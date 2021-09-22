@@ -13,11 +13,11 @@ struct Font {
     std::unique_ptr<FTFont> font;
 
     Font(const char *path) {
-        font = std::make_unique<FTExtrudeFont>(path);
+        font = std::make_unique<FTBitmapFont>(path);
         if (font->Error()) {
             printf("failed to load font: %s\n", path);
         }
-        font->FaceSize(80);
+        font->FaceSize(30);
         font->Depth(10);
         font->Outset(0, 3);
         font->CharMap(ft_encoding_unicode);
@@ -27,7 +27,7 @@ struct Font {
     void render(float x, float y, const char *str) {
         glPushMatrix();
         glTranslatef(x, y, 0.0f);
-        font->Render(str);
+        font->Render(str, -1, {x, y});
         glPopMatrix();
     }
 };
@@ -42,10 +42,12 @@ struct CursorState {
     void *lmb_on = nullptr;
 
     void on_update() {
-        double _x, _y;
+        GLint nx = 100, ny = 100;
+        glfwGetFramebufferSize(window, &nx, &ny);
+        GLdouble _x, _y;
         glfwGetCursorPos(window, &_x, &_y);
-        x = (float)_x;
-        y = (float)_y;
+        x = 0.5f + (float)_x;
+        y = ny - 0.5f - (float)_y;
         lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
         rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
@@ -109,10 +111,6 @@ struct Button : Widget {
 
     void on_update() override {
         Widget::on_update();
-
-        printf("!!!\n");
-        glColor3f(1.f, 1.f, 0.f);
-        font.render(bbox.x0, bbox.y0, "FUCKFTGL");
     }
 
     void on_draw() const override {
@@ -124,6 +122,9 @@ struct Button : Widget {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        glColor3f(1.f, 1.f, 1.f);
+        font.render(bbox.x0, bbox.y0, "FuckFTGL");
     }
 };
 
@@ -139,7 +140,7 @@ void process_input() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glScalef(2.f, -2.f, 1.f);
+    glScalef(2.f, 2.f, 1.f);
     glTranslatef(-.5f, -.5f, 0.f);
     glScalef(1.f / nx, 1.f / ny, 1.f);
 
@@ -170,7 +171,7 @@ int main() {
         return -1;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "Unknown"; glfwGetError(&err);

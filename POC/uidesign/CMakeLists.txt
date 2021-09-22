@@ -9,6 +9,5 @@ target_link_libraries(ZenoEditor PRIVATE GL glfw)
 
 
 target_link_libraries(ZenoEditor PRIVATE ftgl)
-FIND_PACKAGE(Freetype REQUIRED)
-FIND_PACKAGE(OpenGL   REQUIRED)
+find_package(Freetype REQUIRED)
 target_include_directories(ZenoEditor PRIVATE ftgl/src ftgl/src/FTFont ftgl/src/FTGlyph ftgl/src/FTLayout ${FREETYPE_INCLUDE_DIRS})
