@@ -10,30 +10,59 @@
 #include <tuple>
 
 
+struct AABB {
+    float x0, y0, nx, ny;
+
+    AABB(float x0 = 0, float y0 = 0, float nx = 0, float ny = 0)
+        : x0(x0), y0(y0), nx(nx), ny(ny) {}
+
+    bool contains(float x, float y) const {
+        return x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny;
+    }
+};
+
+
 struct Font {
     std::unique_ptr<FTFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
 
-    Font(const char *path, float font_size = 30.f) {
+    Font(const char *path) {
         font = std::make_unique<FTPolygonFont>(path);
         if (font->Error()) {
             printf("failed to load font: %s\n", path);
         }
-        font->FaceSize(font_size);
         font->CharMap(ft_encoding_unicode);
 
         layout = std::make_unique<FTSimpleLayout>();
-        layout->SetLineLength(600.f);
         layout->SetFont(font.get());
     }
 
-    void render(float x, float y, std::string const &str) {
+    Font &set_font_size(float font_size) {
+        font->FaceSize(font_size);
+        return *this;
+    }
+
+    Font &set_line_len(float line_len, FTGL::TextAlignment align = FTGL::ALIGN_CENTER) {
+        layout->SetLineLength(line_len);
+        layout->SetAlignment(align);
+        return *this;
+    }
+
+    AABB calc_bounding_box(std::string const &str) {
+        auto bbox = layout->BBox(str.data(), str.size());
+        return AABB(bbox.Lower().X(), bbox.Lower().Y(),
+                    bbox.Upper().X() - bbox.Lower().X(),
+                    bbox.Upper().Y() - bbox.Lower().Y());
+    }
+
+    Font &render(float x, float y, std::string const &str) {
         if (str.size()) {
             glPushMatrix();
             glTranslatef(x, y, 0.f);
             layout->Render(str.data(), str.size());
             glPopMatrix();
         }
+        return *this;
     }
 };
 
@@ -71,15 +100,6 @@ struct IWidget {
 };
 
 
-struct AABB {
-    float x0, y0, nx, ny;
-
-    bool contains(float x, float y) const {
-        return x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny;
-    }
-};
-
-
 struct Widget : IWidget {
     bool hovered = false;
     bool pressed = false;
@@ -100,9 +120,6 @@ struct Widget : IWidget {
         }
     }
 };
-
-
-Font font("LiberationMono-Regular.ttf");
 
 
 struct Button : Widget {
@@ -129,6 +146,10 @@ struct Button : Widget {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        Font font("LiberationMono-Regular.ttf");
+        font.set_font_size(30.f);
+        font.set_line_len(bbox.nx);
 
         glColor3f(1.f, 1.f, 1.f);
         font.render(bbox.x0, bbox.y0, text);
