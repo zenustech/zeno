@@ -86,7 +86,8 @@ struct Widget;
 struct CursorState {
     float x, y;
     bool lmb, mmb, rmb;
-    Widget *lmb_on = nullptr;
+    Widget *lmb_pressed = nullptr;
+    Widget *lmb_selected = nullptr;
 
     void update() {
         GLint nx, ny;
@@ -116,6 +117,8 @@ struct Widget : IWidget {
     bool hovered = false;
     bool pressed = false;
     bool pressable = false;
+    bool selected = false;
+    bool selectable = false;
 
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
@@ -138,13 +141,26 @@ struct Widget : IWidget {
 
         if (pressable) {
             if (hovered && cur.lmb) {
-                if (cur.lmb_on)
-                    cur.lmb_on->pressed = false;
-                cur.lmb_on = this;
+                if (cur.lmb_pressed)
+                    cur.lmb_pressed->pressed = false;
+                cur.lmb_pressed = this;
                 pressed = true;
             }
             if (!cur.lmb) {
                 pressed = false;
+            }
+        }
+
+        if (cur.lmb) {
+            if (cur.lmb_selected)
+                cur.lmb_selected->selected = false;
+            cur.lmb_selected = nullptr;
+        }
+
+        if (selectable) {
+            if (hovered && cur.lmb) {
+                cur.lmb_selected = this;
+                selected = true;
             }
         }
 
@@ -192,10 +208,36 @@ struct Button : Widget {
 };
 
 
+struct Selectable : Widget {
+    AABB bbox;
+
+    Selectable(AABB bbox)
+        : bbox(bbox) {
+        selectable = true;
+    }
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
+
+    void draw() const override {
+        if (selected) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+        } else if (hovered) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else {
+            glColor3f(0.375f, 0.375f, 0.375f);
+        }
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+    }
+};
+
+
 struct MyWindow : Widget {
     MyWindow() {
         add_child<Button>(AABB(100, 100, 150, 50), "OK");
         add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
+        add_child<Selectable>(AABB(100, 300, 150, 50));
     }
 
     AABB get_bounding_box() const override {
