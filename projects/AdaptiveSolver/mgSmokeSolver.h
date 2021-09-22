@@ -46,7 +46,7 @@ namespace zeno{
         openvdb::BBoxd worldinputbbox;
         void resize(int levelNum);
         void initData(openvdb::FloatGrid::Ptr sdf, int levelNum, float inputdt);
-
+        void fillInner(openvdb::FloatGrid::Ptr sdf);
         void advection();
         void applyOuterforce();
         void solvePress();

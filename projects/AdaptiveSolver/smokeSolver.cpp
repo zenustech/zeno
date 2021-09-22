@@ -317,7 +317,9 @@ namespace zeno{
                 auto &leaf = *leaves[liter];
                 for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                     openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
-                    for(int i=0;i<3;++i){
+                    //for(int i=0;i<3;++i)
+                    int i = 1;
+                    {
                         if(!vel_axr[i].isValueOn(coord))
                             continue;
                         auto wpos = velField[i]->indexToWorld(coord);
