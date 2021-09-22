@@ -25,11 +25,13 @@ struct AABB {
 struct Font {
     std::unique_ptr<FTFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
+    float fixed_height = -1;
 
     Font(const char *path) {
         font = std::make_unique<FTPolygonFont>(path);
         if (font->Error()) {
-            printf("failed to load font: %s\n", path);
+            fprintf(stderr, "Failed to load font: %s\n", path);
+            abort();
         }
         font->CharMap(ft_encoding_unicode);
 
@@ -42,9 +44,14 @@ struct Font {
         return *this;
     }
 
-    Font &set_line_len(float line_len, FTGL::TextAlignment align = FTGL::ALIGN_CENTER) {
-        layout->SetLineLength(line_len);
+    Font &set_fixed_width(float width, FTGL::TextAlignment align = FTGL::ALIGN_CENTER) {
+        layout->SetLineLength(width);
         layout->SetAlignment(align);
+        return *this;
+    }
+
+    Font &set_fixed_height(float height) {
+        fixed_height = height;
         return *this;
     }
 
@@ -56,6 +63,10 @@ struct Font {
     }
 
     Font &render(float x, float y, std::string const &str) {
+        if (fixed_height > 0) {
+            auto bbox = calc_bounding_box(str);
+            y += fixed_height / 2 - bbox.ny / 2;
+        }
         if (str.size()) {
             glPushMatrix();
             glTranslatef(x, y, 0.f);
@@ -76,7 +87,7 @@ struct CursorState {
     void *lmb_on = nullptr;
 
     void on_update() {
-        GLint nx = 100, ny = 100;
+        GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
         GLdouble _x, _y;
         glfwGetCursorPos(window, &_x, &_y);
@@ -103,6 +114,9 @@ struct IWidget {
 struct Widget : IWidget {
     bool hovered = false;
     bool pressed = false;
+
+    Widget *parent = nullptr;
+    std::vector<std::shared_ptr<Widget>> children;
 
     virtual AABB get_bounding_box() const = 0;
 
@@ -148,8 +162,10 @@ struct Button : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         Font font("LiberationMono-Regular.ttf");
+        //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
         font.set_font_size(30.f);
-        font.set_line_len(bbox.nx);
+        font.set_fixed_width(bbox.nx);
+        font.set_fixed_height(bbox.ny);
 
         glColor3f(1.f, 1.f, 1.f);
         font.render(bbox.x0, bbox.y0, text);
@@ -194,16 +210,16 @@ void draw_graphics() {
 
 int main() {
     if (!glfwInit()) {
-        const char *err = "Unknown"; glfwGetError(&err);
-        printf("Failed to initialize GLFW library: %s\n", err);
+        const char *err = "unknown error"; glfwGetError(&err);
+        fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
-        const char *err = "Unknown"; glfwGetError(&err);
-        printf("Failed to create GLFW window: %s\n", err);
+        const char *err = "unknown error"; glfwGetError(&err);
+        fprintf(stderr, "Failed to create GLFW window: %s\n", err);
         return -1;
     }
     glfwMakeContextCurrent(window);
