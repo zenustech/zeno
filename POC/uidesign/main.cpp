@@ -12,20 +12,27 @@
 
 struct Font {
     std::unique_ptr<FTFont> font;
+    std::unique_ptr<FTSimpleLayout> layout;
 
-    Font(const char *path, int font_size = 30) {
-        font = std::make_unique<FTBitmapFont>(path);
+    Font(const char *path, float font_size = 30.f) {
+        font = std::make_unique<FTPolygonFont>(path);
         if (font->Error()) {
             printf("failed to load font: %s\n", path);
         }
         font->FaceSize(font_size);
         font->CharMap(ft_encoding_unicode);
-        printf("Using FTGL version %s\n", FTGL::GetString(FTGL::CONFIG_VERSION));
+
+        layout = std::make_unique<FTSimpleLayout>();
+        layout->SetLineLength(600.f);
+        layout->SetFont(font.get());
     }
 
     void render(float x, float y, std::string const &str) {
         if (str.size()) {
-            font->Render(str.data(), str.size(), {x, y});
+            glPushMatrix();
+            glTranslatef(x, y, 0.f);
+            layout->Render(str.data(), str.size());
+            glPopMatrix();
         }
     }
 };
