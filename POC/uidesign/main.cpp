@@ -48,11 +48,12 @@ struct AABB {
 };
 
 
-template <class Base>
+template <class Base = Widget>
 struct Hoverable : Base {
     using WidgetBase = Hoverable;
 
     bool hovered = false;
+    bool pressed = false;
 
     virtual AABB get_bounding_box() const = 0;
 
@@ -60,6 +61,15 @@ struct Hoverable : Base {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
         Base::on_update();
+
+        if (hovered && cur.lmb && !cur.lmb_on) {
+            cur.lmb_on = this;
+            pressed = true;
+        }
+        if (!cur.lmb) {
+            cur.lmb_on = nullptr;
+            pressed = false;
+        }
     }
 };
 
@@ -76,19 +86,8 @@ struct Button : Hoverable<Widget> {
         return bbox;
     }
 
-    bool pressed = false;
-
     void on_update() override {
         WidgetBase::on_update();
-
-        if (hovered && cur.lmb && !cur.lmb_on) {
-            cur.lmb_on = this;
-            pressed = true;
-        }
-        if (!cur.lmb) {
-            cur.lmb_on = nullptr;
-            pressed = false;
-        }
     }
 
     void on_draw() const override {

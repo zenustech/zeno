@@ -1,0 +1,77 @@
+This package was debianized by Sam Hocevar <sam@zoy.org> on Wed, 30 Apr
+2008 12:29:11 +0000.
+
+It was downloaded from <http://ftgl.sf.net/>.
+
+Copyright (c) 2001-2004  Henry Maddocks <henryj@paradise.net.nz>
+              2008  Sam Hocevar <sam@zoy.org>
+              2008  Éric Beets <ericbeets@free.fr>
+
+Licensing information:
+
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation
+    files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use,
+    copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following
+    conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+test/font_pack/timR12-ISO8859-1.pcf.gz
+
+    Copied from the Debian package xfonts-100dpi
+
+    This package contains the font-adobe-100dpi, font-bh-100dpi,
+    font-bh-lucidatypewriter-100dpi and font-bitstream-100dpi tarballs
+    downloaded from: http://xorg.freedesktop.org/releases/individual/font/
+
+    font-adobe-100dpi:
+      Copyright 1984-1989, 1994 Adobe Systems Incorporated.
+      Copyright 1988, 1994 Digital Equipment Corporation.
+
+      Adobe is a trademark of Adobe Systems Incorporated which may be
+      registered in certain jurisdictions.
+      Permission to use these trademarks is hereby granted only in
+      association with the images described in this file.
+
+      Permission to use, copy, modify, distribute and sell this software
+      and its documentation for any purpose and without fee is hereby
+      granted, provided that the above copyright notices appear in all
+      copies and that both those copyright notices and this permission
+      notice appear in supporting documentation, and that the names of
+      Adobe Systems and Digital Equipment Corporation not be used in
+      advertising or publicity pertaining to distribution of the software
+      without specific, written prior permission.  Adobe Systems and
+      Digital Equipment Corporation make no representations about the
+      suitability of this software for any purpose.  It is provided "as
+      is" without express or implied warranty.
+
+test/font_pack/El_Abogado_Loco.ttf
+
+    Copied from the Debian package fonts-dustin
+
+    This package was debianized by Aurelien Jarno <aurel32@debian.org> on
+    Mon,  7 Apr 2003 00:33:50 +0200.
+
+    All the fonts were downloaded from http://www.dustismo.com
+
+    Upstream Author: Dustin Norlander <dustin@dustismo.com>
+
+    Copyright (C) 2002-2003 Dustin Norlander
+
+    You are free to distribute this software under the terms of the GNU General
+    Public License.  On Debian systems, the complete text of the GNU General Public
+    License can be found in /usr/share/common-licenses/GPL-2 file.

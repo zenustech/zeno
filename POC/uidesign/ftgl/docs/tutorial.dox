@@ -1,0 +1,268 @@
+/** \page ftgl-tutorial %FTGL tutorial
+
+ \section starting Starting to use %FTGL
+
+ Only one header is required to use %FTGL:
+
+\code
+#include <FTGL/ftgl.h>
+\endcode
+
+ \section type Choosing a font type
+
+ %FTGL supports 6 font output types among 3 groups: raster fonts, vector
+ fonts, and texture fonts which are a mixture of both. Each font type has its
+ advantages and disadvantages.
+
+ \subsection raster Raster fonts
+
+ Raster fonts are made of pixels painted directly on the viewport's
+ framebuffer. They cannot be directly rotated or scaled.
+
+ - Bitmap fonts use 1-bit (2-colour) rasterised glyphs.
+ - Pixmap fonts use 8-bit (256 levels) rasterised glyphs.
+
+ \image html rasterfont.png
+ \image latex rasterfont.png "" width=0.7\textwidth
+
+ \subsection vector Vector fonts
+
+ Vector fonts are 3D objects that are rendered at the current matrix location.
+ All position, scale, texture and material effects apply to vector fonts.
+
+ - Polygon fonts use planar triangle meshes and can be texture-mapped.
+ - Outline fonts use OpenGL lines.
+ - Extruded fonts are extruded polygon fonts, with the front, back and side
+   meshes renderable separately to apply different effects and materials.
+
+ \image html vectorfont.png
+ \image latex vectorfont.png "" width=0.7\textwidth
+
+ \subsection texture Textured fonts
+
+ Textured fonts are probably the most versatile types. They are fast,
+ antialiased, and can be transformed just like any OpenGL primitive.
+
+ - Texture fonts use one texture per glyph. They are fast because glyphs are
+   stored permanently in the video card's memory.
+ - Buffer fonts use one texture per line of text. They tend to be faster
+   than texture fonts when the same line of text needs to be rendered for
+   more than one frame.
+
+ \image html texturefont.png
+ \image latex texturefont.png "" width=0.7\textwidth
+
+ \section creating Create font objects
+
+ Creating a font and displaying some text is really straightforward, be it
+ in C or in C++.
+
+ \subsection c in C
+
+ \code
+/* Create a pixmap font from a TrueType file. */
+FTGLfont *font = ftglCreatePixmapFont("/home/user/Arial.ttf");
+
+/* If something went wrong, bail out. */
+if(!font)
+    return -1;
+
+/* Set the font size and render a small text. */
+ftglSetFontFaceSize(font, 72, 72);
+ftglRenderFont(font, "Hello World!", FTGL_RENDER_ALL);
+
+/* Destroy the font object. */
+ftglDestroyFont(font);
+ \endcode
+
+ \subsection cxx in C++
+
+ \code
+// Create a pixmap font from a TrueType file.
+FTGLPixmapFont font("/home/user/Arial.ttf");
+
+// If something went wrong, bail out.
+if(font.Error())
+    return -1;
+
+// Set the font size and render a small text.
+font.FaceSize(72);
+font.Render("Hello World!");
+ \endcode
+
+ The first 128 glyphs of the font (generally corresponding to the ASCII set)
+ are preloaded. This means that usual text is rendered fast enough, but no
+ memory is wasted loading glyphs that will not be used.
+
+ \section commands More font commands
+
+ \subsection metrics Font metrics
+
+ \image html metrics.png
+ \image latex metrics.png "" width=0.5\textwidth
+
+ If you ask a font to render at 0.0, 0.0 the bottom left most pixel or polygon
+ may not be aligned to 0.0, 0.0. With FTFont::Ascender(), FTFont::Descender()
+ and FTFont::Advance() an approximate bounding box can be calculated.
+
+ For an exact bounding box, use the FTFont::BBox() function. This function
+ returns the extent of the volume containing 'string'. 0.0 on the y axis will
+ be aligned with the font baseline.
+
+ \subsection charmap Specifying a character map encoding
+
+ From the FreeType documentation:
+
+ "By default, when a new face object is created, (FreeType) lists all the
+ charmaps contained in the font face and selects the one that supports Unicode
+ character codes if it finds one. Otherwise, it tries to find support for
+ Latin-1, then ASCII."
+
+ It then gives up. In this case %FTGL will set the charmap to the first it
+ finds in the fonts charmap list. You can expilcitly set the char encoding with
+ FTFont::CharMap().
+
+ Valid encodings as of FreeType 2.0.4 are:
+
+ - ft_encoding_none
+ - ft_encoding_unicode
+ - ft_encoding_symbol
+ - ft_encoding_latin_1
+ - ft_encoding_latin_2
+ - ft_encoding_sjis
+ - ft_encoding_gb2312
+ - ft_encoding_big5
+ - ft_encoding_wansung
+ - ft_encoding_johab
+ - ft_encoding_adobe_standard
+ - ft_encoding_adobe_expert
+ - ft_encoding_adobe_custom
+ - ft_encoding_apple_roman
+
+ For instance:
+
+ \code
+font.CharMap(ft_encoding_apple_roman);
+ \endcode
+
+ This will return an error if the requested encoding can't be found in the
+ font.
+
+ If your application uses Latin-1 characters, you can preload this character
+ set using the following code:
+
+ \code
+// Create a pixmap font from a TrueType file.
+FTGLPixmapFont font("/home/user/Arial.ttf");
+
+// If something went wrong, bail out.
+if(font.Error())
+    return -1;
+
+// Set the face size and the character map. If something went wrong, bail out.
+font.FaceSize(72);
+if(!font.CharMap(ft_encoding_latin_1))
+    return -1;
+
+// Create a string containing all characters between 128 and 255
+// and preload the Latin-1 chars without rendering them.
+char buf[129];
+for(int i = 128; i < 256; i++)
+{
+    buf[i] = (char)(unsigned char)i;
+}
+buf[128] = '\0';
+
+font.Advance(buf);
+}
+ \endcode
+
+
+ \section sample Sample font manager class
+
+\code
+FTTextureFont* myFont = FTGLFontManager::Instance().GetFont("arial.ttf", 72);
+
+#include <map>
+#include <string>
+#include <FTGL/ftgl.h>
+
+using namespace std;
+
+typedef map<string, FTFont*> FontList;
+typedef FontList::const_iterator FontIter;
+
+class FTGLFontManager
+{
+    public:
+        // NOTE
+        // This is shown here for brevity. The implementation should be in the source
+        // file otherwise your compiler may inline the function resulting in
+        // multiple instances of FTGLFontManager
+        static FTGLFontManager& Instance()
+        {
+            static FTGLFontManager tm;
+            return tm;
+        }
+
+        ~FTGLFontManager()
+        {
+            FontIter font;
+            for(font = fonts.begin(); font != fonts.end(); font++)
+            {
+                delete (*font).second;
+            }
+
+            fonts.clear();
+        }
+
+
+        FTFont* GetFont(const char *filename, int size)
+        {
+            char buf[256];
+            sprintf(buf, "%s%i", filename, size);
+            string fontKey = string(buf);
+
+            FontIter result = fonts.find(fontKey);
+            if(result != fonts.end())
+            {
+                LOGMSG("Found font %s in list", filename);
+                return result->second;
+            }
+
+            FTFont* font = new FTTextureFont;
+
+            string fullname = path + string(filename);
+
+            if(!font->Open(fullname.c_str()))
+            {
+                LOGERROR("Font %s failed to open", fullname.c_str());
+                delete font;
+                return NULL;
+            }
+
+            if(!font->FaceSize(size))
+            {
+                LOGERROR("Font %s failed to set size %i", filename, size);
+                delete font;
+                return NULL;
+            }
+
+            fonts[fontKey] = font;
+
+            return font;
+        }
+
+
+    private:
+        // Hide these 'cause this is a singleton.
+        FTGLFontManager(){}
+        FTGLFontManager(const FTGLFontManager&){};
+        FTGLFontManager& operator = (const FTGLFontManager&){ return *this; };
+
+        // container for fonts
+        FontList fonts;
+};
+\endcode
+
+*/
