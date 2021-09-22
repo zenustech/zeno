@@ -4,7 +4,34 @@
 #include <unistd.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <FTGL/ftgl.h>
+#include <memory>
 #include <tuple>
+
+
+struct Font {
+    std::unique_ptr<FTFont> font;
+
+    Font(const char *path) {
+        font = std::make_unique<FTExtrudeFont>(path);
+        if (font->Error()) {
+            printf("failed to load font: %s\n", path);
+        }
+        font->FaceSize(80);
+        font->Depth(10);
+        font->Outset(0, 3);
+        font->CharMap(ft_encoding_unicode);
+        printf("Using FTGL version %s\n", FTGL::GetString(FTGL::CONFIG_VERSION));
+    }
+
+    void render(float x, float y, const char *str) {
+        glPushMatrix();
+        glTranslatef(x, y, 0.0f);
+        font->Render(str);
+        glPopMatrix();
+    }
+};
+
 
 GLFWwindow *window;
 
@@ -26,13 +53,11 @@ struct CursorState {
 } cur;
 
 
-struct Widget {
-    using WidgetBase = Widget;
-
-    Widget() = default;
-    Widget(Widget const &) = delete;
-    Widget &operator=(Widget const &) = delete;
-    virtual ~Widget() = default;
+struct IWidget {
+    IWidget() = default;
+    IWidget(IWidget const &) = delete;
+    IWidget &operator=(IWidget const &) = delete;
+    virtual ~IWidget() = default;
 
     virtual void on_update() {}
     virtual void on_draw() const {}
@@ -48,10 +73,7 @@ struct AABB {
 };
 
 
-template <class Base = Widget>
-struct Hoverable : Base {
-    using WidgetBase = Hoverable;
-
+struct Widget : IWidget {
     bool hovered = false;
     bool pressed = false;
 
@@ -60,7 +82,6 @@ struct Hoverable : Base {
     void on_update() override {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
-        Base::on_update();
 
         if (hovered && cur.lmb && !cur.lmb_on) {
             cur.lmb_on = this;
@@ -74,9 +95,9 @@ struct Hoverable : Base {
 };
 
 
-struct Button : Hoverable<Widget> {
-    using ButtonBase = Button;
+Font font("LiberationMono-Regular.ttf");
 
+struct Button : Widget {
     AABB bbox;
 
     Button(AABB bbox)
@@ -87,7 +108,11 @@ struct Button : Hoverable<Widget> {
     }
 
     void on_update() override {
-        WidgetBase::on_update();
+        Widget::on_update();
+
+        printf("!!!\n");
+        glColor3f(1.f, 1.f, 0.f);
+        font.render(bbox.x0, bbox.y0, "FUCKFTGL");
     }
 
     void on_draw() const override {
