@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <FTGL/ftgl.h>
 #include <memory>
+#include <string>
 #include <tuple>
 
 
@@ -13,7 +14,7 @@ struct Font {
     std::unique_ptr<FTFont> font;
 
     Font(const char *path) {
-        font = std::make_unique<FTBitmapFont>(path);
+        font = std::make_unique<FTPolygonFont>(path);
         if (font->Error()) {
             printf("failed to load font: %s\n", path);
         }
@@ -24,11 +25,10 @@ struct Font {
         printf("Using FTGL version %s\n", FTGL::GetString(FTGL::CONFIG_VERSION));
     }
 
-    void render(float x, float y, const char *str) {
-        glPushMatrix();
-        glTranslatef(x, y, 0.0f);
-        font->Render(str, -1, {x, y});
-        glPopMatrix();
+    void render(float x, float y, std::string const &str) {
+        if (str.size()) {
+            font->Render(str.data(), str.size(), {x, y});
+        }
     }
 };
 
@@ -99,11 +99,13 @@ struct Widget : IWidget {
 
 Font font("LiberationMono-Regular.ttf");
 
+
 struct Button : Widget {
     AABB bbox;
+    std::string text;
 
-    Button(AABB bbox)
-        : bbox(bbox) {}
+    Button(AABB bbox, std::string text)
+        : bbox(bbox), text(text) {}
 
     AABB get_bounding_box() const override {
         return bbox;
@@ -124,13 +126,13 @@ struct Button : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         glColor3f(1.f, 1.f, 1.f);
-        font.render(bbox.x0, bbox.y0, "FuckFTGL");
+        font.render(bbox.x0, bbox.y0, text);
     }
 };
 
 
-Button btn1({100, 100, 100, 100});
-Button btn2({300, 100, 100, 100});
+Button btn1({100, 100, 100, 100}, "OK");
+Button btn2({300, 100, 100, 100}, "Cancel");
 
 
 void process_input() {
