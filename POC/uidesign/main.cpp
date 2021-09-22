@@ -84,9 +84,9 @@ GLFWwindow *window;
 struct CursorState {
     float x, y;
     bool lmb, mmb, rmb;
-    void *lmb_on = nullptr;
+    //void *lmb_on = nullptr;//todo:fixme
 
-    void on_update() {
+    void update() {
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
         GLdouble _x, _y;
@@ -106,8 +106,7 @@ struct IWidget {
     IWidget &operator=(IWidget const &) = delete;
     virtual ~IWidget() = default;
 
-    virtual void on_update() {}
-    virtual void on_draw() const {}
+    virtual void update() = 0;
 };
 
 
@@ -116,22 +115,36 @@ struct Widget : IWidget {
     bool pressed = false;
 
     Widget *parent = nullptr;
-    std::vector<std::shared_ptr<Widget>> children;
+    std::vector<std::unique_ptr<Widget>> children;
+
+    template <class T, class ...Ts>
+    T *add_child(Ts &&...ts) {
+        std::unique_ptr<Widget> p = std::make_unique<T>(std::forward<Ts>(ts)...);
+        p->parent = this;
+        auto raw_p = p.get();
+        children.push_back(std::move(p));
+        return static_cast<T *>(raw_p);
+    }
 
     virtual AABB get_bounding_box() const = 0;
+    virtual void draw() const {}
 
-    void on_update() override {
+    void update() override {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
 
-        if (hovered && cur.lmb && !cur.lmb_on) {
-            cur.lmb_on = this;
+        if (hovered && cur.lmb) {
             pressed = true;
         }
         if (!cur.lmb) {
-            cur.lmb_on = nullptr;
             pressed = false;
         }
+
+        for (auto const &child: children) {
+            child->update();
+        }
+
+        draw();
     }
 };
 
@@ -147,11 +160,7 @@ struct Button : Widget {
         return bbox;
     }
 
-    void on_update() override {
-        Widget::on_update();
-    }
-
-    void on_draw() const override {
+    void draw() const override {
         if (pressed) {
             glColor3f(0.375f, 0.5f, 1.0f);
         } else if (hovered) {
@@ -173,8 +182,17 @@ struct Button : Widget {
 };
 
 
-Button btn1({100, 100, 150, 50}, "OK");
-Button btn2({300, 100, 150, 50}, "Cancel");
+struct MyWindow : Widget {
+    MyWindow() {
+        add_child<Button>(AABB(100, 100, 150, 50), "OK");
+        add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
+    }
+
+    AABB get_bounding_box() const override {
+        return {0, 0, 800, 600};
+    }
+
+} win;
 
 
 void process_input() {
@@ -192,10 +210,7 @@ void process_input() {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    cur.on_update();
-
-    btn1.on_update();
-    btn2.on_update();
+    cur.update();
 }
 
 
@@ -203,8 +218,7 @@ void draw_graphics() {
     glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    btn1.on_draw();
-    btn2.on_draw();
+    win.update();
 }
 
 
