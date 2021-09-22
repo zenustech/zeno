@@ -81,10 +81,12 @@ struct Font {
 GLFWwindow *window;
 
 
+struct Widget;
+
 struct CursorState {
     float x, y;
     bool lmb, mmb, rmb;
-    //void *lmb_on = nullptr;//todo:fixme
+    Widget *lmb_on = nullptr;
 
     void update() {
         GLint nx, ny;
@@ -113,6 +115,7 @@ struct IWidget {
 struct Widget : IWidget {
     bool hovered = false;
     bool pressed = false;
+    bool pressable = false;
 
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
@@ -133,11 +136,16 @@ struct Widget : IWidget {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
 
-        if (hovered && cur.lmb) {
-            pressed = true;
-        }
-        if (!cur.lmb) {
-            pressed = false;
+        if (pressable) {
+            if (hovered && cur.lmb) {
+                if (cur.lmb_on)
+                    cur.lmb_on->pressed = false;
+                cur.lmb_on = this;
+                pressed = true;
+            }
+            if (!cur.lmb) {
+                pressed = false;
+            }
         }
 
         for (auto const &child: children) {
@@ -154,7 +162,9 @@ struct Button : Widget {
     std::string text;
 
     Button(AABB bbox, std::string text)
-        : bbox(bbox), text(text) {}
+        : bbox(bbox), text(text) {
+        pressable = true;
+    }
 
     AABB get_bounding_box() const override {
         return bbox;
