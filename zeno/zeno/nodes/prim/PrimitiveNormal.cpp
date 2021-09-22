@@ -41,6 +41,7 @@ ZENDEFNODE(PrimitiveCalcNormal, {
     {"primitive"},
 });
 
+
 struct PrimitiveSplitEdges : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
@@ -60,6 +61,28 @@ struct PrimitiveSplitEdges : zeno::INode {
     for (size_t i = 0; i < prim->tris.size(); i++) {
         prim->tris[i] = zeno::vec3i(i * 3 + 0, i * 3 + 1, i * 3 + 2);
     }
+
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitiveSplitEdges, {
+    {"prim"},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+
+struct PrimitiveFaceAttrToVert : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+
+    prim->tris.foreach_attr<std::tuple<vec3i>>([&] (auto &key, auto &arr) {
+        for (size_t i = 0; i < arr.size(); i++) {
+            [arr[i]];
+        }
+    });
 
     set_output("prim", get_input("prim"));
   }
