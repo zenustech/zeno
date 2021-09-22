@@ -48,7 +48,7 @@ struct PrimitiveCalcCentroid : zeno::INode {
             vec3f(acc[0], acc[1], acc[2]) / acc[3];
 
         set_output2("centroid", centroid);
-        set_output2("totalArea", acc[3]);
+        set_output2("totalArea", std::abs(acc[3]));
     }
 };
 

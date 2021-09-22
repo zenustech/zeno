@@ -348,7 +348,7 @@
      "params": {},
      "uipos": [
       -4904.87856410002,
-      3645.432266718094
+      3645.4322667180936
      ],
      "options": []
     },
@@ -830,8 +830,8 @@
      },
      "params": {},
      "uipos": [
-      -7014.385886373134,
-      963.6233929223038
+      -7017.884747420971,
+      962.4571059063583
      ],
      "options": []
     },
@@ -933,8 +933,8 @@
      },
      "params": {},
      "uipos": [
-      -6423.375776222553,
-      570.6626994972202
+      -6386.929306974261,
+      556.0841117979036
      ],
      "options": []
     },
@@ -1354,8 +1354,8 @@
      },
      "params": {},
      "uipos": [
-      -6758.424736972973,
-      1088.3161946557107
+      -6766.88031783858,
+      951.8606137901077
      ],
      "options": []
     },
@@ -1380,7 +1380,7 @@
       "mass": [
        "d08a59e0-NumericOperator",
        "ret",
-       1.0
+       0.5
       ],
       "dampLin": [
        null,
@@ -1410,8 +1410,8 @@
      },
      "params": {},
      "uipos": [
-      -6127.781272107934,
-      967.1137588343042
+      -6107.37124932889,
+      964.198041294441
      ],
      "options": []
     },
@@ -1687,8 +1687,8 @@
      },
      "params": {},
      "uipos": [
-      -5487.908049617271,
-      695.7797079070233
+      -5612.000988113854,
+      688.315471004973
      ],
      "options": []
     },
@@ -2919,7 +2919,7 @@
      "inputs": {
       "lhs": [
        "861881dd-x",
-       "mass",
+       "volume",
        null
       ],
       "rhs": [
@@ -2937,8 +2937,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -6451.51515151513,
-      1166.6666666666629
+      -6447.724718713309,
+      1166.0835231586896
      ],
      "options": []
     },
@@ -2952,11 +2952,11 @@
       ]
      },
      "params": {
-      "value": 0.05
+      "value": 0.5
      },
      "uipos": [
-      -6744.852756274378,
-      1306.6110964863317
+      -6784.506514816522,
+      1273.9550600398622
      ],
      "options": []
     },
@@ -2994,10 +2994,10 @@
     }
    },
    "view_rect": {
-    "x": -6318.564572543589,
-    "y": 1351.9206535870374,
-    "width": 4577.636718749827,
-    "height": 3814.6972656249864
+    "x": -7376.44322189958,
+    "y": 816.0307786271517,
+    "width": 767.9999999999685,
+    "height": 639.9999999999978
    }
   },
   "makeCollision": {
@@ -5093,8 +5093,8 @@
      },
      "params": {},
      "uipos": [
-      461.1492894654018,
-      4570.651599592654
+      587.983002449456,
+      4547.3258592737475
      ],
      "options": []
     },
@@ -5133,8 +5133,8 @@
       "defl": ""
      },
      "uipos": [
-      361.25660995923323,
-      4680.358789029942
+      232.9650382052473,
+      4760.541021376183
      ],
      "options": []
     },
@@ -5164,8 +5164,8 @@
      },
      "params": {},
      "uipos": [
-      1565.3284303148112,
-      4758.350483943437
+      1531.797678606383,
+      4727.735449774874
      ],
      "options": []
     },
@@ -5337,10 +5337,10 @@
     }
    },
    "view_rect": {
-    "x": 5324.333416000268,
-    "y": 3512.555707815964,
-    "width": 1499.9999999999957,
-    "height": 1249.9999999999957
+    "x": 2600.943550337215,
+    "y": 4204.009332727779,
+    "width": 614.3999999999983,
+    "height": 511.9999999999983
    }
   },
   "addRigid": {
@@ -7845,10 +7845,10 @@
     }
    },
    "view_rect": {
-    "x": 291.378414996268,
-    "y": -1267.4481174255545,
-    "width": 2929.687499999998,
-    "height": 2441.4062499999986
+    "x": 2510.309216061818,
+    "y": -383.8896957999881,
+    "width": 614.3999999999996,
+    "height": 511.9999999999997
    }
   },
   "RigidStepWorld": {
@@ -8995,10 +8995,12 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "method": "Area"
+     },
      "uipos": [
-      -29.819842769717482,
-      370.93224405647027
+      -75.0931912890797,
+      351.5700572683154
      ],
      "options": []
     },
@@ -9017,8 +9019,8 @@
       "defl": ""
      },
      "uipos": [
-      -247.6139978791092,
-      174.44326617179215
+      -340.15386120484953,
+      138.85101104650744
      ],
      "options": []
     },
@@ -9066,8 +9068,8 @@
       "op_type": "neg"
      },
      "uipos": [
-      327.1474019088017,
-      382.2905620360552
+      323.7305454167744,
+      359.51151875587294
      ],
      "options": []
     },
@@ -9151,7 +9153,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "bb70e589-PrimitiveCalcCentroid",
+       "6619b803-x",
        "totalArea",
        null
       ],
@@ -9162,22 +9164,45 @@
       ]
      },
      "params": {
-      "name": "mass",
+      "name": "volume",
       "type": "vec3f",
       "defl": ""
      },
      "uipos": [
-      253.23246870400567,
-      644.0604871255165
+      478.7449971778099,
+      760.2336078544458
+     ],
+     "options": []
+    },
+    "6619b803-x": {
+     "name": "PrimitiveCalcCentroid",
+     "inputs": {
+      "prim": [
+       "333224cd-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "Volume"
+     },
+     "uipos": [
+      -127.56264236902045,
+      652.619589977221
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -205.07154486869015,
-    "y": 139.32995311703075,
-    "width": 625.0,
-    "height": 625.0
+    "x": 43.85848164491027,
+    "y": 420.00610372369147,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeConstraint": {
@@ -12827,7 +12852,7 @@
     [
      "int",
      "numRandPoints",
-     "256"
+     "64"
     ],
     [
      "bool",
@@ -14136,6 +14161,76 @@
     "FLIPSolver"
    ]
   },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachePrimitive": {
    "inputs": [
     [
@@ -14144,7 +14239,7 @@
      ""
     ],
     [
-     "int",
+     "",
      "frameNum",
      ""
     ],
@@ -20738,7 +20833,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -21421,6 +21522,11 @@
      "bool",
      "noNullMesh",
      "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     ""
     ]
    ],
    "categories": [
@@ -22276,7 +22382,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "DEPRECATED",
+     ""
+    ]
+   ],
    "categories": [
     "cgmesh"
    ]
@@ -22759,6 +22871,481 @@
     "FLIPSolver"
    ]
   },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.0"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.0"
+    ],
+    [
+     "float",
+     "friction",
+     "0.5"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.5"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex decomp sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectListToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mergedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "volume",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "40"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -22832,6 +23419,71 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "SDFAdvect": {
+   "inputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "SpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TemporalScheme",
+     "Order_2_Runge_Kuta"
+    ],
+    [
+     "int",
+     "RenormalizeStep",
+     "3"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "TrackerSpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TrackerTemporalScheme",
+     "Explicit_Euler"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "SDFToPoly": {
@@ -22916,6 +23568,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ScalarFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Gradient Curvature Laplacian ClosestPoint",
+     "Operator",
+     "Gradient"
+    ]
+   ],
    "categories": [
     "openvdb"
    ]
@@ -25001,6 +25689,113 @@
     "FLIPSolver"
    ]
   },
+  "VectorFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Divergence Curl Magnitude Normalize",
+     "Operator",
+     "Divergence"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VoronoiFracture": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "meshPrim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ],
+    [
+     "bool",
+     "doMeshFix2",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
+   ]
+  },
   "WriteBgeo": {
    "inputs": [
     [
@@ -25888,236 +26683,6 @@
    "params": [],
    "categories": [
     "Rigid_Fluid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "int",
-     "steps",
-     "40"
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "float",
-     "dampLin",
-     "0.0"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.0"
-    ],
-    [
-     "float",
-     "friction",
-     "0.5"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.5"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
    ],
    "is_subgraph": true
   },
