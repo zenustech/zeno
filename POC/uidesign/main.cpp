@@ -13,14 +13,12 @@
 struct Font {
     std::unique_ptr<FTFont> font;
 
-    Font(const char *path) {
-        font = std::make_unique<FTPolygonFont>(path);
+    Font(const char *path, int font_size = 30) {
+        font = std::make_unique<FTBitmapFont>(path);
         if (font->Error()) {
             printf("failed to load font: %s\n", path);
         }
-        font->FaceSize(30);
-        font->Depth(10);
-        font->Outset(0, 3);
+        font->FaceSize(font_size);
         font->CharMap(ft_encoding_unicode);
         printf("Using FTGL version %s\n", FTGL::GetString(FTGL::CONFIG_VERSION));
     }
@@ -131,8 +129,8 @@ struct Button : Widget {
 };
 
 
-Button btn1({100, 100, 100, 100}, "OK");
-Button btn2({300, 100, 100, 100}, "Cancel");
+Button btn1({100, 100, 150, 50}, "OK");
+Button btn2({300, 100, 150, 50}, "Cancel");
 
 
 void process_input() {
