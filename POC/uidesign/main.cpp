@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -8,28 +9,47 @@
 GLFWwindow *window;
 
 
-std::tuple<float, float> get_cursor_pos() {
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-    return {(float)x, (float)y};
-}
+struct CursorState {
+    float x, y;
+    bool lmb, mmb, rmb;
+    void *lmb_on = nullptr;
+
+    void on_update() {
+        double _x, _y;
+        glfwGetCursorPos(window, &_x, &_y);
+        x = (float)_x;
+        y = (float)_y;
+        lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+        rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    }
+} cur;
 
 
 struct Button {
     float x0, y0, nx, ny;
 
     bool hover = false;
+    bool press = false;
 
-    void on_event() {
-        auto [x, y] = get_cursor_pos();
-        printf("%f %f\n", x, y);
+    void on_update() {
+        hover = (x0 <= cur.x && y0 <= cur.y && cur.x <= x0 + nx && cur.y <= y0 + ny);
 
-        hover = (x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny);
+        if (hover && cur.lmb && !cur.lmb_on) {
+            cur.lmb_on = this;
+            press = true;
+        }
+        if (!cur.lmb) {
+            cur.lmb_on = nullptr;
+            press = false;
+        }
     }
 
     void on_draw() const {
-        if (hover) {
+        if (press) {
             glColor3f(0.375f, 0.5f, 1.0f);
+        } else if (hover) {
+            glColor3f(0.75f, 0.5f, 0.375f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
@@ -38,7 +58,8 @@ struct Button {
 };
 
 
-Button btn{100, 100, 400, 400};
+Button btn1{100, 100, 100, 100};
+Button btn2{300, 100, 100, 100};
 
 
 void process_input() {
@@ -49,14 +70,17 @@ void process_input() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glScalef(2.f, -2.f, 1.f);
-    glTranslatef(-.5f, -.5f, 1.f);
+    glTranslatef(-.5f, -.5f, 0.f);
     glScalef(1.f / nx, 1.f / ny, 1.f);
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    btn.on_event();
+    cur.on_update();
+
+    btn1.on_update();
+    btn2.on_update();
 }
 
 
@@ -64,7 +88,8 @@ void draw_graphics() {
     glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    btn.on_draw();
+    btn1.on_draw();
+    btn2.on_draw();
 }
 
 
