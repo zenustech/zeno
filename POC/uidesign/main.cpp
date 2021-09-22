@@ -27,53 +27,85 @@ struct CursorState {
 
 
 struct Widget {
+    using WidgetBase = Widget;
+
     Widget() = default;
     Widget(Widget const &) = delete;
     Widget &operator=(Widget const &) = delete;
     virtual ~Widget() = default;
 
-    virtual void on_update() = 0;
-    virtual void on_draw() const = 0;
+    virtual void on_update() {}
+    virtual void on_draw() const {}
 };
 
 
-struct Button : Widget {
+struct AABB {
     float x0, y0, nx, ny;
 
-    Button(float x0, float y0, float nx, float ny)
-        : x0(x0), y0(y0), nx(nx), ny(ny) {}
+    bool contains(float x, float y) const {
+        return x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny;
+    }
+};
 
-    bool hover = false;
-    bool press = false;
 
-    void on_update() {
-        hover = (x0 <= cur.x && y0 <= cur.y && cur.x <= x0 + nx && cur.y <= y0 + ny);
+template <class Base>
+struct Hoverable : Base {
+    using WidgetBase = Hoverable;
 
-        if (hover && cur.lmb && !cur.lmb_on) {
+    bool hovered = false;
+
+    virtual AABB get_bounding_box() const = 0;
+
+    void on_update() override {
+        auto bbox = get_bounding_box();
+        hovered = bbox.contains(cur.x, cur.y);
+        Base::on_update();
+    }
+};
+
+
+struct Button : Hoverable<Widget> {
+    using ButtonBase = Button;
+
+    AABB bbox;
+
+    Button(AABB bbox)
+        : bbox(bbox) {}
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
+
+    bool pressed = false;
+
+    void on_update() override {
+        WidgetBase::on_update();
+
+        if (hovered && cur.lmb && !cur.lmb_on) {
             cur.lmb_on = this;
-            press = true;
+            pressed = true;
         }
         if (!cur.lmb) {
             cur.lmb_on = nullptr;
-            press = false;
+            pressed = false;
         }
     }
 
-    void on_draw() const {
-        if (press) {
+    void on_draw() const override {
+        if (pressed) {
             glColor3f(0.375f, 0.5f, 1.0f);
-        } else if (hover) {
+        } else if (hovered) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
-        glRectf(x0, y0, x0 + nx, y0 + ny);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
 
 
-Button btn1{100, 100, 100, 100};
-Button btn2{300, 100, 100, 100};
+Button btn1({100, 100, 100, 100});
+Button btn2({300, 100, 100, 100});
 
 
 void process_input() {
