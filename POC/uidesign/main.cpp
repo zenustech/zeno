@@ -38,7 +38,7 @@ struct Button {
 };
 
 
-Button btn{.1f, .1f, .8f, .8f};
+Button btn{100, 100, 400, 400};
 
 
 void process_input() {
@@ -50,6 +50,7 @@ void process_input() {
     glLoadIdentity();
     glScalef(2.f, -2.f, 1.f);
     glTranslatef(-.5f, -.5f, 1.f);
+    glScalef(1.f / nx, 1.f / ny, 1.f);
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
