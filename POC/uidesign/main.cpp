@@ -133,9 +133,6 @@ struct IWidget {
 
 
 struct Widget : IWidget {
-    bool hovered = false;
-    bool selected = false;
-
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
     Point position{0, 0};
@@ -155,17 +152,65 @@ struct Widget : IWidget {
 
     virtual AABB get_bounding_box() const = 0;
 
-    virtual void on_hover_enter() {}
-    virtual void on_hover_leave() {}
+    virtual void on_hover_enter() {
+    }
 
-    virtual void on_lmb_down() {}
-    virtual void on_lmb_up() {}
+    virtual void on_hover_leave() {
+        if (lmb_ever_down) on_lmb_up();
+        if (mmb_ever_down) on_mmb_up();
+        if (rmb_ever_down) on_rmb_up();
+    }
 
-    virtual void on_mmb_down() {}
-    virtual void on_mmb_up() {}
+    std::vector<Widget *> children_selected;
 
-    virtual void on_rmb_down() {}
-    virtual void on_rmb_up() {}
+    bool hovered = false;
+    bool selected = false;
+    bool pressed = false;
+    bool selectable = true;
+
+    void _select_child(Widget *ptr, bool is_clear = true) {
+        if (is_clear) {
+            for (auto child: children_selected) {
+                child->selected = false;
+            }
+            children_selected.clear();
+        }
+        children_selected.push_back(ptr);
+        ptr->selected = true;
+    }
+
+    virtual void on_lmb_down() {
+        lmb_ever_down = true;
+        if (parent && selectable) {
+            parent->_select_child(this);  // todo: is_clear if no Ctrl modifier
+        }
+        pressed = true;
+    }
+
+    virtual void on_lmb_up() {
+        lmb_ever_down = false;
+        pressed = false;
+    }
+
+    virtual void on_mmb_down() {
+        mmb_ever_down = true;
+    }
+
+    virtual void on_mmb_up() {
+        mmb_ever_down = false;
+    }
+
+    virtual void on_rmb_down() {
+        rmb_ever_down = true;
+    }
+
+    virtual void on_rmb_up() {
+        rmb_ever_down = false;
+    }
+
+    bool lmb_ever_down = false;
+    bool mmb_ever_down = false;
+    bool rmb_ever_down = false;
 
     void do_update() override {
         auto raii = cur.translate(-position.x, -position.y);
@@ -179,22 +224,24 @@ struct Widget : IWidget {
         }
         hovered = new_hovered;
 
-        if (!cur.last_lmb && cur.lmb) {
-            on_lmb_down();
-        } else if (!cur.last_lmb && cur.lmb) {
-            on_lmb_up();
-        }
+        if (hovered) {
+            if (!cur.last_lmb && cur.lmb) {
+                on_lmb_down();
+            } else if (!cur.last_lmb && cur.lmb) {
+                on_lmb_up();
+            }
 
-        if (!cur.last_mmb && cur.mmb) {
-            on_mmb_down();
-        } else if (!cur.last_mmb && cur.mmb) {
-            on_mmb_up();
-        }
+            if (!cur.last_mmb && cur.mmb) {
+                on_mmb_down();
+            } else if (!cur.last_mmb && cur.mmb) {
+                on_mmb_up();
+            }
 
-        if (!cur.last_rmb && cur.rmb) {
-            on_rmb_down();
-        } else if (!cur.last_rmb && cur.rmb) {
-            on_rmb_up();
+            if (!cur.last_rmb && cur.rmb) {
+                on_rmb_down();
+            } else if (!cur.last_rmb && cur.rmb) {
+                on_rmb_up();
+            }
         }
 
         for (auto const &child: children) {
