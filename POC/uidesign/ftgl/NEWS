@@ -1,0 +1,438 @@
+						-*- coding: utf-8 -*-
+FTGL
+====
+
+Included below are release notes for all versions of FTGL that have
+been released to date.  All versions prior to and including version
+2.1.2 were exclusively developed by Henry Maddocks.  Subsequent
+versions have changes attributed per contributor.
+
+----------------------------------------------------------------------
+--- 2018-10-14  Release 2.3.0                                      ---
+----------------------------------------------------------------------
+
+    * Fix a memory leak
+    * FTContour: avoid NaN for angles close to 180 degrees
+      (see Debian bug #589601, 5.)
+    * FTBufferGlyph: fix garbage with bitmap fonts
+      (text is still clipped, that seems to be another problem)
+    * FTTextureGlyphImpl: fix garbage with bitmap fonts
+      (see Debian bug #589601, 4.)
+    * FTPixmapGlyph: fix garbage with bitmap fonts
+      (see Debian bug #589601, 2.)
+    * FTOutlineGlyphImpl, FTPolygonGlyphImpl: avoid uninizitalized
+      vectoriser in case of error (see Debian bug #589601, 1.)
+    * Various other bugfixes collected through the years
+
+----------------------------------------------------------------------
+--- 2008-06-19  Release 2.2.0                                      ---
+----------------------------------------------------------------------
+
+    * Stable API. Public headers are now frozen.
+    * Fixed several memory corruption and crash bugs - Sam Hocevar
+    * Fixed several memory leaks - Sam Hocevar
+    * Kerning and glyph performance enhancements - Sean Morrison
+    * The library now also exports a pure C interface - Éric Beets
+    * Inset/outset contour support for fonts - Éric Beets
+    * Fix the FTLayout rendering - Éric Beets
+    * Added new FTLayout and FTSimpleLayout support for layout
+      managers - Sam Hocevar
+    * Fixed the paths in the XCode project - Henry Maddocks
+    * Changed the behaviour of some objects so that if there is an
+      error their state isn't changed - Henry Maddocks
+    * New, fast FTBufferFont texture fonts - Sam Hocevar
+    * UTF-8 support - Daniel Remenak
+
+----------------------------------------------------------------------
+--- 2004-12-11  Release 2.1.2                                      ---
+----------------------------------------------------------------------
+
+    * Changed the way the colour is specified for Pixmap fonts. It can
+      now be done per string rather than at start up as previous.
+    * Fixed a couple of compilation errors caused by the new FTPoint
+      stuff, mostly...
+    * More const correctness. It's like a virus!
+
+----------------------------------------------------------------------
+--- 2004-12-05  Release 2.1.1                                      ---
+----------------------------------------------------------------------
+
+    * Added the xCode project properly this time.
+
+----------------------------------------------------------------------
+--- 2004-12-05  Release 2.1.0                                      ---
+----------------------------------------------------------------------
+
+    * Added texture co-ordinates to the geometry based font types.
+    * Added the ability to turn off (or on) glDisplayList creation
+      inside FTGL.
+    * Removed unnecessary translates in the glyph rendering code.
+    * Moved the Mac project to XCode.
+    * Added a line height function to FTFont.
+    * Got rid of the GL_TEXTURE_2D_BINDING_EXT call and replaced it
+      with a static member.
+    * Fixed a bug where resizing FTGLTextureFont caused a GL error.
+    * Refactored FTPoint quite a bit.
+    * More unit tests. Fixed a heap of bugs.
+
+----------------------------------------------------------------------
+--- 2004-08-16  Release 2.0.11                                     ---
+----------------------------------------------------------------------
+
+    * Updated FTFont( *pBufferBytes, bufferSizeInBytes) documentation.
+
+----------------------------------------------------------------------
+--- 2004-08-16  Release 2.0.10                                     ---
+----------------------------------------------------------------------
+
+    * Fixed tab problem in unix Makefile.
+    * Added CYGWIN GLUTesselatorFunction define to FTVectoriser.
+
+----------------------------------------------------------------------
+--- 2004-04-21  Release 2.0.9                                      ---
+----------------------------------------------------------------------
+
+    * Fixed includes for pre 2.1.7 versions of freetype
+    * Changed unix build to create FTGL subdir for includes
+
+----------------------------------------------------------------------
+--- 2004-04-09  Release 2.0.8                                      ---
+----------------------------------------------------------------------
+
+    * Fixes for deprecated identifiers in 2.1.5
+    * Changed the internals to use FTGlyphSlot instead of FTGlyph
+    * Added a unit test for FTBitmapGlyph, FTCharToGlyphIndexMap.
+    * Fixed a memory leak in FTGlyphContainer.
+    * Added the ability to get the list of charmaps in the font.
+    * Changed FTGLTextureFont to use FTVector for texture id list.
+
+----------------------------------------------------------------------
+--- 2003-08-31  Release 2.07                                       ---
+----------------------------------------------------------------------
+
+    * Minor fix for unix build scripts.
+    * Minor fix for unit tests.
+
+----------------------------------------------------------------------
+--- 2003-08-25  Release 2.06                                       ---
+----------------------------------------------------------------------
+
+    * Updated the unix build scripts.
+
+----------------------------------------------------------------------
+--- 2003-08-25  Release 2.05                                       ---
+----------------------------------------------------------------------
+
+    * Refactored FTGlyphContainer & FTCharmap. They now store FTGlyphs
+      sequentially rather than by glyph index. This should save a heap
+      of memory and a bit of time at startup.
+    * Changed the Mac font paths in the demos.
+    * Changed the unit tests for new hinter in Freetype 2.1.4.
+    * Added a test for broken contour tags.
+
+----------------------------------------------------------------------
+--- 2003-04-12  Release 2.04                                       ---
+----------------------------------------------------------------------
+
+    * Fixed resize behavior in FTGLTextureFont.
+
+----------------------------------------------------------------------
+--- 2003-04-09  Release 2.03                                       ---
+----------------------------------------------------------------------
+
+    * Fix in FTContour to handle broken contours.
+
+----------------------------------------------------------------------
+--- 2003-04-03  Release 2.02                                       ---
+----------------------------------------------------------------------
+
+    * Fixed memory leaks
+
+----------------------------------------------------------------------
+--- 2003-03-14  Release 2.01                                       ---
+----------------------------------------------------------------------
+
+    * Minor changes to autoconf to detect glu
+
+----------------------------------------------------------------------
+--- 2003-03-11  Release 2.0                                        ---
+----------------------------------------------------------------------
+
+    * Fixed some alignment bugs caused by changes to Freetype
+      ( > 2.0.9).
+    * Minor fixes to float declarations.
+    * Moved FTBBox and FTPoint to their own files and added Move()
+      and operator += to FTBBox
+    * Replaced FT_Vector with FTPoint for kerning.
+    * Fixed the glPushAttrib calls.
+    * Changed gluTess callback def.
+    * Rewriting FTGLDemo.
+    * Minor fixes for irix.
+    * Removed a bunch of redundant members and made them function
+      locals.
+    * Removed the Open() & Close() functions from FTFont because there
+      was no way to handle Close correctly which makes Open redundant.
+    * Removed Open() from FTface.
+    * Improved the robustness of some of the error handling.
+    * Removed the FTCharmap Platform/Encoding function.
+    * Added unit tests.
+    * Removed the precache flag.
+    * Unvirtualised functions in FTLibrary and FTGlyphContainer.
+    * Fixed empty string bug in FTFont::BBox.
+    * Refactored FTContour and moved it to it's own file.
+    * Removed unnecessary memory allocations in vector Glyphs. They
+      now access the vector data directly.
+    * Made vectoriser a local variable in vector glyphs.
+    * Fixed a long standing visual bug in FTVectoriser.
+    * Changed size calculations to use floats instead of ints. This
+      includes FTBBox.
+    * Refactored FTGlyph. Now calculates advance (as a float) and
+      bbox.
+    * Changed contourList from FTVector to an array in FTVectoriser.
+    * Made function and member names more consistant.
+    * Moved header files to include directory.
+    * Mesh now uses a list for glCombine points.
+    * Delete the display lists.
+    * Unix AutoConf support.
+    * Attach 'files' from memory.
+
+----------------------------------------------------------------------
+--- 2002-10-23  Release 1.4                                        ---
+----------------------------------------------------------------------
+
+    * FTGL now requires 2.0.9 or later. See below for reason.
+    * Merged 1.32 branch with main tree
+    * Glyph loading has been optimised for pixel based glyphs.
+    * Removed mmgr
+    * Added FTFont::Attach
+    * Updated API docs
+    * Removed stl map and vector. Replaced by code supplied by
+      Sebastien Barre
+    * Removed work around for Type1 height and width bug in
+      freetype. It seems to be fixed in 2.0.9
+    * Added a test target to the Mac OSX project
+    * Inline some private functions.
+
+----------------------------------------------------------------------
+--- 2002-04-23  Release 1.32                                       ---
+----------------------------------------------------------------------
+
+    * Fixed enable state attribute in FTGLBitmapFont
+    * Wrapped tb.h & trackball.h in EXTERN "C"
+    * Renamed FTGLDemo to .cpp
+    Ellers...
+    * New MSVC projects updated to v1.3
+    * Removed a lot of unnecessary Windows stuff from ftgl.h
+    * Added functions to load font from memory.
+    * Fixed a couple of Windows 'for' scope problems in FTExtrdGlyph
+    * FTGLDemo. Added #define for windows font
+
+----------------------------------------------------------------------
+--- 2002-01-30  Release 1.31                                       ---
+----------------------------------------------------------------------
+
+    * Forgot to update readme etc for 1.3
+
+----------------------------------------------------------------------
+--- 2002-01-27  Release 1.3b5                                      ---
+----------------------------------------------------------------------
+
+    * FTBbox now uses float rather then int
+    * Fixed some more warnings (size_t)
+    * Removed the contour winding function because it didn't fix the
+      problem!!
+    * Fixed up some state settings in fonts.
+
+----------------------------------------------------------------------
+--- 2001-12-11  Release 1.3b4                                      ---
+----------------------------------------------------------------------
+
+    * Added MAC OSX project (Project Builder)
+    * Added a function for extruded glyphs that calculates the winding
+      order of the glyph contour.
+    * Added FTGL_DEBUG to include memory debugger.
+    * Added a couple of typedefs to FTGL.h, mainly to aid debugging
+    * Cleaned up the includes.
+
+----------------------------------------------------------------------
+--- 2001-11-13  Release 1.3b3                                      ---
+----------------------------------------------------------------------
+
+    * Texture fonts now behave the same as the others and can be
+      loaded on demand. This made FTGLTextureFont MUCH simpler!!!! It
+      has also improved the grid fitting so less texture mem is
+      needed.
+    * Refactored FTVectoriser...
+      This now builds contours and meshes internally and then passes
+      the raw point data onto the glyphs. The gluTess data is captured
+      in an internal non static data structure fixing a memory Leak in
+      PolyGlyph (glCombine).
+      This has enabled...
+    * Extruded fonts. FTGLExtrdFont & FTExtrdGlyph.
+    * Reversed the winding for polyglyphs, extruded glyphs and texture
+      glyphs to make them CCW
+    * Bounding box function
+    * Fixed the != and == operators in ftPoint
+    * Un-virtualised some functions in FTFont
+    * Added a demo app to dist.
+
+----------------------------------------------------------------------
+--- 2001-11-09  Release 1.21                                       ---
+----------------------------------------------------------------------
+
+    * Visual Studio projects updated for .cpp source file extensions.
+    * A couple of windows 'cast' warnings have been fixed.
+
+----------------------------------------------------------------------
+--- 2001-11-06  Release 1.2                                        ---
+----------------------------------------------------------------------
+
+    * Glyphs can now be loaded on the fly instead of being
+      pre-cached. If FTFont::Open() is called with false,
+      FTGlyphContainer will build a list of null pointers. Then when
+      ever a glyph needs to be access eg by FTFont::advance or
+      FTFont::render, it will be built and slotted into the glyphlist
+      in the correct position.
+    * Removed glext.h from FTGL.h and replaced it with a test for
+      GL_EXT_texture_object.
+    * Added padding to texture size calculations.
+    * Fixed a NASTY bug in FTGLTextureFont. Only came to light after
+      changes to the glyph preprocessing.
+
+----------------------------------------------------------------------
+--- 2001-10-31  Release 1.1                                        ---
+----------------------------------------------------------------------
+
+    * Renamed the source to .cpp
+    * Removed the static activeTextureID from FTTextureGlyph and
+      replaced it with a call to
+      glGetIntegerv( GL_TEXTURE_2D_BINDING_EXT, &activeTextureID);
+    * Added an include for glext.h in FTGL.h
+    * Tidied up the glbegin/glEnd pairs in FTTextureGlyph &
+      FTGLTextureFont
+    * Fixed the problem with doc filenames.
+    * Tidied up some implicit type conversions.
+    * Fixed FTCharMap to ensure that a valid default charmap is always
+      created by the c_stor.
+
+----------------------------------------------------------------------
+--- 2001-10-26  Release 1.01                                       ---
+----------------------------------------------------------------------
+
+    * Removed the glEnable( GL_TEXTURE_2D) from FTGLTextureFont
+    * Removed the redundant tempGlyph members in the FTGLXXXXFont
+      classes
+    * Made a change in FTGL.h to include correct headers for MAC OSX
+    * FTGL.h now includes glu.h
+    * Minor fixes to get rid of Project Builder warnings (MAC OSX)
+    * Fixed some of the docs
+
+----------------------------------------------------------------------
+--- 2001-10-24  Release 1.0                                        ---
+----------------------------------------------------------------------
+
+    * Version 1.0 release
+
+----------------------------------------------------------------------
+--- 2001-09-29  Release 1.0b7                                      ---
+----------------------------------------------------------------------
+
+    * Tesselation winding rules
+    * Fixed bug in FTContour Add point function
+    * Cleaned up disposal of FTCharmap in FTFace
+    * renamed FTVectorGlyph to FTOutlineGlyph
+    * New distribution structure
+    * Minor changes for windows (VC 6)
+    * Windows and Linux ports.
+
+----------------------------------------------------------------------
+--- 2001-09-20  Release 1.0b6                                      ---
+----------------------------------------------------------------------
+
+    * Implemented the new FTCharmap class. The performance improvement
+      is dramatic.
+    * Tidied up the way the freetype FT_Face object is disposed of by
+      FTFont and FTFace. This was a potential crash.
+    * FTVectorGlyph and FTPolyGlyph now disposes of the freetype glyph
+      correctly after initialsation. This was a potential crash.
+    * Preliminary support for unicode...wchar_t Tested with non
+      european fonts.
+    * Added function to calc the advance width of a string.
+    * Minor tidy ups.
+
+----------------------------------------------------------------------
+--- 2001-08-29  Release 1.0b5                                      ---
+----------------------------------------------------------------------
+
+    * Settled on integers for FTSize stuff. NOTE the FTGlyph stuff is
+      still up in the air.
+    * Fixed the positional stuff.
+    * Added Java Doc comments. NOT COMPLETE
+    * Fixes for linux, mainly to clear warnings.
+    * changed the return type for FTFace::Glyph() from a reference to
+      a pointer so it can return NULL on failure.
+    * Related to above...better error handling and reporting in
+      FTGLXXXFont::MakeGlyphList()
+    * Fixed a bug in FTVectoriser that was ignoring non printing
+      characters. This meant that the pen wasn't advanced for spaces
+      etc. It affected polygon and outline font rendering.
+    * Minor tidy ups.
+
+----------------------------------------------------------------------
+--- 2001-08-21  Release 1.0b4                                      ---
+----------------------------------------------------------------------
+
+    * Changed the mode for FT_Load_Glyph to FT_LOAD_NO_HINTING |
+      FT_LOAD_NO_BITMAP for outline and polygon fonts &
+      FT_LOAD_NO_HINTING for texture fonts. Seems to produce better
+      looking glyphs.
+    * FTGLTextureFont can now use multiple textures to render glyphs
+      if they  don't fit within one GL_MAX_TEXTURE_SIZE texture.
+    * Changed FTSize to use bbox for global width and height. Needs
+      more work (eg float or int?) and need to check inconsistancies
+      in freetype.
+    * Being more strict with types eg integer indices and sizes are
+      now unsigned.
+
+----------------------------------------------------------------------
+--- 2001-08-08  Release 1.0b3                                      ---
+----------------------------------------------------------------------
+
+    * I've made fundamental change to the way the glyphlist is
+      built. This is to get round the problems I was having with
+      charmaps. At this stage it is a temporary solution. Previously
+      the glyphList was indexed by char code. Now it's indexed by
+      glyph index and the conversion is done by the freetype function
+      FT_Get_Char_Index(). If this proves to be too slow I'll make my
+      own charmap and use it to index into the glyphlist. This has
+      fixed all the charmap related problems/bugs.
+    * Enabled alpha blend in Pixmap font.
+    * Enabled LINE_SMOOTH in Outline font
+    * Fixed bug that prevented the display of chars >127
+    * Moved pixel store stuff out of BitmapGlyph into BitmapFont.
+    * Minor changes for IRIX (compiles but isn't tested)
+    * Pixmap fonts can now be in colour. It uses the current colour
+      when the font is CREATED. This isn't ideal but is better than
+      the alternatives.
+    * Tidied up the error handling.
+    * Minor code clean ups.
+
+----------------------------------------------------------------------
+--- 2001-08-06  BETA Release 1.0b2                                 ---
+----------------------------------------------------------------------
+
+    * Minor tidy ups for first public release.
+
+----------------------------------------------------------------------
+--- 2001-08-03  First BETA Release 1.0b1                           ---
+----------------------------------------------------------------------
+
+    * All font types are now working, Bitmaps, Pixmaps, Texture,
+      Outline and Polygons. Quality of output and performance varies
+      wildly. :)
+
+----------------------------------------------------------------------
+--- 2001-07-22  First ALPHA Release 1.0a1                          ---
+----------------------------------------------------------------------
+
+    * And so it begins.

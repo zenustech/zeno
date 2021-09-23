@@ -1,0 +1,23 @@
+BUGS
+====
+
+* FTGLTextureFonts can't be used inside display lists. This because
+  the glGet call to check the current texture id can't be used in a
+  display list. It is only a valid call when the list is compiled and
+  is ignore after that.
+
+* The texture co-ords in the Texture Font may be wrong for non
+  scalable fonts.
+
+* /usr/share/fonts/truetype/ttf-larabie-deco/let_seat.ttf has issues
+  with the outset position (glyph "u").
+  /usr/share/fonts/truetype/ttf-larabie-straight/teenlite.ttf has the
+  same problem but it depends the glyph size.
+
+* /usr/share/fonts/truetype/ttf-larabie-straight/primer.ttf has filling
+  issues.
+
+* The content of textured quads are properly antialiased but their edges
+  remain blocky because there is no possible interpolation. Maybe adding
+  a 1-pixel border would help.
+
