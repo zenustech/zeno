@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <unistd.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -9,6 +10,12 @@
 #include <string>
 #include <tuple>
 
+struct Point {
+    float x, y;
+
+    Point(float x = 0, float y = 0)
+        : x(x), y(y) {}
+};
 
 struct AABB {
     float x0, y0, nx, ny;
@@ -100,6 +107,16 @@ struct CursorState {
         mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
         rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     }
+
+    auto translate(float dx, float dy) {
+        x += dx; y += dy;
+        struct RAII : std::function<void()> {
+            ~RAII() { (*this)(); }
+        } raii {[=] () {
+            x -= dx; y -= dy;
+        }};
+        return raii;
+    }
 } cur;
 
 
@@ -109,7 +126,8 @@ struct IWidget {
     IWidget &operator=(IWidget const &) = delete;
     virtual ~IWidget() = default;
 
-    virtual void update() = 0;
+    virtual void on_update() = 0;
+    virtual void on_draw() const = 0;
 };
 
 
@@ -122,6 +140,7 @@ struct Widget : IWidget {
 
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
+    Point position{0, 0};
 
     Widget *child_selected = nullptr;
 
@@ -135,11 +154,12 @@ struct Widget : IWidget {
     }
 
     virtual AABB get_bounding_box() const = 0;
-    virtual void draw() const {}
 
-    void update() override {
+    void on_update() override {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
+
+        auto raii = cur.translate(-position.x, -position.y);
 
         if (parent) {
             if (pressable) {
@@ -164,57 +184,29 @@ struct Widget : IWidget {
             }
         }
 
+        update();
         for (auto const &child: children) {
-            child->update();
+            child->on_update();
         }
+    }
 
+    void on_draw() const override {
         draw();
-    }
-};
-
-
-struct Button : Widget {
-    AABB bbox;
-    std::string text;
-
-    Button(AABB bbox, std::string text)
-        : bbox(bbox), text(text) {
-        pressable = true;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
-    }
-
-    void draw() const override {
-        if (pressed) {
-            glColor3f(0.75f, 0.5f, 0.375f);
-        } else if (hovered) {
-            glColor3f(0.375f, 0.5f, 1.0f);
-        } else {
-            glColor3f(0.375f, 0.375f, 0.375f);
+        for (auto const &child: children) {
+            child->on_draw();
         }
-        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-
-        Font font("LiberationMono-Regular.ttf");
-        //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
-        font.set_font_size(30.f);
-        font.set_fixed_width(bbox.nx);
-        font.set_fixed_height(bbox.ny);
-
-        glColor3f(1.f, 1.f, 1.f);
-        font.render(bbox.x0, bbox.y0, text);
     }
+
+    virtual void update() const {}
+    virtual void draw() const {}
 };
 
 
-struct Selectable : Widget {
+struct RectItem : Widget {
     AABB bbox;
 
-    Selectable(AABB bbox)
-        : bbox(bbox) {
-        selectable = true;
-    }
+    RectItem(AABB bbox)
+        : bbox(bbox) {}
 
     AABB get_bounding_box() const override {
         return bbox;
@@ -233,19 +225,60 @@ struct Selectable : Widget {
 };
 
 
+struct Button : RectItem {
+    std::string text;
+
+    Button(AABB bbox, std::string text)
+        : RectItem(bbox), text(text) {
+        pressable = true;
+    }
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
+
+    void draw() const override {
+        if (pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+        } else {
+            glColor3f(0.375f, 0.375f, 0.375f);
+        }
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        RectItem::draw();
+
+        Font font("LiberationMono-Regular.ttf");
+        //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
+        font.set_font_size(30.f);
+        font.set_fixed_width(bbox.nx);
+        font.set_fixed_height(bbox.ny);
+        glColor3f(1.f, 1.f, 1.f);
+        font.render(bbox.x0, bbox.y0, text);
+    }
+};
+
+
 struct MyWindow : Widget {
     MyWindow() {
         add_child<Button>(AABB(100, 100, 150, 50), "OK");
         add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
-        add_child<Selectable>(AABB(100, 300, 150, 50));
-        add_child<Selectable>(AABB(300, 300, 150, 50));
+        add_child<RectItem>(AABB(100, 300, 150, 50))->selectable = true;
+        add_child<RectItem>(AABB(300, 300, 150, 50))->selectable = true;
     }
 
     AABB get_bounding_box() const override {
-        return {0, 0, 800, 600};
+        return {0, 0, 500, 400};
     }
-
 } win;
+
+
+/*struct DemoWindow : Widget {
+    DemoWindow() {
+        add_child<MyWindow>();
+    }
+};*/
 
 
 void process_input() {
@@ -264,6 +297,7 @@ void process_input() {
     }
 
     cur.update();
+    win.update();
 }
 
 
@@ -271,7 +305,7 @@ void draw_graphics() {
     glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    win.update();
+    win.draw();
 }
 
 
