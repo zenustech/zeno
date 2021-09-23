@@ -156,16 +156,15 @@ struct Widget : IWidget {
     }
 
     virtual void on_hover_leave() {
-        if (lmb_ever_down) on_lmb_up();
-        if (mmb_ever_down) on_mmb_up();
-        if (rmb_ever_down) on_rmb_up();
+        if (lmb_pressed) on_lmb_up();
+        if (mmb_pressed) on_mmb_up();
+        if (rmb_pressed) on_rmb_up();
     }
 
     std::vector<Widget *> children_selected;
 
     bool hovered = false;
     bool selected = false;
-    bool pressed = false;
     bool selectable = false;
 
     void _select_child(Widget *ptr, bool is_clear = true) {
@@ -180,37 +179,35 @@ struct Widget : IWidget {
     }
 
     virtual void on_lmb_down() {
-        lmb_ever_down = true;
+        lmb_pressed = true;
         if (parent && selectable) {
             parent->_select_child(this);  // todo: is_clear if no Ctrl modifier
         }
-        pressed = true;
     }
 
     virtual void on_lmb_up() {
-        lmb_ever_down = false;
-        pressed = false;
+        lmb_pressed = false;
     }
 
     virtual void on_mmb_down() {
-        mmb_ever_down = true;
+        mmb_pressed = true;
     }
 
     virtual void on_mmb_up() {
-        mmb_ever_down = false;
+        mmb_pressed = false;
     }
 
     virtual void on_rmb_down() {
-        rmb_ever_down = true;
+        rmb_pressed = true;
     }
 
     virtual void on_rmb_up() {
-        rmb_ever_down = false;
+        rmb_pressed = false;
     }
 
-    bool lmb_ever_down = false;
-    bool mmb_ever_down = false;
-    bool rmb_ever_down = false;
+    bool lmb_pressed = false;
+    bool mmb_pressed = false;
+    bool rmb_pressed = false;
 
     void do_update() override {
         auto raii = cur.translate(-position.x, -position.y);
@@ -276,7 +273,7 @@ struct RectItem : Widget {
     }
 
     void paint() const override {
-        if (selected || pressed) {
+        if (selected || lmb_pressed) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
