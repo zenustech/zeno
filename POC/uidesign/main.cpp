@@ -127,8 +127,8 @@ struct CursorState {
 struct IWidget {
     virtual ~IWidget() = default;
 
-    virtual void on_update() = 0;
-    virtual void on_draw() const = 0;
+    virtual void do_update() = 0;
+    virtual void do_paint() = 0;
 };
 
 
@@ -167,7 +167,7 @@ struct Widget : IWidget {
     virtual void on_rmb_down() {}
     virtual void on_rmb_up() {}
 
-    void on_update() override {
+    void do_update() override {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
 
@@ -197,24 +197,22 @@ struct Widget : IWidget {
             on_rmb_up();
         }
 
-        update();
         for (auto const &child: children) {
-            child->on_update();
+            child->do_update();
         }
     }
 
-    void on_draw() const override {
+    void do_paint() override {
         glPushMatrix();
         glTranslatef(position.x, position.y, 0.f);
-        draw();
+        paint();
         for (auto const &child: children) {
-            child->on_draw();
+            child->do_paint();
         }
         glPopMatrix();
     }
 
-    virtual void update() const {}
-    virtual void draw() const {}
+    virtual void paint() const {}
 };
 
 
@@ -228,7 +226,7 @@ struct RectItem : Widget {
         return bbox;
     }
 
-    void draw() const override {
+    void paint() const override {
         if (selected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
@@ -252,8 +250,8 @@ struct Button : RectItem {
         return bbox;
     }
 
-    void draw() const override {
-        RectItem::draw();
+    void paint() const override {
+        RectItem::paint();
 
         Font font("LiberationMono-Regular.ttf");
         //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
@@ -304,7 +302,7 @@ void process_input() {
 
     cur.on_update();
     win.position = {100, 100};
-    win.on_update();
+    win.do_update();
 }
 
 
@@ -312,7 +310,7 @@ void draw_graphics() {
     glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    win.on_draw();
+    win.do_paint();
 }
 
 
