@@ -92,6 +92,8 @@ struct Widget;
 
 struct CursorState {
     float x = 0, y = 0;
+    float dx = 0, dy = 0;
+    float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool last_lmb = false, last_mmb = false, last_rmb = false;
 
@@ -99,6 +101,8 @@ struct CursorState {
         last_lmb = lmb;
         last_mmb = mmb;
         last_rmb = rmb;
+        last_x = x;
+        last_y = y;
 
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
@@ -106,6 +110,8 @@ struct CursorState {
         glfwGetCursorPos(window, &_x, &_y);
         x = 0.5f + (float)_x;
         y = ny - 0.5f - (float)_y;
+        dx = x - last_x;
+        dy = y - last_y;
         lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
         rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
@@ -165,17 +171,28 @@ struct Widget : IWidget {
 
     bool hovered = false;
     bool selected = false;
-    bool selectable = false;
+    bool selectable = true;
+    bool draggable = true;
 
     void _select_child(Widget *ptr, bool is_clear = true) {
         if (is_clear) {
-            for (auto child: children_selected) {
+            for (auto *child: children_selected) {
                 child->selected = false;
             }
             children_selected.clear();
         }
         children_selected.push_back(ptr);
         ptr->selected = true;
+    }
+
+    virtual void on_mouse_move() {
+        printf("%f %f\n", cur.dx, cur.dy);
+        for (auto *child: children_selected) {
+            if (child->lmb_pressed && child->draggable) {
+                child->position.x += cur.dx;
+                child->position.y += cur.dy;
+            }
+        }
     }
 
     virtual void on_lmb_down() {
@@ -213,34 +230,39 @@ struct Widget : IWidget {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
 
-        {
-            auto new_hovered = bbox.contains(cur.x, cur.y);
-            if (!hovered && new_hovered) {
-                on_hover_enter();
-            } else if (hovered && !new_hovered) {
-                on_hover_leave();
-            }
-            hovered = new_hovered;
-        }
+        auto old_hovered = hovered;
+        hovered = bbox.contains(cur.x, cur.y);
 
         if (hovered) {
             if (!cur.last_lmb && cur.lmb) {
                 on_lmb_down();
-            } else if (cur.last_lmb && !cur.lmb) {
-                on_lmb_up();
             }
-
-            if (!cur.last_mmb && cur.mmb) {
-                on_mmb_down();
-            } else if (cur.last_mmb && !cur.mmb) {
-                on_mmb_up();
-            }
-
             if (!cur.last_rmb && cur.rmb) {
                 on_rmb_down();
-            } else if (cur.last_rmb && !cur.rmb) {
+            }
+            if (!cur.last_mmb && cur.mmb) {
+                on_mmb_down();
+            }
+
+            if (cur.dx || cur.dy) {
+                on_mouse_move();
+            }
+
+            if (cur.last_lmb && !cur.lmb) {
+                on_lmb_up();
+            }
+            if (cur.last_mmb && !cur.mmb) {
+                on_mmb_up();
+            }
+            if (cur.last_rmb && !cur.rmb) {
                 on_rmb_up();
             }
+        }
+
+        if (!old_hovered && hovered) {
+            on_hover_enter();
+        } else if (old_hovered && !hovered) {
+            on_hover_leave();
         }
 
         for (auto const &child: children) {
