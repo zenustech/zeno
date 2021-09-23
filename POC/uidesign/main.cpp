@@ -166,7 +166,7 @@ struct Widget : IWidget {
     bool hovered = false;
     bool selected = false;
     bool pressed = false;
-    bool selectable = true;
+    bool selectable = false;
 
     void _select_child(Widget *ptr, bool is_clear = true) {
         if (is_clear) {
@@ -216,30 +216,32 @@ struct Widget : IWidget {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
 
-        auto new_hovered = bbox.contains(cur.x, cur.y);
-        if (!hovered && new_hovered) {
-            on_hover_enter();
-        } else if (hovered && !new_hovered) {
-            on_hover_leave();
+        {
+            auto new_hovered = bbox.contains(cur.x, cur.y);
+            if (!hovered && new_hovered) {
+                on_hover_enter();
+            } else if (hovered && !new_hovered) {
+                on_hover_leave();
+            }
+            hovered = new_hovered;
         }
-        hovered = new_hovered;
 
         if (hovered) {
             if (!cur.last_lmb && cur.lmb) {
                 on_lmb_down();
-            } else if (!cur.last_lmb && cur.lmb) {
+            } else if (cur.last_lmb && !cur.lmb) {
                 on_lmb_up();
             }
 
             if (!cur.last_mmb && cur.mmb) {
                 on_mmb_down();
-            } else if (!cur.last_mmb && cur.mmb) {
+            } else if (cur.last_mmb && !cur.mmb) {
                 on_mmb_up();
             }
 
             if (!cur.last_rmb && cur.rmb) {
                 on_rmb_down();
-            } else if (!cur.last_rmb && cur.rmb) {
+            } else if (cur.last_rmb && !cur.rmb) {
                 on_rmb_up();
             }
         }
@@ -274,7 +276,7 @@ struct RectItem : Widget {
     }
 
     void paint() const override {
-        if (selected) {
+        if (selected || pressed) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
