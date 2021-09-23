@@ -91,12 +91,15 @@ GLFWwindow *window;
 struct Widget;
 
 struct CursorState {
-    float x, y;
-    bool lmb, mmb, rmb;
-    Widget *lmb_pressed = nullptr;
-    Widget *lmb_selected = nullptr;
+    float x = 0, y = 0;
+    bool lmb = false, mmb = false, rmb = false;
+    bool last_lmb = false, last_mmb = false, last_rmb = false;
 
     void on_update() {
+        last_lmb = lmb;
+        last_mmb = mmb;
+        last_rmb = rmb;
+
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
         GLdouble _x, _y;
@@ -122,9 +125,6 @@ struct CursorState {
 
 
 struct IWidget {
-    IWidget() = default;
-    IWidget(IWidget const &) = delete;
-    IWidget &operator=(IWidget const &) = delete;
     virtual ~IWidget() = default;
 
     virtual void on_update() = 0;
@@ -134,16 +134,15 @@ struct IWidget {
 
 struct Widget : IWidget {
     bool hovered = false;
-    bool pressed = false;
-    bool pressable = false;
     bool selected = false;
-    bool selectable = false;
 
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
     Point position{0, 0};
 
-    Widget *child_selected = nullptr;
+    Widget() = default;
+    Widget(Widget const &) = delete;
+    Widget &operator=(Widget const &) = delete;
 
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {
@@ -156,36 +155,46 @@ struct Widget : IWidget {
 
     virtual AABB get_bounding_box() const = 0;
 
+    virtual void on_hover_enter() {}
+    virtual void on_hover_leave() {}
+
+    virtual void on_lmb_down() {}
+    virtual void on_lmb_up() {}
+
+    virtual void on_mmb_down() {}
+    virtual void on_mmb_up() {}
+
+    virtual void on_rmb_down() {}
+    virtual void on_rmb_up() {}
+
     void on_update() override {
-        auto bbox = get_bounding_box();
-        hovered = bbox.contains(cur.x, cur.y);
-
         auto raii = cur.translate(-position.x, -position.y);
+        auto bbox = get_bounding_box();
 
-        if (pressable) {
-            if (hovered && cur.lmb) {
-                if (cur.lmb_pressed) {
-                    cur.lmb_pressed->pressed = false;
-                }
-                cur.lmb_pressed = this;
-                pressed = true;
-            }
-            if (!cur.lmb) {
-                pressed = false;
-            }
+        auto new_hovered = bbox.contains(cur.x, cur.y);
+        if (!hovered && new_hovered) {
+            on_hover_enter();
+        } else if (hovered && !new_hovered) {
+            on_hover_leave();
+        }
+        hovered = new_hovered;
+
+        if (!cur.last_lmb && cur.lmb) {
+            on_lmb_down();
+        } else if (!cur.last_lmb && cur.lmb) {
+            on_lmb_up();
         }
 
+        if (!cur.last_mmb && cur.mmb) {
+            on_mmb_down();
+        } else if (!cur.last_mmb && cur.mmb) {
+            on_mmb_up();
+        }
 
-        if (parent) {
-            if (selectable) {
-                if (hovered && cur.lmb) {
-                    if (parent->child_selected) {
-                        parent->child_selected->selected = false;
-                    }
-                    parent->child_selected = this;
-                    selected = true;
-                }
-            }
+        if (!cur.last_rmb && cur.rmb) {
+            on_rmb_down();
+        } else if (!cur.last_rmb && cur.rmb) {
+            on_rmb_up();
         }
 
         update();
@@ -195,10 +204,13 @@ struct Widget : IWidget {
     }
 
     void on_draw() const override {
+        glPushMatrix();
+        glTranslatef(position.x, position.y, 0.f);
         draw();
         for (auto const &child: children) {
             child->on_draw();
         }
+        glPopMatrix();
     }
 
     virtual void update() const {}
@@ -217,7 +229,7 @@ struct RectItem : Widget {
     }
 
     void draw() const override {
-        if (selected || pressed) {
+        if (selected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -234,7 +246,6 @@ struct Button : RectItem {
 
     Button(AABB bbox, std::string text)
         : RectItem(bbox), text(text) {
-        pressable = true;
     }
 
     AABB get_bounding_box() const override {
@@ -259,8 +270,8 @@ struct MyWindow : Widget {
     MyWindow() {
         add_child<Button>(AABB(100, 100, 150, 50), "OK");
         add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
-        add_child<RectItem>(AABB(100, 300, 150, 50))->selectable = true;
-        add_child<RectItem>(AABB(300, 300, 150, 50))->selectable = true;
+        add_child<RectItem>(AABB(100, 300, 150, 50));
+        add_child<RectItem>(AABB(300, 300, 150, 50));
     }
 
     AABB get_bounding_box() const override {
@@ -292,6 +303,7 @@ void process_input() {
     }
 
     cur.on_update();
+    win.position = {100, 100};
     win.on_update();
 }
 
