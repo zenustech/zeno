@@ -96,7 +96,7 @@ struct CursorState {
     Widget *lmb_pressed = nullptr;
     Widget *lmb_selected = nullptr;
 
-    void update() {
+    void on_update() {
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
         GLdouble _x, _y;
@@ -111,6 +111,7 @@ struct CursorState {
     auto translate(float dx, float dy) {
         x += dx; y += dy;
         struct RAII : std::function<void()> {
+            using std::function<void()>::function;
             ~RAII() { (*this)(); }
         } raii {[=] () {
             x -= dx; y -= dy;
@@ -161,23 +162,26 @@ struct Widget : IWidget {
 
         auto raii = cur.translate(-position.x, -position.y);
 
-        if (parent) {
-            if (pressable) {
-                if (hovered && cur.lmb) {
-                    if (cur.lmb_pressed)
-                        cur.lmb_pressed->pressed = false;
-                    cur.lmb_pressed = this;
-                    pressed = true;
+        if (pressable) {
+            if (hovered && cur.lmb) {
+                if (cur.lmb_pressed) {
+                    cur.lmb_pressed->pressed = false;
                 }
-                if (!cur.lmb) {
-                    pressed = false;
-                }
+                cur.lmb_pressed = this;
+                pressed = true;
             }
+            if (!cur.lmb) {
+                pressed = false;
+            }
+        }
 
+
+        if (parent) {
             if (selectable) {
                 if (hovered && cur.lmb) {
-                    if (parent->child_selected)
+                    if (parent->child_selected) {
                         parent->child_selected->selected = false;
+                    }
                     parent->child_selected = this;
                     selected = true;
                 }
@@ -213,7 +217,7 @@ struct RectItem : Widget {
     }
 
     void draw() const override {
-        if (selected) {
+        if (selected || pressed) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -238,15 +242,6 @@ struct Button : RectItem {
     }
 
     void draw() const override {
-        if (pressed) {
-            glColor3f(0.75f, 0.5f, 0.375f);
-        } else if (hovered) {
-            glColor3f(0.375f, 0.5f, 1.0f);
-        } else {
-            glColor3f(0.375f, 0.375f, 0.375f);
-        }
-        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-
         RectItem::draw();
 
         Font font("LiberationMono-Regular.ttf");
@@ -296,8 +291,8 @@ void process_input() {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    cur.update();
-    win.update();
+    cur.on_update();
+    win.on_update();
 }
 
 
@@ -305,7 +300,7 @@ void draw_graphics() {
     glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    win.draw();
+    win.on_draw();
 }
 
 
@@ -316,7 +311,7 @@ int main() {
         return -1;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
