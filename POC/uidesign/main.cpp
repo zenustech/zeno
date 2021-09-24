@@ -96,6 +96,7 @@ struct CursorState {
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool last_lmb = false, last_mmb = false, last_rmb = false;
+    bool shift = false, ctrl = false, alt = false;
 
     void on_update() {
         last_lmb = lmb;
@@ -115,6 +116,9 @@ struct CursorState {
         lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
         rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+        shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+        ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+        alt = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
     }
 
     auto translate(float dx, float dy) {
@@ -171,7 +175,7 @@ struct Widget : IWidget {
 
     bool hovered = false;
     bool selected = false;
-    bool selectable = true;
+    bool selectable = false;
 
     void _select_child(Widget *ptr, bool is_clear = true) {
         if (is_clear) {
@@ -190,7 +194,7 @@ struct Widget : IWidget {
     virtual void on_lmb_down() {
         lmb_pressed = true;
         if (parent && selectable) {
-            parent->_select_child(this);  // todo: is_clear if no Ctrl modifier
+            parent->_select_child(this, !cur.shift);
         }
     }
 
@@ -326,10 +330,14 @@ struct Button : RectItem {
 
 struct MyWindow : Widget {
     MyWindow() {
-        add_child<Button>(AABB(100, 100, 150, 50), "OK");
-        add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
-        add_child<RectItem>(AABB(100, 300, 150, 50));
-        add_child<RectItem>(AABB(300, 300, 150, 50));
+        auto a = add_child<Button>(AABB(100, 100, 150, 50), "OK");
+        auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
+        auto c = add_child<RectItem>(AABB(100, 300, 150, 50));
+        auto d = add_child<RectItem>(AABB(300, 300, 150, 50));
+        a->selectable = true;
+        b->selectable = true;
+        c->selectable = true;
+        d->selectable = true;
     }
 
     AABB get_bounding_box() const override {
