@@ -279,6 +279,7 @@ struct GraphicsWidget : Widget {
 
     bool selected = false;
     bool selectable = false;
+    bool draggable = false;
 
     void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
         if (!(multiselect || (ptr && ptr->selected))) {
@@ -301,8 +302,10 @@ struct GraphicsWidget : Widget {
     void on_mouse_move() override {
         if (cur.lmb) {
             for (auto *child: children_selected) {
-                child->position.x += cur.dx;
-                child->position.y += cur.dy;
+                if (child->draggable) {
+                    child->position.x += cur.dx;
+                    child->position.y += cur.dy;
+                }
             }
         }
     }
@@ -377,6 +380,7 @@ struct MyNode : RectItem {
         : RectItem(bbox)
     {
         selectable = true;
+        draggable = true;
     }
 };
 
@@ -396,8 +400,6 @@ struct MyWindow : RectItem {
         auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
         auto c = add_child<MyNode>(AABB(100, 300, 150, 50));
         auto d = add_child<MyNode>(AABB(300, 300, 150, 50));
-        c->selectable = true;
-        d->selectable = true;
     }
 
     void paint() const override {
