@@ -334,8 +334,10 @@ struct Button : RectItem {
 };
 
 
-struct MyWindow : Widget {
-    MyWindow() {
+struct MyWindow : RectItem {
+    MyWindow(AABB bbox)
+        : RectItem(bbox)
+    {
         struct MyButton : Button {
             using Button::Button;
 
@@ -351,15 +353,16 @@ struct MyWindow : Widget {
         d->selectable = true;
     }
 
-    AABB get_bounding_box() const override {
-        return {0, 0, 500, 400};
+    void paint() const override {
+        glColor3f(0.2f, 0.2f, 0.2f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
 
 
 struct RootWindow : Widget {
     RootWindow() {
-        add_child<MyWindow>();
+        add_child<MyWindow>(AABB(0, 0, 550, 400));
     }
 
     AABB get_bounding_box() const override {
