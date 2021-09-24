@@ -323,10 +323,11 @@ struct GraphicsWidget : Widget {
 
 
 struct GraphicsRectItem : GraphicsWidget {
-    AABB bbox;
+    AABB bbox{0, 0, 200, 150};
 
-    GraphicsRectItem(AABB bbox)
-        : bbox(bbox) {}
+    void set_bounding_box(AABB bbox) {
+        this->bbox = bbox;
+    }
 
     AABB get_bounding_box() const override {
         return bbox;
@@ -346,11 +347,11 @@ struct GraphicsRectItem : GraphicsWidget {
 
 
 struct Button : Widget {
+    AABB bbox{0, 0, 150, 50};
     std::string text;
-    AABB bbox;
 
-    Button(AABB bbox, std::string text = "")
-        : bbox(bbox), text(text) {
+    void set_bounding_box(AABB bbox) {
+        this->bbox = bbox;
     }
 
     AABB get_bounding_box() const override {
@@ -387,31 +388,47 @@ struct Button : Widget {
 };
 
 
+struct MySocket : GraphicsRectItem {
+    static constexpr float R = 18;
+
+    MySocket() {
+        set_bounding_box({-R, -R, 2 * R, 2 * R});
+    }
+};
+
+
 struct MyNode : GraphicsRectItem {
-    MyNode(AABB bbox = {0, 0, 200, 100})
-        : GraphicsRectItem(bbox)
-    {
+    MyNode() {
         selectable = true;
         draggable = true;
+
+        set_bounding_box({-100, -100, 200, 200});
+
+        auto a = add_child<MySocket>();
+        a->position = {0, 0};
     }
 };
 
 
 struct MyWindow : GraphicsRectItem {
-    MyWindow(AABB bbox)
-        : GraphicsRectItem(bbox)
-    {
-        struct MyButton : Button {
-            using Button::Button;
+    MyWindow() {
+        set_bounding_box({0, 0, 550, 400});
 
+        struct MyButton : Button {
             void on_clicked() override {
                 printf("clicked OK\n");
             }
         };
-        auto a = add_child<MyButton>(AABB(100, 100, 150, 50), "OK");
-        auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
-        auto c = add_child<MyNode>(AABB(100, 300, 150, 50));
-        auto d = add_child<MyNode>(AABB(300, 300, 150, 50));
+        auto a = add_child<MyButton>();
+        a->text = "OK";
+        a->position = {100, 100};
+        auto b = add_child<Button>();
+        b->text = "Cancel";
+        b->position = {300, 100};
+        auto c = add_child<MyNode>();
+        c->position = {100, 300};
+        auto d = add_child<MyNode>();
+        d->position = {300, 300};
     }
 
     void paint() const override {
@@ -423,7 +440,7 @@ struct MyWindow : GraphicsRectItem {
 
 struct RootWindow : Widget {
     RootWindow() {
-        add_child<MyWindow>(AABB(0, 0, 550, 400));
+        add_child<MyWindow>();
     }
 
     AABB get_bounding_box() const override {
