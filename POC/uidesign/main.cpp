@@ -398,28 +398,28 @@ struct MySocket : GraphicsRectItem {
 
 
 struct MyNode : GraphicsRectItem {
-    static constexpr float R = 18;
+    static constexpr float WW = 100, HH = 50;
 
     std::vector<MySocket *> inputs;
     std::vector<MySocket *> outputs;
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
-            auto x = float(1 + i) / (inputs.size() + 2);
-            inputs[i]->position = {x, 55};
+            auto x = float(0.75f + i) / (inputs.size() + 0.5f);
+            inputs[i]->position = {x * 2 * WW - WW, HH};
         }
     }
 
     void _update_output_positions() {
         for (int i = 0; i < outputs.size(); i++) {
-            auto x = float(1 + i) / (outputs.size() + 2);
-            outputs[i]->position = {x, -55};
+            auto x = float(0.75f + i) / (outputs.size() + 0.5f);
+            outputs[i]->position = {x * 2 * WW - WW, -HH};
         }
     }
 
     MySocket *add_input_socket() {
         auto p = add_child<MySocket>();
-        outputs.push_back(p);
+        inputs.push_back(p);
         _update_input_positions();
         return p;
     }
@@ -435,7 +435,7 @@ struct MyNode : GraphicsRectItem {
         selectable = true;
         draggable = true;
 
-        set_bounding_box({-100, -50, 200, 100});
+        set_bounding_box({-WW, -HH, WW * 2, HH * 2});
     }
 };
 
@@ -459,6 +459,10 @@ struct MyWindow : GraphicsRectItem {
         c->position = {100, 300};
         auto d = add_child<MyNode>();
         d->position = {300, 300};
+        d->add_input_socket();
+        d->add_output_socket();
+        d->add_output_socket();
+        d->add_output_socket();
     }
 
     void paint() const override {
