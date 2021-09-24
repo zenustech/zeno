@@ -611,7 +611,7 @@ struct DopPendingLink : GraphicsLineItem {
 };
 
 
-struct NodeEditor : GraphicsRectItem {
+struct DopGraph : GraphicsRectItem {
     std::vector<DopNode *> nodes;
     std::vector<DopLink *> links;
 
@@ -627,7 +627,7 @@ struct NodeEditor : GraphicsRectItem {
         return p;
     }
 
-    NodeEditor() {
+    DopGraph() {
         set_bounding_box({0, 0, 550, 400});
 
         auto c = add_node();
@@ -657,7 +657,7 @@ struct NodeEditor : GraphicsRectItem {
 
 struct RootWindow : Widget {
     RootWindow() {
-        add_child<NodeEditor>();
+        add_child<DopGraph>();
     }
 
     AABB get_bounding_box() const override {
