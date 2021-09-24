@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -17,6 +18,10 @@ struct Point {
 
     Point(float x = 0, float y = 0)
         : x(x), y(y) {}
+
+    Point operator+(Point const &o) const {
+        return {x + o.x, y + o.y};
+    }
 };
 
 struct AABB {
@@ -319,7 +324,8 @@ struct GraphicsWidget : Widget {
                 par->_select_child(this, cur.shift);
             }
         }
-        _select_child(nullptr);
+        if (!cur.shift)
+            _select_child(nullptr);
     }
 };
 
@@ -391,6 +397,7 @@ struct Button : Widget {
 
 
 struct DopLink;
+struct DopNode;
 
 struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 18, NW = 200;
@@ -409,6 +416,10 @@ struct DopSocket : GraphicsRectItem {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
         glRectf(bbox.x0 + BW, bbox.y0 + BW, bbox.x0 + bbox.nx - BW, bbox.y0 + bbox.ny - BW);
+    }
+
+    DopNode *get_parent() const {
+        return (DopNode *)(parent);
     }
 };
 
@@ -483,6 +494,7 @@ struct DopNode : GraphicsRectItem {
 
     DopInputSocket *add_input_socket() {
         auto p = add_child<DopInputSocket>();
+        p->parent = this;
         inputs.push_back(p);
         _update_input_positions();
         return p;
@@ -490,6 +502,7 @@ struct DopNode : GraphicsRectItem {
 
     DopOutputSocket *add_output_socket() {
         auto p = add_child<DopOutputSocket>();
+        p->parent = this;
         outputs.push_back(p);
         _update_output_positions();
         return p;
@@ -531,6 +544,8 @@ struct DopNode : GraphicsRectItem {
 
 
 struct DopLink : GraphicsWidget {
+    static constexpr float LW = 3.f;
+
     DopOutputSocket *from_socket;
     DopInputSocket *to_socket;
 
@@ -539,6 +554,36 @@ struct DopLink : GraphicsWidget {
     {
         from_socket->links.push_back(this);
         to_socket->links.push_back(this);
+        selectable = true;
+    }
+
+    Point get_from_position() const {
+        return from_socket->position + from_socket->get_parent()->position;
+    }
+
+    Point get_to_position() const {
+        return to_socket->position + to_socket->get_parent()->position;
+    }
+
+    AABB get_bounding_box() const override {
+        auto [sx, sy] = get_from_position();
+        auto [dx, dy] = get_to_position();
+        return {std::min(sx, dx), std::min(sy, dy), std::fabs(sx - dx), std::fabs(sy - dy)};
+    }
+
+    void paint() const override {
+        if (selected) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else {
+            glColor3f(0.125f, 0.375f, 0.425f);
+        }
+        auto [sx, sy] = get_from_position();
+        auto [dx, dy] = get_to_position();
+        glLineWidth(LW);
+        glBegin(GL_LINE_STRIP);
+        glVertex2f(sx, sy);
+        glVertex2f(dx, dy);
+        glEnd();
     }
 };
 
@@ -576,6 +621,8 @@ struct NodeEditor : GraphicsRectItem {
         d->add_input_socket()->title = "times";
         d->add_output_socket()->title = "grid";
         d->title = "vdbsmooth";
+
+        add_link(c->outputs[0], d->inputs[0]);
     }
 
     void paint() const override {
