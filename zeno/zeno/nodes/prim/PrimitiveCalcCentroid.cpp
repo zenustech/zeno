@@ -58,7 +58,7 @@ ZENDEFNODE(PrimitiveCalcCentroid, {
     },
     {
     {"vec3f", "centroid"},
-    {"float", "totalArea"},  // actually mass
+    {"float", "totalArea"},  // actually mass, can change name to cihou old graphs
     },
     {
     {"enum Volume Area Vertex", "method", "Volume"}

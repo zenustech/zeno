@@ -8,7 +8,9 @@
 #include <FTGL/ftgl.h>
 #include <memory>
 #include <string>
+#include <vector>
 #include <tuple>
+#include <set>
 
 struct Point {
     float x, y;
@@ -171,7 +173,7 @@ struct Widget : IWidget {
         if (rmb_pressed) on_rmb_up();
     }
 
-    std::vector<Widget *> children_selected;
+    std::set<Widget *> children_selected;
 
     bool hovered = false;
     bool selected = false;
@@ -184,7 +186,7 @@ struct Widget : IWidget {
             }
             children_selected.clear();
         }
-        children_selected.push_back(ptr);
+        children_selected.insert(ptr);
         ptr->selected = true;
     }
 
