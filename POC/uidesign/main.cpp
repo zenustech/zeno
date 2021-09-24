@@ -441,19 +441,43 @@ struct SopNode : GraphicsRectItem {
 
 
 struct DopSocket : GraphicsRectItem {
-    static constexpr float R = 18;
+    static constexpr float BW = 4;
+    static constexpr float R = 15;
 
-    DopSocket() {
-        set_bounding_box({-R, -R, 2 * R, 2 * R});
+    void paint() const override {
+        glColor3f(0.75f, 0.75f, 0.75f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+        if (selected || lmb_pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+        } else {
+            glColor3f(0.375f, 0.375f, 0.375f);
+        }
+        glRectf(bbox.x0 + BW, bbox.y0 + BW, bbox.x0 + bbox.nx - BW, bbox.y0 + bbox.ny - BW);
+    }
+};
+
+
+struct DopInputSocket : DopSocket {
+    DopInputSocket() {
+        set_bounding_box({0, -R, 2 * R, 2 * R});
+    }
+};
+
+
+struct DopOutputSocket : DopSocket {
+    DopOutputSocket() {
+        set_bounding_box({-2 * R, -R, 2 * R, 2 * R});
     }
 };
 
 
 struct DopNode : GraphicsRectItem {
-    static constexpr float DH = 50, TH = 50, W = 200;
+    static constexpr float DH = 50, TH = 50, W = 200, BW = 5;
 
-    std::vector<DopSocket *> inputs;
-    std::vector<DopSocket *> outputs;
+    std::vector<DopInputSocket *> inputs;
+    std::vector<DopOutputSocket *> outputs;
     std::string title = "untitled";
 
     void _update_input_positions() {
@@ -477,15 +501,15 @@ struct DopNode : GraphicsRectItem {
         set_bounding_box({0, -h, W, h + TH});
     }
 
-    DopSocket *add_input_socket() {
-        auto p = add_child<DopSocket>();
+    DopInputSocket *add_input_socket() {
+        auto p = add_child<DopInputSocket>();
         inputs.push_back(p);
         _update_input_positions();
         return p;
     }
 
-    DopSocket *add_output_socket() {
-        auto p = add_child<DopSocket>();
+    DopOutputSocket *add_output_socket() {
+        auto p = add_child<DopOutputSocket>();
         outputs.push_back(p);
         _update_output_positions();
         return p;
@@ -499,7 +523,15 @@ struct DopNode : GraphicsRectItem {
     }
 
     void paint() const override {
-        GraphicsRectItem::paint();
+        if (selected || lmb_pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+            glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);
+        /*} else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+            glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);*/
+        }
+        glColor3f(0.375f, 0.375f, 0.375f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         Font font("LiberationMono-Regular.ttf");
         font.set_font_size(30.f);
