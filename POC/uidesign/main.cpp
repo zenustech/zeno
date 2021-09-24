@@ -172,7 +172,6 @@ struct Widget : IWidget {
     bool hovered = false;
     bool selected = false;
     bool selectable = true;
-    bool draggable = true;
 
     void _select_child(Widget *ptr, bool is_clear = true) {
         if (is_clear) {
@@ -186,13 +185,6 @@ struct Widget : IWidget {
     }
 
     virtual void on_mouse_move() {
-        printf("%f %f\n", cur.dx, cur.dy);
-        for (auto *child: children_selected) {
-            if (child->lmb_pressed && child->draggable) {
-                child->position.x += cur.dx;
-                child->position.y += cur.dy;
-            }
-        }
     }
 
     virtual void on_lmb_down() {
@@ -343,14 +335,18 @@ struct MyWindow : Widget {
     AABB get_bounding_box() const override {
         return {0, 0, 500, 400};
     }
-} win;
+};
 
 
-/*struct DemoWindow : Widget {
-    DemoWindow() {
+struct RootWindow : Widget {
+    RootWindow() {
         add_child<MyWindow>();
     }
-};*/
+
+    AABB get_bounding_box() const override {
+        return {0, 0, 800, 600};
+    }
+} win;
 
 
 void process_input() {
