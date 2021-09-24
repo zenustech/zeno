@@ -176,37 +176,12 @@ struct Widget : IWidget {
     std::set<Widget *> children_selected;
 
     bool hovered = false;
-    bool selected = false;
-    bool selectable = false;
-
-    void _select_child(Widget *ptr, bool multiselect = false) {
-        if (!(multiselect || (ptr && ptr->selected))) {
-            for (auto *child: children_selected) {
-                child->selected = false;
-            }
-            children_selected.clear();
-        }
-        if (ptr) {
-            if (ptr->selected && multiselect) {
-                children_selected.erase(ptr);
-                ptr->selected = false;
-            } else {
-                children_selected.insert(ptr);
-                ptr->selected = true;
-            }
-        }
-    }
 
     virtual void on_mouse_move() {
     }
 
     virtual void on_lmb_down() {
         lmb_pressed = true;
-        if (parent && selectable) {
-            parent->_select_child(this, cur.shift);
-        } else {
-            _select_child(nullptr);
-        }
     }
 
     virtual void on_lmb_up() {
@@ -299,7 +274,51 @@ struct Widget : IWidget {
 };
 
 
-struct RectItem : Widget {
+struct GraphicsWidget : Widget {
+    std::set<GraphicsWidget *> children_selected;
+
+    bool selected = false;
+    bool selectable = false;
+
+    void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
+        if (!(multiselect || (ptr && ptr->selected))) {
+            for (auto *child: children_selected) {
+                child->selected = false;
+            }
+            children_selected.clear();
+        }
+        if (ptr) {
+            if (ptr->selected && multiselect) {
+                children_selected.erase(ptr);
+                ptr->selected = false;
+            } else {
+                children_selected.insert(ptr);
+                ptr->selected = true;
+            }
+        }
+    }
+
+    void on_mouse_move() override {
+        if (cur.lmb) {
+            for (auto *child: children_selected) {
+                child->position.x += cur.dx;
+                child->position.y += cur.dy;
+            }
+        }
+    }
+
+    void on_lmb_down() override {
+        Widget::on_lmb_down();
+        if (auto par = dynamic_cast<GraphicsWidget *>(parent); par && selectable) {
+            par->_select_child(this, cur.shift);
+        } else {
+            _select_child(nullptr);
+        }
+    }
+};
+
+
+struct RectItem : GraphicsWidget {
     AABB bbox;
 
     RectItem(AABB bbox)
@@ -379,15 +398,6 @@ struct MyWindow : RectItem {
         auto d = add_child<MyNode>(AABB(300, 300, 150, 50));
         c->selectable = true;
         d->selectable = true;
-    }
-
-    void on_mouse_move() override {
-        if (cur.lmb) {
-            for (auto *child: children_selected) {
-                child->position.x += cur.dx;
-                child->position.y += cur.dy;
-            }
-        }
     }
 
     void paint() const override {
