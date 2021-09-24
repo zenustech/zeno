@@ -422,7 +422,7 @@ struct DopOutputSocket : DopSocket {
 
 
 struct DopNode : GraphicsRectItem {
-    static constexpr float DH = 50, TH = 50, W = 200, BW = 3;
+    static constexpr float DH = 42, TH = 42, FH = 25, W = 200, BW = 3;
 
     std::vector<DopInputSocket *> inputs;
     std::vector<DopOutputSocket *> outputs;
@@ -489,7 +489,7 @@ struct DopNode : GraphicsRectItem {
         glRectf(0.f, 0.f, W, TH);
 
         Font font("LiberationMono-Regular.ttf");
-        font.set_font_size(30.f);
+        font.set_font_size(FH);
         font.set_fixed_width(W);
         font.set_fixed_height(TH);
         glColor3f(1.f, 1.f, 1.f);
@@ -503,20 +503,19 @@ struct NodeEditor : GraphicsRectItem {
         set_bounding_box({0, 0, 550, 400});
 
         auto c = add_child<DopNode>();
-        c->position = {100, 300};
+        c->position = {50, 300};
         c->add_input_socket();
         c->add_input_socket();
         c->add_output_socket();
-        c->add_output_socket();
-        c->add_output_socket();
+        c->title = "readvdb";
 
         auto d = add_child<DopNode>();
         d->position = {300, 300};
         d->add_input_socket();
         d->add_input_socket();
+        d->add_input_socket();
         d->add_output_socket();
-        d->add_output_socket();
-        d->add_output_socket();
+        d->title = "vdbsmooth";
     }
 
     void paint() const override {
