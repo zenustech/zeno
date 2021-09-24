@@ -398,14 +398,44 @@ struct MySocket : GraphicsRectItem {
 
 
 struct MyNode : GraphicsRectItem {
+    static constexpr float R = 18;
+
+    std::vector<MySocket *> inputs;
+    std::vector<MySocket *> outputs;
+
+    void _update_input_positions() {
+        for (int i = 0; i < inputs.size(); i++) {
+            auto x = float(1 + i) / (inputs.size() + 2);
+            inputs[i]->position = {x, 55};
+        }
+    }
+
+    void _update_output_positions() {
+        for (int i = 0; i < outputs.size(); i++) {
+            auto x = float(1 + i) / (outputs.size() + 2);
+            outputs[i]->position = {x, -55};
+        }
+    }
+
+    MySocket *add_input_socket() {
+        auto p = add_child<MySocket>();
+        outputs.push_back(p);
+        _update_input_positions();
+        return p;
+    }
+
+    MySocket *add_output_socket() {
+        auto p = add_child<MySocket>();
+        outputs.push_back(p);
+        _update_output_positions();
+        return p;
+    }
+
     MyNode() {
         selectable = true;
         draggable = true;
 
-        set_bounding_box({-100, -100, 200, 200});
-
-        auto a = add_child<MySocket>();
-        a->position = {0, 0};
+        set_bounding_box({-100, -50, 200, 100});
     }
 };
 
