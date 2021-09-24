@@ -388,16 +388,18 @@ struct Button : Widget {
 };
 
 
+struct DopLink;
+
 struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 18, NW = 200;
 
     std::string title = "(untitled)";
-    bool connected = false;
+    std::vector<DopLink *> links;
 
     void paint() const override {
         glColor3f(0.75f, 0.75f, 0.75f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-        if (connected) {
+        if (links.size()) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -526,12 +528,32 @@ struct DopNode : GraphicsRectItem {
 };
 
 
+struct DopLink : GraphicsWidget {
+    DopOutputSocket *from_socket;
+    DopInputSocket *to_socket;
+
+    DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
+        : from_socket(from_socket), to_socket(to_socket)
+    {
+        from_socket->links.push_back(this);
+        to_socket->links.push_back(this);
+    }
+};
+
+
 struct NodeEditor : GraphicsRectItem {
     std::vector<DopNode *> nodes;
+    std::vector<DopLink *> links;
 
     DopNode *add_node() {
         auto p = add_child<DopNode>();
         nodes.push_back(p);
+        return p;
+    }
+
+    DopLink *add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
+        auto p = add_child<DopLink>(from_socket, to_socket);
+        links.push_back(p);
         return p;
     }
 
