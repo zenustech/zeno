@@ -312,19 +312,20 @@ struct GraphicsWidget : Widget {
 
     void on_lmb_down() override {
         Widget::on_lmb_down();
-        if (auto par = dynamic_cast<GraphicsWidget *>(parent); par && selectable) {
-            par->_select_child(this, cur.shift);
-        } else {
-            _select_child(nullptr);
+        if (auto par = dynamic_cast<GraphicsWidget *>(parent); par) {
+            if (selectable) {
+                par->_select_child(this, cur.shift);
+            }
         }
+        _select_child(nullptr);
     }
 };
 
 
-struct RectItem : GraphicsWidget {
+struct GraphicsRectItem : GraphicsWidget {
     AABB bbox;
 
-    RectItem(AABB bbox)
+    GraphicsRectItem(AABB bbox)
         : bbox(bbox) {}
 
     AABB get_bounding_box() const override {
@@ -344,23 +345,34 @@ struct RectItem : GraphicsWidget {
 };
 
 
-struct Button : RectItem {
+struct Button : Widget {
     std::string text;
+    AABB bbox;
 
     Button(AABB bbox, std::string text = "")
-        : RectItem(bbox), text(text) {
+        : bbox(bbox), text(text) {
     }
 
-    virtual void on_clicked() {
+    AABB get_bounding_box() const override {
+        return bbox;
     }
+
+    virtual void on_clicked() {}
 
     void on_lmb_down() override {
-        RectItem::on_lmb_down();
+        Widget::on_lmb_down();
         on_clicked();
     }
 
     void paint() const override {
-        RectItem::paint();
+        if (lmb_pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+        } else {
+            glColor3f(0.375f, 0.375f, 0.375f);
+        }
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         if (text.size()) {
             Font font("LiberationMono-Regular.ttf");
@@ -375,9 +387,9 @@ struct Button : RectItem {
 };
 
 
-struct MyNode : RectItem {
+struct MyNode : GraphicsRectItem {
     MyNode(AABB bbox = {0, 0, 200, 100})
-        : RectItem(bbox)
+        : GraphicsRectItem(bbox)
     {
         selectable = true;
         draggable = true;
@@ -385,9 +397,9 @@ struct MyNode : RectItem {
 };
 
 
-struct MyWindow : RectItem {
+struct MyWindow : GraphicsRectItem {
     MyWindow(AABB bbox)
-        : RectItem(bbox)
+        : GraphicsRectItem(bbox)
     {
         struct MyButton : Button {
             using Button::Button;
