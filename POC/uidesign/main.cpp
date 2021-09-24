@@ -388,20 +388,20 @@ struct Button : Widget {
 };
 
 
-struct MySocket : GraphicsRectItem {
+struct SopSocket : GraphicsRectItem {
     static constexpr float R = 18;
 
-    MySocket() {
+    SopSocket() {
         set_bounding_box({-R, -R, 2 * R, 2 * R});
     }
 };
 
 
-struct MyNode : GraphicsRectItem {
+struct SopNode : GraphicsRectItem {
     static constexpr float WW = 100, HH = 50;
 
-    std::vector<MySocket *> inputs;
-    std::vector<MySocket *> outputs;
+    std::vector<SopSocket *> inputs;
+    std::vector<SopSocket *> outputs;
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
@@ -417,21 +417,21 @@ struct MyNode : GraphicsRectItem {
         }
     }
 
-    MySocket *add_input_socket() {
-        auto p = add_child<MySocket>();
+    SopSocket *add_input_socket() {
+        auto p = add_child<SopSocket>();
         inputs.push_back(p);
         _update_input_positions();
         return p;
     }
 
-    MySocket *add_output_socket() {
-        auto p = add_child<MySocket>();
+    SopSocket *add_output_socket() {
+        auto p = add_child<SopSocket>();
         outputs.push_back(p);
         _update_output_positions();
         return p;
     }
 
-    MyNode() {
+    SopNode() {
         selectable = true;
         draggable = true;
 
@@ -440,25 +440,92 @@ struct MyNode : GraphicsRectItem {
 };
 
 
-struct MyWindow : GraphicsRectItem {
-    MyWindow() {
+struct DopSocket : GraphicsRectItem {
+    static constexpr float R = 18;
+
+    DopSocket() {
+        set_bounding_box({-R, -R, 2 * R, 2 * R});
+    }
+};
+
+
+struct DopNode : GraphicsRectItem {
+    static constexpr float DH = 50, TH = 50, W = 200;
+
+    std::vector<DopSocket *> inputs;
+    std::vector<DopSocket *> outputs;
+    std::string title = "untitled";
+
+    void _update_input_positions() {
+        for (int i = 0; i < inputs.size(); i++) {
+            auto y = DH * (i + 0.5f);
+            inputs[i]->position = {0, -y};
+        }
+        _update_node_height();
+    }
+
+    void _update_output_positions() {
+        for (int i = 0; i < outputs.size(); i++) {
+            auto y = DH * (i + 0.5f);
+            outputs[i]->position = {W, -y};
+        }
+        _update_node_height();
+    }
+
+    void _update_node_height() {
+        auto h = std::max(outputs.size(), inputs.size()) * DH;
+        set_bounding_box({0, -h, W, h + TH});
+    }
+
+    DopSocket *add_input_socket() {
+        auto p = add_child<DopSocket>();
+        inputs.push_back(p);
+        _update_input_positions();
+        return p;
+    }
+
+    DopSocket *add_output_socket() {
+        auto p = add_child<DopSocket>();
+        outputs.push_back(p);
+        _update_output_positions();
+        return p;
+    }
+
+    DopNode() {
+        selectable = true;
+        draggable = true;
+
+        _update_node_height();
+    }
+
+    void paint() const override {
+        GraphicsRectItem::paint();
+
+        Font font("LiberationMono-Regular.ttf");
+        font.set_font_size(30.f);
+        font.set_fixed_width(W);
+        font.set_fixed_height(TH);
+        glColor3f(1.f, 1.f, 1.f);
+        font.render(0, 0, title);
+    }
+};
+
+
+struct NodeEditor : GraphicsRectItem {
+    NodeEditor() {
         set_bounding_box({0, 0, 550, 400});
 
-        struct MyButton : Button {
-            void on_clicked() override {
-                printf("clicked OK\n");
-            }
-        };
-        auto a = add_child<MyButton>();
-        a->text = "OK";
-        a->position = {100, 100};
-        auto b = add_child<Button>();
-        b->text = "Cancel";
-        b->position = {300, 100};
-        auto c = add_child<MyNode>();
+        auto c = add_child<SopNode>();
         c->position = {100, 300};
-        auto d = add_child<MyNode>();
+        c->add_input_socket();
+        c->add_input_socket();
+        c->add_output_socket();
+        c->add_output_socket();
+        c->add_output_socket();
+
+        auto d = add_child<DopNode>();
         d->position = {300, 300};
+        d->add_input_socket();
         d->add_input_socket();
         d->add_output_socket();
         d->add_output_socket();
@@ -474,7 +541,7 @@ struct MyWindow : GraphicsRectItem {
 
 struct RootWindow : Widget {
     RootWindow() {
-        add_child<MyWindow>();
+        add_child<NodeEditor>();
     }
 
     AABB get_bounding_box() const override {
