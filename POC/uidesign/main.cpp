@@ -526,18 +526,41 @@ struct DopNode : GraphicsRectItem {
 };
 
 
+struct ParamEditor : GraphicsRectItem {
+    ParamEditor() {
+        set_bounding_box({0, 0, 300, 400});
+    }
+
+    void paint() const override {
+        glColor3f(0.1f, 0.1f, 0.1f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+    }
+};
+
+
 struct NodeEditor : GraphicsRectItem {
+    std::vector<DopNode *> nodes;
+    ParamEditor *paredit;
+
+    DopNode *add_node() {
+        auto p = add_child<DopNode>();
+        nodes.push_back(p);
+        return p;
+    }
+
     NodeEditor() {
         set_bounding_box({0, 0, 550, 400});
 
-        auto c = add_child<DopNode>();
+        paredit = add_child<ParamEditor>();
+
+        auto c = add_node();
         c->position = {50, 300};
         c->add_input_socket()->title = "path";
         c->add_input_socket()->title = "type";
         c->add_output_socket()->title = "grid";
         c->title = "readvdb";
 
-        auto d = add_child<DopNode>();
+        auto d = add_node();
         d->position = {300, 300};
         d->add_input_socket()->title = "grid";
         d->add_input_socket()->title = "width";
