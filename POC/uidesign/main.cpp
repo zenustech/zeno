@@ -474,7 +474,7 @@ struct DopOutputSocket : DopSocket {
 
 
 struct DopNode : GraphicsRectItem {
-    static constexpr float DH = 50, TH = 50, W = 200, BW = 5;
+    static constexpr float DH = 50, TH = 50, W = 200, BW = 3;
 
     std::vector<DopInputSocket *> inputs;
     std::vector<DopOutputSocket *> outputs;
@@ -525,13 +525,20 @@ struct DopNode : GraphicsRectItem {
     void paint() const override {
         if (selected || lmb_pressed) {
             glColor3f(0.75f, 0.5f, 0.375f);
-            glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);
-        /*} else if (hovered) {
-            glColor3f(0.375f, 0.5f, 1.0f);
-            glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);*/
+        } else {
+            glColor3f(0.125f, 0.375f, 0.425f);
         }
+        glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);
+
         glColor3f(0.375f, 0.375f, 0.375f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        if (selected || lmb_pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else {
+            glColor3f(0.125f, 0.375f, 0.425f);
+        }
+        glRectf(0.f, 0.f, W, TH);
 
         Font font("LiberationMono-Regular.ttf");
         font.set_font_size(30.f);
