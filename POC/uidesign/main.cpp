@@ -310,12 +310,12 @@ struct Button : RectItem {
         : RectItem(bbox), text(text) {
     }
 
-    std::function<void()> on_clicked;// = [=] { printf("clicked\n"); };
+    virtual void on_clicked() {
+    }
 
     void on_lmb_down() override {
         RectItem::on_lmb_down();
-        if (on_clicked)
-            on_clicked();
+        on_clicked();
     }
 
     void paint() const override {
@@ -336,7 +336,14 @@ struct Button : RectItem {
 
 struct MyWindow : Widget {
     MyWindow() {
-        auto a = add_child<Button>(AABB(100, 100, 150, 50), "OK");
+        struct MyButton : Button {
+            using Button::Button;
+
+            void on_clicked() override {
+                printf("clicked OK\n");
+            }
+        };
+        auto a = add_child<MyButton>(AABB(100, 100, 150, 50), "OK");
         auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
         auto c = add_child<RectItem>(AABB(100, 300, 150, 50));
         auto d = add_child<RectItem>(AABB(300, 300, 150, 50));
