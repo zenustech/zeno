@@ -152,6 +152,8 @@ struct Widget : IWidget {
     Widget() = default;
     Widget(Widget const &) = delete;
     Widget &operator=(Widget const &) = delete;
+    Widget(Widget &&) = delete;
+    Widget &operator=(Widget &&) = delete;
 
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {
