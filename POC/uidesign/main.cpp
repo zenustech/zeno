@@ -526,21 +526,8 @@ struct DopNode : GraphicsRectItem {
 };
 
 
-struct ParamEditor : GraphicsRectItem {
-    ParamEditor() {
-        set_bounding_box({0, 0, 300, 400});
-    }
-
-    void paint() const override {
-        glColor3f(0.1f, 0.1f, 0.1f);
-        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-    }
-};
-
-
 struct NodeEditor : GraphicsRectItem {
     std::vector<DopNode *> nodes;
-    ParamEditor *paredit;
 
     DopNode *add_node() {
         auto p = add_child<DopNode>();
@@ -550,8 +537,6 @@ struct NodeEditor : GraphicsRectItem {
 
     NodeEditor() {
         set_bounding_box({0, 0, 550, 400});
-
-        paredit = add_child<ParamEditor>();
 
         auto c = add_node();
         c->position = {50, 300};
