@@ -334,6 +334,15 @@ struct Button : RectItem {
 };
 
 
+struct MyNode : RectItem {
+    MyNode(AABB bbox = {0, 0, 200, 100})
+        : RectItem(bbox)
+    {
+        selectable = true;
+    }
+};
+
+
 struct MyWindow : RectItem {
     MyWindow(AABB bbox)
         : RectItem(bbox)
@@ -347,10 +356,19 @@ struct MyWindow : RectItem {
         };
         auto a = add_child<MyButton>(AABB(100, 100, 150, 50), "OK");
         auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
-        auto c = add_child<RectItem>(AABB(100, 300, 150, 50));
-        auto d = add_child<RectItem>(AABB(300, 300, 150, 50));
+        auto c = add_child<MyNode>(AABB(100, 300, 150, 50));
+        auto d = add_child<MyNode>(AABB(300, 300, 150, 50));
         c->selectable = true;
         d->selectable = true;
+    }
+
+    void on_mouse_move() override {
+        if (lmb_pressed) {
+            for (auto *child: children_selected) {
+                child->position.x += cur.dx;
+                child->position.y += cur.dy;
+            }
+        }
     }
 
     void paint() const override {
