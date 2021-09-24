@@ -543,27 +543,11 @@ struct DopNode : GraphicsRectItem {
 };
 
 
-struct DopLink : GraphicsWidget {
-    static constexpr float LW = 3.f;
+struct GraphicsLineItem : GraphicsWidget {
+    static constexpr float LW = 4.f;
 
-    DopOutputSocket *from_socket;
-    DopInputSocket *to_socket;
-
-    DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
-        : from_socket(from_socket), to_socket(to_socket)
-    {
-        from_socket->links.push_back(this);
-        to_socket->links.push_back(this);
-        selectable = true;
-    }
-
-    Point get_from_position() const {
-        return from_socket->position + from_socket->get_parent()->position;
-    }
-
-    Point get_to_position() const {
-        return to_socket->position + to_socket->get_parent()->position;
-    }
+    virtual Point get_from_position() const = 0;
+    virtual Point get_to_position() const = 0;
 
     AABB get_bounding_box() const override {
         auto [sx, sy] = get_from_position();
@@ -584,6 +568,45 @@ struct DopLink : GraphicsWidget {
         glVertex2f(sx, sy);
         glVertex2f(dx, dy);
         glEnd();
+    }
+};
+
+
+struct DopLink : GraphicsLineItem {
+    DopOutputSocket *from_socket;
+    DopInputSocket *to_socket;
+
+    DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
+        : from_socket(from_socket), to_socket(to_socket)
+    {
+        from_socket->links.push_back(this);
+        to_socket->links.push_back(this);
+        selectable = true;
+    }
+
+    Point get_from_position() const override {
+        return from_socket->position + from_socket->get_parent()->position;
+    }
+
+    Point get_to_position() const override {
+        return to_socket->position + to_socket->get_parent()->position;
+    }
+};
+
+
+struct DopPendingLink : GraphicsLineItem {
+    DopSocket *socket;
+
+    DopPendingLink(DopSocket *socket)
+        : socket(socket)
+    {}
+
+    Point get_from_position() const override {
+        return socket->position + socket->get_parent()->position;
+    }
+
+    Point get_to_position() const override {
+        return {cur.x, cur.y};
     }
 };
 
