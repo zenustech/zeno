@@ -306,24 +306,30 @@ struct RectItem : Widget {
 struct Button : RectItem {
     std::string text;
 
-    Button(AABB bbox, std::string text)
+    Button(AABB bbox, std::string text = "")
         : RectItem(bbox), text(text) {
     }
 
-    AABB get_bounding_box() const override {
-        return bbox;
+    std::function<void()> on_clicked;// = [=] { printf("clicked\n"); };
+
+    void on_lmb_down() override {
+        RectItem::on_lmb_down();
+        if (on_clicked)
+            on_clicked();
     }
 
     void paint() const override {
         RectItem::paint();
 
-        Font font("LiberationMono-Regular.ttf");
-        //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
-        font.set_font_size(30.f);
-        font.set_fixed_width(bbox.nx);
-        font.set_fixed_height(bbox.ny);
-        glColor3f(1.f, 1.f, 1.f);
-        font.render(bbox.x0, bbox.y0, text);
+        if (text.size()) {
+            Font font("LiberationMono-Regular.ttf");
+            //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
+            font.set_font_size(30.f);
+            font.set_fixed_width(bbox.nx);
+            font.set_fixed_height(bbox.ny);
+            glColor3f(1.f, 1.f, 1.f);
+            font.render(bbox.x0, bbox.y0, text);
+        }
     }
 };
 
@@ -334,8 +340,6 @@ struct MyWindow : Widget {
         auto b = add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
         auto c = add_child<RectItem>(AABB(100, 300, 150, 50));
         auto d = add_child<RectItem>(AABB(300, 300, 150, 50));
-        a->selectable = true;
-        b->selectable = true;
         c->selectable = true;
         d->selectable = true;
     }
