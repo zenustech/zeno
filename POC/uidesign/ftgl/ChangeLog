@@ -1,0 +1,6944 @@
+2018-10-14 21:17  Frank Heckenbach <f.heckenbach@fh-soft.de>
+
+	* NEWS, configure.ac, ppa_upload.sh, msvc/config.h, debian/rules:
+	  * Mark package as being version 2.3.0.
+
+2008-06-19 13:11  sammy
+
+	* [r1193] NEWS, configure.ac:
+	  * Updated NEWS file.
+	  * Mark package as being version 2.2.0.
+
+2008-06-19 13:10  sammy
+
+	* [r1192] TODO:
+	  * Mention fontconfig in the TODO list.
+
+2008-06-13 21:16  dtremenak
+
+	* [r1191] demo/FTGLDemo.cpp, msvc/config.h, src/FTFont/FTFont.cpp,
+	  src/FTLayout/FTSimpleLayout.cpp:
+	  make windows use the FONT_FILE mechanism for setting default font
+	  in demos also, no reason to special-case it.
+	  add standard license verbage to msvc config.h.
+	  tack a copyright notice on a couple files I made significant
+	  changes to.
+
+2008-06-12 14:56  sammy
+
+	* [r1190] ChangeLog:
+	  * Update ChangeLog using svn2cl -i.
+
+2008-06-12 14:13  sammy
+
+	* [r1189] NEWS, configure.ac:
+	  * Updated NEWS file.
+	  * Mark package as being version 2.1.3~rc5.
+
+2008-06-12 14:13  sammy
+
+	* [r1188] src/FTGL/FTBufferGlyph.h, src/FTGlyph/FTGlyphGlue.cpp:
+	  * ftglCreateBufferGlyph: do not export FTBufferFont in the C API:
+	  we do not
+	  have easy ways to emulate the FTBuffer object.
+
+2008-06-12 14:13  sammy
+
+	* [r1187] src/FTFont/FTBufferFont.cpp:
+	  * Prevent issues when strndup is defined as a macro.
+
+2008-06-11 23:35  dtremenak
+
+	* [r1186] msvc/vc8/ftgl_dll.vcproj:
+	  be consistent
+
+2008-06-11 23:34  dtremenak
+
+	* [r1185] msvc/vc71/ftgl_dll.vcproj:
+	  fix vc7.1 project
+
+2008-06-11 23:23  dtremenak
+
+	* [r1184] configure.ac, src/FTFont/FTBufferFont.cpp:
+	  provide for us poor sobs who don't have a native strndup
+	  implementation
+
+2008-06-09 14:21  sammy
+
+	* [r1183] README:
+	  * Update README.
+
+2008-06-09 12:57  sammy
+
+	* [r1182] AUTHORS, src/FTCharmap.cpp, src/FTContour.cpp,
+	  src/FTContour.h, src/FTFace.cpp, src/FTFont/FTBitmapFont.cpp,
+	  src/FTFont/FTBitmapFontImpl.h, src/FTFont/FTExtrudeFont.cpp,
+	  src/FTFont/FTExtrudeFontImpl.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontGlue.cpp, src/FTFont/FTFontImpl.h,
+	  src/FTFont/FTOutlineFont.cpp, src/FTFont/FTOutlineFontImpl.h,
+	  src/FTFont/FTPixmapFont.cpp, src/FTFont/FTPixmapFontImpl.h,
+	  src/FTFont/FTPolygonFont.cpp, src/FTFont/FTPolygonFontImpl.h,
+	  src/FTFont/FTTextureFont.cpp, src/FTFont/FTTextureFontImpl.h,
+	  src/FTGlyph/FTBitmapGlyph.cpp, src/FTGlyph/FTBitmapGlyphImpl.h,
+	  src/FTGlyph/FTExtrudeGlyph.cpp, src/FTGlyph/FTExtrudeGlyphImpl.h,
+	  src/FTGlyph/FTGlyph.cpp, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTGlyph/FTGlyphImpl.h, src/FTGlyph/FTOutlineGlyph.cpp,
+	  src/FTGlyph/FTOutlineGlyphImpl.h, src/FTGlyph/FTPixmapGlyph.cpp,
+	  src/FTGlyph/FTPixmapGlyphImpl.h, src/FTGlyph/FTPolygonGlyph.cpp,
+	  src/FTGlyph/FTPolygonGlyphImpl.h, src/FTGlyph/FTTextureGlyph.cpp,
+	  src/FTGlyph/FTTextureGlyphImpl.h, src/FTGlyphContainer.cpp,
+	  src/FTGlyphContainer.h, src/FTInternals.h,
+	  src/FTLayout/FTLayout.cpp, src/FTLayout/FTLayoutGlue.cpp,
+	  src/FTLayout/FTLayoutImpl.h, src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h, src/FTPoint.cpp,
+	  src/FTVectoriser.cpp, src/FTVectoriser.h:
+	  * Add my copyright information to files I modified significantly.
+	  * Add the Unicode, Inc. to the list of authors because of
+	  FTUnicode.h.
+
+2008-06-09 11:47  sammy
+
+	* [r1181] src/FTContour.cpp, src/FTContour.h:
+	  * Code simplifications in FTContour.
+
+2008-06-09 11:47  sammy
+
+	* [r1180] src/FTGL/FTPoint.h:
+	  * Add "const" qualifier to FTPoint's scalar multiplication
+	  operator.
+
+2008-06-09 11:45  sammy
+
+	* [r1179] src/FTBuffer.cpp, src/FTContour.cpp,
+	  src/FTFont/FTBufferFont.cpp, src/FTGL/FTBuffer.h,
+	  src/FTGlyph/FTBufferGlyph.cpp:
+	  * Document and reorganise FTBuffer. It is now clean enough.
+
+2008-06-09 10:13  sammy
+
+	* [r1178] src/FTGL/FTBufferGlyph.h, src/FTGL/FTGlyph.h:
+	  * Document missing function parameters.
+
+2008-06-09 10:12  sammy
+
+	* [r1177] src/FTContour.cpp:
+	  * Better FTContour::ComputeOutsetPoint() documentation.
+
+2008-06-09 10:11  sammy
+
+	* [r1176] src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTExtrudeFont.cpp, src/FTFont/FTExtrudeFontImpl.h,
+	  src/FTFont/FTFont.cpp, src/FTFont/FTFontGlue.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTFont/FTOutlineFont.cpp,
+	  src/FTFont/FTOutlineFontImpl.h, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTPixmapFontImpl.h, src/FTFont/FTPolygonFont.cpp,
+	  src/FTFont/FTPolygonFontImpl.h, src/FTFont/FTTextureFont.cpp,
+	  src/FTGL/FTFont.h:
+	  * Create FTFont::GlyphLoadFlags() to vary FT_Load_Glyph() calls
+	  according
+	  to the font type. Now we no longer load vector information when
+	  not
+	  needed.
+
+2008-06-08 15:56  sammy
+
+	* [r1175] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  src/FTFont/FTFont.cpp, src/FTFont/FTFontGlue.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGlyph/FTGlyph.cpp, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTGlyph/FTGlyphImpl.h, src/FTGlyphContainer.cpp,
+	  src/FTGlyphContainer.h, src/FTLayout/FTSimpleLayout.cpp,
+	  test/FTFont-Test.cpp, test/FTGlyph-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp:
+	  * Revert the FTFont::Advance() and FTGlyph::Advance()
+	  improvements. After
+	  discussion, I was convinced they were not worth the backwards
+	  compatibility
+	  breakage. They now return float again, instead of FTPoint.
+
+2008-06-08 15:55  sammy
+
+	* [r1174] src/FTFont/FTBufferFont.cpp:
+	  * Add a comment to FTBufferFont to not forget about bugs in it.
+
+2008-06-03 12:24  sammy
+
+	* [r1173] src/FTGlyph/FTExtrudeGlyph.cpp:
+	  * Fix a crash in FTExtrudeGlyph caused by uninitialised members.
+
+2008-06-03 12:23  sammy
+
+	* [r1172] configure.ac, src/FTFont/FTBufferFont.cpp:
+	  * FTBufferFont: use strndup() and, when available, wcsdup().
+
+2008-06-03 12:23  sammy
+
+	* [r1171] demo/FTGLDemo.cpp, src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTFont.cpp, src/FTUnicode.h:
+	  * Coding style: remove tabs and trailing spaces, wrap long lines.
+
+2008-06-03 12:22  sammy
+
+	* [r1170] BUGS, m4/font.m4:
+	  * Multiline sed scripts won't work very well on Cygwin. Falling
+	  back to
+	  two piped sed calls instead.
+
+2008-05-30 04:07  brlcad
+
+	* [r1169] m4/font.m4:
+	  push jwmelto's fix for the sed script error back upstream into
+	  ftgl
+
+2008-05-28 18:00  brlcad
+
+	* [r1168] configure.ac:
+	  remove unused/unnecessary check for memset
+
+2008-05-28 15:46  brlcad
+
+	* [r1167] demo/Makefile.am, test/Makefile.am:
+	  target-specific CPPFLAGS was not added to automake until 1.7 so
+	  use AM_CPPFLAGS instead
+
+2008-05-28 06:07  brlcad
+
+	* [r1166] BUGS:
+	  running configure on mac os x results in bad sed during search
+	  for a truetype font. haven't had time to investigate, but at
+	  least document it as a build system bug
+
+2008-05-28 06:05  brlcad
+
+	* [r1165] m4/freetype2.m4:
+	  merge freetype.m4 update from downstream bzflag, which is in turn
+	  from latest freetype2 sources albeit modified to not abort on
+	  failure to find the freetype-config script.
+
+2008-05-28 04:43  brlcad
+
+	* [r1164] mac:
+	  bye bye, baby, bye bye. no more mac dir. the xcode project was
+	  entirely out of sync to be of any use and the includes are
+	  pointless (do proper subconfigure management instead)
+
+2008-05-24 19:04  dtremenak
+
+	* [r1163] src/FTFont/FTBufferFont.cpp:
+	  from BZFlag r17264: rewrite StringCopy. wcscpy is not a standard
+	  function; we have logic for doing it ourselves already (minus the
+	  len = 0 case), so handle len = 0 and do it all ourselves.
+
+2008-05-23 16:45  dtremenak
+
+	* [r1162] src/FTUnicode.h:
+	  Copyright notices as requested by sam
+
+2008-05-23 00:56  dtremenak
+
+	* [r1161] src/FTLayout/FTSimpleLayout.cpp:
+	  include wctype.h to make gcc happy
+
+2008-05-23 00:53  dtremenak
+
+	* [r1160] src/FTFont/FTFont.cpp:
+	  no need to shadow variables
+
+2008-05-23 00:46  dtremenak
+
+	* [r1159] TODO, demo/FTGLDemo.cpp, msvc/vc8/ftgl_static.vcproj,
+	  src/FTFont/FTFont.cpp, src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTUnicode.h, src/Makefile.am:
+	  * Provide a helper class for walking potentially-multibyte
+	  unicode strings.
+	  * Provide support for multibyte encodings (UTF-8, UTF-16) in
+	  FTFont and derived classes, and in FTSimpleLayout.
+	  * Put a few UTF-8 strings in non-latin codeplanes in FTGLDemo
+	  (toggle at compile-time) for testing.
+	  * FTSimpleLayout should be tested extensively before release. I
+	  would be surprised if I didn't break at least one unusual use
+	  case.
+
+2008-05-23 00:20  dtremenak
+
+	* [r1158] msvc/vc8/FTGLDemo.vcproj, msvc/vc8/trackball.vcproj:
+	  fix release mode configurations
+
+2008-05-23 00:16  sammy
+
+	* [r1157] src/FTFont/FTBufferFont.cpp, src/FTGL/FTBuffer.h,
+	  src/FTGlyph/FTBufferGlyph.cpp:
+	  * Start protecting FTBuffer members using getters and setters.
+
+2008-05-23 00:16  sammy
+
+	* [r1156] docs/projects_using_ftgl.txt:
+	  * Add ~40 entries to the list of projects that use FTGL.
+
+2008-05-23 00:16  sammy
+
+	* [r1155] docs/Makefile.am, docs/faq.dox, docs/ftgl.dox,
+	  docs/projects_using_ftgl.txt, docs/tutorial.dox:
+	  * Work around a Doxygen bug that creates fake latex references
+	  whenever we
+	  use "FTGL" in section names, and fails to remove the "%" in HTML
+	  pages
+	  whenever we use "%FTGL". Fixing HTML pages is easier.
+
+2008-05-23 00:15  sammy
+
+	* [r1154] docs/Makefile.am, docs/ftgl.dox, docs/tutorial.dox:
+	  * Simplify EPS creation rules.
+
+2008-05-22 17:28  dtremenak
+
+	* [r1153] msvc/config.h:
+	  quell deprecation messages for posix and c-style string functions
+
+2008-05-22 15:32  sammy
+
+	* [r1152] docs/images/texturefont.png, docs/tutorial.dox:
+	  * Add GLBufferFont to the tutorial.
+
+2008-05-22 15:31  sammy
+
+	* [r1151] src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTBufferFontImpl.h:
+	  * Empty the FTBufferFont cache when changing the face size.
+
+2008-05-22 15:31  sammy
+
+	* [r1150] src/FTGlyph/FTBufferGlyph.cpp:
+	  * Fix a visual bug in FTBufferFont caused by overlapping glyphs.
+
+2008-05-22 15:30  sammy
+
+	* [r1149] docs/projects_using_ftgl.txt:
+	  * Add a few entries to the list of projects using FTGL: Gem,
+	  Libinstrudeo,
+	  Light Speed!, projectM, Tulip.
+
+2008-05-22 15:30  sammy
+
+	* [r1148] demo/c-demo.c, demo/simple.cpp:
+	  * Print FPS information in the small demos.
+
+2008-05-22 14:38  sammy
+
+	* [r1147] docs/Makefile.am, docs/doxygen.cfg.in, docs/faq.dox,
+	  docs/ftgl.dox, docs/projects_using_ftgl.txt, docs/tutorial.dox:
+	  * Refactor the documentation to have a cleaner frontpage: put the
+	  tutorial
+	  and the FAQ in two separate pages, add links to the most
+	  important C and
+	  C++ documentation, and add projects_using_ftgl.txt to the doxygen
+	  project.
+
+2008-05-22 12:39  sammy
+
+	* [r1146] src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTBufferFontImpl.h:
+	  * Implement caching in FTBufferFont. To avoid unnecessary texture
+	  uploads,
+	  each font object keeps the last 16 strings in the graphic card.
+
+2008-05-22 12:39  sammy
+
+	* [r1145] src/FTFont/FTBufferFont.cpp,
+	  src/FTGlyph/FTBufferGlyph.cpp:
+	  * Fix an off-by-one error in FTBufferGlyph::Render.
+
+2008-05-21 16:38  sammy
+
+	* [r1144] demo/simple.cpp:
+	  * Revert the simple C++ demo to its previous state, now that
+	  FTBufferFont
+	  starts to work.
+
+2008-05-21 16:37  sammy
+
+	* [r1143] src/FTFont/FTBufferFont.cpp:
+	  * Fix the quad vertex order in FTBufferFont.
+
+2008-05-21 16:36  sammy
+
+	* [r1142] src/FTFont/FTFont.cpp:
+	  * Fix a bug in the FTFont::BBox calculation: the first glyph bbox
+	  was not
+	  relative to the position argument.
+
+2008-05-21 15:45  sammy
+
+	* [r1141] src/FTFont/FTBufferFont.cpp:
+	  * Fix a texture coordinate bug caused by our next-power-of-two
+	  ceiling.
+
+2008-05-21 15:43  sammy
+
+	* [r1140] src/FTFont/FTBitmapFont.cpp, src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTOutlineFont.cpp, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTTextureFont.cpp:
+	  * Add proper glPushAttrib() and glPushClientAttrib() calls to the
+	  rendering methods that need them.
+
+2008-05-21 11:39  sammy
+
+	* [r1139] src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTTextureFont.cpp:
+	  * Enable GL_TEXTURE_2D in FTFont::Render variations that need it.
+
+2008-05-21 11:39  sammy
+
+	* [r1138] demo/simple.cpp:
+	  * Temporarily disabled lighting in the simple demo to test
+	  FTBufferFont.
+
+2008-05-21 10:11  sammy
+
+	* [r1137] demo/FTGLDemo.cpp:
+	  * Add FTBufferFont to the complex FTGL demo.
+
+2008-05-21 01:16  dtremenak
+
+	* [r1136] msvc/vc8/CDemo.vcproj, msvc/vc8/ftgl_demo.sln:
+	  build C demo on windows
+
+2008-05-21 01:14  dtremenak
+
+	* [r1135] demo/c-demo.c:
+	  all variables must be declared at the start of a block for C89
+	  compliance. also use explicit float constants.
+
+2008-05-21 00:53  dtremenak
+
+	* [r1134] msvc/vc8/ftgl_dll.vcproj, msvc/vc8/ftgl_static.vcproj:
+	  missed FTBuffer.cpp
+
+2008-05-21 00:44  dtremenak
+
+	* [r1133] msvc/vc8/ftgl_dll.vcproj, msvc/vc8/ftgl_static.vcproj:
+	  build bufferfont/bufferglyph stuff on windows too
+
+2008-05-21 00:39  dtremenak
+
+	* [r1132] src/FTFont/FTFontGlue.cpp:
+	  quell warning
+
+2008-05-20 23:49  sammy
+
+	* [r1131] src/FTBuffer.cpp, src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTBufferFontImpl.h, src/FTGL/FTBuffer.h,
+	  src/FTGL/FTBufferGlyph.h, src/FTGlyph/FTBufferGlyph.cpp,
+	  src/FTGlyph/FTBufferGlyphImpl.h, src/FTGlyph/FTGlyphGlue.cpp:
+	  * First try at the FTBufferFont/FTBufferGlyph implementation.
+
+2008-05-20 23:48  sammy
+
+	* [r1130] src/FTGlyph/FTTextureGlyph.cpp,
+	  src/FTGlyph/FTTextureGlyphImpl.h:
+	  * Rename FTTextureGlyphImpl::pos to FTTextureGlyphImpl::corner
+	  because pos
+	  was misleading.
+
+2008-05-19 15:45  sammy
+
+	* [r1129] src/FTBuffer.cpp, src/FTFont/FTBufferFont.cpp,
+	  src/FTFont/FTBufferFontImpl.h, src/FTFont/FTFontGlue.cpp,
+	  src/FTGL/FTBuffer.h, src/FTGL/FTBufferFont.h,
+	  src/FTGL/FTBufferGlyph.h, src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGL/ftgl.h, src/FTGlyph/FTBufferGlyph.cpp,
+	  src/FTGlyph/FTBufferGlyphImpl.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTInternals.h, src/Makefile.am:
+	  * Starting the buffer font class revival. For now, it just
+	  consists in empty
+	  FTBuffer, FTBufferGlyph and FTBufferFont classes.
+
+2008-05-19 10:06  sammy
+
+	* [r1128] src/FTCharmap.cpp:
+	  * Do not crash if the face has no charmaps. Bug found using zzuf:
+	  xvfb-run zzuf -q -F5 -r0.0000001:0.1 -s0:10000 -c CTest
+	  EunjinNakseo.ttf
+
+2008-05-19 10:06  sammy
+
+	* [r1127] src/FTVectoriser.cpp:
+	  * Simplified contour parity check routine, formula courtesy of
+	  Guillaume
+	  Bittoun.
+
+2008-05-19 10:06  sammy
+
+	* [r1126] src/FTContour.cpp:
+	  * Add parentheses around && within || to please gcc.
+
+2008-05-19 10:05  sammy
+
+	* [r1125] Makefile.am:
+	  * Add a "make upload-doc" rule for easy online documentation
+	  updates.
+
+2008-05-12 14:25  sammy
+
+	* [r1124] m4/font.m4:
+	  * Use fontconfig to find fonts on the system.
+
+2008-05-12 14:11  sammy
+
+	* [r1123] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp, demo/c-demo.c,
+	  demo/simple.cpp:
+	  * The examples now use FONT_FILE if it was found by the configure
+	  step.
+
+2008-05-12 14:10  sammy
+
+	* [r1122] configure.ac, m4/font.m4:
+	  * Add an m4 check to look for a font file on the system.
+
+2008-05-12 04:59  brlcad
+
+	* [r1121] docs/Makefile.am, docs/projects_using_ftgl.txt:
+	  add a list of project using ftgl
+
+2008-05-11 21:43  sammy
+
+	* [r1120] src/FTFont/FTFontGlue.cpp, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTLayout/FTLayoutGlue.cpp:
+	  * Simplify the C bindings. 70 lines gained.
+
+2008-05-11 21:43  sammy
+
+	* [r1119] src/FTGL/FTSimpleLayout.h, src/FTLayout/FTLayoutGlue.cpp,
+	  src/FTLayout/FTSimpleLayout.cpp:
+	  * Get rid of FTSimpleLayout::RenderSpace(). It's still useful in
+	  FTSimpleLayoutImpl, but as a public method FTFont::Render() is
+	  just
+	  as powerful.
+
+2008-05-11 21:43  sammy
+
+	* [r1118] demo/FTGLDemo.cpp, src/FTGL/FTFont.h,
+	  src/FTGL/FTLayout.h, src/FTGL/FTSimpleLayout.h,
+	  src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h:
+	  * Added optional position and string length to the Layout
+	  methods.
+
+2008-05-11 11:29  sammy
+
+	* [r1117] src/FTFont/FTFontImpl.h, src/FTGL/FTFont.h,
+	  src/FTLayout/FTLayout.cpp, src/FTLayout/FTLayoutImpl.h,
+	  src/FTLayout/FTSimpleLayout.cpp:
+	  * Get rid of all methods in FTLayoutImpl that were accessing
+	  FTFontImpl
+	  internals, since FTFont now has all the proper public methods for
+	  that.
+
+2008-05-11 11:29  sammy
+
+	* [r1116] src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h,
+	  src/FTLayout/FTLayout.cpp:
+	  * Get rid of FTFontImpl::DoRender(), one of the oldest TODOs.
+
+2008-05-11 11:28  sammy
+
+	* [r1115] src/FTGL/FTFont.h:
+	  * Re-add FTFont::BBox() implementations with the old prototype,
+	  in case
+	  old projects use them.
+
+2008-05-11 11:28  sammy
+
+	* [r1114] src/FTGlyph/FTExtrudeGlyph.cpp,
+	  src/FTGlyph/FTOutlineGlyph.cpp, src/FTGlyph/FTPolygonGlyph.cpp:
+	  * Honour the pen's Z coordinate when rendering glyphs (except the
+	  raster
+	  ones, where the Z coordinate makes no sense).
+
+2008-05-11 11:28  sammy
+
+	* [r1113] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  src/FTFont/FTBitmapFont.cpp, src/FTFont/FTBitmapFontImpl.h,
+	  src/FTFont/FTExtrudeFont.cpp, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontGlue.cpp, src/FTFont/FTFontImpl.h,
+	  src/FTFont/FTOutlineFont.cpp, src/FTFont/FTOutlineFontImpl.h,
+	  src/FTFont/FTPixmapFont.cpp, src/FTFont/FTPixmapFontImpl.h,
+	  src/FTFont/FTTextureFont.cpp, src/FTFont/FTTextureFontImpl.h,
+	  src/FTGL/FTFont.h, src/FTGlyphContainer.cpp,
+	  src/FTGlyphContainer.h, src/FTLayout/FTSimpleLayout.cpp,
+	  test/FTFont-Test.cpp, test/FTGlyphContainer-Test.cpp:
+	  * FTFont::Advance(), FTFont::Render() and FTFont::BBox() are now
+	  far
+	  more powerful, allowing for substring display and extra spacing
+	  between
+	  characters.
+
+2008-05-11 11:26  sammy
+
+	* [r1112] src/FTFont/FTBitmapFont.cpp,
+	  src/FTFont/FTBitmapFontImpl.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTFont/FTOutlineFont.cpp,
+	  src/FTFont/FTOutlineFontImpl.h, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTPixmapFontImpl.h, src/FTFont/FTTextureFont.cpp,
+	  src/FTFont/FTTextureFontImpl.h, src/FTGL/FTFont.h,
+	  src/FTGL/FTLayout.h, src/FTGL/FTSimpleLayout.h, src/FTGL/ftgl.h,
+	  src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h:
+	  * Kill 180 lines of code by removing duplicate *::Render()
+	  functions and
+	  giving a default value to the renderMode parameter.
+
+2008-05-11 11:23  sammy
+
+	* [r1111] docs/ftgl.dox:
+	  * More documentation.
+
+2008-05-11 11:23  sammy
+
+	* [r1110] .gitignore:
+	  * Ignore autom4te.cache and generated EPS files.
+
+2008-05-09 15:43  brlcad
+
+	* [r1109] AUTHORS:
+	  add daniel and jeff
+
+2008-05-09 15:41  brlcad
+
+	* [r1108] demo/FTGLDemo.cpp, test/demo.cpp:
+	  reference a font that actually exists.. alas we do not all have a
+	  /Users/henry/Development directory. at least this one will exist
+	  if X11 is installed.
+
+2008-05-09 13:42  sammy
+
+	* [r1107] configure.ac, docs/Makefile.am, docs/ftgl.dox,
+	  docs/images/ftgl.png, docs/images/logo.png,
+	  docs/images/rasterfont.png, docs/images/texturefont.png,
+	  docs/images/vectorfont.png:
+	  * Add a few pictures to the documentation to illustrate what the
+	  font
+	  objects look like.
+	  * Generate EPS files at build time if the LaTeX output is
+	  activated.
+
+2008-05-09 10:03  sammy
+
+	* [r1106] BUGS:
+	  * Update BUGS.
+
+2008-05-09 10:02  sammy
+
+	* [r1105] src/FTFont/FTFontGlue.cpp, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTLayout/FTLayoutGlue.cpp:
+	  * Put a few wrapper functions into extern "C++" braces because
+	  they return
+	  references to C++ objects.
+
+2008-05-09 10:01  sammy
+
+	* [r1104] src/FTContour.cpp:
+	  * Minor cosmetic fix (remove tab).
+
+2008-05-08 23:45  dtremenak
+
+	* [r1103] demo/trackball.c:
+	  use float constants when assigning to floats
+
+2008-05-08 23:31  dtremenak
+
+	* [r1102] msvc/config.h:
+	  disable "'this': used in base member initializer list" warning.
+	  although it is dangerous practice, it's valid and ftgl does not
+	  use the passed pointer until well after the object is guaranteed
+	  to be fully constructed.
+
+2008-05-08 23:27  dtremenak
+
+	* [r1101] msvc/vc8/FTGLDemo.vcproj:
+	  quell spurious deprecation warnings
+
+2008-05-08 23:12  dtremenak
+
+	* [r1100] src/FTVectoriser.cpp:
+	  and more fun with float/double consistency
+
+2008-05-08 23:12  dtremenak
+
+	* [r1099] src/FTContour.cpp:
+	  more fun with size_t consistency
+
+2008-05-08 23:10  dtremenak
+
+	* [r1098] msvc/config.h:
+	  M_PI and friends on MSVC are only defined if _USE_MATH_DEFINES is
+	  defined first. include it appropriately in config.h.
+
+2008-05-08 22:35  sammy
+
+	* [r1097] demo/c-demo.c, demo/simple.cpp,
+	  src/FTFont/FTFontGlue.cpp, src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGL/FTPolyGlyph.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTInternals.h:
+	  * Implement C bindings for FTGlyph and FTFont subclassing.
+	  * Add subclassing to the simple C demo to show how to do similar
+	  stuff as
+	  in the C++ demo.
+
+2008-05-08 17:07  sammy
+
+	* [r1096] BUGS, TODO:
+	  * Update BUGS and TODO now that we got rid of some bugs.
+
+2008-05-08 17:07  sammy
+
+	* [r1095] src/FTContour.cpp, src/FTContour.h, src/FTVectoriser.cpp:
+	  * When a glyph is created, check that all its contours have the
+	  proper
+	  clockwise/counterclockwise orientation. This fixes a nasty
+	  display bug
+	  with some badly encoded fonts.
+
+2008-05-08 17:06  sammy
+
+	* [r1094] src/FTContour.cpp, src/FTContour.h:
+	  * During contour creation, compute whether the contour is
+	  clockwise or
+	  anti-clockwise. This will be needed later to correct fonts that
+	  do not
+	  abide to the even-odd and non-zero winding number conventions,
+	  thus
+	  breaking our nice outset glyphs.
+
+2008-05-08 17:05  sammy
+
+	* [r1093] src/FTGL/FTPoint.h:
+	  * Add scalar product to the FTPoint operators.
+
+2008-05-08 17:04  sammy
+
+	* [r1092] src/FTLayout/FTLayoutGlue.cpp:
+	  * Cosmetic fixes in the FTLayout C bindings.
+
+2008-05-08 17:03  sammy
+
+	* [r1091] src/FTContour.cpp:
+	  * Small optimisation in FTContour::ComputeOutsetPoint().
+
+2008-05-08 17:01  sammy
+
+	* [r1090] src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGL/FTLayout.h:
+	  * Made most FTFont, FTGlyph and FTLayout function virtual. It's
+	  true that
+	  most of them use private members of the pImpl class and thus are
+	  not
+	  easily replaced, but intercepting the information may be useful
+	  in
+	  subclassing, too.
+
+2008-05-07 16:10  sammy
+
+	* [r1089] src/FTFace.cpp, src/FTFace.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTGL/FTFont.h,
+	  src/FTGlyphContainer.cpp:
+	  * Some code cleanup here and there, mostly in FTGlyphContainer.
+
+2008-05-07 15:09  sammy
+
+	* [r1088] test/FTFont-Test.cpp, test/FTGlyph-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp, test/FTlayout-Test.cpp,
+	  test/Makefile.am:
+	  * Fixed and reactivated unit tests that were disabled during the
+	  pImpl
+	  refactoring.
+
+2008-05-07 15:07  sammy
+
+	* [r1087] src/FTGL/FTBBox.h, src/FTGL/FTFont.h:
+	  * Documentation updates.
+
+2008-05-07 15:06  sammy
+
+	* [r1086] src/FTFont/FTFont.cpp, src/FTGL/FTBBox.h,
+	  test/FTBBox-Test.cpp:
+	  * Replace FTBBox::Move() with the += operator, to make it clearer
+	  that the
+	  object is modified in the process.
+
+2008-05-07 15:03  sammy
+
+	* [r1085] src/FTFont/FTFont.cpp, src/FTGL/FTBBox.h,
+	  src/FTLayout/FTSimpleLayout.cpp:
+	  * Change the += operator for bounding boxes to |=, which better
+	  represents
+	  what is happening, and avoids future confusion with "FTBBox +
+	  FTPoint"
+	  constructs.
+
+2008-05-07 15:01  sammy
+
+	* [r1084] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  src/FTFont/FTFont.cpp, src/FTFont/FTFontGlue.cpp,
+	  src/FTGL/FTFont.h, src/FTGL/FTLayout.h,
+	  src/FTGL/FTSimpleLayout.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTLayout/FTLayoutGlue.cpp, src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h:
+	  * Make all BBox functions return an FTBBox object instead of
+	  doing
+	  countless conversions to floats or arrays of floats.
+
+2008-05-07 14:59  sammy
+
+	* [r1083] src/FTGL/FTBBox.h:
+	  * Fix FTBBox::SetDepth() behaviour with negative depth values (as
+	  done in
+	  the FTExtrudeGlyph class).
+
+2008-05-07 14:58  sammy
+
+	* [r1082] src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h:
+	  * Reimplement all FTFont::BBox() variants using the same
+	  FTFontImpl::BBox()
+	  common method.
+
+2008-05-07 14:56  sammy
+
+	* [r1081] src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h,
+	  src/FTGL/FTFont.h:
+	  * Add an overload of FTFont::BBox that returns an FTBBox object.
+	  It will
+	  save us a lot of code later.
+
+2008-05-07 14:55  sammy
+
+	* [r1080] src/FTGL/FTBBox.h, src/FTGL/FTPoint.h:
+	  * Allow to create an FTBBox using two FTPoint objects.
+	  * Allow the operands to FTPoint's "+" and "-" operators to be
+	  const.
+
+2008-05-07 07:17  sammy
+
+	* [r1079] demo/c-demo.c, demo/simple.cpp:
+	  * In the C++ demo, show that FTFont itself can be directly
+	  derived, not
+	  only its subclasses.
+	  * Minor changes to the C demo to reduce the differences with the
+	  C++ version.
+
+2008-05-07 00:11  sammy
+
+	* [r1078] msvc/Makefile.am:
+	  * Synchronise msvc/Makefile.am with its directory contents.
+
+2008-05-06 22:36  dtremenak
+
+	* [r1077] msvc/demo.cpp, msvc/vc8/FTGLDemo.vcproj,
+	  msvc/vc8/README_WIN32.txt, msvc/vc8/SimpleDemo.vcproj,
+	  msvc/vc8/ftgl_demo.sln, msvc/vc8/ftgl_demo.vcproj,
+	  msvc/vc8/ftgl_demo_2.vcproj, msvc/vc8/trackball.vcproj:
+	  get rid of the (broken and obsolete) windows-specific demo, and
+	  obsolete VC6 readme (which has been superceded by the global msvc
+	  readme). build the normal and simple demos in visual studio too.
+
+2008-05-06 21:43  dtremenak
+
+	* [r1076] msvc/demo.cpp, msvc/vc8/ftgl_demo.vcproj,
+	  msvc/vc8/ftgl_demo_2.vcproj:
+	  make the windows demo build (on vc8 at least)
+
+2008-05-06 21:41  dtremenak
+
+	* [r1075] demo/simple.cpp:
+	  on recent MS compilers one must include stdlib.h before glut.h
+
+2008-05-06 21:19  sammy
+
+	* [r1074] src/FTContour.cpp:
+	  * Refactor FTContour::ComputeOutsetPoint so that it's twice as
+	  short, even
+	  with the additional comments.
+
+2008-05-06 21:19  sammy
+
+	* [r1073] src/FTContour.cpp:
+	  * Make FTContour:FTContour comply with the FreeType specification
+	  and
+	  remove duplicate points in the Bézier curves. Fixes weird
+	  rendering
+	  errors with some fonts.
+
+2008-05-06 21:19  sammy
+
+	* [r1072] demo/simple.cpp:
+	  * Minor fixes to the simple demo.
+
+2008-05-06 12:14  sammy
+
+	* [r1071] .gitignore, demo, demo/Makefile.am, demo/c-demo.c, docs:
+	  * Create a C demo to show how the C bindings work.
+
+2008-05-06 10:01  sammy
+
+	* [r1070] demo/simple.cpp:
+	  * Show how to subclass FTFont classes in the simple demo.
+
+2008-05-06 10:00  sammy
+
+	* [r1069] src/FTVectoriser.cpp:
+	  * Fix an unsigned int / size_t mismatch in FTVectoriser.
+
+2008-05-06 08:24  sammy
+
+	* [r1068] msvc/Makefile.am, msvc/vc8/Makefile.am:
+	  * Move msvc/Makefile.am back to its proper place.
+	  * Add the new visual studio build files to the distribution.
+
+2008-05-06 07:08  sammy
+
+	* [r1067] src/FTCharmap.cpp, src/FTFace.cpp:
+	  * Fix indentation by replacing a few tabs with spaces.
+
+2008-05-06 06:54  dtremenak
+
+	* [r1066] src/FTFont/FTFontGlue.cpp:
+	  l != 1, depending on your font of course
+
+2008-05-06 06:38  dtremenak
+
+	* [r1065] src/FTCharmap.cpp, src/FTCharmap.h, src/FTContour.h,
+	  src/FTFace.cpp, src/FTFont/FTFont.cpp, src/FTFont/FTFontGlue.cpp,
+	  src/FTFont/FTTextureFont.cpp, src/FTGL/FTPoint.h,
+	  src/FTGlyph/FTBitmapGlyph.cpp, src/FTGlyph/FTExtrudeGlyph.cpp,
+	  src/FTGlyph/FTGlyphGlue.cpp, src/FTGlyph/FTOutlineGlyph.cpp,
+	  src/FTGlyph/FTPixmapGlyph.cpp, src/FTGlyph/FTPolygonGlyph.cpp,
+	  src/FTGlyph/FTTextureGlyph.cpp, src/FTGlyphContainer.cpp,
+	  src/FTLayout/FTSimpleLayout.cpp, src/FTPoint.cpp,
+	  src/FTVectoriser.cpp, src/FTVectoriser.h:
+	  VC build fixes from bzflag revs 17848-17852.
+	  * size_t consistency
+	  * avoid coercing from int to bool
+	  * make casts from double to float explicit rather than implicit,
+	  mostly by way of a few new getter functions in FTPoint, or avoid
+	  if possible.
+
+2008-05-06 06:03  JeffM2501
+
+	* [r1064] msvc/README.txt:
+	  mention the joy of the build dir.
+
+2008-05-06 06:02  JeffM2501
+
+	* [r1063] msvc/README.txt:
+	  a readme for those that like to read and learn and grow.
+
+2008-05-06 05:51  JeffM2501
+
+	* [r1062] msvc/vc8/ftgl_demo.sln, msvc/vc8/ftgl_demo.vcproj,
+	  msvc/vc8/ftgl_demo_2.vcproj:
+	  make the demos build, and pair it down to just one set of build
+	  targets, release and debug
+
+2008-05-06 05:43  JeffM2501
+
+	* [r1061] msvc/vc8/ftgl_dll.vcproj:
+	  put our stuff in build not debug
+
+2008-05-06 05:43  JeffM2501
+
+	* [r1060] msvc/vc8/ftgl.sln, msvc/vc8/ftgl_static.vcproj:
+	  build a static lib as an option
+
+2008-05-06 05:12  JeffM2501
+
+	* [r1059] msvc/vc71, msvc/vc71/ftgl.sln, msvc/vc71/ftgl_dll.vcproj:
+	  start a vc7.1 build
+
+2008-05-06 04:55  JeffM2501
+
+	* [r1058] msvc/vc8/ftgl.sln, msvc/vc8/ftgl_dll.vcproj,
+	  msvc/vc8/ftgl_static_lib.vcproj, msvc/vc8/unit_tests.vcproj:
+	  build as a VC8 DLL again
+
+2008-05-06 04:15  JeffM2501
+
+	* [r1057] msvc/config.h, msvc/demo.cpp, msvc/vc8/config.h,
+	  msvc/vc8/demo.cpp:
+	  move the config.h and demo file up so they can be shared with all
+	  MSVC builds.
+
+2008-05-06 04:04  brlcad
+
+	* [r1056] mac/Libraries:
+	  begone, vile beasties
+
+2008-05-06 04:03  JeffM2501
+
+	* [r1055] msvc/vc8/ftgl.sln, msvc/vc8/ftgl_demo.vcproj,
+	  msvc/vc8/ftgl_demo_2.vcproj, msvc/vc8/ftgl_dll.vcproj,
+	  msvc/vc8/ftgl_static_lib.vcproj, msvc/vc8/unit_tests.vcproj:
+	  fix busted line endings
+
+2008-05-06 03:59  JeffM2501
+
+	* [r1054] msvc/Makefile.am, msvc/README_WIN32.txt, msvc/config.h,
+	  msvc/demo.cpp, msvc/ftgl.sln, msvc/ftgl_demo.vcproj,
+	  msvc/ftgl_demo_2.vcproj, msvc/ftgl_dll.vcproj,
+	  msvc/ftgl_static_lib.vcproj, msvc/unit_tests.vcproj, msvc/vc8,
+	  msvc/vc8/Makefile.am, msvc/vc8/README_WIN32.txt,
+	  msvc/vc8/config.h, msvc/vc8/demo.cpp, msvc/vc8/ftgl.sln,
+	  msvc/vc8/ftgl_demo.vcproj, msvc/vc8/ftgl_demo_2.vcproj,
+	  msvc/vc8/ftgl_dll.vcproj, msvc/vc8/ftgl_static_lib.vcproj,
+	  msvc/vc8/unit_tests.vcproj:
+	  move 2005 build files to VC8 dir so we can have more then one
+	  windows build system
+
+2008-05-05 22:16  sammy
+
+	* [r1053] .gitignore, demo, demo/Makefile.am, demo/simple.cpp:
+	  * The FTGL "simple demo" is no longer simple. Wrote a really
+	  simple one.
+
+2008-05-05 14:55  sammy
+
+	* [r1052] src/FTFont/FTBitmapFont.cpp,
+	  src/FTFont/FTExtrudeFont.cpp, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTOutlineFont.cpp, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTPolygonFont.cpp, src/FTFont/FTTextureFont.cpp,
+	  src/FTGL/FTBitmapGlyph.h, src/FTGL/FTExtrdGlyph.h,
+	  src/FTGL/FTFont.h, src/FTGL/FTGlyph.h, src/FTGL/FTLayout.h,
+	  src/FTGL/FTOutlineGlyph.h, src/FTGL/FTPixmapGlyph.h,
+	  src/FTGL/FTPolyGlyph.h, src/FTGL/FTSimpleLayout.h,
+	  src/FTGL/FTTextureGlyph.h, src/FTGlyph/FTBitmapGlyph.cpp,
+	  src/FTGlyph/FTBitmapGlyphImpl.h, src/FTGlyph/FTExtrudeGlyph.cpp,
+	  src/FTGlyph/FTExtrudeGlyphImpl.h, src/FTGlyph/FTGlyph.cpp,
+	  src/FTGlyph/FTGlyphImpl.h, src/FTGlyph/FTOutlineGlyph.cpp,
+	  src/FTGlyph/FTOutlineGlyphImpl.h, src/FTGlyph/FTPixmapGlyph.cpp,
+	  src/FTGlyph/FTPixmapGlyphImpl.h, src/FTGlyph/FTPolygonGlyph.cpp,
+	  src/FTGlyph/FTPolygonGlyphImpl.h, src/FTGlyph/FTTextureGlyph.cpp,
+	  src/FTGlyph/FTTextureGlyphImpl.h, src/FTLayout/FTLayout.cpp,
+	  src/FTLayout/FTLayoutImpl.h, src/FTLayout/FTSimpleLayout.cpp:
+	  * Refactor FTGlyph, FTFont and FTLayout so that client
+	  applications can
+	  hopefully subclass them.
+
+2008-05-05 14:52  sammy
+
+	* [r1051] src/FTFont/FTTextureFont.cpp,
+	  src/FTFont/FTTextureFontImpl.h:
+	  * Rename FTTextureFontImpl::MakeGlyph to
+	  FTTextureFontImpl::MakeGlyphImpl to
+	  avoid confusion.
+
+2008-05-05 14:52  sammy
+
+	* [r1050] src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h:
+	  * Rename FTFontImpl::base to FTFontImpl::intf.
+
+2008-05-05 13:22  brlcad
+
+	* [r1049] src/FTFont/FTFont.cpp:
+	  quell warnings, reorder initializations
+
+2008-05-05 13:14  brlcad
+
+	* [r1048] m4/gl.m4:
+	  don't need to check for glu if we have the mac opengl framework
+
+2008-05-04 19:39  sammy
+
+	* [r1047] src/FTFont/FTBitmapFont.cpp,
+	  src/FTFont/FTBitmapFontImpl.h, src/FTFont/FTExtrudeFont.cpp,
+	  src/FTFont/FTExtrudeFontImpl.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTFont/FTOutlineFont.cpp,
+	  src/FTFont/FTOutlineFontImpl.h, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTPixmapFontImpl.h, src/FTFont/FTPolygonFont.cpp,
+	  src/FTFont/FTPolygonFontImpl.h, src/FTFont/FTTextureFont.cpp,
+	  src/FTFont/FTTextureFontImpl.h, src/FTGL/FTFont.h,
+	  src/FTGL/FTGLBitmapFont.h, src/FTGL/FTGLExtrdFont.h,
+	  src/FTGL/FTGLOutlineFont.h, src/FTGL/FTGLPixmapFont.h,
+	  src/FTGL/FTGLPolygonFont.h, src/FTGL/FTGLTextureFont.h:
+	  * Put MakeGlyph back into FT*Font classes instead of FT*FontImpl,
+	  and make
+	  it use as few FT*FontImpl members as possible so that external
+	  application
+	  may actually have a chance to properly subclass us.
+
+2008-05-04 19:38  sammy
+
+	* [r1046] src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h:
+	  * The FTFont<->FTFontImpl bridge is now complete.
+
+2008-05-04 19:38  sammy
+
+	* [r1045] src/FTGL/FTBBox.h, src/FTGL/FTBitmapGlyph.h,
+	  src/FTGL/FTExtrdGlyph.h, src/FTGL/FTFont.h,
+	  src/FTGL/FTGLBitmapFont.h, src/FTGL/FTGLExtrdFont.h,
+	  src/FTGL/FTGLOutlineFont.h, src/FTGL/FTGLPixmapFont.h,
+	  src/FTGL/FTGLPolygonFont.h, src/FTGL/FTGLTextureFont.h,
+	  src/FTGL/FTGlyph.h, src/FTGL/FTLayout.h,
+	  src/FTGL/FTOutlineGlyph.h, src/FTGL/FTPixmapGlyph.h,
+	  src/FTGL/FTPoint.h, src/FTGL/FTPolyGlyph.h,
+	  src/FTGL/FTSimpleLayout.h, src/FTGL/FTTextureGlyph.h,
+	  src/FTGL/ftgl.h:
+	  * Put my name and Sean's in the public headers so that people
+	  know who to
+	  contact.
+
+2008-05-04 19:38  sammy
+
+	* [r1044] src/FTFont/FTFont.cpp:
+	  * Cast strings to unsigned char * before handling them to our
+	  internal
+	  methods, because the chars may be cast directly to int, causing
+	  crashes
+	  with 8-bit strings.
+
+2008-05-04 16:24  brlcad
+
+	* [r1043] Makefile.am, configure.ac, m4/pkg.m4:
+	  revert the r1027 changes related to PKG_CHECK_MODULES. provide
+	  the macro via the pkg.m4 script but still don't abort if it's not
+	  found.
+
+2008-05-04 06:23  brlcad
+
+	* [r1042] src/FTGL/ftgl.h:
+	  quell compilation warnings about the last enum having a comma
+
+2008-05-04 06:04  brlcad
+
+	* [r1041] Makefile.am, cleanup:
+	  remove the silly one-liner cleanup script that just removes
+	  Finder files
+
+2008-05-04 05:45  brlcad
+
+	* [r1040] configure.ac:
+	  sort makefiles for easier comparison
+
+2008-05-04 05:04  brlcad
+
+	* [r1039] Makefile.am:
+	  include the changelog
+
+2008-05-04 04:55  brlcad
+
+	* [r1038] ChangeLog:
+	  initial changelog through today created via svn2cl.sh -i -a
+
+2008-05-04 04:50  brlcad
+
+	* [r1037] NEWS:
+	  credit self for the precomputed glyph and kerning tables that
+	  gave a nice performance boost to the font rendering (at a mild
+	  expense of 64k memory per font face)
+
+2008-05-04 04:46  brlcad
+
+	* [r1036] NEWS:
+	  annotate that sam fixed many bugs related to memory corruption,
+	  leaks, and prevented/fixed more than a handful of bugs through
+	  inspection and valgrinding
+
+2008-05-04 04:35  brlcad
+
+	* [r1035] Makefile.am:
+	  print an informative summary
+
+2008-05-04 04:31  brlcad
+
+	* [r1034] configure.ac:
+	  have to add the default include dir path to the CPPFLAGS so we
+	  can find the headers
+
+2008-05-04 04:29  brlcad
+
+	* [r1033] m4/glut.m4:
+	  GLUT framework needs the OpenGL framework, use the same Xlinker
+	  hack for libtool
+
+2008-05-04 03:59  brlcad
+
+	* [r1032] configure.ac:
+	  add an output summary
+
+2008-05-04 03:55  brlcad
+
+	* [r1031] m4/gl.m4:
+	  test with LIBS instead of LDFLAGS but don't persist since that's
+	  done later
+
+2008-05-04 03:13  brlcad
+
+	* [r1030] m4/gl.m4, m4/glut.m4:
+	  fix the gl/glut tests so that they also work on mac os x where
+	  libraries are specified through frameworks instead of libs.
+	  libtool 1.5 and earlier are unfortunately have busted behavior
+	  with -no-undefined libraries as it strips off unrecognized
+	  options, hence the use of -Xlinker
+
+2008-05-04 02:58  brlcad
+
+	* [r1029] src/FTFont/FTTextureFont.cpp, src/FTLayout/FTLayout.cpp:
+	  refer to local/private headers with local path inclusion,
+	  otherwise the search include paths are wrong
+
+2008-05-04 02:57  brlcad
+
+	* [r1028] src/Makefile.am:
+	  list the libs as libs instead of flags so they get passed through
+	  as dependencies in the libtool archive
+
+2008-05-03 23:40  brlcad
+
+	* [r1027] configure.ac:
+	  use AC_PATH_PROG instead of PKG_CHECK_MODULES to keep the
+	  versions to a minimum
+
+2008-05-03 17:21  brlcad
+
+	* [r1026] m4/gl.m4:
+	  have to quote the AC_MSG_ERROR else the exit code is screwed up
+
+2008-05-02 14:52  sammy
+
+	* [r1025] src/FTLayout/FTLayout.cpp, src/FTLayout/FTLayoutImpl.h:
+	  * Add a virtual destructor to FTLayoutImpl to make sure derived
+	  classes
+	  have their destructors called.
+	  * Make all FTLayoutImpl members protected. Only its derived
+	  classes and
+	  FTLayout need to access them.
+
+2008-05-02 13:28  sammy
+
+	* [r1024] docs/Makefile.am:
+	  * Fix inconsistencies in the documentation install paths.
+
+2008-05-02 13:27  sammy
+
+	* [r1023] src/FTLayout/FTLayoutGlue.cpp:
+	  * Add an implicit cast to FTGL::TextAlignment in the
+	  FTLayout::SetAlignment
+	  C wrapper.
+
+2008-05-02 13:18  sammy
+
+	* [r1022] src/FTGL/FTLayout.h, src/FTGL/FTSimpleLayout.h,
+	  src/FTLayout/FTLayoutGlue.cpp:
+	  * Started documenting the FTLayout C bindings.
+
+2008-05-02 13:17  sammy
+
+	* [r1021] .gitignore, configure.ac, docs/Makefile.am,
+	  docs/doxygen.cfg.in:
+	  * Generate PDF documentation if a proper LaTeX installation can
+	  be found.
+
+2008-05-02 12:45  sammy
+
+	* [r1020] docs/Makefile.am, docs/ftgl.dox, docs/images/ftgl.png,
+	  docs/images/ftgldemo.jpg, src/FTGlyph/FTTextureGlyph.cpp:
+	  * Use a smaller logo on the User Guide's front page.
+
+2008-05-02 12:43  sammy
+
+	* [r1019] src/FTFont/FTFontGlue.cpp, src/FTGL/FTBitmapGlyph.h,
+	  src/FTGL/FTExtrdGlyph.h, src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGL/FTLayout.h, src/FTGL/FTOutlineGlyph.h,
+	  src/FTGL/FTPixmapGlyph.h, src/FTGL/FTPolyGlyph.h,
+	  src/FTGL/FTTextureGlyph.h, src/FTGL/ftgl.h,
+	  src/FTGlyph/FTGlyphGlue.cpp:
+	  * Document the C bindings for FTGlyph.
+
+2008-05-02 12:43  sammy
+
+	* [r1018] src/FTGlyph/FTGlyphGlue.cpp:
+	  * Fix a potential memory leak in the FTGlyph C bindings error
+	  handler.
+
+2008-05-02 09:58  sammy
+
+	* [r1017] docs/FTGL.html, docs/Makefile.am, docs/doxygen.cfg.in,
+	  docs/ftgl.dox:
+	  * Converted the HTML documentation to Doxygen so that everything
+	  ends up
+	  in the same document. Plus, Doxygen's C++ pretty-printer is very
+	  nice for
+	  code examples.
+
+2008-05-02 09:17  sammy
+
+	* [r1016] ftgl.pc.in:
+	  * Fixes and enhancements to ftgl.pc:
+	  + Add -I${includedir}/FTGL to Cflags because we want to support
+	  legacy
+	  application that still #include <FTGLBitmapFont.h>.
+	  + Remove @GL_CFLAGS@ from Cflags because our public headers do
+	  not use
+	  GL headers.
+	  + Add freetype2 to Requires.private since it ships its own .pc
+	  file. Not
+	  using Requires because freetype2 is only really needed for
+	  statically
+	  linking. Getting rid of @FT2_CFLAGS@ and @FT2_LIBS@ at the same
+	  time.
+
+2008-05-02 09:16  sammy
+
+	* [r1015] docs/doxygen.cfg.in:
+	  * Activate macro expansion in Doxygen to hide useless macros such
+	  as
+	  FTGL_EXPORT in the documentation.
+
+2008-05-02 09:15  sammy
+
+	* [r1014] src/FTFont/FTFontGlue.cpp, src/FTGL/FTFont.h,
+	  src/FTGL/FTGLBitmapFont.h, src/FTGL/FTGLExtrdFont.h,
+	  src/FTGL/FTGLOutlineFont.h, src/FTGL/FTGLPixmapFont.h,
+	  src/FTGL/FTGLPolygonFont.h, src/FTGL/FTGLTextureFont.h,
+	  test/CTest.c:
+	  * Change a few function names in the FTFont C bindings to avoid
+	  confusion
+	  with other classes.
+	  * Document the C bindings. Since it's almost copypasta from the
+	  C++
+	  documentation, I put the constructors back in their original
+	  files.
+
+2008-05-02 09:13  sammy
+
+	* [r1013] src/FTGL/ftgl.h:
+	  * Add RENDER_ALL to the enum used in Font::Render() so that
+	  client
+	  applications need not worry about future extensions.
+
+2008-05-02 07:21  sammy
+
+	* [r1012] src/FTGlyph/FTExtrudeGlyph.cpp:
+	  * Fix a memory leak in ~FTExtrudeGlyph: only one of the three
+	  display lists
+	  was being freed.
+
+2008-05-02 07:21  sammy
+
+	* [r1011] test/CTest.c, test/FTBitmapFont-Test.cpp,
+	  test/FTExtrudeFont-Test.cpp, test/FTOutlineFont-Test.cpp,
+	  test/FTPixmapFont-Test.cpp, test/FTPolygonFont-Test.cpp,
+	  test/FTTextureFont-Test.cpp:
+	  * Fix memory leaks in the font tests due to temporary variables
+	  not being
+	  deleted.
+	  * Add a few method calls to the C test program.
+
+2008-05-02 07:21  sammy
+
+	* [r1010] src/FTGL/FTPoint.h:
+	  * Fix brown-paper-bag bug in the vector product computation: the
+	  indices
+	  were completely messed up. Thanks to valgrind for spotting it for
+	  me.
+
+2008-05-02 07:20  sammy
+
+	* [r1009] src/FTFont/FTFontGlue.cpp, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTLayout/FTLayoutGlue.cpp:
+	  * Fix a small memory leak in the C bindings destructors.
+
+2008-05-02 04:17  brlcad
+
+	* [r1008] mac/FTGL.pbproj:
+	  remove the obsolete 10.3 project builder project for mac, it's
+	  now pretty far out of date and is without maintainer
+
+2008-05-02 03:52  brlcad
+
+	* [r1007] AUTHORS:
+	  add a utf-8 coding line for emacs, attribute full name with
+	  e-mail
+
+2008-05-02 03:45  brlcad
+
+	* [r1006] .:
+	  don't ignore COPYING now that there is one
+
+2008-05-01 19:31  sammy
+
+	* [r1005] src/FTGL/FTFont.h, src/FTGL/FTGlyph.h,
+	  src/FTGL/FTLayout.h:
+	  * Make our base classes' destructors public. We want to prevent
+	  accidental
+	  instantiation, but direct destruction is perfectly legal.
+
+2008-05-01 18:46  sammy
+
+	* [r1004] src/FTFace.cpp:
+	  * Proper FTFace member initialisation to prevent destructor-time
+	  crashes.
+
+2008-05-01 18:33  sammy
+
+	* [r1003] src/FTCharmap.cpp, src/FTCharmap.h, src/FTFace.cpp,
+	  src/FTFace.h:
+	  * Optimise FTFace::KernAdvance() so that kerning for font indices
+	  < 128 is
+	  precomputed during FTFace() instantiation to avoid calling
+	  FT_Get_Kerning()
+	  too often. Patch by Sean Morrison, taken from bzflag commit
+	  r14652,
+	  reworked for safety and performance by me.
+
+2008-05-01 18:31  sammy
+
+	* [r1002] src/FTCharmap.cpp, src/FTCharmap.h:
+	  * Optimize FTCharmap::FontIndex() so that font indices < 128 are
+	  precomputed
+	  during FTCharmap() instantiation to avoid repeated
+	  tt_cmap4_char_index()
+	  calls. Performance patch by Sean Morrison, taken from bzflag
+	  commit r14644.
+
+2008-05-01 18:30  sammy
+
+	* [r1001] src/FTFont/FTTextureFont.cpp:
+	  * Avoid crashing when the texture size is so small that its
+	  integer size
+	  becomes zero. At the same time, round many floats instead of
+	  simply
+	  flooring them to int. First part by Sean Morrison from bzflag
+	  commit
+	  r14590.
+
+2008-05-01 14:19  sammy
+
+	* [r1000] AUTHORS, src/FTFont/FTTextureFont.cpp:
+	  * Patches by Sean Morrison, from BzFlag commits r15755 and
+	  r14843:
+	  + Only delete textures if there is at least one of them.
+	  + Ensure that the FTTextureFont data members get set for all
+	  cases.
+	  * Added Sean to the AUTHORS file.
+
+2008-05-01 13:42  sammy
+
+	* [r999] src/FTFont/FTFont.cpp, src/FTFont/FTTextureFont.cpp,
+	  src/FTGL/FTBBox.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTLayout/FTSimpleLayout.cpp, test/FTBBox-Test.cpp:
+	  * Store FTPoints in the BBox object instead of floats. This was a
+	  todo
+	  from Henry.
+
+2008-05-01 12:05  sammy
+
+	* [r998] docs/Makefile.am, docs/images/metrics.png,
+	  docs/images/metrics.svg:
+	  * Remade metrics.png using Inkscape.
+
+2008-05-01 10:54  sammy
+
+	* [r997] src/FTGL/FTPoint.h, src/FTGlyph/FTExtrudeGlyph.cpp,
+	  src/FTPoint.cpp:
+	  * Inline most FTPoint methods and operators. This will probably
+	  make the
+	  code smaller instead of bigger, because most of what they do will
+	  be
+	  optimised out by the compiler.
+	  * Get rid of the weird GetNormal() method and reimplement it
+	  using the ^
+	  operator (vector product) and Normalise() method instead.
+
+2008-05-01 10:04  sammy
+
+	* [r996] .gitignore, docs, src/FTGL/FTFont.h,
+	  src/FTGL/FTGLBitmapFont.h, src/FTGL/FTGLExtrdFont.h,
+	  src/FTGL/FTGLOutlineFont.h, src/FTGL/FTGLPixmapFont.h,
+	  src/FTGL/FTGLPolygonFont.h, src/FTGL/FTGLTextureFont.h,
+	  src/FTGL/FTGlyph.h, src/FTGL/FTLayout.h, src/FTGL/FTPoint.h,
+	  src/FTGL/FTSimpleLayout.h, test:
+	  * Moved C constructor bindings to FTFont.h and FTLayout.h so that
+	  they appear in the same file in the generated documentation.
+	  * Various minor documentation updates.
+
+2008-05-01 09:45  sammy
+
+	* [r995] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  test/CXXTest.cpp, test/FTBitmapFont-Test.cpp,
+	  test/FTExtrdGlyph-Test.cpp, test/FTExtrudeFont-Test.cpp,
+	  test/FTExtrudeGlyph-Test.cpp, test/FTGLBitmapFont-Test.cpp,
+	  test/FTGLExtrdFont-Test.cpp, test/FTGLOutlineFont-Test.cpp,
+	  test/FTGLPixmapFont-Test.cpp, test/FTGLPolygonFont-Test.cpp,
+	  test/FTGLTextureFont-Test.cpp, test/FTOutlineFont-Test.cpp,
+	  test/FTPixmapFont-Test.cpp, test/FTPolyGlyph-Test.cpp,
+	  test/FTPolygonFont-Test.cpp, test/FTPolygonGlyph-Test.cpp,
+	  test/FTTextureFont-Test.cpp, test/Makefile.am, test/TestMain.cpp,
+	  test/demo.cpp:
+	  * Update demos and unit tests so that they use the newly named
+	  types.
+
+2008-05-01 09:31  sammy
+
+	* [r994] src/FTContour.h, src/FTFont/FTBitmapFont.cpp,
+	  src/FTFont/FTBitmapFontImpl.h, src/FTFont/FTExtrudeFont.cpp,
+	  src/FTFont/FTExtrudeFontImpl.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTFontGlue.cpp, src/FTFont/FTGLBitmapFont.cpp,
+	  src/FTFont/FTGLBitmapFontImpl.h, src/FTFont/FTGLExtrdFont.cpp,
+	  src/FTFont/FTGLExtrdFontImpl.h, src/FTFont/FTGLOutlineFont.cpp,
+	  src/FTFont/FTGLOutlineFontImpl.h, src/FTFont/FTGLPixmapFont.cpp,
+	  src/FTFont/FTGLPixmapFontImpl.h, src/FTFont/FTGLPolygonFont.cpp,
+	  src/FTFont/FTGLPolygonFontImpl.h, src/FTFont/FTGLTextureFont.cpp,
+	  src/FTFont/FTGLTextureFontImpl.h, src/FTFont/FTOutlineFont.cpp,
+	  src/FTFont/FTOutlineFontImpl.h, src/FTFont/FTPixmapFont.cpp,
+	  src/FTFont/FTPixmapFontImpl.h, src/FTFont/FTPolygonFont.cpp,
+	  src/FTFont/FTPolygonFontImpl.h, src/FTFont/FTTextureFont.cpp,
+	  src/FTFont/FTTextureFontImpl.h, src/FTGL/FTExtrdGlyph.h,
+	  src/FTGL/FTFont.h, src/FTGL/FTGLBitmapFont.h,
+	  src/FTGL/FTGLExtrdFont.h, src/FTGL/FTGLOutlineFont.h,
+	  src/FTGL/FTGLPixmapFont.h, src/FTGL/FTGLPolygonFont.h,
+	  src/FTGL/FTGLTextureFont.h, src/FTGL/FTPolyGlyph.h,
+	  src/FTGlyph/FTExtrdGlyph.cpp, src/FTGlyph/FTExtrdGlyphImpl.h,
+	  src/FTGlyph/FTExtrudeGlyph.cpp, src/FTGlyph/FTExtrudeGlyphImpl.h,
+	  src/FTGlyph/FTGlyphGlue.cpp, src/FTGlyph/FTPolyGlyph.cpp,
+	  src/FTGlyph/FTPolyGlyphImpl.h, src/FTGlyph/FTPolygonGlyph.cpp,
+	  src/FTGlyph/FTPolygonGlyphImpl.h,
+	  src/FTGlyph/FTTextureGlyphImpl.h, src/FTVectoriser.h,
+	  src/Makefile.am:
+	  * Mass consistency renaming: the fonts' "FTGL" prefix is dropped
+	  in favour
+	  of "FT" because all other types use only the latter.
+	  * Rename "Extrd" types to "Extrude" because the former doesn't
+	  really make
+	  much sense.
+	  * Added appropriate #defines so that legacy applications still
+	  build.
+
+2008-05-01 07:47  sammy
+
+	* [r993] docs/doxygen.cfg.in:
+	  * Predefine __cplusplus in the Doxygen config file so that the
+	  whole
+	  headers are parsed.
+
+2008-05-01 07:37  sammy
+
+	* [r992] configure.ac, docs/Makefile.am, docs/doxygen.cfg.in,
+	  docs/ftgl_dox:
+	  * Generate the Doxygen configuration file at configure time so
+	  that we
+	  don't need to hardcode the package version in it.
+	  * Only generate documentation for the public classes.
+
+2008-04-30 19:59  sammy
+
+	* [r991] docs/Makefile.am, docs/ftgl_dox, docs/html.tar.gz:
+	  * Remove deprecated html.tar.gz tarball. We may ship one later,
+	  but right
+	  now it is unusable.
+	  * Update Doxygen config file so that it sees our new header
+	  locations.
+
+2008-04-30 16:35  sammy
+
+	* [r990] src/FTCharToGlyphIndexMap.h, src/FTCharmap.h,
+	  src/FTContour.h, src/FTFace.h, src/FTGlyphContainer.h,
+	  src/FTLibrary.h, src/FTList.h, src/FTSize.h, src/FTVector.h,
+	  src/FTVectoriser.h:
+	  * Remove FTGL_EXPORT specification from classes that are not
+	  actually
+	  exported.
+
+2008-04-30 16:27  sammy
+
+	* [r989] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  demo/Makefile.am, include, src/FTCharToGlyphIndexMap.h,
+	  src/FTCharmap.h, src/FTContour.h, src/FTFace.h,
+	  src/FTFont/FTFont.cpp, src/FTFont/FTFontImpl.h,
+	  src/FTFont/FTGLBitmapFont.cpp, src/FTFont/FTGLBitmapFontImpl.h,
+	  src/FTFont/FTGLExtrdFont.cpp, src/FTFont/FTGLExtrdFontImpl.h,
+	  src/FTFont/FTGLOutlineFont.cpp, src/FTFont/FTGLOutlineFontImpl.h,
+	  src/FTFont/FTGLPixmapFont.cpp, src/FTFont/FTGLPixmapFontImpl.h,
+	  src/FTFont/FTGLPolygonFont.cpp, src/FTFont/FTGLPolygonFontImpl.h,
+	  src/FTFont/FTGLTextureFont.cpp, src/FTFont/FTGLTextureFontImpl.h,
+	  src/FTGL, src/FTGL/FTBBox.h, src/FTGL/FTBitmapGlyph.h,
+	  src/FTGL/FTExtrdGlyph.h, src/FTGL/FTFont.h,
+	  src/FTGL/FTGLBitmapFont.h, src/FTGL/FTGLExtrdFont.h,
+	  src/FTGL/FTGLOutlineFont.h, src/FTGL/FTGLPixmapFont.h,
+	  src/FTGL/FTGLPolygonFont.h, src/FTGL/FTGLTextureFont.h,
+	  src/FTGL/FTGlyph.h, src/FTGL/FTLayout.h,
+	  src/FTGL/FTOutlineGlyph.h, src/FTGL/FTPixmapGlyph.h,
+	  src/FTGL/FTPoint.h, src/FTGL/FTPolyGlyph.h,
+	  src/FTGL/FTSimpleLayout.h, src/FTGL/FTTextureGlyph.h,
+	  src/FTGL/ftgl.h, src/FTGlyph/FTBitmapGlyph.cpp,
+	  src/FTGlyph/FTBitmapGlyphImpl.h, src/FTGlyph/FTExtrdGlyph.cpp,
+	  src/FTGlyph/FTExtrdGlyphImpl.h, src/FTGlyph/FTGlyph.cpp,
+	  src/FTGlyph/FTGlyphGlue.cpp, src/FTGlyph/FTGlyphImpl.h,
+	  src/FTGlyph/FTOutlineGlyph.cpp, src/FTGlyph/FTOutlineGlyphImpl.h,
+	  src/FTGlyph/FTPixmapGlyph.cpp, src/FTGlyph/FTPixmapGlyphImpl.h,
+	  src/FTGlyph/FTPolyGlyph.cpp, src/FTGlyph/FTPolyGlyphImpl.h,
+	  src/FTGlyph/FTTextureGlyph.cpp, src/FTGlyph/FTTextureGlyphImpl.h,
+	  src/FTGlyphContainer.cpp, src/FTGlyphContainer.h,
+	  src/FTInternals.h, src/FTLayout/FTLayout.cpp,
+	  src/FTLayout/FTLayoutImpl.h, src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h, src/FTLibrary.h, src/FTList.h,
+	  src/FTPoint.cpp, src/FTSize.h, src/FTVector.h,
+	  src/FTVectoriser.h, src/Makefile.am, test/CTest.c,
+	  test/FTBBox-Test.cpp, test/FTBitmapGlyph-Test.cpp,
+	  test/FTExtrdGlyph-Test.cpp, test/FTFont-Test.cpp,
+	  test/FTGLBitmapFont-Test.cpp, test/FTGLExtrdFont-Test.cpp,
+	  test/FTGLOutlineFont-Test.cpp, test/FTGLPixmapFont-Test.cpp,
+	  test/FTGLPolygonFont-Test.cpp, test/FTGLTextureFont-Test.cpp,
+	  test/FTGlyph-Test.cpp, test/FTOutlineGlyph-Test.cpp,
+	  test/FTPixmapGlyph-Test.cpp, test/FTPoint-Test.cpp,
+	  test/FTPolyGlyph-Test.cpp, test/FTTextureGlyph-Test.cpp,
+	  test/Makefile.am:
+	  * Move include/* to src/FTGL/* so the files in there can directly
+	  be
+	  referred to as "FTGL/*.h". This is convenient because they will
+	  be
+	  installed in a similar location.
+	  * Put a warning in each legacy public header to advise users to
+	  only include
+	  the generic <FTGL/ftgl.h> header instead.
+
+2008-04-30 14:10  sammy
+
+	* [r988] src/FTFont/FTFontGlue.cpp, src/FTLayout/FTLayoutGlue.cpp:
+	  * Improve constructor code in the FTFont and FTLayout C bindings.
+	  Shorter
+	  (40 lines) and more consistend code.
+
+2008-04-30 14:07  sammy
+
+	* [r987] src/Makefile.am:
+	  * Fix Makefile to add missing header files in "make dist".
+
+2008-04-30 14:02  sammy
+
+	* [r986] include/FTLayout.h, src/FTLayout/FTLayout.cpp,
+	  src/FTLayout/FTLayoutImpl.h:
+	  * Implement FTLayout::Error(). Nothing uses it yet and it's
+	  always zero,
+	  but it may come in handy later and we want a stable API.
+
+2008-04-29 23:08  sammy
+
+	* [r985] .gitignore, configure.ac, test, test/CTest.c,
+	  test/Makefile.am:
+	  * Small C test program. It does not do anything yet, but it's
+	  already a good
+	  thing to know whether all public headers can be #included from C
+	  code.
+
+2008-04-29 22:59  sammy
+
+	* [r984] include/FTBBox.h, include/FTBitmapGlyph.h,
+	  include/FTExtrdGlyph.h, include/FTGlyph.h, include/FTLayout.h,
+	  include/FTOutlineGlyph.h, include/FTPixmapGlyph.h,
+	  include/FTPoint.h, include/FTPolyGlyph.h,
+	  include/FTSimpleLayout.h, include/FTTextureGlyph.h,
+	  include/ftgl.h, src/FTGlyph/FTGlyphGlue.cpp, src/FTInternals.h:
+	  * Wrote C bindings for the FTGlyph class.
+
+2008-04-29 21:35  sammy
+
+	* [r983] TODO, include/FTBBox.h, include/FTBitmapGlyph.h,
+	  include/FTExtrdGlyph.h, include/FTGlyph.h,
+	  include/FTOutlineGlyph.h, include/FTPixmapGlyph.h,
+	  include/FTPoint.h, include/FTPolyGlyph.h,
+	  include/FTTextureGlyph.h, include/ftgl.h, src/FTBBox.h,
+	  src/FTFont/FTGLTextureFont.cpp, src/FTGlyph/FTBitmapGlyph.cpp,
+	  src/FTGlyph/FTBitmapGlyph.h, src/FTGlyph/FTBitmapGlyphImpl.h,
+	  src/FTGlyph/FTExtrdGlyph.cpp, src/FTGlyph/FTExtrdGlyph.h,
+	  src/FTGlyph/FTExtrdGlyphImpl.h, src/FTGlyph/FTGlyph.cpp,
+	  src/FTGlyph/FTGlyph.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTGlyph/FTGlyphImpl.h, src/FTGlyph/FTOutlineGlyph.cpp,
+	  src/FTGlyph/FTOutlineGlyph.h, src/FTGlyph/FTOutlineGlyphImpl.h,
+	  src/FTGlyph/FTPixmapGlyph.cpp, src/FTGlyph/FTPixmapGlyph.h,
+	  src/FTGlyph/FTPixmapGlyphImpl.h, src/FTGlyph/FTPolyGlyph.cpp,
+	  src/FTGlyph/FTPolyGlyph.h, src/FTGlyph/FTPolyGlyphImpl.h,
+	  src/FTGlyph/FTTextureGlyph.cpp, src/FTGlyph/FTTextureGlyph.h,
+	  src/FTGlyph/FTTextureGlyphImpl.h, src/FTLayout/FTLayout.cpp,
+	  src/FTPoint.cpp, src/FTPoint.h, src/Makefile.am,
+	  test/FTBBox-Test.cpp, test/FTPoint-Test.cpp, test/Makefile.am:
+	  * End of the pImpl refactoring task started in [972]. FTGlyph was
+	  the last
+	  class needing the change. As a consequence, FTGlyph is now also
+	  exported
+	  in the library API, and so are FTBBox and FTPoint.
+
+2008-04-29 20:42  sammy
+
+	* [r982] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, src/FTFont/FTFont.cpp,
+	  src/FTFont/FTGLBitmapFont.cpp, src/FTFont/FTGLExtrdFont.cpp,
+	  src/FTFont/FTGLOutlineFont.cpp, src/FTFont/FTGLPixmapFont.cpp,
+	  src/FTFont/FTGLPolygonFont.cpp, src/FTFont/FTGLTextureFont.cpp:
+	  * Simplified FTFont's constructor. Since the class is kind of
+	  abstract,
+	  there is no need to export the constructor interface: only
+	  derived classes
+	  need to advertise how they are instantiated.
+
+2008-04-29 17:11  sammy
+
+	* [r981] configure.ac, src/FTBitmapGlyph.cpp, src/FTBitmapGlyph.h,
+	  src/FTExtrdGlyph.cpp, src/FTExtrdGlyph.h, src/FTFont,
+	  src/FTFont.cpp, src/FTFont/FTFont.cpp, src/FTFont/FTFontGlue.cpp,
+	  src/FTFont/FTFontImpl.h, src/FTFont/FTGLBitmapFont.cpp,
+	  src/FTFont/FTGLBitmapFontImpl.h, src/FTFont/FTGLExtrdFont.cpp,
+	  src/FTFont/FTGLExtrdFontImpl.h, src/FTFont/FTGLOutlineFont.cpp,
+	  src/FTFont/FTGLOutlineFontImpl.h, src/FTFont/FTGLPixmapFont.cpp,
+	  src/FTFont/FTGLPixmapFontImpl.h, src/FTFont/FTGLPolygonFont.cpp,
+	  src/FTFont/FTGLPolygonFontImpl.h, src/FTFont/FTGLTextureFont.cpp,
+	  src/FTFont/FTGLTextureFontImpl.h, src/FTFontGlue.cpp,
+	  src/FTFontImpl.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLBitmapFontImpl.h, src/FTGLExtrdFont.cpp,
+	  src/FTGLExtrdFontImpl.h, src/FTGLOutlineFont.cpp,
+	  src/FTGLOutlineFontImpl.h, src/FTGLPixmapFont.cpp,
+	  src/FTGLPixmapFontImpl.h, src/FTGLPolygonFont.cpp,
+	  src/FTGLPolygonFontImpl.h, src/FTGLTextureFont.cpp,
+	  src/FTGLTextureFontImpl.h, src/FTGlyph, src/FTGlyph.cpp,
+	  src/FTGlyph.h, src/FTGlyph/FTBitmapGlyph.cpp,
+	  src/FTGlyph/FTBitmapGlyph.h, src/FTGlyph/FTExtrdGlyph.cpp,
+	  src/FTGlyph/FTExtrdGlyph.h, src/FTGlyph/FTGlyph.cpp,
+	  src/FTGlyph/FTGlyph.h, src/FTGlyph/FTGlyphGlue.cpp,
+	  src/FTGlyph/FTOutlineGlyph.cpp, src/FTGlyph/FTOutlineGlyph.h,
+	  src/FTGlyph/FTPixmapGlyph.cpp, src/FTGlyph/FTPixmapGlyph.h,
+	  src/FTGlyph/FTPolyGlyph.cpp, src/FTGlyph/FTPolyGlyph.h,
+	  src/FTGlyph/FTTextureGlyph.cpp, src/FTGlyph/FTTextureGlyph.h,
+	  src/FTGlyphGlue.cpp, src/FTLayout, src/FTLayout.cpp,
+	  src/FTLayout/FTLayout.cpp, src/FTLayout/FTLayoutGlue.cpp,
+	  src/FTLayout/FTLayoutImpl.h, src/FTLayout/FTSimpleLayout.cpp,
+	  src/FTLayout/FTSimpleLayoutImpl.h, src/FTLayoutGlue.cpp,
+	  src/FTLayoutImpl.h, src/FTOutlineGlyph.cpp, src/FTOutlineGlyph.h,
+	  src/FTPixmapGlyph.cpp, src/FTPixmapGlyph.h, src/FTPolyGlyph.cpp,
+	  src/FTPolyGlyph.h, src/FTSimpleLayout.cpp,
+	  src/FTSimpleLayoutImpl.h, src/FTTextureGlyph.cpp,
+	  src/FTTextureGlyph.h, src/Makefile.am, test/Makefile.am:
+	  * Move FTGlyph, FTFont and FTLayout classes and their derivatives
+	  into
+	  separate subdirectories of src/ to avoid cluttering src/ with too
+	  many
+	  files. The Visual Studio solution still needs an update.
+
+2008-04-29 16:47  sammy
+
+	* [r980] include/FTFont.h, include/FTLayout.h, include/ftgl.h,
+	  src/FTFont.cpp, src/FTFontGlue.cpp, src/FTFontImpl.h,
+	  src/FTGLBitmapFont.cpp, src/FTGLBitmapFontImpl.h,
+	  src/FTGLExtrdFont.cpp, src/FTGLExtrdFontImpl.h,
+	  src/FTGLOutlineFont.cpp, src/FTGLOutlineFontImpl.h,
+	  src/FTGLPixmapFont.cpp, src/FTGLPixmapFontImpl.h,
+	  src/FTGLPolygonFont.cpp, src/FTGLPolygonFontImpl.h,
+	  src/FTGLTextureFont.cpp, src/FTGLTextureFontImpl.h,
+	  src/FTInternals.h, src/FTLayout.cpp, src/FTSimpleLayout.cpp,
+	  src/FTSimpleLayoutImpl.h:
+	  * More cleanup following the private pointer refactoring:
+	  + Removed private type enums from the public ftgl.h header.
+	  + Protected all private implementation ctors and dtors.
+	  + Prevent accidental initialisation of the base classes by
+	  protecting
+	  their constructors. Derived classes can still be properly
+	  instantiated.
+
+2008-04-29 15:44  sammy
+
+	* [r979] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTLayout.h,
+	  include/FTSimpleLayout.h, include/ftgl.h, src/FTFont.cpp,
+	  src/FTFontGlue.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlue.cpp, src/FTGlyphGlue.cpp,
+	  src/FTInternals.h, src/FTLayoutGlue.cpp, src/FTSimpleLayout.cpp,
+	  src/Makefile.am:
+	  * Clean up the C bindings by splitting FTGlue.cpp into
+	  FTLayoutGlue.cpp,
+	  FTGlyphGlue.cpp (unused yet) and FTFontGlue.cpp. C methods
+	  previously
+	  scattered all around are now located in one of these 3 files.
+	  * Hide extern "C" and namespace C constructs in a single
+	  FTGL_BEGIN_C_DECLS
+	  macro.
+	  * Use namespace FTGL all around instead of a mix of C and FTGL
+	  namespaces.
+
+2008-04-29 14:57  sammy
+
+	* [r978] include/FTLayout.h, src/FTGlue.cpp:
+	  * Fix the ftglLayoutRenderSpace C binding's prototype, which
+	  wasn't in sync
+	  with its implementation in FTGlue.cpp.
+
+2008-04-29 14:39  sammy
+
+	* [r977] COPYING, COPYING.LGPL, COPYING.MIT, Makefile.am,
+	  demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp, include/FTFont.h,
+	  include/FTGLBitmapFont.h, include/FTGLExtrdFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTLayout.h, include/FTSimpleLayout.h, include/ftgl.h,
+	  src/FTBBox.h, src/FTBitmapGlyph.cpp, src/FTBitmapGlyph.h,
+	  src/FTCharToGlyphIndexMap.h, src/FTCharmap.cpp, src/FTCharmap.h,
+	  src/FTContour.cpp, src/FTContour.h, src/FTExtrdGlyph.cpp,
+	  src/FTExtrdGlyph.h, src/FTFace.cpp, src/FTFace.h, src/FTFont.cpp,
+	  src/FTFontImpl.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLBitmapFontImpl.h, src/FTGLExtrdFont.cpp,
+	  src/FTGLExtrdFontImpl.h, src/FTGLOutlineFont.cpp,
+	  src/FTGLOutlineFontImpl.h, src/FTGLPixmapFont.cpp,
+	  src/FTGLPixmapFontImpl.h, src/FTGLPolygonFont.cpp,
+	  src/FTGLPolygonFontImpl.h, src/FTGLTextureFont.cpp,
+	  src/FTGLTextureFontImpl.h, src/FTGlue.cpp, src/FTGlyph.cpp,
+	  src/FTGlyph.h, src/FTGlyphContainer.cpp, src/FTGlyphContainer.h,
+	  src/FTInternals.h, src/FTLayout.cpp, src/FTLayoutImpl.h,
+	  src/FTLibrary.cpp, src/FTLibrary.h, src/FTList.h,
+	  src/FTOutlineGlyph.cpp, src/FTOutlineGlyph.h,
+	  src/FTPixmapGlyph.cpp, src/FTPixmapGlyph.h, src/FTPoint.cpp,
+	  src/FTPoint.h, src/FTPolyGlyph.cpp, src/FTPolyGlyph.h,
+	  src/FTSimpleLayout.cpp, src/FTSimpleLayoutImpl.h, src/FTSize.cpp,
+	  src/FTSize.h, src/FTTextureGlyph.cpp, src/FTTextureGlyph.h,
+	  src/FTVector.h, src/FTVectoriser.cpp, src/FTVectoriser.h,
+	  test/Fontdefs.h:
+	  * Since the MIT license is LGPL-compatible, there is no real
+	  point in
+	  shipping FTGL under a dual license. Consequently removing LGPL
+	  references
+	  from the code, in agreement with Sean.
+
+2008-04-29 11:30  sammy
+
+	* [r976] include/FTGLBufferFont.h, src/FTBufferGlyph.cpp,
+	  src/FTBufferGlyph.h, src/FTGLBufferFont.cpp,
+	  src/FTGLBufferFontImpl.h:
+	  * Remove dead code: FTGLBufferFont and FTBufferGlyph are the same
+	  as
+	  FTGLPixmapFont and FTPixmapGLyph, except the latter are actually
+	  used
+	  and do work.
+
+2008-04-29 11:18  sammy
+
+	* [r975] include/FTGLBitmapFont.h, src/FTGLBitmapFont.cpp:
+	  * Remove useless overriden methods in FTGLBitmapFont that
+	  reimplemented
+	  the same thing as in FTFont.
+
+2008-04-29 06:44  sammy
+
+	* [r974] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  include/FTBBox.h, include/FTBitmapGlyph.h,
+	  include/FTBufferGlyph.h, include/FTCharToGlyphIndexMap.h,
+	  include/FTCharmap.h, include/FTContour.h, include/FTExtrdGlyph.h,
+	  include/FTFace.h, include/FTFont.h, include/FTGL.h,
+	  include/FTGLBitmapFont.h, include/FTGLBufferFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTGlyph.h,
+	  include/FTGlyphContainer.h, include/FTInternals.h,
+	  include/FTLayout.h, include/FTLibrary.h, include/FTList.h,
+	  include/FTOutlineGlyph.h, include/FTPixmapGlyph.h,
+	  include/FTPoint.h, include/FTPolyGlyph.h,
+	  include/FTSimpleLayout.h, include/FTSize.h,
+	  include/FTTextureGlyph.h, include/FTVector.h,
+	  include/FTVectoriser.h, include/ftgl.h, src/FTBBox.h,
+	  src/FTBitmapGlyph.cpp, src/FTBitmapGlyph.h, src/FTBufferGlyph.h,
+	  src/FTCharToGlyphIndexMap.h, src/FTCharmap.h, src/FTContour.h,
+	  src/FTExtrdGlyph.cpp, src/FTExtrdGlyph.h, src/FTFace.h,
+	  src/FTFont.cpp, src/FTFontImpl.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlue.cpp, src/FTGlyph.h,
+	  src/FTGlyphContainer.h, src/FTInternals.h, src/FTLibrary.h,
+	  src/FTList.h, src/FTOutlineGlyph.cpp, src/FTOutlineGlyph.h,
+	  src/FTPixmapGlyph.cpp, src/FTPixmapGlyph.h, src/FTPoint.h,
+	  src/FTPolyGlyph.cpp, src/FTPolyGlyph.h, src/FTSimpleLayout.cpp,
+	  src/FTSize.h, src/FTTextureGlyph.cpp, src/FTTextureGlyph.h,
+	  src/FTVector.h, src/FTVectoriser.cpp, src/FTVectoriser.h,
+	  src/Makefile.am, test/FTBitmapGlyph-Test.cpp,
+	  test/FTExtrdGlyph-Test.cpp, test/FTGLBitmapFont-Test.cpp,
+	  test/FTGLExtrdFont-Test.cpp, test/FTGLOutlineFont-Test.cpp,
+	  test/FTGLPixmapFont-Test.cpp, test/FTGLPolygonFont-Test.cpp,
+	  test/FTGLTextureFont-Test.cpp, test/FTMesh-Test.cpp,
+	  test/FTOutlineGlyph-Test.cpp, test/FTPixmapGlyph-Test.cpp,
+	  test/FTPolyGlyph-Test.cpp, test/FTTesselation-Test.cpp,
+	  test/FTTextureGlyph-Test.cpp, test/FTVectoriser-Test.cpp,
+	  test/Makefile.am:
+	  * Moved header files that are not required by library clients
+	  into src/
+	  so that they do not get installed.
+	  * Created an ftgl.h header that allows clients to #include
+	  <FTGL/ftgl.h> and
+	  be done with it.
+
+2008-04-28 21:48  sammy
+
+	* [r973] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLBufferFont.h, include/FTGLExtrdFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTLayout.h, include/FTSimpleLayout.h, src/FTFont.cpp,
+	  src/FTFontImpl.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLBitmapFontImpl.h, src/FTGLBufferFont.cpp,
+	  src/FTGLBufferFontImpl.h, src/FTGLExtrdFont.cpp,
+	  src/FTGLExtrdFontImpl.h, src/FTGLOutlineFont.cpp,
+	  src/FTGLOutlineFontImpl.h, src/FTGLPixmapFont.cpp,
+	  src/FTGLPixmapFontImpl.h, src/FTGLPolygonFont.cpp,
+	  src/FTGLPolygonFontImpl.h, src/FTGLTextureFont.cpp,
+	  src/FTGLTextureFontImpl.h, src/FTLayout.cpp, src/FTLayoutImpl.h,
+	  src/FTSimpleLayout.cpp, src/FTSimpleLayoutImpl.h,
+	  src/Makefile.am:
+	  * Split Font and Layout headers into Foo.h and FooImpl.h, and
+	  taking the
+	  latter out of the include/ directory.
+
+2008-04-28 21:12  sammy
+
+	* [r972] include/FTFont.h, include/FTGL.h,
+	  include/FTGLBitmapFont.h, include/FTGLBufferFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTLayout.h,
+	  include/FTSimpleLayout.h, src/FTBufferGlyph.cpp, src/FTFont.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLBufferFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlue.cpp, src/FTLayout.cpp,
+	  src/FTSimpleLayout.cpp, test/Makefile.am:
+	  * Beginning of a new refactoring task. Classes inheriting FTFont
+	  or FTLayout
+	  now hide their private members behind a pImpl pointer. This will
+	  make the
+	  public headers smaller, and we will not break the ABI by changing
+	  private
+	  members of our public classes. This first step just splits
+	  classes but
+	  does not reorganise files.
+
+2008-04-28 17:48  brlcad
+
+	* [r971] ., Makefile.am, autogen.sh, bootstrap:
+	  replace the bootstrap script with autogen.sh (buildconf project)
+	  with does much (much) more in terms of protections, reporting
+	  options, and error recovery that supports a wide variety of
+	  autotool versions, autoreconf bug workarounds, and system
+	  misconfiguration issues.
+
+2008-04-28 17:31  brlcad
+
+	* [r970] Makefile.am, configure.ac, demo/Makefile.am,
+	  docs/Makefile.am, msvc/Makefile.am, src/Makefile.am,
+	  test/Makefile.am:
+	  specify minimum versions, make ac be 2.58 and am be 1.6 (needed
+	  in order to support os x 10.4 out-of-the-box). PKG_CHECK_MODULES
+	  doesn't seem to wrap the args properly so you can't embed
+	  AC_MSG_RESULT, make a zip and bzip2 when we make a dist, and
+	  provide NULL to make am happy
+
+2008-04-28 15:24  sammy
+
+	* [r963] include/FTFont.h, include/FTGlyph.h, include/FTLayout.h,
+	  src/FTFont.cpp, src/FTGlyph.cpp, src/FTLayout.cpp,
+	  src/Makefile.am:
+	  * Remove all method implementations from the main FTFont.h,
+	  FTLayout.h and
+	  FTGlyph.h headers. Since they use private members, they belong to
+	  their
+	  respective .cpp files.
+
+2008-04-28 13:11  sammy
+
+	* [r962] extras:
+	  * Remove deprecated extras/layout stuff. We now have
+	  FTSimpleLayout anyway.
+
+2008-04-28 11:17  sammy
+
+	* [r961] include/FTBBox.h, include/FTBitmapGlyph.h,
+	  include/FTBufferGlyph.h, include/FTCharToGlyphIndexMap.h,
+	  include/FTCharmap.h, include/FTContour.h, include/FTExtrdGlyph.h,
+	  include/FTFace.h, include/FTFont.h, include/FTGL.h,
+	  include/FTGLBitmapFont.h, include/FTGLBufferFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTGlyph.h,
+	  include/FTGlyphContainer.h, include/FTInternals.h,
+	  include/FTLibrary.h, include/FTList.h, include/FTOutlineGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTSize.h, include/FTVector.h,
+	  include/FTVectoriser.h, src/FTBitmapGlyph.cpp,
+	  src/FTBufferGlyph.cpp, src/FTCharmap.cpp, src/FTContour.cpp,
+	  src/FTFace.cpp, src/FTFont.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLBufferFont.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp,
+	  src/FTGlyph.cpp, src/FTGlyphContainer.cpp, src/FTLibrary.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTPoint.cpp, src/FTSize.cpp,
+	  src/FTVectoriser.cpp, test/FTBBox-Test.cpp,
+	  test/FTBitmapGlyph-Test.cpp, test/FTCharToGlyphIndexMap-Test.cpp,
+	  test/FTCharmap-Test.cpp, test/FTContour-Test.cpp,
+	  test/FTExtrdGlyph-Test.cpp, test/FTFace-Test.cpp,
+	  test/FTFont-Test.cpp, test/FTGLBitmapFont-Test.cpp,
+	  test/FTGLExtrdFont-Test.cpp, test/FTGLOutlineFont-Test.cpp,
+	  test/FTGLPixmapFont-Test.cpp, test/FTGLPolygonFont-Test.cpp,
+	  test/FTGLTextureFont-Test.cpp, test/FTGlyph-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp, test/FTLibrary-Test.cpp,
+	  test/FTList-Test.cpp, test/FTMesh-Test.cpp,
+	  test/FTOutlineGlyph-Test.cpp, test/FTPixmapGlyph-Test.cpp,
+	  test/FTPoint-Test.cpp, test/FTPolyGlyph-Test.cpp,
+	  test/FTSize-Test.cpp, test/FTTesselation-Test.cpp,
+	  test/FTTextureGlyph-Test.cpp, test/FTVector-Test.cpp,
+	  test/FTVectoriser-Test.cpp, test/FTlayout-Test.cpp,
+	  test/Fontdefs.h, test/HPGCalc_afm.cpp, test/HPGCalc_pfb.cpp,
+	  test/TestMain.cpp, test/demo.cpp:
+	  * Cosmetic: remove trailing spaces, fix unbalanced
+	  parenthesis/space
+	  constructs, remove tab/space mixes, wrap a lot of long source
+	  lines.
+
+2008-04-28 09:11  sammy
+
+	* [r960] include/FTInternals.h:
+	  * The C constructors now properly return NULL if the C++
+	  constructor failed.
+
+2008-04-28 09:10  sammy
+
+	* [r959] src/FTFont.cpp:
+	  * Crash fix: do not try to delete FTFont::glyphList if the
+	  constructor
+	  failed.
+
+2008-04-27 19:55  sammy
+
+	* [r958] configure.ac, src/Makefile.am:
+	  * Use libtool' versioning features to call the library
+	  libftgl.2.1.3. This
+	  is not the recommended way to do, but it's nice to synchronise
+	  the
+	  package's version and the library's soname.
+
+2008-04-27 10:22  sammy
+
+	* [r957] include/FTSimpleLayout.h, src/FTGlue.cpp:
+	  * Fix erroneous warnings in the C bindings for destructors, by
+	  Eric Beets.
+
+2008-04-27 09:52  sammy
+
+	* [r956] demo/FTGLDemo.cpp:
+	  * Various fixes and improvements to the demo, by Eric Beets and
+	  myself.
+
+2008-04-25 12:24  sammy
+
+	* [r955] src/FTExtrdGlyph.cpp:
+	  * *sigh*, another bug fix for a problem I introduced in [941].
+
+2008-04-25 12:22  sammy
+
+	* [r954] include/FTGL.h, include/FTSimpleLayout.h:
+	  * Use macros instead of enums in the C bindings. Not the most
+	  elegant thing,
+	  but it avoids naming conflicts when mixing C and C++ code. Patch
+	  by Eric
+	  Beets.
+
+2008-04-25 10:01  sammy
+
+	* [r953] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLTextureFont.h, src/FTGlue.cpp:
+	  * Implement Render() for all Font types. Patch by Eric Beets.
+
+2008-04-25 10:01  sammy
+
+	* [r952] src/FTPixmapGlyph.cpp, src/FTTextureGlyph.cpp:
+	  * Align FTPixmapGlyph and FTTextureGlyph objects at round pixel
+	  coordinates
+	  to reduce bleeding. Patch by Ton Roosendaal, from Blender commit
+	  r4411.
+
+2008-04-25 10:00  sammy
+
+	* [r951] src/FTGLPixmapFont.cpp, src/FTGLTextureFont.cpp:
+	  * Disable the use of the font's internal bitmap in
+	  FTGLTextureFont and
+	  FTGLPixmapFont. Patch by Shizu, from Blender commit r4569.
+
+2008-04-25 10:00  sammy
+
+	* [r950] src/FTGLTextureFont.cpp:
+	  * Turn off the color buffer bit in the TextureFont renderer to
+	  increase
+	  performance. Patch by Ton Roosendaal, from Blender commit r5362.
+
+2008-04-25 09:59  sammy
+
+	* [r949] src/FTCharmap.cpp:
+	  * Synchronise FTCharmap::GlyphListIndex and FTCharmap::FontIndex
+	  prototypes
+	  declarations with their definitions. Patch by Vladimir Marek,
+	  taken from
+	  Blender commit r8915.
+
+2008-04-25 09:59  sammy
+
+	* [r948] src/FTVectoriser.cpp:
+	  * OS X Leopard build fix. Starting from this version,
+	  GLUTesselatorFunction
+	  has a standard prototype again. Patch by Kent Mein, taken from
+	  Blender
+	  commit r11864.
+
+2008-04-25 09:59  sammy
+
+	* [r947] include/FTGL.h:
+	  * Somewhat hackish support for Solaris 10 x86 support. The
+	  problem is that
+	  our public headers need the GL and GLU headers, which are in very
+	  different
+	  locations depending the system. One solution would be to generate
+	  FTGL.h
+	  at configure time. Patch by Kent Mein, taken from Blender commit
+	  r12796.
+
+2008-04-25 09:59  sammy
+
+	* [r946] include/FTContour.h, src/FTContour.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPoint.cpp, src/FTPolyGlyph.cpp:
+	  * Fix random bugs introduced in [941] and [943].
+
+2008-04-24 13:40  sammy
+
+	* [r945] Makefile.am, configure.ac, msvc, msvc/Makefile.am,
+	  msvc/README_WIN32.txt, msvc/config.h, msvc/demo.cpp,
+	  msvc/ftgl.sln, msvc/ftgl_demo.vcproj, msvc/ftgl_demo_2.vcproj,
+	  msvc/ftgl_dll.vcproj, msvc/ftgl_static_lib.vcproj,
+	  msvc/unit_tests.vcproj, win32_vcpp:
+	  * Rename "win32_vcpp" to "msvc" and move all Visual Studio build
+	  files out
+	  of their subdirectory.
+	  * Add the msvc subdirectory to "make dist" so that it gets
+	  distributed.
+
+2008-04-24 13:20  sammy
+
+	* [r944] src/FTGlue.cpp, win32_vcpp/config.h, win32_vcpp/ftgl.dsw,
+	  win32_vcpp/ftgl.sln, win32_vcpp/ftgl_demo/ftgl_demo.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo.vcproj,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.vcproj,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp,
+	  win32_vcpp/ftgl_dll/ftgl_dll.vcproj,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.vcproj,
+	  win32_vcpp/unit_tests/unit_tests.dsp,
+	  win32_vcpp/unit_tests/unit_tests.vcproj:
+	  * Updated Visual Studio build, by Eric Beets. We decided to
+	  switch the
+	  solution file to Visual Studio 2005 because no one was able to
+	  get an
+	  older version. Sorry.
+
+2008-04-23 21:23  sammy
+
+	* [r943] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp, demo/tb.c,
+	  demo/trackball.c, include/FTGlyph.h, include/FTVector.h,
+	  src/FTContour.cpp, src/FTExtrdGlyph.cpp, src/FTFace.cpp,
+	  src/FTGlyph.cpp, src/FTOutlineGlyph.cpp, src/FTPolyGlyph.cpp,
+	  src/FTVectoriser.cpp, test/FTFont-Test.cpp, test/FTMesh-Test.cpp:
+	  * Fix most compilation warnings. Most frequent causes: shadow
+	  declarations
+	  and const qualifier disappearances.
+
+2008-04-23 21:23  sammy
+
+	* [r942] configure.ac:
+	  * Add loads of C/C++ warning flags to the build process:
+	  -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wshadow
+	  -Wsign-compare
+	  * Add C-specific warning flags, too:
+	  -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes
+	  -Wnested-externs
+
+2008-04-23 15:56  sammy
+
+	* [r941] include/FTContour.h, include/FTExtrdGlyph.h,
+	  include/FTGLOutlineFont.h, include/FTOutlineGlyph.h,
+	  include/FTPolyGlyph.h, include/FTVectoriser.h, src/FTContour.cpp,
+	  src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp,
+	  test/FTVectoriser-Test.cpp:
+	  * Only build outset contours when really needed. This spares
+	  quite a few
+	  operations and removes now useless parameters from several
+	  methods.
+	  Patch by Eric Beets, reworked by me.
+
+2008-04-23 12:12  sammy
+
+	* [r940] demo/FTGLDemo.cpp:
+	  * Cosmetic changes to FTGLDemo: bigger font, layout-compliant
+	  text, filtered
+	  textures.
+
+2008-04-23 09:51  sammy
+
+	* [r939] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp, demo/tb.c,
+	  m4/glut.m4, test/TestMain.cpp, test/demo.cpp:
+	  * Check for <GL/glut.h> and <GLUT/glut.h> during the configure
+	  step instead
+	  of guessing their location at build time.
+
+2008-04-23 09:50  sammy
+
+	* [r938] src/FTVectoriser.cpp:
+	  * Assume unknown operating systems share the
+	  GLUTesselatorFunction prototype
+	  with other standard Linux/Unix systems. It's a pretty safe bet
+	  and spares
+	  us from patching the code each time a new system such as
+	  GNU/kFreeBSD
+	  appears.
+
+2008-04-23 09:49  sammy
+
+	* [r937] src/FTOutlineGlyph.cpp:
+	  * In outline mode, do not render the original outline if an
+	  outset value
+	  was specified: only render the modified one. Patch by Eric Beets.
+
+2008-04-22 23:47  sammy
+
+	* [r936] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp, include/FTGL.h,
+	  include/FTInternals.h, include/FTLayout.h,
+	  include/FTSimpleLayout.h, src/FTGlue.cpp, src/FTSimpleLayout.cpp:
+	  * C bindings for the FTLayout interface. Code by Eric Beets.
+
+2008-04-22 17:09  sammy
+
+	* [r935] NEWS:
+	  * Advertise the C bindings in the NEWS file.
+
+2008-04-22 17:06  sammy
+
+	* [r934] demo/FTGLDemo.cpp, include/FTTextureGlyph.h,
+	  src/FTTextureGlyph.cpp:
+	  * Fix FTTextureGlyph rendering offset so that it works with
+	  layouts.
+
+2008-04-22 16:45  sammy
+
+	* [r933] demo/FTGLDemo.cpp:
+	  * Fix the demo program so that it uses the FTTextureFont class.
+
+2008-04-22 16:42  sammy
+
+	* [r932] demo/FTGLDemo.cpp:
+	  * Slightly tune the demo to show the new FTGL::RENDER_FRONT and
+	  RENDER_SIDE
+	  features.
+
+2008-04-22 16:21  sammy
+
+	* [r931] include/FTExtrdGlyph.h, src/FTExtrdGlyph.cpp:
+	  * Fix displaylist usage in FTExtrdGlyph. Closes SourceForge
+	  ticket #1945392.
+
+2008-04-22 16:21  sammy
+
+	* [r930] include/FTBitmapGlyph.h, include/FTExtrdGlyph.h,
+	  include/FTFont.h, include/FTGL.h, include/FTGLBitmapFont.h,
+	  include/FTGlyph.h, include/FTGlyphContainer.h,
+	  include/FTLayout.h, include/FTOutlineGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTPolyGlyph.h,
+	  include/FTSimpleLayout.h, include/FTTextureGlyph.h,
+	  src/FTBitmapGlyph.cpp, src/FTExtrdGlyph.cpp, src/FTFont.cpp,
+	  src/FTGlyphContainer.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTPolyGlyph.cpp,
+	  src/FTSimpleLayout.cpp, src/FTTextureGlyph.cpp,
+	  test/FTBitmapGlyph-Test.cpp, test/FTExtrdGlyph-Test.cpp,
+	  test/FTFont-Test.cpp, test/FTGlyph-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp, test/FTOutlineGlyph-Test.cpp,
+	  test/FTPixmapGlyph-Test.cpp, test/FTPolyGlyph-Test.cpp,
+	  test/FTTextureGlyph-Test.cpp:
+	  * Allow to selectively display parts of the glyph/font/layout.
+	  This is
+	  currently only used in FTExtrdGlyph: it lets the user render the
+	  front
+	  surface in a different color than the extruded side surface. Code
+	  written
+	  by Eric Beets.
+
+2008-04-22 16:18  sammy
+
+	* [r929] include/FTOutlineGlyph.h, include/FTPolyGlyph.h,
+	  src/FTOutlineGlyph.cpp, src/FTPolyGlyph.cpp:
+	  * Fix displaylist usage in FTOutlineGlyph and FTPolyGlyph.
+	  FTExtrdGlyph
+	  still needs to be fixed, but that will be after pending Render()
+	  changes.
+	  Partially addresses SourceForge ticket #1945392.
+
+2008-04-22 09:31  brlcad
+
+	* [r928] NEWS:
+	  M-q column 70 formatting
+
+2008-04-22 08:43  sammy
+
+	* [r927] NEWS:
+	  * Fix my name in the NEWS file and change its encoding to UTF-8.
+
+2008-04-22 08:08  brlcad
+
+	* [r926] NEWS:
+	  asterisk bullets
+
+2008-04-22 08:06  brlcad
+
+	* [r925] NEWS:
+	  annotate the recent changes from eric beets and sam hovecar for
+	  the layout managers and new inset/outset contour support
+
+2008-04-22 08:01  brlcad
+
+	* [r924] HISTORY, Makefile.am, NEWS:
+	  rename HISTORY to NEWS, reformat with distinct sections for each
+	  released version and consistent formatting
+
+2008-04-22 07:20  brlcad
+
+	* [r923] HISTORY, HISTORY.txt, INSTALL, INSTALL.txt, Makefile.am,
+	  README, README.txt:
+	  drop all the main doc file suffixes to be consistent with more
+	  prevalent gnu conventions
+
+2008-04-21 21:48  sammy
+
+	* [r922] demo/FTGLDemo.cpp:
+	  * Fine tune the demo so that the extrude mode shows the outset
+	  results.
+
+2008-04-21 21:48  sammy
+
+	* [r921] include/FTContour.h, include/FTExtrdGlyph.h,
+	  include/FTFont.h, include/FTGLExtrdFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPolygonFont.h,
+	  include/FTOutlineGlyph.h, include/FTPoint.h,
+	  include/FTPolyGlyph.h, include/FTVectoriser.h, src/FTContour.cpp,
+	  src/FTExtrdGlyph.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPolygonFont.cpp, src/FTGlue.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPoint.cpp, src/FTPolyGlyph.cpp,
+	  src/FTVectoriser.cpp, test/FTExtrdGlyph-Test.cpp,
+	  test/FTOutlineGlyph-Test.cpp, test/FTPolyGlyph-Test.cpp,
+	  test/FTVectoriser-Test.cpp:
+	  * Inset/outset contour support for fonts, by Eric Beets. For now,
+	  only
+	  contours with exactly the same number of points are generated.
+
+2008-04-21 16:09  sammy
+
+	* [r920] src/FTBitmapGlyph.cpp, src/FTExtrdGlyph.cpp,
+	  src/FTFont.cpp, src/FTOutlineGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  * Fix the FTLayout rendering: line feeds were not properly
+	  handled. Patch
+	  by Eric Beets.
+
+2008-04-17 16:13  sammy
+
+	* [r919] AUTHORS, README.txt:
+	  * Moved authorship information from README.txt to a separate
+	  AUTHORS file and
+	  added Eric Beets and myself. No need to track the file with
+	  automake, it's
+	  picked up by default.
+
+2008-04-17 16:07  sammy
+
+	* [r918] BUGS, Makefile.am, TODO:
+	  * Re-added BUGS and TODO from the old trunk.
+
+2008-04-17 13:38  sammy
+
+	* [r917] src/FTFont.cpp, src/FTSimpleLayout.cpp:
+	  * Use pen += FTPoint(a, 0) constructs instead of pen.X(pen.X() +
+	  a), it's
+	  more object-oriented.
+
+2008-04-17 13:37  sammy
+
+	* [r916] include/FTPoint.h:
+	  * Implement - and -= operators in the FTPoint class.
+	  * Allow to omit the Z coordinate in the FTPoint constructor, in
+	  which case
+	  it is set to zero.
+
+2008-04-17 13:36  sammy
+
+	* [r915] src/FTFont.cpp:
+	  * Fix a bug in FTFont::DoRender() introduced by my FTSimpleLayout
+	  merge
+	  that was causing excessive spacing between characters.
+
+2008-04-16 15:57  sammy
+
+	* [r914] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLTextureFont.h, include/FTSimpleLayout.h,
+	  src/FTFont.cpp, src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLTextureFont.cpp,
+	  src/FTSimpleLayout.cpp:
+	  * Remove a lot of code duplication caused by the char/wchar_t
+	  overloading
+	  thanks to templates. No API change here.
+
+2008-04-15 13:52  sammy
+
+	* [r913] .gitignore:
+	  * Add a .gitignore file for people tracking FTGL using git-svn.
+
+2008-04-15 09:53  sammy
+
+	* [r912] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlue.cpp:
+	  * Added ftglDestroyFont() destructor for the C bindings.
+	  * Remove useless "#ifdef __cplusplus" constructs from .cpp files.
+
+2008-04-14 14:22  sammy
+
+	* [r911] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp:
+	  * Made the FTGLDemo and FTGLMFontDemo coding style consistent
+	  with the rest
+	  of the code.
+
+2008-04-14 13:41  sammy
+
+	* [r910] include/FTSimpleLayout.h:
+	  * Remove stray non-breaking spaces from the source code.
+
+2008-04-14 13:22  sammy
+
+	* [r909] include/FTLayout.h, include/FTSimpleLayout.h,
+	  src/FTSimpleLayout.cpp:
+	  * Made the FTSimpleLayout coding style consistent with the rest
+	  of the code.
+
+2008-04-13 22:13  sammy
+
+	* [r908] demo/FTGLDemo.cpp, demo/FTGLMFontDemo.cpp,
+	  include/FTLayout.h, include/FTSimpleLayout.h,
+	  src/FTSimpleLayout.cpp, test/Fontdefs.h:
+	  * Added copyright and license information to recently merged
+	  files.
+
+2008-04-13 21:47  sammy
+
+	* [r907] .:
+	  * Branch FTGL_2_0_2b is the new trunk.
+
+2008-04-13 21:39  sammy
+
+	* [r905] :
+	  * Merged trunk commits [678] and [711], by henry:
+	  + Created a demo that can handle multiple fonts and command line
+	  options.
+	  + Updated for new compiler.
+
+2008-04-13 21:27  sammy
+
+	* [r904] :
+	  * Merged trunk commits [741], [742], [745], [747], [748] and
+	  [749], by
+	  henry:
+	  + Changed to use FTGlyphSlot internally instead of FTGlyph.
+	  + Added a test for broken glyph but freetype is broken so it
+	  doesn't work.
+	  + Added SetDepth function to FTBBox.
+	  + Tidy Up.
+	  + Test for bitmap bbox.
+
+2008-04-13 21:14  sammy
+
+	* [r903] :
+	  * Merged trunk commits [664], [665], [666], [667], [669], [670],
+	  [671],
+	  [672] and [684], by patrick and henry:
+	  + Added FTLayout.h, FTSimpleLayout.h and FTSimpleLayout.cpp to
+	  implement
+	  a framework for layout managers and an implementation of a simple
+	  layout
+	  manager.
+	  + Updated FTGLDemo to use the new FTSimpleLayout. Changes
+	  include:
+	  - Added a font origin to specify the location to render the font.
+	  - The default text is now blatantly plagarized from the back
+	  cover of
+	  the OGL red book.
+	  - The font size is much smaller.
+	  - Font metrics are rendered differently depending on the current
+	  layout
+	  manager.
+	  - The FTSimpleLayout alignment mode is now output with other font
+	  information.
+	  - The space bar no longer cycles through the fonts. The cursor
+	  up/down
+	  keys do.
+	  - The cursor left/right keys increment/decrement the size of the
+	  current
+	  font.
+	  - The page up/page down keys cycle through the layout managers.
+	  - The home/end keys increment and decrement the line length of a
+	  simple
+	  layout
+	  - The tab key cycles through the alignment modes of a simple
+	  layout.
+	  + Fixed a bug where the trackball rotation was applied after
+	  translation.
+	  + Minor reformatting and enabled texture fonts to be selected
+	  + Un-inlined private methods...because they are called by other
+	  private
+	  inlined methods
+	  + Minor formatting changes
+	  + Adding FTLayout
+
+2008-04-13 19:37  sammy
+
+	* [r902] :
+	  * Merged trunk commits [662] and [663], by patrick:
+	  + Added the FTBBox::Invalidate and FTBBox::IsValid methods.
+	  + Changed the FTFont::BBox to accept a range of indicies. Only
+	  characters
+	  with the range are checked. The previous funcitonality is
+	  preserved via
+	  inline methods that call the new implementation.
+	  + Kluged a fix for a bug where FTFont::BBox was returning
+	  bounding volumes
+	  where min > max. I don't know where the problem is originating, I
+	  just
+	  force the bounds to be correct.
+	  + Changed the FTFont::DoRender methods to accept an external
+	  FTPoint for
+	  the pen position. This enables FTLayout classes to use their own
+	  pen
+	  for rendering.
+	  + Added the FTLayout class as a friend of FTFont to allow layout
+	  managers
+	  to call private rendering functions and access private font
+	  information.
+
+2008-04-13 14:04  sammy
+
+	* [r899] :
+	  * Changed some unit tests so that they're clearer about where the
+	  failures
+	  come from.
+
+2008-04-13 09:50  sammy
+
+	* [r898] :
+	  * Fix a crash in the glyph extrusion code when a contour has zero
+	  points.
+
+2008-04-13 09:37  sammy
+
+	* [r897] :
+	  * Fix minor typo (polyon -> polygon).
+
+2008-04-13 09:34  sammy
+
+	* [r896] :
+	  * Fix a coordinate bug in the extrusion texture mapping.
+
+2008-04-13 09:28  sammy
+
+	* [r895] :
+	  * Minor refactoring in FTExtrdGlyph.cpp.
+
+2008-04-13 09:06  sammy
+
+	* [r894] :
+	  * Fix a crash in FTContour::FTContour caused by invalid or
+	  unknown tags.
+
+2008-04-13 07:48  sammy
+
+	* [r893] :
+	  * Refactoring FTContour.
+
+2008-04-13 01:29  sammy
+
+	* [r892] :
+	  * Fix a crash in FTBitmapGlyph-Test.cpp caused by glGetError()
+	  calls with
+	  no GL context.
+
+2008-04-13 00:53  sammy
+
+	* [r891] :
+	  * Build cppunit tests using the autotools.
+
+2008-04-12 23:55  sammy
+
+	* [r890] :
+	  * Merging [689].
+
+2008-04-12 22:57  sammy
+
+	* [r889] :
+	  * Rename license files to COPYING.MIT and COPUING.LGPL.
+
+2008-04-12 22:44  sammy
+
+	* [r888] :
+	  * Add licensing information to all files in the library.
+
+2008-04-12 22:41  sammy
+
+	* [r887] :
+	  * Fix an undefined operation in the FTGL demo.
+
+2008-04-11 16:24  sammy
+
+	* [r886] :
+	  * C bindings for FTGL, written by Éric Beets <ericbeets@free.fr>.
+
+2008-04-04 13:16  sammy
+
+	* [r885] :
+	  * Build the documentation the autotools way. If doxygen is not
+	  present,
+	  then do nothing.
+
+2008-04-04 12:43  sammy
+
+	* [r884] :
+	  * Generate a config.h file instead of passing all defines in the
+	  compiler
+	  command line.
+	  * "make install" now properly installs the includes, the
+	  documentation and
+	  the .pc file.
+	  * Generate a shared library.
+
+2008-04-04 12:21  sammy
+
+	* [r883] :
+	  * Big build system overhaul. Autotools-generated files are no
+	  longer stored
+	  in SVN, the bootstrap script is more tolerant with odd
+	  installations, all
+	  makefiles are a lot shorter.
+
+2008-04-04 11:19  sammy
+
+	* [r882] :
+	  * Put standard system headers first because on Windows glut.h
+	  uses exit().
+
+2008-04-04 09:20  sammy
+
+	* [r881] :
+	  * Fix an illegal cast of a static string to a char* (has to be
+	  char const*).
+
+2008-04-04 09:18  sammy
+
+	* [r880] :
+	  * Remove extra qualification in
+	  FTTextureGlyph::ResetActiveTexture, this is
+	  illegal and no longer tolerated by recent gcc versions.
+
+2008-04-04 09:17  sammy
+
+	* [r879] :
+	  * Abort make with an error if a submake fails, otherwise the
+	  error might
+	  never be noticed by automated builds.
+
+2008-03-03 16:41  sammy
+
+	* [r878] :
+	  * Remove svn:executable property from source files.
+
+2005-01-03 09:09  henry
+
+	* [r876] :
+	  Reset the error when setting the charmap
+
+2005-01-03 07:54  henry
+
+	* [r875] :
+	  Added test for SDL
+
+2004-12-20 20:12  henry
+
+	* [r874] :
+	  Fixed xcode paths
+
+2004-12-12 10:01  henry
+
+	* [r873] :
+	  Changed behaviour so that if an errror occurs the object isn't
+	  modified. (strong guarantee).
+
+2004-12-10 21:48  henry
+
+	* [r871] :
+	  Updated for 2.1.2
+
+2004-12-10 09:51  henry
+
+	* [r870] :
+	  const correctness
+
+2004-12-10 09:51  henry
+
+	* [r869] :
+	  Added include for assert
+
+2004-12-06 22:42  henry
+
+	* [r868] :
+	  const correctness.
+
+2004-12-06 22:41  henry
+
+	* [r867] :
+	  Minor code format change
+
+2004-12-06 10:34  henry
+
+	* [r866] :
+	  Changed the way the colour is specified. It can now be done per
+	  string rather than at start up as previous.
+
+2004-12-05 09:53  henry
+
+	* [r864] :
+	  Added xCode project properly. 2.1.1
+
+2004-12-05 09:50  henry
+
+	* [r863] :
+	  Added xCode project
+
+2004-12-05 09:38  henry
+
+	* [r861] :
+	  Updated for 2.1
+
+2004-12-05 09:35  henry
+
+	* [r860] :
+	  Updated for 2.1
+
+2004-12-05 09:29  henry
+
+	* [r859] :
+	  Updated to 2.1
+
+2004-12-05 09:29  henry
+
+	* [r858] :
+	  const correctness
+
+2004-12-05 09:08  henry
+
+	* [r857] :
+	  const correctness
+
+2004-10-18 21:41  henry
+
+	* [r856] :
+	  Removed depth member var.
+	  Fixed a problem with normal generation.
+
+2004-10-17 00:40  henry
+
+	* [r855] :
+	  Changed advance to be an FTPoint rather than a float.
+
+2004-10-12 01:23  henry
+
+	* [r854] :
+	  Updated comments
+
+2004-10-12 01:06  henry
+
+	* [r853] :
+	  Got rid of the DoRender function.
+
+2004-10-11 09:46  henry
+
+	* [r852] :
+	  Added a test for pen position
+
+2004-10-11 09:46  henry
+
+	* [r851] :
+	  Changed the gl window creation so that the pen position test in
+	  bitmap font test would work
+
+2004-10-11 09:45  henry
+
+	* [r850] :
+	  Changed pos assignment
+
+2004-10-11 02:58  henry
+
+	* [r849] :
+	  Added operator + & * to FTPoint
+
+2004-10-11 01:58  henry
+
+	* [r848] :
+	  Renamed variable
+
+2004-10-11 01:56  henry
+
+	* [r847] :
+	  Removed a redundant var
+
+2004-10-11 01:55  henry
+
+	* [r846] :
+	  Fixed a casting problem
+
+2004-10-10 22:50  henry
+
+	* [r845] :
+	  Refactoring FTPoint
+
+2004-10-10 11:14  henry
+
+	* [r844] :
+	  Refactoring FTPoint
+
+2004-10-10 10:45  henry
+
+	* [r843] :
+	  Added cast to double operator
+
+2004-10-08 11:37  henry
+
+	* [r842] :
+	  Changed a couple of variable names.
+
+2004-10-07 02:11  henry
+
+	* [r841] :
+	  Fixed some floats
+
+2004-10-07 02:09  henry
+
+	* [r840] :
+	  Changed testKerning to use a font with a kerning table.
+
+2004-10-05 04:49  henry
+
+	* [r839] :
+	  nothing
+
+2004-10-05 04:48  henry
+
+	* [r838] :
+	  Added hasKerningTable member so we don't query the font every
+	  glyph.
+	  Got rid of the redundant Close() and unused UnitsPerEM()
+
+2004-10-03 22:50  henry
+
+	* [r837] :
+	  Adding support for turning off display lists in FTGL
+
+2004-10-03 22:44  henry
+
+	* [r836] :
+	  size_t suddenly stopped working in xCode!!
+
+2004-10-03 22:42  henry
+
+	* [r835] :
+	  Updated for 2.1
+
+2004-10-03 22:34  henry
+
+	* [r834] :
+	  Only set the err in CheckGlyph if it hasn't been set by some
+	  other part of the process.
+
+2004-10-03 21:59  henry
+
+	* [r833] :
+	  Doh
+
+2004-10-03 21:11  henry
+
+	* [r832] :
+	  CheckGlyph sets error flag
+
+2004-10-03 21:10  henry
+
+	* [r831] :
+	  Update comments
+
+2004-10-01 05:32  henry
+
+	* [r830] :
+	  Updated for 2.1 candidate release
+
+2004-09-30 22:50  henry
+
+	* [r829] :
+	  Minor
+
+2004-09-30 13:18  henry
+
+	* [r828] :
+	  Removed GL_EXT_texture_object defines.
+
+2004-09-30 11:46  henry
+
+	* [r827] :
+	  Updating documentation
+
+2004-09-30 08:15  henry
+
+	* [r826] :
+	  Code to turn off display lists.
+
+2004-09-30 00:08  henry
+
+	* [r825] :
+	  Change to BBox to stop it exiting completely on a NULL glyph.
+
+2004-09-29 23:55  henry
+
+	* [r824] :
+	  Fixed infinite loop.
+
+2004-09-29 23:46  henry
+
+	* [r823] :
+	  Changed tests to better show the interaction between character
+	  encodings
+
+2004-09-29 23:11  henry
+
+	* [r822] :
+	  Made tests more obvious
+
+2004-09-29 23:09  henry
+
+	* [r821] :
+	  Removed the pixels per em function because no one is using them.
+	  Added a test to bail early if the client is setting the size to
+	  the existing size.
+
+2004-09-29 23:07  henry
+
+	* [r820] :
+	  Removed the pixels per em function because no one is using them.
+
+2004-09-29 23:06  henry
+
+	* [r819] :
+	  Added a test to bail early of the client sets the size to the
+	  existing size.
+	  Removed the pixels per em function because no one is using them.
+
+2004-09-29 10:24  henry
+
+	* [r818] :
+	  Refactored tests
+
+2004-09-29 04:13  henry
+
+	* [r817] :
+	  Constructed texture to stop glError in test.
+
+2004-09-29 03:13  henry
+
+	* [r816] :
+	  Improved error values for tests
+
+2004-09-29 03:07  henry
+
+	* [r815] :
+	  Added testCheckGlyphFailure test
+
+2004-09-29 03:01  henry
+
+	* [r814] :
+	  Fixing render tests. Must set size before rendering.
+
+2004-09-28 11:49  henry
+
+	* [r813] :
+	  Changed CheckGlyph function to indicate failure to create a
+	  glyph.
+
+2004-09-28 05:35  henry
+
+	* [r812] :
+	  Trying to track down a crashing bug when calling render before
+	  FaceSize();
+
+2004-09-28 04:50  henry
+
+	* [r811] :
+	  Fixed a bug where resizing FTGLTextureFont caused a GL error
+
+2004-09-28 03:55  henry
+
+	* [r810] :
+	  Added assert for gl error
+
+2004-09-28 03:54  henry
+
+	* [r809] :
+	  Newline at end of file
+
+2004-09-28 02:39  henry
+
+	* [r808] :
+	  Added a function to construct a gl context. Required for some
+	  tests
+
+2004-09-28 02:39  henry
+
+	* [r807] :
+	  New tests.
+
+2004-09-28 02:19  henry
+
+	* [r806] :
+	  New tests.
+
+2004-09-27 23:21  henry
+
+	* [r805] :
+	  Less precision
+
+2004-09-27 05:59  henry
+
+	* [r804] :
+	  Tests work and pass
+
+2004-09-27 05:34  henry
+
+	* [r803] :
+	  Initial Add
+
+2004-09-26 09:47  henry
+
+	* [r802] :
+	  Finalised texture coordinate generation code.
+	  Tidied some code.
+
+2004-09-26 09:46  henry
+
+	* [r801] :
+	  Removed activeTextureID from initialisation list.
+
+2004-09-26 09:45  henry
+
+	* [r800] :
+	  Added an assert for a 0 maximum texture size. This is tripping
+	  some people up.
+
+2004-09-18 11:25  henry
+
+	* [r799] :
+	  Added demonstration of texture co-ordinate generation.
+
+2004-09-18 11:24  henry
+
+	* [r798] :
+	  Added texture co-ordinate generation.
+
+2004-08-23 08:05  henry
+
+	* [r797] :
+	  Added LineHeight function.
+
+2004-08-23 08:03  henry
+
+	* [r796] :
+	  Remove a superfluous semi-colon.
+
+2004-08-23 07:18  henry
+
+	* [r795] :
+	  Got rid fo the GL_TEXTURE_2D_BINDING_EXT call in FTTextureGlyph
+	  and replaced it with a static member.
+
+2004-08-22 05:50  henry
+
+	* [r794] :
+	  Removed unnecessary translates in the glyph rendering code.
+
+2004-08-22 04:03  henry
+
+	* [r793] :
+	  Removed out of date Code warrior project
+
+2004-08-19 05:43  henry
+
+	* [r792] :
+	  FaceSize now sets the error value.
+
+2004-08-17 01:53  henry
+
+	* [r791] :
+	  tweatked the font size
+
+2004-08-17 01:51  henry
+
+	* [r790] :
+	  Added docs
+
+2004-08-17 01:46  henry
+
+	* [r789] :
+	  Added note for CYGWIN tesselator define for v2.0.10
+
+2004-08-16 06:56  henry
+
+	* [r787] :
+	  Updated FTFont( *pBufferBytes, bufferSizeInBytes) documentation.
+
+2004-08-16 06:54  henry
+
+	* [r786] :
+	  Updated to 2.0.11
+
+2004-08-16 06:25  henry
+
+	* [r784] :
+	  Updated for 2.0.10
+
+2004-08-16 06:22  henry
+
+	* [r783] :
+	  Updated FTFont( *pBufferBytes, bufferSizeInBytes) documentation.
+
+2004-08-16 06:09  henry
+
+	* [r782] :
+	  Fixed a couple of tabs
+
+2004-05-10 09:11  henry
+
+	* [r781] :
+	  First add for buffer font stuff
+
+2004-05-09 07:22  henry
+
+	* [r780] :
+	  Changed signed to unsigned for glyph indices
+
+2004-05-09 07:13  henry
+
+	* [r779] :
+	  Updated for changes in FTCharmap
+
+2004-05-09 07:09  henry
+
+	* [r778] :
+	  Renamed functions for clarity
+
+2004-05-04 10:38  henry
+
+	* [r777] :
+	  Added __CYGWIN__
+
+2004-05-04 10:17  henry
+
+	* [r776] :
+	  Renamed
+
+2004-04-21 09:17  henry
+
+	* [r774] :
+	  Update for 2.0.9
+
+2004-04-20 20:55  henry
+
+	* [r773] :
+	  includes now go in FTGL subdir
+
+2004-04-20 20:50  henry
+
+	* [r772] :
+	  Moved include to fix FT_OPEN_MEMORY # def for older freetype
+	  versions
+
+2004-04-09 05:43  henry
+
+	* [r770] :
+	  updated docs
+
+2004-04-09 05:42  henry
+
+	* [r769] :
+	  Added comment extra function
+
+2004-04-09 05:29  henry
+
+	* [r768] :
+	  Update for 2.0.8
+
+2004-04-09 05:28  henry
+
+	* [r767] :
+	  Not needed any more
+
+2004-04-09 05:24  henry
+
+	* [r766] :
+	  Updated for 2.0.8
+
+2004-04-09 05:22  henry
+
+	* [r765] :
+	  Added comments for new functions
+
+2004-04-09 05:09  henry
+
+	* [r764] :
+	  For 2.0.8
+
+2004-04-09 04:08  henry
+
+	* [r763] :
+	  Fixes for glyph to glyphSlot change
+
+2004-04-09 04:01  henry
+
+	* [r761] :
+	  Added symbol for front and rear facing
+
+2004-04-09 03:51  henry
+
+	* [r760] :
+	  Added symbol for front and rear facing
+
+2004-01-22 08:11  henry
+
+	* [r759] :
+	  Changed FTGLTextureFont to use FTVector for texture id list.
+
+2003-11-02 21:40  henry
+
+	* [r758] :
+	  Removed FTLayout.h
+
+2003-10-20 02:48  henry
+
+	* [r757] :
+	  Moved charmap list from FTCharmap to FTFont
+
+2003-10-19 21:38  henry
+
+	* [r756] :
+	  Moved charmap list function out of FTCharmap into FTFont
+
+2003-10-19 21:16  henry
+
+	* [r755] :
+	  Moved charmap list function out of FTCharmap into FTFont
+
+2003-10-19 02:40  henry
+
+	* [r754] :
+	  Can now get the list of supported charmaps for the font.
+
+2003-10-11 03:41  henry
+
+	* [r753] :
+	  FTCharToGlyphIndexMap::find no longer returns a pointer
+
+2003-10-08 21:00  henry
+
+	* [r752] :
+	  Delete charmap in destructor.
+
+2003-10-04 04:58  henry
+
+	* [r751] :
+	  Initial test before refactoring
+
+2003-10-02 04:07  henry
+
+	* [r750] :
+	  Test for outline or bitmap doesn't seem to matter.
+
+2003-10-01 06:46  henry
+
+	* [r747] test/FTBBox-Test.cpp:
+	  Now uses FT_Outline_Get_CBox where possible
+
+2003-10-01 00:25  henry
+
+	* [r746] :
+	  Minor change
+
+2003-09-29 20:59  henry
+
+	* [r745] test/FTBBox-Test.cpp:
+	  Added SetDepth function to FTBBox
+
+2003-09-29 04:56  henry
+
+	* [r744] :
+	  Changed from FT_Glyph to FT_GlyphSlot
+
+2003-09-29 04:55  henry
+
+	* [r743] :
+	  Tidied up test
+
+2003-09-25 03:55  henry
+
+	* [r741] test/FTBBox-Test.cpp:
+	  Changed to use FTGlyphSlot internally instead of FTGlyph
+
+2003-09-24 22:13  henry
+
+	* [r740] :
+	  Initial Add
+
+2003-09-24 22:12  henry
+
+	* [r739] :
+	  Fixed some error return values.
+
+2003-09-24 22:05  henry
+
+	* [r738] :
+	  Removed old char map function
+
+2003-09-24 22:05  henry
+
+	* [r737] :
+	  Removed old comments
+
+2003-09-22 05:27  henry
+
+	* [r736] :
+	  Refactored setUpFreetype function.
+
+2003-09-22 02:11  henry
+
+	* [r735] :
+	  Fixes for deprecated identifiers in 2.1.5
+
+2003-09-21 22:36  henry
+
+	* [r734] :
+	  Fixed FT_OPEN_MEMORY for 2.1.5
+
+2003-09-21 01:43  henry
+
+	* [r732] :
+	  Fixed for 2.1.5
+
+2003-09-21 01:42  henry
+
+	* [r731] :
+	  Fixed memory face error code
+
+2003-09-21 01:42  henry
+
+	* [r730] :
+	  Small change for VC.net
+
+2003-09-19 23:37  henry
+
+	* [r729] :
+	  Added a test for the freetype library version.
+
+2003-09-19 23:35  henry
+
+	* [r728] :
+	  Fixed a spelling mistake.
+
+2003-08-30 23:24  henry
+
+	* [r726] :
+	  Update for 2.0.7
+
+2003-08-29 00:04  henry
+
+	* [r723] :
+	  Removed FTSimpleLayout
+
+2003-08-25 04:23  henry
+
+	* [r721] :
+	  Updated the unix build scripts
+
+2003-08-25 04:18  henry
+
+	* [r720] :
+	  Updated unix build scripts
+
+2003-08-25 03:31  henry
+
+	* [r718] :
+	  Updated for 2.0.5
+
+2003-08-25 03:02  henry
+
+	* [r717] :
+	  Update for 2.0.5
+
+2003-08-05 00:26  henry
+
+	* [r716] :
+	  Refactored variable names
+
+2003-07-23 09:06  henry
+
+	* [r715] :
+	  Remove Font Table function.
+
+2003-07-23 09:06  henry
+
+	* [r714] :
+	  Fixed precision conversion
+
+2003-07-18 10:13  henry
+
+	* [r712] :
+	  Minor change
+
+2003-07-16 10:18  henry
+
+	* [r711] test/demo.cpp:
+	  Updated for new compiler
+
+2003-07-16 10:17  henry
+
+	* [r710] :
+	  Made a constant a float
+
+2003-07-12 12:06  henry
+
+	* [r709] :
+	  Removed inline directive
+
+2003-07-12 12:06  henry
+
+	* [r708] :
+	  Re-ordereds function for inlining
+
+2003-06-08 01:21  henry
+
+	* [r707] :
+	  Refactored FTGlyphContainer & FTCharmap
+
+2003-06-08 01:09  henry
+
+	* [r706] :
+	  Refactored FTGlyphContainer & FTCharmap. They now store FTGlyphs
+	  sequentially rather than by glyph index.
+
+2003-06-08 01:08  henry
+
+	* [r705] :
+	  Minor format change
+
+2003-06-08 01:02  henry
+
+	* [r704] :
+	  Minor format change
+
+2003-06-03 04:02  henry
+
+	* [r703] :
+	  Now takes an FTGL face not a Freetype fac
+
+2003-06-03 04:01  henry
+
+	* [r702] :
+	  Now takes an FTGL face not a Freetype fac
+	  Fixed docs
+	  Added glyphIndex function
+
+2003-06-03 03:58  henry
+
+	* [r701] :
+	  Minor format fix
+
+2003-06-03 03:08  henry
+
+	* [r700] :
+	  Moved FTCharmap into this class
+
+2003-06-03 02:57  henry
+
+	* [r699] :
+	  Removed FTCharmap from FTFace
+
+2003-06-03 02:51  henry
+
+	* [r698] :
+	  Added extra defines for GLUTesselatorFunction
+
+2003-06-03 02:50  henry
+
+	* [r697] :
+	  Removed FTCharmap member and associated methods
+
+2003-06-03 02:44  henry
+
+	* [r696] :
+	  Better variable name
+
+2003-05-04 21:12  henry
+
+	* [r695] :
+	  Changed for the new hinter in Freetype 2.1.4
+
+2003-05-04 21:06  henry
+
+	* [r694] :
+	  Added null size test in PixelsPerEm functions
+
+2003-05-04 21:02  henry
+
+	* [r693] :
+	  Changed unit tests for new hinter in Freetype 2.1.4
+
+2003-05-04 20:59  henry
+
+	* [r692] :
+	  Added test for broken contour tags
+
+2003-05-04 20:54  henry
+
+	* [r691] :
+	  Changed unit tests for new hinter in Freetype 2.1.4
+
+2003-05-03 05:45  henry
+
+	* [r690] :
+	  Changed MAC font path
+
+2003-04-13 02:09  henry
+
+	* [r680] :
+	  Fixed FTGLTextureFont resize bug
+
+2003-04-12 01:57  henry
+
+	* [r679] :
+	  Fix in FTGLTextureFont
+
+2003-04-09 10:20  henry
+
+	* [r677] :
+	  Updated for 2.03
+
+2003-04-09 10:14  henry
+
+	* [r675] :
+	  Added extra test for broken contour
+
+2003-04-09 10:13  henry
+
+	* [r674] :
+	  Fixed broken contour bug
+
+2003-04-05 00:40  
+
+	* [r661] :
+	  This commit was manufactured by cvs2svn to create branch
+	  'FTGL_2_0_2b'.
+
+2003-04-05 00:40  henry
+
+	* [r659] include/FTList.h:
+	  Fixed formatting
+
+2003-04-05 00:34  henry
+
+	* [r658] docs/html.tar.gz:
+	  Updated for 2.02
+
+2003-04-04 02:09  henry
+
+	* [r657] HISTORY.txt, README.txt, TODO.txt,
+	  test/font_pack/README.txt:
+	  Updated for 2.02
+
+2003-04-03 23:59  henry
+
+	* [r656] src/FTExtrdGlyph.cpp:
+	  Made vectoriser a stack var and refactored variables
+
+2003-04-02 23:47  henry
+
+	* [r655] include/FTList.h, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp:
+	  Fixed memory leaks
+
+2003-03-14 01:40  henry
+
+	* [r653] README.txt, TODO.txt:
+	  Updated for 2.0.1
+
+2003-03-13 06:01  henry
+
+	* [r652] HISTORY.txt:
+	  Update 2.01
+
+2003-03-13 00:40  ellers
+
+	* [r651] win32_vcpp/README_WIN32.txt:
+	  (hopefully) changed newlines to DOS style)
+
+2003-03-12 18:55  marcelo
+
+	* [r649] unix/acinclude.m4, unix/aclocal.m4, unix/config.guess,
+	  unix/config.sub, unix/configure:
+	  Update autoconf stuff to incorporate GL detection fixes
+
+2003-03-12 18:49  marcelo
+
+	* [r648] unix/configure.ac, unix/m4/gl.m4:
+	  Fix problem with configure failing to find GL libraries because
+	  they are installed in the X11 tree
+
+2003-03-12 11:44  marcelo
+
+	* [r647] unix/src/Makefile:
+	  Fix blooper with include file installation; the include files
+	  were moved to 'include', I noticed, but forgot to update the
+	  Makefile
+
+2003-03-06 10:30  marcelo
+
+	* [r646] unix/src/Makefile:
+	  Get rid of annoying IRIX droppings on distclean
+
+2003-03-06 10:22  marcelo
+
+	* [r645] unix/docs/Makefile:
+	  Last minute change to get document generation working again on
+	  IRIX
+
+2003-03-06 10:06  marcelo
+
+	* [r644] unix/aclocal.m4, unix/configure:
+	  Update aclocal.m4 and configure script before release
+
+2003-03-06 08:09  henry
+
+	* [r642] HISTORY.txt:
+	  Minor changes
+
+2003-03-05 21:25  henry
+
+	* [r641] HISTORY.txt, README.txt, TODO.txt, demo/README.txt,
+	  mac/README.txt, test/README.txt, test/font_pack/README.txt:
+	  Version 2.0 release
+
+2003-02-27 22:28  henry
+
+	* [r640] src/FTFont.cpp, test/FTFont-Test.cpp:
+	  Fixed null string bug in BBox
+
+2003-02-24 03:03  henry
+
+	* [r639] test/README.txt, test/font_pack/README.txt:
+	  Updated for v2 release
+
+2003-02-24 01:24  henry
+
+	* [r638] test/README.txt, test/font_pack,
+	  test/font_pack/README.txt:
+	  Initial Add
+
+2003-02-07 13:04  ellers
+
+	* [r637] win32_vcpp/ftgl_demo/ftgl_demo.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.dsp,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp:
+	  a few more minor tweaks to the project files
+
+2003-02-07 12:58  ellers
+
+	* [r636] win32_vcpp/ftgl.dsw, win32_vcpp/ftgl_demo/ftgl_demo.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.dsp,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp,
+	  win32_vcpp/unit_tests/unit_tests.dsp:
+	  altered projects so unit tests will build with cppunit
+
+2003-01-30 12:24  ellers
+
+	* [r635] test/FTBBox-Test.cpp, test/FTCharmap-Test.cpp,
+	  test/FTMesh-Test.cpp, test/FTSize-Test.cpp,
+	  test/FTVectoriser-Test.cpp, test/mmgr.cpp, test/mmgr.h,
+	  win32_vcpp/ftgl.dsw, win32_vcpp/ftgl_demo/demo.cpp,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp,
+	  win32_vcpp/unit_tests, win32_vcpp/unit_tests/unit_tests.dsp:
+	  updates for win32 build
+
+2003-01-28 13:53  ellers
+
+	* [r634] src/FTExtrdGlyph.cpp:
+	  minor update for win32
+
+2003-01-28 13:52  ellers
+
+	* [r633] win32_vcpp/ftgl.dsw, win32_vcpp/ftgl_demo/ftgl_demo.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.dsp,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp:
+	  updated win32 project files
+
+2003-01-20 13:58  marcelo
+
+	* [r632] demo/FTGLDemo.cpp:
+	  Expect a fontfile on the command line, fall back to a default one
+	  on systems
+	  where a default is known -- else complain about the missing
+	  parameter.
+	  
+	  Come to think of it, I could use a PS font on IRIX. I'll look
+	  into that later.
+
+2003-01-16 00:23  henry
+
+	* [r631] src/FTVectoriser.cpp:
+	  Removed redundant () in preprocess
+
+2003-01-14 16:13  marcelo
+
+	* [r630] unix/acinclude.m4, unix/aclocal.m4, unix/configure,
+	  unix/m4/glut.m4:
+	  Add a couple of extra libraries usually required by GLUT
+
+2003-01-14 16:09  marcelo
+
+	* [r629] unix/demo/Makefile:
+	  Mantra: Link C++ programs with the C++ compiler
+
+2003-01-14 16:08  marcelo
+
+	* [r628] src/FTVectoriser.cpp:
+	  The parser in the IRIX C++ compiler has a bug and the result of:
+	  
+	  new (Type*)[size]
+	  
+	  is of type "Type*" instead of "Type**". Work arround it by
+	  typedef'ing TypeP
+	  which is just Type*.
+
+2003-01-14 14:32  marcelo
+
+	* [r627] unix/acinclude.m4, unix/aclocal.m4, unix/configure,
+	  unix/m4/glut.m4:
+	  Get ./configure to work with IRIX (and other systems with broken
+	  linkers)
+
+2003-01-13 03:09  henry
+
+	* [r626] extras/layout/FTICUFace.cpp, extras/layout/FTICUFace.h,
+	  extras/layout/FTLayoutFont.cpp, extras/layout/FTLayoutFont.h,
+	  extras/layout/LEFontInstance.h, test/FTlayout-Test.cpp:
+	  Integrating ICU
+
+2003-01-12 21:27  marcelo
+
+	* [r625] unix, unix/Make.conf.in, unix/Make.rules, unix/Makefile,
+	  unix/README.txt, unix/acinclude.m4, unix/aclocal.m4,
+	  unix/bootstrap, unix/config.guess, unix/config.sub,
+	  unix/configure, unix/configure.ac, unix/demo, unix/demo/Makefile,
+	  unix/docs, unix/docs/Makefile, unix/ftgl.pc.in, unix/install-sh,
+	  unix/ltmain.sh, unix/m4, unix/m4/cxx.m4, unix/m4/freetype2.m4,
+	  unix/m4/gl.m4, unix/m4/glut.m4, unix/src, unix/src/Makefile:
+	  Unified UNIX building system
+
+2003-01-12 08:42  henry
+
+	* [r623] extras, extras/layout, extras/layout/FTICUFace.h,
+	  extras/layout/FTLayoutFont.h:
+	  Layout stuff
+
+2003-01-10 03:43  henry
+
+	* [r622] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Added layout test
+
+2003-01-10 03:26  henry
+
+	* [r621] test/FTlayout-Test.cpp:
+	  Starting future layout support tests
+
+2003-01-10 03:26  henry
+
+	* [r620] test/FTVectoriser-Test.cpp, test/Fontdefs.h:
+	  Adding fonts for future layout support tests
+
+2003-01-10 03:25  henry
+
+	* [r619] include/FTFace.h, src/FTFace.cpp, test/FTFace-Test.cpp:
+	  Trying to add table support
+
+2003-01-10 01:47  henry
+
+	* [r618] include/FTFace.h, include/FTSize.h, src/FTFace.cpp,
+	  src/FTSize.cpp, test/FTFace-Test.cpp, test/FTSize-Test.cpp:
+	  Added units per EM square
+
+2003-01-09 09:25  henry
+
+	* [r617] HISTORY.txt:
+	  added attach file from memory
+
+2003-01-09 02:56  henry
+
+	* [r616] src/FTFace.cpp:
+	  Fixed warning and kerning
+
+2003-01-09 01:59  henry
+
+	* [r615] test/FTBBox-Test.cpp, test/FTCharmap-Test.cpp,
+	  test/FTFace-Test.cpp, test/FTFont-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp, test/FTLibrary-Test.cpp,
+	  test/FTList-Test.cpp, test/FTMesh-Test.cpp,
+	  test/FTPoint-Test.cpp, test/FTSize-Test.cpp,
+	  test/FTTesselation-Test.cpp, test/FTVector-Test.cpp,
+	  test/FTVectoriser-Test.cpp:
+	  Formatting changes
+
+2003-01-08 23:32  henry
+
+	* [r614] include/FTGLOutlineFont.h, include/FTGLPixmapFont.h:
+	  Updated doc
+
+2003-01-08 23:13  henry
+
+	* [r613] include/FTFont.h, include/FTGLExtrdFont.h:
+	  Updated doc
+
+2003-01-08 23:10  henry
+
+	* [r612] include/FTFont.h:
+	  Updated doc
+
+2003-01-08 22:47  henry
+
+	* [r611] include/FTFont.h:
+	  Updated doc
+
+2003-01-08 22:42  henry
+
+	* [r610] test/FTList-Test.cpp, test/FTMesh-Test.cpp,
+	  test/FTPoint-Test.cpp:
+	  Tidied up includes
+
+2003-01-08 21:48  henry
+
+	* [r609] test/arial_ttf.cpp:
+	  Replaced by HPGCalc
+
+2003-01-08 21:46  henry
+
+	* [r608] test/FTFace-Test.cpp, test/FTFont-Test.cpp,
+	  test/Fontdefs.h, test/HPGCalc_afm.cpp, test/HPGCalc_pfb.cpp:
+	  Implemented Attach from memory test
+
+2003-01-08 19:13  henry
+
+	* [r607] test/HPGCalc_afm.cpp, test/HPGCalc_pfb.cpp:
+	  Files for attch mem test
+
+2003-01-08 09:02  henry
+
+	* [r606] test/FTBBox-Test.cpp, test/FTFace-Test.cpp,
+	  test/FTFont-Test.cpp, test/FTSize-Test.cpp,
+	  test/FTVectoriser-Test.cpp, test/Fontdefs.h:
+	  Added Type1 file attach test
+
+2003-01-08 04:24  henry
+
+	* [r605] include/FTFace.h, include/FTFont.h, src/FTFace.cpp,
+	  src/FTFont.cpp, test/FTFace-Test.cpp, test/FTFont-Test.cpp:
+	  Added attach from memory function
+
+2003-01-08 00:35  henry
+
+	* [r604] HISTORY.txt, README.txt, license.txt:
+	  Impending autoconf and year 03
+
+2003-01-06 04:11  henry
+
+	* [r603] src/FTGlyphContainer.cpp:
+	  removed test in d_stor
+
+2003-01-06 04:10  henry
+
+	* [r602] src/FTFont.cpp:
+	  Minor change to BBox
+
+2003-01-05 22:40  henry
+
+	* [r601] test/FTFace-Test.cpp:
+	  Minor change
+
+2002-12-31 04:47  henry
+
+	* [r600] test/FTFont-Test.cpp:
+	  Change size test
+
+2002-12-31 04:24  henry
+
+	* [r599] HISTORY.txt, README.txt:
+	  Fixes to bitmap glyph alignment
+
+2002-12-31 04:07  henry
+
+	* [r598] include/FTBitmapGlyph.h, src/FTBitmapGlyph.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLTextureFont.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Fixed alignment issues for bitmap and texture glyphs
+
+2002-12-21 09:11  henry
+
+	* [r597] docs/html.tar.gz:
+	  No private structs
+
+2002-12-21 09:09  henry
+
+	* [r596] demo/FTGLDemo.cpp:
+	  Changed int to float in glRasterPos
+
+2002-12-21 09:08  henry
+
+	* [r595] HISTORY.txt:
+	  Delete lists
+
+2002-12-21 07:32  henry
+
+	* [r594] src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  Delete the display list
+
+2002-12-21 07:23  henry
+
+	* [r593] include/FTGlyphContainer.h:
+	  Minor change
+
+2002-12-21 07:23  henry
+
+	* [r592] docs/ftgl_dox:
+	  Don't doc private classes
+
+2002-12-21 07:19  henry
+
+	* [r591] include/FTGlyphContainer.h:
+	  Fixed docs
+
+2002-12-21 07:15  henry
+
+	* [r590] include/FTList.h:
+	  Docs
+
+2002-12-21 07:11  henry
+
+	* [r589] src/FTGlyphContainer.cpp:
+	  Refactored variable names
+
+2002-12-21 07:10  henry
+
+	* [r588] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Refactored variable names
+
+2002-12-21 05:18  henry
+
+	* [r587] include/FTFace.h, src/FTFace.cpp:
+	  Updated docs and removed numberOfCharmaps member
+
+2002-12-21 05:08  henry
+
+	* [r586] include/FTFont.h, src/FTFont.cpp:
+	  Removed DoAdvance function
+
+2002-12-21 03:24  henry
+
+	* [r585] src/FTFont.cpp:
+	  Refactored BBox()
+
+2002-12-20 22:23  henry
+
+	* [r584] test/FTVector-Test.cpp:
+	  Started writing tests
+
+2002-12-20 22:22  henry
+
+	* [r583] test/FTMesh-Test.cpp:
+	  Changes for FTList
+
+2002-12-20 22:22  henry
+
+	* [r582] test/FTList-Test.cpp:
+	  Added testGetFront
+
+2002-12-20 22:21  henry
+
+	* [r581] test/FTLibrary-Test.cpp:
+	  Added TestError()
+
+2002-12-20 22:21  henry
+
+	* [r580] include/FTVectoriser.h, src/FTVectoriser.cpp,
+	  test/FTTesselation-Test.cpp:
+	  Added Mesh::Combine and changed tempPointList to FTList
+
+2002-12-20 22:20  henry
+
+	* [r579] test/FTGlyphContainer-Test.cpp:
+	  Change for FTFace
+
+2002-12-20 22:19  henry
+
+	* [r578] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Made Glyph() const
+
+2002-12-20 22:18  henry
+
+	* [r577] include/FTGLTextureFont.h, src/FTGLTextureFont.cpp:
+	  Removed comments and makeGlyphList function
+
+2002-12-20 22:17  henry
+
+	* [r576] include/FTGlyph.h:
+	  Made BBox() const
+
+2002-12-20 22:17  henry
+
+	* [r575] include/FTFont.h, src/FTFont.cpp:
+	  Removed maekGlyphList function and changes for FTFace
+
+2002-12-20 22:13  henry
+
+	* [r574] include/FTFace.h, src/FTFace.cpp, test/FTFace-Test.cpp:
+	  Removed Open functions. C_stors now open face
+
+2002-12-20 10:26  henry
+
+	* [r573] include/FTList.h:
+	  Finished
+
+2002-12-20 10:26  henry
+
+	* [r572] include/FTVector.h:
+	  Minor formatting
+
+2002-12-20 10:18  henry
+
+	* [r571] include/FTLibrary.h:
+	  Minor formatting and and made get library const
+
+2002-12-20 10:17  henry
+
+	* [r570] src/FTTextureGlyph.cpp:
+	  Minor formatting and removed comments
+
+2002-12-20 10:16  henry
+
+	* [r569] include/FTGLBitmapFont.h, include/FTGLExtrdFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTSize.h:
+	  Minor formatting
+
+2002-12-20 10:13  henry
+
+	* [r568] include/FTCharmap.h:
+	  Changed protected to private
+
+2002-12-19 10:31  henry
+
+	* [r567] include/FTList.h, mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj, test/FTList-Test.cpp,
+	  test/FTVector-Test.cpp:
+	  Added FTList, FTListTest and FTVectorTest
+
+2002-12-19 10:29  henry
+
+	* [r566] test/FTMesh-Test.cpp, test/FTTesselation-Test.cpp,
+	  test/FTVectoriser-Test.cpp:
+	  More tests
+
+2002-12-19 10:28  henry
+
+	* [r565] test/FTFace-Test.cpp:
+	  Uncommented test
+
+2002-12-19 10:28  henry
+
+	* [r564] include/FTFace.h, src/FTFace.cpp:
+	  Made return value const
+
+2002-12-19 10:27  henry
+
+	* [r563] include/FTFont.h, src/FTFont.cpp:
+	  Refactored function names
+
+2002-12-19 10:27  henry
+
+	* [r562] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Made return values const
+
+2002-12-19 10:26  henry
+
+	* [r561] include/FTVector.h:
+	  Removed comments and protected
+
+2002-12-19 10:25  henry
+
+	* [r560] include/FTLibrary.h, src/FTLibrary.cpp:
+	  Changed init function name
+
+2002-12-19 10:25  henry
+
+	* [r559] include/FTGLTextureFont.h, src/FTGLTextureFont.cpp:
+	  Changed vars to GLunit
+
+2002-12-19 10:24  henry
+
+	* [r558] src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  Made some objects const
+
+2002-12-19 10:22  henry
+
+	* [r557] include/FTContour.h:
+	  Inlined some functions
+
+2002-12-18 03:53  henry
+
+	* [r556] include/FTContour.h, src/FTContour.cpp:
+	  Trying to simplify the constructor.
+
+2002-12-18 02:13  henry
+
+	* [r555] test/FTMesh-Test.cpp:
+	  Added test for glCombine
+
+2002-12-18 01:30  henry
+
+	* [r554] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Fixed tests
+
+2002-12-17 23:51  henry
+
+	* [r553] test/FTBBox-Test.cpp, test/FTVectoriser-Test.cpp,
+	  test/Fontdefs.h:
+	  Fixed tests
+
+2002-12-17 23:28  henry
+
+	* [r552] test/FTBBox-Test.cpp, test/FTCharmap-Test.cpp,
+	  test/FTFace-Test.cpp, test/FTFont-Test.cpp,
+	  test/FTGlyphContainer-Test.cpp, test/FTSize-Test.cpp,
+	  test/FTVectoriser-Test.cpp, test/Fontdefs.h, test/arial_ttf.cpp:
+	  Moved all the constants into a header
+
+2002-12-17 20:17  henry
+
+	* [r551] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Fixed paths
+
+2002-12-17 20:02  henry
+
+	* [r550] HISTORY.txt:
+	  Note about include directory
+
+2002-12-17 09:15  henry
+
+	* [r549] docs/ftgl_dox, docs/html.tar.gz:
+	  Added include dir
+
+2002-12-17 09:15  henry
+
+	* [r548] include/FTContour.h:
+	  Fix docs
+
+2002-12-17 09:10  henry
+
+	* [r547] demo/FTGLDemo.cpp, test/demo.cpp:
+	  Changed render to Render
+
+2002-12-17 08:42  henry
+
+	* [r546] mac/Includes/freetype/cache,
+	  mac/Includes/freetype/cache/ftccache.h,
+	  mac/Includes/freetype/cache/ftccmap.h,
+	  mac/Includes/freetype/cache/ftcglyph.h,
+	  mac/Includes/freetype/cache/ftcimage.h,
+	  mac/Includes/freetype/cache/ftcmanag.h,
+	  mac/Includes/freetype/cache/ftcsbits.h,
+	  mac/Includes/freetype/cache/ftlru.h,
+	  mac/Includes/freetype/config,
+	  mac/Includes/freetype/config/ftconfig.h,
+	  mac/Includes/freetype/config/ftheader.h,
+	  mac/Includes/freetype/config/ftmodule.h,
+	  mac/Includes/freetype/config/ftoption.h,
+	  mac/Includes/freetype/internal,
+	  mac/Includes/freetype/internal/autohint.h,
+	  mac/Includes/freetype/internal/cfftypes.h,
+	  mac/Includes/freetype/internal/fnttypes.h,
+	  mac/Includes/freetype/internal/ftcalc.h,
+	  mac/Includes/freetype/internal/ftdebug.h,
+	  mac/Includes/freetype/internal/ftdriver.h,
+	  mac/Includes/freetype/internal/ftextend.h,
+	  mac/Includes/freetype/internal/ftmemory.h,
+	  mac/Includes/freetype/internal/ftobjs.h,
+	  mac/Includes/freetype/internal/ftstream.h,
+	  mac/Includes/freetype/internal/internal.h,
+	  mac/Includes/freetype/internal/pcftypes.h,
+	  mac/Includes/freetype/internal/psaux.h,
+	  mac/Includes/freetype/internal/psglobal.h,
+	  mac/Includes/freetype/internal/pshints.h,
+	  mac/Includes/freetype/internal/psnames.h,
+	  mac/Includes/freetype/internal/sfnt.h,
+	  mac/Includes/freetype/internal/t1types.h,
+	  mac/Includes/freetype/internal/tttypes.h:
+	  Adding Unit tests
+
+2002-12-17 08:40  henry
+
+	* [r545] mac/FTGL.pbproj/project.pbxproj,
+	  mac/Includes/cppunit/extensions,
+	  mac/Includes/cppunit/extensions/AutoRegisterSuite.h,
+	  mac/Includes/cppunit/extensions/HelperMacros.h,
+	  mac/Includes/cppunit/extensions/Orthodox.h,
+	  mac/Includes/cppunit/extensions/RepeatedTest.h,
+	  mac/Includes/cppunit/extensions/TestDecorator.h,
+	  mac/Includes/cppunit/extensions/TestFactory.h,
+	  mac/Includes/cppunit/extensions/TestFactoryRegistry.h,
+	  mac/Includes/cppunit/extensions/TestSetUp.h,
+	  mac/Includes/cppunit/extensions/TestSuiteBuilder.h,
+	  mac/Includes/cppunit/extensions/TestSuiteFactory.h,
+	  mac/Includes/cppunit/extensions/TypeInfoHelper.h,
+	  mac/Includes/cppunit/ui, mac/Includes/cppunit/ui/text,
+	  mac/Includes/cppunit/ui/text/TestRunner.h:
+	  Adding unit tests
+
+2002-12-17 08:35  henry
+
+	* [r544] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj, mac/Includes,
+	  mac/Includes/cppunit, mac/Includes/cppunit/Asserter.h,
+	  mac/Includes/cppunit/CompilerOutputter.h,
+	  mac/Includes/cppunit/Exception.h,
+	  mac/Includes/cppunit/NotEqualException.h,
+	  mac/Includes/cppunit/Outputter.h,
+	  mac/Includes/cppunit/Portability.h,
+	  mac/Includes/cppunit/SourceLine.h,
+	  mac/Includes/cppunit/SynchronizedObject.h,
+	  mac/Includes/cppunit/Test.h, mac/Includes/cppunit/TestAssert.h,
+	  mac/Includes/cppunit/TestCaller.h,
+	  mac/Includes/cppunit/TestCase.h,
+	  mac/Includes/cppunit/TestFailure.h,
+	  mac/Includes/cppunit/TestFixture.h,
+	  mac/Includes/cppunit/TestListener.h,
+	  mac/Includes/cppunit/TestResult.h,
+	  mac/Includes/cppunit/TestResultCollector.h,
+	  mac/Includes/cppunit/TestSucessListener.h,
+	  mac/Includes/cppunit/TestSuite.h,
+	  mac/Includes/cppunit/TextOutputter.h,
+	  mac/Includes/cppunit/TextTestProgressListener.h,
+	  mac/Includes/cppunit/TextTestResult.h,
+	  mac/Includes/cppunit/TextTestRunner.h,
+	  mac/Includes/cppunit/XmlOutputter.h,
+	  mac/Includes/cppunit/config-auto.h,
+	  mac/Includes/cppunit/config-bcb5.h,
+	  mac/Includes/cppunit/config-msvc6.h, mac/Includes/freetype,
+	  mac/Includes/freetype/freetype.h, mac/Includes/freetype/ftbbox.h,
+	  mac/Includes/freetype/ftcache.h,
+	  mac/Includes/freetype/ftchapters.h,
+	  mac/Includes/freetype/fterrors.h,
+	  mac/Includes/freetype/ftglyph.h, mac/Includes/freetype/ftimage.h,
+	  mac/Includes/freetype/ftlist.h, mac/Includes/freetype/ftmac.h,
+	  mac/Includes/freetype/ftmm.h, mac/Includes/freetype/ftmoderr.h,
+	  mac/Includes/freetype/ftmodule.h,
+	  mac/Includes/freetype/ftoutln.h,
+	  mac/Includes/freetype/ftrender.h,
+	  mac/Includes/freetype/ftsizes.h,
+	  mac/Includes/freetype/ftsnames.h,
+	  mac/Includes/freetype/ftsynth.h,
+	  mac/Includes/freetype/ftsystem.h,
+	  mac/Includes/freetype/fttrigon.h,
+	  mac/Includes/freetype/fttypes.h,
+	  mac/Includes/freetype/t1tables.h,
+	  mac/Includes/freetype/ttnameid.h,
+	  mac/Includes/freetype/tttables.h, mac/Includes/freetype/tttags.h,
+	  mac/Includes/ft2build.h, mac/Libraries,
+	  mac/Libraries/libcppunit.a, mac/Libraries/libfreetype.a:
+	  Adding unit tests
+
+2002-12-17 08:21  henry
+
+	* [r543] test/FTBBox-Test.cpp, test/FTCharmap-Test.cpp,
+	  test/FTContour-Test.cpp, test/FTFace-Test.cpp,
+	  test/FTFont-Test.cpp, test/FTGlyphContainer-Test.cpp,
+	  test/FTLibrary-Test.cpp, test/FTMesh-Test.cpp,
+	  test/FTPoint-Test.cpp, test/FTSize-Test.cpp,
+	  test/FTTesselation-Test.cpp, test/FTVectoriser-Test.cpp,
+	  test/TestMain.cpp, test/arial_ttf.cpp:
+	  Added unit tests
+
+2002-12-17 08:18  henry
+
+	* [r542] demo/FTGLDemo.cpp, test/demo.cpp:
+	  Changed mac font path to test directory
+
+2002-12-17 04:44  henry
+
+	* [r541] src/FTBitmapGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Fixed freetype render flag :)
+
+2002-12-17 04:42  henry
+
+	* [r540] include/FTBitmapGlyph.h, include/FTFont.h,
+	  include/FTGLBitmapFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyphContainer.h, src/FTBitmapGlyph.cpp,
+	  src/FTExtrdGlyph.cpp, src/FTFont.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlyphContainer.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTTextureGlyph.cpp:
+	  Renamed render to Render
+
+2002-12-17 04:37  henry
+
+	* [r539] HISTORY.txt:
+	  More refactoring
+
+2002-12-17 03:55  henry
+
+	* [r538] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Major refactoring to FTVectoriser and clients
+
+2002-12-17 03:53  henry
+
+	* [r537] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Refactored to get rid of data memory buffers and function name
+	  tidy ups
+
+2002-12-17 03:52  henry
+
+	* [r536] src/FTPolyGlyph.cpp:
+	  Removed data memory buffer
+
+2002-12-17 03:50  henry
+
+	* [r535] src/FTOutlineGlyph.cpp:
+	  Changes in FTVectoriser and FTContour
+
+2002-12-17 03:49  henry
+
+	* [r534] src/FTExtrdGlyph.cpp:
+	  Removed data buffers. Now call into vectoriser
+
+2002-12-17 03:46  henry
+
+	* [r533] include/FTContour.h:
+	  Renamed 'Points' to 'PointCount'
+
+2002-12-17 01:44  henry
+
+	* [r532] include/FTBBox.h:
+	  Removed operator +
+
+2002-12-17 01:33  henry
+
+	* [r531] src/FTBBox.cpp:
+	  No loger needed. Replaced by +=
+
+2002-12-17 01:16  henry
+
+	* [r530] src/FTExtrdGlyph.cpp:
+	  Removed redundant code and memory allocation
+
+2002-12-17 01:05  henry
+
+	* [r529] include/FTPoint.h:
+	  Added operator +=
+
+2002-12-16 23:25  henry
+
+	* [r528] include/FTExtrdGlyph.h, src/FTExtrdGlyph.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPolyGlyph.cpp:
+	  Changes to the outline code in FTVectoriser
+
+2002-12-16 23:24  henry
+
+	* [r527] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Made ProcessContours Private and removed GetOutline
+
+2002-12-16 20:12  henry
+
+	* [r526] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Changes in FTContour
+
+2002-12-16 20:11  henry
+
+	* [r525] include/FTContour.h:
+	  Made pointList private and removed size()
+
+2002-12-16 09:13  henry
+
+	* [r524] docs/html.tar.gz:
+	  Reafctored *Font. Got rid of Open function
+
+2002-12-16 08:53  henry
+
+	* [r523] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h:
+	  Updated the docs
+
+2002-12-16 08:27  henry
+
+	* [r522] HISTORY.txt, demo/FTGLDemo.cpp, include/FTFont.h,
+	  include/FTGLBitmapFont.h, include/FTGLExtrdFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  mac/FTGL.pbproj/henry.pbxuser, src/FTFont.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp, test/demo.cpp:
+	  Refactored FTFont to get rid of Open function
+
+2002-12-16 03:46  henry
+
+	* [r521] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Refactoring FTContour
+
+2002-12-16 00:40  henry
+
+	* [r520] src/FTContour.cpp:
+	  Removed unused constants
+
+2002-12-15 23:04  henry
+
+	* [r519] include/FTContour.h:
+	  Updated comments
+
+2002-12-15 23:02  henry
+
+	* [r518] include/FTContour.h, src/FTContour.cpp:
+	  Unrolled evaluate curve
+
+2002-12-15 22:04  henry
+
+	* [r517] include/FTContour.h, src/FTContour.cpp:
+	  Refactored evaluate curve
+
+2002-12-15 08:51  henry
+
+	* [r516] include/FTContour.h, src/FTContour.cpp:
+	  Got rid of ctrlPtArray
+
+2002-12-15 08:32  henry
+
+	* [r515] docs/ftgl_dox, docs/html.tar.gz:
+	  Updated doxygen template
+
+2002-12-15 08:23  henry
+
+	* [r514] HISTORY.txt, mac/FTGL.pbproj/henry.pbxuser:
+	  FTcontour update
+
+2002-12-15 08:20  henry
+
+	* [r513] include/FTContour.h, src/FTContour.cpp:
+	  Removed contourPoint struct
+
+2002-12-14 22:02  henry
+
+	* [r512] include/FTContour.h:
+	  Removed conic and cubic functions
+
+2002-12-14 22:01  henry
+
+	* [r511] src/FTContour.cpp:
+	  Contour extraction is now one pass. The code is a bit ugly at
+	  this stage though.
+
+2002-12-12 23:51  henry
+
+	* [r510] docs/html.tar.gz:
+	  Refactored FTFont
+
+2002-12-12 23:50  henry
+
+	* [r509] include/FTGlyphContainer.h:
+	  Updated comments
+
+2002-12-12 22:36  henry
+
+	* [r508] mac/FTGL.pbproj/henry.pbxuser:
+	  update
+
+2002-12-12 21:47  henry
+
+	* [r507] include/FTFont.h, src/FTFont.cpp:
+	  Added CheckGlyph function
+
+2002-12-12 21:46  henry
+
+	* [r506] include/FTGLTextureFont.h:
+	  Made some members unsigned
+
+2002-12-12 20:48  henry
+
+	* [r505] include/FTFace.h, include/FTGlyphContainer.h,
+	  src/FTFace.cpp, src/FTGlyphContainer.cpp:
+	  Added GlyphCount accessor to FTFace
+
+2002-12-12 20:46  henry
+
+	* [r504] include/FTFont.h, src/FTFont.cpp, src/FTGLTextureFont.cpp:
+	  Pushed down numGlyph field
+
+2002-12-12 06:12  henry
+
+	* [r503] include/FTBitmapGlyph.h, include/FTGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTTextureGlyph.h,
+	  src/FTPixmapGlyph.cpp, src/FTTextureGlyph.cpp:
+	  Got rid of numGreys and pushed down pos
+
+2002-12-11 09:30  henry
+
+	* [r502] HISTORY.txt:
+	  Glyph refactoring
+
+2002-12-11 09:29  henry
+
+	* [r501] src/FTFont.cpp:
+	  Minor change to bbox functions
+
+2002-12-11 09:29  henry
+
+	* [r500] include/FTBBox.h, src/FTBBox.cpp:
+	  Added another c_stor and operator +=
+	  Fixed 'add' functions
+
+2002-12-11 09:28  henry
+
+	* [r499] include/FTExtrdGlyph.h, include/FTGlyph.h,
+	  include/FTOutlineGlyph.h, include/FTPolyGlyph.h,
+	  src/FTBitmapGlyph.cpp, src/FTExtrdGlyph.cpp, src/FTGlyph.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTTextureGlyph.cpp:
+	  Removed redundant members.
+	  Moved BBox and advance to FTGlyph c_stor
+
+2002-12-11 09:25  henry
+
+	* [r498] src/FTGLTextureFont.cpp:
+	  Had to increase padding now that FTBBox uses floats.
+
+2002-12-11 07:41  henry
+
+	* [r497] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Replaced contourList FTVector with an array.
+
+2002-12-10 09:01  henry
+
+	* [r496] src/FTContour.cpp, src/FTVectoriser.cpp:
+	  Minor fix
+
+2002-12-10 08:48  henry
+
+	* [r495] include/FTBBox.h:
+	  Changed size calculations to use floats
+
+2002-12-10 08:38  henry
+
+	* [r494] include/FTFont.h, include/FTSize.h, src/FTFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTSize.cpp:
+	  Changed size calculations to use floats
+
+2002-12-08 09:39  henry
+
+	* [r493] src/FTVectoriser.cpp:
+	  WIN32 function pointer typedef
+
+2002-12-08 08:58  henry
+
+	* [r492] HISTORY.txt:
+	  Refactored FTContour
+
+2002-12-08 08:56  henry
+
+	* [r491] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Fixes for broken glyphs. Uses numberOfContours as a flag that the
+	  glyph is valid.
+
+2002-12-08 07:01  henry
+
+	* [r490] src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  Minor tidy up
+
+2002-12-08 06:57  henry
+
+	* [r489] include/FTExtrdGlyph.h, include/FTOutlineGlyph.h,
+	  include/FTPolyGlyph.h, src/FTExtrdGlyph.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPolyGlyph.cpp:
+	  Made vectoriser a local variable
+
+2002-12-08 06:51  henry
+
+	* [r488] include/FTOutlineGlyph.h, src/FTOutlineGlyph.cpp:
+	  Removed an unnecessary memory allocation
+
+2002-12-08 05:12  henry
+
+	* [r487] docs/html.tar.gz, mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Updated for FTContour refactoring
+
+2002-12-08 05:07  henry
+
+	* [r486] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Removed redundant member
+
+2002-12-08 04:49  henry
+
+	* [r485] include/FTContour.h:
+	  Removed freetype includes
+
+2002-12-08 04:40  henry
+
+	* [r484] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Refactored FTContour - moved it into it's own file
+
+2002-12-08 04:38  henry
+
+	* [r483] src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  Refactored FTContour
+
+2002-12-08 04:37  henry
+
+	* [r482] include/FTContour.h, src/FTContour.cpp:
+	  Moved from FTVectoriser to own file
+
+2002-12-05 10:23  henry
+
+	* [r481] src/FTVectoriser.cpp:
+	  Minor fix up
+
+2002-12-05 09:33  henry
+
+	* [r480] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Refactored variables in Process()
+	  Changed Process to void
+	  Test in FTVectoriser c_stor
+
+2002-12-05 06:47  henry
+
+	* [r479] demo/FTGLDemo.cpp:
+	  Fixed path
+
+2002-12-05 06:47  henry
+
+	* [r478] include/FTVectoriser.h:
+	  Added docs
+
+2002-12-05 06:46  henry
+
+	* [r477] src/FTVectoriser.cpp:
+	  Refactored variable names
+
+2002-12-05 06:11  henry
+
+	* [r476] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Refactored variable names
+	  Removed Point()
+	  Added docs
+
+2002-12-05 06:01  henry
+
+	* [r475] include/FTVectoriser.h:
+	  Fixed comments
+
+2002-12-05 05:59  henry
+
+	* [r474] include/FTGlyphContainer.h:
+	  Made numGlyphs unsigned
+
+2002-12-04 09:02  henry
+
+	* [r473] HISTORY.txt, docs/html.tar.gz:
+	  Updating for 141
+
+2002-12-04 08:20  henry
+
+	* [r472] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Error checking in Add
+	  Un-virtualised some functions
+	  Minor tidy ups
+
+2002-12-04 07:03  henry
+
+	* [r471] include/FTFont.h, include/FTGlyphContainer.h:
+	  Fixed documentation
+
+2002-12-04 06:58  henry
+
+	* [r470] include/FTFont.h:
+	  Fixed documentation
+
+2002-12-04 06:21  henry
+
+	* [r469] src/FTVectoriser.cpp:
+	  typedef for mips and linux
+
+2002-12-04 06:19  henry
+
+	* [r468] include/FTFont.h, src/FTFont.cpp:
+	  Error handling in Attach
+
+2002-12-02 06:40  henry
+
+	* [r467] docs/html.tar.gz:
+	  Preparing for 1.41
+
+2002-12-02 06:35  henry
+
+	* [r466] HISTORY.txt, TODO.txt, mac/FTGL.pbproj/henry.pbxuser:
+	  Getting ready for 1.41
+
+2002-12-02 06:32  henry
+
+	* [r465] demo/FTGLDemo.cpp:
+	  Rewriting to make it more 'correct'
+
+2002-12-02 06:32  henry
+
+	* [r464] src/FTSize.cpp:
+	  Minor bug fix
+
+2002-12-02 06:31  henry
+
+	* [r463] include/FTLibrary.h, src/FTLibrary.cpp:
+	  Renamed lib to library.
+	  Got rid of the version stuff.
+	  Unvirtualised some functions
+
+2002-12-02 06:28  henry
+
+	* [r462] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Got rid of the pre cache flag
+
+2002-12-02 06:27  henry
+
+	* [r461] src/FTGLTextureFont.cpp:
+	  Minor tidy up.
+
+2002-12-02 06:27  henry
+
+	* [r460] include/FTFont.h, src/FTFont.cpp:
+	  Fixed BBox null string bug.
+	  Better error handling.
+	  Got rid of pre cache flag.
+
+2002-12-01 08:45  henry
+
+	* [r459] test/demo.cpp:
+	  Added Idle function
+
+2002-12-01 07:52  henry
+
+	* [r458] src/FTFace.cpp, src/FTSize.cpp:
+	  Better error handling
+
+2002-12-01 07:50  henry
+
+	* [r457] include/FTCharmap.h, src/FTCharmap.cpp:
+	  Better error handling and remove platform/encoding function
+
+2002-11-29 10:42  henry
+
+	* [r456] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  FTBBox and FTPoint
+
+2002-11-29 10:41  henry
+
+	* [r455] mac/FTGL.pbproj/henry.pbxuser:
+	  FTBBox and FTPoint
+
+2002-11-29 08:21  henry
+
+	* [r454] include/FTFace.h, src/FTFace.cpp:
+	  Improved error handling
+
+2002-11-29 08:20  henry
+
+	* [r453] include/FTCharmap.h:
+	  Removed redundant include
+
+2002-11-29 08:18  henry
+
+	* [r452] include/FTBBox.h:
+	  Added Move and operator +
+
+2002-11-29 08:13  henry
+
+	* [r451] include/FTFont.h, src/FTFont.cpp:
+	  Got rid of Close() and improved som error handling
+
+2002-11-29 07:58  henry
+
+	* [r450] src/FTBBox.cpp:
+	  Operator +
+
+2002-11-28 09:43  henry
+
+	* [r449] src/FTBitmapGlyph.cpp:
+	  Added a static cast
+
+2002-11-28 09:43  henry
+
+	* [r448] include/FTFont.h, include/FTGLTextureFont.h:
+	  Got rid of inline for irix
+
+2002-11-28 09:41  henry
+
+	* [r447] include/FTCharToGlyphIndexMap.h:
+	  Changed cstdlib to stdlib.h for irix
+
+2002-11-28 09:41  henry
+
+	* [r446] src/FTFace.cpp:
+	  Set default values for kernAdvance
+
+2002-11-28 09:40  henry
+
+	* [r445] include/FTGlyph.h:
+	  Changed FT_Vector for FTPoint
+
+2002-11-28 09:40  henry
+
+	* [r444] src/FTGlyphContainer.cpp:
+	  Got rid of the tabs
+
+2002-11-28 09:39  henry
+
+	* [r443] src/FTVectoriser.cpp:
+	  Changed the gluTess callback function definitions
+
+2002-11-28 08:23  henry
+
+	* [r442] include/FTSize.h, include/FTVector.h,
+	  include/FTVectoriser.h:
+	  Changes to Documentation
+
+2002-11-28 08:21  henry
+
+	* [r441] include/FTBBox.h, include/FTCharmap.h, include/FTFace.h,
+	  include/FTFont.h, include/FTGLExtrdFont.h, include/FTLibrary.h,
+	  include/FTPoint.h, src/FTGLBitmapFont.cpp:
+	  Documentation Changes
+
+2002-11-28 08:01  henry
+
+	* [r440] demo/FTGLDemo.cpp:
+	  Removed some redundant code
+
+2002-11-28 08:00  henry
+
+	* [r439] include/FTBitmapGlyph.h, include/FTExtrdGlyph.h,
+	  include/FTGlyph.h, include/FTOutlineGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTPolyGlyph.h,
+	  include/FTTextureGlyph.h, src/FTBitmapGlyph.cpp,
+	  src/FTExtrdGlyph.cpp, src/FTGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTPolyGlyph.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Changed FT_Vector to FTPoint
+
+2002-11-27 07:47  henry
+
+	* [r438] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Changes for FTPoint
+
+2002-11-27 07:46  henry
+
+	* [r437] src/FTGLBitmapFont.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp:
+	  Changes to the glyph loading flags
+
+2002-11-27 07:39  henry
+
+	* [r436] include/FTFont.h, src/FTFont.cpp:
+	  Changes for FTPoint & FTBBox
+
+2002-11-27 07:38  henry
+
+	* [r435] include/FTFace.h, src/FTFace.cpp:
+	  Changes for FTPoint
+
+2002-11-27 07:34  henry
+
+	* [r434] include/FTVectoriser.h:
+	  Fixed an FTPoint
+
+2002-11-27 07:12  henry
+
+	* [r433] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Moved FTPoint to it's own file
+
+2002-11-27 06:35  henry
+
+	* [r432] include/FTBBox.h, include/FTPoint.h, src/FTPoint.cpp:
+	  Moved these classes to there own files
+
+2002-11-27 06:20  henry
+
+	* [r431] include/FTFont.h, include/FTLibrary.h,
+	  include/FTVectoriser.h, src/FTExtrdGlyph.cpp, src/FTFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp:
+	  Tidied up some float declarations
+
+2002-11-23 09:04  henry
+
+	* [r430] src/FTFace.cpp:
+	  Added cast to FT_New_Memory_Face
+
+2002-11-23 09:02  henry
+
+	* [r429] src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLTextureFont.cpp:
+	  Fixed PushAttrib call
+
+2002-11-21 06:26  henry
+
+	* [r428] src/FTTextureGlyph.cpp:
+	  Added glPixelStorei call to fix corrupt glyphs
+
+2002-10-23 08:22  henry
+
+	* [r426] test, test/demo.cpp, test/mmgr.cpp, test/mmgr.h,
+	  test/nommgr.h:
+	  Added test app
+
+2002-10-23 08:19  henry
+
+	* [r425] HISTORY.txt, README.txt, TODO.txt:
+	  Release 1.4
+
+2002-10-23 08:07  henry
+
+	* [r424] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Updated for 1.4
+
+2002-10-23 07:04  henry
+
+	* [r423] src/FTGLPixmapFont.cpp, src/FTPixmapGlyph.cpp:
+	  Minor formatting and moved Push Attribs to the font
+
+2002-10-23 07:04  henry
+
+	* [r422] src/FTBitmapGlyph.cpp:
+	  Minor formatting
+
+2002-08-28 09:46  henry
+
+	* [r421] include/FTGLTextureFont.h, src/FTGLTextureFont.cpp:
+	  Reduced texture ID array size
+
+2002-08-28 09:45  henry
+
+	* [r420] HISTORY.txt:
+	  Added release date
+
+2002-08-27 07:45  henry
+
+	* [r419] HISTORY.txt, README.txt, TODO.txt:
+	  Updated for 1.4
+
+2002-08-27 07:45  henry
+
+	* [r418] docs/html.tar.gz:
+	  Updated dox
+
+2002-08-27 07:13  henry
+
+	* [r417] include/FTCharToGlyphIndexMap.h:
+	  Inlined the whole class
+
+2002-08-27 07:12  henry
+
+	* [r416] include/FTCharmap.h, include/FTExtrdGlyph.h,
+	  include/FTFace.h, include/FTFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyphContainer.h, include/FTSize.h,
+	  include/FTVectoriser.h:
+	  Updated dox comments
+
+2002-08-26 10:18  henry
+
+	* [r415] include/FTVector.h:
+	  Updated to VTK latest
+
+2002-08-26 10:17  henry
+
+	* [r414] src/FTGlyphContainer.cpp, src/FTPixmapGlyph.cpp:
+	  Removed mmgr
+
+2002-08-26 09:01  henry
+
+	* [r413] include/FTBitmapGlyph.h:
+	  Made some ints unsigned
+
+2002-08-26 08:57  henry
+
+	* [r412] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Removed std::vector
+
+2002-08-26 08:53  henry
+
+	* [r411] src/FTPixmapGlyph.cpp:
+	  Added some braces
+
+2002-08-26 08:51  henry
+
+	* [r410] include/FTVectoriser.h:
+	  Updated comments
+
+2002-08-26 08:49  henry
+
+	* [r409] src/FTBitmapGlyph.cpp:
+	  Made some ints unsigned
+
+2002-07-04 01:03  henry
+
+	* [r408] include/FTFont.h:
+	  Added a comment about impicit conversions
+
+2002-07-01 09:48  henry
+
+	* [r407] src/FTTesselationVector.h:
+	  FTVector is now a template
+
+2002-07-01 09:47  henry
+
+	* [r406] src/FTContourVector.h, src/FTGlyphVector.h,
+	  src/FTPointVector.h:
+	  FTvector is now a template
+
+2002-07-01 09:44  henry
+
+	* [r405] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h:
+	  Inlined private functions
+
+2002-06-22 23:35  henry
+
+	* [r404] include/FTVector.h, include/FTVectoriser.h:
+	  Made FTVector a template
+
+2002-06-22 23:34  henry
+
+	* [r403] include/FTFace.h, src/FTFace.cpp:
+	  Made charmap() const
+
+2002-06-22 23:33  henry
+
+	* [r402] include/FTFont.h, include/FTSize.h, src/FTFont.cpp,
+	  src/FTSize.cpp:
+	  Added accessors for point size
+
+2002-06-21 08:32  henry
+
+	* [r401] HISTORY.txt, README.txt, TODO.txt,
+	  mac/FTGL.pbproj/henry.pbxuser, mac/FTGL.pbproj/project.pbxproj:
+	  Merged 1.32 into main branch
+
+2002-06-21 08:30  henry
+
+	* [r400] win32_vcpp/ftgl.dsw, win32_vcpp/ftgl_demo,
+	  win32_vcpp/ftgl_demo/demo.cpp,
+	  win32_vcpp/ftgl_demo/ftgl_demo.dsp,
+	  win32_vcpp/ftgl_demo/ftgl_demo_2.dsp, win32_vcpp/ftgl_dll,
+	  win32_vcpp/ftgl_dll/ftgl_dll.dsp, win32_vcpp/ftgl_static_lib,
+	  win32_vcpp/ftgl_static_lib/ftgl_static_lib.dsp:
+	  New VC porj
+
+2002-06-21 08:30  henry
+
+	* [r399] win32_vcpp, win32_vcpp/README_WIN32.txt:
+	  New VC proj
+
+2002-06-21 08:29  henry
+
+	* [r398] demo/README.txt, mac/README.txt:
+	  Merged 1.32 into 1.4
+
+2002-06-21 08:23  henry
+
+	* [r397] include/FTVectoriser.h:
+	  removed stl vector
+
+2002-06-21 08:22  henry
+
+	* [r396] demo/FTGLDemo.cpp:
+	  Added hash define for windows fonts
+
+2002-06-21 08:22  henry
+
+	* [r395] src/FTFace.cpp:
+	  Getting rid of magic numbers
+
+2002-06-21 08:21  henry
+
+	* [r394] include/FTCharToGlyphIndexMap.h, include/FTVector.h,
+	  src/FTContourVector.h, src/FTGlyphVector.h, src/FTPointVector.h,
+	  src/FTTesselationVector.h:
+	  Replacements for stl containers
+
+2002-06-21 08:20  henry
+
+	* [r393] include/FTCharmap.h, src/FTCharmap.cpp:
+	  Remove <map> replaced with FTCharToGlyphIndexMap
+
+2002-06-20 08:40  henry
+
+	* [r392] license.txt:
+	  Added 2002
+
+2002-06-20 08:22  henry
+
+	* [r391] include/FTBitmapGlyph.h, include/FTCharmap.h,
+	  include/FTExtrdGlyph.h, include/FTFace.h, include/FTFont.h,
+	  include/FTGL.h, include/FTGLBitmapFont.h,
+	  include/FTGLExtrdFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTGlyph.h,
+	  include/FTGlyphContainer.h, include/FTLibrary.h,
+	  include/FTOutlineGlyph.h, include/FTPixmapGlyph.h,
+	  include/FTPolyGlyph.h, include/FTSize.h,
+	  include/FTTextureGlyph.h, include/FTVectoriser.h,
+	  src/FTBitmapGlyph.cpp, src/FTCharmap.cpp, src/FTExtrdGlyph.cpp,
+	  src/FTFace.cpp, src/FTFont.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLExtrdFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlyph.cpp,
+	  src/FTGlyphContainer.cpp, src/FTLibrary.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTSize.cpp, src/FTTextureGlyph.cpp,
+	  src/FTVectoriser.cpp:
+	  Changes for VTK
+	  Removed tabs
+	  Removed mmgr
+	  Optimisations for loading pixel based fonts
+	  Minor changes
+
+2002-06-12 08:56  henry
+
+	* [r390] include/FTFace.h, include/FTFont.h, include/FTGL.h,
+	  src/FTFace.cpp, src/FTFont.cpp:
+	  Merged FTGL_1_3_2
+
+2002-06-12 08:18  henry
+
+	* [r389] src/FTGLTextureFont.cpp:
+	  Reformatted and merged with 1.32
+
+2002-02-16 06:19  henry
+
+	* [r369] mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  Changed FTGLDemo to .cpp
+
+2002-02-16 06:19  henry
+
+	* [r368] src/FTGLBitmapFont.cpp:
+	  Removed FT_DoneGlyph and fix state stuff
+
+2002-02-16 06:18  henry
+
+	* [r367] src/FTGLPixmapFont.cpp, src/FTGLTextureFont.cpp:
+	  removed FT_Done_Glyph
+
+2002-02-16 06:17  henry
+
+	* [r366] README.txt:
+	  Added Ellers and Marcelo to contributors
+
+2002-02-16 06:17  henry
+
+	* [r365] src/FTPixmapGlyph.cpp:
+	  hardly worth mentioning
+
+2002-02-16 06:15  henry
+
+	* [r364] include/FTGlyph.h:
+	  Changed formatting
+
+2002-02-16 06:14  henry
+
+	* [r363] TODO.txt:
+	  Added glGet -> display list problem
+
+2002-02-16 05:42  henry
+
+	* [r362] demo/tb.h, demo/trackball.h:
+	  Added EXTERN "C"
+
+2002-02-16 05:12  henry
+
+	* [r360] demo/FTGLDemo.c, demo/FTGLDemo.cpp:
+	  Renamed from *.c to *.cpp
+
+2002-02-16 00:04  henry
+
+	* [r359] src/FTFont.cpp:
+	  Put glyphcontainer back in
+
+2002-02-09 23:56  henry
+
+	* [r358] docs/FTGL.html:
+	  Added an faq about missing freetype includes
+
+2002-02-06 02:41  henry
+
+	* [r357] src/FTGLPixmapFont.cpp:
+	  nothing
+
+2002-02-06 02:40  henry
+
+	* [r356] include/FTFont.h, src/FTFont.cpp:
+	  inlined the ascender and descender functions
+
+2002-02-05 09:50  henry
+
+	* [r355] docs/FTGL.html:
+	  a bit more
+
+2002-02-02 01:48  henry
+
+	* [r354] include/FTTextureGlyph.h, src/FTTextureGlyph.cpp:
+	  Removed redundant data and numGreys fields and changed render
+	  function slightly
+
+2002-02-02 00:16  henry
+
+	* [r353] src/FTBitmapGlyph.cpp, src/FTExtrdGlyph.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTTextureGlyph.cpp:
+	  Removed FT_DoneGlyph and clean up delete []
+
+2002-02-02 00:15  henry
+
+	* [r352] src/FTGLBitmapFont.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp:
+	  Moved FT_Done_Glyph from FT*Glyph
+
+2002-01-28 06:56  henry
+
+	* [r346] docs/FTGL.html:
+	  Added note in font manager sample code about the inline static
+	  problem.
+
+2002-01-28 06:24  henry
+
+	* [r345] demo/FTGLDemo.c:
+	  Added comment about font path
+
+2002-01-26 21:58  henry
+
+	* [r342] README.txt, TODO.txt:
+	  Updated foe 1.3b5
+
+2002-01-26 21:58  henry
+
+	* [r341] HISTORY.txt:
+	  Updated for 1.3b5
+
+2002-01-25 22:48  henry
+
+	* [r340] include/FTFont.h:
+	  More comments
+
+2002-01-25 22:34  henry
+
+	* [r339] include/FTGLTextureFont.h:
+	  Updated comments
+
+2002-01-25 22:34  henry
+
+	* [r338] include/FTExtrdGlyph.h, src/FTExtrdGlyph.cpp:
+	  Removed some redundant members and made then local
+
+2002-01-24 09:43  henry
+
+	* [r337] src/FTExtrdGlyph.cpp:
+	  Removed the winding code. Reverted back to broken outline.flag.
+	  Glyph winding still broken!!!
+
+2002-01-24 09:42  henry
+
+	* [r336] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Fixed compiler warnings (size_t)
+
+2002-01-24 09:41  henry
+
+	* [r335] src/FTPolyGlyph.cpp:
+	  Removed complier warnings
+
+2002-01-24 09:40  henry
+
+	* [r334] demo/FTGLDemo.c, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp:
+	  Set the correct state for font type
+
+2002-01-12 00:38  henry
+
+	* [r333] docs/FTGL.html:
+	  More work on docs
+
+2002-01-10 07:14  henry
+
+	* [r332] demo/FTGLDemo.c:
+	  Bbox now uses float
+
+2002-01-09 20:54  henry
+
+	* [r331] HISTORY.txt:
+	  Updated Jan 2002
+
+2002-01-09 20:54  henry
+
+	* [r330] src/FTBitmapGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Added a check for zero dimension bitmaps
+
+2002-01-09 20:35  henry
+
+	* [r329] include/FTFont.h, include/FTGlyph.h, src/FTFont.cpp:
+	  FTBbox now uses floats rather then ints
+
+2002-01-09 20:34  henry
+
+	* [r328] include/FTCharmap.h:
+	  Fixed up a comment
+
+2002-01-09 20:34  henry
+
+	* [r327] src/FTExtrdGlyph.cpp:
+	  Minor tidy up
+
+2002-01-09 20:33  henry
+
+	* [r326] src/FTGlyphContainer.cpp:
+	  More const stuff
+	  Replaced the for loop with a resize to fill the vector with null
+
+2002-01-09 20:32  henry
+
+	* [r325] include/FTGlyphContainer.h:
+	  More const stuff
+
+2001-12-14 02:52  henry
+
+	* [r324] src/FTExtrdGlyph.cpp:
+	  Added math.h header
+
+2001-12-11 23:11  henry
+
+	* [r323] demo/README.txt:
+	  Added compilation note
+
+2001-12-11 23:04  henry
+
+	* [r322] demo/tb.c:
+	  fixed glut header for OSX
+
+2001-12-11 22:52  henry
+
+	* [r320] README.txt, TODO.txt:
+	  1.3b4
+
+2001-12-11 22:46  henry
+
+	* [r319] demo/README.txt:
+	  initial import
+
+2001-12-11 03:56  henry
+
+	* [r318] include/FTFont.h, src/FTFont.cpp:
+	  rejigged the advance and render functions to make them
+	  sleaner...not really
+
+2001-12-11 03:55  henry
+
+	* [r317] include/FTExtrdGlyph.h, include/FTOutlineGlyph.h,
+	  include/FTPolyGlyph.h, include/FTVectoriser.h,
+	  src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp:
+	  Replaced double with FTGL_DOUBLE typedef
+
+2001-12-11 03:54  henry
+
+	* [r316] HISTORY.txt:
+	  1.3b4
+
+2001-12-11 03:53  henry
+
+	* [r315] src/FTCharmap.cpp, src/FTGLTextureFont.cpp:
+	  Tidied up includes
+
+2001-12-11 03:42  henry
+
+	* [r314] TODO.txt:
+	  Fixed FTExtrdGlyph bug
+	  OSX proj
+
+2001-12-11 03:42  henry
+
+	* [r313] demo/FTGLDemo.c:
+	  Tidy ups for release 1.3
+
+2001-12-11 01:31  henry
+
+	* [r312] mac/FTGL.pbproj, mac/FTGL.pbproj/henry.pbxuser,
+	  mac/FTGL.pbproj/project.pbxproj:
+	  initial import
+
+2001-12-11 01:26  henry
+
+	* [r311] mac/README.txt:
+	  Added a note about the linker problem when building freetype
+
+2001-12-10 23:35  henry
+
+	* [r310] demo/FTGLDemo.c:
+	  Added edit mode, labels and a bunch more
+
+2001-12-10 21:53  henry
+
+	* [r309] include/FTBitmapGlyph.h, include/FTCharmap.h,
+	  include/FTGlyph.h, include/FTGlyphContainer.h,
+	  include/FTPixmapGlyph.h, include/FTSize.h,
+	  include/FTTextureGlyph.h:
+	  Tidied up includes
+
+2001-12-10 21:52  henry
+
+	* [r308] include/FTLibrary.h:
+	  Clarified comment about init()
+
+2001-12-10 21:35  henry
+
+	* [r307] README.txt:
+	  Added site link about texture caching
+
+2001-12-10 21:30  henry
+
+	* [r306] src/FTBitmapGlyph.cpp, src/FTFace.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLExtrdFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGlyph.cpp,
+	  src/FTGlyphContainer.cpp, src/FTLibrary.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTSize.cpp, src/FTTextureGlyph.cpp:
+	  Added include for mmgr
+
+2001-11-29 05:10  henry
+
+	* [r305] include/FTExtrdGlyph.h, src/FTExtrdGlyph.cpp:
+	  Added Winding fuction to colc area for a full contour rather than
+	  part of one
+
+2001-11-29 01:13  henry
+
+	* [r304] include/FTGL.h:
+	  Added #define and a couple of typedefs for debugging
+
+2001-11-29 01:12  henry
+
+	* [r303] src/FTGLTextureFont.cpp:
+	  Added an include for mmgr
+
+2001-11-29 01:12  henry
+
+	* [r302] src/FTCharmap.cpp:
+	  Added include for mmgr
+
+2001-11-28 23:04  henry
+
+	* [r301] src/FTExtrdGlyph.cpp:
+	  Added a work around for a bug in freetype. Calcs the winding
+	  direction of the contour
+
+2001-11-28 03:16  henry
+
+	* [r300] TODO.txt:
+	  Added FTExtrdGlyph bug
+
+2001-11-27 04:52  henry
+
+	* [r299] include/FTVectoriser.h:
+	  Added a comment
+
+2001-11-25 20:40  henry
+
+	* [r298] src/FTExtrdGlyph.cpp, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp:
+	  Fixed the space bug AGAIN.
+
+2001-11-15 05:19  henry
+
+	* [r297] TODO.txt:
+	  Added a couple of bugs
+
+2001-11-15 05:16  henry
+
+	* [r296] docs/FTGL.html:
+	  Added a couple of web links
+
+2001-11-15 05:14  henry
+
+	* [r295] docs/FTGL.html:
+	  Added email discussion about sizes
+
+2001-11-14 03:23  henry
+
+	* [r294] demo/FTGLDemo.c:
+	  Enabled lighting for texture font
+
+2001-11-13 20:10  henry
+
+	* [r293] demo/FTGLDemo.c:
+	  Can now switch between font types.
+
+2001-11-13 20:09  henry
+
+	* [r292] docs/FTGL.html:
+	  Minor fixes, unix line endings
+
+2001-11-13 05:45  henry
+
+	* [r290] src/FTGLTextureFont.cpp:
+	  Fixed up the xOffset ( +padding)
+
+2001-11-13 05:45  henry
+
+	* [r289] include/FTFont.h:
+	  Added an empty virtual depth function
+
+2001-11-13 01:53  henry
+
+	* [r288] HISTORY.txt, README.txt, TODO.txt:
+	  Updated fro v1.3b3
+
+2001-11-13 01:35  henry
+
+	* [r287] demo/FTGLDemo.c:
+	  Added some comments
+
+2001-11-12 23:38  henry
+
+	* [r286] FTGL.jpg:
+	  turned into a gif and moved into the docs dir
+
+2001-11-12 23:36  henry
+
+	* [r285] mac/README.txt:
+	  updated for v1.3
+
+2001-11-12 23:34  henry
+
+	* [r284] mac/ftlib.prj:
+	  Updated for new texture font code and Extruded fonts
+
+2001-11-12 22:28  henry
+
+	* [r283] include/FTGLTextureFont.h, include/FTTextureGlyph.h,
+	  src/FTGLTextureFont.cpp, src/FTTextureGlyph.cpp:
+	  Refactored texture fonts to ba able to load glyphs on the
+	  fly...uses glTexSubImage2D. They are now more in line with the
+	  rest of the fonts.
+
+2001-11-12 22:26  henry
+
+	* [r282] src/FTFont.cpp:
+	  fix me
+
+2001-11-12 04:14  henry
+
+	* [r281] include/FTFont.h:
+	  Made MakeGlyphList() virtual again
+
+2001-11-12 02:45  henry
+
+	* [r280] src/FTPolyGlyph.cpp:
+	  Set the bounding box
+
+2001-11-12 02:44  henry
+
+	* [r279] src/FTTextureGlyph.cpp:
+	  Set the bounding box
+	  Tidied up some code
+
+2001-11-12 02:44  henry
+
+	* [r278] src/FTVectoriser.cpp:
+	  gluTesselation now feeds data to internal FTMesh class
+
+2001-11-12 02:43  henry
+
+	* [r277] include/FTVectoriser.h:
+	  changed ftPoint to use doubles and inlined a lot of stuff
+
+2001-11-12 02:42  henry
+
+	* [r276] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Added bounding box function
+
+2001-11-12 02:41  henry
+
+	* [r275] include/FTGlyph.h:
+	  Added FTBbox
+
+2001-11-12 02:41  henry
+
+	* [r274] include/FTOutlineGlyph.h, include/FTPolyGlyph.h:
+	  Changed type of glList
+
+2001-11-12 02:40  henry
+
+	* [r273] src/FTOutlineGlyph.cpp:
+	  Set the bounding box and re-order some operations
+
+2001-11-12 02:39  henry
+
+	* [r272] src/FTBitmapGlyph.cpp, src/FTPixmapGlyph.cpp:
+	  Set the bounding box
+
+2001-11-12 02:38  henry
+
+	* [r271] demo/FTGLDemo.c:
+	  Changed blend func
+
+2001-11-12 02:34  henry
+
+	* [r270] include/FTGL.h:
+	  Minor comments
+
+2001-11-12 02:34  henry
+
+	* [r269] src/FTFont.cpp:
+	  Added bounding box functions
+
+2001-11-12 02:33  henry
+
+	* [r268] include/FTFont.h:
+	  Added bounding box function
+	  un-virtualised some functions
+	  fixed comments
+
+2001-11-12 00:00  henry
+
+	* [r267] include/FTExtrdGlyph.h, include/FTGLExtrdFont.h,
+	  src/FTExtrdGlyph.cpp, src/FTGLExtrdFont.cpp:
+	  Extrusion code merged from 1.3beta2
+
+2001-11-11 23:59  henry
+
+	* [r266] demo, demo/FTGLDemo.c, demo/tb.c, demo/tb.h,
+	  demo/trackball.c, demo/trackball.h:
+	  Initial import of demo
+
+2001-11-11 23:58  henry
+
+	* [r265] docs/FTGL_1_3.gif, docs/images, docs/images/ftgldemo.jpg,
+	  docs/images/metrics.png:
+	  Initial import
+
+2001-11-11 23:57  henry
+
+	* [r264] docs/FTGL.html, docs/FTGL.txt:
+	  Changed to html from txt
+
+2001-11-11 23:26  henry
+
+	* [r263] cleanup:
+	  unix line endings....
+
+2001-11-08 21:05  henry
+
+	* [r238] cleanup, docs/ftgl_dox:
+	  Unix line endings
+
+2001-11-08 20:50  henry
+
+	* [r237] HISTORY.txt, README.txt, TODO.txt:
+	  Updated for 1.21
+
+2001-11-08 20:36  henry
+
+	* [r236] src/FTBitmapGlyph.cpp, src/FTVectoriser.cpp:
+	  Minor fixes for windows warnings
+
+2001-11-05 22:32  henry
+
+	* [r222] include/FTPolyGlyph.h, include/FTVectoriser.h,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp:
+	  Refactoring FTVectoriser & FTPolyGlyph to anable access to
+	  tessellation data
+
+2001-11-05 22:02  henry
+
+	* [r219] HISTORY.txt, README.txt, TODO.txt, docs/html.tar.gz:
+	  Updated for 1.2
+
+2001-11-05 21:01  henry
+
+	* [r218] README.txt:
+	  Removed the stuff about restricted sets of glyphs. It happens for
+	  free now:)
+
+2001-11-05 21:00  henry
+
+	* [r217] src/FTGLTextureFont.cpp:
+	  Fixed a bug that was overunning the glyph list
+
+2001-11-05 20:59  henry
+
+	* [r216] include/FTGLTextureFont.h:
+	  made MakeGlyphList virtual
+
+2001-11-05 20:59  henry
+
+	* [r215] src/FTGlyphContainer.cpp:
+	  Added a test for null pointers in the d_stor
+
+2001-11-05 20:58  henry
+
+	* [r214] TODO.txt:
+	  Added note about gluTessNormal
+
+2001-11-05 20:58  henry
+
+	* [r213] docs/FTGL.txt:
+	  More words of wisdom
+
+2001-11-04 04:55  henry
+
+	* [r212] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyphContainer.h, src/FTFont.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGlyphContainer.cpp:
+	  Unix line endings
+
+2001-11-04 04:53  henry
+
+	* [r211] include/FTGL.h:
+	  unix line endings
+
+2001-11-04 04:33  henry
+
+	* [r210] include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyphContainer.h, src/FTFont.cpp,
+	  src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlyphContainer.cpp:
+	  Changes to allow glyphs to be loaded on the fly...
+	  MakeGlyphList is no longer pure virtual.
+	  New function MakeGlyph is pure virtual
+	  Open now has a flag for pre-cache
+	  GlyphContainer builds a list of null pointers
+	  advance and render functions check if glyph has been loaded and
+	  loads it if it has'nt
+
+2001-11-02 01:18  henry
+
+	* [r209] TODO.txt:
+	  Added note about padding
+
+2001-11-02 01:17  henry
+
+	* [r208] HISTORY.txt:
+	  Added 1.1 tag
+
+2001-11-02 01:17  henry
+
+	* [r207] include/FTGL.h:
+	  Got rid of non standard glext.h and replaced with defines
+
+2001-11-01 20:07  henry
+
+	* [r206] src/FTSize.cpp:
+	  Added brackets to clear Win32 warning
+
+2001-11-01 20:05  henry
+
+	* [r205] src/FTGLTextureFont.cpp:
+	  Added padding to size calculations
+
+2001-10-31 02:00  henry
+
+	* [r203] docs/html.tar.gz:
+	  Initial import. Archived to fix filename problem
+
+2001-10-31 00:05  henry
+
+	* [r202] HISTORY.txt, README.txt, TODO.txt:
+	  Updated for 1.1
+
+2001-10-30 23:54  henry
+
+	* [r201] mac/ftlib.prj:
+	  renamed the source files to .cpp
+
+2001-10-30 23:23  henry
+
+	* [r200] include/FTVectoriser.h, src/FTOutlineGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTVectoriser.cpp:
+	  Renamed functions in prep for extruded glyphs
+	  Ingest->Process
+	  Output->MakeOutline
+
+2001-10-30 21:35  henry
+
+	* [r199] docs/FTGL.txt:
+	  stuff
+
+2001-10-30 21:30  henry
+
+	* [r198] mac/README.txt:
+	  Fixed typos
+
+2001-10-30 05:19  henry
+
+	* [r197] docs/README.txt:
+	  Docs fixed so don't need this
+
+2001-10-30 05:18  henry
+
+	* [r196] docs/FTGL.txt:
+	  Initial import
+
+2001-10-30 02:51  henry
+
+	* [r195] src/FTCharmap.cpp:
+	  Fixed c_stor to ensure that a valid charmap is created
+
+2001-10-29 20:09  henry
+
+	* [r194] include/FTFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyphContainer.h, include/FTTextureGlyph.h,
+	  src/FTGLTextureFont.cpp, src/FTGlyphContainer.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Minor changes to fix some implicit type conversions
+
+2001-10-28 04:23  henry
+
+	* [r193] cleanup, docs/ftgl_dox:
+	  Initial import
+
+2001-10-28 04:06  henry
+
+	* [r192] src/FTGLTextureFont.cpp:
+	  Got rid of the static in FTTextureGlyph and tidied the code up
+
+2001-10-28 04:06  henry
+
+	* [r191] src/FTGLBitmapFont.cpp:
+	  Removed a couple of comments
+
+2001-10-28 04:05  henry
+
+	* [r190] include/FTTextureGlyph.h, src/FTTextureGlyph.cpp:
+	  Got rid of the static and moved the glBegin/glEnd pairs
+
+2001-10-28 04:04  henry
+
+	* [r189] include/FTGL.h:
+	  Added test for GL_TEXTURE_2D_BINDING_EXT and include for glext.h
+
+2001-10-28 04:04  henry
+
+	* [r188] mac/README.txt:
+	  Added note about STL
+
+2001-10-26 02:42  henry
+
+	* [r187] docs, docs/README.txt:
+	  Initial import
+
+2001-10-25 23:11  henry
+
+	* [r186] COPYING.txt, FTGL.jpg, license.txt, mac, mac/README.txt,
+	  mac/ftlib.prj:
+	  Initial import
+
+2001-10-25 21:39  henry
+
+	* [r184] HISTORY.txt, README.txt, TODO.txt:
+	  Updated for 1.01
+
+2001-10-25 20:54  henry
+
+	* [r183] src/FTGLTextureFont.cpp:
+	  Removed the glEnable( GL_TEXTURE_2D) call
+
+2001-10-25 20:53  henry
+
+	* [r182] include/FTTextureGlyph.h:
+	  Added a note about replacing activeTextureID
+
+2001-10-25 04:33  henry
+
+	* [r181] src/FTPolyGlyph.cpp:
+	  Removed the glu header
+
+2001-10-25 04:32  henry
+
+	* [r180] include/FTGL.h:
+	  Added the glu headers
+
+2001-10-25 04:03  henry
+
+	* [r179] src/FTCharmap.cpp, src/FTFace.cpp,
+	  src/FTGLTextureFont.cpp, src/FTSize.cpp, src/FTVectoriser.cpp:
+	  Re-ordered initialisation lists to keep project builder happy
+	  (MAC OSX)
+
+2001-10-25 04:01  henry
+
+	* [r178] include/FTFont.h:
+	  Made numGlyphs unsigned
+
+2001-10-25 03:57  henry
+
+	* [r177] include/FTGlyphContainer.h:
+	  Made the destructor virtual
+
+2001-10-25 02:14  henry
+
+	* [r176] include/FTGL.h:
+	  Changed include to allow for bloody Apple's new OpenGL on OSX
+
+2001-10-25 02:01  henry
+
+	* [r175] include/FTGLBitmapFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp:
+	  Removed redundant tempGlyph members
+
+2001-10-24 21:21  henry
+
+	* [r174] include/FTGlyphContainer.h, include/FTVectoriser.h:
+	  Fixing up the comments
+
+2001-10-24 03:31  henry
+
+	* [r172] HISTORY.txt, TODO.txt:
+	  Version 1.0 release
+
+2001-10-24 03:31  henry
+
+	* [r171] README.txt:
+	  Version 1.0 release
+	  Added note about glyphs
+
+2001-10-23 03:05  henry
+
+	* [r170] src/FTGLTextureFont.cpp:
+	  Enable texturing
+
+2001-10-14 21:53  henry
+
+	* [r169] include/FTVectoriser.h:
+	  Updated comments and removed redundant member vars
+
+2001-10-14 21:52  henry
+
+	* [r168] include/FTBitmapGlyph.h, include/FTCharmap.h,
+	  include/FTFace.h, include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyph.h, include/FTGlyphContainer.h,
+	  include/FTLibrary.h, include/FTOutlineGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTPolyGlyph.h,
+	  include/FTTextureGlyph.h:
+	  Updated comments
+
+2001-10-10 22:03  henry
+
+	* [r167] src/FTBitmapGlyph.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTLibrary.cpp,
+	  src/FTOutlineGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTTextureGlyph.cpp:
+	  Minor changes, mainly to includes, for the windows port
+
+2001-10-10 22:01  henry
+
+	* [r166] include/FTGL.h:
+	  Added the conditional compilation stuff for Windows DLL
+
+2001-10-10 22:00  henry
+
+	* [r165] include/FTCharmap.h:
+	  Added FTGL_EXPORT to class declaration for the windows port
+
+2001-10-10 21:59  henry
+
+	* [r164] include/FTBitmapGlyph.h, include/FTFace.h,
+	  include/FTFont.h, include/FTGLBitmapFont.h,
+	  include/FTGLOutlineFont.h, include/FTGLPixmapFont.h,
+	  include/FTGLPolygonFont.h, include/FTGLTextureFont.h,
+	  include/FTGlyph.h, include/FTGlyphContainer.h,
+	  include/FTLibrary.h, include/FTOutlineGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTPolyGlyph.h, include/FTSize.h,
+	  include/FTTextureGlyph.h:
+	  Added FTGL_EXPORT to class declarations for the windows port
+
+2001-10-10 21:53  henry
+
+	* [r163] include/FTVectoriser.h:
+	  Added FTGL_EXPORT for windows
+
+2001-09-30 23:03  henry
+
+	* [r162] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Changed these to FTOutlineGlyph. Removed these files
+
+2001-09-30 23:01  henry
+
+	* [r160] include/FTOutlineGlyph.h, src/FTOutlineGlyph.cpp:
+	  These used to be FTVectorGlyph. Changed the name.
+
+2001-09-30 23:00  henry
+
+	* [r159] include/FTGL.h:
+	  Removed the redundant enums
+
+2001-09-30 23:00  henry
+
+	* [r158] src/FTFace.cpp:
+	  Clean up the FTCharmap
+
+2001-09-30 22:59  henry
+
+	* [r157] include/FTGLOutlineFont.h, src/FTGLOutlineFont.cpp:
+	  Changed FTVectorGlyph to FTOutlineGlyph
+
+2001-09-30 22:57  henry
+
+	* [r156] src/FTGLTextureFont.cpp:
+	  Changed std::memset to memset. Added using namespace std.
+	  This is for windows
+
+2001-09-30 22:56  henry
+
+	* [r155] src/FTPolyGlyph.cpp:
+	  Added CALLBACK to the gluTess callback function definitions. This
+	  for windows.
+
+2001-09-30 22:53  henry
+
+	* [r154] HISTORY.txt, README.txt, TODO.txt:
+	  Beta 7
+	  Split ReadMe into README, HISTORY and TODO files
+
+2001-09-27 01:41  henry
+
+	* [r153] src/FTPolyGlyph.cpp:
+	  Added tessellation winding rules
+
+2001-09-27 01:40  henry
+
+	* [r152] src/FTVectoriser.cpp:
+	  Added a test for an empty point list when adding points to a
+	  contour.
+
+2001-09-20 00:26  henry
+
+	* [r150] README.txt:
+	  Beta 6 release
+
+2001-09-20 00:22  henry
+
+	* [r149] include/FTFont.h, src/FTFont.cpp:
+	  Removed redundant code. Added comments for Advancs()
+
+2001-09-19 05:00  henry
+
+	* [r148] README.txt:
+	  Implemented advance width function for strings
+
+2001-09-19 04:54  henry
+
+	* [r147] include/FTFont.h, include/FTGlyphContainer.h,
+	  src/FTFont.cpp, src/FTGlyphContainer.cpp:
+	  Added functions to calc the advance width of a string
+
+2001-09-19 04:54  henry
+
+	* [r146] src/FTTextureGlyph.cpp:
+	  Minor changes
+
+2001-09-19 01:50  henry
+
+	* [r145] include/FTGlyph.h:
+	  Added accessor function for advance width
+
+2001-09-17 22:53  henry
+
+	* [r144] include/FTCharmap.h, src/FTCharmap.cpp:
+	  Set the default encoding
+
+2001-09-17 21:02  henry
+
+	* [r143] README.txt:
+	  Implemented and profiled new FTCharmap class
+
+2001-09-17 21:00  henry
+
+	* [r142] src/FTSize.cpp:
+	  Minor change to CharSize func
+
+2001-09-17 21:00  henry
+
+	* [r141] include/FTGlyph.h, src/FTGlyph.cpp:
+	  Comment changes
+
+2001-09-17 20:59  henry
+
+	* [r140] include/FTFace.h, src/FTFace.cpp:
+	  Implemented FTCharmap class
+
+2001-09-17 20:58  henry
+
+	* [r139] include/FTCharmap.h, src/FTCharmap.cpp:
+	  Initial revision
+
+2001-09-16 21:54  henry
+
+	* [r138] README.txt:
+	  Updated for BETA 6
+
+2001-09-16 21:52  henry
+
+	* [r137] include/FTGLBitmapFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp:
+	  Updated for changes in *Glyph classes.
+	  Added unicode render function.
+	  Updated comments
+
+2001-09-16 21:50  henry
+
+	* [r136] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Added error code (err) to initialisation list
+
+2001-09-16 21:49  henry
+
+	* [r135] include/FTBitmapGlyph.h, include/FTPixmapGlyph.h,
+	  include/FTPolyGlyph.h, include/FTTextureGlyph.h,
+	  src/FTBitmapGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTTextureGlyph.cpp,
+	  src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Removed glyph index parameter from c_stor (see FTGlyph) and
+	  updated comments
+
+2001-09-16 21:31  henry
+
+	* [r134] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Minor tidy ups
+
+2001-09-16 21:30  henry
+
+	* [r133] include/FTSize.h, src/FTSize.cpp:
+	  Updated comments.
+	  Added err and ftface to initialosation list
+
+2001-09-16 21:29  henry
+
+	* [r132] src/FTFace.cpp, src/FTLibrary.cpp:
+	  Added error code (err) to initialisation list
+
+2001-09-16 21:28  henry
+
+	* [r131] include/FTFont.h, src/FTFont.cpp:
+	  Updated comments and added a unicode render function
+
+2001-09-16 21:27  henry
+
+	* [r130] include/FTGlyph.h, src/FTGlyph.cpp:
+	  removed the glyphIndex member
+
+2001-09-14 01:13  henry
+
+	* [r129] README.txt:
+	  Updated for changes made while in the UK
+
+2001-09-14 01:11  henry
+
+	* [r128] src/FTGLTextureFont.cpp:
+	  Added FIXME comment for max number of textures
+
+2001-09-14 00:42  henry
+
+	* [r127] src/FTPolyGlyph.cpp, src/FTVectorGlyph.cpp:
+	  The freetype glyph is now disposed of correctly after
+	  initialsation
+
+2001-09-14 00:40  henry
+
+	* [r126] src/FTFace.cpp:
+	  Changed the order in which things are cleaned up when this object
+	  is destroyed.
+
+2001-09-14 00:39  henry
+
+	* [r125] src/FTFont.cpp:
+	  No longer call face.close(). FTFace is responsible for closing
+	  the face.
+
+2001-09-14 00:38  henry
+
+	* [r124] include/FTFont.h:
+	  Added more comments
+
+2001-09-14 00:37  henry
+
+	* [r123] src/FTGlyph.cpp:
+	  Removed FT_Done_Glyph from the d_tor. Glyph disposal is done
+	  immediately after the glyph is processed.
+
+2001-08-29 04:33  henry
+
+	* [r121] README.txt:
+	  Updated for beta 5
+
+2001-08-29 01:07  henry
+
+	* [r120] src/FTPolyGlyph.cpp, src/FTVectorGlyph.cpp:
+	  Removed the redundant pos.x in Render()
+
+2001-08-28 23:04  henry
+
+	* [r119] include/FTFace.h, src/FTFace.cpp:
+	  Moved the list of valid encoding symbols from the .cc to .h so it
+	  appears in the docs.
+
+2001-08-28 22:53  henry
+
+	* [r118] src/FTPolyGlyph.cpp, src/FTVectorGlyph.cpp,
+	  src/FTVectoriser.cpp:
+	  Fixed a bug in FTVectoriser::Ingest() that caused non printing
+	  glyphs ( eg spaces) to be ignored
+
+2001-08-28 05:09  henry
+
+	* [r117] README.txt:
+	  Updated for beta 5
+
+2001-08-28 05:09  henry
+
+	* [r116] src/FTBitmapGlyph.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Fixed the test for an invalid glyph format
+
+2001-08-28 05:09  henry
+
+	* [r115] src/FTPolyGlyph.cpp:
+	  reversed the test for glyph format = outline
+
+2001-08-28 05:07  henry
+
+	* [r114] src/FTVectorGlyph.cpp:
+	  Reversed the test for glyph format == oultline
+
+2001-08-28 01:47  henry
+
+	* [r113] src/FTVectoriser.cpp:
+	  Removed redundant static_cast<float>()
+
+2001-08-28 01:12  henry
+
+	* [r112] include/FTFont.h, include/FTSize.h:
+	  Fixed comments
+
+2001-08-27 23:01  henry
+
+	* [r111] include/FTFont.h:
+	  Updated comments
+
+2001-08-27 22:03  henry
+
+	* [r110] src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp:
+	  If we get a NULL FT_Glyph we now report an error.
+
+2001-08-27 21:40  henry
+
+	* [r109] src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp:
+	  Added a check for a NULL glyph
+
+2001-08-27 21:32  henry
+
+	* [r108] include/FTFace.h, src/FTFace.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp:
+	  Changed the return type of FTFace::Glyph() from a reference to a
+	  pointer so I can return NULL on failure.
+
+2001-08-27 21:29  henry
+
+	* [r107] include/FTBitmapGlyph.h, include/FTGlyph.h,
+	  include/FTPixmapGlyph.h, include/FTTextureGlyph.h:
+	  Minor change. Changed arg name in Render()
+
+2001-08-27 03:33  henry
+
+	* [r106] README.txt:
+	  Updated for beta 5
+
+2001-08-27 03:16  henry
+
+	* [r105] include/FTGlyphContainer.h:
+	  Started to add comments
+
+2001-08-27 03:15  henry
+
+	* [r104] src/FTGlyph.cpp:
+	  Minor change to FIXME comment
+
+2001-08-27 03:15  henry
+
+	* [r103] include/FTGlyph.h, include/FTLibrary.h:
+	  Updated comments
+
+2001-08-27 03:11  henry
+
+	* [r102] src/FTPixmapGlyph.cpp:
+	  Static cast float to unsigned char in bitmap code
+
+2001-08-27 03:10  henry
+
+	* [r101] src/FTPolyGlyph.cpp:
+	  update to reflect change in contourFlag in FTVectoriser
+
+2001-08-27 00:57  henry
+
+	* [r100] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Changed the args for FTContour::AddPoint() to float to get rid of
+	  warning. Also make more sense.
+
+2001-08-26 22:53  henry
+
+	* [r99] src/FTFace.cpp:
+	  Fixed a bug in the kerning code. Dims are in 1/64 pixels.
+
+2001-08-26 22:30  henry
+
+	* [r98] src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp:
+	  Removed the numGlyphs hack
+
+2001-08-26 22:28  henry
+
+	* [r97] include/FTVectoriser.h:
+	  Made contourFlag private and added accessor function
+
+2001-08-24 02:18  henry
+
+	* [r96] include/FTFace.h, include/FTFont.h, include/FTGlyph.h,
+	  include/FTLibrary.h, include/FTSize.h:
+	  Added JavaDoc comments
+
+2001-08-24 02:17  henry
+
+	* [r95] src/FTLibrary.cpp:
+	  Minor format change
+
+2001-08-24 02:17  henry
+
+	* [r94] src/FTFace.cpp:
+	  Added error checking in charSize().
+	  Inserted some code comments to remind me how to set the encoding
+	  properly
+
+2001-08-24 02:16  henry
+
+	* [r93] src/FTBitmapGlyph.cpp, src/FTGlyphContainer.cpp,
+	  src/FTPixmapGlyph.cpp:
+	  Minor changes to comments
+
+2001-08-24 02:06  henry
+
+	* [r92] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Made some magic numbers into constants
+
+2001-08-22 22:58  henry
+
+	* [r91] src/FTPolyGlyph.cpp, src/FTTextureGlyph.cpp,
+	  src/FTVectorGlyph.cpp:
+	  Fixed the positional stuff in render(). Added leftside bearing
+	  offset.
+
+2001-08-22 03:40  henry
+
+	* [r90] README.txt:
+	  Added profiling notes, updated todos.
+
+2001-08-22 03:40  henry
+
+	* [r89] include/FTSize.h, src/FTSize.cpp:
+	  Changed the return types for the size function to int
+
+2001-08-21 03:33  henry
+
+	* [r88] src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp:
+	  Glyphs are know retrieved from the FTFace object rather than with
+	  direct freetype calls.
+
+2001-08-21 03:20  henry
+
+	* [r87] src/FTFace.cpp:
+	  return type for CharIndex() made unsigned int
+
+2001-08-20 22:51  henry
+
+	* [r86] include/FTBitmapGlyph.h, include/FTFace.h,
+	  include/FTFont.h, include/FTGLTextureFont.h, include/FTGlyph.h,
+	  include/FTGlyphContainer.h, include/FTPixmapGlyph.h,
+	  include/FTPolyGlyph.h, include/FTSize.h,
+	  include/FTTextureGlyph.h, src/FTBitmapGlyph.cpp, src/FTFace.cpp,
+	  src/FTFont.cpp, src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp,
+	  src/FTGLTextureFont.cpp, src/FTGlyph.cpp,
+	  src/FTGlyphContainer.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTPolyGlyph.cpp, src/FTSize.cpp, src/FTTextureGlyph.cpp,
+	  src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Started being more strict with types eg integer indices and sizes
+	  are now unsigned.
+
+2001-08-20 22:36  henry
+
+	* [r85] include/FTFace.h, src/FTFace.cpp:
+	  Added Glyph function
+
+2001-08-20 21:44  henry
+
+	* [r84] include/FTLibrary.h, src/FTGLTextureFont.cpp:
+	  Gerards fixes to compile under Linux
+
+2001-08-19 22:49  henry
+
+	* [r83] README.txt:
+	  Updated for beta 4
+
+2001-08-19 22:43  henry
+
+	* [r82] include/FTGLTextureFont.h, include/FTTextureGlyph.h,
+	  src/FTGLTextureFont.cpp, src/FTTextureGlyph.cpp:
+	  Major change to enable multiple textures. If all the glyphs for a
+	  given face and size don't fit within the max texture size we now
+	  create as many textures as required and switch automatically when
+	  rendering.
+
+2001-08-19 22:40  henry
+
+	* [r81] include/FTSize.h, src/FTSize.cpp:
+	  Changed the size stuff to use floats rather than ints.
+	  Global height and width is now calculated using the bbox
+
+2001-08-19 22:34  henry
+
+	* [r80] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  This now uses FTFace function rather than calling freetype
+	  directly...better encapsulation and may allow future caching.
+
+2001-08-19 22:32  henry
+
+	* [r79] include/FTFont.h, src/FTFont.cpp:
+	  Updated to reflect changes in FTFace & FTGlyphContainer
+
+2001-08-19 22:31  henry
+
+	* [r78] include/FTFace.h, src/FTFace.cpp:
+	  Implemented charmap, CharIndex and kernAdvance functions. These
+	  are now wrappers for the freetype functions and the rest of FTGL
+	  should not call freetype directly.
+
+2001-08-19 22:20  henry
+
+	* [r77] include/FTVectoriser.h:
+	  removed the unused loop struct.
+
+2001-08-16 06:15  henry
+
+	* [r76] src/FTGLPolygonFont.cpp:
+	  Changed the mode in FT_Load_Glyph()
+
+2001-08-16 06:14  henry
+
+	* [r75] src/FTGLOutlineFont.cpp:
+	  Changed the mode in FT_load_Glyph()
+	  Changed the blend function in render()
+
+2001-08-12 22:05  henry
+
+	* [r74] README.txt:
+	  Added TODO about sizes
+
+2001-08-09 02:49  henry
+
+	* [r73] src/FTPolyGlyph.cpp:
+	  Found memory leak in glCombine
+
+2001-08-09 02:30  henry
+
+	* [r72] README.txt:
+	  Result of memory testing, found a leak in FTPolyGlyph
+
+2001-08-08 01:33  henry
+
+	* [r70] README.txt:
+	  Updated for BETA 3
+
+2001-08-08 01:33  henry
+
+	* [r69] include/FTFont.h, src/FTFont.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGlyphContainer.cpp:
+	  Changes to the way charmaps are handled
+
+2001-08-08 01:32  henry
+
+	* [r68] src/FTPolyGlyph.cpp, src/FTVectorGlyph.cpp:
+	  render() does not draw'invalid' glyphs
+
+2001-08-08 01:30  henry
+
+	* [r67] include/FTGLTextureFont.h, src/FTGLTextureFont.cpp:
+	  Changes to the charmap handling and fixed TextureSize()
+
+2001-08-07 21:32  henry
+
+	* [r66] src/FTGLBitmapFont.cpp, src/FTGLOutlineFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTGLPolygonFont.cpp:
+	  Tidied up the error stuff
+
+2001-08-07 21:30  henry
+
+	* [r65] src/FTGLTextureFont.cpp:
+	  Tidied up the error stuff and got rid of some redundant code.
+	  Added a note about glyph bounding boxes
+
+2001-08-07 21:28  henry
+
+	* [r64] src/FTGlyphContainer.cpp:
+	  Added a note about kerning modes
+
+2001-08-07 21:28  henry
+
+	* [r63] include/FTFont.h, src/FTFont.cpp:
+	  Minor tidy ups.
+	  Tidied up the error stuff
+
+2001-08-07 21:26  henry
+
+	* [r62] src/FTFace.cpp:
+	  Tidied up the err stuff
+
+2001-08-07 21:25  henry
+
+	* [r61] include/FTLibrary.h, src/FTLibrary.cpp:
+	  Added Error() stuff
+
+2001-08-07 21:24  henry
+
+	* [r60] src/FTPolyGlyph.cpp:
+	  Added comment about winding rules
+
+2001-08-07 21:21  henry
+
+	* [r59] include/FTSize.h, src/FTSize.cpp:
+	  Added Error().
+	  Minor Tidy ups
+	  Added Underline()...doesn't work yet
+
+2001-08-07 01:03  henry
+
+	* [r58] include/FTGLOutlineFont.h, src/FTGLOutlineFont.cpp:
+	  Added a render function to set LINE_SMOOTH for anti aliased lines
+
+2001-08-07 01:02  henry
+
+	* [r57] include/FTGLPixmapFont.h, src/FTGLPixmapFont.cpp:
+	  Added a render function to set the alpha blend mode
+
+2001-08-07 01:02  henry
+
+	* [r56] src/FTPixmapGlyph.cpp:
+	  Now gets the current color and create the glyph pixmap based on
+	  that.
+
+2001-08-07 01:00  henry
+
+	* [r55] include/FTGLBitmapFont.h, src/FTGLBitmapFont.cpp:
+	  Added a render function to set the pixelStore stuff previously
+	  set by the bitmap glyph
+
+2001-08-07 00:59  henry
+
+	* [r54] src/FTBitmapGlyph.cpp:
+	  Moved the pixelStore stuff to BitmapFont
+
+2001-08-06 21:01  henry
+
+	* [r53] README.txt:
+	  Fixed char > 127 bug.
+	  Added TODO about Unicode.
+	  Added link to interesting website
+
+2001-08-06 20:57  henry
+
+	* [r52] src/FTFont.cpp:
+	  Changed char* to unsigend char* to fix bug when displaying chars
+	  >127
+
+2001-08-06 05:46  henry
+
+	* [r51] include/FTGLTextureFont.h:
+	  Changed types for IRIX
+
+2001-08-06 05:43  henry
+
+	* [r50] src/FTBitmapGlyph.cpp, src/FTGLTextureFont.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTPolyGlyph.cpp,
+	  src/FTTextureGlyph.cpp, src/FTVectorGlyph.cpp:
+	  Added GL to openGL include paths
+
+2001-08-06 04:29  henry
+
+	* [r49] include/FTVectoriser.h:
+	  Added using namespace std
+
+2001-08-05 22:35  henry
+
+	* [r47] README.txt:
+	  Updated for BETA 2
+
+2001-08-05 22:29  henry
+
+	* [r46] README.txt:
+	  Added Description. Added TODOs. Comments about charSize problem.
+
+2001-08-05 22:28  henry
+
+	* [r45] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  const rampage:) added next2 to curve code
+
+2001-08-05 22:22  henry
+
+	* [r44] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Made render() arg const. delete contourList
+
+2001-08-05 22:21  henry
+
+	* [r43] include/FTGLOutlineFont.h, src/FTGLOutlineFont.cpp:
+	  Minor tidy ups
+
+2001-08-05 22:16  henry
+
+	* [r42] include/FTPixmapGlyph.h, src/FTPixmapGlyph.cpp:
+	  Initialisation list. Made render() arg const.
+
+2001-08-05 22:15  henry
+
+	* [r41] include/FTPolyGlyph.h, src/FTPolyGlyph.cpp:
+	  Made render() arg const. Minor tidy ups
+
+2001-08-05 21:46  henry
+
+	* [r40] src/FTGLPolygonFont.cpp:
+	  Minor tidy ups
+
+2001-08-05 21:44  henry
+
+	* [r39] include/FTTextureGlyph.h, src/FTTextureGlyph.cpp:
+	  Made render() arg const. Initialisation list.
+
+2001-08-05 21:43  henry
+
+	* [r38] include/FTGLTextureFont.h, src/FTGLTextureFont.cpp:
+	  Made return type of render() void.
+	  Initialisation list.
+	  TextureSize() complete
+
+2001-08-05 21:41  henry
+
+	* [r37] include/FTGlyphContainer.h, src/FTGlyphContainer.cpp:
+	  Added FT_Error member. Minor tidy ups and fixed automatic
+	  variable warning in render()
+
+2001-08-05 21:39  henry
+
+	* [r36] include/FTGlyph.h, src/FTGlyph.cpp:
+	  Minor tidy ups and made render() arg const
+
+2001-08-05 21:39  henry
+
+	* [r35] include/FTFont.h, src/FTFont.cpp:
+	  Minor tidy ups and fixed a couple of compiler warnings
+
+2001-08-05 21:37  henry
+
+	* [r34] include/FTFace.h, src/FTFace.cpp:
+	  Added FT_Error member and accessor function. Minor tidy ups
+
+2001-08-05 21:35  henry
+
+	* [r33] include/FTBitmapGlyph.h, src/FTBitmapGlyph.cpp:
+	  Made render() arg const
+
+2001-08-05 21:34  henry
+
+	* [r32] include/FTGLBitmapFont.h, include/FTGLPixmapFont.h,
+	  include/FTLibrary.h, src/FTGLBitmapFont.cpp,
+	  src/FTGLPixmapFont.cpp, src/FTLibrary.cpp:
+	  Minor tidy ups
+
+2001-08-02 23:41  henry
+
+	* [r31] README.txt:
+	  Added some TODO stuff
+
+2001-08-02 23:00  henry
+
+	* [r29] README.txt:
+	  Polygon fonts now work.
+	  BETA release 1.0b1
+
+2001-08-02 22:59  henry
+
+	* [r28] include/FTGLPolygonFont.h, include/FTPolyGlyph.h,
+	  src/FTGLPolygonFont.cpp, src/FTPolyGlyph.cpp:
+	  Polygon fonts now work.
+
+2001-08-02 21:52  henry
+
+	* [r27] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Made the ftPoint struct an external class and added some helper
+	  functions eg operator !=
+	  Got rid of ftLoop, it's not needed now that I've tidied up the
+	  curve parsing code (which fixed the Vivaldi Q bug)
+	  Minor code tidy ups.
+
+2001-08-02 21:49  henry
+
+	* [r26] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Changed the cord data from floats to doubles...trying to debug
+	  the glutess stuff in FTPolyGlyph!!
+
+2001-08-02 21:47  henry
+
+	* [r25] README.txt:
+	  Added a future section. Fixed the Vivaldi Q bug
+
+2001-08-01 23:00  henry
+
+	* [r24] README.txt:
+	  Updated for changes to FTVectorGlyph.
+
+2001-08-01 22:58  henry
+
+	* [r23] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Removed the <vector> include and some debug code. Changed the
+	  render code to use glDisplayList. There was NO performance
+	  improvement but it will make it the same as FTPolyGlyph.
+	  Now uses glTranslate for the pen pos, again to make it the same
+	  as FTPolyGlyph.
+	  Changes because of the changes tp FTPOINT in FTVectoriser.
+
+2001-08-01 22:56  henry
+
+	* [r22] include/FTVectoriser.h, src/FTVectoriser.cpp:
+	  Made the FTPOINT type a struct of 3 floats rather than a
+	  PAIR<int, int> to make it compatible with gluTess.
+	  Made bValues[][] a private member rather than local to
+	  evaluateCurve()
+
+2001-08-01 05:27  henry
+
+	* [r21] include/FTVectoriser.h, src/FTVectorGlyph.cpp,
+	  src/FTVectorGlyph.h, src/FTVectoriser.cpp:
+	  Spilt the FTVectoriser & FTContour stuff out of FTVectorGlyph.
+	  Made some minor changes to the curve code.
+
+2001-08-01 04:28  henry
+
+	* [r20] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  Removed stdio include and used arg in deCasteljau function
+	  declaration
+
+2001-08-01 04:22  henry
+
+	* [r19] README.txt:
+	  Updated now that vectorglyphs now work.
+
+2001-08-01 04:21  henry
+
+	* [r18] src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  First commit of working code
+
+2001-08-01 04:20  henry
+
+	* [r17] src/FTTextureGlyph.cpp:
+	  removed a comment
+
+2001-08-01 04:19  henry
+
+	* [r16] src/FTGLTextureFont.cpp:
+	  Added code to calculate the min texture size
+
+2001-08-01 04:17  henry
+
+	* [r15] include/FTGLOutlineFont.h, src/FTGLOutlineFont.cpp:
+	  Updated for FTVectorGlyph
+
+2001-07-30 04:49  henry
+
+	* [r14] README.txt:
+	  Added raster position comment to todo
+
+2001-07-30 04:48  henry
+
+	* [r13] src/FTPixmapGlyph.cpp:
+	  Fixing the position stuff
+
+2001-07-30 04:47  henry
+
+	* [r12] src/FTBitmapGlyph.cpp:
+	  Fixing the psosition stuff
+
+2001-07-30 02:29  henry
+
+	* [r11] README.txt:
+	  Raster position changes. TextureGlyph working but not finished
+
+2001-07-30 02:24  henry
+
+	* [r10] include/FTBitmapGlyph.h, include/FTFont.h,
+	  include/FTGLTextureFont.h, include/FTGlyphContainer.h,
+	  include/FTPixmapGlyph.h, include/FTTextureGlyph.h,
+	  src/FTBitmapGlyph.cpp, src/FTFont.cpp, src/FTGLTextureFont.cpp,
+	  src/FTGlyphContainer.cpp, src/FTPixmapGlyph.cpp,
+	  src/FTTextureGlyph.cpp:
+	  Rewrote the way the raster positon is set. The position is now
+	  kept in an FT_Vector called pen and pas into the glyphs, rather
+	  than the glyph calculating it's on raster position.
+
+2001-07-30 01:08  henry
+
+	* [r9] include/FTGlyph.h:
+	  render() now takes a reference
+
+2001-07-30 01:07  henry
+
+	* [r8] src/FTSize.cpp:
+	  Return values now scaled correctly
+
+2001-07-27 04:28  henry
+
+	* [r7] include/FTFont.h:
+	  Made all methods virtual
+
+2001-07-26 05:19  henry
+
+	* [r6] README.txt:
+	  Update for changes to FTSize
+
+2001-07-26 05:18  henry
+
+	* [r5] include/FTSize.h, src/FTSize.cpp:
+	  Added assignment of FT_Size attribute and added Height and Width
+	  methods
+
+2001-07-26 05:11  henry
+
+	* [r3] README.txt, include, include/FTBitmapGlyph.h,
+	  include/FTFace.h, include/FTFont.h, include/FTGL.h,
+	  include/FTGLBitmapFont.h, include/FTGLOutlineFont.h,
+	  include/FTGLPixmapFont.h, include/FTGLPolygonFont.h,
+	  include/FTGLTextureFont.h, include/FTGlyph.h,
+	  include/FTGlyphContainer.h, include/FTLibrary.h,
+	  include/FTPixmapGlyph.h, include/FTSize.h,
+	  include/FTTextureGlyph.h, src, src/FTBitmapGlyph.cpp,
+	  src/FTFace.cpp, src/FTFont.cpp, src/FTGLBitmapFont.cpp,
+	  src/FTGLOutlineFont.cpp, src/FTGLPixmapFont.cpp,
+	  src/FTGLPolygonFont.cpp, src/FTGLTextureFont.cpp,
+	  src/FTGlyph.cpp, src/FTGlyphContainer.cpp, src/FTLibrary.cpp,
+	  src/FTPixmapGlyph.cpp, src/FTSize.cpp, src/FTTextureGlyph.cpp,
+	  src/FTVectorGlyph.cpp, src/FTVectorGlyph.h:
+	  This commit was generated by cvs2svn to compensate for changes in
+	  r2,
+	  which included commits to RCS files with non-trunk default
+	  branches.
+
+2001-07-26 05:11  
+
+	* [r1] .:
+	  New repository initialized by cvs2svn.
+

@@ -1,0 +1,34 @@
+TODO
+====
+
+* select face ie italic, bold etc
+
+* Multiple sizes
+
+* Optimise performance and mem usage.
+
+* Use the Freetype Cache mechanism. FTC_xxx
+
+* Multiple Masters
+
+* String Cache or string chunks
+
+* Provide an interface to access the point data for outlines and
+  polygon meshes. Part way there with new vectoriser.
+
+* Have a look at improving the algorthm for making curves. Maybe a
+  distance metric might be the way to go so that rather than having 5
+  polylines (0.2 step) for every curve, adjust the fineness for the
+  length of the curve. But then you should also test the angle of the
+  tangents as well.  Jed's new bezier stuff.
+
+* Guard classes - vectoriser
+
+* Move the init code out of the glyph constructors into an init
+  function so that they can return errors.
+
+* Get rid of frontPointList and backPointList!
+
+* Use fontconfig (optionally) to support more than one font (for non-latin
+  scripts). We can do that without changing the API.
+

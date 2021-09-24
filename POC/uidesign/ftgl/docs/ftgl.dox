@@ -1,0 +1,45 @@
+/** \mainpage %FTGL User Guide
+
+ \image html logo.png
+ \image latex logo.png "" width=0.3\textwidth
+
+ \section intro Introduction
+
+ OpenGL doesn't provide direct font support, so the application must use any
+ of OpenGL's other features for font rendering, such as drawing bitmaps or
+ pixmaps, creating texture maps containing an entire character set, drawing
+ character outlines, or creating a 3D geometry for each character.
+
+ More information can be found on the OpenGL website:
+ - http://www.opengl.org/resources/faq/technical/fonts.htm
+ - http://www.opengl.org/resources/features/fontsurvey/
+
+ Most of these systems require a pre-processing stage to take the native fonts
+ and convert them into a proprietary format.
+
+ %FTGL was born out of the need to treat fonts in OpenGL applications just like
+ any other application. For example when using Adobe Photoshop or Microsoft
+ Word you don't need an intermediate pre-processing step to use high quality
+ scalable fonts.
+
+ \section documentation Documentation
+
+ - \subpage ftgl-tutorial
+
+ - C API reference:
+   - FTGlyph.h
+   - FTFont.h
+   - FTLayout.h
+
+ - C++ API reference:
+   - class FTGlyph
+   - class FTFont
+   - class FTLayout
+
+ \section information Additional information
+
+ - \subpage ftgl-faq
+
+ - \subpage ftgl-projects
+
+*/
