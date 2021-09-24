@@ -389,13 +389,15 @@ struct Button : Widget {
 
 
 struct DopSocket : GraphicsRectItem {
-    static constexpr float BW = 4;
-    static constexpr float R = 15;
+    static constexpr float BW = 4, R = 15, FH = 18, NW = 200;
+
+    std::string title = "(untitled)";
+    bool connected = false;
 
     void paint() const override {
         glColor3f(0.75f, 0.75f, 0.75f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-        if (selected || lmb_pressed) {
+        if (connected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -411,12 +413,38 @@ struct DopInputSocket : DopSocket {
     DopInputSocket() {
         set_bounding_box({0, -R, 2 * R, 2 * R});
     }
+
+    void paint() const override {
+        DopSocket::paint();
+
+        if (hovered || lmb_pressed) {
+            Font font("LiberationMono-Regular.ttf");
+            font.set_font_size(FH);
+            font.set_fixed_height(2 * R);
+            font.set_fixed_width(NW, FTGL::ALIGN_LEFT);
+            glColor3f(1.f, 1.f, 1.f);
+            font.render(R * 2.3f, -R + FH * 0.15f, title);
+        }
+    }
 };
 
 
 struct DopOutputSocket : DopSocket {
     DopOutputSocket() {
         set_bounding_box({-2 * R, -R, 2 * R, 2 * R});
+    }
+
+    void paint() const override {
+        DopSocket::paint();
+
+        if (hovered || lmb_pressed) {
+            Font font("LiberationMono-Regular.ttf");
+            font.set_font_size(FH);
+            font.set_fixed_height(2 * R);
+            font.set_fixed_width(NW, FTGL::ALIGN_RIGHT);
+            glColor3f(1.f, 1.f, 1.f);
+            font.render(-NW - R * 2.5f, -R + FH * 0.15f, title);
+        }
     }
 };
 
@@ -426,7 +454,7 @@ struct DopNode : GraphicsRectItem {
 
     std::vector<DopInputSocket *> inputs;
     std::vector<DopOutputSocket *> outputs;
-    std::string title = "untitled";
+    std::string title = "(untitled)";
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
@@ -493,7 +521,7 @@ struct DopNode : GraphicsRectItem {
         font.set_fixed_width(W);
         font.set_fixed_height(TH);
         glColor3f(1.f, 1.f, 1.f);
-        font.render(0, 0, title);
+        font.render(0, FH * 0.05f, title);
     }
 };
 
@@ -504,17 +532,17 @@ struct NodeEditor : GraphicsRectItem {
 
         auto c = add_child<DopNode>();
         c->position = {50, 300};
-        c->add_input_socket();
-        c->add_input_socket();
-        c->add_output_socket();
+        c->add_input_socket()->title = "path";
+        c->add_input_socket()->title = "type";
+        c->add_output_socket()->title = "grid";
         c->title = "readvdb";
 
         auto d = add_child<DopNode>();
         d->position = {300, 300};
-        d->add_input_socket();
-        d->add_input_socket();
-        d->add_input_socket();
-        d->add_output_socket();
+        d->add_input_socket()->title = "grid";
+        d->add_input_socket()->title = "width";
+        d->add_input_socket()->title = "times";
+        d->add_output_socket()->title = "grid";
         d->title = "vdbsmooth";
     }
 
