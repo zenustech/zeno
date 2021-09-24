@@ -86,6 +86,33 @@ ZENO_DEFNODE(VDBSmooth)(
     "openvdb",
 } });
 
+struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
+  virtual void apply() override {
+
+    auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
+    int width = std::get<int>(get_param("width"));
+    int iterations = std::get<int>(get_param("iterations"));
+    auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutSDF->m_grid));
+    lsf.setGrainSize(1);
+    lsf.gaussian(width, iterations, nullptr);
+    //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
+    set_output("inoutSDF", get_input("inoutSDF"));
+  }
+};
+
+static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
+     { /* inputs: */ {
+     "inoutSDF", 
+     }, /* outputs: */ {
+     "inoutSDF",
+     }, /* params: */ {
+         {"int", "width", "1"},
+         {"int", "iterations", "1"},
+         {"string", "DEPRECATED", "Use VDBSmooth Instead"},
+     }, /* category: */ {
+     "openvdb",
+     }});
+
 struct  VDBDilateTopo : zeno::INode {
   virtual void apply() override {
 
