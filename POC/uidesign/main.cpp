@@ -388,58 +388,6 @@ struct Button : Widget {
 };
 
 
-struct SopSocket : GraphicsRectItem {
-    static constexpr float R = 18;
-
-    SopSocket() {
-        set_bounding_box({-R, -R, 2 * R, 2 * R});
-    }
-};
-
-
-struct SopNode : GraphicsRectItem {
-    static constexpr float WW = 100, HH = 50;
-
-    std::vector<SopSocket *> inputs;
-    std::vector<SopSocket *> outputs;
-
-    void _update_input_positions() {
-        for (int i = 0; i < inputs.size(); i++) {
-            auto x = float(0.75f + i) / (inputs.size() + 0.5f);
-            inputs[i]->position = {x * 2 * WW - WW, HH};
-        }
-    }
-
-    void _update_output_positions() {
-        for (int i = 0; i < outputs.size(); i++) {
-            auto x = float(0.75f + i) / (outputs.size() + 0.5f);
-            outputs[i]->position = {x * 2 * WW - WW, -HH};
-        }
-    }
-
-    SopSocket *add_input_socket() {
-        auto p = add_child<SopSocket>();
-        inputs.push_back(p);
-        _update_input_positions();
-        return p;
-    }
-
-    SopSocket *add_output_socket() {
-        auto p = add_child<SopSocket>();
-        outputs.push_back(p);
-        _update_output_positions();
-        return p;
-    }
-
-    SopNode() {
-        selectable = true;
-        draggable = true;
-
-        set_bounding_box({-WW, -HH, WW * 2, HH * 2});
-    }
-};
-
-
 struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4;
     static constexpr float R = 15;
@@ -554,7 +502,7 @@ struct NodeEditor : GraphicsRectItem {
     NodeEditor() {
         set_bounding_box({0, 0, 550, 400});
 
-        auto c = add_child<SopNode>();
+        auto c = add_child<DopNode>();
         c->position = {100, 300};
         c->add_input_socket();
         c->add_input_socket();
