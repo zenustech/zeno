@@ -179,15 +179,22 @@ struct Widget : IWidget {
     bool selected = false;
     bool selectable = false;
 
-    void _select_child(Widget *ptr, bool is_clear = true) {
-        if (is_clear) {
+    void _select_child(Widget *ptr, bool multiselect = false) {
+        if (!(multiselect || (ptr && ptr->selected))) {
             for (auto *child: children_selected) {
                 child->selected = false;
             }
             children_selected.clear();
         }
-        children_selected.insert(ptr);
-        ptr->selected = true;
+        if (ptr) {
+            if (ptr->selected && multiselect) {
+                children_selected.erase(ptr);
+                ptr->selected = false;
+            } else {
+                children_selected.insert(ptr);
+                ptr->selected = true;
+            }
+        }
     }
 
     virtual void on_mouse_move() {
@@ -196,7 +203,9 @@ struct Widget : IWidget {
     virtual void on_lmb_down() {
         lmb_pressed = true;
         if (parent && selectable) {
-            parent->_select_child(this, !cur.shift);
+            parent->_select_child(this, cur.shift);
+        } else {
+            _select_child(nullptr);
         }
     }
 
@@ -231,29 +240,41 @@ struct Widget : IWidget {
         auto old_hovered = hovered;
         hovered = bbox.contains(cur.x, cur.y);
 
+        for (auto const &child: children) {
+            child->do_update();
+        }
+
         if (hovered) {
             if (!cur.last_lmb && cur.lmb) {
                 on_lmb_down();
-            }
-            if (!cur.last_rmb && cur.rmb) {
-                on_rmb_down();
+                cur.last_lmb = cur.lmb;
             }
             if (!cur.last_mmb && cur.mmb) {
                 on_mmb_down();
+                cur.last_mmb = cur.mmb;
             }
-
-            if (cur.dx || cur.dy) {
-                on_mouse_move();
+            if (!cur.last_rmb && cur.rmb) {
+                on_rmb_down();
+                cur.last_rmb = cur.rmb;
             }
+        }
 
+        if (cur.dx || cur.dy) {
+            on_mouse_move();
+        }
+
+        if (hovered) {
             if (cur.last_lmb && !cur.lmb) {
                 on_lmb_up();
+                cur.last_lmb = cur.lmb;
             }
             if (cur.last_mmb && !cur.mmb) {
                 on_mmb_up();
+                cur.last_mmb = cur.mmb;
             }
             if (cur.last_rmb && !cur.rmb) {
                 on_rmb_up();
+                cur.last_rmb = cur.rmb;
             }
         }
 
@@ -261,10 +282,6 @@ struct Widget : IWidget {
             on_hover_enter();
         } else if (old_hovered && !hovered) {
             on_hover_leave();
-        }
-
-        for (auto const &child: children) {
-            child->do_update();
         }
     }
 
@@ -365,7 +382,7 @@ struct MyWindow : RectItem {
     }
 
     void on_mouse_move() override {
-        if (lmb_pressed) {
+        if (cur.lmb) {
             for (auto *child: children_selected) {
                 child->position.x += cur.dx;
                 child->position.y += cur.dy;
