@@ -568,7 +568,7 @@ struct DopLink : GraphicsWidget {
     AABB get_bounding_box() const override {
         auto [sx, sy] = get_from_position();
         auto [dx, dy] = get_to_position();
-        return {std::min(sx, dx), std::min(sy, dy), std::fabs(sx - dx), std::fabs(sy - dy)};
+        return {std::min(sx, dx) - LW, std::min(sy, dy) - LW, std::fabs(sx - dx) + 2 * LW, std::fabs(sy - dy) + 2 * LW};
     }
 
     void paint() const override {
