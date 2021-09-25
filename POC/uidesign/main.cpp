@@ -478,6 +478,8 @@ struct DopInputSocket : DopSocket {
             font.render(R * 1.3f, -R + FH * 0.15f, title);
         }
     }
+
+    void attach_link(DopLink *link);
 };
 
 
@@ -493,6 +495,10 @@ struct DopOutputSocket : DopSocket {
             glColor3f(1.f, 1.f, 1.f);
             font.render(-NW - R * 1.5f, -R + FH * 0.15f, title);
         }
+    }
+
+    void attach_link(DopLink *link) {
+        links.push_back(link);
     }
 };
 
@@ -616,8 +622,8 @@ struct DopLink : GraphicsLineItem {
     DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
         : from_socket(from_socket), to_socket(to_socket)
     {
-        from_socket->links.push_back(this);
-        to_socket->links.push_back(this);
+        from_socket->attach_link(this);
+        to_socket->attach_link(this);
         selectable = true;
     }
 
@@ -627,6 +633,10 @@ struct DopLink : GraphicsLineItem {
 
     Point get_to_position() const override {
         return to_socket->position + to_socket->get_parent()->position;
+    }
+
+    DopGraph *get_parent() const {
+        return (DopGraph *)(parent);
     }
 };
 
@@ -649,19 +659,37 @@ struct DopPendingLink : GraphicsLineItem {
 
 
 struct DopGraph : GraphicsRectItem {
-    std::vector<DopNode *> nodes;
-    std::vector<DopLink *> links;
+    std::set<DopNode *> nodes;
+    std::set<DopLink *> links;
     DopPendingLink *pending_link = nullptr;
+
+    bool remove_link(DopLink *link) {
+        if (remove_child(link)) {
+            links.erase(link);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool remove_node(DopNode *node) {
+        if (remove_child(node)) {
+            nodes.erase(node);
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     DopNode *add_node() {
         auto p = add_child<DopNode>();
-        nodes.push_back(p);
+        nodes.insert(p);
         return p;
     }
 
     DopLink *add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
         auto p = add_child<DopLink>(from_socket, to_socket);
-        links.push_back(p);
+        links.insert(p);
         return p;
     }
 
@@ -716,6 +744,17 @@ struct DopGraph : GraphicsRectItem {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
+
+
+void DopInputSocket::attach_link(DopLink *link) {
+    auto graph = get_parent()->get_parent();
+    if (links.size()) {
+        for (auto link: links) {
+            graph->remove_link(link);
+        }
+    }
+    links.push_back(link);
+}
 
 
 void DopSocket::on_lmb_down() {
