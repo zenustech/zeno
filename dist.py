@@ -25,13 +25,13 @@ elif os_name == 'windows':
     subprocess.check_call([sys.executable, 'scripts/windows_dist_helper.py'])
 
 print('==> invoking pyinstaller for packaging')
-subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name), '-y'] + sys.argv[1:])
+subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/{}.spec'.format(os_name), '-y'] + sys.argv[1:])
 
 #print('==> appending version informations')
-#with open('dist/launcher/zenqt/__init__.py', 'a') as f:
+#with open('dist/zenqte/zenqt/__init__.py', 'a') as f:
 #    f.write('\nversion = {}\n'.format(repr(version)))
 
 zipname = 'dist/zeno-{}-{}'.format(os_name, version)
 print('==> creating zip archive at {}'.format(zipname))
-shutil.make_archive(zipname, 'zip', 'dist/launcher', verbose=1)
+shutil.make_archive(zipname, 'zip', 'dist/zenqte', verbose=1)
 print('==> done with zip archive {}.zip'.format(zipname))

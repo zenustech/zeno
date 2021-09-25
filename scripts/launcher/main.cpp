@@ -108,6 +108,12 @@ static void start(const char *path) {
 int main() {
     freopen(logfile, "w", stdout);
     report();
-    start("ls");
+    start(
+#if defined(_WIN32)
+            "zenqte.exe"
+#else
+            "./zenqte"
+#endif
+            );
     return 0;
 }

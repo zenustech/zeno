@@ -14,7 +14,7 @@ assets=[
     ( '../scripts/wintools/*', '.' ),
 ]
 
-a = Analysis(['launcher.py'],
+a = Analysis(['zenqte.py'],
              pathex=['.'],
              binaries=dlls,
              datas=assets,
@@ -35,7 +35,7 @@ exe = EXE(pyz,
           a.scripts, 
           [],
           exclude_binaries=True,
-          name='launcher',
+          name='zenqte',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -53,4 +53,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=False,
                upx_exclude=[],
-               name='launcher')
+               name='zenqte')
