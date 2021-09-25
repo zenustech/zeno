@@ -1,0 +1,10 @@
+Platform: Linux
+Build: Sep 25 2021 10:14:09
+Compiler: GCC 11, C++ 201703
+CPU cores: 12
+Memory: 32004 MiB
+launching command: 's' 2>&1
+>>> begin of log <<<
+sh: line 1: s: command not found
+>>> end of log <<<
+exit code: 32512 (0x7f00)

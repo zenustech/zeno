@@ -8,6 +8,8 @@
 #include <unistd.h>
 #endif
 
+static const char logfile[] = "zeno_output.txt";
+
 static void report() {
     printf("Platform: %s\n",
 #if defined(_WIN64)
@@ -59,25 +61,47 @@ static void report() {
 #endif
 }
 
+static void failure(int stat) {
+    fprintf(stderr, "================================================================\n");
+    fprintf(stderr, "Sorry, the program crashed! Would you mind report this by either:\n\n");
+    fprintf(stderr, "  1. Opening a GitHub issue on: https://github.com/zenustech/zeno/issues\n");
+    fprintf(stderr, "  2. Send the report to maintainers via WeChat: tanh233 or shinshinzhang\n\n");
+    fprintf(stderr, "Also please consider attach this file:\n\n  %s\n\n", logfile);
+    fprintf(stderr, "so that we could locate the problem easier? Thank for your help!\n");
+    fprintf(stderr, "================================================================\n");
+#if defined(_WIN32)
+    system("pause");
+#endif
+    exit(stat);
+}
+
 static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
+    printf("launching command: %s\n", buf);
     FILE *pipe = popen(buf, "r");
     if (!pipe) {
-        perror("popen");
-        abort();
+        perror(buf);
+        printf("failed to launch\n");
+        failure(1);
     }
     char c;
-    printf("=== begin of output\n");
+    printf(">>> begin of log <<<\n");
     while ((c = fgetc(pipe)) != EOF) {
         fputc(c, stdout);
+        fputc(c, stderr);
     }
-    printf("=== end of output\n");
-    pclose(pipe);
+    printf(">>> end of log <<<\n");
+    int stat = pclose(pipe);
+    printf("exit code: %d (0x%x)\n", stat, stat);
+    if (stat) {
+        failure(stat);
+    }
 }
 
 int main() {
+    freopen(logfile, "w", stdout);
     report();
-    start("ls");
+    start("s");
     return 0;
 }
