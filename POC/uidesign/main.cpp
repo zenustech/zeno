@@ -248,8 +248,13 @@ struct Widget : IWidget {
         hovered = bbox.contains(cur.x, cur.y);
 
         for (auto const &child: children) {
-            if (child)
+            if (child) {
+#ifndef __clang__
+                    printf("%p\n", child.get());
+                    printf("%s\n", typeid(*child).name());
+#endif
                 child->do_update();
+            }
         }
 
         if (hovered) {
@@ -526,7 +531,6 @@ struct DopNode : GraphicsRectItem {
 
     DopInputSocket *add_input_socket() {
         auto p = add_child<DopInputSocket>();
-        p->parent = this;
         inputs.push_back(p);
         _update_input_positions();
         return p;
@@ -534,7 +538,6 @@ struct DopNode : GraphicsRectItem {
 
     DopOutputSocket *add_output_socket() {
         auto p = add_child<DopOutputSocket>();
-        p->parent = this;
         outputs.push_back(p);
         _update_output_positions();
         return p;
@@ -664,12 +667,29 @@ struct DopGraph : GraphicsRectItem {
         return p;
     }
 
-    DopPendingLink *add_pending_link(DopSocket *socket) {
-        auto p = add_child<DopPendingLink>(socket);
-        if (pending_link) remove_child(pending_link);
-        pending_link = p;
-        return nullptr;
-        return p;
+    void add_pending_link(DopSocket *socket) {
+        if (pending_link) {
+            if (socket && pending_link->socket) {
+                auto socket1 = pending_link->socket;
+                auto socket2 = socket;
+                auto output1 = dynamic_cast<DopOutputSocket *>(socket1);
+                auto output2 = dynamic_cast<DopOutputSocket *>(socket2);
+                auto input1 = dynamic_cast<DopInputSocket *>(socket1);
+                auto input2 = dynamic_cast<DopInputSocket *>(socket2);
+                if (output1 && input2) {
+                    printf("o->i %s %s\n", output1->title.c_str(), input2->title.c_str());
+                    add_link(output1, input2);
+                } else if (input1 && output2) {
+                    printf("i->o %s %s\n", input1->title.c_str(), output2->title.c_str());
+                    add_link(output2, input1);
+                }
+            }
+            remove_child(pending_link);
+            pending_link = nullptr;
+
+        } else if (socket) {
+            pending_link = add_child<DopPendingLink>(socket);
+        }
     }
 
     DopGraph() {
