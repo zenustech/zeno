@@ -169,6 +169,16 @@ struct Widget : IWidget {
         return static_cast<T *>(raw_p);
     }
 
+    bool remove_child(Widget *ptr) {
+        for (auto &child: children) {
+            if (child.get() == ptr) {
+                child = nullptr;
+                return true;
+            }
+        }
+        return false;
+    }
+
     virtual AABB get_bounding_box() const = 0;
 
     virtual void on_hover_enter() {
@@ -215,6 +225,20 @@ struct Widget : IWidget {
     bool mmb_pressed = false;
     bool rmb_pressed = false;
 
+    void _clean_null_children() {
+        bool has_any;
+        do {
+            has_any = false;
+            for (auto it = children.begin(); it != children.end(); it++) {
+                if (!*it) {
+                    children.erase(it);
+                    has_any = true;
+                    break;
+                }
+            }
+        } while (has_any);
+    }
+
     void do_update() override {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
@@ -223,7 +247,8 @@ struct Widget : IWidget {
         hovered = bbox.contains(cur.x, cur.y);
 
         for (auto const &child: children) {
-            child->do_update();
+            if (child)
+                child->do_update();
         }
 
         if (hovered) {
@@ -272,7 +297,8 @@ struct Widget : IWidget {
         glTranslatef(position.x, position.y, 0.f);
         paint();
         for (auto const &child: children) {
-            child->do_paint();
+            if (child)
+                child->do_paint();
         }
         glPopMatrix();
     }
@@ -421,6 +447,8 @@ struct DopSocket : GraphicsRectItem {
     DopNode *get_parent() const {
         return (DopNode *)(parent);
     }
+
+    void on_lmb_down() override;
 };
 
 
@@ -614,6 +642,7 @@ struct DopPendingLink : GraphicsLineItem {
 struct DopGraph : GraphicsRectItem {
     std::vector<DopNode *> nodes;
     std::vector<DopLink *> links;
+    DopPendingLink *pending_link;
 
     DopNode *add_node() {
         auto p = add_child<DopNode>();
@@ -624,6 +653,14 @@ struct DopGraph : GraphicsRectItem {
     DopLink *add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
         auto p = add_child<DopLink>(from_socket, to_socket);
         links.push_back(p);
+        return p;
+    }
+
+    DopPendingLink *add_pending_link(DopSocket *socket) {
+        auto p = add_child<DopPendingLink>(socket);
+        if (pending_link)
+            remove_child(pending_link);
+        pending_link = p;
         return p;
     }
 
@@ -653,6 +690,12 @@ struct DopGraph : GraphicsRectItem {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
+
+
+void DopSocket::on_lmb_down() {
+    auto graph = static_cast<DopGraph *>(parent);
+    graph->add_pending_link(this);
+}
 
 
 struct RootWindow : Widget {
