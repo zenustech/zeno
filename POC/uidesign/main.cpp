@@ -38,12 +38,12 @@ struct AABB {
 
 
 struct Font {
-    std::unique_ptr<FTPixmapFont> font;
+    std::unique_ptr<FTFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
     float fixed_height = -1;
 
     Font(const char *path) {
-        font = std::make_unique<FTPixmapFont>(path);
+        font = std::make_unique<FTTextureFont>(path);
         if (font->Error()) {
             fprintf(stderr, "Failed to load font: %s\n", path);
             abort();
