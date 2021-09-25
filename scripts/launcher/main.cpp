@@ -11,7 +11,7 @@
 
 static const char logfile[] = "zeno_output.txt";
 
-static void my_dirname(std::string const &str)
+static std::string my_dirname(std::string const &str)
 {
     return str.substr(0, str.find_last_of("/\\"));
 }
@@ -112,14 +112,14 @@ static void start(const char *path) {
 }
 
 int main(int argc, char **argv) {
-    const char *path = my_dirname(argv[0]);
+    auto path = my_dirname(argv[0]);
 #if defined(_WIN32)
-    SetCurrentDirectory(path);
+    SetCurrentDirectory(path.c_str());
     if (argv[1]) {
         setenv("ZEN_OPEN", argv[1], 1);
     }
 #else
-    chdir(path);
+    chdir(path.c_str());
 #endif
     freopen(logfile, "w", stdout);
     report();
