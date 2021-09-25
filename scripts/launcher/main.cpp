@@ -88,7 +88,6 @@ static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
     setenv("ZEN_LOGLEVEL", "debug", 0);
-    fprintf(stderr, "(release date: %s)\n", __DATE__);
     fprintf(stderr, ">>> launching ZENO now <<<\n");
     printf("launching command: %s\n", buf);
     FILE *pipe = popen(buf, "r");
@@ -113,6 +112,8 @@ static void start(const char *path) {
 
 int main(int argc, char **argv) {
     auto path = my_dirname(argv[0]);
+    fprintf(stderr, "==> release date: %s\n", __DATE__);
+    fprintf(stderr, "==> working directory: %s\n", path.c_str());
 #if defined(_WIN32)
     SetCurrentDirectory(path.c_str());
     if (argv[1]) {
