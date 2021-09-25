@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#include <string>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
@@ -9,6 +10,11 @@
 #endif
 
 static const char logfile[] = "zeno_output.txt";
+
+static void my_dirname(std::string const &str)
+{
+    return str.substr(0, str.find_last_of("/\\"));
+}
 
 static void report() {
     printf("Platform: %s\n",
@@ -105,7 +111,16 @@ static void start(const char *path) {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
+    const char *path = my_dirname(argv[0]);
+#if defined(_WIN32)
+    SetCurrentDirectory(path);
+    if (argv[1]) {
+        setenv("ZEN_OPEN", argv[1], 1);
+    }
+#else
+    chdir(path);
+#endif
     freopen(logfile, "w", stdout);
     report();
     start(
