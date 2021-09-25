@@ -81,6 +81,7 @@ static void failure(int stat) {
 static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
+    setenv("ZEN_LOGLEVEL", "debug", 0);
     fprintf(stderr, "(release date: %s)\n", __DATE__);
     fprintf(stderr, ">>> launching ZENO now <<<\n");
     printf("launching command: %s\n", buf);
