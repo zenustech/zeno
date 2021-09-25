@@ -81,7 +81,8 @@ static void failure(int stat) {
 static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
-    fprintf(stderr, "=== launching ZENO now ===\n");
+    fprintf(stderr, "(release date: %s)\n", __DATE__);
+    fprintf(stderr, ">>> launching ZENO now <<<\n");
     printf("launching command: %s\n", buf);
     FILE *pipe = popen(buf, "r");
     if (!pipe) {

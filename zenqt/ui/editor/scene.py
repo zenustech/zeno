@@ -564,7 +564,7 @@ class QDMGraphicsView(QGraphicsView):
     def scale(self, sx, sy, pos=None):
         rect = self.scene()._scene_rect
         if (rect.width() > 10000 and sx < 1) or \
-            (rect.width() < 300 and sx > 1):
+            (rect.width() < 200 and sx > 1):
             return
         if pos:
             pos = self.mapToScene(pos)
