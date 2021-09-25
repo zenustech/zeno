@@ -175,6 +175,7 @@ struct Widget : IWidget {
         p->parent = this;
         auto raw_p = p.get();
         children.push_back(std::move(p));
+        invalidate();
         return static_cast<T *>(raw_p);
     }
 
@@ -182,6 +183,7 @@ struct Widget : IWidget {
         for (auto &child: children) {
             if (child.get() == ptr) {
                 ptr->parent = nullptr;
+                invalidate();
                 gc.push_back(std::move(child));
                 return true;
             }
@@ -192,9 +194,11 @@ struct Widget : IWidget {
     virtual AABB get_bounding_box() const = 0;
 
     virtual void on_hover_enter() {
+        invalidate();
     }
 
     virtual void on_hover_leave() {
+        invalidate();
         if (lmb_pressed) on_lmb_up();
         if (mmb_pressed) on_mmb_up();
         if (rmb_pressed) on_rmb_up();
@@ -205,29 +209,36 @@ struct Widget : IWidget {
     bool hovered = false;
 
     virtual void on_mouse_move() {
+        invalidate();
     }
 
     virtual void on_lmb_down() {
+        invalidate();
         lmb_pressed = true;
     }
 
     virtual void on_lmb_up() {
+        invalidate();
         lmb_pressed = false;
     }
 
     virtual void on_mmb_down() {
+        invalidate();
         mmb_pressed = true;
     }
 
     virtual void on_mmb_up() {
+        invalidate();
         mmb_pressed = false;
     }
 
     virtual void on_rmb_down() {
+        invalidate();
         rmb_pressed = true;
     }
 
     virtual void on_rmb_up() {
+        invalidate();
         rmb_pressed = false;
     }
 
@@ -256,13 +267,9 @@ struct Widget : IWidget {
         auto old_hovered = hovered;
         hovered = bbox.contains(cur.x, cur.y);
 
-        std::vector<Widget *> children_list;
         for (auto const &child: children) {
             if (child)
-                children_list.push_back(child.get());
-        }
-        for (auto *child: children_list) {
-            child->do_update();
+                child->do_update();
         }
 
         if (hovered) {
@@ -306,7 +313,23 @@ struct Widget : IWidget {
         }
     }
 
+    bool invalid = true;
+
+    void invalidate() {
+        if (!invalid) {
+            invalid = true;
+            if (parent)
+                parent->invalidate();
+            for (auto const &child: children) {
+                if (child)
+                    child->invalidate();
+            }
+        }
+    }
+
     void do_paint() override {
+        if (!invalid) return;
+
         auto raii = cur.translate(-position.x, -position.y);
         glPushMatrix();
         glTranslatef(position.x, position.y, 0.f);
@@ -316,6 +339,7 @@ struct Widget : IWidget {
                 child->do_paint();
         }
         glPopMatrix();
+        invalid = false;
     }
 
     virtual void paint() const {}
@@ -335,6 +359,7 @@ struct GraphicsWidget : Widget {
                 child->selected = false;
             }
             children_selected.clear();
+            invalidate();
         }
         if (ptr) {
             if (ptr->selected && multiselect) {
@@ -344,10 +369,12 @@ struct GraphicsWidget : Widget {
                 children_selected.insert(ptr);
                 ptr->selected = true;
             }
+            invalidate();
         }
     }
 
     void on_mouse_move() override {
+        Widget::on_mouse_move();
         if (cur.lmb) {
             for (auto *child: children_selected) {
                 if (child->draggable) {
@@ -443,7 +470,7 @@ struct DopNode;
 struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 18, NW = 200;
 
-    std::string title = "(untitled)";
+    std::string name = "(unnamed)";
     std::vector<DopLink *> links;
 
     DopSocket() {
@@ -481,7 +508,7 @@ struct DopInputSocket : DopSocket {
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_LEFT);
             glColor3f(1.f, 1.f, 1.f);
-            font.render(R * 1.3f, -R + FH * 0.15f, title);
+            font.render(R * 1.3f, -R + FH * 0.15f, name);
         }
     }
 
@@ -499,7 +526,7 @@ struct DopOutputSocket : DopSocket {
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_RIGHT);
             glColor3f(1.f, 1.f, 1.f);
-            font.render(-NW - R * 1.5f, -R + FH * 0.15f, title);
+            font.render(-NW - R * 1.5f, -R + FH * 0.15f, name);
         }
     }
 
@@ -516,7 +543,8 @@ struct DopNode : GraphicsRectItem {
 
     std::vector<DopInputSocket *> inputs;
     std::vector<DopOutputSocket *> outputs;
-    std::string title = "(untitled)";
+    std::string name = "(unnamed)";
+    std::string kind = "(untyped)";
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
@@ -587,7 +615,7 @@ struct DopNode : GraphicsRectItem {
         font.set_fixed_width(W);
         font.set_fixed_height(TH);
         glColor3f(1.f, 1.f, 1.f);
-        font.render(0, FH * 0.05f, title);
+        font.render(0, FH * 0.05f, name);
     }
 };
 
@@ -709,10 +737,8 @@ struct DopGraph : GraphicsRectItem {
                 auto input1 = dynamic_cast<DopInputSocket *>(socket1);
                 auto input2 = dynamic_cast<DopInputSocket *>(socket2);
                 if (output1 && input2) {
-                    printf("o->i %s %s\n", output1->title.c_str(), input2->title.c_str());
                     add_link(output1, input2);
                 } else if (input1 && output2) {
-                    printf("i->o %s %s\n", input1->title.c_str(), output2->title.c_str());
                     add_link(output2, input1);
                 }
             }
@@ -729,18 +755,20 @@ struct DopGraph : GraphicsRectItem {
 
         auto c = add_node();
         c->position = {50, 300};
-        c->add_input_socket()->title = "path";
-        c->add_input_socket()->title = "type";
-        c->add_output_socket()->title = "grid";
-        c->title = "readvdb";
+        c->add_input_socket()->name = "path";
+        c->add_input_socket()->name = "type";
+        c->add_output_socket()->name = "grid";
+        c->name = "readvdb1";
+        c->kind = "readvdb";
 
         auto d = add_node();
         d->position = {300, 300};
-        d->add_input_socket()->title = "grid";
-        d->add_input_socket()->title = "width";
-        d->add_input_socket()->title = "times";
-        d->add_output_socket()->title = "grid";
-        d->title = "vdbsmooth";
+        d->add_input_socket()->name = "grid";
+        d->add_input_socket()->name = "width";
+        d->add_input_socket()->name = "times";
+        d->add_output_socket()->name = "grid";
+        d->name = "vdbsmooth1";
+        d->kind = "vdbsmooth";
 
         add_link(c->outputs[0], d->inputs[0]);
     }
@@ -764,6 +792,7 @@ void DopInputSocket::attach_link(DopLink *link) {
 
 
 void DopSocket::on_lmb_down() {
+    Widget::on_lmb_down();
     auto graph = get_parent()->get_parent();
     graph->add_pending_link(this);
 }
@@ -802,9 +831,8 @@ void process_input() {
 
 
 void draw_graphics() {
-    glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
+    //glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
     win.do_paint();
 }
 
@@ -815,9 +843,10 @@ int main() {
         fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
-    //glfwWindowHint(GLFW_SAMPLES, 16);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+    glfwWindowHint(GLFW_SAMPLES, 16);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
@@ -826,12 +855,12 @@ int main() {
     }
     glfwMakeContextCurrent(window);
 
-    double fps = 0;
+    double fps = 144;
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
         process_input();
         draw_graphics();
-        glfwSwapBuffers(window);
+        glFlush();
         glfwPollEvents();
         if (fps > 0) {
             lasttime += 1.0 / fps;
