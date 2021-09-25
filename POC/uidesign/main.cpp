@@ -469,7 +469,7 @@ struct DopLink;
 struct DopNode;
 
 struct DopSocket : GraphicsRectItem {
-    static constexpr float BW = 4, R = 15, FH = 18, NW = 200;
+    static constexpr float BW = 4, R = 15, FH = 19, NW = 200;
 
     std::string name = "(unnamed)";
     std::vector<DopLink *> links;
@@ -540,7 +540,7 @@ struct DopOutputSocket : DopSocket {
 struct DopGraph;
 
 struct DopNode : GraphicsRectItem {
-    static constexpr float DH = 42, TH = 42, FH = 25, W = 200, BW = 3;
+    static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
     std::vector<DopInputSocket *> inputs;
     std::vector<DopOutputSocket *> outputs;
@@ -847,7 +847,6 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
-    //glfwWindowHint(GLFW_SAMPLES, 16);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
