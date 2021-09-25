@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import time
 import shutil
@@ -26,6 +27,10 @@ elif os_name == 'windows':
 
 print('==> invoking pyinstaller for packaging')
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/{}.spec'.format(os_name), '-y'] + sys.argv[1:])
+
+if os.path.exists('zenqt/bin/launcher'):
+    print('==> copying launcher wrapper')
+    shutil.copyfile('zenqt/bin/launcher', 'dist/zenqte')
 
 #print('==> appending version informations')
 #with open('dist/zenqte/zenqt/__init__.py', 'a') as f:
