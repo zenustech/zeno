@@ -18,6 +18,9 @@ version = '{}.{}.{}'.format(*version)
 
 print('==> release version={} os_name={}'.format(version, os_name))
 
+print('==> copying launcher wrapper')
+shutil.copyfile('zenqt/bin/launcher', 'dist/launcher')
+
 if os_name == 'linux':
     print('==> copying linux shared libraries')
     subprocess.check_call([sys.executable, 'scripts/linux_dist_helper.py'])
@@ -28,9 +31,8 @@ elif os_name == 'windows':
 print('==> invoking pyinstaller for packaging')
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/{}.spec'.format(os_name), '-y'] + sys.argv[1:])
 
-if os.path.exists('zenqt/bin/launcher'):
-    print('==> copying launcher wrapper')
-    shutil.copyfile('zenqt/bin/launcher', 'dist/zenqte')
+print('==> moving launcher wrapper')
+shutil.move('dist/launcher', 'dist/zenqte/launcher')
 
 #print('==> appending version informations')
 #with open('dist/zenqte/zenqt/__init__.py', 'a') as f:
