@@ -846,7 +846,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
-    glfwWindowHint(GLFW_SAMPLES, 16);
+    //glfwWindowHint(GLFW_SAMPLES, 16);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
@@ -854,6 +854,12 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_POLYGON_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
     double fps = 144;
     double lasttime = glfwGetTime();
