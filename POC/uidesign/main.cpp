@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <thread>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -103,7 +104,7 @@ struct CursorState {
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool last_lmb = false, last_mmb = false, last_rmb = false;
-    bool shift = false, ctrl = false, alt = false;
+    bool shift = false, ctrl = false, alt = false, del = false;
 
     void on_update() {
         last_lmb = lmb;
@@ -126,6 +127,11 @@ struct CursorState {
         shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
         ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
         alt = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+        del = glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS;
+    }
+
+    bool is_pressed(int key) const {
+        return glfwGetKey(window, key) == GLFW_PRESS;
     }
 
     auto translate(float dx, float dy) {
@@ -809,10 +815,9 @@ int main() {
         fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
+    //glfwWindowHint(GLFW_SAMPLES, 16);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_SAMPLES, 8);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
@@ -821,12 +826,20 @@ int main() {
     }
     glfwMakeContextCurrent(window);
 
+    double fps = 0;
+    double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
         process_input();
         draw_graphics();
         glfwSwapBuffers(window);
         glfwPollEvents();
-        usleep(16000);
+        if (fps > 0) {
+            lasttime += 1.0 / fps;
+            while (glfwGetTime() < lasttime) {
+                double sleepfor = (lasttime - glfwGetTime()) * 0.75;
+                usleep(int(sleepfor / 1000000));
+            }
+        }
     }
 
     return 0;
