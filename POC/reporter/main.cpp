@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <thread>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -57,7 +59,25 @@ static void report() {
 #endif
 }
 
+static void start(const char *path) {
+    char *buf = (char *)alloca(strlen(path) + 64);
+    sprintf(buf, "'%s' 2>&1", path);
+    FILE *pipe = popen(buf, "r");
+    if (!pipe) {
+        perror("popen");
+        abort();
+    }
+    char c;
+    printf("=== begin of output\n");
+    while ((c = fgetc(pipe)) != EOF) {
+        fputc(c, stdout);
+    }
+    printf("=== end of output\n");
+    pclose(pipe);
+}
+
 int main() {
     report();
+    start("ls");
     return 0;
 }
