@@ -1,4 +1,10 @@
 #include <cstdio>
+#include <thread>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
+#include <unistd.h>
+#endif
 
 static void report() {
     printf("Platform: %s\n",
@@ -10,6 +16,12 @@ static void report() {
     "Linux"
 #elif defined(__APPLE__)
     "Mac OS X"
+#elif defined(__unix__)
+    "Other Unix"
+#elif defined(_AIX)
+    "AIX"
+#elif defined(__sun__)
+    "Solaris"
 #else
     "Unknown"
 #endif
@@ -22,6 +34,8 @@ static void report() {
     "GCC", __GNUC__
 #elif defined(__clang__)
     "Clang", __clang__
+#elif defined(__DPCPP__)
+    "DPC++", __DPCPP__
 #else
     "Unknown", 0
 #endif
@@ -31,6 +45,16 @@ static void report() {
     , 0l
 #endif
     );
+    printf("CPU cores: %d\n", std::thread::hardware_concurrency());
+#if defined(_WIN32) || defined(_WIN64)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    printf("Memory: %ld MiB\n", status.ullTotalPhys / 1024 / 1024);
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
+    long memsize = sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
+    printf("Memory: %ld MiB\n", memsize / 1024 / 1024);
+#endif
 }
 
 int main() {
