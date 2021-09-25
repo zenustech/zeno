@@ -38,12 +38,12 @@ struct AABB {
 
 
 struct Font {
-    std::unique_ptr<FTFont> font;
+    std::unique_ptr<FTPixmapFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
     float fixed_height = -1;
 
     Font(const char *path) {
-        font = std::make_unique<FTPolygonFont>(path);
+        font = std::make_unique<FTPixmapFont>(path);
         if (font->Error()) {
             fprintf(stderr, "Failed to load font: %s\n", path);
             abort();
@@ -135,12 +135,13 @@ struct CursorState {
     }
 
     auto translate(float dx, float dy) {
+        auto ox = x, oy = y;
         x += dx; y += dy;
         struct RAII : std::function<void()> {
             using std::function<void()>::function;
             ~RAII() { (*this)(); }
         } raii {[=] () {
-            x -= dx; y -= dy;
+            x = ox; y = oy;
         }};
         return raii;
     }
