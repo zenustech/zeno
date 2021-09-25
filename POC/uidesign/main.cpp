@@ -149,6 +149,9 @@ struct IWidget {
 };
 
 
+std::vector<std::unique_ptr<Widget>> gc;
+
+
 struct Widget : IWidget {
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
@@ -173,7 +176,7 @@ struct Widget : IWidget {
         for (auto &child: children) {
             if (child.get() == ptr) {
                 ptr->parent = nullptr;
-                child = nullptr;
+                gc.push_back(std::move(child));
                 return true;
             }
         }
@@ -437,6 +440,10 @@ struct DopSocket : GraphicsRectItem {
     std::string title = "(untitled)";
     std::vector<DopLink *> links;
 
+    DopSocket() {
+        set_bounding_box({-R, -R, 2 * R, 2 * R});
+    }
+
     void paint() const override {
         glColor3f(0.75f, 0.75f, 0.75f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
@@ -459,10 +466,6 @@ struct DopSocket : GraphicsRectItem {
 
 
 struct DopInputSocket : DopSocket {
-    DopInputSocket() {
-        set_bounding_box({0, -R, 2 * R, 2 * R});
-    }
-
     void paint() const override {
         DopSocket::paint();
 
@@ -472,17 +475,13 @@ struct DopInputSocket : DopSocket {
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_LEFT);
             glColor3f(1.f, 1.f, 1.f);
-            font.render(R * 2.3f, -R + FH * 0.15f, title);
+            font.render(R * 1.3f, -R + FH * 0.15f, title);
         }
     }
 };
 
 
 struct DopOutputSocket : DopSocket {
-    DopOutputSocket() {
-        set_bounding_box({-2 * R, -R, 2 * R, 2 * R});
-    }
-
     void paint() const override {
         DopSocket::paint();
 
@@ -492,7 +491,7 @@ struct DopOutputSocket : DopSocket {
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_RIGHT);
             glColor3f(1.f, 1.f, 1.f);
-            font.render(-NW - R * 2.5f, -R + FH * 0.15f, title);
+            font.render(-NW - R * 1.5f, -R + FH * 0.15f, title);
         }
     }
 };
@@ -510,7 +509,7 @@ struct DopNode : GraphicsRectItem {
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
             auto y = DH * (i + 0.5f);
-            inputs[i]->position = {0, -y};
+            inputs[i]->position = {DopSocket::R, -y};
         }
         _update_node_height();
     }
@@ -518,7 +517,7 @@ struct DopNode : GraphicsRectItem {
     void _update_output_positions() {
         for (int i = 0; i < outputs.size(); i++) {
             auto y = DH * (i + 0.5f);
-            outputs[i]->position = {W, -y};
+            outputs[i]->position = {W - DopSocket::R, -y};
         }
         _update_node_height();
     }
@@ -683,7 +682,7 @@ struct DopGraph : GraphicsRectItem {
                     add_link(output2, input1);
                 }
             }
-            //remove_child(pending_link);
+            remove_child(pending_link);
             pending_link = nullptr;
 
         } else if (socket) {
@@ -773,6 +772,7 @@ int main() {
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwWindowHint(GLFW_SAMPLES, 8);
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
