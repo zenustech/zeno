@@ -1,10 +1,14 @@
 Platform: Linux
-Build: Sep 25 2021 10:14:09
+Build: Sep 25 2021 10:18:51
 Compiler: GCC 11, C++ 201703
 CPU cores: 12
 Memory: 32004 MiB
-launching command: 's' 2>&1
+launching command: 'ls' 2>&1
 >>> begin of log <<<
-sh: line 1: s: command not found
+build
+CMakeLists.txt
+main.cpp
+Makefile
+zeno_output.txt
 >>> end of log <<<
-exit code: 32512 (0x7f00)
+exit code: 0 (0x0)

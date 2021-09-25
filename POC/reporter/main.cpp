@@ -68,6 +68,9 @@ static void failure(int stat) {
     fprintf(stderr, "  2. Send the report to maintainers via WeChat: tanh233 or shinshinzhang\n\n");
     fprintf(stderr, "Also please consider attach this file:\n\n  %s\n\n", logfile);
     fprintf(stderr, "so that we could locate the problem easier? Thank for your help!\n");
+    fprintf(stderr, "Would also be helpful if you'd like to attach details about the\n");
+    fprintf(stderr, "current editing graph (if any), the graphics card you use, and\n");
+    fprintf(stderr, "other possible information might related to the problem, thanks!\n");
     fprintf(stderr, "================================================================\n");
 #if defined(_WIN32)
     system("pause");
@@ -78,6 +81,7 @@ static void failure(int stat) {
 static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
+    fprintf(stderr, "=== launching ZENO now ===\n");
     printf("launching command: %s\n", buf);
     FILE *pipe = popen(buf, "r");
     if (!pipe) {
@@ -102,6 +106,6 @@ static void start(const char *path) {
 int main() {
     freopen(logfile, "w", stdout);
     report();
-    start("s");
+    start("ls");
     return 0;
 }
