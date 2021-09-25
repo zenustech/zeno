@@ -677,13 +677,13 @@ struct DopGraph : GraphicsRectItem {
                 auto input2 = dynamic_cast<DopInputSocket *>(socket2);
                 if (output1 && input2) {
                     printf("o->i %s %s\n", output1->title.c_str(), input2->title.c_str());
-                    //add_link(output1, input2);
+                    add_link(output1, input2);
                 } else if (input1 && output2) {
                     printf("i->o %s %s\n", input1->title.c_str(), output2->title.c_str());
-                    //add_link(output2, input1);
+                    add_link(output2, input1);
                 }
             }
-            remove_child(pending_link);
+            //remove_child(pending_link);
             pending_link = nullptr;
 
         } else if (socket) {
