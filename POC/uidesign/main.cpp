@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <functional>
 #if defined(__linux__)
 #include <unistd.h>
@@ -163,34 +164,34 @@ struct Object {
 };
 
 template <class T>
-struct Ptr {
+struct SPtr {
     T *ptr = nullptr;
 
-    Ptr(T *ptr) : ptr(ptr) {}
+    SPtr(T *ptr) : ptr(ptr) {}
 
-    Ptr &operator=(T *nptr) {
+    SPtr &operator=(T *nptr) {
         release();
         ptr = nptr;
         return *this;
     }
 
-    Ptr(Ptr const &p) : ptr(p.ptr) {
+    SPtr(SPtr const &p) : ptr(p.ptr) {
         if (ptr)
             ptr->refcnt++;
     }
 
-    Ptr &operator=(Ptr const &p) {
+    SPtr &operator=(SPtr const &p) {
         ptr = p.ptr;
         if (ptr)
             ptr->refcnt++;
         return *this;
     }
 
-    Ptr(Ptr &&p) : ptr(p.ptr) {
+    SPtr(SPtr &&p) : ptr(p.ptr) {
         p.ptr = nullptr;
     }
 
-    Ptr &operator=(Ptr &&p) {
+    SPtr &operator=(SPtr &&p) {
         ptr = p.ptr;
         p.ptr = nullptr;
         return *this;
@@ -201,17 +202,17 @@ struct Ptr {
     }
 
     template <class S>
-    Ptr<S> cast() const {
+    SPtr<S> cast() const {
         if (ptr)
             ptr->refcnt++;
-        return Ptr<S>(dynamic_cast<S *>(ptr));
+        return SPtr<S>(dynamic_cast<S *>(ptr));
     }
 
     template <class S>
-    operator Ptr<S>() const {
+    operator SPtr<S>() const {
         if (ptr)
             ptr->refcnt++;
-        return Ptr<S>(static_cast<S *>(ptr));
+        return SPtr<S>(static_cast<S *>(ptr));
     }
 
     operator T *() const {
@@ -233,24 +234,24 @@ struct Ptr {
         }
     }
 
-    Ptr(std::nullptr_t = nullptr) : ptr(nullptr) {
+    SPtr(std::nullptr_t = nullptr) : ptr(nullptr) {
     }
 
-    Ptr &operator=(std::nullptr_t) {
+    SPtr &operator=(std::nullptr_t) {
         release();
         return *this;
     }
 
-    ~Ptr() {
+    ~SPtr() {
         release();
     }
 };
 
 template <class T>
-Ptr(T *) -> Ptr<T>;
+SPtr(T *) -> SPtr<T>;
 
 template <class T, class ...Ts>
-Ptr<T> makePtr(Ts &&...ts) {
+SPtr<T> makePtr(Ts &&...ts) {
     return new T(std::forward<Ts>(ts)...);
 }
 
@@ -258,7 +259,7 @@ Ptr<T> makePtr(Ts &&...ts) {
 
 template <class T>
 inline T notnull(T &&t) {
-    if (!t) throw std::bad_cast();
+    if (!t) throw "notnull assertion failed";
     return t;
 }
 
@@ -272,16 +273,16 @@ struct Object {
 };
 
 template <class T>
-struct Ptr : std::shared_ptr<T> {
+struct SPtr : std::shared_ptr<T> {
     using std::shared_ptr<T>::shared_ptr;
 
-    Ptr(std::shared_ptr<T> &&p) : std::shared_ptr<T>(std::move(p)) {}
-    Ptr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
-    Ptr(T *p) : std::shared_ptr<T>(p) {}
+    SPtr(std::shared_ptr<T> &&p) : std::shared_ptr<T>(std::move(p)) {}
+    SPtr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
+    SPtr(T *p) : std::shared_ptr<T>(p) {}
     operator T *() const { return std::shared_ptr<T>::get(); }
 
     template <class S>
-    Ptr<S> cast() const {
+    SPtr<S> cast() const {
         return std::dynamic_pointer_cast<S>(*this);
     }
 };
@@ -290,12 +291,14 @@ template <class T>
 struct WPtr : std::weak_ptr<T> {
     using std::weak_ptr<T>::weak_ptr;
 
+    //WPtr(std::nullptr_t = {}) : std::weak_ptr<T>(std::shared_ptr<T>()) {}
+    //WPtr &operator=(std::nullptr_t) { std::weak_ptr<T>::operator=(std::shared_ptr<T>()); return *this; }
     WPtr(std::weak_ptr<T> &&p) : std::weak_ptr<T>(std::move(p)) {}
     WPtr(std::weak_ptr<T> const &p) : std::weak_ptr<T>(p) {}
-    operator Ptr<T>() const { return notnull(std::weak_ptr<T>::lock()); }
-    operator T *() const { return Ptr<T>(*this); }
-    T &operator*() const { return *Ptr<T>(*this); }
-    Ptr<T> operator->() const { return *this; }
+    operator SPtr<T>() const { return notnull(std::weak_ptr<T>::lock()); }
+    operator T *() const { return SPtr<T>(*this); }
+    T &operator*() const { return *SPtr<T>(*this); }
+    SPtr<T> operator->() const { return *this; }
 
     template <class S>
     WPtr<S> cast() const {
@@ -303,11 +306,23 @@ struct WPtr : std::weak_ptr<T> {
     }
 };
 
-template <class T>
-Ptr(T *) -> Ptr<T>;
+template <class T, class ...Bases>
+struct Self : private std::enable_shared_from_this<T>, Bases... {
+protected:
+    SPtr<const T> self() const {
+        return std::enable_shared_from_this<T>::shared_from_this();
+    }
+
+    SPtr<T> self() {
+        return std::enable_shared_from_this<T>::shared_from_this();
+    }
+};
 
 template <class T>
-Ptr(std::shared_ptr<T>) -> Ptr<T>;
+SPtr(T *) -> SPtr<T>;
+
+template <class T>
+SPtr(std::shared_ptr<T>) -> SPtr<T>;
 
 template <class T>
 WPtr(std::shared_ptr<T>) -> WPtr<T>;
@@ -316,16 +331,16 @@ template <class T>
 WPtr(std::weak_ptr<T>) -> WPtr<T>;
 
 template <class T, class ...Ts>
-Ptr<T> makePtr(Ts &&...ts) {
+SPtr<T> makePtr(Ts &&...ts) {
     return std::make_shared<T>(std::forward<Ts>(ts)...);
 }
 
 #endif
 
 
-struct Widget : Object {
+struct Widget : Self<Widget, Object> {
     Widget *parent = nullptr;
-    std::vector<Ptr<Widget>> children;
+    std::vector<SPtr<Widget>> children;
     Point position{0, 0};
 
     template <class T, class ...Ts>
@@ -502,20 +517,24 @@ struct Widget : Object {
 };
 
 
-struct GraphicsWidget : Widget {
+struct GraphicsWidget : Self<GraphicsWidget, Widget> {
     std::set<WPtr<GraphicsWidget>> children_selected;
 
     bool selected = false;
     bool selectable = false;
     bool draggable = false;
 
+    void _deselect_children() {
+        for (auto const &child: children_selected) {
+            child->selected = false;
+        }
+        children_selected.clear();
+        invalidate();
+    }
+
     void _select_child(WPtr<GraphicsWidget> ptr, bool multiselect = false) {
-        if (!(multiselect || (ptr && ptr->selected))) {
-            for (auto const &child: children_selected) {
-                child->selected = false;
-            }
-            children_selected.clear();
-            invalidate();
+        if (!(multiselect || ptr->selected)) {
+            _deselect_children();
         }
         if (ptr) {
             if (ptr->selected && multiselect) {
@@ -545,16 +564,16 @@ struct GraphicsWidget : Widget {
         Widget::on_lmb_down();
         if (auto par = dynamic_cast<GraphicsWidget *>(parent); par) {
             if (selectable) {
-                par->_select_child(this, cur.shift);
+                par->_select_child(self(), cur.shift);
             }
         }
         if (!cur.shift)
-            _select_child(nullptr);
+            _deselect_children();
     }
 };
 
 
-struct GraphicsRectItem : GraphicsWidget {
+struct GraphicsRectItem : Self<GraphicsRectItem, GraphicsWidget> {
     AABB bbox{0, 0, 200, 150};
 
     void set_bounding_box(AABB bbox) {
@@ -578,7 +597,7 @@ struct GraphicsRectItem : GraphicsWidget {
 };
 
 
-struct Button : Widget {
+struct Button : Self<Button, Widget> {
     AABB bbox{0, 0, 150, 50};
     std::string text;
 
@@ -623,11 +642,11 @@ struct Button : Widget {
 struct DopLink;
 struct DopNode;
 
-struct DopSocket : GraphicsRectItem {
+struct DopSocket : Self<DopSocket, GraphicsRectItem> {
     static constexpr float BW = 4, R = 15, FH = 19, NW = 200;
 
     std::string name = "(unnamed)";
-    std::vector<DopLink *> links;
+    std::vector<WPtr<DopLink>> links;
 
     DopSocket() {
         set_bounding_box({-R, -R, 2 * R, 2 * R});
@@ -654,7 +673,7 @@ struct DopSocket : GraphicsRectItem {
 };
 
 
-struct DopInputSocket : DopSocket {
+struct DopInputSocket : Self<DopInputSocket, DopSocket> {
     void paint() const override {
         DopSocket::paint();
 
@@ -668,11 +687,11 @@ struct DopInputSocket : DopSocket {
         }
     }
 
-    void attach_link(DopLink *link);
+    void attach_link(WPtr<DopLink> link);
 };
 
 
-struct DopOutputSocket : DopSocket {
+struct DopOutputSocket : Self<DopOutputSocket, DopSocket> {
     void paint() const override {
         DopSocket::paint();
 
@@ -686,7 +705,7 @@ struct DopOutputSocket : DopSocket {
         }
     }
 
-    void attach_link(DopLink *link) {
+    void attach_link(WPtr<DopLink> link) {
         links.push_back(link);
     }
 };
@@ -694,7 +713,7 @@ struct DopOutputSocket : DopSocket {
 
 struct DopGraph;
 
-struct DopNode : GraphicsRectItem {
+struct DopNode : Self<DopNode, GraphicsRectItem> {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
     std::vector<WPtr<DopInputSocket>> inputs;
@@ -778,7 +797,7 @@ struct DopNode : GraphicsRectItem {
 };
 
 
-struct GraphicsLineItem : GraphicsWidget {
+struct GraphicsLineItem : Self<GraphicsLineItem, GraphicsWidget> {
     static constexpr float LW = 4.f;
 
     virtual Point get_from_position() const = 0;
@@ -807,15 +826,15 @@ struct GraphicsLineItem : GraphicsWidget {
 };
 
 
-struct DopLink : GraphicsLineItem {
+struct DopLink : Self<DopLink, GraphicsLineItem> {
     DopOutputSocket *from_socket;
     DopInputSocket *to_socket;
 
     DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
         : from_socket(from_socket), to_socket(to_socket)
     {
-        from_socket->attach_link(this);
-        to_socket->attach_link(this);
+        from_socket->attach_link(self());
+        to_socket->attach_link(self());
         selectable = true;
     }
 
@@ -833,7 +852,7 @@ struct DopLink : GraphicsLineItem {
 };
 
 
-struct DopPendingLink : GraphicsLineItem {
+struct DopPendingLink : Self<DopLink, GraphicsLineItem> {
     DopSocket *socket;
 
     DopPendingLink(DopSocket *socket)
@@ -856,12 +875,12 @@ struct DopPendingLink : GraphicsLineItem {
 };
 
 
-struct DopGraph : GraphicsRectItem {
+struct DopGraph : Self<DopGraph, GraphicsRectItem> {
     std::set<WPtr<DopNode>> nodes;
     std::set<WPtr<DopLink>> links;
-    WPtr<DopPendingLink> pending_link = nullptr;
+    std::optional<WPtr<DopPendingLink>> pending_link;
 
-    bool remove_link(DopLink *link) {
+    bool remove_link(WPtr<DopLink> link) {
         if (remove_child(link)) {
             links.erase(link);
             return true;
@@ -870,7 +889,7 @@ struct DopGraph : GraphicsRectItem {
         }
     }
 
-    bool remove_node(DopNode *node) {
+    bool remove_node(WPtr<DopNode> node) {
         if (remove_child(node)) {
             nodes.erase(node);
             return true;
@@ -893,8 +912,8 @@ struct DopGraph : GraphicsRectItem {
 
     void add_pending_link(DopSocket *socket) {
         if (pending_link) {
-            if (socket && pending_link->socket) {
-                auto socket1 = pending_link->socket;
+            if (socket && pending_link.value()->socket) {
+                auto socket1 = pending_link.value()->socket;
                 auto socket2 = socket;
                 auto output1 = dynamic_cast<DopOutputSocket *>(socket1);
                 auto output2 = dynamic_cast<DopOutputSocket *>(socket2);
@@ -906,15 +925,15 @@ struct DopGraph : GraphicsRectItem {
                     add_link(output2, input1);
                 }
             }
-            remove_child(pending_link);
-            pending_link = nullptr;
+            remove_child(pending_link.value());
+            pending_link = std::nullopt;
 
         } else if (socket) {
             pending_link = add_child<DopPendingLink>(socket);
 
         } else {
-            remove_child(pending_link);
-            pending_link = nullptr;
+            remove_child(pending_link.value());
+            pending_link = std::nullopt;
         }
     }
 
@@ -959,7 +978,7 @@ void DopNode::on_lmb_down() {
     GraphicsWidget::on_lmb_down();
     auto graph = get_parent();
     if (graph->pending_link) {
-        auto another = graph->pending_link->socket;
+        auto another = graph->pending_link.value()->socket;
         if (dynamic_cast<DopInputSocket *>(another) && outputs.size()) {
             graph->add_pending_link(outputs[0]);
         } else if (dynamic_cast<DopOutputSocket *>(another) && inputs.size()) {
@@ -971,7 +990,7 @@ void DopNode::on_lmb_down() {
 }
 
 
-void DopInputSocket::attach_link(DopLink *link) {
+void DopInputSocket::attach_link(WPtr<DopLink> link) {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
         for (auto link: links) {
