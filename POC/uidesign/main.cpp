@@ -202,13 +202,15 @@ struct Ptr {
 
     template <class S>
     Ptr<S> cast() const {
-        ptr->refcnt++;
+        if (ptr)
+            ptr->refcnt++;
         return Ptr<S>(dynamic_cast<S *>(ptr));
     }
 
     template <class S>
     operator Ptr<S>() const {
-        ptr->refcnt++;
+        if (ptr)
+            ptr->refcnt++;
         return Ptr<S>(static_cast<S *>(ptr));
     }
 
@@ -262,13 +264,13 @@ struct Widget : Object {
     template <class T, class ...Ts>
     Ptr<T> add_child(Ts &&...ts) {
         auto p = makePtr<T>(std::forward<Ts>(ts)...);
+        p->parent = this;
         children.push_back(p);
         invalidate();
         return p;
     }
 
-    bool remove_child(Ptr<Widget> ptr) {
-        return 0;
+    bool remove_child(Widget *ptr) {
         for (auto &child: children) {
             if (child == ptr) {
                 ptr->parent = nullptr;
@@ -628,8 +630,8 @@ struct DopGraph;
 struct DopNode : GraphicsRectItem {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
-    std::vector<DopInputSocket *> inputs;
-    std::vector<DopOutputSocket *> outputs;
+    std::vector<Ptr<DopInputSocket>> inputs;
+    std::vector<Ptr<DopOutputSocket>> outputs;
     std::string name = "(unnamed)";
     std::string kind = "(untyped)";
 
@@ -661,7 +663,7 @@ struct DopNode : GraphicsRectItem {
         return p;
     }
 
-    DopOutputSocket *add_output_socket() {
+    Ptr<DopOutputSocket> add_output_socket() {
         auto p = add_child<DopOutputSocket>();
         outputs.push_back(p);
         _update_output_positions();
@@ -788,9 +790,9 @@ struct DopPendingLink : GraphicsLineItem {
 
 
 struct DopGraph : GraphicsRectItem {
-    std::set<DopNode *> nodes;
-    std::set<DopLink *> links;
-    DopPendingLink *pending_link = nullptr;
+    std::set<Ptr<DopNode>> nodes;
+    std::set<Ptr<DopLink>> links;
+    Ptr<DopPendingLink> pending_link = nullptr;
 
     bool remove_link(DopLink *link) {
         if (remove_child(link)) {
@@ -810,13 +812,13 @@ struct DopGraph : GraphicsRectItem {
         }
     }
 
-    DopNode *add_node() {
+    Ptr<DopNode> add_node() {
         auto p = add_child<DopNode>();
         nodes.insert(p);
         return p;
     }
 
-    DopLink *add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
+    Ptr<DopLink> add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
         auto p = add_child<DopLink>(from_socket, to_socket);
         links.insert(p);
         return p;
