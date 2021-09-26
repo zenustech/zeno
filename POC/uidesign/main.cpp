@@ -159,7 +159,6 @@ struct Object {
     Object &operator=(Object const &) = delete;
     Object(Object &&) = delete;
     Object &operator=(Object &&) = delete;
-
     virtual ~Object() = default;
 };
 
@@ -263,7 +262,6 @@ struct Object {
     Object &operator=(Object const &) = delete;
     Object(Object &&) = delete;
     Object &operator=(Object &&) = delete;
-
     virtual ~Object() = default;
 };
 
@@ -275,6 +273,11 @@ struct Ptr : std::shared_ptr<T> {
     Ptr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
     Ptr(T *p) : std::shared_ptr<T>(p) {}
     operator T *() const { return this->get(); }
+
+    template <class S>
+    Ptr<S> cast() const {
+        return std::dynamic_pointer_cast<S>(*this);
+    }
 };
 
 template <class T>
