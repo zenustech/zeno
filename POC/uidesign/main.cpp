@@ -834,9 +834,10 @@ void process_input() {
 
 
 void draw_graphics() {
-    //glClearColor(0.2f, 0.3f, 0.5f, 0.0f);
-    //glClear(GL_COLOR_BUFFER_BIT);
-    win.do_paint();
+    if (win.invalid) {
+        win.do_paint();
+        glFlush();
+    }
 }
 
 
@@ -868,7 +869,6 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         process_input();
         draw_graphics();
-        glFlush();
         glfwPollEvents();
         if (fps > 0) {
             lasttime += 1.0 / fps;
