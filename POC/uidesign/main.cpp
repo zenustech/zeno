@@ -259,7 +259,7 @@ SPtr<T> makePtr(Ts &&...ts) {
 
 template <class T>
 inline T notnull(T &&t) {
-    if (!t) throw "notnull assertion failed";
+    if (!t) throw std::bad_optional_access();
     return t;
 }
 
@@ -310,7 +310,7 @@ struct Self : Bases... {
     }
 };*/
 
-template <class T, class ...Bases>
+/*template <class T, class ...Bases>
 struct Self : private std::enable_shared_from_this<T>, Bases... {
 protected:
     SPtr<const T> self() const {
@@ -320,7 +320,7 @@ protected:
     SPtr<T> self() {
         return std::enable_shared_from_this<T>::shared_from_this();
     }
-};
+};*/
 #else
 template <class T>
 struct WPtr : std::weak_ptr<T> {
@@ -363,7 +363,7 @@ WPtr(std::weak_ptr<T>) -> WPtr<T>;
 #endif
 
 
-struct Widget : Self<Widget, Object> {
+struct Widget : Object {
     Widget *parent = nullptr;
     std::vector<SPtr<Widget>> children;
     Point position{0, 0};
@@ -542,7 +542,7 @@ struct Widget : Self<Widget, Object> {
 };
 
 
-struct GraphicsWidget : Self<GraphicsWidget, Widget> {
+struct GraphicsWidget : Widget {
     std::set<GraphicsWidget *> children_selected;
 
     bool selected = false;
@@ -598,7 +598,7 @@ struct GraphicsWidget : Self<GraphicsWidget, Widget> {
 };
 
 
-struct GraphicsRectItem : Self<GraphicsRectItem, GraphicsWidget> {
+struct GraphicsRectItem : GraphicsWidget {
     AABB bbox{0, 0, 200, 150};
 
     void set_bounding_box(AABB bbox) {
@@ -622,7 +622,7 @@ struct GraphicsRectItem : Self<GraphicsRectItem, GraphicsWidget> {
 };
 
 
-struct Button : Self<Button, Widget> {
+struct Button : Widget {
     AABB bbox{0, 0, 150, 50};
     std::string text;
 
@@ -667,7 +667,7 @@ struct Button : Self<Button, Widget> {
 struct DopLink;
 struct DopNode;
 
-struct DopSocket : Self<DopSocket, GraphicsRectItem> {
+struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 19, NW = 200;
 
     std::string name = "(unnamed)";
@@ -698,7 +698,7 @@ struct DopSocket : Self<DopSocket, GraphicsRectItem> {
 };
 
 
-struct DopInputSocket : Self<DopInputSocket, DopSocket> {
+struct DopInputSocket : DopSocket {
     void paint() const override {
         DopSocket::paint();
 
@@ -716,7 +716,7 @@ struct DopInputSocket : Self<DopInputSocket, DopSocket> {
 };
 
 
-struct DopOutputSocket : Self<DopOutputSocket, DopSocket> {
+struct DopOutputSocket : DopSocket {
     void paint() const override {
         DopSocket::paint();
 
@@ -738,7 +738,7 @@ struct DopOutputSocket : Self<DopOutputSocket, DopSocket> {
 
 struct DopGraph;
 
-struct DopNode : Self<DopNode, GraphicsRectItem> {
+struct DopNode : GraphicsRectItem {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
     std::vector<DopInputSocket *> inputs;
@@ -822,7 +822,7 @@ struct DopNode : Self<DopNode, GraphicsRectItem> {
 };
 
 
-struct GraphicsLineItem : Self<GraphicsLineItem, GraphicsWidget> {
+struct GraphicsLineItem : GraphicsWidget {
     static constexpr float LW = 4.f;
 
     virtual Point get_from_position() const = 0;
@@ -851,15 +851,15 @@ struct GraphicsLineItem : Self<GraphicsLineItem, GraphicsWidget> {
 };
 
 
-struct DopLink : Self<DopLink, GraphicsLineItem> {
+struct DopLink : GraphicsLineItem {
     DopOutputSocket *from_socket;
     DopInputSocket *to_socket;
 
     DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
         : from_socket(from_socket), to_socket(to_socket)
     {
-        from_socket->attach_link(self());
-        to_socket->attach_link(self());
+        from_socket->attach_link(this);
+        to_socket->attach_link(this);
         selectable = true;
     }
 
@@ -877,7 +877,7 @@ struct DopLink : Self<DopLink, GraphicsLineItem> {
 };
 
 
-struct DopPendingLink : Self<DopLink, GraphicsLineItem> {
+struct DopPendingLink : GraphicsLineItem {
     DopSocket *socket;
 
     DopPendingLink(DopSocket *socket)
@@ -900,7 +900,7 @@ struct DopPendingLink : Self<DopLink, GraphicsLineItem> {
 };
 
 
-struct DopGraph : Self<DopGraph, GraphicsRectItem> {
+struct DopGraph : GraphicsRectItem {
     std::set<DopNode *> nodes;
     std::set<DopLink *> links;
     DopPendingLink *pending_link = nullptr;
