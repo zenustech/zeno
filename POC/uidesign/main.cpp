@@ -150,6 +150,7 @@ struct CursorState {
 } cur;
 
 
+#if 0
 struct Object {
     int refcnt = 1;
 
@@ -249,11 +250,45 @@ struct Ptr {
 template <class T>
 Ptr(T *) -> Ptr<T>;
 
-
 template <class T, class ...Ts>
 Ptr<T> makePtr(Ts &&...ts) {
     return new T(std::forward<Ts>(ts)...);
 }
+
+#else
+
+struct Object {
+    Object() = default;
+    Object(Object const &) = delete;
+    Object &operator=(Object const &) = delete;
+    Object(Object &&) = delete;
+    Object &operator=(Object &&) = delete;
+
+    virtual ~Object() = default;
+};
+
+template <class T>
+struct Ptr : std::shared_ptr<T> {
+    using std::shared_ptr<T>::shared_ptr;
+
+    Ptr(std::shared_ptr<T> &&p) : std::shared_ptr<T>(std::move(p)) {}
+    Ptr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
+    Ptr(T *p) : std::shared_ptr<T>(p) {}
+    operator T *() const { return this->get(); }
+};
+
+template <class T>
+Ptr(T *) -> Ptr<T>;
+
+template <class T>
+Ptr(std::shared_ptr<T>) -> Ptr<T>;
+
+template <class T, class ...Ts>
+Ptr<T> makePtr(Ts &&...ts) {
+    return std::make_shared<T>(std::forward<Ts>(ts)...);
+}
+
+#endif
 
 
 struct Widget : Object {
