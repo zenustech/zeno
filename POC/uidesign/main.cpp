@@ -151,112 +151,6 @@ struct CursorState {
 } cur;
 
 
-#if 0
-struct Object {
-    int refcnt = 1;
-
-    Object() = default;
-    Object(Object const &) = delete;
-    Object &operator=(Object const &) = delete;
-    Object(Object &&) = delete;
-    Object &operator=(Object &&) = delete;
-    virtual ~Object() = default;
-};
-
-template <class T>
-struct SPtr {
-    T *ptr = nullptr;
-
-    SPtr(T *ptr) : ptr(ptr) {}
-
-    SPtr &operator=(T *nptr) {
-        release();
-        ptr = nptr;
-        return *this;
-    }
-
-    SPtr(SPtr const &p) : ptr(p.ptr) {
-        if (ptr)
-            ptr->refcnt++;
-    }
-
-    SPtr &operator=(SPtr const &p) {
-        ptr = p.ptr;
-        if (ptr)
-            ptr->refcnt++;
-        return *this;
-    }
-
-    SPtr(SPtr &&p) : ptr(p.ptr) {
-        p.ptr = nullptr;
-    }
-
-    SPtr &operator=(SPtr &&p) {
-        ptr = p.ptr;
-        p.ptr = nullptr;
-        return *this;
-    }
-
-    T *get() const {
-        return ptr;
-    }
-
-    template <class S>
-    SPtr<S> cast() const {
-        if (ptr)
-            ptr->refcnt++;
-        return SPtr<S>(dynamic_cast<S *>(ptr));
-    }
-
-    template <class S>
-    operator SPtr<S>() const {
-        if (ptr)
-            ptr->refcnt++;
-        return SPtr<S>(static_cast<S *>(ptr));
-    }
-
-    operator T *() const {
-        return get();
-    }
-
-    T &operator*() const {
-        return *get();
-    }
-
-    T *operator->() const {
-        return get();
-    }
-
-    void release() {
-        if (ptr && --ptr->refcnt <= 0) {
-            delete ptr;
-            ptr = nullptr;
-        }
-    }
-
-    SPtr(std::nullptr_t = nullptr) : ptr(nullptr) {
-    }
-
-    SPtr &operator=(std::nullptr_t) {
-        release();
-        return *this;
-    }
-
-    ~SPtr() {
-        release();
-    }
-};
-
-template <class T>
-SPtr(T *) -> SPtr<T>;
-
-template <class T, class ...Ts>
-SPtr<T> makePtr(Ts &&...ts) {
-    return new T(std::forward<Ts>(ts)...);
-}
-
-#else
-
 template <class T>
 inline T notnull(T &&t) {
     if (!t) throw std::bad_optional_access();
@@ -272,114 +166,46 @@ struct Object {
     virtual ~Object() = default;
 };
 
-template <class T>
-struct SPtr : std::shared_ptr<T> {
-    using std::shared_ptr<T>::shared_ptr;
+/*template <class T>
+struct Ptr : std::unique_ptr<T> {
+    using std::unique_ptr<T>::unique_ptr;
 
-    SPtr(std::shared_ptr<T> &&p) : std::shared_ptr<T>(std::move(p)) {}
-    SPtr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
-    SPtr(T *p) : std::shared_ptr<T>(p) {}
-    operator T *() const { return std::shared_ptr<T>::get(); }
-
-    template <class S>
-    SPtr<S> cast() const {
-        return std::dynamic_pointer_cast<S>(*this);
-    }
+    Ptr(std::unique_ptr<T> &&p) : std::unique_ptr<T>(std::move(p)) {}
+    Ptr(std::unique_ptr<T> const &p) : std::unique_ptr<T>(p) {}
+    Ptr(T *p) : std::unique_ptr<T>(p) {}
+    operator T *() const { return std::unique_ptr<T>::get(); }
 };
 
 template <class T>
-SPtr(T *) -> SPtr<T>;
+Ptr(T *) -> Ptr<T>;
 
 template <class T>
-SPtr(std::shared_ptr<T>) -> SPtr<T>;
+Ptr(std::unique_ptr<T>) -> Ptr<T>;
 
 template <class T, class ...Ts>
-SPtr<T> makePtr(Ts &&...ts) {
-    return std::make_shared<T>(std::forward<Ts>(ts)...);
-}
-
-#if 1
-/*template <class T, class ...Bases>
-struct Self : Bases... {
-    T *self() {
-        return static_cast<T *>(this);
-    }
-
-    T const *self() const {
-        return static_cast<T const *>(this);
-    }
-};*/
-
-/*template <class T, class ...Bases>
-struct Self : private std::enable_shared_from_this<T>, Bases... {
-protected:
-    SPtr<const T> self() const {
-        return std::enable_shared_from_this<T>::shared_from_this();
-    }
-
-    SPtr<T> self() {
-        return std::enable_shared_from_this<T>::shared_from_this();
-    }
-};*/
-#else
-template <class T>
-struct WPtr : std::weak_ptr<T> {
-    using std::weak_ptr<T>::weak_ptr;
-
-    //WPtr(std::nullptr_t = {}) : std::weak_ptr<T>(std::shared_ptr<T>()) {}
-    //WPtr &operator=(std::nullptr_t) { std::weak_ptr<T>::operator=(std::shared_ptr<T>()); return *this; }
-    WPtr(std::weak_ptr<T> &&p) : std::weak_ptr<T>(std::move(p)) {}
-    WPtr(std::weak_ptr<T> const &p) : std::weak_ptr<T>(p) {}
-    operator SPtr<T>() const { return notnull(std::weak_ptr<T>::lock()); }
-    operator T *() const { return SPtr<T>(*this); }
-    T &operator*() const { return *SPtr<T>(*this); }
-    SPtr<T> operator->() const { return *this; }
-
-    template <class S>
-    WPtr<S> cast() const {
-        return std::dynamic_pointer_cast<S>(*this);
-    }
-};
-
-template <class T, class ...Bases>
-struct Self : private std::enable_shared_from_this<T>, Bases... {
-protected:
-    SPtr<const T> self() const {
-        return std::enable_shared_from_this<T>::shared_from_this();
-    }
-
-    SPtr<T> self() {
-        return std::enable_shared_from_this<T>::shared_from_this();
-    }
-};
-
-template <class T>
-WPtr(std::shared_ptr<T>) -> WPtr<T>;
-
-template <class T>
-WPtr(std::weak_ptr<T>) -> WPtr<T>;
-#endif
-
-#endif
+Ptr<T> makePtr(Ts &&...ts) {
+    return std::make_unique<T>(std::forward<Ts>(ts)...);
+}*/
 
 
 struct Widget : Object {
     Widget *parent = nullptr;
-    std::vector<SPtr<Widget>> children;
+    std::vector<std::unique_ptr<Widget>> children;
     Point position{0, 0};
 
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {
-        auto p = makePtr<T>(std::forward<Ts>(ts)...);
+        auto p = std::make_unique<T>(std::forward<Ts>(ts)...);
+        T *raw_p = p.get();
         p->parent = this;
-        children.push_back(p);
+        children.push_back(std::move(p));
         invalidate();
-        return p;
+        return raw_p;
     }
 
     bool remove_child(Widget *ptr) {
         for (auto &child: children) {
-            if (child == ptr) {
+            if (child.get() == ptr) {
                 ptr->parent = nullptr;
                 invalidate();
                 child = nullptr;
