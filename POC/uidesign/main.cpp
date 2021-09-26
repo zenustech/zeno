@@ -620,6 +620,8 @@ struct DopNode : GraphicsRectItem {
         glColor3f(1.f, 1.f, 1.f);
         font.render(0, FH * 0.05f, name);
     }
+
+    void on_lmb_down() override;
 };
 
 
@@ -692,6 +694,12 @@ struct DopPendingLink : GraphicsLineItem {
     Point get_to_position() const override {
         return {cur.x, cur.y};
     }
+
+    DopGraph *get_parent() const {
+        return (DopGraph *)(parent);
+    }
+
+    void on_lmb_down() override;
 };
 
 
@@ -750,6 +758,10 @@ struct DopGraph : GraphicsRectItem {
 
         } else if (socket) {
             pending_link = add_child<DopPendingLink>(socket);
+
+        } else {
+            remove_child(pending_link);
+            pending_link = nullptr;
         }
     }
 
@@ -783,6 +795,29 @@ struct DopGraph : GraphicsRectItem {
 };
 
 
+void DopPendingLink::on_lmb_down() {
+    GraphicsWidget::on_lmb_down();
+    auto graph = get_parent();
+    graph->add_pending_link(nullptr);
+}
+
+
+void DopNode::on_lmb_down() {
+    GraphicsWidget::on_lmb_down();
+    auto graph = get_parent();
+    if (graph->pending_link) {
+        auto another = graph->pending_link->socket;
+        if (dynamic_cast<DopInputSocket *>(another) && outputs.size()) {
+            graph->add_pending_link(outputs[0]);
+        } else if (dynamic_cast<DopOutputSocket *>(another) && inputs.size()) {
+            graph->add_pending_link(inputs[0]);
+        } else {
+            graph->add_pending_link(nullptr);
+        }
+    }
+}
+
+
 void DopInputSocket::attach_link(DopLink *link) {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
@@ -795,7 +830,7 @@ void DopInputSocket::attach_link(DopLink *link) {
 
 
 void DopSocket::on_lmb_down() {
-    Widget::on_lmb_down();
+    GraphicsWidget::on_lmb_down();
     auto graph = get_parent()->get_parent();
     graph->add_pending_link(this);
 }
