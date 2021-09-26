@@ -150,44 +150,130 @@ struct CursorState {
 } cur;
 
 
-struct IWidget {
-    virtual ~IWidget() = default;
+struct Object {
+    int refcnt = 1;
 
-    virtual void do_update() = 0;
-    virtual void do_paint() = 0;
+    Object() = default;
+    Object(Object const &) = delete;
+    Object &operator=(Object const &) = delete;
+    Object(Object &&) = delete;
+    Object &operator=(Object &&) = delete;
+
+    virtual ~Object() = default;
 };
 
+template <class T>
+struct Ptr {
+    T *ptr = nullptr;
 
-std::vector<std::unique_ptr<Widget>> gc;
+    Ptr(T *ptr) : ptr(ptr) {}
 
-
-struct Widget : IWidget {
-    Widget *parent = nullptr;
-    std::vector<std::unique_ptr<Widget>> children;
-    Point position{0, 0};
-
-    Widget() = default;
-    Widget(Widget const &) = delete;
-    Widget &operator=(Widget const &) = delete;
-    Widget(Widget &&) = delete;
-    Widget &operator=(Widget &&) = delete;
-
-    template <class T, class ...Ts>
-    T *add_child(Ts &&...ts) {
-        std::unique_ptr<Widget> p = std::make_unique<T>(std::forward<Ts>(ts)...);
-        p->parent = this;
-        auto raw_p = p.get();
-        children.push_back(std::move(p));
-        invalidate();
-        return static_cast<T *>(raw_p);
+    Ptr &operator=(T *nptr) {
+        release();
+        ptr = nptr;
+        return *this;
     }
 
-    bool remove_child(Widget *ptr) {
+    Ptr(Ptr const &p) : ptr(p.ptr) {
+        if (ptr)
+            ptr->refcnt++;
+    }
+
+    Ptr &operator=(Ptr const &p) {
+        ptr = p.ptr;
+        if (ptr)
+            ptr->refcnt++;
+        return *this;
+    }
+
+    Ptr(Ptr &&p) : ptr(p.ptr) {
+        p.ptr = nullptr;
+    }
+
+    Ptr &operator=(Ptr &&p) {
+        ptr = p.ptr;
+        p.ptr = nullptr;
+        return *this;
+    }
+
+    T *get() const {
+        return ptr;
+    }
+
+    template <class S>
+    Ptr<S> cast() const {
+        ptr->refcnt++;
+        return Ptr<S>(dynamic_cast<S *>(ptr));
+    }
+
+    template <class S>
+    operator Ptr<S>() const {
+        ptr->refcnt++;
+        return Ptr<S>(static_cast<S *>(ptr));
+    }
+
+    operator T *() const {
+        return get();
+    }
+
+    T &operator*() const {
+        return *get();
+    }
+
+    T *operator->() const {
+        return get();
+    }
+
+    void release() {
+        if (ptr && --ptr->refcnt <= 0) {
+            delete ptr;
+            ptr = nullptr;
+        }
+    }
+
+    Ptr(std::nullptr_t = nullptr) : ptr(nullptr) {
+    }
+
+    Ptr &operator=(std::nullptr_t) {
+        release();
+        return *this;
+    }
+
+    ~Ptr() {
+        release();
+    }
+};
+
+template <class T>
+Ptr(T *) -> Ptr<T>;
+
+
+template <class T, class ...Ts>
+Ptr<T> makePtr(Ts &&...ts) {
+    return new T(std::forward<Ts>(ts)...);
+}
+
+
+struct Widget : Object {
+    Widget *parent = nullptr;
+    std::vector<Ptr<Widget>> children;
+    Point position{0, 0};
+
+    template <class T, class ...Ts>
+    Ptr<T> add_child(Ts &&...ts) {
+        auto p = makePtr<T>(std::forward<Ts>(ts)...);
+        children.push_back(p);
+        invalidate();
+        return p;
+    }
+
+    bool remove_child(Ptr<Widget> ptr) {
+        return 0;
         for (auto &child: children) {
-            if (child.get() == ptr) {
+            if (child == ptr) {
                 ptr->parent = nullptr;
                 invalidate();
-                gc.push_back(std::move(child));
+                child = nullptr;
                 return true;
             }
         }
@@ -206,8 +292,6 @@ struct Widget : IWidget {
         if (mmb_pressed) on_mmb_up();
         if (rmb_pressed) on_rmb_up();
     }
-
-    std::set<Widget *> children_selected;
 
     bool hovered = false;
 
@@ -263,7 +347,7 @@ struct Widget : IWidget {
         } while (has_any);
     }
 
-    void do_update() override {
+    virtual void do_update() {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
 
@@ -330,7 +414,7 @@ struct Widget : IWidget {
         }
     }
 
-    void do_paint() override {
+    virtual void do_paint() {
         if (!invalid) return;
 
         auto raii = cur.translate(-position.x, -position.y);
@@ -350,7 +434,7 @@ struct Widget : IWidget {
 
 
 struct GraphicsWidget : Widget {
-    std::set<GraphicsWidget *> children_selected;
+    std::set<Ptr<GraphicsWidget>> children_selected;
 
     bool selected = false;
     bool selectable = false;
@@ -358,7 +442,7 @@ struct GraphicsWidget : Widget {
 
     void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
         if (!(multiselect || (ptr && ptr->selected))) {
-            for (auto *child: children_selected) {
+            for (auto const &child: children_selected) {
                 child->selected = false;
             }
             children_selected.clear();
@@ -379,7 +463,7 @@ struct GraphicsWidget : Widget {
     void on_mouse_move() override {
         Widget::on_mouse_move();
         if (cur.lmb) {
-            for (auto *child: children_selected) {
+            for (auto const &child: children_selected) {
                 if (child->draggable) {
                     child->position.x += cur.dx;
                     child->position.y += cur.dy;
@@ -570,7 +654,7 @@ struct DopNode : GraphicsRectItem {
         set_bounding_box({0, -h, W, h + TH});
     }
 
-    DopInputSocket *add_input_socket() {
+    Ptr<DopInputSocket> add_input_socket() {
         auto p = add_child<DopInputSocket>();
         inputs.push_back(p);
         _update_input_positions();
