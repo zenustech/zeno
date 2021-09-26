@@ -256,6 +256,12 @@ Ptr<T> makePtr(Ts &&...ts) {
 
 #else
 
+template <class T>
+inline T notnull(T &&t) {
+    if (!t) throw std::bad_cast();
+    return t;
+}
+
 struct Object {
     Object() = default;
     Object(Object const &) = delete;
@@ -272,10 +278,27 @@ struct Ptr : std::shared_ptr<T> {
     Ptr(std::shared_ptr<T> &&p) : std::shared_ptr<T>(std::move(p)) {}
     Ptr(std::shared_ptr<T> const &p) : std::shared_ptr<T>(p) {}
     Ptr(T *p) : std::shared_ptr<T>(p) {}
-    operator T *() const { return this->get(); }
+    operator T *() const { return std::shared_ptr<T>::get(); }
 
     template <class S>
     Ptr<S> cast() const {
+        return std::dynamic_pointer_cast<S>(*this);
+    }
+};
+
+template <class T>
+struct WPtr : std::weak_ptr<T> {
+    using std::weak_ptr<T>::weak_ptr;
+
+    WPtr(std::weak_ptr<T> &&p) : std::weak_ptr<T>(std::move(p)) {}
+    WPtr(std::weak_ptr<T> const &p) : std::weak_ptr<T>(p) {}
+    WPtr(T *p) : std::weak_ptr<T>(p) {}
+    operator Ptr<T>() const { return notnull(std::weak_ptr<T>::lock()); }
+    operator T *() const { return Ptr<T>(*this); }
+    Ptr<T> operator->() const { return *this; }
+
+    template <class S>
+    WPtr<S> cast() const {
         return std::dynamic_pointer_cast<S>(*this);
     }
 };
@@ -285,6 +308,12 @@ Ptr(T *) -> Ptr<T>;
 
 template <class T>
 Ptr(std::shared_ptr<T>) -> Ptr<T>;
+
+template <class T>
+WPtr(std::shared_ptr<T>) -> WPtr<T>;
+
+template <class T>
+WPtr(std::weak_ptr<T>) -> WPtr<T>;
 
 template <class T, class ...Ts>
 Ptr<T> makePtr(Ts &&...ts) {
@@ -668,8 +697,8 @@ struct DopGraph;
 struct DopNode : GraphicsRectItem {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
-    std::vector<Ptr<DopInputSocket>> inputs;
-    std::vector<Ptr<DopOutputSocket>> outputs;
+    std::vector<WPtr<DopInputSocket>> inputs;
+    std::vector<WPtr<DopOutputSocket>> outputs;
     std::string name = "(unnamed)";
     std::string kind = "(untyped)";
 
