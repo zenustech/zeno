@@ -4,7 +4,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#if defined(__linux__)
 #include <unistd.h>
+#endif
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
 #include <FTGL/ftgl.h>
@@ -872,7 +874,12 @@ int main() {
             lasttime += 1.0 / fps;
             while (glfwGetTime() < lasttime) {
                 double sleepfor = (lasttime - glfwGetTime()) * 0.75;
-                usleep(int(sleepfor / 1000000));
+                int us(sleepfor / 1000000);
+#if defined(__linux__)
+                ::usleep(us);
+#else
+                std::this_thread::sleep_for(std::chrono::microseconds(us));
+#endif
             }
         }
     }
