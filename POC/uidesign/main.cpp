@@ -26,6 +26,10 @@ struct Point {
     Point operator+(Point const &o) const {
         return {x + o.x, y + o.y};
     }
+
+    Point operator-(Point const &o) const {
+        return {x - o.x, y - o.y};
+    }
 };
 
 struct AABB {
@@ -199,7 +203,6 @@ struct Widget : Object {
         T *raw_p = p.get();
         p->parent = this;
         children.push_back(std::move(p));
-        invalidate();
         return raw_p;
     }
 
@@ -207,7 +210,6 @@ struct Widget : Object {
         for (auto &child: children) {
             if (child.get() == ptr) {
                 ptr->parent = nullptr;
-                invalidate();
                 child = nullptr;
                 return true;
             }
@@ -218,11 +220,9 @@ struct Widget : Object {
     virtual AABB get_bounding_box() const = 0;
 
     virtual void on_hover_enter() {
-        invalidate();
     }
 
     virtual void on_hover_leave() {
-        invalidate();
         if (lmb_pressed) on_lmb_up();
         if (mmb_pressed) on_mmb_up();
         if (rmb_pressed) on_rmb_up();
@@ -231,36 +231,29 @@ struct Widget : Object {
     bool hovered = false;
 
     virtual void on_mouse_move() {
-        invalidate();
     }
 
     virtual void on_lmb_down() {
-        invalidate();
         lmb_pressed = true;
     }
 
     virtual void on_lmb_up() {
-        invalidate();
         lmb_pressed = false;
     }
 
     virtual void on_mmb_down() {
-        invalidate();
         mmb_pressed = true;
     }
 
     virtual void on_mmb_up() {
-        invalidate();
         mmb_pressed = false;
     }
 
     virtual void on_rmb_down() {
-        invalidate();
         rmb_pressed = true;
     }
 
     virtual void on_rmb_up() {
-        invalidate();
         rmb_pressed = false;
     }
 
@@ -282,6 +275,21 @@ struct Widget : Object {
         } while (has_any);
     }
 
+    virtual Widget *item_at(Point p) const {
+        auto bbox = get_bounding_box();
+        if (!bbox.contains(p.x, p.y)) {
+            return nullptr;
+        }
+        for (auto const &child: children) {
+            if (child) {
+                if (auto it = child->item_at(p - child->position); it) {
+                    return it;
+                }
+            }
+        }
+        return const_cast<Widget *>(this);
+    }
+
     virtual void do_update() {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
@@ -297,15 +305,15 @@ struct Widget : Object {
         if (hovered) {
             if (!cur.last_lmb && cur.lmb) {
                 on_lmb_down();
-                cur.last_lmb = cur.lmb;
+                //cur.last_lmb = cur.lmb;
             }
             if (!cur.last_mmb && cur.mmb) {
                 on_mmb_down();
-                cur.last_mmb = cur.mmb;
+                //cur.last_mmb = cur.mmb;
             }
             if (!cur.last_rmb && cur.rmb) {
                 on_rmb_down();
-                cur.last_rmb = cur.rmb;
+                //cur.last_rmb = cur.rmb;
             }
         }
 
@@ -316,15 +324,15 @@ struct Widget : Object {
         if (hovered) {
             if (cur.last_lmb && !cur.lmb) {
                 on_lmb_up();
-                cur.last_lmb = cur.lmb;
+                //cur.last_lmb = cur.lmb;
             }
             if (cur.last_mmb && !cur.mmb) {
                 on_mmb_up();
-                cur.last_mmb = cur.mmb;
+                //cur.last_mmb = cur.mmb;
             }
             if (cur.last_rmb && !cur.rmb) {
                 on_rmb_up();
-                cur.last_rmb = cur.rmb;
+                //cur.last_rmb = cur.rmb;
             }
         }
 
@@ -335,23 +343,7 @@ struct Widget : Object {
         }
     }
 
-    bool invalid = true;
-
-    void invalidate() {
-        if (!invalid) {
-            invalid = true;
-            if (parent)
-                parent->invalidate();
-            for (auto const &child: children) {
-                if (child)
-                    child->invalidate();
-            }
-        }
-    }
-
     virtual void do_paint() {
-        if (!invalid) return;
-
         auto raii = cur.translate(-position.x, -position.y);
         glPushMatrix();
         glTranslatef(position.x, position.y, 0.f);
@@ -361,7 +353,6 @@ struct Widget : Object {
                 child->do_paint();
         }
         glPopMatrix();
-        invalid = false;
     }
 
     virtual void paint() const {}
@@ -380,7 +371,6 @@ struct GraphicsWidget : Widget {
             child->selected = false;
         }
         children_selected.clear();
-        invalidate();
     }
 
     void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
@@ -395,7 +385,6 @@ struct GraphicsWidget : Widget {
                 children_selected.insert(ptr);
                 ptr->selected = true;
             }
-            invalidate();
         }
     }
 
@@ -413,13 +402,12 @@ struct GraphicsWidget : Widget {
 
     void on_lmb_down() override {
         Widget::on_lmb_down();
-        if (auto par = dynamic_cast<GraphicsWidget *>(parent); par) {
-            if (selectable) {
-                par->_select_child(this, cur.shift);
-            }
-        }
-        if (!cur.shift)
+        auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y}));
+        if (item && item != this && item->selectable) {
+            _select_child(item, cur.shift);
+        } else if (!cur.shift) {
             _deselect_children();
+        }
     }
 };
 
@@ -519,8 +507,6 @@ struct DopSocket : GraphicsRectItem {
     DopNode *get_parent() const {
         return (DopNode *)(parent);
     }
-
-    void on_lmb_down() override;
 };
 
 
@@ -643,8 +629,6 @@ struct DopNode : GraphicsRectItem {
         glColor3f(1.f, 1.f, 1.f);
         font.render(0, FH * 0.05f, name);
     }
-
-    void on_lmb_down() override;
 };
 
 
@@ -721,8 +705,6 @@ struct DopPendingLink : GraphicsLineItem {
     DopGraph *get_parent() const {
         return (DopGraph *)(parent);
     }
-
-    void on_lmb_down() override;
 };
 
 
@@ -815,30 +797,33 @@ struct DopGraph : GraphicsRectItem {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
-};
 
+    void on_lmb_down() override {
+        GraphicsWidget::on_lmb_down();
 
-void DopPendingLink::on_lmb_down() {
-    GraphicsWidget::on_lmb_down();
-    auto graph = get_parent();
-    graph->add_pending_link(nullptr);
-}
+        auto item = item_at({cur.x, cur.y});
 
+        if (!item) {
+            add_pending_link(nullptr);
 
-void DopNode::on_lmb_down() {
-    GraphicsWidget::on_lmb_down();
-    auto graph = get_parent();
-    if (graph->pending_link) {
-        auto another = graph->pending_link->socket;
-        if (dynamic_cast<DopInputSocket *>(another) && outputs.size()) {
-            graph->add_pending_link(outputs[0]);
-        } else if (dynamic_cast<DopOutputSocket *>(another) && inputs.size()) {
-            graph->add_pending_link(inputs[0]);
-        } else {
-            graph->add_pending_link(nullptr);
+        } else if (auto node = dynamic_cast<DopNode *>(item); node) {
+            if (pending_link) {
+                auto another = pending_link->socket;
+                if (dynamic_cast<DopInputSocket *>(another) && node->outputs.size()) {
+                    add_pending_link(node->outputs[0]);
+                } else if (dynamic_cast<DopOutputSocket *>(another) && node->inputs.size()) {
+                    add_pending_link(node->inputs[0]);
+                } else {
+                    add_pending_link(nullptr);
+                }
+            }
+
+        } else if (auto socket = dynamic_cast<DopSocket *>(item); socket) {
+            add_pending_link(socket);
+
         }
     }
-}
+};
 
 
 void DopInputSocket::attach_link(DopLink *link) {
@@ -849,13 +834,6 @@ void DopInputSocket::attach_link(DopLink *link) {
         }
     }
     links.push_back(link);
-}
-
-
-void DopSocket::on_lmb_down() {
-    GraphicsWidget::on_lmb_down();
-    auto graph = get_parent()->get_parent();
-    graph->add_pending_link(this);
 }
 
 
@@ -891,8 +869,10 @@ void process_input() {
 }
 
 
+bool need_repaint = true;
+
 void draw_graphics() {
-    if (win.invalid) {
+    if (need_repaint) {
         win.do_paint();
         glFlush();
     }
