@@ -292,9 +292,9 @@ struct WPtr : std::weak_ptr<T> {
 
     WPtr(std::weak_ptr<T> &&p) : std::weak_ptr<T>(std::move(p)) {}
     WPtr(std::weak_ptr<T> const &p) : std::weak_ptr<T>(p) {}
-    WPtr(T *p) : std::weak_ptr<T>(p) {}
     operator Ptr<T>() const { return notnull(std::weak_ptr<T>::lock()); }
     operator T *() const { return Ptr<T>(*this); }
+    T &operator*() const { return *Ptr<T>(*this); }
     Ptr<T> operator->() const { return *this; }
 
     template <class S>
@@ -329,7 +329,7 @@ struct Widget : Object {
     Point position{0, 0};
 
     template <class T, class ...Ts>
-    Ptr<T> add_child(Ts &&...ts) {
+    WPtr<T> add_child(Ts &&...ts) {
         auto p = makePtr<T>(std::forward<Ts>(ts)...);
         p->parent = this;
         children.push_back(p);
@@ -503,13 +503,13 @@ struct Widget : Object {
 
 
 struct GraphicsWidget : Widget {
-    std::set<Ptr<GraphicsWidget>> children_selected;
+    std::set<WPtr<GraphicsWidget>> children_selected;
 
     bool selected = false;
     bool selectable = false;
     bool draggable = false;
 
-    void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
+    void _select_child(WPtr<GraphicsWidget> ptr, bool multiselect = false) {
         if (!(multiselect || (ptr && ptr->selected))) {
             for (auto const &child: children_selected) {
                 child->selected = false;
@@ -723,14 +723,14 @@ struct DopNode : GraphicsRectItem {
         set_bounding_box({0, -h, W, h + TH});
     }
 
-    Ptr<DopInputSocket> add_input_socket() {
+    WPtr<DopInputSocket> add_input_socket() {
         auto p = add_child<DopInputSocket>();
         inputs.push_back(p);
         _update_input_positions();
         return p;
     }
 
-    Ptr<DopOutputSocket> add_output_socket() {
+    WPtr<DopOutputSocket> add_output_socket() {
         auto p = add_child<DopOutputSocket>();
         outputs.push_back(p);
         _update_output_positions();
@@ -857,9 +857,9 @@ struct DopPendingLink : GraphicsLineItem {
 
 
 struct DopGraph : GraphicsRectItem {
-    std::set<Ptr<DopNode>> nodes;
-    std::set<Ptr<DopLink>> links;
-    Ptr<DopPendingLink> pending_link = nullptr;
+    std::set<WPtr<DopNode>> nodes;
+    std::set<WPtr<DopLink>> links;
+    WPtr<DopPendingLink> pending_link = nullptr;
 
     bool remove_link(DopLink *link) {
         if (remove_child(link)) {
@@ -879,13 +879,13 @@ struct DopGraph : GraphicsRectItem {
         }
     }
 
-    Ptr<DopNode> add_node() {
+    WPtr<DopNode> add_node() {
         auto p = add_child<DopNode>();
         nodes.insert(p);
         return p;
     }
 
-    Ptr<DopLink> add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
+    WPtr<DopLink> add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
         auto p = add_child<DopLink>(from_socket, to_socket);
         links.insert(p);
         return p;
