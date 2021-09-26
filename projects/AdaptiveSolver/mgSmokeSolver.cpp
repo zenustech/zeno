@@ -57,6 +57,7 @@ namespace zeno{
     void mgSmokeData::initData(openvdb::FloatGrid::Ptr sdf, int levelNum, float inputdt)
     {
         dt = inputdt;
+        dens = 1;
         resize(levelNum);
         printf("mgSmoke Data resize over!level Num is %d\n", levelNum);
         
@@ -318,13 +319,451 @@ namespace zeno{
             leaves.clear();
         }
     }
+    
+    void mgSmokeData::Smooth(int level)
+    {
+        // using jacobi
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        float d2 = 1 / (dx[level] * dx[level]);
+        auto delta = pressField[level]->deepCopy();
+        auto computeDelta = [&](const tbb::blocked_range<size_t> &r){
+            auto press_axr = pressField[level]->getConstAccessor();
+            auto rhs_axr = iterBuffer.rhsGrid[level]->getConstAccessor();
+            auto delta_axr = delta->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    float ipress = press_axr.getValue(coord);
+                    float diag = 0, lapP = 0, rhs = rhs_axr.getValue(coord);
+                    for(int ss = 0;ss<3;++ss)
+                    for(int i = -1;i<=1;i+=2)
+                    {
+                        auto jcoord = coord;
+                        jcoord[ss] += i;
+                        if(!press_axr.isValueOn(jcoord))
+                            continue;
+                        float jpress = press_axr.getValue(jcoord);
+                        lapP += (jpress - ipress) * d2;
+                        diag -= d2;
+                    }
+                    if(diag != 0)
+                    {
+                        auto value = (rhs - lapP) / diag;
+                        delta_axr.setValue(coord, value);
+                    }
+                    else
+                    {
+                        delta_axr.setValue(coord, 0);
+                    }
+                }
+            }
+        };
+    
+        auto applyDelta = [&](const tbb::blocked_range<size_t> &r){
+            auto press_axr = pressField[level]->getAccessor();
+            auto delta_axr = delta->getConstAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    float ipress = press_axr.getValue(coord);
+                    ipress += 0.6667 * delta_axr.getValue(coord);
+                    press_axr.setValue(coord, ipress);
+                }
+            }
+        };
+
+        pressField[level]->tree().getNodes(leaves);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeDelta);
+        
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyDelta);
+        
+        leaves.clear();
+    }
+
+    void mgSmokeData::PossionSolver()
+    {
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        int level = dx.size()-1;
+        float dens = 1, alpha, beta;
+        auto initIter = [&](const tbb::blocked_range<size_t> &r) {
+            auto press_axr = pressField[level]->getConstAccessor();
+            auto rhs_axr = iterBuffer.rhsGrid[level]->getAccessor();
+            auto res_axr = iterBuffer.resGrid[level]->getAccessor();
+            auto p_axr = iterBuffer.pGrid[level]->getAccessor();
+            auto r2_axr = iterBuffer.r2Grid[level]->getAccessor();
+            openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+                vel_axr[3]=
+                {velField[0][level]->getConstAccessor(),velField[1][level]->getConstAccessor(),velField[2][level]->getConstAccessor()};
+            
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    auto rhs = rhs_axr.getValue(coord);
+                    // compute Ax
+                    float Ax = 0;
+                    for(int i=-1;i<=1;i+=2)
+                    for(int ss =0;ss<3;++ss)
+                    {
+                        auto ipos =coord;
+                        ipos[ss] += i;
+                        Ax += press_axr.getValue(ipos);
+                    }
+                    Ax = (6 * press_axr.getValue(coord) - Ax) / (dx[level] * dx[level]);
+                    Ax *= dt / dens;
+
+                    res_axr.setValue(coord, rhs - Ax);
+                    p_axr.setValue(coord, rhs - Ax);
+                    r2_axr.setValue(coord, rhs - Ax);
+                }
+            }
+        };
+    
+        auto reductionR2 = [&](const tbb::blocked_range<size_t> &r, float r2Sum){
+            auto r2_axr = iterBuffer.r2Grid[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!r2_axr.isValueOn(coord))
+                        continue;
+                    float r2 = r2_axr.getValue(coord);
+                    r2Sum += r2 * r2;
+                }
+            }
+            return r2Sum;
+        };
+
+        auto reductionR = [&](const tbb::blocked_range<size_t> &r, float rSum){
+            auto res_axr = iterBuffer.resGrid[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!res_axr.isValueOn(coord))
+                        continue;
+                    float r2 = res_axr.getValue(coord);
+                    rSum += r2 * r2;
+                }
+            }
+            return rSum;
+        };
+        
+        auto reductionPAP = [&](const tbb::blocked_range<size_t> &r, float pApSum){
+            auto Ap_axr = iterBuffer.ApGrid[level]->getAccessor();
+            auto p_axr = iterBuffer.pGrid[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!Ap_axr.isValueOn(coord))
+                        continue;
+                    float Ap = Ap_axr.getValue(coord);
+                    pApSum += Ap * p_axr.getValue(coord);
+                }
+            }
+            return pApSum;
+        };
+
+        auto computeAp = [&](const tbb::blocked_range<size_t> &r){
+            auto p_axr = iterBuffer.pGrid[level]->getConstAccessor();
+            auto Ap_axr = iterBuffer.ApGrid[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!p_axr.isValueOn(coord))
+                        continue;
+                    // compute Ap
+                    float Ap = 0;
+                    for(int i=-1;i<=1;i+=2)
+                    for(int ss =0;ss<3;++ss)
+                    {
+                        auto ipos =coord;
+                        ipos[ss] += i;
+                        Ap += p_axr.getValue(ipos);
+                    }
+                    Ap = (6 * p_axr.getValue(coord) - Ap) / (dx[level] * dx[level]);
+                    Ap *= dt / dens;
+
+                    Ap_axr.setValue(coord, Ap);
+                }
+            }
+        };
+        
+        auto updatePress = [&](const tbb::blocked_range<size_t> &r){
+            auto press_axr = pressField[level]->getAccessor();
+            auto res_axr = iterBuffer.resGrid[level]->getConstAccessor();
+            auto Ap_axr = iterBuffer.ApGrid[level]->getConstAccessor();
+            auto p_axr = iterBuffer.pGrid[level]->getConstAccessor();
+            auto r2_axr = iterBuffer.r2Grid[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    float press = press_axr.getValue(coord);
+                    press_axr.setValue(coord, press + alpha * p_axr.getValue(coord));
+                    float r = res_axr.getValue(coord);
+                    float ap = Ap_axr.getValue(coord);
+                    r2_axr.setValue(coord, r - alpha * ap);
+                }
+            }
+        };
+        
+        auto updateP = [&](const tbb::blocked_range<size_t> &r){
+            auto res_axr = iterBuffer.resGrid[level]->getAccessor();
+            auto p_axr = iterBuffer.pGrid[level]->getAccessor();
+            auto r2_axr = iterBuffer.r2Grid[level]->getConstAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!r2_axr.isValueOn(coord))
+                        continue;
+                    float r2 = r2_axr.getValue(coord);
+                    float p = r2 + beta * p_axr.getValue(coord);
+                    p_axr.setValue(coord, p);
+                    res_axr.setValue(coord, r2);
+                }
+            }
+        };
+
+        pressField[level]->tree().getNodes(leaves);
+        
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
+        int voxelNum = pressField[level]->activeVoxelCount();
+        alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0f,reductionR2, std::plus<float>());
+        if(alpha < 0.01 * voxelNum)
+        {
+            printf("alpha is %f, voxel num is %d\n", alpha, voxelNum);
+            return;
+        }
+        printf("start to iter, alpha is %f\n", alpha);
+        for(int k=0;k < 100;++k)
+        {
+            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0f,reductionR, std::plus<float>());
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeAp);
+            beta = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0f,reductionPAP, std::plus<float>());
+            alpha /= beta;
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), updatePress);
+            beta = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0f,reductionR2, std::plus<float>());
+            if(beta < 0.00001 * voxelNum)
+                break;
+            printf("new beta is %f\n", beta);
+            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0f,reductionR, std::plus<float>());
+            beta /= alpha;
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), updateP);
+            
+        }
+        printf("iter over. error is %f\n", beta);
+        leaves.clear();
+        
+    }
+    void mgSmokeData::Restrict(int level)
+    {
+        int coarseLevel = level + 1;
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        iterBuffer.resGrid[coarseLevel]->tree().getNodes(leaves);
+        auto computeCoarse = [&](const tbb::blocked_range<size_t> &r) {
+            auto press_axr = pressField[coarseLevel]->getAccessor();
+            auto res_axr = iterBuffer.resGrid[level]->getConstAccessor();
+            ConstBoxSample resSampler(res_axr, iterBuffer.resGrid[level]->transform());
+            auto rhs_axr = iterBuffer.rhsGrid[coarseLevel]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    auto wpos = iterBuffer.resGrid[coarseLevel]->indexToWorld(coord);
+                    auto resValue = resSampler.wsSample(wpos);
+                    rhs_axr.setValue(coord, resValue);
+                    press_axr.setValue(coord, 0);
+                }
+            }
+        };
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeCoarse);
+    
+    }
+
+    void mgSmokeData::Prolongate(int level){
+        int coarseLevel = level + 1;
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        pressField[coarseLevel]->tree().getNodes(leaves);
+        auto computeFine = [&](const tbb::blocked_range<size_t> &r) {
+            auto press_axr = pressField[coarseLevel]->getConstAccessor();
+            ConstBoxSample pressSampler(press_axr, pressField[coarseLevel]->transform());
+            auto fine_press_axr = pressField[level]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                    if(!fine_press_axr.isValueOn(coord))
+                        continue;
+                    auto wpos = pressField[coarseLevel]->indexToWorld(coord);
+                    auto pressValue = pressSampler.wsSample(wpos);
+                    
+                    fine_press_axr.setValue(coord, pressValue);
+                }
+            }
+        };
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeFine);
+            
+    }
+    void mgSmokeData::solvePress()
+    {
+        int levelNum = dx.size();
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+
+        auto computeRHS = [&](const tbb::blocked_range<size_t> &r) {
+            openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+                vel_axr[3] = 
+                {velField[0][0]->getConstAccessor(),
+                velField[1][0]->getConstAccessor(),
+                velField[2][0]->getConstAccessor()};
+            auto press_axr = pressField[0]->getConstAccessor();
+            auto rhs_axr = iterBuffer.rhsGrid[0]->getAccessor();
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                    if(!press_axr.isValueOn(coord))
+                        continue;
+                    float rhs = 0;
+                    for(int i = -1;i <= 0; ++i)
+                    for(int ss = 0;ss < 3; ++ss)
+                    {
+                        auto ipos = coord;
+                        ipos[ss] += i;
+                        float vel = vel_axr[ss].getValue(ipos);
+                        rhs -= (i+0.5)*2*vel/dx[0];
+                    }
+                    rhs_axr.setValue(coord, rhs);
+                }
+            }
+        };
+        pressField[0]->tree().getNodes(leaves);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
+        leaves.clear();
+        for(int level = 0;level<levelNum-1;++level)
+        {
+            float d2 = 1 / (dx[level] * dx[level]);
+            pressField[level]->tree().getNodes(leaves);
+            
+            Smooth(level);
+
+            auto computeRes = [&](const tbb::blocked_range<size_t> &r){
+                auto press_axr = pressField[level]->getConstAccessor();
+                auto rhs_axr = iterBuffer.rhsGrid[level]->getConstAccessor();
+                auto res_axr = iterBuffer.resGrid[level]->getAccessor();
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                        if(!press_axr.isValueOn(coord))
+                            continue;
+                        float ipress = press_axr.getValue(coord);
+                        float diag = 0, lapP = 0, rhs = rhs_axr.getValue(coord);
+                        for(int ss = 0;ss<3;++ss)
+                        for(int i = -1;i<=1;i+=2)
+                        {
+                            auto jcoord = coord;
+                            jcoord[ss] += i;
+                            if(!press_axr.isValueOn(jcoord))
+                                continue;
+                            float jpress = press_axr.getValue(jcoord);
+                            lapP += (jpress - ipress) * d2;
+                            diag -= d2;
+                        }
+                        if(diag != 0)
+                        {
+                            auto value = (rhs - lapP) / diag;
+                            res_axr.setValue(coord, value);
+                        }
+                        else
+                        {
+                            res_axr.setValue(coord, 0);
+                        }
+                    }
+                }
+            };
+    
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRes);
+            
+            //if(level < levelNum - 1)
+            Restrict(level);
+
+            leaves.clear();
+        }
+        // step2: solve coarset level grid
+        PossionSolver();
+        // pro longate
+        for(int level = levelNum-2;level>=0;--level)
+        {
+            Prolongate(level);
+            Smooth(level);
+        }
+
+        auto applyPress = [&](const tbb::blocked_range<size_t> &r){
+            auto press_axr = pressField[0]->getAccessor();
+            openvdb::tree::ValueAccessor<openvdb::FloatTree, true> 
+                vel_axr[3]=
+                {velField[0][0]->getAccessor(),velField[1][0]->getAccessor(),velField[2][0]->getAccessor()};
+            
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    float gradPV[3], velV[3];
+                    for(int i=0;i<3;++i)
+                    {
+                        if(!vel_axr[i].isValueOn(coord))
+                            continue;
+                        float vel = vel_axr[i].getValue(coord);
+                        float gradP = 0;
+                        for(int j=0;j<=1;++j){
+                            auto ipos = coord;
+                            ipos[i] += j;
+                            gradP += (j-0.5)*2*press_axr.getValue(ipos);
+                        }
+                        velV[i] = vel;
+                        vel -= dt * gradP /(dx[0] * dens);
+                        float mol = abs(vel);
+                        if(mol > 2)
+                            vel = vel / mol * 2;
+                        vel *= 0.99;
+                        
+                        gradPV[i] = gradP;
+                        vel_axr[i].setValue(coord, vel);
+                    }
+                }
+            }
+        };
+        
+        leaves.clear();
+        velField[0][0]->tree().getNodes(leaves);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyPress);
+
+    }
     void mgSmokeData::step(){
         //printf("begin to step\n");
         advection();
         //printf("advection over\n");
         applyOuterforce();
         //printf("apply outer force over\n");
-        //solvePress();
+        solvePress();
+        
     }
 
     struct mgSmokeToSDF : zeno::INode{

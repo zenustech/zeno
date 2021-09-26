@@ -24,6 +24,7 @@ namespace zeno{
         std::vector<openvdb::FloatGrid::Ptr> ApGrid;
         void init(std::vector<openvdb::FloatGrid::Ptr> pressField);
         void resize(int levelNum);
+        void computeRHSgrid(int level);
     };
     struct mgSmokeData:IObject{
         using ConstBoxSample = openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler>;
@@ -41,7 +42,7 @@ namespace zeno{
         std::vector<openvdb::FloatGrid::Ptr>  velField[3];
 
         // parms
-        float dt;
+        float dt, dens;
         std::vector<float> dx;
         openvdb::BBoxd worldinputbbox;
         void resize(int levelNum);
@@ -51,5 +52,11 @@ namespace zeno{
         void applyOuterforce();
         void solvePress();
         void step();
+
+        // mg possion press solver
+        void PossionSolver();
+        void Smooth(int level);
+        void Restrict(int level);
+        void Prolongate(int level);
     };
 }
