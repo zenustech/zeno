@@ -9,7 +9,6 @@ include(Cpp20Modules)
 
 project(cpp20test LANGUAGES C CXX)
 
-
 add_module(helloworld__hello)
 add_module(helloworld__world)
 
