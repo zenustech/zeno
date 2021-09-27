@@ -1,6 +1,6 @@
 #include <zeno/utils/Exception.h>
 #include <zeno/utils/logger.h>
-#if __has_include(<backward.hpp>)
+#ifdef ZENO_FAULTHANDLER
 #include <backward.hpp>
 #endif
 
@@ -14,10 +14,11 @@ ZENO_API Exception::Exception(std::string_view msg) noexcept
     : BaseException(msg) {
     log_error("Exception: {}", msg);
 
-#if __has_include(<backward.hpp>)
+#ifdef ZENO_FAULTHANDLER
     using namespace backward;
     StackTrace st;
     st.load_here(32);
+    st.skip_n_firsts(3);
     Printer p;
     p.print(st);
 #endif
