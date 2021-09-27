@@ -1,4 +1,5 @@
 x:
-	cmake -Bbuild
-	make -Cbuild -j
-	build/helloworld
+	rm -rf build
+	cmake -Bbuild -G Ninja
+	cmake --build build --parallel
+	build/main

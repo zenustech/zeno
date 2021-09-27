@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_CXX_COMPILER clang)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
 project(cpp20test LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-#set(CMAKE_CXX_COMPILER clang++)
-set(CMAKE_CXX_EXTENSIONS OFF)
 set(PREBUILT_MODULE_PATH ${CMAKE_BINARY_DIR}/modules)
 
 function(target_as_module name)
@@ -30,7 +30,7 @@ function(target_as_module name)
                 )
         add_dependencies(${name} ${name}.pcm)
 
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GU")
         target_compile_options(${name} PUBLIC -fmodules-ts)
         target_compile_options(${name} PUBLIC -fbuiltin-module-map)
         target_compile_options(${name} PRIVATE -fmodule-file=${PREBUILT_MODULE_PATH}/${name}.pcm)
