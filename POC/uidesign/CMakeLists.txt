@@ -7,7 +7,7 @@ add_subdirectory(ftgl)
 add_subdirectory(backward-cpp)
 
 file(GLOB PROJECT_SOURCE *.cpp)
-add_executable(ZenoEditor ${PROJECT_SOURCE})
+add_executable(ZenoEditor ${PROJECT_SOURCE} ${BACKWARD_ENABLE})
 target_link_libraries(ZenoEditor PRIVATE GL glfw)
 target_compile_options(ZenoEditor PRIVATE -lbfd -liberty)
 
