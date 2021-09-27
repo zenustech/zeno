@@ -6,6 +6,7 @@ function(target_module_interface name)
     file(MAKE_DIRECTORY ${PREBUILT_MODULE_PATH})
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_link_libraries(${name} PUBLIC c dl stdc++ m)
         target_compile_options(${name} PUBLIC -fmodules)
         target_compile_options(${name} PUBLIC -stdlib=libstdc++)
         target_compile_options(${name} PUBLIC -fbuiltin-module-map)
