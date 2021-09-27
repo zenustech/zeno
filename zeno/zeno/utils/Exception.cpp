@@ -1,9 +1,8 @@
 #include <zeno/utils/Exception.h>
 #include <zeno/utils/logger.h>
+#include <zeno/utils/print_traceback.h>
 
 namespace zeno {
-
-void print_traceback(int skip);
 
 ZENO_API BaseException::BaseException(std::string_view msg) noexcept
     : msg(msg) {
