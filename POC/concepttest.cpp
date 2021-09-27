@@ -9,15 +9,21 @@ struct Point {
 
 template <class T>
 concept Add = requires(T a, T b) {
-    { a + b } -> std::same_as<T>;
+    a + b;
 };
 
 template <class T>
 concept Mul = requires(T a, T b) {
-    { a + b } -> std::same_as<T>;
+    a + b;
 };
 
-template <Add T>
+template <class T>
+concept Copy = requires(T const &a) {
+    T(a);
+};
+
+template <class T>
+requires Add<T> && Mul<T> && Copy<T>
 auto length(Point<T> const &self) {
     return self.x * self.x + self.y * self.y;
 }
