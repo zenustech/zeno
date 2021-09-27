@@ -502,7 +502,7 @@ struct DopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 19, NW = 200;
 
     std::string name = "(unnamed)";
-    std::vector<DopLink *> links;
+    std::set<DopLink *> links;
 
     DopSocket() {
         set_bounding_box({-R, -R, 2 * R, 2 * R});
@@ -560,7 +560,7 @@ struct DopOutputSocket : DopSocket {
     }
 
     void attach_link(DopLink *link) {
-        links.push_back(link);
+        links.insert(link);
     }
 };
 
@@ -690,6 +690,11 @@ struct DopLink : GraphicsLineItem {
         selectable = true;
     }
 
+    ~DopLink() {
+        from_socket->links.erase(this);
+        to_socket->links.erase(this);
+    }
+
     Point get_from_position() const override {
         return from_socket->position + from_socket->get_parent()->position;
     }
@@ -749,6 +754,16 @@ struct DopGraph : GraphicsView {
     }
 
     bool remove_node(DopNode *node) {
+        for (auto *socket: node->inputs) {
+            for (auto *link: std::set(socket->links)) {
+                remove_link(link);
+            }
+        }
+        for (auto *socket: node->outputs) {
+            for (auto *link: std::set(socket->links)) {
+                remove_link(link);
+            }
+        }
         if (remove_child(node)) {
             nodes.erase(node);
             return true;
@@ -850,7 +865,13 @@ struct DopGraph : GraphicsView {
     void on_del_down() override {
         Widget::on_del_down();
         for (auto *item: children_selected) {
-            remove_child(item);
+
+            if (auto link = dynamic_cast<DopLink *>(item); link) {
+                remove_link(link);
+
+            } else if (auto node = dynamic_cast<DopNode *>(item); node) {
+                remove_node(node);
+            }
         }
     }
 };
@@ -863,7 +884,7 @@ void DopInputSocket::attach_link(DopLink *link) {
             graph->remove_link(link);
         }
     }
-    links.push_back(link);
+    links.insert(link);
 }
 
 
