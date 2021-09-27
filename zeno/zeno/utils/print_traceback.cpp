@@ -1,4 +1,29 @@
 #include <zeno/utils/print_traceback.h>
+
+#ifdef ZENO_FAULTHANDLER
+#include <backward.hpp>
+
+namespace zeno {
+
+ZENO_API void print_traceback(int skip) {
+    using namespace backward;
+    StackTrace st;
+    st.load_here(32);
+    Printer p;
+    p.print(st);
+}
+
+}
+#else
+namespace zeno {
+
+ZENO_API void print_traceback(int skip) {
+}
+
+}
+#endif
+
+#if 0
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
@@ -419,4 +444,5 @@ namespace zeno {
 ZENO_API void print_traceback(int skip) {
 }
 }
+#endif
 #endif

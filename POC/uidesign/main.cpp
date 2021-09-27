@@ -783,7 +783,6 @@ struct DopGraph : GraphicsView {
 
     void add_pending_link(DopSocket *socket) {
         if (pending_link) {
-                    printf("1\n");fflush(stdout);
             if (socket && pending_link->socket) {
                 auto socket1 = pending_link->socket;
                 auto socket2 = socket;

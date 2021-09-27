@@ -49,6 +49,10 @@ endif()
 
 add_subdirectory(external/spdlog)
 
+if (ZENO_FAULTHANDLER)
+    add_subdirectory(external/backward-cpp)
+endif()
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
