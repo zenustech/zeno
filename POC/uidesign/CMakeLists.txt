@@ -7,6 +7,7 @@ add_subdirectory(ftgl)
 file(GLOB PROJECT_SOURCE *.cpp)
 add_executable(ZenoEditor ${PROJECT_SOURCE})
 target_link_libraries(ZenoEditor PRIVATE GL glfw)
+target_compile_options(ZenoEditor PRIVATE -lbfd -liberty)
 
 
 target_link_libraries(ZenoEditor PRIVATE ftgl)
