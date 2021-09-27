@@ -14,4 +14,9 @@ add_module(helloworld__hello)
 add_module(helloworld__world)
 
 add_executable(main main.cc)
-target_link_libraries(main helloworld__hello helloworld__world)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB)
+find_package(OpenVDB REQUIRED)
+target_link_libraries(helloworld__hello PRIVATE OpenVDB::openvdb c dl stdc++ m)
+
+target_link_libraries(main PRIVATE helloworld__hello helloworld__world)

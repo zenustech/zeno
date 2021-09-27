@@ -7,7 +7,7 @@ function(target_module_interface name)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(${name} PUBLIC -fmodules)
-        target_compile_options(${name} PUBLIC -stdlib=libc++)
+        target_compile_options(${name} PUBLIC -stdlib=libstdc++)
         target_compile_options(${name} PUBLIC -fbuiltin-module-map)
         target_compile_options(${name} PUBLIC -fimplicit-module-maps)
         target_compile_options(${name} PUBLIC -fprebuilt-module-path=${PREBUILT_MODULE_PATH})
@@ -16,7 +16,7 @@ function(target_module_interface name)
                 COMMAND
                     ${CMAKE_CXX_COMPILER}
                     -std=c++20
-                    -stdlib=libc++
+                    -stdlib=libstdc++
                     -fmodules
                     ${CMAKE_CXX_FLAGS}
                     -c
