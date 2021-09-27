@@ -1,6 +1,8 @@
-module helloworld__world;
+module;
 
 #include <cstdio>
+
+module world;
 
 void world() {
     printf("World, hello!\n");
