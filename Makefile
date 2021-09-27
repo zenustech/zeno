@@ -3,8 +3,9 @@
 #O=c.zsg
 #O=d.zsg
 #O=i.zsg
+O=j.zsg
 #O=arts/testspray.zsg
-O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
+#O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
 #O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
 #O=arts/flip.zsg           # FLIPtools/stub.cpp
 
@@ -43,7 +44,7 @@ default: run
 #default: run
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake -B build -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
 	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count; print(cpu_count())'`
 
 run: all
