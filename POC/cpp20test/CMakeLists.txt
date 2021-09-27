@@ -5,10 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} cmake)
+include(Cpp20Modules)
 
 project(cpp20test LANGUAGES C CXX)
-
-include(Cpp20Modules)
 
 
 add_library(helloworld OBJECT helloworld.cc)
