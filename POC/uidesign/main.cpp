@@ -690,11 +690,6 @@ struct DopLink : GraphicsLineItem {
         selectable = true;
     }
 
-    ~DopLink() {
-        from_socket->links.erase(this);
-        to_socket->links.erase(this);
-    }
-
     Point get_from_position() const override {
         return from_socket->position + from_socket->get_parent()->position;
     }
@@ -746,6 +741,8 @@ struct DopGraph : GraphicsView {
 
     bool remove_link(DopLink *link) {
         if (remove_child(link)) {
+            link->from_socket->links.erase(link);
+            link->to_socket->links.erase(link);
             links.erase(link);
             return true;
         } else {
@@ -786,6 +783,7 @@ struct DopGraph : GraphicsView {
 
     void add_pending_link(DopSocket *socket) {
         if (pending_link) {
+                    printf("1\n");fflush(stdout);
             if (socket && pending_link->socket) {
                 auto socket1 = pending_link->socket;
                 auto socket2 = socket;
@@ -880,7 +878,7 @@ struct DopGraph : GraphicsView {
 void DopInputSocket::attach_link(DopLink *link) {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
-        for (auto link: links) {
+        for (auto link: std::set(links)) {
             graph->remove_link(link);
         }
     }
