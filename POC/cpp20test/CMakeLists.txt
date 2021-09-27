@@ -10,7 +10,8 @@ include(Cpp20Modules)
 project(cpp20test LANGUAGES C CXX)
 
 
-add_library(helloworld OBJECT hello.cc)
-target_module_headers(helloworld hello.hh)
+add_module(helloworld__hello)
+add_module(helloworld__world)
+
 add_executable(main main.cc)
-target_link_libraries(main helloworld)
+target_link_libraries(main helloworld__hello helloworld__world)

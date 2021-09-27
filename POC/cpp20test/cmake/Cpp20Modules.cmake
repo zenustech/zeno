@@ -2,7 +2,7 @@ if (NOT PREBUILT_MODULE_PATH)
     set(PREBUILT_MODULE_PATH ${CMAKE_BINARY_DIR}/modules)
 endif()
 
-function(target_module_headers name)
+function(target_module_interface name)
     file(MAKE_DIRECTORY ${PREBUILT_MODULE_PATH})
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -29,4 +29,10 @@ function(target_module_headers name)
     else()
         message(FATAL_ERROR "Compiler ID `${CMAKE_CXX_COMPILER_ID}` is not supported for using C++20 modules now. Please consider use Clang instead.")
     endif()
+endfunction()
+
+
+function(add_module name)
+    add_library(${name} OBJECT ${name}.cc)
+    target_module_interface(${name} ${name}.hh)
 endfunction()

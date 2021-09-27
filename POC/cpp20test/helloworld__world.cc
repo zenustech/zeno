@@ -2,7 +2,7 @@ module;
 
 #include <cstdio>
 
-module helloworld;
+module helloworld__world;
 
 void world() {
     printf("World, hello!\n");
