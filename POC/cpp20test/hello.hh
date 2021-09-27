@@ -1,8 +1,19 @@
+/////////////////////////////////
+#ifndef CPP20_MODULE_HEADER_hello
+#pragma once
+#else
 module;
+#endif
+/////////////////////////////////
 
 #include <array>
 
+/////////////////////////////////
+#ifndef CPP20_MODULE_HEADER_hello
+import hello;
+#else
 export module hello;
+/////////////////////////////////
 
 export void hello();
 
@@ -10,3 +21,7 @@ export template <class T>
 auto get_array() {
     return std::array<T, 1>();
 }
+
+/////////////////////////////////
+#endif
+/////////////////////////////////

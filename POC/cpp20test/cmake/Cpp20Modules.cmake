@@ -19,6 +19,7 @@ function(target_module_interface name)
                     ${CMAKE_CXX_COMPILER}
                     -std=c++20
                     -stdlib=${stdlib}
+                    -DCPP20_MODULE_HEADER_${name}=1
                     -fmodules
                     ${CMAKE_CXX_FLAGS}
                     -c

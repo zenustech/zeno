@@ -1,7 +1,6 @@
 #include <array>
-
-import hello;
-import world;
+#include "hello.hh"
+#include "world.hh"
 
 int main() {
     hello();
