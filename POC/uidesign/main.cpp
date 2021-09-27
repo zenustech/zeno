@@ -906,8 +906,8 @@ void process_input() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glScalef(2.f, 2.f, 1.f);
-    glTranslatef(-.5f, -.5f, -1.f);
+    glScalef(2.f, 2.f, -.001f);
+    glTranslatef(-.5f, -.5f, 1.f);
     glScalef(1.f / nx, 1.f / ny, 1.f);
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -949,6 +949,7 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_POLYGON_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
