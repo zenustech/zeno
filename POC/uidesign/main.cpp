@@ -419,8 +419,7 @@ struct GraphicsView : Widget {
 
     void on_lmb_down() override {
         Widget::on_lmb_down();
-        auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y}));
-        if (item) {
+        if (auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y})); item) {
             if (item->selectable)
                 _select_child(item, cur.shift);
         } else if (!cur.shift) {
@@ -850,8 +849,7 @@ struct DopGraph : GraphicsView {
 
     void on_del_down() override {
         Widget::on_del_down();
-        auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y}));
-        if (item) {
+        for (auto *item: children_selected) {
             remove_child(item);
         }
     }
