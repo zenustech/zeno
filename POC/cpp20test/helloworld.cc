@@ -1,5 +1,9 @@
-export module helloworld;
+module;
 
-export namespace helloworld {
-    void hello();
+#include <cstdio>
+
+module helloworld;
+
+void hello() {
+    printf("Hello, world!\n");
 }
