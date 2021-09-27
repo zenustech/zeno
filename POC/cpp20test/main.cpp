@@ -1,5 +1,5 @@
 import helloworld;
 
 int main() {
-    hello();
+    helloworld::hello();
 }
