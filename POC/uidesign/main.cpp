@@ -360,11 +360,14 @@ struct Widget : Object {
 
 
 struct GraphicsWidget : Widget {
-    std::set<GraphicsWidget *> children_selected;
-
     bool selected = false;
     bool selectable = false;
     bool draggable = false;
+};
+
+
+struct GraphicsView : Widget {
+    std::set<GraphicsWidget *> children_selected;
 
     void _deselect_children() {
         for (auto const &child: children_selected) {
@@ -403,8 +406,9 @@ struct GraphicsWidget : Widget {
     void on_lmb_down() override {
         Widget::on_lmb_down();
         auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y}));
-        if (item && item != this && item->selectable) {
-            _select_child(item, cur.shift);
+        if (item) {
+            if (item->selectable)
+                _select_child(item, cur.shift);
         } else if (!cur.shift) {
             _deselect_children();
         }
@@ -514,7 +518,7 @@ struct DopInputSocket : DopSocket {
     void paint() const override {
         DopSocket::paint();
 
-        if (hovered || lmb_pressed) {
+        if (hovered) {
             Font font("LiberationMono-Regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
@@ -532,7 +536,7 @@ struct DopOutputSocket : DopSocket {
     void paint() const override {
         DopSocket::paint();
 
-        if (hovered || lmb_pressed) {
+        if (hovered) {
             Font font("LiberationMono-Regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
@@ -605,7 +609,7 @@ struct DopNode : GraphicsRectItem {
     }
 
     void paint() const override {
-        if (selected || lmb_pressed) {
+        if (selected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else {
             glColor3f(0.125f, 0.375f, 0.425f);
@@ -615,7 +619,7 @@ struct DopNode : GraphicsRectItem {
         glColor3f(0.375f, 0.375f, 0.375f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        if (selected || lmb_pressed) {
+        if (selected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else {
             glColor3f(0.125f, 0.375f, 0.425f);
@@ -708,10 +712,19 @@ struct DopPendingLink : GraphicsLineItem {
 };
 
 
-struct DopGraph : GraphicsRectItem {
+struct DopGraph : GraphicsView {
     std::set<DopNode *> nodes;
     std::set<DopLink *> links;
     DopPendingLink *pending_link = nullptr;
+    AABB bbox{0, 0, 400, 400};
+
+    void set_bounding_box(AABB bbox) {
+        this->bbox = bbox;
+    }
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
 
     bool remove_link(DopLink *link) {
         if (remove_child(link)) {
@@ -763,10 +776,6 @@ struct DopGraph : GraphicsRectItem {
 
         } else if (socket) {
             pending_link = add_child<DopPendingLink>(socket);
-
-        } else {
-            remove_child(pending_link);
-            pending_link = nullptr;
         }
     }
 
@@ -799,14 +808,11 @@ struct DopGraph : GraphicsRectItem {
     }
 
     void on_lmb_down() override {
-        GraphicsWidget::on_lmb_down();
+        GraphicsView::on_lmb_down();
 
         auto item = item_at({cur.x, cur.y});
 
-        if (!item) {
-            add_pending_link(nullptr);
-
-        } else if (auto node = dynamic_cast<DopNode *>(item); node) {
+        if (auto node = dynamic_cast<DopNode *>(item); node) {
             if (pending_link) {
                 auto another = pending_link->socket;
                 if (dynamic_cast<DopInputSocket *>(another) && node->outputs.size()) {
@@ -820,6 +826,10 @@ struct DopGraph : GraphicsRectItem {
 
         } else if (auto socket = dynamic_cast<DopSocket *>(item); socket) {
             add_pending_link(socket);
+
+        } else {
+            add_pending_link(nullptr);
+
 
         }
     }
