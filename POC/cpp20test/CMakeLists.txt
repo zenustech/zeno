@@ -10,6 +10,8 @@ include(Cpp20Modules)
 
 project(cpp20test LANGUAGES C CXX)
 
+include_directories(.)
+
 add_module(hello)
 add_module(world)
 
