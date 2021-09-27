@@ -1,4 +1,4 @@
 x:
 	cmake -Bbuild
 	make -Cbuild -j
-	build/main
+	build/helloworld

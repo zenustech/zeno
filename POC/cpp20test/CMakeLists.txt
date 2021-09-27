@@ -6,16 +6,15 @@ set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(PREBUILT_MODULE_PATH ${CMAKE_BINARY_DIR}/modules)
 
-add_compile_options(-fmodules)
-add_compile_options(-stdlib=libc++)
-add_compile_options(-fbuiltin-module-map)
-add_compile_options(-fimplicit-module-maps)
-add_compile_options(-fprebuilt-module-path=${PREBUILT_MODULE_PATH})
-add_compile_options(-fmodule-file=${PREBUILT_MODULE_PATH}/helloworld.pcm)
-
-function(add_module name)
+function(target_as_module name)
     file(MAKE_DIRECTORY ${PREBUILT_MODULE_PATH})
-    add_custom_target(${name}
+    target_compile_options(${name} PUBLIC -fmodules)
+    target_compile_options(${name} PUBLIC -stdlib=libc++)
+    target_compile_options(${name} PUBLIC -fbuiltin-module-map)
+    target_compile_options(${name} PUBLIC -fimplicit-module-maps)
+    target_compile_options(${name} PUBLIC -fprebuilt-module-path=${PREBUILT_MODULE_PATH})
+    target_compile_options(${name} PRIVATE -fmodule-file=${PREBUILT_MODULE_PATH}/${name}.pcm)
+    add_custom_target(${name}.pcm
             COMMAND
                 ${CMAKE_CXX_COMPILER}
                 -std=c++20
@@ -27,9 +26,11 @@ function(add_module name)
                 -Xclang -emit-module-interface
                 -o ${PREBUILT_MODULE_PATH}/${name}.pcm
             )
+    add_dependencies(${name} ${name}.pcm)
 endfunction()
 
 
-add_module(helloworld helloworld.cc)
-add_executable(main main.cpp helloworld.cpp)
-add_dependencies(main helloworld)
+add_library(helloworld OBJECT helloworld.cpp)
+target_as_module(helloworld helloworld.cc)
+add_executable(main main.cpp)
+target_link_libraries(main helloworld)
