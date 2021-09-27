@@ -907,7 +907,7 @@ void process_input() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glScalef(2.f, 2.f, 1.f);
-    glTranslatef(-.5f, -.5f, 0.f);
+    glTranslatef(-.5f, -.5f, -1.f);
     glScalef(1.f / nx, 1.f / ny, 1.f);
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -924,8 +924,9 @@ bool need_repaint = true;
 
 void draw_graphics() {
     if (need_repaint) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
-        glFlush();
+        glfwSwapBuffers(window);
     }
 }
 
@@ -938,7 +939,6 @@ int main() {
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
@@ -948,6 +948,7 @@ int main() {
     glfwMakeContextCurrent(window);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_POLYGON_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
