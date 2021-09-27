@@ -2,7 +2,7 @@ if (NOT PREBUILT_MODULE_PATH)
     set(PREBUILT_MODULE_PATH ${CMAKE_BINARY_DIR}/modules)
 endif()
 
-function(target_as_module name)
+function(target_module_headers name)
     file(MAKE_DIRECTORY ${PREBUILT_MODULE_PATH})
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
