@@ -111,12 +111,14 @@ struct CursorState {
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool last_lmb = false, last_mmb = false, last_rmb = false;
-    bool shift = false, ctrl = false, alt = false, del = false;
+    bool shift = false, ctrl = false, alt = false;
+    bool del = false, last_del = false;
 
     void on_update() {
         last_lmb = lmb;
         last_mmb = mmb;
         last_rmb = rmb;
+        last_del = del;
         last_x = x;
         last_y = y;
 
@@ -257,6 +259,12 @@ struct Widget : Object {
         rmb_pressed = false;
     }
 
+    virtual void on_del_down() {
+    }
+
+    virtual void on_del_up() {
+    }
+
     bool lmb_pressed = false;
     bool mmb_pressed = false;
     bool rmb_pressed = false;
@@ -303,6 +311,9 @@ struct Widget : Object {
         }
 
         if (hovered) {
+            if (!cur.last_del && cur.del) {
+                on_del_down();
+            }
             if (!cur.last_lmb && cur.lmb) {
                 on_lmb_down();
                 //cur.last_lmb = cur.lmb;
@@ -333,6 +344,9 @@ struct Widget : Object {
             if (cur.last_rmb && !cur.rmb) {
                 on_rmb_up();
                 //cur.last_rmb = cur.rmb;
+            }
+            if (cur.last_del && !cur.del) {
+                on_del_up();
             }
         }
 
@@ -831,6 +845,14 @@ struct DopGraph : GraphicsView {
             add_pending_link(nullptr);
 
 
+        }
+    }
+
+    void on_del_down() override {
+        Widget::on_del_down();
+        auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y}));
+        if (item) {
+            remove_child(item);
         }
     }
 };
