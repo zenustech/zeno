@@ -13,10 +13,9 @@ project(cpp20test LANGUAGES C CXX)
 add_module(helloworld__hello)
 add_module(helloworld__world)
 
-add_executable(main main.cc)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB)
 find_package(OpenVDB REQUIRED)
-target_link_libraries(helloworld__hello PRIVATE OpenVDB::openvdb)
+target_link_libraries(helloworld__world PRIVATE OpenVDB::openvdb)
 
+add_executable(main main.cc)
 target_link_libraries(main PRIVATE helloworld__hello helloworld__world)

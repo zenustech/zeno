@@ -3,5 +3,6 @@ import helloworld__world;
 
 int main() {
     hello();
+    test();
     world();
 }
