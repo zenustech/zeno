@@ -516,7 +516,6 @@ struct DopInputValue_ReferVariable {
 struct DopInputValue_ImmedValue {
     std::string immed;
 };
-
 using DopInputValue = std::variant
     < DopInputValue_NoValue
     , DopInputValue_ReferVariable
@@ -975,6 +974,18 @@ struct UiDopGraph : GraphicsView {
                     add_pending_link(node->outputs[0]);
                 } else if (dynamic_cast<UiDopOutputSocket *>(another) && node->inputs.size()) {
                     add_pending_link(node->inputs[0]);
+                } else {
+                    add_pending_link(nullptr);
+                }
+            }
+
+        } else if (auto link = dynamic_cast<UiDopLink *>(item); link) {
+            if (pending_link) {
+                auto another = pending_link->socket;
+                if (dynamic_cast<UiDopInputSocket *>(another)) {
+                    add_pending_link(link->from_socket);
+                } else if (dynamic_cast<UiDopOutputSocket *>(another)) {
+                    add_pending_link(link->to_socket);
                 } else {
                     add_pending_link(nullptr);
                 }
