@@ -123,6 +123,30 @@ struct Font {
 GLFWwindow *window;
 
 
+
+struct Event_Key {
+    int key;
+    bool down;
+};
+
+struct Event_Mouse {
+    float x, y;
+    int btn;  // lmb=0, mmb=1, rmb=2
+    bool down;
+};
+
+struct Event_Motion {
+    float x, y;
+    float dx, dy;
+};
+
+using Event = std::variant
+    < Event_Key
+    , Event_Mouse
+    , Event_Motion
+    >;
+
+
 struct Widget;
 
 struct CursorState {
@@ -169,12 +193,23 @@ struct CursorState {
         struct RAII : std::function<void()> {
             using std::function<void()>::function;
             ~RAII() { (*this)(); }
-        } raii {[=] () {
+        } raii {[=, this] () {
             x = ox; y = oy;
         }};
         return raii;
     }
+
+    std::vector<Event> events;
+
+    void after_update() {
+        events.clear();
+    }
 } cur;
+
+static void key_callback(GLFWwindow *window, int key,
+        int scancode, int action, int mode) {
+        cur.events.push_back(Event_Key{.key = key, .down = action == GLFW_PRESS});
+}
 
 
 template <class T>
@@ -259,12 +294,6 @@ struct Widget : Object {
         rmb_pressed = false;
     }
 
-    virtual void on_del_down() {
-    }
-
-    virtual void on_del_up() {
-    }
-
     bool lmb_pressed = false;
     bool mmb_pressed = false;
     bool rmb_pressed = false;
@@ -303,6 +332,28 @@ struct Widget : Object {
         return const_cast<Widget *>(this);
     }
 
+    virtual void on_event(Event_Motion e) {
+    }
+
+    virtual void on_event(Event_Mouse e) {
+        if (e.btn == 0) {
+            if (e.down) on_lmb_down(); else on_lmb_up();
+        } else if (e.btn == 1) {
+            if (e.down) on_mmb_down(); else on_mmb_up();
+        } else if (e.btn == 2) {
+            if (e.down) on_rmb_down(); else on_rmb_up();
+        }
+    }
+
+    virtual void on_event(Event_Key e) {
+    }
+
+    virtual void on_generic_event(Event e) {
+        std::visit([this] (auto e) {
+            on_event(e);
+        }, e);
+    }
+
     virtual void do_update() {
         auto raii = cur.translate(-position.x, -position.y);
         auto bbox = get_bounding_box();
@@ -316,42 +367,35 @@ struct Widget : Object {
         }
 
         if (hovered) {
-            if (!cur.last_del && cur.del) {
-                on_del_down();
+            for (auto const &e: cur.events) {
+                on_generic_event(e);
             }
+
             if (!cur.last_lmb && cur.lmb) {
-                on_lmb_down();
-                //cur.last_lmb = cur.lmb;
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 0, .down = true});
             }
             if (!cur.last_mmb && cur.mmb) {
-                on_mmb_down();
-                //cur.last_mmb = cur.mmb;
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 1, .down = true});
             }
             if (!cur.last_rmb && cur.rmb) {
-                on_rmb_down();
-                //cur.last_rmb = cur.rmb;
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 2, .down = true});
             }
         }
 
         if (cur.dx || cur.dy) {
+            on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
             on_mouse_move();
         }
 
         if (hovered) {
             if (cur.last_lmb && !cur.lmb) {
-                on_lmb_up();
-                //cur.last_lmb = cur.lmb;
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 0, .down = false});
             }
             if (cur.last_mmb && !cur.mmb) {
-                on_mmb_up();
-                //cur.last_mmb = cur.mmb;
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 1, .down = false});
             }
             if (cur.last_rmb && !cur.rmb) {
-                on_rmb_up();
-                //cur.last_rmb = cur.rmb;
-            }
-            if (cur.last_del && !cur.del) {
-                on_del_up();
+                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 2, .down = false});
             }
         }
 
@@ -410,8 +454,8 @@ struct GraphicsView : Widget {
         }
     }
 
-    void on_mouse_move() override {
-        Widget::on_mouse_move();
+    void on_event(Event_Motion e) override {
+        Widget::on_event(e);
         if (cur.lmb) {
             for (auto const &child: children_selected) {
                 if (child->draggable) {
@@ -501,7 +545,8 @@ struct Button : Widget {
 
 struct TextEdit : Widget {
     AABB bbox{0, 0, 150, 50};
-    std::string text;
+    std::string text = "(input text)";
+    float font_size = 20.f;
 
     void set_bounding_box(AABB bbox) {
         this->bbox = bbox;
@@ -511,17 +556,8 @@ struct TextEdit : Widget {
         return bbox;
     }
 
-    virtual void on_clicked() {}
-
-    void on_lmb_down() override {
-        Widget::on_lmb_down();
-        on_clicked();
-    }
-
     void paint() const override {
-        if (lmb_pressed) {
-            glColor3f(0.75f, 0.5f, 0.375f);
-        } else if (hovered) {
+        if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
@@ -529,8 +565,8 @@ struct TextEdit : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         if (text.size()) {
-            Font font("regular.ttf");
-            font.set_font_size(30.f);
+            Font font("assets/regular.ttf");
+            font.set_font_size(font_size);
             font.set_fixed_width(bbox.nx);
             font.set_fixed_height(bbox.ny);
             glColor3f(1.f, 1.f, 1.f);
@@ -1120,13 +1156,17 @@ struct UiDopGraph : GraphicsView {
         }
     }
 
-    void on_del_down() override {
-        Widget::on_del_down();
-        for (auto *item: children_selected) {
+    void on_event(Event_Key e) override {
+        Widget::on_event(e);
 
+        if (e.down != true)
+            return;
+        if (e.key != GLFW_KEY_DELETE)
+            return;
+
+        for (auto *item: children_selected) {
             if (auto link = dynamic_cast<UiDopLink *>(item); link) {
                 remove_link(link);
-
             } else if (auto node = dynamic_cast<UiDopNode *>(item); node) {
                 remove_node(node);
             }
@@ -1169,12 +1209,12 @@ struct UiDopParamEditor : Widget {
 
 struct RootWindow : Widget {
     UiDopGraph *graph;
-    //UiDopParamEditor *editor;
+    TextEdit *edit;
 
     RootWindow() {
         graph = add_child<UiDopGraph>();
         graph->set_bounding_box({0, 0, 550, 400});
-        //editor = add_child<UiDopParamEditor>();
+        edit = add_child<TextEdit>();
 
     }
 
@@ -1205,6 +1245,7 @@ void process_input() {
     cur.on_update();
     win.position = {100, 100};
     win.do_update();
+    cur.after_update();
 }
 
 
@@ -1242,6 +1283,7 @@ int main() {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+    glfwSetKeyCallback(window, key_callback);
 
     double fps = 144;
     double lasttime = glfwGetTime();
