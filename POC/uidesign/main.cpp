@@ -560,6 +560,21 @@ struct TextEdit : Widget {
         if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
             auto str = glfwGetClipboardString(window);
             _insert_text(str);
+
+        } else if (e.key == GLFW_KEY_C && e.mode == GLFW_MOD_CONTROL) {
+            auto str = text.substr(cursor, sellen);
+            if (str.size())
+                glfwSetClipboardString(window, str.c_str());
+
+        } else if (e.key == GLFW_KEY_A && e.mode == GLFW_MOD_CONTROL) {
+            cursor = 0;
+            sellen = text.size();
+
+        } else if (e.key == GLFW_KEY_LEFT) {
+            cursor = std::max(0, cursor - 1);
+
+        } else if (e.key == GLFW_KEY_RIGHT) {
+            cursor = std::max(0, cursor + 1);
         }
     }
 
@@ -580,12 +595,16 @@ struct TextEdit : Widget {
         }
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        auto txt = text.substr(0, cursor) + '|' + text.substr(cursor);
         Font font("assets/regular.ttf");
         font.set_font_size(font_size);
         font.set_fixed_width(bbox.nx);
         font.set_fixed_height(bbox.ny);
         glColor3f(1.f, 1.f, 1.f);
+
+        auto txt = sellen == 0
+            ? text.substr(0, cursor) + '|' + text.substr(cursor)
+            : text.substr(0, cursor) + '|' + text.substr(cursor, sellen) + '|' + text.substr(cursor + sellen);
+            ;
         font.render(bbox.x0, bbox.y0, txt);
     }
 };
