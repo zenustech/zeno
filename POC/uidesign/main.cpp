@@ -574,7 +574,12 @@ struct TextEdit : Widget {
             cursor = std::max(0, cursor - 1);
 
         } else if (e.key == GLFW_KEY_RIGHT) {
-            cursor = std::max(0, cursor + 1);
+            cursor = std::min((int)text.size() - 1, cursor + 1);
+
+        } else if (e.key == GLFW_KEY_BACKSPACE) {
+            text = text.substr(0, cursor - 1) + text.substr(cursor);
+            cursor = std::max(0, cursor - 1);
+
         }
     }
 
