@@ -508,28 +508,31 @@ struct Button : Widget {
 
 // BEG node data structures
 
+struct DopInputValue_NoValue {
+};
+struct DopInputValue_ReferVariable {
+    std::string refid;
+};
+struct DopInputValue_ImmedValue {
+    std::string immed;
+};
+
+using DopInputValue = std::variant
+    < DopInputValue_NoValue
+    , DopInputValue_ReferVariable
+    , DopInputValue_ImmedValue
+    >;
+
+struct DopInputSocket {
+    std::string name;
+    DopInputValue value;
+};
+
+struct DopOutputSocket {
+    std::string name;
+};
+
 struct DopNode {
-    struct DopInputValue_ReferVariable {
-        std::string refid;
-    };
-    struct DopInputValue_ImmedValue {
-        std::string immed;
-    };
-
-    using DopInputValue = std::variant
-        < DopInputValue_ReferVariable
-        , DopInputValue_ImmedValue
-        >;
-
-    struct DopInputSocket {
-        std::string name;
-        DopInputValue value;
-    };
-
-    struct DopOutputSocket {
-        std::string name;
-    };
-
     std::string name;
     std::string kind;
     std::vector<DopInputSocket> inputs;
@@ -539,6 +542,35 @@ struct DopNode {
 
 struct DopGraph {
     std::set<std::unique_ptr<DopNode>> nodes;
+
+    DopNode *add_node() {
+        auto p = std::make_unique<DopNode>();
+        auto raw = p.get();
+        nodes.insert(std::move(p));
+        return raw;
+    }
+
+    static void set_node_input
+        ( DopNode *to_node
+        , int to_socket_index
+        , DopNode *from_node
+        , int from_socket_index
+        )
+    {
+        auto const &from_socket = from_node->outputs.at(from_socket_index);
+        auto &to_socket = to_node->inputs.at(to_socket_index);
+        auto refid = from_node->name + ":" + from_socket.name;
+        to_socket.value = DopInputValue_ImmedValue{refid};
+    }
+
+    static void remove_node_input
+        ( DopNode *to_node
+        , int to_socket_index
+        )
+    {
+        auto &to_socket = to_node->inputs.at(to_socket_index);
+        to_socket.value = DopInputValue_NoValue{};
+    }
 };
 
 // END node data structures
@@ -625,6 +657,20 @@ struct UiDopNode : GraphicsRectItem {
     std::vector<UiDopOutputSocket *> outputs;
     std::string name;
     std::string kind;
+
+    DopNode *bk_node = nullptr;
+
+    void update_backend() const {
+        bk_node->name = name;
+        bk_node->inputs.resize(inputs.size());
+        for (int i = 0; i < inputs.size(); i++) {
+            bk_node->inputs[i].name = inputs[i]->name;
+        }
+        bk_node->outputs.resize(outputs.size());
+        for (int i = 0; i < outputs.size(); i++) {
+            bk_node->outputs[i].name = outputs[i]->name;
+        }
+    }
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
@@ -789,7 +835,7 @@ struct UiDopGraph : GraphicsView {
     UiDopPendingLink *pending_link = nullptr;
     AABB bbox{0, 0, 400, 400};
 
-    std::unique_ptr<DopGraph> bk_graph;
+    std::unique_ptr<DopGraph> bk_graph = std::make_unique<DopGraph>();
 
     void set_bounding_box(AABB bbox) {
         this->bbox = bbox;
@@ -803,6 +849,10 @@ struct UiDopGraph : GraphicsView {
         if (remove_child(link)) {
             link->from_socket->links.erase(link);
             link->to_socket->links.erase(link);
+            auto to_node = link->to_socket->get_parent();
+            auto from_node = link->from_socket->get_parent();
+            bk_graph->remove_node_input(to_node->bk_node,
+                    link->to_socket->get_index());
             links.erase(link);
             return true;
         } else {
@@ -831,12 +881,17 @@ struct UiDopGraph : GraphicsView {
 
     UiDopNode *add_node() {
         auto p = add_child<UiDopNode>();
+        p->bk_node = bk_graph->add_node();
         nodes.insert(p);
         return p;
     }
 
     UiDopLink *add_link(UiDopOutputSocket *from_socket, UiDopInputSocket *to_socket) {
         auto p = add_child<UiDopLink>(from_socket, to_socket);
+        auto to_node = to_socket->get_parent();
+        auto from_node = from_socket->get_parent();
+        bk_graph->set_node_input(to_node->bk_node, to_socket->get_index(),
+                from_node->bk_node, from_socket->get_index());
         links.insert(p);
         return p;
     }
