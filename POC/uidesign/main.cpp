@@ -267,9 +267,6 @@ struct Widget : Object {
 
     bool hovered = false;
 
-    virtual void on_mouse_move() {
-    }
-
     virtual void on_lmb_down() {
         lmb_pressed = true;
     }
