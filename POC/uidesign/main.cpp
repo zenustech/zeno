@@ -1144,7 +1144,7 @@ void UiDopSocket::clear_links() {
 }
 
 
-struct UiDopParamLine : Widget {
+/*struct UiDopParamLine : Widget {
     TextEdit edit;
 };
 
@@ -1161,7 +1161,7 @@ struct UiDopParamEditor : Widget {
     AABB get_bounding_box() const override {
         return bbox;
     }
-};
+};*/
 
 // END node editor ui
 
@@ -1169,12 +1169,12 @@ struct UiDopParamEditor : Widget {
 
 struct RootWindow : Widget {
     UiDopGraph *graph;
-    UiDopParamEditor *editor;
+    //UiDopParamEditor *editor;
 
     RootWindow() {
         graph = add_child<UiDopGraph>();
         graph->set_bounding_box({0, 0, 550, 400});
-        editor = add_child<UiDopParamEditor>();
+        //editor = add_child<UiDopParamEditor>();
 
     }
 
