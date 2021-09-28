@@ -48,22 +48,9 @@ IF(CxxTest_FOUND)
 	ENDIF(BUILD_TESTS)
 ENDIF(CxxTest_FOUND)
 
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/FTGLConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/FTGLConfig.cmake"
-  @ONLY)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/FTGLConfig-install.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/FTGLConfig.cmake"
-  @ONLY)
 
 if (WIN32)
   set(cmakedir cmake)
 else ()
   set(cmakedir lib/cmake/FTGL)
 endif ()
-
-install(EXPORT FTGL-targets DESTINATION "${cmakedir}")
-install(
-  FILES       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/FTGLConfig.cmake"
-  DESTINATION "${cmakedir}")

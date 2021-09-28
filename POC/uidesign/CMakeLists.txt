@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 project(ZenoEditor LANGUAGES C CXX)
 
+add_subdirectory(glfw)
 add_subdirectory(ftgl)
 add_subdirectory(backward-cpp)
 
@@ -14,5 +15,3 @@ target_link_libraries(ZenoEditor PRIVATE GL glfw)
 target_compile_options(ZenoEditor PRIVATE -lbfd -liberty)
 
 target_link_libraries(ZenoEditor PRIVATE ftgl)
-find_package(Freetype REQUIRED)
-target_include_directories(ZenoEditor PRIVATE ftgl/src ftgl/src/FTFont ftgl/src/FTGlyph ftgl/src/FTLayout ${FREETYPE_INCLUDE_DIRS})
