@@ -488,7 +488,7 @@ struct Button : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         if (text.size()) {
-            Font font("LiberationMono-Regular.ttf");
+            Font font("regular.ttf");
             font.set_font_size(30.f);
             font.set_fixed_width(bbox.nx);
             font.set_fixed_height(bbox.ny);
@@ -529,7 +529,7 @@ struct TextEdit : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         if (text.size()) {
-            Font font("LiberationMono-Regular.ttf");
+            Font font("regular.ttf");
             font.set_font_size(30.f);
             font.set_fixed_width(bbox.nx);
             font.set_fixed_height(bbox.ny);
