@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstdlib>
 #include <cstring>
+#include <variant>
 #include <optional>
 #include <functional>
 #if defined(__linux__)
@@ -16,6 +17,9 @@
 #include <vector>
 #include <tuple>
 #include <set>
+
+
+/// BEGIN generic ui library
 
 struct Point {
     float x, y;
@@ -501,16 +505,20 @@ struct Button : Widget {
 };
 
 
-struct DopLink;
-struct DopNode;
+/// END generic ui library
 
-struct DopSocket : GraphicsRectItem {
+/// BEG node editor ui
+
+struct UiDopLink;
+struct UiDopNode;
+
+struct UiDopSocket : GraphicsRectItem {
     static constexpr float BW = 4, R = 15, FH = 19, NW = 200;
 
-    std::string name = "(unnamed)";
-    std::set<DopLink *> links;
+    std::string name;
+    std::set<UiDopLink *> links;
 
-    DopSocket() {
+    UiDopSocket() {
         set_bounding_box({-R, -R, 2 * R, 2 * R});
     }
 
@@ -527,15 +535,15 @@ struct DopSocket : GraphicsRectItem {
         glRectf(bbox.x0 + BW, bbox.y0 + BW, bbox.x0 + bbox.nx - BW, bbox.y0 + bbox.ny - BW);
     }
 
-    DopNode *get_parent() const {
-        return (DopNode *)(parent);
+    UiDopNode *get_parent() const {
+        return (UiDopNode *)(parent);
     }
 };
 
 
-struct DopInputSocket : DopSocket {
+struct UiDopInputSocket : UiDopSocket {
     void paint() const override {
-        DopSocket::paint();
+        UiDopSocket::paint();
 
         if (hovered) {
             Font font("LiberationMono-Regular.ttf");
@@ -547,13 +555,13 @@ struct DopInputSocket : DopSocket {
         }
     }
 
-    void attach_link(DopLink *link);
+    void attach_link(UiDopLink *link);
 };
 
 
-struct DopOutputSocket : DopSocket {
+struct UiDopOutputSocket : UiDopSocket {
     void paint() const override {
-        DopSocket::paint();
+        UiDopSocket::paint();
 
         if (hovered) {
             Font font("LiberationMono-Regular.ttf");
@@ -565,26 +573,26 @@ struct DopOutputSocket : DopSocket {
         }
     }
 
-    void attach_link(DopLink *link) {
+    void attach_link(UiDopLink *link) {
         links.insert(link);
     }
 };
 
 
-struct DopGraph;
+struct UiDopGraph;
 
-struct DopNode : GraphicsRectItem {
+struct UiDopNode : GraphicsRectItem {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
 
-    std::vector<DopInputSocket *> inputs;
-    std::vector<DopOutputSocket *> outputs;
-    std::string name = "(unnamed)";
-    std::string kind = "(untyped)";
+    std::vector<UiDopInputSocket *> inputs;
+    std::vector<UiDopOutputSocket *> outputs;
+    std::string name;
+    std::string kind;
 
     void _update_input_positions() {
         for (int i = 0; i < inputs.size(); i++) {
             auto y = DH * (i + 0.5f);
-            inputs[i]->position = {DopSocket::R, -y};
+            inputs[i]->position = {UiDopSocket::R, -y};
         }
         _update_node_height();
     }
@@ -592,7 +600,7 @@ struct DopNode : GraphicsRectItem {
     void _update_output_positions() {
         for (int i = 0; i < outputs.size(); i++) {
             auto y = DH * (i + 0.5f);
-            outputs[i]->position = {W - DopSocket::R, -y};
+            outputs[i]->position = {W - UiDopSocket::R, -y};
         }
         _update_node_height();
     }
@@ -602,29 +610,29 @@ struct DopNode : GraphicsRectItem {
         set_bounding_box({0, -h, W, h + TH});
     }
 
-    DopInputSocket *add_input_socket() {
-        auto p = add_child<DopInputSocket>();
+    UiDopInputSocket *add_input_socket() {
+        auto p = add_child<UiDopInputSocket>();
         inputs.push_back(p);
         _update_input_positions();
         return p;
     }
 
-    DopOutputSocket *add_output_socket() {
-        auto p = add_child<DopOutputSocket>();
+    UiDopOutputSocket *add_output_socket() {
+        auto p = add_child<UiDopOutputSocket>();
         outputs.push_back(p);
         _update_output_positions();
         return p;
     }
 
-    DopNode() {
+    UiDopNode() {
         selectable = true;
         draggable = true;
 
         _update_node_height();
     }
 
-    DopGraph *get_parent() const {
-        return (DopGraph *)(parent);
+    UiDopGraph *get_parent() const {
+        return (UiDopGraph *)(parent);
     }
 
     void paint() const override {
@@ -684,11 +692,11 @@ struct GraphicsLineItem : GraphicsWidget {
 };
 
 
-struct DopLink : GraphicsLineItem {
-    DopOutputSocket *from_socket;
-    DopInputSocket *to_socket;
+struct UiDopLink : GraphicsLineItem {
+    UiDopOutputSocket *from_socket;
+    UiDopInputSocket *to_socket;
 
-    DopLink(DopOutputSocket *from_socket, DopInputSocket *to_socket)
+    UiDopLink(UiDopOutputSocket *from_socket, UiDopInputSocket *to_socket)
         : from_socket(from_socket), to_socket(to_socket)
     {
         from_socket->attach_link(this);
@@ -705,16 +713,16 @@ struct DopLink : GraphicsLineItem {
         return to_socket->position + to_socket->get_parent()->position;
     }
 
-    DopGraph *get_parent() const {
-        return (DopGraph *)(parent);
+    UiDopGraph *get_parent() const {
+        return (UiDopGraph *)(parent);
     }
 };
 
 
-struct DopPendingLink : GraphicsLineItem {
-    DopSocket *socket;
+struct UiDopPendingLink : GraphicsLineItem {
+    UiDopSocket *socket;
 
-    DopPendingLink(DopSocket *socket)
+    UiDopPendingLink(UiDopSocket *socket)
         : socket(socket)
     {
         zvalue = 2.f;
@@ -728,8 +736,8 @@ struct DopPendingLink : GraphicsLineItem {
         return {cur.x, cur.y};
     }
 
-    DopGraph *get_parent() const {
-        return (DopGraph *)(parent);
+    UiDopGraph *get_parent() const {
+        return (UiDopGraph *)(parent);
     }
 
     Widget *item_at(Point p) const override {
@@ -738,10 +746,10 @@ struct DopPendingLink : GraphicsLineItem {
 };
 
 
-struct DopGraph : GraphicsView {
-    std::set<DopNode *> nodes;
-    std::set<DopLink *> links;
-    DopPendingLink *pending_link = nullptr;
+struct UiDopGraph : GraphicsView {
+    std::set<UiDopNode *> nodes;
+    std::set<UiDopLink *> links;
+    UiDopPendingLink *pending_link = nullptr;
     AABB bbox{0, 0, 400, 400};
 
     void set_bounding_box(AABB bbox) {
@@ -752,7 +760,7 @@ struct DopGraph : GraphicsView {
         return bbox;
     }
 
-    bool remove_link(DopLink *link) {
+    bool remove_link(UiDopLink *link) {
         if (remove_child(link)) {
             link->from_socket->links.erase(link);
             link->to_socket->links.erase(link);
@@ -763,7 +771,7 @@ struct DopGraph : GraphicsView {
         }
     }
 
-    bool remove_node(DopNode *node) {
+    bool remove_node(UiDopNode *node) {
         for (auto *socket: node->inputs) {
             for (auto *link: std::set(socket->links)) {
                 remove_link(link);
@@ -782,27 +790,27 @@ struct DopGraph : GraphicsView {
         }
     }
 
-    DopNode *add_node() {
-        auto p = add_child<DopNode>();
+    UiDopNode *add_node() {
+        auto p = add_child<UiDopNode>();
         nodes.insert(p);
         return p;
     }
 
-    DopLink *add_link(DopOutputSocket *from_socket, DopInputSocket *to_socket) {
-        auto p = add_child<DopLink>(from_socket, to_socket);
+    UiDopLink *add_link(UiDopOutputSocket *from_socket, UiDopInputSocket *to_socket) {
+        auto p = add_child<UiDopLink>(from_socket, to_socket);
         links.insert(p);
         return p;
     }
 
-    void add_pending_link(DopSocket *socket) {
+    void add_pending_link(UiDopSocket *socket) {
         if (pending_link) {
             if (socket && pending_link->socket) {
                 auto socket1 = pending_link->socket;
                 auto socket2 = socket;
-                auto output1 = dynamic_cast<DopOutputSocket *>(socket1);
-                auto output2 = dynamic_cast<DopOutputSocket *>(socket2);
-                auto input1 = dynamic_cast<DopInputSocket *>(socket1);
-                auto input2 = dynamic_cast<DopInputSocket *>(socket2);
+                auto output1 = dynamic_cast<UiDopOutputSocket *>(socket1);
+                auto output2 = dynamic_cast<UiDopOutputSocket *>(socket2);
+                auto input1 = dynamic_cast<UiDopInputSocket *>(socket1);
+                auto input2 = dynamic_cast<UiDopInputSocket *>(socket2);
                 if (output1 && input2) {
                     add_link(output1, input2);
                 } else if (input1 && output2) {
@@ -813,11 +821,11 @@ struct DopGraph : GraphicsView {
             pending_link = nullptr;
 
         } else if (socket) {
-            pending_link = add_child<DopPendingLink>(socket);
+            pending_link = add_child<UiDopPendingLink>(socket);
         }
     }
 
-    DopGraph() {
+    UiDopGraph() {
         set_bounding_box({0, 0, 550, 400});
 
         auto c = add_node();
@@ -850,19 +858,19 @@ struct DopGraph : GraphicsView {
 
         auto item = item_at({cur.x, cur.y});
 
-        if (auto node = dynamic_cast<DopNode *>(item); node) {
+        if (auto node = dynamic_cast<UiDopNode *>(item); node) {
             if (pending_link) {
                 auto another = pending_link->socket;
-                if (dynamic_cast<DopInputSocket *>(another) && node->outputs.size()) {
+                if (dynamic_cast<UiDopInputSocket *>(another) && node->outputs.size()) {
                     add_pending_link(node->outputs[0]);
-                } else if (dynamic_cast<DopOutputSocket *>(another) && node->inputs.size()) {
+                } else if (dynamic_cast<UiDopOutputSocket *>(another) && node->inputs.size()) {
                     add_pending_link(node->inputs[0]);
                 } else {
                     add_pending_link(nullptr);
                 }
             }
 
-        } else if (auto socket = dynamic_cast<DopSocket *>(item); socket) {
+        } else if (auto socket = dynamic_cast<UiDopSocket *>(item); socket) {
             add_pending_link(socket);
 
         } else {
@@ -876,10 +884,10 @@ struct DopGraph : GraphicsView {
         Widget::on_del_down();
         for (auto *item: children_selected) {
 
-            if (auto link = dynamic_cast<DopLink *>(item); link) {
+            if (auto link = dynamic_cast<UiDopLink *>(item); link) {
                 remove_link(link);
 
-            } else if (auto node = dynamic_cast<DopNode *>(item); node) {
+            } else if (auto node = dynamic_cast<UiDopNode *>(item); node) {
                 remove_node(node);
             }
         }
@@ -887,7 +895,7 @@ struct DopGraph : GraphicsView {
 };
 
 
-void DopInputSocket::attach_link(DopLink *link) {
+void UiDopInputSocket::attach_link(UiDopLink *link) {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
         for (auto link: std::set(links)) {
@@ -897,10 +905,13 @@ void DopInputSocket::attach_link(DopLink *link) {
     links.insert(link);
 }
 
+/// END node editor ui
+
+/// BEG main window ui
 
 struct RootWindow : Widget {
     RootWindow() {
-        add_child<DopGraph>();
+        add_child<UiDopGraph>();
     }
 
     AABB get_bounding_box() const override {
@@ -908,6 +919,9 @@ struct RootWindow : Widget {
     }
 } win;
 
+/// END main window ui
+
+/// BEG ui library main loop
 
 void process_input() {
     GLint nx = 100, ny = 100;
@@ -987,3 +1001,5 @@ int main() {
 
     return 0;
 }
+
+// END ui library main loop
