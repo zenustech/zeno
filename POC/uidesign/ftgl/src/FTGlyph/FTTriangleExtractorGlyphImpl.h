@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -57,3 +58,4 @@ class FTTriangleExtractorGlyphImpl : public FTGlyphImpl
 
 #endif  //  __FTTriangleExtractorGlyphImpl__
 
+#endif

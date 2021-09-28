@@ -43,22 +43,22 @@ SET(ftgl_headers
     FTGL/FTBuffer.h
     FTGL/FTPoint.h
     FTGL/FTGlyph.h
-    FTGL/FTBitmapGlyph.h
-    FTGL/FTBufferGlyph.h
-    FTGL/FTExtrdGlyph.h
-    FTGL/FTOutlineGlyph.h
-    FTGL/FTPixmapGlyph.h
-    FTGL/FTPolyGlyph.h
+    #FTGL/FTBitmapGlyph.h
+    #FTGL/FTBufferGlyph.h
+    #FTGL/FTExtrdGlyph.h
+    #FTGL/FTOutlineGlyph.h
+    #FTGL/FTPixmapGlyph.h
+    #FTGL/FTPolyGlyph.h
     FTGL/FTTextureGlyph.h
     FTGL/FTFont.h
-    FTGL/FTGLBitmapFont.h
-    FTGL/FTBufferFont.h
-    FTGL/FTGLExtrdFont.h
-    FTGL/FTGLOutlineFont.h
-    FTGL/FTGLPixmapFont.h
-    FTGL/FTGLPolygonFont.h
+    #FTGL/FTGLBitmapFont.h
+    #FTGL/FTBufferFont.h
+    #FTGL/FTGLExtrdFont.h
+    #FTGL/FTGLOutlineFont.h
+    #FTGL/FTGLPixmapFont.h
+    #FTGL/FTGLPolygonFont.h
     FTGL/FTGLTextureFont.h
-    FTGL/FTGLTriangleExtractorFont.h
+    #FTGL/FTGLTriangleExtractorFont.h
     FTGL/FTLayout.h
     FTGL/FTSimpleLayout.h
 )
@@ -67,44 +67,44 @@ SET(ftglyph_sources
     FTGlyph/FTGlyph.cpp
     FTGlyph/FTGlyphImpl.h
     FTGlyph/FTGlyphGlue.cpp
-    FTGlyph/FTBitmapGlyph.cpp
-    FTGlyph/FTBitmapGlyphImpl.h
-    FTGlyph/FTBufferGlyph.cpp
-    FTGlyph/FTBufferGlyphImpl.h
-    FTGlyph/FTExtrudeGlyph.cpp
-    FTGlyph/FTExtrudeGlyphImpl.h
-    FTGlyph/FTOutlineGlyph.cpp
-    FTGlyph/FTOutlineGlyphImpl.h
-    FTGlyph/FTPixmapGlyph.cpp
-    FTGlyph/FTPixmapGlyphImpl.h
-    FTGlyph/FTPolygonGlyph.cpp
-    FTGlyph/FTPolygonGlyphImpl.h
+    #FTGlyph/FTBitmapGlyph.cpp
+    #FTGlyph/FTBitmapGlyphImpl.h
+    #FTGlyph/FTBufferGlyph.cpp
+    #FTGlyph/FTBufferGlyphImpl.h
+    #FTGlyph/FTExtrudeGlyph.cpp
+    #FTGlyph/FTExtrudeGlyphImpl.h
+    #FTGlyph/FTOutlineGlyph.cpp
+    #FTGlyph/FTOutlineGlyphImpl.h
+    #FTGlyph/FTPixmapGlyph.cpp
+    #FTGlyph/FTPixmapGlyphImpl.h
+    #FTGlyph/FTPolygonGlyph.cpp
+    #FTGlyph/FTPolygonGlyphImpl.h
     FTGlyph/FTTextureGlyph.cpp
     FTGlyph/FTTextureGlyphImpl.h
-    FTGlyph/FTTriangleExtractorGlyph.cpp
-    FTGlyph/FTTriangleExtractorGlyphImpl.h
+    #FTGlyph/FTTriangleExtractorGlyph.cpp
+    #FTGlyph/FTTriangleExtractorGlyphImpl.h
 )
 
 SET(ftfont_sources
     FTFont/FTFont.cpp
     FTFont/FTFontImpl.h
     FTFont/FTFontGlue.cpp
-    FTFont/FTBitmapFont.cpp
-    FTFont/FTBitmapFontImpl.h
-    FTFont/FTBufferFont.cpp
-    FTFont/FTBufferFontImpl.h
-    FTFont/FTExtrudeFont.cpp
-    FTFont/FTExtrudeFontImpl.h
-    FTFont/FTOutlineFont.cpp
-    FTFont/FTOutlineFontImpl.h
-    FTFont/FTPixmapFont.cpp
-    FTFont/FTPixmapFontImpl.h
-    FTFont/FTPolygonFont.cpp
-    FTFont/FTPolygonFontImpl.h
+    #FTFont/FTBitmapFont.cpp
+    #FTFont/FTBitmapFontImpl.h
+    #FTFont/FTBufferFont.cpp
+    #FTFont/FTBufferFontImpl.h
+    #FTFont/FTExtrudeFont.cpp
+    #FTFont/FTExtrudeFontImpl.h
+    #FTFont/FTOutlineFont.cpp
+    #FTFont/FTOutlineFontImpl.h
+    #FTFont/FTPixmapFont.cpp
+    #FTFont/FTPixmapFontImpl.h
+    #FTFont/FTPolygonFont.cpp
+    #FTFont/FTPolygonFontImpl.h
     FTFont/FTTextureFont.cpp
     FTFont/FTTextureFontImpl.h
-    FTFont/FTTriangleExtractorFont.cpp
-    FTFont/FTTriangleExtractorFontImpl.h
+    #FTFont/FTTriangleExtractorFont.cpp
+    #FTFont/FTTriangleExtractorFontImpl.h
 )
 
 SET(ftlayout_sources
@@ -119,12 +119,11 @@ SET(ftlayout_sources
 ADD_LIBRARY(ftgl ${libftgl_la_SOURCES} ${ftgl_headers} ${ftglyph_sources} ${ftfont_sources} ${ftlayout_sources})
 TARGET_LINK_LIBRARIES(ftgl PUBLIC
 	${FREETYPE_LIBRARIES}
-	${OPENGL_LIBRARIES}
 )
 TARGET_INCLUDE_DIRECTORIES(ftgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/FTFont ${CMAKE_CURRENT_SOURCE_DIR}/FTGlyph ${CMAKE_CURRENT_SOURCE_DIR}/FTLayout ${FREETYPE_INCLUDE_DIRS})
 
 IF(NOT BUILD_SHARED_LIBS)
-	TARGET_LINK_LIBRARIES(ftgl ${OPENGL_LIBRARIES})
+	TARGET_LINK_LIBRARIES(ftgl glad)
 ENDIF()
 
 SET_TARGET_PROPERTIES(
@@ -132,5 +131,5 @@ SET_TARGET_PROPERTIES(
   PROPERTIES
     VERSION ${VERSION_SERIES}.${VERSION_MAJOR}.${VERSION_MINOR}
 	SOVERSION ${FTGL_SOVERSION}
-    DEBUG_POSTFIX "d"
+    #DEBUG_POSTFIX "d"
 )

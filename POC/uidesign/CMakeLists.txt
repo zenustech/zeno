@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 project(ZenoEditor LANGUAGES C CXX)
 
+add_subdirectory(glad)
 add_subdirectory(glfw)
 add_subdirectory(ftgl)
 add_subdirectory(backward-cpp)

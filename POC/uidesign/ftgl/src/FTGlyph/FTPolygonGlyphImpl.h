@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -64,3 +65,4 @@ class FTPolygonGlyphImpl : public FTGlyphImpl
 
 #endif  //  __FTPolygonGlyphImpl__
 
+#endif
