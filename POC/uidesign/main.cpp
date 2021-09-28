@@ -129,6 +129,10 @@ struct Event_Key {
     bool down;
 };
 
+struct Event_Hover {
+    bool enter;
+};
+
 struct Event_Mouse {
     float x, y;
     int btn;  // lmb=0, mmb=1, rmb=2
@@ -142,6 +146,7 @@ struct Event_Motion {
 
 using Event = std::variant
     < Event_Key
+    , Event_Hover
     , Event_Mouse
     , Event_Motion
     >;
@@ -256,44 +261,9 @@ struct Widget : Object {
 
     virtual AABB get_bounding_box() const = 0;
 
-    virtual void on_hover_enter() {
-    }
-
-    virtual void on_hover_leave() {
-        if (lmb_pressed) on_lmb_up();
-        if (mmb_pressed) on_mmb_up();
-        if (rmb_pressed) on_rmb_up();
-    }
-
     bool hovered = false;
 
-    virtual void on_lmb_down() {
-        lmb_pressed = true;
-    }
-
-    virtual void on_lmb_up() {
-        lmb_pressed = false;
-    }
-
-    virtual void on_mmb_down() {
-        mmb_pressed = true;
-    }
-
-    virtual void on_mmb_up() {
-        mmb_pressed = false;
-    }
-
-    virtual void on_rmb_down() {
-        rmb_pressed = true;
-    }
-
-    virtual void on_rmb_up() {
-        rmb_pressed = false;
-    }
-
-    bool lmb_pressed = false;
-    bool mmb_pressed = false;
-    bool rmb_pressed = false;
+    bool pressed[3] = {false, false, false};
 
     void _clean_null_children() {
         bool has_any;
@@ -329,17 +299,14 @@ struct Widget : Object {
         return const_cast<Widget *>(this);
     }
 
+    virtual void on_event(Event_Hover e) {
+    }
+
     virtual void on_event(Event_Motion e) {
     }
 
     virtual void on_event(Event_Mouse e) {
-        if (e.btn == 0) {
-            if (e.down) on_lmb_down(); else on_lmb_up();
-        } else if (e.btn == 1) {
-            if (e.down) on_mmb_down(); else on_mmb_up();
-        } else if (e.btn == 2) {
-            if (e.down) on_rmb_down(); else on_rmb_up();
-        }
+        pressed[e.btn] = e.down;
     }
 
     virtual void on_event(Event_Key e) {
@@ -381,7 +348,6 @@ struct Widget : Object {
 
         if (cur.dx || cur.dy) {
             on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
-            on_mouse_move();
         }
 
         if (hovered) {
@@ -397,9 +363,9 @@ struct Widget : Object {
         }
 
         if (!old_hovered && hovered) {
-            on_hover_enter();
+            on_event(Event_Hover{.enter = true});
         } else if (old_hovered && !hovered) {
-            on_hover_leave();
+            on_event(Event_Hover{.enter = false});
         }
     }
 
@@ -463,8 +429,14 @@ struct GraphicsView : Widget {
         }
     }
 
-    void on_lmb_down() override {
-        Widget::on_lmb_down();
+    void on_event(Event_Mouse e) override {
+        Widget::on_event(e);
+
+        if (e.down != true)
+            return;
+        if (e.btn != 0)
+            return;
+
         if (auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y})); item) {
             if (item->selectable)
                 _select_child(item, cur.shift);
@@ -487,7 +459,7 @@ struct GraphicsRectItem : GraphicsWidget {
     }
 
     void paint() const override {
-        if (selected || lmb_pressed) {
+        if (selected || pressed[0]) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -513,13 +485,19 @@ struct Button : Widget {
 
     virtual void on_clicked() {}
 
-    void on_lmb_down() override {
-        Widget::on_lmb_down();
+    void on_event(Event_Mouse e) override {
+        Widget::on_event(e);
+
+        if (e.down != true)
+            return;
+        if (e.btn != 0)
+            return;
+
         on_clicked();
     }
 
     void paint() const override {
-        if (lmb_pressed) {
+        if (pressed[0]) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -1110,8 +1088,13 @@ struct UiDopGraph : GraphicsView {
         //bk_graph->serialize(std::cout); // for debug
     }
 
-    void on_lmb_down() override {
-        GraphicsView::on_lmb_down();
+    void on_event(Event_Mouse e) override {
+        GraphicsView::on_event(e);
+
+        if (e.down != true)
+            return;
+        if (e.btn != 0)
+            return;
 
         auto item = item_at({cur.x, cur.y});
 
@@ -1168,6 +1151,7 @@ struct UiDopGraph : GraphicsView {
                 remove_node(node);
             }
         }
+        children_selected.clear();
     }
 };
 
