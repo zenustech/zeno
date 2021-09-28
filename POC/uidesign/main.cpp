@@ -581,7 +581,6 @@ struct TextEdit : Widget {
     void on_event(Event_Char e) override {
         Widget::on_event(e);
 
-        printf("%#x\n", e.code);
         char c = e.code;
         _insert_text(c);
         cursor++;
