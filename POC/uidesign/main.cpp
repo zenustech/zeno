@@ -715,7 +715,7 @@ struct UiDopInputSocket : UiDopSocket {
         UiDopSocket::paint();
 
         if (hovered) {
-            Font font("LiberationMono-Regular.ttf");
+            Font font("assets/regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_LEFT);
@@ -738,7 +738,7 @@ struct UiDopOutputSocket : UiDopSocket {
         UiDopSocket::paint();
 
         if (hovered) {
-            Font font("LiberationMono-Regular.ttf");
+            Font font("assets/regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_RIGHT);
@@ -835,7 +835,7 @@ struct UiDopNode : GraphicsRectItem {
         }
         glRectf(0.f, 0.f, W, TH);
 
-        Font font("LiberationMono-Regular.ttf");
+        Font font("assets/regular.ttf");
         font.set_font_size(FH);
         font.set_fixed_width(W);
         font.set_fixed_height(TH);
