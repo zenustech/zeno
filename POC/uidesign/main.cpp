@@ -642,14 +642,15 @@ struct UiDopSocket : GraphicsRectItem {
 
     UiDopSocket() {
         set_bounding_box({-R, -R, 2 * R, 2 * R});
+        zvalue = 2.f;
     }
 
     void paint() const override {
         glColor3f(0.75f, 0.75f, 0.75f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-        if (links.size()) {
+        if (hovered) {
             glColor3f(0.75f, 0.5f, 0.375f);
-        } else if (hovered) {
+        } else if (links.size()) {
             glColor3f(0.375f, 0.5f, 1.0f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
@@ -821,7 +822,7 @@ int UiDopOutputSocket::get_index() const {
 
 
 struct GraphicsLineItem : GraphicsWidget {
-    static constexpr float LW = 4.f;
+    static constexpr float LW = 5.f;
 
     virtual Point get_from_position() const = 0;
     virtual Point get_to_position() const = 0;
@@ -836,7 +837,8 @@ struct GraphicsLineItem : GraphicsWidget {
         if (selected) {
             glColor3f(0.75f, 0.5f, 0.375f);
         } else {
-            glColor3f(0.125f, 0.375f, 0.425f);
+            glColor3f(0.375f, 0.5f, 1.0f);
+            //glColor3f(0.125f, 0.375f, 0.425f);
         }
         auto [sx, sy] = get_from_position();
         auto [dx, dy] = get_to_position();
@@ -882,7 +884,7 @@ struct UiDopPendingLink : GraphicsLineItem {
     UiDopPendingLink(UiDopSocket *socket)
         : socket(socket)
     {
-        zvalue = 2.f;
+        zvalue = 3.f;
     }
 
     Point get_from_position() const override {
@@ -1057,6 +1059,11 @@ struct UiDopGraph : GraphicsView {
             add_pending_link(socket);
 
         } else {
+            if (pending_link) {
+                if (auto socket = dynamic_cast<UiDopInputSocket *>(pending_link->socket); socket) {
+                    socket->clear_links();
+                }
+            }
             add_pending_link(nullptr);
 
         }
