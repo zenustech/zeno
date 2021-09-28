@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <variant>
 #include <optional>
 #include <functional>
@@ -509,13 +510,28 @@ struct Button : Widget {
 // BEG node data structures
 
 struct DopInputValue_NoValue {
+
+    void serialize(std::ostream &ss) const {
+        ss << "none";
+    }
 };
+
 struct DopInputValue_ReferVariable {
     std::string refid;
+
+    void serialize(std::ostream &ss) const {
+        ss << "ref " << refid;
+    }
 };
+
 struct DopInputValue_ImmedValue {
     std::string immed;
+
+    void serialize(std::ostream &ss) const {
+        ss << "imm " << immed;
+    }
 };
+
 using DopInputValue = std::variant
     < DopInputValue_NoValue
     , DopInputValue_ReferVariable
@@ -525,10 +541,21 @@ using DopInputValue = std::variant
 struct DopInputSocket {
     std::string name;
     DopInputValue value;
+
+    void serialize(std::ostream &ss) const {
+        ss << name << "=";
+        std::visit([&] (auto &value) {
+            value.serialize(ss);
+        }, value);
+    }
 };
 
 struct DopOutputSocket {
     std::string name;
+
+    void serialize(std::ostream &ss) const {
+        ss << name;
+    }
 };
 
 struct DopNode {
@@ -536,6 +563,27 @@ struct DopNode {
     std::string kind;
     std::vector<DopInputSocket> inputs;
     std::vector<DopOutputSocket> outputs;
+
+    void serialize(std::ostream &ss) const {
+        ss << "DopNode[" << '\n';
+        ss << "  name=" << name << '\n';
+        ss << "  kind=" << kind << '\n';
+        ss << "  inputs=[" << '\n';
+        for (auto const &input: inputs) {
+            ss << "    ";
+            input.serialize(ss);
+            ss << '\n';
+        }
+        ss << "  ]" << '\n';
+        ss << "  outputs=[" << '\n';
+        for (auto const &output: outputs) {
+            ss << "    ";
+            output.serialize(ss);
+            ss << '\n';
+        }
+        ss << "  ]" << '\n';
+        ss << "]" << '\n';
+    }
 };
 
 
@@ -549,6 +597,13 @@ struct DopGraph {
         return raw;
     }
 
+    void serialize(std::ostream &ss) const {
+        for (auto const &node: nodes) {
+            node->serialize(ss);
+            ss << '\n';
+        }
+    }
+
     static void set_node_input
         ( DopNode *to_node
         , int to_socket_index
@@ -559,7 +614,7 @@ struct DopGraph {
         auto const &from_socket = from_node->outputs.at(from_socket_index);
         auto &to_socket = to_node->inputs.at(to_socket_index);
         auto refid = from_node->name + ":" + from_socket.name;
-        to_socket.value = DopInputValue_ImmedValue{refid};
+        to_socket.value = DopInputValue_ReferVariable{refid};
     }
 
     static void remove_node_input
@@ -855,6 +910,7 @@ struct UiDopGraph : GraphicsView {
     }
 
     AABB get_bounding_box() const override {
+        bk_graph->serialize(std::cout);
         return bbox;
     }
 
@@ -937,22 +993,22 @@ struct UiDopGraph : GraphicsView {
 
         auto c = add_node();
         c->position = {50, 300};
+        c->name = "readvdb1";
+        c->kind = "readvdb";
         c->add_input_socket()->name = "path";
         c->add_input_socket()->name = "type";
         c->add_output_socket()->name = "grid";
         c->update_sockets();
-        c->name = "readvdb1";
-        c->kind = "readvdb";
 
         auto d = add_node();
         d->position = {300, 300};
+        d->name = "vdbsmooth1";
+        d->kind = "vdbsmooth";
         d->add_input_socket()->name = "grid";
         d->add_input_socket()->name = "width";
         d->add_input_socket()->name = "times";
         d->add_output_socket()->name = "grid";
         d->update_sockets();
-        d->name = "vdbsmooth1";
-        d->kind = "vdbsmooth";
 
         add_link(c->outputs[0], d->inputs[0]);
     }
