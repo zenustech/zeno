@@ -660,6 +660,8 @@ struct UiDopSocket : GraphicsRectItem {
     UiDopNode *get_parent() const {
         return (UiDopNode *)(parent);
     }
+
+    void clear_links();
 };
 
 
@@ -677,7 +679,11 @@ struct UiDopInputSocket : UiDopSocket {
         }
     }
 
-    void attach_link(UiDopLink *link);
+    void attach_link(UiDopLink *link) {
+        clear_links();
+        links.insert(link);
+    }
+
     int get_index() const;
 };
 
@@ -1053,7 +1059,6 @@ struct UiDopGraph : GraphicsView {
         } else {
             add_pending_link(nullptr);
 
-
         }
     }
 
@@ -1072,14 +1077,13 @@ struct UiDopGraph : GraphicsView {
 };
 
 
-void UiDopInputSocket::attach_link(UiDopLink *link) {
+void UiDopSocket::clear_links() {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
         for (auto link: std::set(links)) {
             graph->remove_link(link);
         }
     }
-    links.insert(link);
 }
 
 // END node editor ui
