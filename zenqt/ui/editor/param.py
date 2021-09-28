@@ -43,7 +43,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
     def setName(self, name):
         self.name = name
-        self.label.setText(name)
+        self.label.setText(translate(name))
 
     def setDefault(self, default):
         self.setValue(default)

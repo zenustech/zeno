@@ -21,26 +21,8 @@ default: run
 #default: run
 
 all:
-	cmake -B build
-	cmake --build build --parallel 
-
-release_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
-
-debug_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
-
-configure:
-	cmake -B build
-	ccmake -B build
-
-test: all
-	build/tests/zentest
-
-easygl: all
-	build/projects/EasyGL/zeno_EasyGL_main
+	cmake -B build -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count; print(cpu_count())'`
 
 run: all
 	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt

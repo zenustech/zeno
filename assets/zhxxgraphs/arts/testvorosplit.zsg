@@ -475,7 +475,8 @@
       "assignAttrs": true,
       "calcAnyFrom": true,
       "doMeshFix": true,
-      "noNullMesh": true
+      "noNullMesh": true,
+      "DEPRECATED": ""
      },
      "uipos": [
       785.5068846542995,
@@ -809,42 +810,11 @@
      ],
      "options": []
     },
-    "f722ebdb-PrimitiveVoronoi": {
-     "name": "PrimitiveVoronoi",
-     "inputs": {
-      "prim": [
-       "2b542f84-x",
-       "prim",
-       null
-      ],
-      "particlesPrim": [
-       null,
-       null,
-       null
-      ],
-      "numParticles": [
-       null,
-       null,
-       64
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2325.9866678815374,
-      -257.77838359908765
-     ],
-     "options": []
-    },
     "b3bc2e60-BeginForEach": {
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "f722ebdb-PrimitiveVoronoi",
+       "46922ddc-VoronoiFracture",
        "primList",
        null
       ],
@@ -1146,13 +1116,46 @@
      "options": [
       "VIEW"
      ]
+    },
+    "46922ddc-VoronoiFracture": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "meshPrim": [
+       "2b542f84-x",
+       "prim",
+       null
+      ],
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doMeshFix": true,
+      "doMeshFix2": true,
+      "numRandPoints": 4,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      -2126.2252027334634,
+      -364.8145785876957
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -2769.885477904286,
-    "y": -821.3236920273279,
-    "width": 767.9999999999957,
-    "height": 588.7999999999942
+    "x": -2363.254210186754,
+    "y": -392.08210777220694,
+    "width": 491.51999999999725,
+    "height": 376.8319999999962
    }
   },
   "PrimitiveVoronoi": {
@@ -1205,7 +1208,8 @@
       "assignAttrs": false,
       "calcAnyFrom": true,
       "doMeshFix": true,
-      "noNullMesh": false
+      "noNullMesh": false,
+      "DEPRECATED": ""
      },
      "uipos": [
       -377.63169165549044,
@@ -3021,7 +3025,7 @@
      ""
     ],
     [
-     "int",
+     "",
      "frameNum",
      ""
     ],
@@ -7305,6 +7309,11 @@
      "bool",
      "noNullMesh",
      "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     ""
     ]
    ],
    "categories": [
@@ -8407,6 +8416,71 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "SDFAdvect": {
+   "inputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "SpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TemporalScheme",
+     "Order_2_Runge_Kuta"
+    ],
+    [
+     "int",
+     "RenormalizeStep",
+     "3"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "TrackerSpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TrackerTemporalScheme",
+     "Explicit_Euler"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "SDFToPoly": {
@@ -9848,10 +9922,86 @@
      "bool",
      "hasInactive",
      "0"
+    ],
+    [
+     "string",
+     "valToAttr",
+     "sdf"
     ]
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "VoronoiFracture": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "meshPrim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ],
+    [
+     "bool",
+     "doMeshFix2",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
    ]
   },
   "WriteObjPrimitive": {

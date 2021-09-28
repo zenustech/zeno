@@ -22,6 +22,9 @@ inline auto prim_to_eigen(PrimitiveObject const *prim) {
     return std::make_pair(V, F);
 }
 
+// defined in PrimitiveMeshingFix.cpp:
+std::pair<Eigen::MatrixXd, Eigen::MatrixXi> prim_to_eigen_with_fix(PrimitiveObject const *primA);
+
 inline void eigen_to_prim(Eigen::MatrixXd const &V, Eigen::MatrixXi const &F, PrimitiveObject *prim) {
     auto &verts = prim->add_attr<vec3f>("pos");
     verts.clear();

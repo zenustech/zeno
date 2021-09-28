@@ -7,11 +7,6 @@
 #include "EigenUtils.h"
 #include "igl_sink.h"
 
-namespace zeno {
-// defined in PrimitiveMeshingFix.cpp:
-std::pair<Eigen::MatrixXd, Eigen::MatrixXi> prim_to_eigen_with_fix(PrimitiveObject const *primA);
-}
-
 namespace {
 
 using namespace zeno;
@@ -152,6 +147,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {"bool", "calcAnyFrom", "0"},
     {"bool", "doMeshFix", "1"},
     {"bool", "noNullMesh", "1"},
+    {"string", "DEPRECATED", ""},
     },
     {"cgmesh"},
 });

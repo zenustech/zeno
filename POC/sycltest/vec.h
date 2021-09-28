@@ -38,8 +38,12 @@ struct vec : std::array<T, N> {
     template <class ...Ts>
     vec(T const &t, Ts const &...ts) : vec({t, T(ts)...}) {}
 
-    operator T() const {
-        return (*this)[0];
+    operator std::conditional_t<N == 1, T, std::array<T, N> const &>() const {
+        if constexpr (N == 1) {
+            return (*this)[0];
+        } else {
+            return static_cast<std::array<T, N> const &>(*this);
+        }
     }
 
     template <class S>

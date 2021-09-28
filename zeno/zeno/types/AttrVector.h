@@ -10,7 +10,12 @@ namespace zeno {
 
 template <class ValT>
 struct AttrVector {
-    using VariantType = std::variant<std::vector<vec3f>, std::vector<float>>;
+    using VariantType = std::variant
+        < std::vector<vec3f>
+        , std::vector<float>
+        , std::vector<vec3i>
+        , std::vector<int>
+        >;
     using ValueType = ValT;
 
     std::vector<ValT> values;
@@ -91,36 +96,48 @@ struct AttrVector {
         return values;
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) const {
         std::visit([&] (auto &arr) {
-            f(arr);
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (tuple_contains<T, Accept>::value) {
+                f(arr);
+            }
         }, attr(name));
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) {
         std::visit([&] (auto &arr) {
-            f(arr);
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (tuple_contains<T, Accept>::value) {
+                f(arr);
+            }
         }, attr(name));
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) const {
         for (auto const &[key, arr]: attrs) {
             auto const &k = key;
             std::visit([&] (auto &arr) {
-                f(k, arr);
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (tuple_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
             }, arr);
         }
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) {
         for (auto &[key, arr]: attrs) {
             auto &k = key;
             std::visit([&] (auto &arr) {
-                f(k, arr);
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (tuple_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
             }, arr);
         }
     }

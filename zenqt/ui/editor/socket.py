@@ -61,7 +61,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def setName(self, name):
         self.name = name
-        self.label.setPlainText(name)
+        self.label.setPlainText(translate(name))
 
     def setType(self, type):
         self.type = type

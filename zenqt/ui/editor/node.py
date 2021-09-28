@@ -57,7 +57,7 @@ class QDMGraphicsNode(QGraphicsItem):
         if self.ident is None:
             self.ident = gen_unique_ident(name)
         self.name = name
-        self.title.setPlainText(name)
+        self.title.setPlainText(translate(name))
 
     def getOptions(self):
         collapsed_status = ['collapsed'] if self.collapsed else []

@@ -80,6 +80,9 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
 
+  auto version = (const char *)glGetString(GL_VERSION);
+  printf("OpenGL version: %s\n", version ? version : "null");
+
   //CHECK_GL(glEnable(GL_BLEND));//??
   //CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));

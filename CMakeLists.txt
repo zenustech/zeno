@@ -4,7 +4,7 @@ project(zeno LANGUAGES C CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
@@ -14,6 +14,7 @@ if (MSVC)
 endif()
 
 option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
+option(ZENO_BUILD_LAUNCHER "Build ZENO wrapper launcher" OFF)
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
@@ -48,6 +49,10 @@ endif()
 
 add_subdirectory(external/spdlog)
 
+if (ZENO_FAULTHANDLER)
+    add_subdirectory(external/backward-cpp)
+endif()
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
@@ -67,4 +72,8 @@ if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
 
 add_definitions(-w)
+endif()
+
+if (ZENO_BUILD_LAUNCHER)
+    add_subdirectory(scripts/launcher)
 endif()

@@ -2,6 +2,7 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/types/AttrVector.h>
+#include <zeno/utils/type_traits.h>
 #include <zeno/utils/vec.h>
 #include <optional>
 #include <variant>
@@ -23,18 +24,18 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<std::pair<int, int>> polys;
 
     // deprecated:
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) {
         std::string pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr(f);
+        verts.foreach_attr<Accept>(std::move(f));
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr(f);
+        verts.foreach_attr<Accept>(std::move(f));
     }
 
     size_t num_attrs() const {
@@ -89,21 +90,21 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.attr(name);
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) const {
         if (name == "pos") {
             return f(verts.values);
         } else {
-            return verts.attr_visit(name, f);
+            return verts.attr_visit<Accept>(name, f);
         }
     }
 
-    template <class F>
+    template <class Accept = std::tuple<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) {
         if (name == "pos") {
             return f(verts.values);
         } else {
-            return verts.attr_visit(name, f);
+            return verts.attr_visit<Accept>(name, f);
         }
     }
 

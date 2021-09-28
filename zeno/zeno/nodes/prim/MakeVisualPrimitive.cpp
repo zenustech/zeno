@@ -49,11 +49,27 @@ struct MakeVisualAABBPrimitive : INode {
 
         } else if (connType == "trifaces") {
             prim->tris.resize(12);
-            // TODO: impl triface aabb
+            prim->tris[0] = vec3i(0, 1, 4);
+            prim->tris[1] = vec3i(1, 5, 4);
+            prim->tris[2] = vec3i(1, 6, 5);
+            prim->tris[3] = vec3i(1, 2, 6);
+            prim->tris[4] = vec3i(2, 3, 6);
+            prim->tris[5] = vec3i(3, 7, 6);
+            prim->tris[6] = vec3i(3, 0, 4);
+            prim->tris[7] = vec3i(3, 4, 7);
+            prim->tris[8] = vec3i(7, 4, 5);
+            prim->tris[9] = vec3i(7, 5, 6);
+            prim->tris[10] = vec3i(2, 0, 3);
+            prim->tris[11] = vec3i(2, 1, 0);
 
         } else if (connType == "quadfaces") {
             prim->quads.resize(6);
-            // TODO: impl quadface aabb
+            prim->quads[0] = vec4i(0, 1, 5, 4);
+            prim->quads[1] = vec4i(1, 2, 6, 5);
+            prim->quads[2] = vec4i(2, 3, 7, 6);
+            prim->quads[3] = vec4i(3, 0, 4, 7);
+            prim->quads[4] = vec4i(4, 5, 6, 7);
+            prim->quads[5] = vec4i(0, 1, 2, 3);
         }
 
         set_output("prim", std::move(prim));
@@ -70,6 +86,4 @@ ZENDEFNODE(MakeVisualAABBPrimitive,
         }, /* category: */ {
         "visualize",
         }});
-
-
 }
