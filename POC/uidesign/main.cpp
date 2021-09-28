@@ -19,7 +19,7 @@
 #include <set>
 
 
-/// BEGIN generic ui library
+// BEG generic ui library
 
 struct Point {
     float x, y;
@@ -504,10 +504,46 @@ struct Button : Widget {
     }
 };
 
+// END generic ui library
 
-/// END generic ui library
+// BEG node data structures
 
-/// BEG node editor ui
+struct DopNode {
+    struct DopInputValue_ReferVariable {
+        std::string refid;
+    };
+    struct DopInputValue_ImmedValue {
+        std::string immed;
+    };
+
+    using DopInputValue = std::variant
+        < DopInputValue_ReferVariable
+        , DopInputValue_ImmedValue
+        >;
+
+    struct DopInputSocket {
+        std::string name;
+        DopInputValue value;
+    };
+
+    struct DopOutputSocket {
+        std::string name;
+    };
+
+    std::string name;
+    std::string kind;
+    std::vector<DopInputSocket> inputs;
+    std::vector<DopOutputSocket> outputs;
+};
+
+
+struct DopGraph {
+    std::set<std::unique_ptr<DopNode>> nodes;
+};
+
+// END node data structures
+
+// BEG node editor ui
 
 struct UiDopLink;
 struct UiDopNode;
@@ -580,6 +616,7 @@ struct UiDopOutputSocket : UiDopSocket {
 
 
 struct UiDopGraph;
+
 
 struct UiDopNode : GraphicsRectItem {
     static constexpr float DH = 40, TH = 42, FH = 24, W = 200, BW = 3;
@@ -752,6 +789,8 @@ struct UiDopGraph : GraphicsView {
     UiDopPendingLink *pending_link = nullptr;
     AABB bbox{0, 0, 400, 400};
 
+    std::unique_ptr<DopGraph> bk_graph;
+
     void set_bounding_box(AABB bbox) {
         this->bbox = bbox;
     }
@@ -905,9 +944,9 @@ void UiDopInputSocket::attach_link(UiDopLink *link) {
     links.insert(link);
 }
 
-/// END node editor ui
+// END node editor ui
 
-/// BEG main window ui
+// BEG main window ui
 
 struct RootWindow : Widget {
     RootWindow() {
@@ -919,9 +958,9 @@ struct RootWindow : Widget {
     }
 } win;
 
-/// END main window ui
+// END main window ui
 
-/// BEG ui library main loop
+// BEG ui library main loop
 
 void process_input() {
     GLint nx = 100, ny = 100;
