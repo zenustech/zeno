@@ -536,6 +536,7 @@ struct TextEdit : Widget {
 
     std::string text;
     int cursor = 0;
+    int sellen = 0;
 
     float font_size = 20.f;
 
@@ -548,14 +549,15 @@ struct TextEdit : Widget {
     }
 
     void _insert_text(auto content) {
-        text = text.substr(0, cursor) + content + text.substr(cursor);
+        text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
+        sellen = 0;
     }
 
     void on_event(Event_Key e) override {
         if (e.down != true)
             return;
 
-        if (e.key == GLFW_KEY_V) {
+        if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
             auto str = glfwGetClipboardString(window);
             _insert_text(str);
         }
@@ -578,14 +580,13 @@ struct TextEdit : Widget {
         }
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        if (text.size()) {
-            Font font("assets/regular.ttf");
-            font.set_font_size(font_size);
-            font.set_fixed_width(bbox.nx);
-            font.set_fixed_height(bbox.ny);
-            glColor3f(1.f, 1.f, 1.f);
-            font.render(bbox.x0, bbox.y0, text);
-        }
+        auto txt = text.substr(0, cursor) + '|' + text.substr(cursor);
+        Font font("assets/regular.ttf");
+        font.set_font_size(font_size);
+        font.set_fixed_width(bbox.nx);
+        font.set_fixed_height(bbox.ny);
+        glColor3f(1.f, 1.f, 1.f);
+        font.render(bbox.x0, bbox.y0, txt);
     }
 };
 
