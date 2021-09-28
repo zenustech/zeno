@@ -531,6 +531,15 @@ struct TextEdit : Widget {
         return bbox;
     }
 
+    void on_event(Event_Key e) override {
+        Widget::on_event(e);
+
+        if (!e.down)
+            return;
+
+        text += e.key;
+    }
+
     void paint() const override {
         if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
@@ -1037,6 +1046,8 @@ struct UiDopGraph : GraphicsView {
         return p;
     }
 
+    // add a new pending link with one side linked to |socket| if no pending link
+    // create a real link from current pending link's socket to the |socket| otherwise
     void add_pending_link(UiDopSocket *socket) {
         if (pending_link) {
             if (socket && pending_link->socket) {
