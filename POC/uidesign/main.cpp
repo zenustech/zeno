@@ -950,7 +950,6 @@ struct UiDopGraph : GraphicsView {
     }
 
     AABB get_bounding_box() const override {
-        bk_graph->serialize(std::cout);
         return bbox;
     }
 
@@ -1057,6 +1056,8 @@ struct UiDopGraph : GraphicsView {
     void paint() const override {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        bk_graph->serialize(std::cout); // for debug
     }
 
     void on_lmb_down() override {
