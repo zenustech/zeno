@@ -198,6 +198,7 @@ struct Widget : Object {
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
     Point position{0, 0};
+    float zvalue{0};
 
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {
@@ -360,7 +361,7 @@ struct Widget : Object {
     virtual void do_paint() {
         auto raii = cur.translate(-position.x, -position.y);
         glPushMatrix();
-        glTranslatef(position.x, position.y, 0.f);
+        glTranslatef(position.x, position.y, zvalue);
         paint();
         for (auto const &child: children) {
             if (child)
@@ -688,6 +689,7 @@ struct DopLink : GraphicsLineItem {
         from_socket->attach_link(this);
         to_socket->attach_link(this);
         selectable = true;
+        zvalue = 1.f;
     }
 
     Point get_from_position() const override {
@@ -709,7 +711,9 @@ struct DopPendingLink : GraphicsLineItem {
 
     DopPendingLink(DopSocket *socket)
         : socket(socket)
-    {}
+    {
+        zvalue = 2.f;
+    }
 
     Point get_from_position() const override {
         return socket->position + socket->get_parent()->position;
