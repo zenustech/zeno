@@ -22,6 +22,21 @@
 
 // BEG generic ui library
 
+struct Color {
+    float r, g, b;
+
+    Color(float r = 0, float g = 0, float b = 0)
+        : r(r), g(g), b(b) {}
+
+    float *data() {
+        return &r;
+    }
+
+    float const *data() const {
+        return &r;
+    }
+};
+
 struct Point {
     float x, y;
 
@@ -833,13 +848,16 @@ struct GraphicsLineItem : GraphicsWidget {
         return {std::min(sx, dx) - LW, std::min(sy, dy) - LW, std::fabs(sx - dx) + 2 * LW, std::fabs(sy - dy) + 2 * LW};
     }
 
-    void paint() const override {
+    virtual Color get_line_color() const {
         if (selected) {
-            glColor3f(0.75f, 0.5f, 0.375f);
+            return {0.75f, 0.5f, 0.375f};
         } else {
-            glColor3f(0.375f, 0.5f, 1.0f);
-            //glColor3f(0.125f, 0.375f, 0.425f);
+            return {0.375f, 0.5f, 1.0f};
         }
+    }
+
+    void paint() const override {
+        glColor3fv(get_line_color().data());
         auto [sx, sy] = get_from_position();
         auto [dx, dy] = get_to_position();
         glLineWidth(LW);
@@ -885,6 +903,10 @@ struct UiDopPendingLink : GraphicsLineItem {
         : socket(socket)
     {
         zvalue = 3.f;
+    }
+
+    Color get_line_color() const override {
+        return {0.75f, 0.5f, 0.375f};
     }
 
     Point get_from_position() const override {
