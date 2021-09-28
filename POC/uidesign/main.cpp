@@ -298,9 +298,9 @@ struct Widget : Object {
                     }
                 }
             }
-            if (found)
-                return found;
         }
+        if (found)
+            return found;
         return const_cast<Widget *>(this);
     }
 
