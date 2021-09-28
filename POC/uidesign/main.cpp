@@ -624,6 +624,7 @@ struct UiDopInputSocket : UiDopSocket {
     }
 
     void attach_link(UiDopLink *link);
+    int get_index() const;
 };
 
 
@@ -644,6 +645,8 @@ struct UiDopOutputSocket : UiDopSocket {
     void attach_link(UiDopLink *link) {
         links.insert(link);
     }
+
+    int get_index() const;
 };
 
 
@@ -660,7 +663,7 @@ struct UiDopNode : GraphicsRectItem {
 
     DopNode *bk_node = nullptr;
 
-    void update_backend() const {
+    void _update_backend_data() const {
         bk_node->name = name;
         bk_node->inputs.resize(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
@@ -672,46 +675,37 @@ struct UiDopNode : GraphicsRectItem {
         }
     }
 
-    void _update_input_positions() {
+    void update_sockets() {
         for (int i = 0; i < inputs.size(); i++) {
             auto y = DH * (i + 0.5f);
             inputs[i]->position = {UiDopSocket::R, -y};
         }
-        _update_node_height();
-    }
-
-    void _update_output_positions() {
         for (int i = 0; i < outputs.size(); i++) {
             auto y = DH * (i + 0.5f);
             outputs[i]->position = {W - UiDopSocket::R, -y};
         }
-        _update_node_height();
-    }
-
-    void _update_node_height() {
         auto h = std::max(outputs.size(), inputs.size()) * DH;
         set_bounding_box({0, -h, W, h + TH});
+
+        _update_backend_data();
     }
 
     UiDopInputSocket *add_input_socket() {
         auto p = add_child<UiDopInputSocket>();
         inputs.push_back(p);
-        _update_input_positions();
         return p;
     }
 
     UiDopOutputSocket *add_output_socket() {
         auto p = add_child<UiDopOutputSocket>();
         outputs.push_back(p);
-        _update_output_positions();
         return p;
     }
 
     UiDopNode() {
         selectable = true;
         draggable = true;
-
-        _update_node_height();
+        set_bounding_box({0, 0, W, TH});
     }
 
     UiDopGraph *get_parent() const {
@@ -744,6 +738,26 @@ struct UiDopNode : GraphicsRectItem {
         font.render(0, FH * 0.05f, name);
     }
 };
+
+int UiDopInputSocket::get_index() const {
+    auto node = get_parent();
+    for (int i = 0; i < node->inputs.size(); i++) {
+        if (node->inputs[i] == this) {
+            return i;
+        }
+    }
+    throw "Cannot find index of input node";
+}
+
+int UiDopOutputSocket::get_index() const {
+    auto node = get_parent();
+    for (int i = 0; i < node->outputs.size(); i++) {
+        if (node->outputs[i] == this) {
+            return i;
+        }
+    }
+    throw "Cannot find index of output node";
+}
 
 
 struct GraphicsLineItem : GraphicsWidget {
@@ -927,6 +941,7 @@ struct UiDopGraph : GraphicsView {
         c->add_input_socket()->name = "path";
         c->add_input_socket()->name = "type";
         c->add_output_socket()->name = "grid";
+        c->update_sockets();
         c->name = "readvdb1";
         c->kind = "readvdb";
 
@@ -936,6 +951,7 @@ struct UiDopGraph : GraphicsView {
         d->add_input_socket()->name = "width";
         d->add_input_socket()->name = "times";
         d->add_output_socket()->name = "grid";
+        d->update_sockets();
         d->name = "vdbsmooth1";
         d->kind = "vdbsmooth";
 
