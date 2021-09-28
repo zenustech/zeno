@@ -201,6 +201,7 @@ namespace zeno{
         temperatureField = new_temField->deepCopy();
         
         leaves.clear();
+        velField[0]->tree().getNodes(leaves);
         openvdb::FloatGrid::Ptr new_vel[3], inte_vel[3];
         for(int i=0;i<3;++i)
         {
@@ -249,6 +250,8 @@ namespace zeno{
                 }
             }
         };
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
+        
         sign = -1;
         for(int i=0;i<3;++i)
             inte_vel[i] = new_vel[i]->deepCopy();
@@ -284,6 +287,7 @@ namespace zeno{
             inte_vel[i]->clear();
             inte_vel[i] = new_vel[i]->deepCopy();
         }
+        
         sign = 1;
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
         for(int i=0;i<3;++i)

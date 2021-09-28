@@ -83,15 +83,15 @@ namespace zeno{
         openvdb::Vec3R loopbegin, loopend;
         tbb::blocked_range3d<int, int, int> pispace_range(0,0,0,0,0,0);
 
+        //openvdb::tools::resampleToMatch<openvdb::tools::QuadraticSampler>(*sdf, *volumeField[level]);
+        volumeField[0] = sdf->deepCopy();
+        openvdb::tools::sdfToFogVolume(*volumeField[0]);
+        temperatureField[0] = volumeField[0]->deepCopy();
         for(int level = 0;level < levelNum;++level){
             auto transform = openvdb::math::Transform::createLinearTransform(dx[level]);
             transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*dx[level]);
             temperatureField[level]->setTransform(transform);
             volumeField[level]->setTransform(transform);
-            
-            openvdb::tools::resampleToMatch<openvdb::tools::QuadraticSampler>(*sdf, *volumeField[level]);
-            openvdb::tools::sdfToFogVolume(*volumeField[level]);
-            temperatureField[level] = volumeField[level]->deepCopy();
 
             loopbegin =
                 openvdb::tools::local_util::floorVec3(volumeField[level]->worldToIndex(worldinputbbox.min()));
@@ -151,7 +151,7 @@ namespace zeno{
                 iter.setValue(0);
             }
             for (openvdb::FloatGrid::ValueOffIter iter = pressField[level]->beginValueOff(); iter.test(); ++iter) {
-                iter.setValue(0);
+                iter.setValue(10000);
             }
         }
         iterBuffer.init(pressField);
@@ -161,8 +161,11 @@ namespace zeno{
     void mgSmokeData::advection()
     {
         std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
-        for(int level = 0;level < volumeField.size();++level)
+        //for(int level = 0;level < volumeField.size();++level)
+        int level = 0;
+        int sign;
         {
+            sign = 1;
             volumeField[level]->tree().getNodes(leaves);
             auto new_temField = temperatureField[level]->deepCopy();
             auto new_volField = volumeField[level]->deepCopy();
@@ -201,15 +204,19 @@ namespace zeno{
                             vel[i] = velSampler[i].wsSample(wpos);
                         }
                         //printf("vel is (%f,%f,%f)\n", vel[0], vel[1], vel[2]);
-                        auto midwpos = wpos - vel * 0.5 * dt;
+                        auto midwpos = wpos - sign * vel * 0.5 * dt;
                         for(int i=0;i<3;++i)
                         {    
                             midvel[i]  = velSampler[i].wsSample(midwpos);
                         }
                         
-                        auto pwpos = wpos - midvel * dt;
+                        auto pwpos = wpos - sign * midvel * dt;
                         auto volume = volSample.wsSample(pwpos);
                         auto tem = temSample.wsSample(pwpos);
+                        if(volume < 0.01)
+                            volume = 0;
+                        if(tem < 0.01)
+                            tem = 0;
                         new_tem_axr.setValue(coord, tem);
                         new_vol_axr.setValue(coord, volume);
                     }
@@ -217,50 +224,95 @@ namespace zeno{
             };
         
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
+            sign = -1;
+            auto temBuffer = temperatureField[level]->deepCopy(); 
+            temperatureField[level]->clear(); 
+            temperatureField[level] = new_temField->deepCopy();
+            auto volBuffer = volumeField[level]->deepCopy(); 
+            volumeField[level]->clear(); 
+            volumeField[level]=new_volField->deepCopy();
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
             
+            auto computeNewField = [&](const tbb::blocked_range<size_t> &r){
+                auto tem_axr = temBuffer->getConstAccessor();
+                auto vol_axr = volBuffer->getConstAccessor();
+                auto new_tem_axr{new_temField->getAccessor()};
+                auto new_vol_axr{new_volField->getAccessor()};
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                        if(!vol_axr.isValueOn(coord))
+                            continue;
+                        float temV = 1.5 * tem_axr.getValue(coord) - 0.5 * new_tem_axr.getValue(coord);
+                        new_tem_axr.setValue(coord, 
+                            temV);
+                        new_vol_axr.setValue(coord, 
+                            1.5 * vol_axr.getValue(coord) - 0.5 * new_vol_axr.getValue(coord));
+                        //printf("tem value is %f\n", temV);
+                    }
+                }
+            };
+            
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeNewField);
+            sign = 1;
+            volumeField[level]->clear();
+            volumeField[level] = new_volField->deepCopy();
+            temperatureField[level]->clear();
+            temperatureField[level] = new_temField->deepCopy();
+            
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
+            volumeField[level]->clear();temperatureField[level]->clear();
+            volumeField[level] = new_volField->deepCopy();
+            temperatureField[level] = new_temField->deepCopy();
+            new_volField->clear();
+            new_temField->clear();
+            leaves.clear();
 
-            temperatureField[level]->clear();volumeField[level]->clear();
-            temperatureField[level] = new_temField;
-            volumeField[level] = new_volField;
-
-            openvdb::FloatGrid::Ptr new_vel[3] = {velField[0][level]->deepCopy(),
-                velField[1][level]->deepCopy(),velField[2][level]->deepCopy()};
+            velField[0][level]->tree().getNodes(leaves);
+            openvdb::FloatGrid::Ptr new_vel[3], inte_vel[3];
+            for(int i=0;i<3;++i)
+            {
+                new_vel[i] = velField[i][level]->deepCopy();
+                inte_vel[i] = velField[i][level]->deepCopy();
+            }
             
             auto velAdvection = [&](const tbb::blocked_range<size_t> &r){
                 openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
                     vel_axr[3]=
-                    {velField[0][level]->getConstAccessor(),velField[1][level]->getConstAccessor(),velField[2][level]->getConstAccessor()};
+                    {velField[0][level]->getConstAccessor(),
+                    velField[1][level]->getConstAccessor(),
+                    velField[2][level]->getConstAccessor()};
+                openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+                    inte_axr[3]=
+                    {inte_vel[0]->getConstAccessor(),inte_vel[1]->getConstAccessor(),inte_vel[2]->getConstAccessor()};
                 openvdb::tree::ValueAccessor<openvdb::FloatTree, true> 
                     new_vel_axr[3]=
                     {new_vel[0]->getAccessor(),new_vel[1]->getAccessor(),new_vel[2]->getAccessor()};
                 ConstBoxSample velSampler[3] = {
-                    ConstBoxSample(vel_axr[0], velField[0][level]->transform()),
-                    ConstBoxSample(vel_axr[1], velField[1][level]->transform()),
-                    ConstBoxSample(vel_axr[2], velField[2][level]->transform())
-                    };
+                    ConstBoxSample(inte_axr[0], inte_vel[0]->transform()),
+                    ConstBoxSample(inte_axr[1], inte_vel[1]->transform()),
+                    ConstBoxSample(inte_axr[2], inte_vel[2]->transform())
+                };
                 // leaf iter
                 for (auto liter = r.begin(); liter != r.end(); ++liter) {
                     auto &leaf = *leaves[liter];
                     for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                         openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                        if(!vel_axr[0].isValueOn(coord))
+                            continue;
+                        // advect u,v,w separately
                         for(int i=0;i<3;++i)
                         {
-                            if(!vel_axr[i].isValueOn(coord))
-                                continue;
                             auto wpos = velField[i][level]->indexToWorld(coord);
-
                             openvdb::Vec3f vel, midvel;
-                            for(int i=0;i<3;++i)
-                            {
-                                vel[i] = velSampler[i].wsSample(wpos);
-                            }
-                            
-                            auto midwpos = wpos - vel * 0.5 * dt;
-                            for(int i=0;i<3;++i)
-                            {    
-                                midvel[i]  = velSampler[i].wsSample(midwpos);
-                            }
-                            auto pwpos = wpos - midvel * dt;
+                            for(int j=0;j<3;++j)
+                                vel[j] = velSampler[j].wsSample(wpos);
+                        
+                            auto midwpos = wpos - sign *0.5 * dt * vel;
+                            for(int j=0;j<3;++j)
+                                midvel[j] = velSampler[j].wsSample(midwpos);
+                            auto pwpos = wpos - sign * dt * midvel;
                             auto pvel = velSampler[i].wsSample(pwpos);
                             new_vel_axr[i].setValue(coord, pvel);
                         }
@@ -268,14 +320,53 @@ namespace zeno{
                 }
 
             };
-            
+            sign = 1;
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
-            
-            velField[0][level]->clear();velField[1][level]->clear();velField[2][level]->clear();
-            velField[0][level] = new_vel[0];
-            velField[1][level] = new_vel[1];
-            velField[2][level] = new_vel[2];
-            
+
+            sign = -1;
+            for(int i=0;i<3;++i)
+                inte_vel[i] = new_vel[i]->deepCopy();
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
+
+            auto computeNewVel = [&](const tbb::blocked_range<size_t> &r){
+                openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+                    vel_axr[3]=
+                    {velField[0][level]->getConstAccessor(),velField[1][level]->getConstAccessor(),velField[2][level]->getConstAccessor()};
+                openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+                    inte_axr[3]=
+                    {inte_vel[0]->getConstAccessor(),inte_vel[1]->getConstAccessor(),inte_vel[2]->getConstAccessor()};
+                openvdb::tree::ValueAccessor<openvdb::FloatTree, true> 
+                    new_vel_axr[3]=
+                    {new_vel[0]->getAccessor(),new_vel[1]->getAccessor(),new_vel[2]->getAccessor()};
+                // leaf iter
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                        for(int i=0;i<3;++i){
+                        if(!vel_axr[i].isValueOn(coord))
+                            continue;
+                        new_vel_axr[i].setValue(coord, 1.5 *vel_axr[i].getValue(coord) - 0.5 * new_vel_axr[i].getValue(coord));
+                        }
+                    }
+                }
+            };   
+        
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeNewVel);
+            for(int i=0;i<3;++i)
+            {
+                inte_vel[i]->clear();
+                inte_vel[i] = new_vel[i]->deepCopy();
+            }
+
+            sign = 1;
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
+            for(int i=0;i<3;++i)
+            {
+                inte_vel[i]->clear();velField[i][level]->clear();
+                velField[i][level] = new_vel[i]->deepCopy();
+                new_vel[i]->clear();
+            }
             leaves.clear();
         }
     }
@@ -302,12 +393,19 @@ namespace zeno{
                             continue;
                         auto wpos = velField[1][level]->indexToWorld(coord);
                         float volume =  volSample.wsSample(wpos);
+                        if(volume <= 0)
+                        {
+                            vel_axr[1].setValue(coord, 0);
+                            continue;
+                        }
                         float temperature = temSample.wsSample(wpos);
                         float dens = (alpha * volume -beta * temperature);
 
                         auto vel = vel_axr[1].getValue(coord);
                         auto deltaV = vel - dens * 9.8 * dt;
-                        
+                        // if(deltaV <= 0 && dens < 0.00001)
+                        //     printf("deltaV is %f, dens is %f, vel is %f\n",
+                        //     deltaV, dens, vel);
                         vel_axr[1].setValue(coord, deltaV);
                         
                     }
