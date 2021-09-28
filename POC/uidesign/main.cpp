@@ -289,12 +289,17 @@ struct Widget : Object {
         if (!bbox.contains(p.x, p.y)) {
             return nullptr;
         }
+        Widget *found = nullptr;
         for (auto const &child: children) {
             if (child) {
                 if (auto it = child->item_at(p - child->position); it) {
-                    return it;
+                    if (!found || it->zvalue >= found->zvalue) {
+                        found = it;
+                    }
                 }
             }
+            if (found)
+                return found;
         }
         return const_cast<Widget *>(this);
     }
