@@ -192,27 +192,6 @@ struct Object {
     virtual ~Object() = default;
 };
 
-/*template <class T>
-struct Ptr : std::unique_ptr<T> {
-    using std::unique_ptr<T>::unique_ptr;
-
-    Ptr(std::unique_ptr<T> &&p) : std::unique_ptr<T>(std::move(p)) {}
-    Ptr(std::unique_ptr<T> const &p) : std::unique_ptr<T>(p) {}
-    Ptr(T *p) : std::unique_ptr<T>(p) {}
-    operator T *() const { return std::unique_ptr<T>::get(); }
-};
-
-template <class T>
-Ptr(T *) -> Ptr<T>;
-
-template <class T>
-Ptr(std::unique_ptr<T>) -> Ptr<T>;
-
-template <class T, class ...Ts>
-Ptr<T> makePtr(Ts &&...ts) {
-    return std::make_unique<T>(std::forward<Ts>(ts)...);
-}*/
-
 
 struct Widget : Object {
     Widget *parent = nullptr;
@@ -510,7 +489,47 @@ struct Button : Widget {
 
         if (text.size()) {
             Font font("LiberationMono-Regular.ttf");
-            //Font font("/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc");
+            font.set_font_size(30.f);
+            font.set_fixed_width(bbox.nx);
+            font.set_fixed_height(bbox.ny);
+            glColor3f(1.f, 1.f, 1.f);
+            font.render(bbox.x0, bbox.y0, text);
+        }
+    }
+};
+
+
+struct TextEdit : Widget {
+    AABB bbox{0, 0, 150, 50};
+    std::string text;
+
+    void set_bounding_box(AABB bbox) {
+        this->bbox = bbox;
+    }
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
+
+    virtual void on_clicked() {}
+
+    void on_lmb_down() override {
+        Widget::on_lmb_down();
+        on_clicked();
+    }
+
+    void paint() const override {
+        if (lmb_pressed) {
+            glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
+        } else {
+            glColor3f(0.375f, 0.375f, 0.375f);
+        }
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        if (text.size()) {
+            Font font("LiberationMono-Regular.ttf");
             font.set_font_size(30.f);
             font.set_fixed_width(bbox.nx);
             font.set_fixed_height(bbox.ny);
@@ -1029,8 +1048,6 @@ struct UiDopGraph : GraphicsView {
     }
 
     UiDopGraph() {
-        set_bounding_box({0, 0, 550, 400});
-
         auto c = add_node();
         c->position = {50, 300};
         c->name = "readvdb1";
@@ -1117,7 +1134,6 @@ struct UiDopGraph : GraphicsView {
     }
 };
 
-
 void UiDopSocket::clear_links() {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
@@ -1127,13 +1143,39 @@ void UiDopSocket::clear_links() {
     }
 }
 
+
+struct UiDopParamLine : Widget {
+    TextEdit edit;
+};
+
+
+struct UiDopParamEditor : Widget {
+    std::vector<UiDopParamLine> lines;
+
+    AABB bbox{0, 0, 400, 400};
+
+    void set_bounding_box(AABB bbox) {
+        this->bbox = bbox;
+    }
+
+    AABB get_bounding_box() const override {
+        return bbox;
+    }
+};
+
 // END node editor ui
 
 // BEG main window ui
 
 struct RootWindow : Widget {
+    UiDopGraph *graph;
+    UiDopParamEditor *editor;
+
     RootWindow() {
-        add_child<UiDopGraph>();
+        graph = add_child<UiDopGraph>();
+        graph->set_bounding_box({0, 0, 550, 400});
+        editor = add_child<UiDopParamEditor>();
+
     }
 
     AABB get_bounding_box() const override {
