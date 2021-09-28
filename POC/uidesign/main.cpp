@@ -1074,7 +1074,7 @@ struct UiDopGraph : GraphicsView {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        bk_graph->serialize(std::cout); // for debug
+        //bk_graph->serialize(std::cout); // for debug
     }
 
     void on_lmb_down() override {
