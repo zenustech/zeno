@@ -126,7 +126,12 @@ GLFWwindow *window;
 
 struct Event_Key {
     int key;
+    int mode;
     bool down;
+};
+
+struct Event_Char {
+    unsigned int code;
 };
 
 struct Event_Hover {
@@ -146,6 +151,7 @@ struct Event_Motion {
 
 using Event = std::variant
     < Event_Key
+    , Event_Char
     , Event_Hover
     , Event_Mouse
     , Event_Motion
@@ -213,7 +219,11 @@ struct CursorState {
 
 static void key_callback(GLFWwindow *window, int key,
         int scancode, int action, int mode) {
-        cur.events.push_back(Event_Key{.key = key, .down = action == GLFW_PRESS});
+        cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
+}
+
+static void char_callback(GLFWwindow *window, unsigned int codeprint) {
+    cur.events.push_back(Event_Char{.code = codeprint});
 }
 
 
@@ -310,6 +320,9 @@ struct Widget : Object {
     }
 
     virtual void on_event(Event_Key e) {
+    }
+
+    virtual void on_event(Event_Char e) {
     }
 
     virtual void on_generic_event(Event e) {
@@ -520,7 +533,10 @@ struct Button : Widget {
 
 struct TextEdit : Widget {
     AABB bbox{0, 0, 150, 50};
-    std::string text = "(input text)";
+
+    std::string text;
+    int cursor = 0;
+
     float font_size = 20.f;
 
     void set_bounding_box(AABB bbox) {
@@ -531,13 +547,27 @@ struct TextEdit : Widget {
         return bbox;
     }
 
-    void on_event(Event_Key e) override {
-        Widget::on_event(e);
+    void _insert_text(auto content) {
+        text = text.substr(0, cursor) + content + text.substr(cursor);
+    }
 
-        if (!e.down)
+    void on_event(Event_Key e) override {
+        if (e.down != true)
             return;
 
-        text += e.key;
+        if (e.key == GLFW_KEY_V) {
+            auto str = glfwGetClipboardString(window);
+            _insert_text(str);
+        }
+    }
+
+    void on_event(Event_Char e) override {
+        Widget::on_event(e);
+
+        printf("%#x\n", e.code);
+        char c = e.code;
+        _insert_text(c);
+        cursor++;
     }
 
     void paint() const override {
@@ -1278,6 +1308,7 @@ int main() {
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCharCallback(window, char_callback);
 
     double fps = 144;
     double lasttime = glfwGetTime();
