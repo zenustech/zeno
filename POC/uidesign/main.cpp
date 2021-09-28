@@ -612,6 +612,16 @@ struct DopGraph {
         return raw;
     }
 
+    bool remove_node(DopNode *node) {
+        for (auto const &n: nodes) {
+            if (n.get() == node) {
+                nodes.erase(n);
+                return true;
+            }
+        }
+        return false;
+    }
+
     void serialize(std::ostream &ss) const {
         for (auto const &node: nodes) {
             node->serialize(ss);
@@ -960,6 +970,7 @@ struct UiDopGraph : GraphicsView {
     }
 
     bool remove_node(UiDopNode *node) {
+        bk_graph->remove_node(node->bk_node);
         for (auto *socket: node->inputs) {
             for (auto *link: std::set(socket->links)) {
                 remove_link(link);
