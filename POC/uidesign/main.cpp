@@ -983,6 +983,8 @@ struct UiDopGraph : GraphicsView {
         return bbox;
     }
 
+    // must invoke these two functions rather than operate on |links| and
+    // |remove_child| directly to prevent bad pointer
     bool remove_link(UiDopLink *link) {
         if (remove_child(link)) {
             link->from_socket->links.erase(link);
