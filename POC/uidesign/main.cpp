@@ -731,6 +731,10 @@ struct DopPendingLink : GraphicsLineItem {
     DopGraph *get_parent() const {
         return (DopGraph *)(parent);
     }
+
+    Widget *item_at(Point p) const override {
+        return nullptr;
+    }
 };
 
 
