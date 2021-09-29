@@ -207,7 +207,11 @@ struct CursorState {
 
     std::vector<Event> events;
 
+    bool need_repaint = true;
+
     void after_update() {
+        if (events.size())
+            need_repaint = true;
         events.clear();
     }
 } cur;
@@ -1260,21 +1264,18 @@ void process_input() {
 }
 
 
-bool need_repaint = true;
-
 void draw_graphics() {
-    if (need_repaint) {
+    if (cur.need_repaint) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
         glfwSwapBuffers(window);
-        need_repaint = false;
+        cur.need_repaint = false;
     }
 }
 
 
 static void window_refresh_callback(GLFWwindow *window) {
-    printf("need repaint\n");
-    need_repaint = true;
+    cur.need_repaint = true;
 }
 
 int main() {
