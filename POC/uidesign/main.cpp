@@ -143,14 +143,12 @@ struct Event_Hover {
 };
 
 struct Event_Mouse {
-    float x, y;
     int btn;  // lmb=0, mmb=1, rmb=2
     bool down;
 };
 
 struct Event_Motion {
     float x, y;
-    float dx, dy;
 };
 
 using Event = std::variant
@@ -220,6 +218,14 @@ struct CursorState {
         events.clear();
     }
 } cur;
+
+static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
+    GLint nx, ny;
+    glfwGetFramebufferSize(window, &nx, &ny);
+    auto x = 0.5f + (float)xpos;
+    auto y = ny - 0.5f - (float)ypos;
+    cur.events.push_back(Event_Motion{.x = x, .y = y});
+}
 
 static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
     cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
@@ -359,10 +365,6 @@ struct Widget : Object {
         if (hovered) {
             for (auto const &e: cur.events) {
                 on_generic_event(e);
-            }
-
-            if (cur.dx || cur.dy) {
-                on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
             }
         }
 
@@ -1272,7 +1274,7 @@ void draw_graphics() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
         glfwSwapBuffers(window);
-        //need_repaint = false;
+        need_repaint = false;
     }
 }
 
@@ -1314,6 +1316,7 @@ int main() {
     glfwSetKeyCallback(window, key_callback);
     glfwSetCharCallback(window, char_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetWindowRefreshCallback(window, window_refresh_callback);
 
     double fps = 144;
