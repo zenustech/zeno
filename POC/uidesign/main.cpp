@@ -269,8 +269,6 @@ struct Widget : Object {
         return false;
     }
 
-    virtual AABB get_bounding_box() const = 0;
-
     bool hovered = false;
     bool pressed[3] = {false, false, false};
 
@@ -329,8 +327,10 @@ struct Widget : Object {
         }, e);
     }
 
+    AABB bbox{0, 0, 10, 10};
+
     virtual bool contains_point(Point p) const {
-        return bbox.contains(p);
+        return bbox.contains(p.x, p.y);
     }
 
     virtual void do_update() {
@@ -462,8 +462,6 @@ struct GraphicsView : Widget {
 
 
 struct GraphicsRectItem : GraphicsWidget {
-    AABB bbox{0, 0, 200, 150};
-
     void paint() const override {
         if (selected || pressed[0]) {
             glColor3f(0.75f, 0.5f, 0.375f);
@@ -478,8 +476,11 @@ struct GraphicsRectItem : GraphicsWidget {
 
 
 struct Button : Widget {
-    AABB bbox{0, 0, 150, 50};
     std::string text;
+
+    Button() {
+        bbox = {0, 0, 150, 50};
+    }
 
     virtual void on_clicked() {}
 
@@ -517,7 +518,9 @@ struct Button : Widget {
 
 
 struct TextEdit : Widget {
-    AABB bbox{0, 0, 150, 50};
+    TextEdit() {
+        bbox = {0, 0, 150, 50};
+    }
 
     std::string text;
     int cursor = 0;
@@ -1011,17 +1014,8 @@ struct UiDopGraph : GraphicsView {
     std::set<UiDopNode *> nodes;
     std::set<UiDopLink *> links;
     UiDopPendingLink *pending_link = nullptr;
-    AABB bbox{0, 0, 400, 400};
 
     std::unique_ptr<DopGraph> bk_graph = std::make_unique<DopGraph>();
-
-    void set_bounding_box(AABB bbox) {
-        this->bbox = bbox;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
-    }
 
     // must invoke these two functions rather than operate on |links| and
     // |remove_child| directly to prevent bad pointer
@@ -1103,6 +1097,8 @@ struct UiDopGraph : GraphicsView {
     }
 
     UiDopGraph() {
+        bbox = {0, 0, 400, 400};
+
         auto c = add_node();
         c->position = {50, 300};
         c->name = "readvdb1";
@@ -1213,6 +1209,7 @@ struct UiDopParamLine : Widget {
     TextEdit *edit;
 
     UiDopParamLine() {
+        bbox = {0, 0, 400, 100};
         edit = add_child<TextEdit>();
     }
 };
@@ -1221,14 +1218,8 @@ struct UiDopParamLine : Widget {
 struct UiDopParamEditor : Widget {
     std::vector<UiDopParamLine> lines;
 
-    AABB bbox{0, 0, 400, 400};
-
-    void set_bounding_box(AABB bbox) {
-        this->bbox = bbox;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
+    UiDopParamEditor() {
+        bbox = {0, 0, 400, 400};
     }
 };
 
@@ -1241,14 +1232,11 @@ struct RootWindow : Widget {
     UiDopParamEditor *editor;
 
     RootWindow() {
+        bbox = {0, 0, 800, 600};
         graph = add_child<UiDopGraph>();
-        graph->set_bounding_box({0, 0, 550, 400});
+        graph->bbox = {0, 0, 550, 400};
         editor = add_child<UiDopParamEditor>();
 
-    }
-
-    AABB get_bounding_box() const override {
-        return {0, 0, 800, 600};
     }
 } win;
 
