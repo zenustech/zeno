@@ -1090,10 +1090,8 @@ struct UiDopGraph : GraphicsView {
     }
 
     UiDopGraph() {
-        bbox = {0, 0, 400, 400};
-
         auto c = add_node();
-        c->position = {50, 300};
+        c->position = {100, 256};
         c->name = "readvdb1";
         c->kind = "readvdb";
         c->add_input_socket()->name = "path";
@@ -1102,7 +1100,7 @@ struct UiDopGraph : GraphicsView {
         c->update_sockets();
 
         auto d = add_node();
-        d->position = {300, 300};
+        d->position = {450, 256};
         d->name = "vdbsmooth1";
         d->kind = "vdbsmooth";
         d->add_input_socket()->name = "grid";
@@ -1218,6 +1216,11 @@ struct UiDopParamEditor : Widget {
     UiDopParamEditor() {
         bbox = {0, 0, 400, 400};
     }
+
+    void paint() const override {
+        glColor3f(0.4f, 0.3f, 0.2f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+    }
 };
 
 // END node editor ui
@@ -1229,11 +1232,11 @@ struct RootWindow : Widget {
     UiDopParamEditor *editor;
 
     RootWindow() {
-        bbox = {0, 0, 800, 600};
         graph = add_child<UiDopGraph>();
-        graph->bbox = {0, 0, 550, 400};
+        graph->bbox = {0, 0, 1024, 512};
+        graph->position = {0, 256};
         editor = add_child<UiDopParamEditor>();
-
+        editor->bbox = {0, 0, 1024, 256};
     }
 } win;
 
@@ -1257,7 +1260,7 @@ void process_input() {
     }
 
     cur.on_update();
-    win.position = {100, 100};
+    win.bbox = {0, 0, (float)nx, (float)ny};
     win.do_update();
     win.after_update();
     cur.after_update();
@@ -1287,7 +1290,8 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
+    window = glfwCreateWindow(1024, 768, "Zeno Editor", nullptr, nullptr);
+    glfwSetWindowPos(window, 0, 0);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
         fprintf(stderr, "Failed to create GLFW window: %s\n", err);
@@ -1313,24 +1317,19 @@ int main() {
     glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetWindowRefreshCallback(window, window_refresh_callback);
 
-    double fps = 144;
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+        glfwWaitEvents();
         process_input();
         draw_graphics();
-        if (fps > 0) {
-            lasttime += 1.0 / fps;
-            while (glfwGetTime() < lasttime) {
-                double sleepfor = (lasttime - glfwGetTime()) * 0.75;
-                int us(sleepfor / 1000000);
-#if defined(__linux__)
-                ::usleep(us);
-#else
-                std::this_thread::sleep_for(std::chrono::microseconds(us));
-#endif
-            }
+#if 0
+        lasttime += 1.0 / fps;
+        while (glfwGetTime() < lasttime) {
+            double sleepfor = (lasttime - glfwGetTime()) * 0.75;
+            int us(sleepfor / 1000000);
+            std::this_thread::sleep_for(std::chrono::microseconds(us));
         }
+#endif
     }
 
     return 0;
