@@ -749,6 +749,7 @@ struct UiDopSocket : GraphicsRectItem {
         return (UiDopNode *)(parent);
     }
 
+    bool is_parent_active() const;
     void clear_links();
 };
 
@@ -757,7 +758,7 @@ struct UiDopInputSocket : UiDopSocket {
     void paint() const override {
         UiDopSocket::paint();
 
-        if (hovered) {
+        if (is_parent_active()) {
             Font font("assets/regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
@@ -780,7 +781,7 @@ struct UiDopOutputSocket : UiDopSocket {
     void paint() const override {
         UiDopSocket::paint();
 
-        if (hovered) {
+        if (is_parent_active()) {
             Font font("assets/regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
@@ -1187,6 +1188,10 @@ struct UiDopGraph : GraphicsView {
         children_selected.clear();
     }
 };
+
+bool UiDopSocket::is_parent_active() const {
+    return get_parent()->hovered;
+}
 
 void UiDopSocket::clear_links() {
     auto graph = get_parent()->get_parent();
