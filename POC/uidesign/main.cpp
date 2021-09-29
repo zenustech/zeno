@@ -217,6 +217,10 @@ struct CursorState {
     }
 } cur;
 
+static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
+    cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
+}
+
 static void key_callback(GLFWwindow *window, int key,
         int scancode, int action, int mode) {
         cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
@@ -348,32 +352,10 @@ struct Widget : Object {
             for (auto const &e: cur.events) {
                 on_generic_event(e);
             }
-
-            if (!cur.last_lmb && cur.lmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 0, .down = true});
-            }
-            if (!cur.last_mmb && cur.mmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 1, .down = true});
-            }
-            if (!cur.last_rmb && cur.rmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 2, .down = true});
-            }
         }
 
         if (cur.dx || cur.dy) {
             on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
-        }
-
-        if (hovered) {
-            if (cur.last_lmb && !cur.lmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 0, .down = false});
-            }
-            if (cur.last_mmb && !cur.mmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 1, .down = false});
-            }
-            if (cur.last_rmb && !cur.rmb) {
-                on_event(Event_Mouse{.x = cur.x, .y = cur.y, .btn = 2, .down = false});
-            }
         }
 
         if (!old_hovered && hovered) {
@@ -1273,9 +1255,15 @@ void draw_graphics() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
         glfwSwapBuffers(window);
+        //need_repaint = false;
     }
 }
 
+
+static void window_refresh_callback(GLFWwindow *window) {
+    printf("need repaint\n");
+    need_repaint = true;
+}
 
 int main() {
     if (!glfwInit()) {
@@ -1308,13 +1296,15 @@ int main() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCharCallback(window, char_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetWindowRefreshCallback(window, window_refresh_callback);
 
     double fps = 144;
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
         process_input();
         draw_graphics();
-        glfwPollEvents();
         if (fps > 0) {
             lasttime += 1.0 / fps;
             while (glfwGetTime() < lasttime) {
