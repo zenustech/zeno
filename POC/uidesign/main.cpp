@@ -482,13 +482,34 @@ struct GraphicsRectItem : GraphicsWidget {
 };
 
 
-struct Button : Widget {
-    std::string text;
+struct Label : Widget {
+    static constexpr float BW = 8.f;
 
-    Button() {
-        bbox = {0, 0, 150, 50};
+    Label() {
+        bbox = {0, 0, 300, 40};
     }
 
+    std::string text;
+
+    float font_size = 20.f;
+    FTGL::TextAlignment alignment = FTGL::ALIGN_LEFT;
+
+    void paint() const override {
+        glColor3f(0.25f, 0.25f, 0.25f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        Font font("assets/regular.ttf");
+        font.set_font_size(font_size);
+        font.set_fixed_width(bbox.nx - BW * 2, alignment);
+        font.set_fixed_height(bbox.ny);
+        glColor3f(1.f, 1.f, 1.f);
+
+        font.render(bbox.x0 + BW, bbox.y0, text);
+    }
+};
+
+
+struct Button : Label {
     SignalSlot on_clicked;
 
     void on_event(Event_Mouse e) override {
@@ -513,39 +534,13 @@ struct Button : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         if (text.size()) {
-            Font font("regular.ttf");
-            font.set_font_size(30.f);
-            font.set_fixed_width(bbox.nx);
+            Font font("assets/regular.ttf");
+            font.set_font_size(font_size);
+            font.set_fixed_width(bbox.nx - BW * 2, alignment);
             font.set_fixed_height(bbox.ny);
             glColor3f(1.f, 1.f, 1.f);
-            font.render(bbox.x0, bbox.y0, text);
+            font.render(bbox.x0 + BW, bbox.y0, text);
         }
-    }
-};
-
-
-struct Label : Widget {
-    static constexpr float BW = 8.f;
-
-    Label() {
-        bbox = {0, 0, 300, 40};
-    }
-
-    std::string text;
-
-    float font_size = 20.f;
-
-    void paint() const override {
-        glColor3f(0.25f, 0.25f, 0.25f);
-        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-
-        Font font("assets/regular.ttf");
-        font.set_font_size(font_size);
-        font.set_fixed_width(bbox.nx - BW * 2, FTGL::ALIGN_LEFT);
-        font.set_fixed_height(bbox.ny);
-        glColor3f(1.f, 1.f, 1.f);
-
-        font.render(bbox.x0 + BW, bbox.y0, text);
     }
 };
 
@@ -645,7 +640,7 @@ struct TextEdit : Label {
 
         Font font("assets/regular.ttf");
         font.set_font_size(font_size);
-        font.set_fixed_width(bbox.nx - BW * 2, FTGL::ALIGN_LEFT);
+        font.set_fixed_width(bbox.nx - BW * 2, alignment);
         font.set_fixed_height(bbox.ny);
         glColor3f(1.f, 1.f, 1.f);
 
@@ -1049,19 +1044,27 @@ struct UiDopPendingLink : GraphicsLineItem {
 struct UiDopContextMenu : Widget {
     static constexpr float EH = 32.f, EW = 210.f, FH = 20.f;
 
-    std::vector<Label *> entries;
+    std::vector<Button *> entries;
+    std::string selection;
+
+    SignalSlot on_selected;
 
     UiDopContextMenu() {
         position = {cur.x, cur.y};
         zvalue = 10.f;
     }
 
-    Label *add_entry(std::string name) {
-        auto label = add_child<Label>();
-        label->text = name;
-        label->font_size = FH;
-        entries.push_back(label);
-        return label;
+    Button *add_entry(std::string name) {
+        auto btn = add_child<Button>();
+        btn->text = name;
+        btn->bbox = {0, 0, EW, EH};
+        btn->font_size = FH;
+        btn->on_clicked.connect([=, this] {
+            selection = name;
+            on_selected();
+        });
+        entries.push_back(btn);
+        return btn;
     }
 
     void update_entries() {
@@ -1245,10 +1248,17 @@ struct UiDopGraph : GraphicsView {
     UiDopContextMenu *add_context_menu() {
         remove_context_menu();
         menu = add_child<UiDopContextMenu>();
+
         menu->add_entry("vdbsmooth");
         menu->add_entry("readvdb");
         menu->add_entry("vdberode");
         menu->update_entries();
+
+        menu->on_selected.connect([this] {
+            //add_node_by_name(menu->selection);
+            printf("selected %s\n", menu->selection.c_str());
+        });
+
         return menu;
     }
 
@@ -1312,7 +1322,7 @@ struct UiDopParam : Widget {
         edit->position = {100, 5};
         edit->bbox = {0, 0, 400, 40};
 
-        edit->on_editing_finished.connect([this] () {
+        edit->on_editing_finished.connect([this] {
             if (value) *value = edit->text;
         });
     }
