@@ -395,6 +395,22 @@ struct Widget : Object {
 };
 
 
+struct SignalSlot {
+    using Callback = std::function<void()>;
+    std::vector<Callback> callbacks;
+
+    void operator()() const {
+        for (auto const &func: callbacks) {
+            func();
+        }
+    }
+
+    void connect(Callback &&f) {
+        callbacks.push_back(std::move(f));
+    }
+};
+
+
 struct GraphicsWidget : Widget {
     bool selected = false;
     bool selectable = false;
@@ -474,7 +490,7 @@ struct Button : Widget {
         bbox = {0, 0, 150, 50};
     }
 
-    virtual void on_clicked() {}
+    SignalSlot on_clicked;
 
     void on_event(Event_Mouse e) override {
         Widget::on_event(e);
@@ -546,6 +562,14 @@ struct TextEdit : Label {
         sellen = 0;
     }
 
+    SignalSlot on_editing_finished;
+
+    void on_event(Event_Hover e) override {
+        Widget::on_event(e);
+
+        on_editing_finished();
+    }
+
     void on_event(Event_Mouse e) override {
         Widget::on_event(e);
 
@@ -582,7 +606,7 @@ struct TextEdit : Label {
             sellen = 0;
 
         } else if (e.key == GLFW_KEY_RIGHT) {
-            cursor = std::min((int)text.size(), cursor + 1);
+            cursor = std::min((int)text.size(), cursor + 1 + sellen);
             sellen = 0;
 
         } else if (e.key == GLFW_KEY_BACKSPACE) {
@@ -632,43 +656,12 @@ struct TextEdit : Label {
 
 // BEG node data structures
 
-struct DopInputValue_NoValue {
-    void serialize(std::ostream &ss) const {
-        ss << "none";
-    }
-};
-
-struct DopInputValue_ReferVariable {
-    std::string refid;
-
-    void serialize(std::ostream &ss) const {
-        ss << "ref " << refid;
-    }
-};
-
-struct DopInputValue_ImmedValue {
-    std::string immed;
-
-    void serialize(std::ostream &ss) const {
-        ss << "imm " << immed;
-    }
-};
-
-using DopInputValue = std::variant
-    < DopInputValue_NoValue
-    , DopInputValue_ReferVariable
-    , DopInputValue_ImmedValue
-    >;
-
 struct DopInputSocket {
     std::string name;
-    DopInputValue value;
+    std::string value;
 
     void serialize(std::ostream &ss) const {
-        ss << name << "=";
-        std::visit([&] (auto &value) {
-            value.serialize(ss);
-        }, value);
+        ss << name << "=" << value;
     }
 };
 
@@ -745,8 +738,8 @@ struct DopGraph {
     {
         auto const &from_socket = from_node->outputs.at(from_socket_index);
         auto &to_socket = to_node->inputs.at(to_socket_index);
-        auto refid = from_node->name + ":" + from_socket.name;
-        to_socket.value = DopInputValue_ReferVariable{refid};
+        auto refid = '@' + from_node->name + ':' + from_socket.name;
+        to_socket.value = refid;
     }
 
     static void remove_node_input
@@ -755,7 +748,7 @@ struct DopGraph {
         )
     {
         auto &to_socket = to_node->inputs.at(to_socket_index);
-        to_socket.value = DopInputValue_NoValue{};
+        to_socket.value = {};
     }
 };
 
@@ -1265,12 +1258,17 @@ struct UiDopParam : Widget {
         edit = add_child<TextEdit>();
         edit->position = {100, 5};
         edit->bbox = {0, 0, 400, 40};
+
+        edit->on_editing_finished.connect([this] () {
+            if (value) *value = edit->text;
+        });
     }
 
-    DopInputValue *value = nullptr;
+    std::string *value = nullptr;
 
     void set_bk_socket(DopInputSocket *socket) {
         label->text = socket->name;
+        edit->text = socket->value;
         value = &socket->value;
     }
 };
