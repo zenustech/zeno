@@ -18,11 +18,11 @@ version = '{}.{}.{}'.format(*version)
 
 print('==> release version={} os_name={}'.format(version, os_name))
 
-print('==> copying launcher wrapper')
-if os_name == 'linux':
-    shutil.copyfile('zenqt/bin/launcher', 'dist/launcher')
-elif os_name == 'windows':
-    shutil.copyfile('zenqt/bin/launcher.exe', 'dist/launcher.exe')
+#print('==> copying launcher wrapper')
+#if os_name == 'linux':
+#    shutil.copyfile('zenqt/bin/launcher', 'dist/launcher')
+#elif os_name == 'windows':
+#    shutil.copyfile('zenqt/bin/launcher.exe', 'dist/launcher.exe')
 
 if os_name == 'linux':
     print('==> copying linux shared libraries')
@@ -34,12 +34,19 @@ elif os_name == 'windows':
 print('==> invoking pyinstaller for packaging')
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/{}.spec'.format(os_name), '-y'] + sys.argv[1:])
 
-print('==> moving launcher wrapper')
+#print('==> moving launcher wrapper')
+#if os_name == 'linux':
+#    shutil.move('dist/launcher', 'dist/zenqte/launcher')
+#    os.system('chmod +x dist/zenqte/launcher')
+#elif os_name == 'windows':
+#    shutil.move('dist/launcher.exe', 'dist/zenqte/launcher.exe')
+
+print('==> moving zenqte launcher')
 if os_name == 'linux':
-    shutil.move('dist/launcher', 'dist/zenqte/launcher')
+    shutil.move('dist/zenqte/zenqte', 'dist/zenqte/launcher')
     os.system('chmod +x dist/zenqte/launcher')
 elif os_name == 'windows':
-    shutil.move('dist/launcher.exe', 'dist/zenqte/launcher.exe')
+    shutil.move('dist/zenqte/zenqte.exe', 'dist/zenqte/launcher.exe')
 
 #print('==> appending version informations')
 #with open('dist/zenqte/zenqt/__init__.py', 'a') as f:

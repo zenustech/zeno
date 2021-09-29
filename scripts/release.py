@@ -11,7 +11,6 @@ os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 args = [
 	'--clean',
-	'--build-launcher',
 	'--with-openvdb',
 	'--with-bullet',
 	'--with-cgal',
