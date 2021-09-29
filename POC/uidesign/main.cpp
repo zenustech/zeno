@@ -509,13 +509,33 @@ struct Button : Widget {
 };
 
 
-struct TextEdit : Widget {
+struct Label : Widget {
     static constexpr float BW = 8.f;
-    TextEdit() {
+
+    Label() {
         bbox = {0, 0, 300, 40};
     }
 
     std::string text;
+
+    float font_size = 20.f;
+
+    void paint() const override {
+        glColor3f(0.25f, 0.25f, 0.25f);
+        glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
+
+        Font font("assets/regular.ttf");
+        font.set_font_size(font_size);
+        font.set_fixed_width(bbox.nx - BW * 2, FTGL::ALIGN_LEFT);
+        font.set_fixed_height(bbox.ny);
+        glColor3f(1.f, 1.f, 1.f);
+
+        font.render(bbox.x0 + BW, bbox.y0, text);
+    }
+};
+
+
+struct TextEdit : Label {
     int cursor = 0;
     int sellen = 0;
 
@@ -526,7 +546,21 @@ struct TextEdit : Widget {
         sellen = 0;
     }
 
+    void on_event(Event_Mouse e) override {
+        Widget::on_event(e);
+
+        if (e.down != true)
+            return;
+        if (e.btn != 0)
+            return;
+
+        cursor = 0;
+        sellen = text.size();
+    }
+
     void on_event(Event_Key e) override {
+        Widget::on_event(e);
+
         if (e.down != true)
             return;
 
@@ -587,10 +621,9 @@ struct TextEdit : Widget {
         font.set_fixed_height(bbox.ny);
         glColor3f(1.f, 1.f, 1.f);
 
-        auto txt = sellen == 0
+        auto txt = !hovered ? text : sellen == 0
             ? text.substr(0, cursor) + '|' + text.substr(cursor)
             : text.substr(0, cursor) + '|' + text.substr(cursor, sellen) + '|' + text.substr(cursor + sellen);
-            ;
         font.render(bbox.x0 + BW, bbox.y0, txt);
     }
 };
@@ -1221,12 +1254,24 @@ void UiDopSocket::clear_links() {
 
 
 struct UiDopParam : Widget {
+    Label *label;
     TextEdit *edit;
 
     UiDopParam() {
         bbox = {0, 0, 400, 50};
+        label = add_child<Label>();
+        label->position = {0, 5};
+        label->bbox = {0, 0, 100, 40};
         edit = add_child<TextEdit>();
-        edit->position = {100, 6};
+        edit->position = {100, 5};
+        edit->bbox = {0, 0, 400, 40};
+    }
+
+    DopInputValue *value = nullptr;
+
+    void set_bk_socket(DopInputSocket *socket) {
+        label->text = socket->name;
+        value = &socket->value;
     }
 };
 
@@ -1239,8 +1284,9 @@ struct UiDopEditor : Widget {
         selected = ptr;
         clear_params();
         if (ptr) {
-            for (int i = 0; i < ptr->inputs.size(); i++) {
-                add_param();
+            for (int i = 0; i < ptr->bk_node->inputs.size(); i++) {
+                auto param = add_param();
+                param->set_bk_socket(&ptr->bk_node->inputs[i]);
             }
         }
         update_params();
@@ -1256,10 +1302,10 @@ struct UiDopEditor : Widget {
     }
 
     void update_params() {
-        float y = 0.f;
+        float y = bbox.ny - 6.f;
         for (int i = 0; i < params.size(); i++) {
+            y -= params[i]->bbox.ny;
             params[i]->position = {0, y};
-            y += params[i]->bbox.ny;
         }
     }
 
