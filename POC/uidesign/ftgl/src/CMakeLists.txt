@@ -116,7 +116,7 @@ SET(ftlayout_sources
 )
 
 
-ADD_LIBRARY(ftgl ${libftgl_la_SOURCES} ${ftgl_headers} ${ftglyph_sources} ${ftfont_sources} ${ftlayout_sources})
+ADD_LIBRARY(ftgl STATIC ${libftgl_la_SOURCES} ${ftgl_headers} ${ftglyph_sources} ${ftfont_sources} ${ftlayout_sources})
 TARGET_LINK_LIBRARIES(ftgl PUBLIC
 	${FREETYPE_LIBRARIES}
 )
@@ -126,10 +126,10 @@ TARGET_INCLUDE_DIRECTORIES(ftgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRE
 	TARGET_LINK_LIBRARIES(ftgl glad)
     #ENDIF()
 
-SET_TARGET_PROPERTIES(
-    ftgl
-  PROPERTIES
-    VERSION ${VERSION_SERIES}.${VERSION_MAJOR}.${VERSION_MINOR}
-	SOVERSION ${FTGL_SOVERSION}
-    #DEBUG_POSTFIX "d"
-)
+    #SET_TARGET_PROPERTIES(
+    #ftgl
+    #PROPERTIES
+    #VERSION ${VERSION_SERIES}.${VERSION_MAJOR}.${VERSION_MINOR}
+    #SOVERSION ${FTGL_SOVERSION}
+    ##DEBUG_POSTFIX "d"
+    #)
