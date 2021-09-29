@@ -10,7 +10,7 @@
 #if defined(__linux__)
 #include <unistd.h>
 #endif
-#include <GL/gl.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <FTGL/ftgl.h>
 #include <memory>
@@ -1323,6 +1323,11 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        fprintf(stderr, "Failed to initialize GLAD\n");
+        return -1;
+    }
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
