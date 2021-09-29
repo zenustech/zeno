@@ -167,13 +167,9 @@ struct CursorState {
     float dx = 0, dy = 0;
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
-    bool last_lmb = false, last_mmb = false, last_rmb = false;
     bool shift = false, ctrl = false, alt = false;
 
     void on_update() {
-        last_lmb = lmb;
-        last_mmb = mmb;
-        last_rmb = rmb;
         last_x = x;
         last_y = y;
 
