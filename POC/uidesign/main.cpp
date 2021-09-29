@@ -578,8 +578,13 @@ struct TextEdit : Label {
         if (e.btn != 0)
             return;
 
-        cursor = 0;
-        sellen = text.size();
+        if (cursor == 0 && sellen == text.size()) {
+            cursor = text.size();
+            sellen = 0;
+        } else {
+            cursor = 0;
+            sellen = text.size();
+        }
     }
 
     void on_event(Event_Key e) override {
@@ -1157,7 +1162,7 @@ struct UiDopGraph : GraphicsView {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        //bk_graph->serialize(std::cout); // for debug
+        bk_graph->serialize(std::cout); // for debug
     }
 
     void on_event(Event_Mouse e) override {
