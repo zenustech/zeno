@@ -50,6 +50,10 @@ struct Point {
     Point operator-(Point const &o) const {
         return {x - o.x, y - o.y};
     }
+
+    Point operator*(float o) const {
+        return {x * o, y * o};
+    }
 };
 
 struct AABB {
@@ -911,10 +915,13 @@ struct GraphicsLineItem : GraphicsWidget {
     virtual Point get_to_position() const = 0;
 
     bool contains_point(Point p) const override {
-        auto [sx, sy] = get_from_position();
-        auto [dx, dy] = get_to_position();
-        AABB bbox{std::min(sx, dx) - LW, std::min(sy, dy) - LW, std::fabs(sx - dx) + 2 * LW, std::fabs(sy - dy) + 2 * LW};
-        return bbox.contains(p.x, p.y);
+        auto p0 = get_from_position();
+        auto p1 = get_to_position();
+        auto a = p - p0;
+        auto b = p1 - p0;
+        auto c = a.x * b.y - a.y * b.x;
+        c /= std::sqrt(b.x * b.x + b.y * b.y);
+        return std::abs(c) < LW;  // actually LW*2 collision width
     }
 
     virtual Color get_line_color() const {
