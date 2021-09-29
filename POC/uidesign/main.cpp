@@ -510,6 +510,7 @@ struct Button : Widget {
 
 
 struct TextEdit : Widget {
+    static constexpr float BW = 8.f;
     TextEdit() {
         bbox = {0, 0, 300, 40};
     }
@@ -582,7 +583,7 @@ struct TextEdit : Widget {
 
         Font font("assets/regular.ttf");
         font.set_font_size(font_size);
-        font.set_fixed_width(bbox.nx);
+        font.set_fixed_width(bbox.nx - BW * 2, FTGL::ALIGN_LEFT);
         font.set_fixed_height(bbox.ny);
         glColor3f(1.f, 1.f, 1.f);
 
@@ -590,7 +591,7 @@ struct TextEdit : Widget {
             ? text.substr(0, cursor) + '|' + text.substr(cursor)
             : text.substr(0, cursor) + '|' + text.substr(cursor, sellen) + '|' + text.substr(cursor + sellen);
             ;
-        font.render(bbox.x0, bbox.y0, txt);
+        font.render(bbox.x0 + BW, bbox.y0, txt);
     }
 };
 
@@ -1223,30 +1224,49 @@ struct UiDopParam : Widget {
     TextEdit *edit;
 
     UiDopParam() {
-        bbox = {0, 0, 400, 100};
+        bbox = {0, 0, 400, 50};
         edit = add_child<TextEdit>();
+        edit->position = {100, 6};
     }
 };
 
 
 struct UiDopEditor : Widget {
-    std::vector<UiDopParam *> lines;
+    std::vector<UiDopParam *> params;
     UiDopNode *selected = nullptr;
+
+    void set_selection(UiDopNode *ptr) {
+        selected = ptr;
+        clear_params();
+        if (ptr) {
+            for (int i = 0; i < ptr->inputs.size(); i++) {
+                add_param();
+            }
+        }
+        update_params();
+    }
 
     UiDopEditor() {
         bbox = {0, 0, 400, 400};
-        add_param();
     }
 
     void clear_params() {
         remove_all_children();
-        lines.clear();
+        params.clear();
+    }
+
+    void update_params() {
+        float y = 0.f;
+        for (int i = 0; i < params.size(); i++) {
+            params[i]->position = {0, y};
+            y += params[i]->bbox.ny;
+        }
     }
 
     UiDopParam *add_param() {
-        auto line = add_child<UiDopParam>();
-        lines.push_back(line);
-        return line;
+        auto param = add_child<UiDopParam>();
+        params.push_back(param);
+        return param;
     }
 
     void paint() const override {
@@ -1258,7 +1278,7 @@ struct UiDopEditor : Widget {
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
     GraphicsView::select_child(ptr, multiselect);
     if (editor)
-        editor->selected = ptr ? dynamic_cast<UiDopNode *>(ptr) : nullptr;
+        editor->set_selection(dynamic_cast<UiDopNode *>(ptr));
 }
 
 // END node editor ui
