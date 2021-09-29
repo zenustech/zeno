@@ -1047,25 +1047,26 @@ struct UiDopPendingLink : GraphicsLineItem {
 
 
 struct UiDopContextMenu : Widget {
-    static constexpr float EH = 32.f, EW = 250.f, FS = 15.f;
+    static constexpr float EH = 32.f, EW = 210.f, FH = 20.f;
 
     std::vector<Label *> entries;
 
     UiDopContextMenu() {
         position = {cur.x, cur.y};
+        zvalue = 10.f;
     }
 
     Label *add_entry(std::string name) {
         auto label = add_child<Label>();
         label->text = name;
-        label->font_size = FS;
+        label->font_size = FH;
         entries.push_back(label);
         return label;
     }
 
     void update_entries() {
         for (int i = 0; i < entries.size(); i++) {
-            entries[i]->position = {0, i * EH};
+            entries[i]->position = {0, -(i + 1) * EH};
         }
         bbox = {0, 0, EW, entries.size() * EH};
     }
@@ -1198,6 +1199,7 @@ struct UiDopGraph : GraphicsView {
         if (e.btn != 0)
             return;
 
+        remove_context_menu();
         auto item = item_at({cur.x, cur.y});
 
         if (auto node = dynamic_cast<UiDopNode *>(item); node) {
@@ -1241,6 +1243,7 @@ struct UiDopGraph : GraphicsView {
     UiDopContextMenu *menu = nullptr;
 
     UiDopContextMenu *add_context_menu() {
+        remove_context_menu();
         menu = add_child<UiDopContextMenu>();
         menu->add_entry("vdbsmooth");
         menu->add_entry("readvdb");
@@ -1259,6 +1262,7 @@ struct UiDopGraph : GraphicsView {
 
         if (e.down != true)
             return;
+        remove_context_menu();
 
         if (e.key == GLFW_KEY_TAB) {
             add_context_menu();
