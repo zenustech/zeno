@@ -169,13 +169,11 @@ struct CursorState {
     bool lmb = false, mmb = false, rmb = false;
     bool last_lmb = false, last_mmb = false, last_rmb = false;
     bool shift = false, ctrl = false, alt = false;
-    bool del = false, last_del = false;
 
     void on_update() {
         last_lmb = lmb;
         last_mmb = mmb;
         last_rmb = rmb;
-        last_del = del;
         last_x = x;
         last_y = y;
 
@@ -193,7 +191,6 @@ struct CursorState {
         shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
         ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
         alt = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
-        del = glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS;
     }
 
     bool is_pressed(int key) const {
