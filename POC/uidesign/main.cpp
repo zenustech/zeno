@@ -508,7 +508,7 @@ struct Button : Widget {
 
 struct TextEdit : Widget {
     TextEdit() {
-        bbox = {0, 0, 150, 50};
+        bbox = {0, 0, 300, 40};
     }
 
     std::string text;
@@ -541,13 +541,22 @@ struct TextEdit : Widget {
 
         } else if (e.key == GLFW_KEY_LEFT) {
             cursor = std::max(0, cursor - 1);
+            sellen = 0;
 
         } else if (e.key == GLFW_KEY_RIGHT) {
-            cursor = std::min((int)text.size() - 1, cursor + 1);
+            cursor = std::min((int)text.size(), cursor + 1);
+            sellen = 0;
 
         } else if (e.key == GLFW_KEY_BACKSPACE) {
-            text = text.substr(0, cursor - 1) + text.substr(cursor);
-            cursor = std::max(0, cursor - 1);
+            if (sellen) {
+                _insert_text("");
+            } else if (cursor - 1 > 0) {
+                text = text.substr(0, cursor - 1) + text.substr(cursor);
+                cursor = std::max(0, cursor - 1);
+            } else {
+                text = text.substr(cursor);
+                cursor = std::max(0, cursor - 1);
+            }
 
         }
     }
