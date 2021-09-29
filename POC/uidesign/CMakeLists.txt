@@ -12,5 +12,5 @@ file(GLOB PROJECT_SOURCE *.cpp)
 add_executable(ZenoEditor ${PROJECT_SOURCE} ${BACKWARD_ENABLE})
 add_backward(ZenoEditor)
 
-target_link_libraries(ZenoEditor PRIVATE GL glfw ftgl)
+target_link_libraries(ZenoEditor PRIVATE glad glfw ftgl)
 target_compile_options(ZenoEditor PRIVATE -lbfd -liberty)
