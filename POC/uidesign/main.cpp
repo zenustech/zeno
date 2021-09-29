@@ -269,6 +269,13 @@ struct Widget : Object {
         return raw_p;
     }
 
+    void remove_all_children() {
+        for (auto &child: children) {
+            child->parent = nullptr;
+            child = nullptr;
+        }
+    }
+
     bool remove_child(Widget *ptr) {
         for (auto &child: children) {
             if (child.get() == ptr) {
@@ -1008,6 +1015,8 @@ struct UiDopPendingLink : GraphicsLineItem {
 };
 
 
+struct UiDopEditor;
+
 struct UiDopGraph : GraphicsView {
     std::set<UiDopNode *> nodes;
     std::set<UiDopLink *> links;
@@ -1188,11 +1197,12 @@ struct UiDopGraph : GraphicsView {
             }
         }
         children_selected.clear();
+        select_child(nullptr, false);
     }
 
-    void select_child(GraphicsWidget *ptr, bool multiselect) override {
-        GraphicsView::select_child(ptr, multiselect);
-    }
+    UiDopEditor *editor = nullptr;
+
+    void select_child(GraphicsWidget *ptr, bool multiselect) override;
 };
 
 bool UiDopSocket::is_parent_active() const {
@@ -1209,27 +1219,32 @@ void UiDopSocket::clear_links() {
 }
 
 
-struct UiDopParamLine : Widget {
+struct UiDopParam : Widget {
     TextEdit *edit;
 
-    UiDopParamLine() {
+    UiDopParam() {
         bbox = {0, 0, 400, 100};
         edit = add_child<TextEdit>();
     }
 };
 
 
-struct UiDopParamEditor : Widget {
-    std::vector<UiDopParamLine *> lines;
+struct UiDopEditor : Widget {
+    std::vector<UiDopParam *> lines;
+    UiDopNode *selected = nullptr;
 
-    UiDopParamEditor() {
+    UiDopEditor() {
         bbox = {0, 0, 400, 400};
-
-        auto l = add_param_line();
+        add_param();
     }
 
-    UiDopParamLine *add_param_line() {
-        auto line = add_child<UiDopParamLine>();
+    void clear_params() {
+        remove_all_children();
+        lines.clear();
+    }
+
+    UiDopParam *add_param() {
+        auto line = add_child<UiDopParam>();
         lines.push_back(line);
         return line;
     }
@@ -1240,20 +1255,27 @@ struct UiDopParamEditor : Widget {
     }
 };
 
+void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
+    GraphicsView::select_child(ptr, multiselect);
+    if (editor)
+        editor->selected = ptr ? dynamic_cast<UiDopNode *>(ptr) : nullptr;
+}
+
 // END node editor ui
 
 // BEG main window ui
 
 struct RootWindow : Widget {
     UiDopGraph *graph;
-    UiDopParamEditor *editor;
+    UiDopEditor *editor;
 
     RootWindow() {
         graph = add_child<UiDopGraph>();
         graph->bbox = {0, 0, 1024, 512};
         graph->position = {0, 256};
-        editor = add_child<UiDopParamEditor>();
+        editor = add_child<UiDopEditor>();
         editor->bbox = {0, 0, 1024, 256};
+        graph->editor = editor;
     }
 } win;
 
