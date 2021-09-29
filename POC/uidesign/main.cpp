@@ -228,9 +228,8 @@ static void mouse_button_callback(GLFWwindow *window, int btn, int action, int m
     cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
 }
 
-static void key_callback(GLFWwindow *window, int key,
-        int scancode, int action, int mode) {
-        cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
+static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
+    cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
 }
 
 static void char_callback(GLFWwindow *window, unsigned int codeprint) {
@@ -1047,6 +1046,32 @@ struct UiDopPendingLink : GraphicsLineItem {
 };
 
 
+struct UiDopContextMenu : Widget {
+    static constexpr float EH = 32.f, EW = 250.f, FS = 15.f;
+
+    std::vector<Label *> entries;
+
+    UiDopContextMenu() {
+        position = {cur.x, cur.y};
+    }
+
+    Label *add_entry(std::string name) {
+        auto label = add_child<Label>();
+        label->text = name;
+        label->font_size = FS;
+        entries.push_back(label);
+        return label;
+    }
+
+    void update_entries() {
+        for (int i = 0; i < entries.size(); i++) {
+            entries[i]->position = {0, i * EH};
+        }
+        bbox = {0, 0, EW, entries.size() * EH};
+    }
+};
+
+
 struct UiDopEditor;
 
 struct UiDopGraph : GraphicsView {
@@ -1162,7 +1187,7 @@ struct UiDopGraph : GraphicsView {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        bk_graph->serialize(std::cout); // for debug
+        //bk_graph->serialize(std::cout); // for debug
     }
 
     void on_event(Event_Mouse e) override {
@@ -1213,23 +1238,42 @@ struct UiDopGraph : GraphicsView {
         }
     }
 
+    UiDopContextMenu *menu = nullptr;
+
+    UiDopContextMenu *add_context_menu() {
+        menu = add_child<UiDopContextMenu>();
+        menu->add_entry("vdbsmooth");
+        menu->add_entry("readvdb");
+        menu->add_entry("vdberode");
+        menu->update_entries();
+        return menu;
+    }
+
+    void remove_context_menu() {
+        if (menu)
+            remove_child(menu);
+    }
+
     void on_event(Event_Key e) override {
         Widget::on_event(e);
 
         if (e.down != true)
             return;
-        if (e.key != GLFW_KEY_DELETE)
-            return;
 
-        for (auto *item: children_selected) {
-            if (auto link = dynamic_cast<UiDopLink *>(item); link) {
-                remove_link(link);
-            } else if (auto node = dynamic_cast<UiDopNode *>(item); node) {
-                remove_node(node);
+        if (e.key == GLFW_KEY_TAB) {
+            add_context_menu();
+
+        } else if (e.key == GLFW_KEY_DELETE) {
+            for (auto *item: children_selected) {
+                if (auto link = dynamic_cast<UiDopLink *>(item); link) {
+                    remove_link(link);
+                } else if (auto node = dynamic_cast<UiDopNode *>(item); node) {
+                    remove_node(node);
+                }
             }
+            children_selected.clear();
+            select_child(nullptr, false);
         }
-        children_selected.clear();
-        select_child(nullptr, false);
     }
 
     UiDopEditor *editor = nullptr;
