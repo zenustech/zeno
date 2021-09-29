@@ -272,7 +272,6 @@ struct Widget : Object {
     virtual AABB get_bounding_box() const = 0;
 
     bool hovered = false;
-
     bool pressed[3] = {false, false, false};
 
     void _clean_null_children() {
@@ -290,8 +289,7 @@ struct Widget : Object {
     }
 
     virtual Widget *item_at(Point p) const {
-        auto bbox = get_bounding_box();
-        if (!bbox.contains(p.x, p.y)) {
+        if (!contains_point(p)) {
             return nullptr;
         }
         Widget *found = nullptr;
@@ -331,12 +329,15 @@ struct Widget : Object {
         }, e);
     }
 
+    virtual bool contains_point(Point p) const {
+        return bbox.contains(p);
+    }
+
     virtual void do_update() {
         auto raii = cur.translate(-position.x, -position.y);
-        auto bbox = get_bounding_box();
 
         auto old_hovered = hovered;
-        hovered = bbox.contains(cur.x, cur.y);
+        hovered = contains_point({cur.x, cur.y});
 
         for (auto const &child: children) {
             if (child)
@@ -463,14 +464,6 @@ struct GraphicsView : Widget {
 struct GraphicsRectItem : GraphicsWidget {
     AABB bbox{0, 0, 200, 150};
 
-    void set_bounding_box(AABB bbox) {
-        this->bbox = bbox;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
-    }
-
     void paint() const override {
         if (selected || pressed[0]) {
             glColor3f(0.75f, 0.5f, 0.375f);
@@ -487,14 +480,6 @@ struct GraphicsRectItem : GraphicsWidget {
 struct Button : Widget {
     AABB bbox{0, 0, 150, 50};
     std::string text;
-
-    void set_bounding_box(AABB bbox) {
-        this->bbox = bbox;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
-    }
 
     virtual void on_clicked() {}
 
@@ -539,14 +524,6 @@ struct TextEdit : Widget {
     int sellen = 0;
 
     float font_size = 20.f;
-
-    void set_bounding_box(AABB bbox) {
-        this->bbox = bbox;
-    }
-
-    AABB get_bounding_box() const override {
-        return bbox;
-    }
 
     void _insert_text(auto content) {
         text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
@@ -618,7 +595,6 @@ struct TextEdit : Widget {
 // BEG node data structures
 
 struct DopInputValue_NoValue {
-
     void serialize(std::ostream &ss) const {
         ss << "none";
     }
@@ -759,7 +735,7 @@ struct UiDopSocket : GraphicsRectItem {
     std::set<UiDopLink *> links;
 
     UiDopSocket() {
-        set_bounding_box({-R, -R, 2 * R, 2 * R});
+        bbox = {-R, -R, 2 * R, 2 * R};
         zvalue = 2.f;
     }
 
@@ -864,7 +840,7 @@ struct UiDopNode : GraphicsRectItem {
             outputs[i]->position = {W - UiDopSocket::R, -y};
         }
         auto h = std::max(outputs.size(), inputs.size()) * DH;
-        set_bounding_box({0, -h, W, h + TH});
+        bbox = {0, -h, W, h + TH};
 
         _update_backend_data();
     }
@@ -884,7 +860,7 @@ struct UiDopNode : GraphicsRectItem {
     UiDopNode() {
         selectable = true;
         draggable = true;
-        set_bounding_box({0, 0, W, TH});
+        bbox = {0, 0, W, TH};
     }
 
     UiDopGraph *get_parent() const {
@@ -945,10 +921,11 @@ struct GraphicsLineItem : GraphicsWidget {
     virtual Point get_from_position() const = 0;
     virtual Point get_to_position() const = 0;
 
-    AABB get_bounding_box() const override {
+    bool contains_point(Point p) const override {
         auto [sx, sy] = get_from_position();
         auto [dx, dy] = get_to_position();
-        return {std::min(sx, dx) - LW, std::min(sy, dy) - LW, std::fabs(sx - dx) + 2 * LW, std::fabs(sy - dy) + 2 * LW};
+        AABB bbox{std::min(sx, dx) - LW, std::min(sy, dy) - LW, std::fabs(sx - dx) + 2 * LW, std::fabs(sy - dy) + 2 * LW};
+        return bbox.contains(p.x, p.y);
     }
 
     virtual Color get_line_color() const {
@@ -1232,8 +1209,12 @@ void UiDopSocket::clear_links() {
 }
 
 
-/*struct UiDopParamLine : Widget {
-    TextEdit edit;
+struct UiDopParamLine : Widget {
+    TextEdit *edit;
+
+    UiDopParamLine() {
+        edit = add_child<TextEdit>();
+    }
 };
 
 
@@ -1249,7 +1230,7 @@ struct UiDopParamEditor : Widget {
     AABB get_bounding_box() const override {
         return bbox;
     }
-};*/
+};
 
 // END node editor ui
 
@@ -1257,12 +1238,12 @@ struct UiDopParamEditor : Widget {
 
 struct RootWindow : Widget {
     UiDopGraph *graph;
-    TextEdit *edit;
+    UiDopParamEditor *editor;
 
     RootWindow() {
         graph = add_child<UiDopGraph>();
         graph->set_bounding_box({0, 0, 550, 400});
-        edit = add_child<TextEdit>();
+        editor = add_child<UiDopParamEditor>();
 
     }
 
