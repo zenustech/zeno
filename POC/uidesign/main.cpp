@@ -276,20 +276,6 @@ struct Widget : Object {
     bool hovered = false;
     bool pressed[3] = {false, false, false};
 
-    void _clean_null_children() {
-        bool has_any;
-        do {
-            has_any = false;
-            for (auto it = children.begin(); it != children.end(); it++) {
-                if (!*it) {
-                    children.erase(it);
-                    has_any = true;
-                    break;
-                }
-            }
-        } while (has_any);
-    }
-
     virtual Widget *item_at(Point p) const {
         if (!contains_point(p)) {
             return nullptr;
@@ -335,6 +321,24 @@ struct Widget : Object {
 
     virtual bool contains_point(Point p) const {
         return bbox.contains(p.x, p.y);
+    }
+
+    virtual void after_update() {
+        bool has_any;
+        do {
+            has_any = false;
+            for (auto it = children.begin(); it != children.end(); it++) {
+                if (!*it) {
+                    children.erase(it);
+                    has_any = true;
+                    break;
+                }
+            }
+        } while (has_any);
+
+        for (auto const &child: children) {
+            child->after_update();
+        }
     }
 
     virtual void do_update() {
@@ -1244,6 +1248,7 @@ void process_input() {
     cur.on_update();
     win.position = {100, 100};
     win.do_update();
+    win.after_update();
     cur.after_update();
 }
 
