@@ -1211,10 +1211,18 @@ struct UiDopParamLine : Widget {
 
 
 struct UiDopParamEditor : Widget {
-    std::vector<UiDopParamLine> lines;
+    std::vector<UiDopParamLine *> lines;
 
     UiDopParamEditor() {
         bbox = {0, 0, 400, 400};
+
+        auto l = add_param_line();
+    }
+
+    UiDopParamLine *add_param_line() {
+        auto line = add_child<UiDopParamLine>();
+        lines.push_back(line);
+        return line;
     }
 
     void paint() const override {
