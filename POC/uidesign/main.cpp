@@ -398,16 +398,12 @@ struct GraphicsWidget : Widget {
 struct GraphicsView : Widget {
     std::set<GraphicsWidget *> children_selected;
 
-    void _deselect_children() {
-        for (auto const &child: children_selected) {
-            child->selected = false;
-        }
-        children_selected.clear();
-    }
-
-    void _select_child(GraphicsWidget *ptr, bool multiselect = false) {
-        if (!(multiselect || ptr->selected)) {
-            _deselect_children();
+    virtual void select_child(GraphicsWidget *ptr, bool multiselect) {
+        if (!(multiselect || (ptr && ptr->selected))) {
+            for (auto const &child: children_selected) {
+                child->selected = false;
+            }
+            children_selected.clear();
         }
         if (ptr) {
             if (ptr->selected && multiselect) {
@@ -442,9 +438,9 @@ struct GraphicsView : Widget {
 
         if (auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y})); item) {
             if (item->selectable)
-                _select_child(item, cur.shift);
+                select_child(item, cur.shift);
         } else if (!cur.shift) {
-            _deselect_children();
+            select_child(nullptr, false);
         }
     }
 };
@@ -1192,6 +1188,10 @@ struct UiDopGraph : GraphicsView {
             }
         }
         children_selected.clear();
+    }
+
+    void select_child(GraphicsWidget *ptr, bool multiselect) override {
+        GraphicsView::select_child(ptr, multiselect);
     }
 };
 
