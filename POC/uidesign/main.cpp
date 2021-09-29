@@ -352,10 +352,10 @@ struct Widget : Object {
             for (auto const &e: cur.events) {
                 on_generic_event(e);
             }
-        }
 
-        if (cur.dx || cur.dy) {
-            on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
+            if (cur.dx || cur.dy) {
+                on_event(Event_Motion{.x = cur.x, .y = cur.y, .dx = cur.dx, .dy = cur.dy});
+            }
         }
 
         if (!old_hovered && hovered) {
