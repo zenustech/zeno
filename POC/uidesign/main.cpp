@@ -288,8 +288,6 @@ struct Widget : Object {
                 // transfer ownership to gc (also set child to null):
                 children_gc.push_back(std::move(child));
                 children.erase(it);
-                // todo: use std::list for children so that iterators don't
-                // invalidate for safe erase from children on the fly
                 return true;
             }
         }
@@ -303,13 +301,11 @@ struct Widget : Object {
         Widget *found = nullptr;
         float found_zvalue = 0.0f;
         for (auto const &child: children) {
-            if (child) {
-                if (child->contains_point(p - child->position)) {
-                    auto child_zvalue = child->absolute_zvalue();
-                    if (!found || child_zvalue >= found_zvalue) {
-                        found = child.get();
-                        found_zvalue = child_zvalue;
-                    }
+            if (child->contains_point(p - child->position)) {
+                auto child_zvalue = child->absolute_zvalue();
+                if (!found || child_zvalue >= found_zvalue) {
+                    found = child.get();
+                    found_zvalue = child_zvalue;
                 }
             }
         }
@@ -323,13 +319,11 @@ struct Widget : Object {
         Widget *found = nullptr;
         float found_zvalue = 0.0f;
         for (auto const &child: children) {
-            if (child) {
-                if (auto it = child->item_at(p - child->position)) {
-                    auto it_zvalue = child->absolute_zvalue();
-                    if (!found || it_zvalue >= found_zvalue) {
-                        found = it;
-                        found_zvalue = it_zvalue;
-                    }
+            if (auto it = child->item_at(p - child->position)) {
+                auto it_zvalue = child->absolute_zvalue();
+                if (!found || it_zvalue >= found_zvalue) {
+                    found = it;
+                    found_zvalue = it_zvalue;
                 }
             }
         }
@@ -411,8 +405,7 @@ struct Widget : Object {
         hovered = contains_point({cur.x, cur.y});
 
         for (auto const &child: children) {
-            if (child)
-                child->do_update();
+            child->do_update();
         }
 
         if (!old_hovered && hovered) {
@@ -428,8 +421,7 @@ struct Widget : Object {
         glTranslatef(position.x, position.y, zvalue);
         paint();
         for (auto const &child: children) {
-            if (child)
-                child->do_paint();
+            child->do_paint();
         }
         glPopMatrix();
     }
