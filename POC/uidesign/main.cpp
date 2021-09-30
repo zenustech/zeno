@@ -20,6 +20,9 @@
 #include <set>
 
 
+#define typenameof(x) typeid(*(x)).name()
+
+
 // BEG generic ui library
 
 struct Color {
@@ -289,16 +292,33 @@ struct Widget : Object {
     bool hovered = false;
     bool pressed[3] = {false, false, false};
 
+    virtual Widget *child_at(Point p) const {
+        Widget *found = nullptr;
+        float found_zvalue = 0.0f;
+        for (auto const &child: children) {
+            if (child) {
+                if (child->contains_point(p - child->position)) {
+                    auto child_zvalue = child->absolute_zvalue();
+                    if (!found || child_zvalue >= found_zvalue) {
+                        found = child.get();
+                        found_zvalue = child_zvalue;
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
     virtual Widget *item_at(Point p) const {
         if (!contains_point(p)) {
             return nullptr;
         }
         Widget *found = nullptr;
-        float it_zvalue = 0.0f, found_zvalue = 0.0f;
+        float found_zvalue = 0.0f;
         for (auto const &child: children) {
             if (child) {
-                if (auto it = child->item_at(p - child->position); it) {
-                    auto it_zvalue = it->absolute_zvalue();
+                if (auto it = child->item_at(p - child->position)) {
+                    auto it_zvalue = child->absolute_zvalue();
                     if (!found || it_zvalue >= found_zvalue) {
                         found = it;
                         found_zvalue = it_zvalue;
@@ -306,8 +326,7 @@ struct Widget : Object {
                 }
             }
         }
-        if (found)
-            return found;
+        if (found) return found;
         return const_cast<Widget *>(this);
     }
 
@@ -361,6 +380,23 @@ struct Widget : Object {
         }
     }
 
+    virtual void do_update_event() {
+        auto raii = cur.translate(-position.x, -position.y);
+
+        if (auto child = child_at({cur.x, cur.y}); child) {
+            printf("child at is %s\n", typenameof(child));
+            child->do_update_event();
+        }
+
+        for (auto const &e: cur.events) {
+            on_generic_event(e);
+        }
+
+        if (cur.dx || cur.dy) {
+            on_event(Event_Motion{.x = -1, .y = -1});
+        }
+    }
+
     virtual void do_update() {
         auto raii = cur.translate(-position.x, -position.y);
 
@@ -370,16 +406,6 @@ struct Widget : Object {
         for (auto const &child: children) {
             if (child)
                 child->do_update();
-        }
-
-        if (hovered) {
-            for (auto const &e: cur.events) {
-                on_generic_event(e);
-            }
-
-            if (cur.dx || cur.dy) {
-                on_event(Event_Motion{.x = -1, .y = -1});
-            }
         }
 
         if (!old_hovered && hovered) {
@@ -777,7 +803,7 @@ struct UiDopSocket : GraphicsRectItem {
 
     UiDopSocket() {
         bbox = {-R, -R, 2 * R, 2 * R};
-        zvalue = 0.f;
+        zvalue = 2.f;
     }
 
     void paint() const override {
@@ -1031,7 +1057,7 @@ struct UiDopPendingLink : GraphicsLineItem {
     UiDopPendingLink(UiDopSocket *socket)
         : socket(socket)
     {
-        zvalue = 2.f;
+        zvalue = 3.f;
     }
 
     Color get_line_color() const override {
@@ -1086,7 +1112,7 @@ struct UiDopContextMenu : Widget {
         for (int i = 0; i < entries.size(); i++) {
             entries[i]->position = {0, -(i + 1) * EH};
         }
-        bbox = {0, 0, EW, entries.size() * EH};
+        bbox = {0, entries.size() * -EH, EW, entries.size() * EH};
     }
 };
 
@@ -1219,6 +1245,7 @@ struct UiDopGraph : GraphicsView {
 
         auto item = item_at({cur.x, cur.y});
 
+        printf("mouse on graph %s\n", typenameof(item));
         if (auto node = dynamic_cast<UiDopNode *>(item); node) {
             if (pending_link) {
                 auto another = pending_link->socket;
@@ -1453,6 +1480,7 @@ void process_input() {
     cur.on_update();
     win.bbox = {0, 0, (float)nx, (float)ny};
     win.do_update();
+    win.do_update_event();
     win.after_update();
     cur.after_update();
 }
