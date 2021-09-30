@@ -596,8 +596,9 @@ struct TextEdit : Label {
 
     float font_size = 20.f;
 
-    void _insert_text(auto content) {
+    void _insert_text(std::string content) {
         text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
+        cursor += content.size();
         sellen = 0;
     }
 
@@ -633,14 +634,15 @@ struct TextEdit : Label {
         if (e.down != true)
             return;
 
-        if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
-            auto str = glfwGetClipboardString(window);
-            _insert_text(str);
-
-        } else if (e.key == GLFW_KEY_C && e.mode == GLFW_MOD_CONTROL) {
+        if (e.key == GLFW_KEY_C && e.mode == GLFW_MOD_CONTROL) {
             auto str = text.substr(cursor, sellen);
             if (str.size())
                 glfwSetClipboardString(window, str.c_str());
+        }
+        if (disabled) {
+        } else if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
+            if (auto str = glfwGetClipboardString(window); str)
+                _insert_text(str);
 
         } else if (e.key == GLFW_KEY_A && e.mode == GLFW_MOD_CONTROL) {
             cursor = 0;
@@ -672,8 +674,7 @@ struct TextEdit : Label {
         Widget::on_event(e);
 
         char c = e.code;
-        _insert_text(c);
-        cursor++;
+        _insert_text(ztd::toString(c));
     }
 
     void paint() const override {
