@@ -210,18 +210,18 @@ struct CursorState {
     bool need_repaint = true;
 
     void after_update() {
-        if (events.size())
+        if (events.size() || dx || dy)
             need_repaint = true;
         events.clear();
     }
 } cur;
 
 static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
-    GLint nx, ny;
-    glfwGetFramebufferSize(window, &nx, &ny);
-    auto x = 0.5f + (float)xpos;
-    auto y = ny - 0.5f - (float)ypos;
-    cur.events.push_back(Event_Motion{.x = x, .y = y});
+    //GLint nx, ny;
+    //glfwGetFramebufferSize(window, &nx, &ny);
+    //auto x = 0.5f + (float)xpos;
+    //auto y = ny - 0.5f - (float)ypos;
+    //cur.events.push_back(Event_Motion{.x = x, .y = y});
 }
 
 static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
@@ -369,6 +369,10 @@ struct Widget : Object {
         if (hovered) {
             for (auto const &e: cur.events) {
                 on_generic_event(e);
+            }
+
+            if (cur.dx || cur.dy) {
+                on_event(Event_Motion{});
             }
         }
 
