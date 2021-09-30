@@ -6,10 +6,6 @@
 
 namespace ztd {
 
-#if 1
-template <class K, class V>
-using Map = std::map<K, V>;
-#else
 template <class K, class V>
 struct Map : std::map<K, V> {
     using std::map<K, V>::map;
@@ -30,6 +26,5 @@ struct Map : std::map<K, V> {
         return it->second;
     }
 };
-#endif
 
 }

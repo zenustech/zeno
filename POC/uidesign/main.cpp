@@ -21,7 +21,7 @@
 #include <set>
 #include <map>
 #include <any>
-//#include "ztd/Map.h"
+#include "ztd/Map.h"
 
 
 #define typenameof(x) typeid(*(x)).name()
@@ -713,7 +713,7 @@ using DopFunctor = std::function<std::vector<std::any>(std::vector<std::any>)>;
 
 struct DopTable {
     struct Impl {
-        std::map<std::string, DopFunctor> funcs;
+        ztd::Map<std::string, DopFunctor> funcs;
     };
     mutable std::unique_ptr<Impl> impl;
 
@@ -769,7 +769,7 @@ struct DopNode {
             if (outputs[i].name == name)
                 return outputs[i].result;
         }
-        throw "Bad output socket name";
+        throw ztd::Exception(ztd::toString("Bad output socket name: ", name));
     }
 
     void serialize(std::ostream &ss) const {
@@ -796,7 +796,7 @@ struct DopNode {
 
 
 struct DopGraph {
-    std::map<std::string, std::unique_ptr<DopNode>> nodes;
+    ztd::Map<std::string, std::unique_ptr<DopNode>> nodes;
 
     DopNode *add_node(std::string kind) {
         auto p = std::make_unique<DopNode>();
@@ -861,12 +861,14 @@ struct DopGraph {
     std::any resolve_value(std::string expr) {
         if (expr[0] == '@') {
             auto i = expr.find(':');
-            auto node_n = expr.substr(0, i);
+            auto node_n = expr.substr(1, i - 1);
             auto socket_n = expr.substr(i + 1);
             auto *node = nodes.at(node_n).get();
             return node->get_output_by_name(socket_n);
-        } else {
+        } else if (expr.size()) {
             return std::stoi(expr);
+        } else {
+            return {};
         }
     }
 };
@@ -1065,7 +1067,7 @@ int UiDopInputSocket::get_index() const {
             return i;
         }
     }
-    throw "Cannot find index of input node";
+    throw ztd::Exception("Cannot find index of input node");
 }
 
 int UiDopOutputSocket::get_index() const {
@@ -1075,7 +1077,7 @@ int UiDopOutputSocket::get_index() const {
             return i;
         }
     }
-    throw "Cannot find index of output node";
+    throw ztd::Exception("Cannot find index of output node");
 }
 
 
