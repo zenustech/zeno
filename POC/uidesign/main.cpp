@@ -24,6 +24,13 @@
 #include "ztd/Map.h"
 
 
+//#ifdef __CLANGD__
+//#define nclangd(...)
+//#else
+//#define nclangd(...) __VA_ARGS__
+//#endif
+
+
 #define typenameof(x) typeid(*(x)).name()
 
 
@@ -494,9 +501,10 @@ struct GraphicsView : Widget {
         if (e.btn != 0)
             return;
 
-        if (auto item = dynamic_cast<GraphicsWidget *>(item_at({cur.x, cur.y})); item) {
-            if (item->selectable)
-                select_child(item, cur.shift);
+        if (auto item = item_at({cur.x, cur.y}); item) {
+            auto it = dynamic_cast<GraphicsWidget *>(item);
+            if (it && it->selectable)
+                select_child(it, cur.shift);
         } else if (!cur.shift) {
             select_child(nullptr, false);
         }
@@ -734,7 +742,9 @@ struct DopTable {
 
 static int def_readvdb = tab.define("readvdb",
 [] (std::vector<std::any> const &args) -> std::vector<std::any> {
-    printf("vdbsmooth\n");
+    //auto dx = std::any_cast<float>(args[0]);
+    //printf("readvdb %f\n", dx);
+    printf("readvdb\n");
     return {1};
 });
 
@@ -746,7 +756,7 @@ static int def_vdbsmooth = tab.define("vdbsmooth",
 
 static int def_vdberode = tab.define("vdberode",
 [] (std::vector<std::any> const &args) -> std::vector<std::any> {
-    printf("vdbsmooth\n");
+    printf("vdberode\n");
     return {3};
 });
 
@@ -872,7 +882,11 @@ struct DopGraph {
         } else if (!expr.size()) {
             return {};
         } else if (std::strchr("0123456789+-.", expr[0])) {
-            return std::stoi(expr);
+            if (expr.find('.') != std::string::npos) {
+                return std::stof(expr);
+            } else {
+                return std::stoi(expr);
+            }
         } else {
             return expr;
             //throw ztd::Exception(ztd::toString("Bad expression: ", expr));
