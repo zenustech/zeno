@@ -21,6 +21,7 @@
 #include <set>
 #include <map>
 #include <any>
+//#include "ztd/Map.h"
 
 
 #define typenameof(x) typeid(*(x)).name()
@@ -1261,6 +1262,8 @@ struct UiDopGraph : GraphicsView {
     UiDopNode *add_node(std::string kind) {
         auto p = add_child<UiDopNode>();
         p->bk_node = bk_graph->add_node(kind);
+        p->name = p->bk_node->name;
+        p->kind = p->bk_node->kind;
         nodes.insert(p);
         return p;
     }
