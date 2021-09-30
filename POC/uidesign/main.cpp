@@ -1296,6 +1296,8 @@ struct UiDopGraph : GraphicsView {
                 } else if (input1 && output2) {
                     add_link(output2, input1);
                 }
+            } else if (auto another = dynamic_cast<UiDopInputSocket *>(pending_link->socket); another) {
+                another->clear_links();
             }
             remove_child(pending_link);
             pending_link = nullptr;
@@ -1361,11 +1363,7 @@ struct UiDopGraph : GraphicsView {
             add_pending_link(socket);
 
         } else {
-            if (pending_link) {
-                if (auto socket = dynamic_cast<UiDopInputSocket *>(pending_link->socket); socket) {
-                    socket->clear_links();
-                }
-            }
+            printf("clear link");
             add_pending_link(nullptr);
         }
     }
