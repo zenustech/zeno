@@ -734,16 +734,19 @@ struct DopTable {
 
 static int def_readvdb = tab.define("readvdb",
 [] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    printf("vdbsmooth\n");
     return {1};
 });
 
 static int def_vdbsmooth = tab.define("vdbsmooth",
 [] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    printf("vdbsmooth\n");
     return {2};
 });
 
 static int def_vdberode = tab.define("vdberode",
 [] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    printf("vdbsmooth\n");
     return {3};
 });
 
@@ -1363,7 +1366,6 @@ struct UiDopGraph : GraphicsView {
             add_pending_link(socket);
 
         } else {
-            printf("clear link");
             add_pending_link(nullptr);
         }
     }
