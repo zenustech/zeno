@@ -33,7 +33,7 @@ namespace zeno{
         // vertex attribute
         std::vector<openvdb::FloatGrid::Ptr> temperatureField;
         std::vector<openvdb::FloatGrid::Ptr> volumeField;
-        openvdb::Int32Grid::Ptr tag;
+        std::vector<openvdb::Int32Grid::Ptr> type;//0:fluid, 1:neumann, 2: dirichlet
 
         // cell centered
         std::vector<openvdb::FloatGrid::Ptr>  pressField;
@@ -50,11 +50,13 @@ namespace zeno{
         void fillInner(openvdb::FloatGrid::Ptr sdf);
         void advection();
         void applyOuterforce();
+        void preConditioner();
         void solvePress();
+        void boundCondition();
         void step();
 
         // mg possion press solver
-        void PossionSolver();
+        void PossionSolver(int level);
         void Smooth(int level);
         void Restrict(int level);
         void Prolongate(int level);

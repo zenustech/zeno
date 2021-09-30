@@ -254,8 +254,8 @@
      },
      "params": {},
      "uipos": [
-      1173.120728929385,
-      39.86332574031889
+      1189.0660592255124,
+      59.22551252847379
      ],
      "options": [
       "VIEW"
@@ -368,8 +368,8 @@
      "name": "VDBVoxelAsParticles",
      "inputs": {
       "vdbGrid": [
-       null,
-       null,
+       "bfed494e-mgPress",
+       "pressVDB",
        null
       ],
       "SRC": [
@@ -385,6 +385,27 @@
      "uipos": [
       1438.4965831435077,
       -7.972665148063783
+     ],
+     "options": []
+    },
+    "bfed494e-mgPress": {
+     "name": "mgPress",
+     "inputs": {
+      "mgSmokeData": [
+       "4d88dffe-mgSmokeSolver",
+       "mgSmokeData",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1169.7038724373579,
+      -115.03416856492026
      ],
      "options": []
     }
@@ -663,6 +684,76 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
     [
      "",
      "DST",
@@ -2524,6 +2615,57 @@
     [
      "bool",
      "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeBoxPrimitive": {
+   "inputs": [
+    [
+     "float",
+     "size_x",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_y",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_z",
+     "2.0"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "use_quads",
      "0"
     ]
    ],
@@ -4532,7 +4674,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -6456,6 +6604,42 @@
     "openvdb"
    ]
   },
+  "ScalarFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Gradient Curvature Laplacian ClosestPoint",
+     "Operator",
+     "Gradient"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "SetFrameTime": {
    "inputs": [
     [
@@ -7206,6 +7390,32 @@
     "debug"
    ]
   },
+  "TriggerException": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "exception occurred!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
   "TriggerSegFault": {
    "inputs": [
     [
@@ -7758,6 +7968,46 @@
     "openvdb"
    ]
   },
+  "VDBSmooth": {
+   "inputs": [
+    [
+     "",
+     "inoutVDB",
+     ""
+    ],
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "VDBSmoothSDF": {
    "inputs": [
     [
@@ -7793,6 +8043,11 @@
      "int",
      "iterations",
      "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     "Use VDBSmooth Instead"
     ]
    ],
    "categories": [
@@ -7920,6 +8175,42 @@
     "zenofx"
    ]
   },
+  "VectorFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Divergence Curl Magnitude Normalize",
+     "Operator",
+     "Divergence"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "WriteObjMesh": {
    "inputs": [
     [
@@ -8041,6 +8332,36 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "mgPress": {
+   "inputs": [
+    [
+     "",
+     "mgSmokeData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pressVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
    ]
   },
   "mgSmokeSolver": {
