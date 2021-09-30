@@ -899,13 +899,14 @@ struct DopGraph {
 
 void DopNode::apply_func() {
     auto func = tab.lookup(kind);
-    std::vector<std::any> input_vals;
+    DopContext ctx;
     for (auto const &input: inputs) {
-        input_vals.push_back(graph->resolve_value(input.value));
+        ctx.in.push_back(graph->resolve_value(input.value));
     }
-    auto output_vals = func(input_vals);
-    for (int i = 0; i < std::min(outputs.size(), output_vals.size()); i++) {
-        outputs[i].result = std::move(output_vals[i]);
+    ctx.out.resize(outputs.size());
+    func(&ctx);
+    for (int i = 0; i < ctx.out.size(); i++) {
+        outputs[i].result = std::move(ctx.out[i]);
     }
     applied = true;
 }
