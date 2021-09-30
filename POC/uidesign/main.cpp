@@ -276,7 +276,7 @@ struct Widget : Object {
     void remove_all_children() {
         for (auto &child: children) {
             child->parent = nullptr;
-            child = nullptr;
+            children_gc.push_back(std::move(child));
         }
     }
 
@@ -284,8 +284,10 @@ struct Widget : Object {
         for (auto &child: children) {
             if (child.get() == ptr) {
                 ptr->parent = nullptr;
-                // transfer ownership to gc:
+                // transfer ownership to gc (also set child to null):
                 children_gc.push_back(std::move(child));
+                // todo: use std::list for children so that iterators don't
+                // invalidate for safe erase from children on the fly
                 return true;
             }
         }
@@ -381,13 +383,13 @@ struct Widget : Object {
         for (auto const &child: children) {
             child->after_update();
         }
+        children_gc.clear();
     }
 
     virtual void do_update_event() {
         auto raii = cur.translate(-position.x, -position.y);
 
         if (auto child = child_at({cur.x, cur.y}); child) {
-            printf("child at is %s\n", typenameof(child));
             child->do_update_event();
         }
 
@@ -1248,7 +1250,6 @@ struct UiDopGraph : GraphicsView {
 
         auto item = item_at({cur.x, cur.y});
 
-        printf("mouse on graph %s\n", typenameof(item));
         if (auto node = dynamic_cast<UiDopNode *>(item); node) {
             if (pending_link) {
                 auto another = pending_link->socket;
