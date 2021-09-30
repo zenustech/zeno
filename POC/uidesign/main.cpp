@@ -299,13 +299,10 @@ struct Widget : Object {
 
     virtual Widget *child_at(Point p) const {
         Widget *found = nullptr;
-        float found_zvalue = 0.0f;
         for (auto const &child: children) {
             if (child->contains_point(p - child->position)) {
-                auto child_zvalue = child->absolute_zvalue();
-                if (!found || child_zvalue >= found_zvalue) {
+                if (!found || child->zvalue >= found->zvalue) {
                     found = child.get();
-                    found_zvalue = child_zvalue;
                 }
             }
         }
@@ -747,6 +744,23 @@ struct DopGraph {
         return raw;
     }
 
+    std::string determine_name(std::string kind) {
+        for (int i = 1; i <= 128; i++) {
+            auto name = kind + std::to_string(i);
+            bool found = true;
+            for (auto const &node: nodes) {
+                if (name == node->name) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return name;
+            }
+        }
+        return kind + std::to_string(abs(rand() * RAND_MAX + rand())) + 'a';
+    }
+
     bool remove_node(DopNode *node) {
         for (auto const &n: nodes) {
             if (n.get() == node) {
@@ -1162,8 +1176,9 @@ struct UiDopGraph : GraphicsView {
         }
     }
 
-    UiDopNode *add_node() {
+    UiDopNode *add_node(std::string kind) {
         auto p = add_child<UiDopNode>();
+        p->name = bk_graph->determine_name(kind);
         p->bk_node = bk_graph->add_node();
         nodes.insert(p);
         return p;
@@ -1205,24 +1220,8 @@ struct UiDopGraph : GraphicsView {
     }
 
     UiDopGraph() {
-        auto c = add_node();
-        c->position = {100, 256};
-        c->name = "readvdb1";
-        c->kind = "readvdb";
-        c->add_input_socket()->name = "path";
-        c->add_input_socket()->name = "type";
-        c->add_output_socket()->name = "grid";
-        c->update_sockets();
-
-        auto d = add_node();
-        d->position = {450, 256};
-        d->name = "vdbsmooth1";
-        d->kind = "vdbsmooth";
-        d->add_input_socket()->name = "grid";
-        d->add_input_socket()->name = "width";
-        d->add_input_socket()->name = "times";
-        d->add_output_socket()->name = "grid";
-        d->update_sockets();
+        auto c = add_node("readvdb", {100, 256});
+        auto d = add_node("vdbsmooth", {450, 256});
 
         add_link(c->outputs[0], d->inputs[0]);
     }
@@ -1283,10 +1282,9 @@ struct UiDopGraph : GraphicsView {
 
     UiDopContextMenu *menu = nullptr;
 
-    UiDopNode *add_node_by_name(std::string kind, Point pos) {
-        auto node = add_node();
+    UiDopNode *add_node(std::string kind, Point pos) {
+        auto node = add_node(kind);
         node->position = pos;
-        node->name = kind + '1';
         node->kind = kind;
         node->add_input_socket()->name = "path";
         node->add_input_socket()->name = "type";
@@ -1305,7 +1303,7 @@ struct UiDopGraph : GraphicsView {
         menu->update_entries();
 
         menu->on_selected.connect([this] {
-            add_node_by_name(menu->selection, menu->position);
+            add_node(menu->selection, menu->position);
             remove_context_menu();
         });
 
