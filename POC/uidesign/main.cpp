@@ -372,7 +372,7 @@ struct Widget : Object {
             }
 
             if (cur.dx || cur.dy) {
-                on_event(Event_Motion{});
+                on_event(Event_Motion{.x = -1, .y = -1});
             }
         }
 
@@ -962,13 +962,17 @@ struct GraphicsLineItem : GraphicsWidget {
         auto p1 = get_to_position();
         auto a = p - p0;
         auto b = p1 - p0;
+        auto l = std::sqrt(b.x * b.x + b.y * b.y);
+        b = b * (1.f / l);
         auto c = a.x * b.y - a.y * b.x;
-        c /= std::sqrt(b.x * b.x + b.y * b.y);
+        auto d = a.x * b.x + a.y * b.y;
+        if (std::max(d, l - d) - l > LW)
+            return false;
         return std::abs(c) < LW;  // actually LW*2 collision width
     }
 
     virtual Color get_line_color() const {
-        if (selected) {
+        if (selected || hovered) {
             return {0.75f, 0.5f, 0.375f};
         } else {
             return {0.375f, 0.5f, 1.0f};
@@ -1061,6 +1065,7 @@ struct UiDopContextMenu : Widget {
 
     Button *add_entry(std::string name) {
         auto btn = add_child<Button>();
+        btn->zvalue = zvalue;  // BUG ad-hoc fix
         btn->text = name;
         btn->bbox = {0, 0, EW, EH};
         btn->font_size = FH;
@@ -1208,9 +1213,6 @@ struct UiDopGraph : GraphicsView {
             return;
 
         auto item = item_at({cur.x, cur.y});
-
-        if (!item || item == this)
-            remove_context_menu();
 
         if (auto node = dynamic_cast<UiDopNode *>(item); node) {
             if (pending_link) {
