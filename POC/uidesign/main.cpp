@@ -708,6 +708,7 @@ struct DopInputSocket {
     }
 };
 
+
 struct DopOutputSocket {
     std::string name;
     std::any result;
@@ -717,7 +718,14 @@ struct DopOutputSocket {
     }
 };
 
-using DopFunctor = std::function<std::vector<std::any>(std::vector<std::any>)>;
+
+struct DopContext {
+    std::vector<std::any> in;
+    std::vector<std::any> out;
+};
+
+using DopFunctor = std::function<void(DopContext *)>;
+
 
 struct DopTable {
     struct Impl {
@@ -740,24 +748,19 @@ struct DopTable {
     }
 } tab;
 
-static int def_readvdb = tab.define("readvdb",
-[] (std::vector<std::any> const &args) -> std::vector<std::any> {
-    //auto dx = std::any_cast<float>(args[0]);
+
+static int def_readvdb = tab.define("readvdb", [] (DopContext *ctx) {
+    //auto dx = std::any_cast<float>(ctx.in[0]);
     //printf("readvdb %f\n", dx);
     printf("readvdb\n");
-    return {1};
 });
 
-static int def_vdbsmooth = tab.define("vdbsmooth",
-[] (std::vector<std::any> const &args) -> std::vector<std::any> {
+static int def_vdbsmooth = tab.define("vdbsmooth", [] (DopContext *ctx) {
     printf("vdbsmooth\n");
-    return {2};
 });
 
-static int def_vdberode = tab.define("vdberode",
-[] (std::vector<std::any> const &args) -> std::vector<std::any> {
+static int def_vdberode = tab.define("vdberode", [] (DopContext *ctx) {
     printf("vdberode\n");
-    return {3};
 });
 
 

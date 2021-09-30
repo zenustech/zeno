@@ -41,10 +41,10 @@ static void report() {
     printf("Compiler: %s %d, C++ %ld\n",
 #if defined(_MSC_VER)
     "MSVC", _MSC_VER
-#elif defined(__GNUC__)
-    "GCC", __GNUC__
 #elif defined(__clang__)
     "Clang", __clang__
+#elif defined(__GNUC__)
+    "GCC", __GNUC__
 #elif defined(__DPCPP__)
     "DPC++", __DPCPP__
 #else
