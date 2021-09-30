@@ -801,6 +801,7 @@ struct DopGraph {
         auto p = std::make_unique<DopNode>();
         p->graph = this;
         auto name = _determine_name(kind);
+        p->kind = kind;
         p->name = name;
         auto raw = p.get();
         nodes.emplace(name, std::move(p));
@@ -1260,7 +1261,6 @@ struct UiDopGraph : GraphicsView {
     UiDopNode *add_node(std::string kind) {
         auto p = add_child<UiDopNode>();
         p->bk_node = bk_graph->add_node(kind);
-        p->name = p->bk_node->name;
         nodes.insert(p);
         return p;
     }
@@ -1305,14 +1305,17 @@ struct UiDopGraph : GraphicsView {
         auto d = add_node("vdbsmooth", {450, 256});
 
         add_link(c->outputs[0], d->inputs[0]);
+
+        auto btn = add_child<Button>();
+        btn->text = "Apply";
+        btn->on_clicked.connect([this] () {
+            bk_graph->nodes.at("vdbsmooth1")->apply_func();
+        });
     }
 
     void paint() const override {
         glColor3f(0.2f, 0.2f, 0.2f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-
-        //bk_graph->serialize(std::cout); // for debug
-        bk_graph->nodes.at("vdbsmooth1")->apply_func();
     }
 
     void on_event(Event_Mouse e) override {
