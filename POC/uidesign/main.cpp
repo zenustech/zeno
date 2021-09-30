@@ -871,10 +871,11 @@ struct DopGraph {
             return node->get_output_by_name(socket_n);
         } else if (!expr.size()) {
             return {};
-        } else if (!std::strchr("0123456789+-.", expr[0])) {
+        } else if (std::strchr("0123456789+-.", expr[0])) {
             return std::stoi(expr);
         } else {
-            throw ztd::Exception(ztd::toString("Bad expression: ", expr));
+            return expr;
+            //throw ztd::Exception(ztd::toString("Bad expression: ", expr));
         }
     }
 };
