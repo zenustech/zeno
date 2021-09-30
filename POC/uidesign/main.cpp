@@ -637,18 +637,20 @@ struct TextEdit : Label {
             return;
 
         if (e.key == GLFW_KEY_C && e.mode == GLFW_MOD_CONTROL) {
-            auto str = text.substr(cursor, sellen);
+            auto str = sellen ? text.substr(cursor, sellen) : text;
             if (str.size())
                 glfwSetClipboardString(window, str.c_str());
-        }
-        if (disabled) {
-        } else if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
-            if (auto str = glfwGetClipboardString(window); str)
-                _insert_text(str);
 
         } else if (e.key == GLFW_KEY_A && e.mode == GLFW_MOD_CONTROL) {
             cursor = 0;
             sellen = text.size();
+        }
+
+        if (disabled) {
+
+        } else if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
+            if (auto str = glfwGetClipboardString(window); str)
+                _insert_text(str);
 
         } else if (e.key == GLFW_KEY_LEFT) {
             cursor = std::max(0, cursor - 1);
