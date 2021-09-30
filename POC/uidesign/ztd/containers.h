@@ -1,7 +1,8 @@
 #pragma once
 
 #include <map>
-#include "Exception.h"
+#include <vector>
+#include "exception.h"
 #include "format.h"
 
 namespace ztd {
@@ -24,6 +25,27 @@ struct Map : std::map<K, V> {
             throw Exception(toString("KeyError: ", k));
         }
         return it->second;
+    }
+};
+
+template <class T>
+struct Vector : std::vector<T> {
+    using std::vector<T>::vector;
+
+    T &at(size_t i) {
+        auto n = this->size();
+        if (i >= n) {
+            throw Exception(toString("IndexError: ", i, " >= ", n));
+        }
+        return this->operator[](i);
+    }
+
+    T const &at(size_t i) const {
+        auto n = this->size();
+        if (i >= n) {
+            throw Exception(toString("IndexError: ", i, " >= ", n));
+        }
+        return this->operator[](i);
     }
 };
 
