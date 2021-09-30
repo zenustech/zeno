@@ -592,6 +592,7 @@ struct Button : Label {
 struct TextEdit : Label {
     int cursor = 0;
     int sellen = 0;
+    bool disabled = false;
 
     float font_size = 20.f;
 
@@ -605,7 +606,8 @@ struct TextEdit : Label {
     void on_event(Event_Hover e) override {
         Widget::on_event(e);
 
-        on_editing_finished();
+        if (e.enter == false && !disabled)
+            on_editing_finished();
     }
 
     void on_event(Event_Mouse e) override {
@@ -675,7 +677,9 @@ struct TextEdit : Label {
     }
 
     void paint() const override {
-        if (hovered) {
+        if (disabled) {
+            glColor3f(0.275f, 0.275f, 0.275f);
+        } else if (hovered) {
             glColor3f(0.375f, 0.5f, 1.0f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
@@ -686,9 +690,13 @@ struct TextEdit : Label {
         font.set_font_size(font_size);
         font.set_fixed_width(bbox.nx - BW * 2, alignment);
         font.set_fixed_height(bbox.ny);
-        glColor3f(1.f, 1.f, 1.f);
+        if (disabled) {
+            glColor3f(0.65f, 0.65f, 0.65f);
+        } else {
+            glColor3f(1.f, 1.f, 1.f);
+        }
 
-        auto txt = !hovered ? text : sellen == 0
+        auto txt = !hovered || disabled ? text : sellen == 0
             ? text.substr(0, cursor) + '|' + text.substr(cursor)
             : text.substr(0, cursor) + '|' + text.substr(cursor, sellen) + '|' + text.substr(cursor + sellen);
         font.render(bbox.x0 + BW, bbox.y0, txt);
@@ -1487,6 +1495,7 @@ struct UiDopParam : Widget {
     void set_bk_socket(UiDopInputSocket *socket, DopInputSocket *bk_socket) {
         label->text = socket->name;
         edit->text = bk_socket->value;
+        edit->disabled = socket->links.size();
 
         edit->on_editing_finished.connect([=, this] {
             if (!socket->links.size()) {
