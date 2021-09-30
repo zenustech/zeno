@@ -294,12 +294,14 @@ struct Widget : Object {
             return nullptr;
         }
         Widget *found = nullptr;
+        float it_zvalue = 0.0f, found_zvalue = 0.0f;
         for (auto const &child: children) {
             if (child) {
                 if (auto it = child->item_at(p - child->position); it) {
-                    // BUG: didn't consider parent zvalue here!
-                    if (!found || it->zvalue >= found->zvalue) {
+                    auto it_zvalue = it->absolute_zvalue();
+                    if (!found || it_zvalue >= found_zvalue) {
                         found = it;
+                        found_zvalue = it_zvalue;
                     }
                 }
             }
@@ -307,6 +309,10 @@ struct Widget : Object {
         if (found)
             return found;
         return const_cast<Widget *>(this);
+    }
+
+    float absolute_zvalue() const {
+        return parent ? zvalue : parent->absolute_zvalue() + zvalue;
     }
 
     virtual void on_event(Event_Hover e) {
@@ -771,7 +777,7 @@ struct UiDopSocket : GraphicsRectItem {
 
     UiDopSocket() {
         bbox = {-R, -R, 2 * R, 2 * R};
-        zvalue = 2.f;
+        zvalue = 0.f;
     }
 
     void paint() const override {
@@ -1025,7 +1031,7 @@ struct UiDopPendingLink : GraphicsLineItem {
     UiDopPendingLink(UiDopSocket *socket)
         : socket(socket)
     {
-        zvalue = 3.f;
+        zvalue = 2.f;
     }
 
     Color get_line_color() const override {
@@ -1065,7 +1071,6 @@ struct UiDopContextMenu : Widget {
 
     Button *add_entry(std::string name) {
         auto btn = add_child<Button>();
-        btn->zvalue = zvalue;  // BUG ad-hoc fix
         btn->text = name;
         btn->bbox = {0, 0, EW, EH};
         btn->font_size = FH;
