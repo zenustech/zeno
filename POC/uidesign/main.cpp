@@ -778,9 +778,7 @@ struct DopNode {
     void apply_func();
 
     std::any get_output_by_name(std::string name) {
-        if (!applied) {
-            apply_func();
-        }
+        apply_func();
         for (int i = 0; i < outputs.size(); i++) {
             if (outputs[i].name == name)
                 return outputs[i].result;
@@ -898,6 +896,8 @@ struct DopGraph {
 };
 
 void DopNode::apply_func() {
+    if (applied)
+        return;
     auto func = tab.lookup(kind);
     DopContext ctx;
     for (auto const &input: inputs) {
