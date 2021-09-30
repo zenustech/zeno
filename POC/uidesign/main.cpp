@@ -614,6 +614,8 @@ struct TextEdit : Label {
     void on_event(Event_Mouse e) override {
         Widget::on_event(e);
 
+        if (disabled)
+            return;
         if (e.down != true)
             return;
         if (e.btn != 0)
