@@ -259,7 +259,7 @@ struct Object {
 
 struct Widget : Object {
     Widget *parent = nullptr;
-    std::vector<std::unique_ptr<Widget>> children;
+    std::list<std::unique_ptr<Widget>> children;
     std::vector<std::unique_ptr<Widget>> children_gc;
     Point position{0, 0};
     float zvalue{0};
@@ -281,11 +281,13 @@ struct Widget : Object {
     }
 
     bool remove_child(Widget *ptr) {
-        for (auto &child: children) {
+        for (auto it = children.begin(); it != children.end(); it++) {
+            auto &child = *it;
             if (child.get() == ptr) {
-                ptr->parent = nullptr;
+                child->parent = nullptr;
                 // transfer ownership to gc (also set child to null):
                 children_gc.push_back(std::move(child));
+                children.erase(it);
                 // todo: use std::list for children so that iterators don't
                 // invalidate for safe erase from children on the fly
                 return true;
