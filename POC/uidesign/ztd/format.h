@@ -30,4 +30,8 @@ auto makeException(Ts const &...ts) {
     return Exception(toString<Ts...>(ts...));
 }
 
+auto makeException(const char *msg) {
+    return Exception(msg);
+}
+
 }
