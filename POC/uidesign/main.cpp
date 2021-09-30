@@ -297,6 +297,7 @@ struct Widget : Object {
         for (auto const &child: children) {
             if (child) {
                 if (auto it = child->item_at(p - child->position); it) {
+                    // BUG: didn't consider parent zvalue here!
                     if (!found || it->zvalue >= found->zvalue) {
                         found = it;
                     }
@@ -515,7 +516,7 @@ struct Button : Label {
     void on_event(Event_Mouse e) override {
         Widget::on_event(e);
 
-        if (e.down != true)
+        if (e.down != false)
             return;
         if (e.btn != 0)
             return;
@@ -1202,8 +1203,10 @@ struct UiDopGraph : GraphicsView {
         if (e.btn != 0)
             return;
 
-        remove_context_menu();
         auto item = item_at({cur.x, cur.y});
+
+        if (!item || item == this)
+            remove_context_menu();
 
         if (auto node = dynamic_cast<UiDopNode *>(item); node) {
             if (pending_link) {
@@ -1239,11 +1242,22 @@ struct UiDopGraph : GraphicsView {
                 }
             }
             add_pending_link(nullptr);
-
         }
     }
 
     UiDopContextMenu *menu = nullptr;
+
+    UiDopNode *add_node_by_name(std::string kind, Point pos) {
+        auto node = add_node();
+        node->position = pos;
+        node->name = kind + '1';
+        node->kind = kind;
+        node->add_input_socket()->name = "path";
+        node->add_input_socket()->name = "type";
+        node->add_output_socket()->name = "grid";
+        node->update_sockets();
+        return node;
+    }
 
     UiDopContextMenu *add_context_menu() {
         remove_context_menu();
@@ -1255,8 +1269,9 @@ struct UiDopGraph : GraphicsView {
         menu->update_entries();
 
         menu->on_selected.connect([this] {
-            //add_node_by_name(menu->selection);
+            add_node_by_name(menu->selection, menu->position);
             printf("selected %s\n", menu->selection.c_str());
+            remove_context_menu();
         });
 
         return menu;
@@ -1272,7 +1287,6 @@ struct UiDopGraph : GraphicsView {
 
         if (e.down != true)
             return;
-        remove_context_menu();
 
         if (e.key == GLFW_KEY_TAB) {
             add_context_menu();
