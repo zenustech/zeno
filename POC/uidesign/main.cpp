@@ -19,6 +19,8 @@
 #include <tuple>
 #include <list>
 #include <set>
+#include <map>
+#include <any>
 
 
 #define typenameof(x) typeid(*(x)).name()
@@ -699,17 +701,75 @@ struct DopInputSocket {
 
 struct DopOutputSocket {
     std::string name;
+    std::any result;
 
     void serialize(std::ostream &ss) const {
         ss << name;
     }
 };
 
+using DopFunctor = std::function<std::vector<std::any>(std::vector<std::any>)>;
+
+struct DopTable {
+    struct Impl {
+        std::map<std::string, DopFunctor> funcs;
+    };
+    mutable std::unique_ptr<Impl> impl;
+
+    Impl *get_impl() const {
+        if (!impl) impl = std::make_unique<Impl>();
+        return impl.get();
+    }
+
+    auto const &lookup(std::string const &kind) const {
+        return get_impl()->funcs.at(kind);
+    }
+
+    int define(std::string const &kind, DopFunctor &&func) {
+        get_impl()->funcs.emplace(kind, std::move(func));
+        return 1;
+    }
+} tab;
+
+static int def_readvdb = tab.define("readvdb",
+[] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    return {1};
+});
+
+static int def_vdbsmooth = tab.define("vdbsmooth",
+[] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    return {2};
+});
+
+static int def_vdberode = tab.define("vdberode",
+[] (std::vector<std::any> const &args) -> std::vector<std::any> {
+    return {3};
+});
+
+
+struct DopGraph;
+
 struct DopNode {
+    DopGraph *graph = nullptr;
+
     std::string name;
     std::string kind;
     std::vector<DopInputSocket> inputs;
     std::vector<DopOutputSocket> outputs;
+    bool applied = false;
+
+    void apply_func();
+
+    std::any get_output_by_name(std::string name) {
+        if (!applied) {
+            apply_func();
+        }
+        for (int i = 0; i < outputs.size(); i++) {
+            if (outputs[i].name == name)
+                return outputs[i].result;
+        }
+        throw "Bad output socket name";
+    }
 
     void serialize(std::ostream &ss) const {
         ss << "DopNode[" << '\n';
@@ -735,26 +795,22 @@ struct DopNode {
 
 
 struct DopGraph {
-    std::set<std::unique_ptr<DopNode>> nodes;
+    std::map<std::string, std::unique_ptr<DopNode>> nodes;
 
-    DopNode *add_node() {
+    DopNode *add_node(std::string kind) {
         auto p = std::make_unique<DopNode>();
+        p->graph = this;
+        auto name = _determine_name(kind);
+        p->name = name;
         auto raw = p.get();
-        nodes.insert(std::move(p));
+        nodes.emplace(name, std::move(p));
         return raw;
     }
 
-    std::string determine_name(std::string kind) {
-        for (int i = 1; i <= 128; i++) {
+    std::string _determine_name(std::string kind) {
+        for (int i = 1; i <= 256; i++) {
             auto name = kind + std::to_string(i);
-            bool found = true;
-            for (auto const &node: nodes) {
-                if (name == node->name) {
-                    found = false;
-                    break;
-                }
-            }
-            if (found) {
+            if (!nodes.contains(name)) {
                 return name;
             }
         }
@@ -762,9 +818,9 @@ struct DopGraph {
     }
 
     bool remove_node(DopNode *node) {
-        for (auto const &n: nodes) {
+        for (auto const &[k, n]: nodes) {
             if (n.get() == node) {
-                nodes.erase(n);
+                nodes.erase(k);
                 return true;
             }
         }
@@ -772,7 +828,7 @@ struct DopGraph {
     }
 
     void serialize(std::ostream &ss) const {
-        for (auto const &node: nodes) {
+        for (auto const &[k, node]: nodes) {
             node->serialize(ss);
             ss << '\n';
         }
@@ -799,7 +855,32 @@ struct DopGraph {
         auto &to_socket = to_node->inputs.at(to_socket_index);
         to_socket.value = {};
     }
+
+    std::any resolve_value(std::string expr) {
+        if (expr[0] == '@') {
+            auto i = expr.find(':');
+            auto node_n = expr.substr(0, i);
+            auto socket_n = expr.substr(i + 1);
+            auto *node = nodes.at(node_n).get();
+            return node->get_output_by_name(socket_n);
+        } else {
+            return std::stoi(expr);
+        }
+    }
 };
+
+void DopNode::apply_func() {
+    auto func = tab.lookup(kind);
+    std::vector<std::any> input_vals;
+    for (auto const &input: inputs) {
+        input_vals.push_back(graph->resolve_value(input.value));
+    }
+    auto output_vals = func(input_vals);
+    for (int i = 0; i < std::min(outputs.size(), output_vals.size()); i++) {
+        outputs[i].result = std::move(output_vals[i]);
+    }
+    applied = true;
+}
 
 // END node data structures
 
@@ -1178,8 +1259,8 @@ struct UiDopGraph : GraphicsView {
 
     UiDopNode *add_node(std::string kind) {
         auto p = add_child<UiDopNode>();
-        p->name = bk_graph->determine_name(kind);
-        p->bk_node = bk_graph->add_node();
+        p->bk_node = bk_graph->add_node(kind);
+        p->name = p->bk_node->name;
         nodes.insert(p);
         return p;
     }
@@ -1231,6 +1312,7 @@ struct UiDopGraph : GraphicsView {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
         //bk_graph->serialize(std::cout); // for debug
+        bk_graph->nodes.at("vdbsmooth1")->apply_func();
     }
 
     void on_event(Event_Mouse e) override {
@@ -1387,6 +1469,7 @@ struct UiDopParam : Widget {
 
 
 struct UiDopEditor : Widget {
+    TextEdit *name_edit = nullptr;
     std::vector<UiDopParam *> params;
     UiDopNode *selected = nullptr;
 
@@ -1407,7 +1490,9 @@ struct UiDopEditor : Widget {
     }
 
     void clear_params() {
-        remove_all_children();
+        for (auto param: params) {
+            remove_child(param);
+        }
         params.clear();
     }
 
