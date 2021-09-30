@@ -819,7 +819,8 @@ struct DopGraph {
                 return name;
             }
         }
-        return kind + std::to_string(abs(rand() * RAND_MAX + rand())) + 'a';
+        auto r = std::rand() * RAND_MAX + std::rand();
+        return kind + std::to_string(std::abs(r)) + 'a';
     }
 
     bool remove_node(DopNode *node) {
@@ -868,10 +869,12 @@ struct DopGraph {
             auto socket_n = expr.substr(i + 1);
             auto *node = nodes.at(node_n).get();
             return node->get_output_by_name(socket_n);
-        } else if (expr.size()) {
+        } else if (!expr.size()) {
+            return {};
+        } else if (!std::strchr("0123456789+-.", expr[0])) {
             return std::stoi(expr);
         } else {
-            return {};
+            throw ztd::Exception(ztd::toString("Bad expression: ", expr));
         }
     }
 };
