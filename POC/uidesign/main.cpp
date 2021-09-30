@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <list>
 #include <set>
 
 
@@ -259,6 +260,7 @@ struct Object {
 struct Widget : Object {
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
+    std::vector<std::unique_ptr<Widget>> children_gc;
     Point position{0, 0};
     float zvalue{0};
 
@@ -282,7 +284,8 @@ struct Widget : Object {
         for (auto &child: children) {
             if (child.get() == ptr) {
                 ptr->parent = nullptr;
-                child = nullptr;
+                // transfer ownership to gc:
+                children_gc.push_back(std::move(child));
                 return true;
             }
         }
@@ -1308,7 +1311,6 @@ struct UiDopGraph : GraphicsView {
 
         menu->on_selected.connect([this] {
             add_node_by_name(menu->selection, menu->position);
-            printf("selected %s\n", menu->selection.c_str());
             remove_context_menu();
         });
 
@@ -1316,8 +1318,10 @@ struct UiDopGraph : GraphicsView {
     }
 
     void remove_context_menu() {
-        if (menu)
+        if (menu) {
             remove_child(menu);
+            menu = nullptr;
+        }
     }
 
     void on_event(Event_Key e) override {
