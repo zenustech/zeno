@@ -1460,18 +1460,19 @@ struct UiDopParam : Widget {
         edit = add_child<TextEdit>();
         edit->position = {100, 5};
         edit->bbox = {0, 0, 400, 40};
-
-        edit->on_editing_finished.connect([this] {
-            if (value) *value = edit->text;
-        });
     }
 
-    std::string *value = nullptr;
-
-    void set_bk_socket(DopInputSocket *socket) {
+    void set_bk_socket(UiDopInputSocket *socket, DopInputSocket *bk_socket) {
         label->text = socket->name;
-        edit->text = socket->value;
-        value = &socket->value;
+        edit->text = bk_socket->value;
+
+        edit->on_editing_finished.connect([=, this] {
+            if (!socket->links.size()) {
+                bk_socket->value = edit->text;
+            } else {
+                edit->text = bk_socket->value;
+            }
+        });
     }
 };
 
@@ -1485,9 +1486,11 @@ struct UiDopEditor : Widget {
         selected = ptr;
         clear_params();
         if (ptr) {
-            for (int i = 0; i < ptr->bk_node->inputs.size(); i++) {
+            for (int i = 0; i < ptr->inputs.size(); i++) {
                 auto param = add_param();
-                param->set_bk_socket(&ptr->bk_node->inputs[i]);
+                auto *socket = ptr->inputs[i];
+                auto *bk_socket = &ptr->bk_node->inputs.at(i);
+                param->set_bk_socket(socket, bk_socket);
             }
         }
         update_params();
