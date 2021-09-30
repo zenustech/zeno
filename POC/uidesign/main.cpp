@@ -783,7 +783,7 @@ struct DopNode {
             if (outputs[i].name == name)
                 return outputs[i].result;
         }
-        throw ztd::Exception(ztd::toString("Bad output socket name: ", name));
+        throw ztd::makeException("Bad output socket name: ", name);
     }
 
     void serialize(std::ostream &ss) const {
@@ -890,7 +890,7 @@ struct DopGraph {
             }
         } else {
             return expr;
-            //throw ztd::Exception(ztd::toString("Bad expression: ", expr));
+            //throw ztd::makeException("Bad expression: ", expr);
         }
     }
 };
@@ -1092,7 +1092,7 @@ int UiDopInputSocket::get_index() const {
             return i;
         }
     }
-    throw ztd::Exception("Cannot find index of input node");
+    throw ztd::makeException("Cannot find index of input node");
 }
 
 int UiDopOutputSocket::get_index() const {
@@ -1102,7 +1102,7 @@ int UiDopOutputSocket::get_index() const {
             return i;
         }
     }
-    throw ztd::Exception("Cannot find index of output node");
+    throw ztd::makeException("Cannot find index of output node");
 }
 
 

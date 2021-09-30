@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include "exception.h"
 
 namespace ztd {
 
@@ -22,6 +23,11 @@ std::string toString(Ts const &...ts) {
     std::ostringstream ss;
     (ss << ... << ts);
     return ss.str();
+}
+
+template <class ...Ts>
+auto makeException(Ts const &...ts) {
+    return Exception(toString<Ts...>(ts...));
 }
 
 }

@@ -14,7 +14,7 @@ struct Map : std::map<K, V> {
     V &at(K const &k) {
         auto it = this->find(k);
         if (it == this->end()) {
-            throw Exception(toString("KeyError: ", k));
+            throw makeException("KeyError: ", k);
         }
         return it->second;
     }
@@ -22,7 +22,7 @@ struct Map : std::map<K, V> {
     V const &at(K const &k) const {
         auto it = this->find(k);
         if (it == this->end()) {
-            throw Exception(toString("KeyError: ", k));
+            throw makeException("KeyError: ", k);
         }
         return it->second;
     }
@@ -35,7 +35,7 @@ struct Vector : std::vector<T> {
     T &at(size_t i) {
         auto n = this->size();
         if (i >= n) {
-            throw Exception(toString("IndexError: ", i, " >= ", n));
+            throw makeException("IndexError: ", i, " >= ", n);
         }
         return this->operator[](i);
     }
@@ -43,7 +43,7 @@ struct Vector : std::vector<T> {
     T const &at(size_t i) const {
         auto n = this->size();
         if (i >= n) {
-            throw Exception(toString("IndexError: ", i, " >= ", n));
+            throw makeException("IndexError: ", i, " >= ", n);
         }
         return this->operator[](i);
     }
