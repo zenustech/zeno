@@ -46,7 +46,7 @@ vcpkg install lapack:x64-windows
 
 > Windows users may need to **install the `English Pack` of Visual Studio** for vcpkg to work.
 
-> Note that the `x64-windows` suffix **must be specified** otherwise vcpkg will install 32-bit packages by default :)
+> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
 
 * Linux (bash)
 
@@ -59,7 +59,7 @@ vcpkg install lapack:x64-windows
 ./vcpkg install lapack:x64-linux
 ```
 
-> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+> Note that the `x64-windows` suffix **must be specified** otherwise vcpkg will install 32-bit packages by default :)
 
 ## Building Zeno from Source
 

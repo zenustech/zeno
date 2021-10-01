@@ -677,6 +677,8 @@ struct TextEdit : Label {
     void on_event(Event_Char e) override {
         Widget::on_event(e);
 
+        if (disabled)
+            return;
         char c = e.code;
         _insert_text(ztd::toString(c));
     }
@@ -799,6 +801,10 @@ struct DopNode {
         throw ztd::makeException("Bad output socket name: ", name);
     }
 
+    void invalidate() {
+        applied = false;
+    }
+
     void serialize(std::ostream &ss) const {
         ss << "DopNode[" << '\n';
         ss << "  name=" << name << '\n';
@@ -893,14 +899,17 @@ struct DopGraph {
             auto socket_n = expr.substr(i + 1);
             auto *node = nodes.at(node_n).get();
             return node->get_output_by_name(socket_n);
+
         } else if (!expr.size()) {
             return {};
+
         } else if (std::strchr("0123456789+-.", expr[0])) {
             if (expr.find('.') != std::string::npos) {
                 return std::stof(expr);
             } else {
                 return std::stoi(expr);
             }
+
         } else {
             return expr;
             //throw ztd::makeException("Bad expression: ", expr);
@@ -909,15 +918,18 @@ struct DopGraph {
 };
 
 void DopNode::apply_func() {
-    if (applied)
-        return;
-    auto func = tab.lookup(kind);
     DopContext ctx;
     for (auto const &input: inputs) {
-        ctx.in.push_back(graph->resolve_value(input.value));
+        auto val = graph->resolve_value(input.value);
+        ctx.in.push_back(std::move(val));
     }
+    if (applied)
+        return;
+
     ctx.out.resize(outputs.size());
+    auto func = tab.lookup(kind);
     func(&ctx);
+
     for (int i = 0; i < ctx.out.size(); i++) {
         outputs[i].result = std::move(ctx.out[i]);
     }
@@ -1497,16 +1509,19 @@ struct UiDopParam : Widget {
         edit->bbox = {0, 0, 400, 40};
     }
 
-    void set_bk_socket(UiDopInputSocket *socket, DopInputSocket *bk_socket) {
+    void set_bk_socket
+        ( UiDopInputSocket *socket
+        , DopInputSocket *bk_socket
+        , DopNode *bk_node
+        ) {
         label->text = socket->name;
         edit->text = bk_socket->value;
         edit->disabled = socket->links.size();
 
         edit->on_editing_finished.connect([=, this] {
-            if (!socket->links.size()) {
+            if (bk_socket->value != edit->text) {
                 bk_socket->value = edit->text;
-            } else {
-                edit->text = bk_socket->value;
+                bk_node->invalidate();
             }
         });
     }
@@ -1526,7 +1541,7 @@ struct UiDopEditor : Widget {
                 auto param = add_param();
                 auto *socket = ptr->inputs[i];
                 auto *bk_socket = &ptr->bk_node->inputs.at(i);
-                param->set_bk_socket(socket, bk_socket);
+                param->set_bk_socket(socket, bk_socket, ptr->bk_node);
             }
         }
         update_params();
