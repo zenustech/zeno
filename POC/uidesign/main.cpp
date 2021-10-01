@@ -892,13 +892,17 @@ struct DopGraph {
         to_socket.value = {};
     }
 
-    std::any resolve_value(std::string expr) {
+    std::any resolve_value(std::string expr, bool *papplied) {
         if (expr[0] == '@') {
             auto i = expr.find(':');
             auto node_n = expr.substr(1, i - 1);
             auto socket_n = expr.substr(i + 1);
             auto *node = nodes.at(node_n).get();
-            return node->get_output_by_name(socket_n);
+            if (!node->applied) {
+                *papplied = false;
+            }
+            auto value = node->get_output_by_name(socket_n);
+            return value;
 
         } else if (!expr.size()) {
             return {};
@@ -920,7 +924,7 @@ struct DopGraph {
 void DopNode::apply_func() {
     DopContext ctx;
     for (auto const &input: inputs) {
-        auto val = graph->resolve_value(input.value);
+        auto val = graph->resolve_value(input.value, &applied);
         ctx.in.push_back(std::move(val));
     }
     if (applied)
