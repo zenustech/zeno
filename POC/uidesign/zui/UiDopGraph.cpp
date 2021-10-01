@@ -100,7 +100,8 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        bk_graph->nodes.at("vdbsmooth1")->apply_func();
+        DopVisited visited;
+        bk_graph->nodes.at("vdbsmooth1")->apply_func(&visited);
     });
 }
 

@@ -2,6 +2,7 @@
 
 
 #include "DopSocket.h"
+#include "DopVisited.h"
 
 
 struct DopGraph;
@@ -15,8 +16,8 @@ struct DopNode {
     std::vector<DopOutputSocket> outputs;
     bool applied = false;
 
-    void apply_func();
-    std::any get_output_by_name(std::string name);
+    void apply_func(DopVisited *visited);
+    std::any get_output_by_name(DopVisited *visited, std::string name);
 
     void invalidate() {
         applied = false;

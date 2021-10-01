@@ -2,6 +2,7 @@
 
 
 #include "DopNode.h"
+#include "DopVisited.h"
 
 
 struct DopGraph {
@@ -24,5 +25,6 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    std::any resolve_value(std::string expr, bool *papplied);
+    std::any resolve_value(
+        DopVisited *visited, std::string expr, bool *papplied);
 };

@@ -4,10 +4,11 @@
 #include "DopTable.h"
 
 
-void DopNode::apply_func() {
+void DopNode::apply_func(DopVisited *visited) {
     DopContext ctx;
+    bool applied = visited->is_visited(name);
     for (auto const &input: inputs) {
-        auto val = graph->resolve_value(input.value, &applied);
+        auto val = graph->resolve_value(visited, input.value, &applied);
         ctx.in.push_back(std::move(val));
     }
     if (applied)
@@ -24,8 +25,8 @@ void DopNode::apply_func() {
 }
 
 
-std::any DopNode::get_output_by_name(std::string name) {
-    apply_func();
+std::any DopNode::get_output_by_name(DopVisited *visited, std::string name) {
+    apply_func(visited);
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)
             return outputs[i].result;

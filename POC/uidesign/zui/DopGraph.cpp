@@ -66,7 +66,8 @@ void DopGraph::remove_node_input
 }
 
 
-std::any DopGraph::resolve_value(std::string expr, bool *papplied) {
+std::any DopGraph::resolve_value(
+    DopVisited *visited, std::string expr, bool *papplied) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
@@ -75,7 +76,7 @@ std::any DopGraph::resolve_value(std::string expr, bool *papplied) {
         if (!node->applied) {
             *papplied = false;
         }
-        auto value = node->get_output_by_name(socket_n);
+        auto value = node->get_output_by_name(visited, socket_n);
         return value;
 
     } else if (!expr.size()) {
