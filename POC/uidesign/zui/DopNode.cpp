@@ -1,12 +1,13 @@
 #include "DopNode.h"
 #include "DopContext.h"
+#include "DopVisited.h"
 #include "DopGraph.h"
 #include "DopTable.h"
 
 
 void DopNode::apply_func(DopVisited *visited) {
     DopContext ctx;
-    bool applied = visited->is_visited(name);
+    bool applied = visited->is_visited(this);
     for (auto const &input: inputs) {
         auto val = graph->resolve_value(visited, input.value, &applied);
         ctx.in.push_back(std::move(val));

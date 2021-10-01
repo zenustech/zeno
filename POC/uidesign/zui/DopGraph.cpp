@@ -73,7 +73,7 @@ std::any DopGraph::resolve_value(
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
-        if (!node->applied) {
+        if (!visited->is_visited(node)) {
             *papplied = false;
         }
         auto value = node->get_output_by_name(visited, socket_n);
