@@ -1,5 +1,4 @@
 #include "CursorState.h"
-#include "Widget.h"
 
 
 CursorState cur;
@@ -29,59 +28,4 @@ void CursorState::after_update() {
     if (events.size() || dx || dy)
         need_repaint = true;
     events.clear();
-}
-
-
-static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
-    //GLint nx, ny;
-    //glfwGetFramebufferSize(window, &nx, &ny);
-    //auto x = 0.5f + (float)xpos;
-    //auto y = ny - 0.5f - (float)ypos;
-    //cur.events.push_back(Event_Motion{.x = x, .y = y});
-}
-
-static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
-    cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
-}
-
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
-    cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
-}
-
-static void char_callback(GLFWwindow *window, unsigned int codeprint) {
-    cur.events.push_back(Event_Char{.code = codeprint});
-}
-
-static void window_refresh_callback(GLFWwindow *window) {
-    cur.need_repaint = true;
-}
-
-void CursorState::init_callbacks() {
-    glfwSetKeyCallback(cur.window, key_callback);
-    glfwSetCharCallback(cur.window, char_callback);
-    glfwSetMouseButtonCallback(cur.window, mouse_button_callback);
-    glfwSetCursorPosCallback(cur.window, cursor_pos_callback);
-    glfwSetWindowRefreshCallback(cur.window, window_refresh_callback);
-}
-
-AABB CursorState::update_transforms() {
-    GLint nx = 100, ny = 100;
-    glfwGetFramebufferSize(cur.window, &nx, &ny);
-    glViewport(0, 0, nx, ny);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glScalef(2.f, 2.f, -.001f);
-    glTranslatef(-.5f, -.5f, 1.f);
-    glScalef(1.f / nx, 1.f / ny, 1.f);
-    return {0, 0, (float)nx, (float)ny};
-}
-
-void CursorState::update_window(Widget *win) {
-    auto bbox = update_transforms();
-    win->bbox = bbox;
-    win->do_update();
-    win->do_update_event();
-    win->after_update();
-    after_update();
 }
