@@ -2,6 +2,7 @@
 
 
 #include "GraphicsRectItem.h"
+#include "Font.h"
 
 
 struct UiDopLink;
