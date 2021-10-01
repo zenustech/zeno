@@ -4,9 +4,6 @@
 #include "stdafx.h"
 
 
-GLFWwindow *window;
-
-
 struct Event_Key {
     int key;
     int mode;

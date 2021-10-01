@@ -1,5 +1,6 @@
 #include "UiDopGraph.h"
 #include "UiDopNode.h"
+#include "UiDopEditor.h"
 
 
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {

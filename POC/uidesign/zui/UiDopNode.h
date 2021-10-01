@@ -3,6 +3,8 @@
 
 #include "UiDopSocket.h"
 #include "GraphicsRectItem.h"
+#include "DopNode.h"
+#include "DopSocket.h"
 
 
 struct UiDopGraph;

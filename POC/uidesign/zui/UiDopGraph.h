@@ -4,6 +4,8 @@
 #include "UiDopNode.h"
 #include "UiDopLink.h"
 #include "UiDopContextMenu.h"
+#include "UiDopSocket.h"
+#include "DopGraph.h"
 
 
 struct UiDopEditor;

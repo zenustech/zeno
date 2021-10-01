@@ -1,5 +1,6 @@
 #include "UiDopSocket.h"
 #include "UiDopNode.h"
+#include "UiDopGraph.h"
 
 
 int UiDopInputSocket::get_index() const {

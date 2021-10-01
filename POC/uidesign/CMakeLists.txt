@@ -9,7 +9,7 @@ add_subdirectory(glfw)
 add_subdirectory(ftgl)
 add_subdirectory(backward-cpp)
 
-file(GLOB PROJECT_SOURCE *.cpp)
+file(GLOB PROJECT_SOURCE *.cpp zui/*.cpp)
 add_executable(ZenoEditor ${PROJECT_SOURCE} ${BACKWARD_ENABLE})
 add_backward(ZenoEditor)
 

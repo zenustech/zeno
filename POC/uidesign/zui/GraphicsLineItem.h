@@ -2,6 +2,7 @@
 
 
 #include "GraphicsWidget.h"
+#include "Color.h"
 
 
 struct GraphicsLineItem : GraphicsWidget {

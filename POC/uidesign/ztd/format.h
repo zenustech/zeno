@@ -26,12 +26,8 @@ std::string toString(Ts const &...ts) {
 }
 
 template <class ...Ts>
-auto makeException(Ts const &...ts) {
+inline auto makeException(Ts const &...ts) {
     return Exception(toString<Ts...>(ts...));
-}
-
-auto makeException(const char *msg) {
-    return Exception(msg);
 }
 
 }

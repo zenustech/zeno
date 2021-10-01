@@ -39,7 +39,7 @@ struct RootWindow : Widget {
 
 void process_input() {
     GLint nx = 100, ny = 100;
-    glfwGetFramebufferSize(window, &nx, &ny);
+    glfwGetFramebufferSize(cur.window, &nx, &ny);
     glViewport(0, 0, nx, ny);
 
     glMatrixMode(GL_MODELVIEW);
@@ -48,8 +48,8 @@ void process_input() {
     glTranslatef(-.5f, -.5f, 1.f);
     glScalef(1.f / nx, 1.f / ny, 1.f);
 
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    if (glfwGetKey(cur.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(cur.window, GLFW_TRUE);
     }
 
     cur.on_update();
@@ -65,7 +65,7 @@ void draw_graphics() {
     if (cur.need_repaint) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(cur.window);
         cur.need_repaint = false;
     }
 }
@@ -84,14 +84,14 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    window = glfwCreateWindow(1024, 768, "Zeno Editor", nullptr, nullptr);
-    glfwSetWindowPos(window, 0, 0);
-    if (!window) {
+    cur.window = glfwCreateWindow(1024, 768, "Zeno Editor", nullptr, nullptr);
+    glfwSetWindowPos(cur.window, 0, 0);
+    if (!cur.window) {
         const char *err = "unknown error"; glfwGetError(&err);
         fprintf(stderr, "Failed to create GLFW window: %s\n", err);
         return -1;
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(cur.window);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");
         return -1;
@@ -105,14 +105,14 @@ int main() {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetCharCallback(window, char_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_pos_callback);
-    glfwSetWindowRefreshCallback(window, window_refresh_callback);
+    glfwSetKeyCallback(cur.window, key_callback);
+    glfwSetCharCallback(cur.window, char_callback);
+    glfwSetMouseButtonCallback(cur.window, mouse_button_callback);
+    glfwSetCursorPosCallback(cur.window, cursor_pos_callback);
+    glfwSetWindowRefreshCallback(cur.window, window_refresh_callback);
 
     double lasttime = glfwGetTime();
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(cur.window)) {
         glfwWaitEvents();
         process_input();
         draw_graphics();

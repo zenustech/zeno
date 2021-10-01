@@ -7,6 +7,8 @@
 struct Widget;
 
 struct CursorState {
+    GLFWwindow *window;
+
     float x = 0, y = 0;
     float dx = 0, dy = 0;
     float last_x = 0, last_y = 0;
@@ -60,4 +62,4 @@ struct CursorState {
     }
 };
 
-CursorState cur;
+extern CursorState cur;
