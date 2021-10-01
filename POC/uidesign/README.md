@@ -15,10 +15,10 @@ Git >= 2.0 && CMake >= 3.12 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Win
 
 > As we all know, Visual Studio is a compiler that bundled with an IDE :)
 
-* Linux
+* Linux (Ubuntu)
 
 ```bash
-apt-get install git cmake g++
+sudo apt-get install git cmake g++
 ```
 
 ## Install required libraries (optional)
@@ -89,13 +89,13 @@ cmake --build build --parallel 8
 * Windows (cmd)
 
 ```cmd
-build\ZenoEditor.exe
+build\bin\ZenoEditor.exe
 ```
 
 * Linux (bash)
 
 ```bash
-build/ZenoEditor
+build/bin/ZenoEditor
 ```
 
 ## References
