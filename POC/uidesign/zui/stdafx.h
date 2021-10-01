@@ -9,9 +9,6 @@
 #include <variant>
 #include <optional>
 #include <functional>
-#if defined(__linux__)
-#include <unistd.h>
-#endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <FTGL/ftgl.h>
@@ -31,6 +28,4 @@
 //#else
 //#define nclangd(...) __VA_ARGS__
 //#endif
-
-
-#define typenameof(x) typeid(*(x)).name()
+//#define typenameof(x) typeid(*(x)).name()

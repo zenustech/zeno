@@ -2,6 +2,9 @@
 #include "CursorState.h"
 #include "UiDopGraph.h"
 #include "UiDopEditor.h"
+#if defined(__linux__)
+#include <unistd.h>
+#endif
 
 
 struct RootWindow : Widget {
