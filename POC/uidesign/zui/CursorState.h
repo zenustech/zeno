@@ -39,7 +39,7 @@ struct CursorState {
 
     bool need_repaint = true;
 
-    static void init_callbacks();
+    void init_callbacks();
     static AABB update_transforms();
     void update_window(Widget *win);
 

@@ -1,7 +1,7 @@
-#include "zui/stdafx.h"
-#include "zui/CursorState.h"
-#include "zui/UiDopGraph.h"
-#include "zui/UiDopEditor.h"
+#include "stdafx.h"
+#include "CursorState.h"
+#include "UiDopGraph.h"
+#include "UiDopEditor.h"
 
 
 struct RootWindow : Widget {

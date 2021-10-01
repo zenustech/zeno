@@ -57,11 +57,11 @@ static void window_refresh_callback(GLFWwindow *window) {
 }
 
 void CursorState::init_callbacks() {
-    glfwSetKeyCallback(cur.window, key_callback);
-    glfwSetCharCallback(cur.window, char_callback);
-    glfwSetMouseButtonCallback(cur.window, mouse_button_callback);
-    glfwSetCursorPosCallback(cur.window, cursor_pos_callback);
-    glfwSetWindowRefreshCallback(cur.window, window_refresh_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetCharCallback(window, char_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwSetWindowRefreshCallback(window, window_refresh_callback);
 }
 
 AABB CursorState::update_transforms() {
@@ -79,6 +79,7 @@ AABB CursorState::update_transforms() {
 
 void CursorState::update_window(Widget *win) {
     auto bbox = update_transforms();
+    on_update();
     win->bbox = bbox;
     win->do_update();
     win->do_update_event();
