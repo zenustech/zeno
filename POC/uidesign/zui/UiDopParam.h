@@ -12,7 +12,7 @@ struct UiDopParam : Widget {
     TextEdit *edit;
 
     UiDopParam() {
-        bbox = {0, 0, 400, 50};
+        bbox = {0, 0, 500, 50};
         label = add_child<Label>();
         label->position = {0, 5};
         label->bbox = {0, 0, 100, 40};

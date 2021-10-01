@@ -104,9 +104,15 @@ void Widget::after_update() {
 void Widget::do_update_event() {
     auto raii = cur.translate(-position.x, -position.y);
 
+#if 1
     if (auto child = child_at({cur.x, cur.y}); child) {
         child->do_update_event();
     }
+#else
+    for (auto const &child: children) {
+        child->do_update_event();
+    }
+#endif
 
     for (auto const &e: cur.events) {
         on_generic_event(e);
