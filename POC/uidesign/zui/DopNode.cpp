@@ -7,12 +7,12 @@
 
 void DopNode::apply_func(DopVisited *visited) {
     DopContext ctx;
-    bool applied = visited->is_visited(this);
+    bool valid = visited->is_visited(this);
     for (auto const &input: inputs) {
-        auto val = graph->resolve_value(visited, input.value, &applied);
+        auto val = graph->resolve_value(visited, input.value, &valid);
         ctx.in.push_back(std::move(val));
     }
-    if (applied)
+    if (valid)
         return;
 
     ctx.out.resize(outputs.size());
@@ -22,7 +22,7 @@ void DopNode::apply_func(DopVisited *visited) {
     for (int i = 0; i < ctx.out.size(); i++) {
         outputs[i].result = std::move(ctx.out[i]);
     }
-    applied = true;
+    visited->mark_visited(this);
 }
 
 

@@ -67,14 +67,14 @@ void DopGraph::remove_node_input
 
 
 std::any DopGraph::resolve_value(
-    DopVisited *visited, std::string expr, bool *papplied) {
+    DopVisited *visited, std::string expr, bool *pisvalid) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
         if (!visited->is_visited(node)) {
-            *papplied = false;
+            *pisvalid = false;
         }
         auto value = node->get_output_by_name(visited, socket_n);
         return value;
