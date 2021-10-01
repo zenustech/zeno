@@ -2,6 +2,7 @@
 
 
 #include "Widget.h"
+#include "Font.h"
 
 
 struct Label : Widget {

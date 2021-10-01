@@ -21,3 +21,17 @@ int UiDopOutputSocket::get_index() const {
     }
     throw ztd::makeException("Cannot find index of output node");
 }
+
+
+bool UiDopSocket::is_parent_active() const {
+    return get_parent()->hovered;
+}
+
+void UiDopSocket::clear_links() {
+    auto graph = get_parent()->get_parent();
+    if (links.size()) {
+        for (auto link: std::set(links)) {
+            graph->remove_link(link);
+        }
+    }
+}

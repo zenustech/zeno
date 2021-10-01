@@ -2,6 +2,8 @@
 
 
 #include "CursorState.h"
+#include "Point.h"
+#include "AABB.h"
 
 
 template <class T>

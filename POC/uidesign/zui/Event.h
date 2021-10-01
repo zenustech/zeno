@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "UI.h"
+#include "stdafx.h"
 
 
 GLFWwindow *window;

@@ -61,26 +61,3 @@ struct CursorState {
 };
 
 CursorState cur;
-
-
-static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
-    //GLint nx, ny;
-    //glfwGetFramebufferSize(window, &nx, &ny);
-    //auto x = 0.5f + (float)xpos;
-    //auto y = ny - 0.5f - (float)ypos;
-    //cur.events.push_back(Event_Motion{.x = x, .y = y});
-}
-
-static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
-    cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
-}
-
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
-    cur.events.push_back(Event_Key{.key = key, .mode = mode, .down = action == GLFW_PRESS});
-}
-
-static void char_callback(GLFWwindow *window, unsigned int codeprint) {
-    cur.events.push_back(Event_Char{.code = codeprint});
-}
-
-
