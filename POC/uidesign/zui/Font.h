@@ -4,52 +4,6 @@
 #include "stdafx.h"
 
 
-struct Color {
-    float r, g, b;
-
-    Color(float r = 0, float g = 0, float b = 0)
-        : r(r), g(g), b(b) {}
-
-    float *data() {
-        return &r;
-    }
-
-    float const *data() const {
-        return &r;
-    }
-};
-
-struct Point {
-    float x, y;
-
-    Point(float x = 0, float y = 0)
-        : x(x), y(y) {}
-
-    Point operator+(Point const &o) const {
-        return {x + o.x, y + o.y};
-    }
-
-    Point operator-(Point const &o) const {
-        return {x - o.x, y - o.y};
-    }
-
-    Point operator*(float o) const {
-        return {x * o, y * o};
-    }
-};
-
-struct AABB {
-    float x0, y0, nx, ny;
-
-    AABB(float x0 = 0, float y0 = 0, float nx = 0, float ny = 0)
-        : x0(x0), y0(y0), nx(nx), ny(ny) {}
-
-    bool contains(float x, float y) const {
-        return x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny;
-    }
-};
-
-
 struct Font {
     std::unique_ptr<FTFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
