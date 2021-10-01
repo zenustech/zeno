@@ -7,7 +7,7 @@
 struct Widget;
 
 struct CursorState {
-    GLFWwindow *window;
+    GLFWwindow *window = nullptr;
 
     float x = 0, y = 0;
     float dx = 0, dy = 0;
@@ -15,25 +15,8 @@ struct CursorState {
     bool lmb = false, mmb = false, rmb = false;
     bool shift = false, ctrl = false, alt = false;
 
-    void on_update() {
-        last_x = x;
-        last_y = y;
-
-        GLint nx, ny;
-        glfwGetFramebufferSize(window, &nx, &ny);
-        GLdouble _x, _y;
-        glfwGetCursorPos(window, &_x, &_y);
-        x = 0.5f + (float)_x;
-        y = ny - 0.5f - (float)_y;
-        dx = x - last_x;
-        dy = y - last_y;
-        lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        mmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-        rmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-        shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
-        ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-        alt = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
-    }
+    void on_update();
+    void after_update();
 
     bool is_pressed(int key) const {
         return glfwGetKey(window, key) == GLFW_PRESS;
@@ -44,7 +27,7 @@ struct CursorState {
         x += dx; y += dy;
         struct RAII : std::function<void()> {
             using std::function<void()>::function;
-            ~RAII() { (*this)(); }
+            ~RAII() { std::function<void()>::operator()(); }
         } raii {[=, this] () {
             x = ox; y = oy;
         }};
@@ -54,12 +37,6 @@ struct CursorState {
     std::vector<Event> events;
 
     bool need_repaint = true;
-
-    void after_update() {
-        if (events.size() || dx || dy)
-            need_repaint = true;
-        events.clear();
-    }
 };
 
 extern CursorState cur;
