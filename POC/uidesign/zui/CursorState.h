@@ -2,6 +2,7 @@
 
 
 #include "Event.h"
+#include "AABB.h"
 
 
 struct Widget;
@@ -37,6 +38,19 @@ struct CursorState {
     std::vector<Event> events;
 
     bool need_repaint = true;
+
+    static void init_callbacks();
+    static AABB update_transforms();
+    void update_window(Widget *win);
+
+    bool is_invalidated() {
+        if (need_repaint) {
+            need_repaint = false;
+            return true;
+        } else {
+            return false;
+        }
+    }
 };
 
 extern CursorState cur;
