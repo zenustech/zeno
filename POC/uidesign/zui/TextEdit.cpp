@@ -74,6 +74,7 @@ void TextEdit::on_event(Event_Key e) {
 void TextEdit::on_event(Event_Char e) {
     Widget::on_event(e);
 
+    printf("oc %c\n", e.code);
     if (disabled)
         return;
     char c = e.code;

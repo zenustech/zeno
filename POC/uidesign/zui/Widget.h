@@ -2,6 +2,7 @@
 
 
 #include "CursorState.h"
+#include "Event.h"
 #include "Point.h"
 #include "AABB.h"
 
