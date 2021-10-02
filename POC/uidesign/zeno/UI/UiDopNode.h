@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include "UiDopSocket.h"
-#include "GraphicsRectItem.h"
-#include "DopNode.h"
-#include "DopSocket.h"
+#include <zeno/UI/UiDopSocket.h>
+#include <zeno/UI/GraphicsRectItem.h>
+#include <zeno/dop/DopNode.h>
+#include <zeno/dop/DopSocket.h>
 
 
 struct UiDopGraph;

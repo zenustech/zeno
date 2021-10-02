@@ -1,7 +1,7 @@
-#include "stdafx.h"
-#include "CursorState.h"
-#include "UiDopGraph.h"
-#include "UiDopEditor.h"
+#include <zeno/UI/stdafx.h>
+#include <zeno/UI/CursorState.h>
+#include <zeno/UI/UiDopGraph.h>
+#include <zeno/UI/UiDopEditor.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif

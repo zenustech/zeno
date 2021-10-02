@@ -1,7 +1,7 @@
-#include "UiDopGraph.h"
-#include "UiDopNode.h"
-#include "UiDopEditor.h"
-#include "DopTable.h"
+#include <zeno/UI/UiDopGraph.h>
+#include <zeno/UI/UiDopNode.h>
+#include <zeno/UI/UiDopEditor.h>
+#include <zeno/dop/DopTable.h>
 
 
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {

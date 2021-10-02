@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include "UiDopNode.h"
-#include "UiDopLink.h"
-#include "UiDopContextMenu.h"
-#include "UiDopSocket.h"
-#include "DopGraph.h"
+#include <zeno/UI/UiDopNode.h>
+#include <zeno/UI/UiDopLink.h>
+#include <zeno/UI/UiDopContextMenu.h>
+#include <zeno/UI/UiDopSocket.h>
+#include <zeno/dop/DopGraph.h>
 
 
 struct UiDopEditor;

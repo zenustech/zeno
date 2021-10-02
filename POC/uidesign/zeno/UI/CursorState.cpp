@@ -1,5 +1,5 @@
-#include "CursorState.h"
-#include "Widget.h"
+#include <zeno/UI/CursorState.h>
+#include <zeno/UI/Widget.h>
 
 
 CursorState cur;

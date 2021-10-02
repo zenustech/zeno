@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "Widget.h"
-#include "Font.h"
+#include <zeno/UI/Widget.h>
+#include <zeno/UI/Font.h>
 
 
 struct Label : Widget {

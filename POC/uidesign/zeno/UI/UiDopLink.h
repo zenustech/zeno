@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "GraphicsLineItem.h"
+#include <zeno/UI/GraphicsLineItem.h>
 
 
 struct UiDopLink : GraphicsLineItem {

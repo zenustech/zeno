@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "GraphicsRectItem.h"
-#include "Font.h"
+#include <zeno/UI/GraphicsRectItem.h>
+#include <zeno/UI/Font.h>
 
 
 struct UiDopLink;

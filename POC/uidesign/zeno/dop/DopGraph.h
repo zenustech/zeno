@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "DopNode.h"
+#include <zeno/dop/DopNode.h>
 
 
 struct DopGraph {

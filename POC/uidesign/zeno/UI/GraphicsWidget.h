@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "Widget.h"
+#include <zeno/UI/Widget.h>
 
 
 struct GraphicsWidget : Widget {

@@ -1,4 +1,4 @@
-#include "UiDopNode.h"
+#include <zeno/UI/UiDopNode.h>
 
 void UiDopNode::_update_backend_data() const {
     bk_node->name = name;

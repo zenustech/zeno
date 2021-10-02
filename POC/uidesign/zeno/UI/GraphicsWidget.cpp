@@ -1,4 +1,4 @@
-#include "GraphicsWidget.h"
+#include <zeno/UI/GraphicsWidget.h>
 
 
 void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {

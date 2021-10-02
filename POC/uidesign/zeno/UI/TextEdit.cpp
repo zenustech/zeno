@@ -1,4 +1,4 @@
-#include "TextEdit.h"
+#include <zeno/UI/TextEdit.h>
 
 
 void TextEdit::on_event(Event_Hover e) {

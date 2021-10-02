@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "DopSocket.h"
-#include "DopContext.h"
+#include <zeno/dop/DopSocket.h>
+#include <zeno/dop/DopContext.h>
 
 
 struct DopGraph;

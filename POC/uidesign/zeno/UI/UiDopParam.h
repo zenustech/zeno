@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include "Label.h"
-#include "TextEdit.h"
-#include "UiDopSocket.h"
-#include "Font.h"
+#include <zeno/UI/Label.h>
+#include <zeno/UI/TextEdit.h>
+#include <zeno/UI/UiDopSocket.h>
+#include <zeno/UI/Font.h>
 
 
 struct UiDopParam : Widget {

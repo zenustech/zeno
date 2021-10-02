@@ -1,5 +1,5 @@
-#include "DopTable.h"
-#include "DopNode.h"
+#include <zeno/dop/DopTable.h>
+#include <zeno/dop/DopNode.h>
 
 
 DopTable tab;

@@ -1,7 +1,7 @@
-#include "DopNode.h"
-#include "DopFunctor.h"
-#include "DopGraph.h"
-#include "DopTable.h"
+#include <zeno/dop/DopNode.h>
+#include <zeno/dop/DopFunctor.h>
+#include <zeno/dop/DopGraph.h>
+#include <zeno/dop/DopTable.h>
 
 
 std::any DopNode::get_input(int i, DopContext *visited) const {

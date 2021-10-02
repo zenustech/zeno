@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "Label.h"
+#include <zeno/UI/Label.h>
 
 
 struct TextEdit : Label {

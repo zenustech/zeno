@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "UiDopParam.h"
-#include "TextEdit.h"
+#include <zeno/UI/UiDopParam.h>
+#include <zeno/UI/TextEdit.h>
 
 
 struct UiDopEditor : Widget {

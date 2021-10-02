@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "GraphicsWidget.h"
-#include "Color.h"
+#include <zeno/UI/GraphicsWidget.h>
+#include <zeno/UI/Color.h>
 
 
 struct GraphicsLineItem : GraphicsWidget {

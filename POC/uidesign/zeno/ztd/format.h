@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
-#include "exception.h"
+#include <zeno/ztd/exception.h>
 
 namespace ztd {
 

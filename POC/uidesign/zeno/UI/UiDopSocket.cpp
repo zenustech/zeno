@@ -1,6 +1,6 @@
-#include "UiDopSocket.h"
-#include "UiDopNode.h"
-#include "UiDopGraph.h"
+#include <zeno/UI/UiDopSocket.h>
+#include <zeno/UI/UiDopNode.h>
+#include <zeno/UI/UiDopGraph.h>
 
 
 int UiDopInputSocket::get_index() const {

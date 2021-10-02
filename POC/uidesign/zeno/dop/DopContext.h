@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "stdafx.h"
+#include <zeno/dop/stdafx.h>
 
 
 using DopContext = std::set<std::string>;

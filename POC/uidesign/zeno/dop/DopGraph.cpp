@@ -1,5 +1,5 @@
-#include "DopGraph.h"
-#include "DopNode.h"
+#include <zeno/dop/DopGraph.h>
+#include <zeno/dop/DopNode.h>
 
 
 DopNode *DopGraph::add_node(std::string kind) {

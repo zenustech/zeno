@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "DopFunctor.h"
+#include <zeno/dop/DopFunctor.h>
 
 
 struct DopTable {
