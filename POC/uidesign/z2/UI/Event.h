@@ -22,7 +22,7 @@ struct Event_Hover {
 };
 
 struct Event_Mouse {
-    int btn;  // lmb=0, mmb=1, rmb=2
+    int btn;  // lmb=0, rmb=1, mmb=2
     bool down;
 };
 
