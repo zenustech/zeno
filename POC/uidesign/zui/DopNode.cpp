@@ -4,12 +4,14 @@
 #include "DopTable.h"
 
 
-void DopNode::apply_func() {
+void DopNode::_apply_func() {
     ztd::Vector<DopLazy> in(inputs.size());
 
     for (int i = 0; i < in.size(); i++) {
-        in[i] = graph->resolve_value(inputs[i].value);
+        in[i] = graph->resolve_value(inputs[i].value, node_changed);
     }
+    if (!node_changed)
+        return;
 
     auto func = tab.lookup(kind);
     ztd::Vector<DopLazy> out(outputs.size());
@@ -21,7 +23,7 @@ void DopNode::apply_func() {
 }
 
 
-DopLazy DopNode::get_output_by_name(std::string name) {
+DopLazy DopNode::get_output_by_name(std::string name, bool &changed) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)
@@ -30,13 +32,15 @@ DopLazy DopNode::get_output_by_name(std::string name) {
     if (n == -1)
         throw ztd::makeException("Bad output socket name: ", name);
 
+    _apply_func();
+    if (node_changed) {
+        changed = true;
+        node_changed = false;
+    }
+
     auto val = outputs[n].result;
     if (!val.has_value()) {
-        apply_func();
-        val = outputs[n].result;
-        if (!val.has_value()) {
-            throw ztd::makeException("no value returned at socket: ", name);
-        }
+        throw ztd::makeException("no value returned at socket: ", name);
     }
     return val;
 }

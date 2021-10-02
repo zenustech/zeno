@@ -100,7 +100,7 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        bk_graph->nodes.at("vdbsmooth1")->get_output_by_name("grid")();
+        bk_graph->resolve_value("@vdbsmooth1:grid")();
     });
 }
 

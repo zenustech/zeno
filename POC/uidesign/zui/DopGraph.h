@@ -25,5 +25,10 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    DopLazy resolve_value(std::string expr);
+    DopLazy resolve_value(std::string expr, bool &changed);
+
+    DopLazy resolve_value(std::string expr) {
+        bool changed = false;
+        return resolve_value(expr, changed);
+    }
 };
