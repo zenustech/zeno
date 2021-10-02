@@ -15,8 +15,6 @@ struct DopNode {
     std::vector<DopInputSocket> inputs;
     std::vector<DopOutputSocket> outputs;
 
-    bool node_changed = true; // deprecated
-
     void _apply_func(DopContext *visited);
     std::any get_output_by_name(std::string sock_name, DopContext *visited);
     void serialize(std::ostream &ss) const;

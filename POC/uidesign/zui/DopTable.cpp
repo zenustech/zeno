@@ -22,6 +22,7 @@ static int def_vdbsmooth = tab.define("vdbsmooth", [] (auto *node, auto *visited
 
 static int def_vdberode = tab.define("vdberode", [] (auto *node, auto *visited) {
     auto grid = std::any_cast<int>(node->get_input(0, visited));
+    auto type = node->get_input(1, visited);
     grid -= 3;
     printf("vdberode out[0] %d\n", grid);
     node->set_output(0, grid);

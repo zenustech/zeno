@@ -32,6 +32,7 @@ std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited)
     if (n == -1)
         throw ztd::makeException("Bad output socket name: ", sock_name);
 
+    printf("do %s %s\n", name.c_str(), sock_name.c_str());
     _apply_func(visited);
 
     return outputs[n].result;
@@ -61,5 +62,4 @@ void DopNode::serialize(std::ostream &ss) const {
 
 
 void DopNode::invalidate() {
-    node_changed = true;
 }
