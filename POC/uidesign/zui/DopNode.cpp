@@ -69,7 +69,5 @@ void DopNode::serialize(std::ostream &ss) const {
 
 
 void DopNode::invalidate() {
-    for (auto const &output: outputs) {
-        output.result.reset();
-    }
+    node_changed = true;
 }
