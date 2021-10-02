@@ -59,9 +59,9 @@ struct UiDopPendingLink : GraphicsLineItem {
         return (UiDopGraph *)(parent);
     }
 
-    Widget *item_at(Point p) const override {
-        return nullptr;
-    }
+    //Widget *item_at(Point p) const override {
+        //return nullptr;
+    //}
 };
 
 

@@ -124,7 +124,9 @@ void UiDopGraph::on_event(Event_Mouse e) {
     if (e.btn != 0)
         return;
 
-    auto item = item_at({cur.x, cur.y});
+    auto item = item_at({cur.x, cur.y}, [=] (Widget *it) {
+        return !dynamic_cast<UiDopLink *>(it);
+    });
 
     if (auto node = dynamic_cast<UiDopNode *>(item); node) {
         if (pending_link) {
@@ -138,6 +140,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
             }
         }
 
+#if 0
     } else if (auto link = dynamic_cast<UiDopLink *>(item); link) {
         if (pending_link) {
             auto another = pending_link->socket;
@@ -149,6 +152,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
                 add_pending_link(nullptr);
             }
         }
+#endif
 
     } else if (auto socket = dynamic_cast<UiDopSocket *>(item); socket) {
         add_pending_link(socket);
