@@ -4,14 +4,12 @@
 #include "DopTable.h"
 
 
-void DopNode::_apply_func() {
+void DopNode::_apply_func(std::set<std::string> &visited) {
     ztd::Vector<DopLazy> in(inputs.size());
 
     for (int i = 0; i < in.size(); i++) {
-        in[i] = graph->resolve_value(inputs[i].value, node_changed);
+        in[i] = graph->resolve_value(inputs[i].value, visited);
     }
-    if (!node_changed)
-        return;
 
     auto func = tab.lookup(kind);
     ztd::Vector<DopLazy> out(outputs.size());
@@ -23,7 +21,7 @@ void DopNode::_apply_func() {
 }
 
 
-DopLazy DopNode::get_output_by_name(std::string name, bool &changed) {
+DopLazy DopNode::get_output_by_name(std::string name, std::set<std::string> &visited) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)
@@ -32,11 +30,8 @@ DopLazy DopNode::get_output_by_name(std::string name, bool &changed) {
     if (n == -1)
         throw ztd::makeException("Bad output socket name: ", name);
 
-    _apply_func();
-    if (node_changed) {
-        changed = true;
-        node_changed = false;
-    }
+    _apply_func(visited);
+    visited.insert(this->name);
 
     auto val = outputs[n].result;
     if (!val.has_value()) {

@@ -66,13 +66,13 @@ void DopGraph::remove_node_input
 }
 
 
-DopLazy DopGraph::resolve_value(std::string expr, bool &changed) {
+DopLazy DopGraph::resolve_value(std::string expr, std::set<std::string> &visited) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
-        auto val = node->get_output_by_name(socket_n, changed);
+        auto val = node->get_output_by_name(socket_n, visited);
         return val;
 
     } else if (!expr.size()) {

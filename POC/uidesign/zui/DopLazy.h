@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 
+#if 1
 class DopLazy {
     struct Impl {
         std::function<std::any()> fun;
@@ -49,3 +50,6 @@ public:
         return impl != nullptr;
     }
 };
+#else
+using DopLazy = std::any;
+#endif

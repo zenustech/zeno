@@ -15,10 +15,10 @@ struct DopNode {
     std::vector<DopInputSocket> inputs;
     std::vector<DopOutputSocket> outputs;
 
-    bool node_changed = true;
+    bool node_changed = true; // deprecated
 
-    void _apply_func();
-    DopLazy get_output_by_name(std::string name, bool &changed);
+    void _apply_func(std::set<std::string> &visited);
+    DopLazy get_output_by_name(std::string name, std::set<std::string> &visited);
     void serialize(std::ostream &ss) const;
     void invalidate();
 };
