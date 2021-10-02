@@ -5,19 +5,18 @@
 
 
 void DopNode::apply_func() {
-    DopContext ctx;
-    ctx.in.resize(inputs.size());
+    ztd::Vector<DopLazy> in(inputs.size());
 
-    for (int i = 0; i < ctx.in.size(); i++) {
-        ctx.in[i] = graph->resolve_value(inputs[i].value);
+    for (int i = 0; i < in.size(); i++) {
+        in[i] = graph->resolve_value(inputs[i].value);
     }
 
-    ctx.out.resize(outputs.size());
     auto func = tab.lookup(kind);
-    func(&ctx);
+    ztd::Vector<DopLazy> out(outputs.size());
+    func(in, out);
 
-    for (int i = 0; i < ctx.out.size(); i++) {
-        outputs[i].result = std::move(ctx.out[i]);
+    for (int i = 0; i < out.size(); i++) {
+        outputs.at(i).result = std::move(out[i]);
     }
 }
 
