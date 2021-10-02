@@ -4,7 +4,7 @@
 #include "DopTable.h"
 
 
-std::any DopNode::get_input(int i, std::set<std::string> &visited) {
+std::any DopNode::get_input(int i, DopContext *visited) const {
     return graph->resolve_value(inputs[i].value, visited);
 }
 
@@ -14,29 +14,27 @@ void DopNode::set_output(int i, std::any val) {
 }
 
 
-void DopNode::_apply_func(std::set<std::string> &visited) {
+void DopNode::_apply_func(DopContext *visited) {
     auto func = tab.lookup(kind);
     func(this, visited);
+    visited->insert(name);
 }
 
 
-std::any DopNode::get_output_by_name(std::string name, std::set<std::string> &visited) {
+std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
-        if (outputs[i].name == name)
+        if (outputs[i].name == sock_name) {
             n = i;
+            break;
+        }
     }
     if (n == -1)
-        throw ztd::makeException("Bad output socket name: ", name);
+        throw ztd::makeException("Bad output socket name: ", sock_name);
 
     _apply_func(visited);
-    visited.insert(this->name);
 
-    auto val = outputs[n].result;
-    if (!val.has_value()) {
-        throw ztd::makeException("no value returned at socket: ", name);
-    }
-    return val;
+    return outputs[n].result;
 }
 
 

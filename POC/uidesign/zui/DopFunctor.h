@@ -1,9 +1,10 @@
 #pragma once
 
 
-#include "stdafx.h"
+#include "DopContext.h"
 
 
 struct DopNode;
 
-using DopFunctor = std::function<void(DopNode *, std::set<std::string> &)>;
+
+using DopFunctor = std::function<void(DopNode *, DopContext *)>;

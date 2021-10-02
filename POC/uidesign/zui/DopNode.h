@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "DopLazy.h"
 #include "DopSocket.h"
+#include "DopContext.h"
 
 
 struct DopGraph;
@@ -17,11 +17,11 @@ struct DopNode {
 
     bool node_changed = true; // deprecated
 
-    void _apply_func(std::set<std::string> &visited);
-    std::any get_output_by_name(std::string name, std::set<std::string> &visited);
+    void _apply_func(DopContext *visited);
+    std::any get_output_by_name(std::string sock_name, DopContext *visited);
     void serialize(std::ostream &ss) const;
     void invalidate();
 
-    std::any get_input(int i, std::set<std::string> &visited);
+    std::any get_input(int i, DopContext *visited) const;
     void set_output(int i, std::any val);
 };
