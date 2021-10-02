@@ -216,7 +216,10 @@ void UiDopGraph::on_event(Event_Key e) {
         return;
 
     if (e.key == GLFW_KEY_TAB) {
-        add_context_menu();
+        if (!menu)
+            add_context_menu();
+        else
+            remove_context_menu();
 
     } else if (e.key == GLFW_KEY_DELETE) {
         for (auto *item: children_selected) {
