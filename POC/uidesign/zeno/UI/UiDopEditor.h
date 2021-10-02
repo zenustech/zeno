@@ -5,6 +5,9 @@
 #include <zeno/UI/TextEdit.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopEditor : Widget {
     TextEdit *name_edit = nullptr;
     std::vector<UiDopParam *> params;
@@ -54,3 +57,6 @@ struct UiDopEditor : Widget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
+
+
+}  // namespace zeno::UI

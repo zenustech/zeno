@@ -1,6 +1,9 @@
 #include <zeno/UI/Button.h>
 
 
+namespace zeno::UI {
+
+
 void Button::on_event(Event_Mouse e) {
     Widget::on_event(e);
 
@@ -32,3 +35,6 @@ void Button::paint() const {
         font.render(bbox.x0 + BW, bbox.y0, text);
     }
 }
+
+
+}  // namespace zeno::UI

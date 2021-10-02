@@ -7,6 +7,9 @@
 #include <zeno/UI/Font.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopParam : Widget {
     Label *label;
     TextEdit *edit;
@@ -38,3 +41,6 @@ struct UiDopParam : Widget {
         });
     }
 };
+
+
+}  // namespace zeno::UI

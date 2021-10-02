@@ -1,6 +1,9 @@
 #include <zeno/UI/UiDopContextMenu.h>
 
 
+namespace zeno::UI {
+
+
 UiDopContextMenu::UiDopContextMenu() {
     position = {cur.x, cur.y};
     zvalue = 10.f;
@@ -28,3 +31,6 @@ void UiDopContextMenu::update_entries() {
     }
     bbox = {0, entries.size() * -EH, EW, entries.size() * EH};
 }
+
+
+}  // namespace zeno::UI

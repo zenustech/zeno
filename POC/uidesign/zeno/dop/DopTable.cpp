@@ -2,6 +2,9 @@
 #include <zeno/dop/DopNode.h>
 
 
+namespace zeno::dop {
+
+
 DopTable tab;
 
 
@@ -37,3 +40,6 @@ static int def_repeat = tab.define("repeat", [] (auto *node, auto *visited) {
     }
     node->set_output(0, 32);
 });
+
+
+}  // namespace zeno::dop

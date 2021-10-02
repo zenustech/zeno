@@ -1,5 +1,8 @@
 #include <zeno/UI/UiDopNode.h>
 
+namespace zeno::UI {
+
+
 void UiDopNode::_update_backend_data() const {
     bk_node->name = name;
     bk_node->inputs.resize(inputs.size());
@@ -74,3 +77,6 @@ void UiDopNode::paint() const {
     glColor3f(1.f, 1.f, 1.f);
     font.render(0, FH * 0.05f, name);
 }
+
+
+}  // namespace zeno::UI

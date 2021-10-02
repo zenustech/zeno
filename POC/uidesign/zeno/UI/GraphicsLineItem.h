@@ -5,6 +5,9 @@
 #include <zeno/UI/Color.h>
 
 
+namespace zeno::UI {
+
+
 struct GraphicsLineItem : GraphicsWidget {
     static constexpr float LW = 5.f;
 
@@ -15,3 +18,6 @@ struct GraphicsLineItem : GraphicsWidget {
     virtual Color get_line_color() const;
     void paint() const override;
 };
+
+
+}  // namespace zeno::UI

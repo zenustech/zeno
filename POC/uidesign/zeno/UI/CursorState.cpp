@@ -2,6 +2,9 @@
 #include <zeno/UI/Widget.h>
 
 
+namespace zeno::UI {
+
+
 CursorState cur;
 
 
@@ -86,3 +89,6 @@ void CursorState::update_window(Widget *win) {
     win->after_update();
     after_update();
 }
+
+
+}  // namespace zeno::UI

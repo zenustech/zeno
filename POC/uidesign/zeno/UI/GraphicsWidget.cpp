@@ -1,6 +1,9 @@
 #include <zeno/UI/GraphicsWidget.h>
 
 
+namespace zeno::UI {
+
+
 void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
     if (!(multiselect || (ptr && ptr->selected))) {
         for (auto const &child: children_selected) {
@@ -47,3 +50,6 @@ void GraphicsView::on_event(Event_Mouse e) {
         select_child(nullptr, false);
     }
 }
+
+
+}  // namespace zeno::UI

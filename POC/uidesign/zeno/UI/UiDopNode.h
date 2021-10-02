@@ -7,6 +7,9 @@
 #include <zeno/dop/DopSocket.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopGraph;
 
 
@@ -29,3 +32,6 @@ struct UiDopNode : GraphicsRectItem {
     UiDopGraph *get_parent() const;
     void paint() const override;
 };
+
+
+}  // namespace zeno::UI

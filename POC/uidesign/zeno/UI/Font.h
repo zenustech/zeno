@@ -4,6 +4,9 @@
 #include <zeno/ztd/stdafx.h>
 
 
+namespace zeno::UI {
+
+
 struct Font {
     std::unique_ptr<FTFont> font;
     std::unique_ptr<FTSimpleLayout> layout;
@@ -58,3 +61,6 @@ struct Font {
         return *this;
     }
 };
+
+
+}  // namespace zeno::UI

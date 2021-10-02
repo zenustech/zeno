@@ -5,6 +5,9 @@
 #include <zeno/UI/AABB.h>
 
 
+namespace zeno::UI {
+
+
 struct Widget;
 
 struct CursorState {
@@ -54,3 +57,6 @@ struct CursorState {
 };
 
 extern CursorState cur;
+
+
+}  // namespace zeno::UI

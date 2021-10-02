@@ -7,6 +7,9 @@
 #include <zeno/UI/AABB.h>
 
 
+namespace zeno::UI {
+
+
 template <class T>
 inline T notnull(T &&t) {
     if (!t) throw std::bad_optional_access();
@@ -67,3 +70,6 @@ struct Widget : Object {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;
     }
 };
+
+
+}  // namespace zeno::UI

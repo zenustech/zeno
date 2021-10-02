@@ -4,6 +4,9 @@
 #include <zeno/UI/Widget.h>
 
 
+namespace zeno::UI {
+
+
 struct GraphicsWidget : Widget {
     bool selected = false;
     bool selectable = false;
@@ -18,3 +21,6 @@ struct GraphicsView : Widget {
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
 };
+
+
+}  // namespace zeno::UI

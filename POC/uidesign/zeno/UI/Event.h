@@ -4,6 +4,9 @@
 #include <zeno/ztd/stdafx.h>
 
 
+namespace zeno::UI {
+
+
 struct Event_Key {
     int key;
     int mode;
@@ -50,3 +53,6 @@ struct SignalSlot {
         callbacks.push_back(std::move(f));
     }
 };
+
+
+}  // namespace zeno::UI

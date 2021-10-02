@@ -5,6 +5,9 @@
 #include <zeno/UI/Font.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopLink;
 struct UiDopNode;
 
@@ -84,3 +87,6 @@ struct UiDopOutputSocket : UiDopSocket {
 
     int get_index() const;
 };
+
+
+}  // namespace zeno::UI

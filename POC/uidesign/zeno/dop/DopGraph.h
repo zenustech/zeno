@@ -4,6 +4,9 @@
 #include <zeno/dop/DopNode.h>
 
 
+namespace zeno::dop {
+
+
 struct DopGraph {
     ztd::Map<std::string, std::unique_ptr<DopNode>> nodes;
 
@@ -31,3 +34,6 @@ struct DopGraph {
         return resolve_value(expr, &visited);
     }
 };
+
+
+}  // namespace zeno::dop

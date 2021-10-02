@@ -4,6 +4,9 @@
 #include <zeno/dop/DopTable.h>
 
 
+namespace zeno::dop {
+
+
 std::any DopNode::get_input(int i, DopContext *visited) const {
     return graph->resolve_value(inputs[i].value, visited);
 }
@@ -63,3 +66,6 @@ void DopNode::serialize(std::ostream &ss) const {
 
 void DopNode::invalidate() {
 }
+
+
+}  // namespace zeno::dop

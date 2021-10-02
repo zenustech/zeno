@@ -2,6 +2,9 @@
 #include <zeno/dop/DopNode.h>
 
 
+namespace zeno::dop {
+
+
 DopNode *DopGraph::add_node(std::string kind) {
     auto p = std::make_unique<DopNode>();
     p->graph = this;
@@ -89,3 +92,6 @@ std::any DopGraph::resolve_value(std::string expr, DopContext *visited) {
         return expr;
     }
 }
+
+
+}  // namespace zeno::dop

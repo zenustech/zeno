@@ -4,6 +4,9 @@
 #include <zeno/UI/GraphicsLineItem.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopLink : GraphicsLineItem {
     UiDopOutputSocket *from_socket;
     UiDopInputSocket *to_socket;
@@ -60,3 +63,6 @@ struct UiDopPendingLink : GraphicsLineItem {
         return nullptr;
     }
 };
+
+
+}  // namespace zeno::UI

@@ -6,6 +6,9 @@
 #include <zeno/UI/Event.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopContextMenu : Widget {
     static constexpr float EH = 32.f, EW = 210.f, FH = 20.f;
 
@@ -18,3 +21,6 @@ struct UiDopContextMenu : Widget {
     Button *add_entry(std::string name);
     void update_entries();
 };
+
+
+}  // namespace zeno::UI

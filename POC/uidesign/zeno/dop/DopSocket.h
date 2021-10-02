@@ -4,6 +4,9 @@
 #include <zeno/ztd/stdafx.h>
 
 
+namespace zeno::dop {
+
+
 struct DopInputSocket {
     std::string name;
     std::string value;
@@ -22,3 +25,6 @@ struct DopOutputSocket {
         ss << name;
     }
 };
+
+
+}  // namespace zeno::dop

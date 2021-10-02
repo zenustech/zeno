@@ -3,6 +3,9 @@
 #include <zeno/UI/UiDopGraph.h>
 
 
+namespace zeno::UI {
+
+
 int UiDopInputSocket::get_index() const {
     auto node = get_parent();
     for (int i = 0; i < node->inputs.size(); i++) {
@@ -36,3 +39,6 @@ void UiDopSocket::clear_links() {
         }
     }
 }
+
+
+}  // namespace zeno::UI

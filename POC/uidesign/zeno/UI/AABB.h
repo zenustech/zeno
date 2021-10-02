@@ -4,6 +4,9 @@
 #include <zeno/ztd/stdafx.h>
 
 
+namespace zeno::UI {
+
+
 struct AABB {
     float x0, y0, nx, ny;
 
@@ -14,3 +17,6 @@ struct AABB {
         return x0 <= x && y0 <= y && x <= x0 + nx && y <= y0 + ny;
     }
 };
+
+
+}  // namespace zeno::UI

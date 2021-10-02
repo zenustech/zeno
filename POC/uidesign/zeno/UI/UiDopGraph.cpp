@@ -4,6 +4,9 @@
 #include <zeno/dop/DopTable.h>
 
 
+namespace zeno::UI {
+
+
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
     GraphicsView::select_child(ptr, multiselect);
     if (editor)
@@ -212,3 +215,6 @@ void UiDopGraph::on_event(Event_Key e) {
         select_child(nullptr, false);
     }
 }
+
+
+}  // namespace zeno::UI

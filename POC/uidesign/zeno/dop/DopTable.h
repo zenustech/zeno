@@ -4,6 +4,9 @@
 #include <zeno/dop/DopFunctor.h>
 
 
+namespace zeno::dop {
+
+
 struct DopTable {
     struct Impl {
         ztd::Map<std::string, DopFunctor> funcs;
@@ -35,3 +38,6 @@ struct DopTable {
 
 
 extern DopTable tab;
+
+
+}  // namespace zeno::dop

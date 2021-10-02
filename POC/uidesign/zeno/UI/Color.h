@@ -4,6 +4,9 @@
 #include <zeno/UI/Color.h>
 
 
+namespace zeno::UI {
+
+
 struct Color {
     float r, g, b;
 
@@ -18,3 +21,6 @@ struct Color {
         return &r;
     }
 };
+
+
+}  // namespace zeno::UI

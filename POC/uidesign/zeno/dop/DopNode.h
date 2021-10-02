@@ -5,6 +5,9 @@
 #include <zeno/dop/DopContext.h>
 
 
+namespace zeno::dop {
+
+
 struct DopGraph;
 
 struct DopNode {
@@ -23,3 +26,6 @@ struct DopNode {
     std::any get_input(int i, DopContext *visited) const;
     void set_output(int i, std::any val);
 };
+
+
+}  // namespace zeno::dop

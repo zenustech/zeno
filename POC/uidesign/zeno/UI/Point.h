@@ -4,6 +4,9 @@
 #include <zeno/ztd/stdafx.h>
 
 
+namespace zeno::UI {
+
+
 struct Point {
     float x, y;
 
@@ -22,3 +25,6 @@ struct Point {
         return {x * o, y * o};
     }
 };
+
+
+}  // namespace zeno::UI

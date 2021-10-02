@@ -4,6 +4,9 @@
 #include <zeno/UI/GraphicsWidget.h>
 
 
+namespace zeno::UI {
+
+
 struct GraphicsRectItem : GraphicsWidget {
     void paint() const override {
         if (selected || pressed[0]) {
@@ -16,3 +19,6 @@ struct GraphicsRectItem : GraphicsWidget {
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
     }
 };
+
+
+}  // namespace zeno::UI

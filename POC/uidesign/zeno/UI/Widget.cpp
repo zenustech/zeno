@@ -1,6 +1,9 @@
 #include <zeno/UI/Widget.h>
 
 
+namespace zeno::UI {
+
+
 void Widget::remove_all_children() {
     for (auto &child: children) {
         child->parent = nullptr;
@@ -147,3 +150,6 @@ void Widget::do_paint() {
 
 void Widget::paint() const {
 }
+
+
+}  // namespace zeno::UI

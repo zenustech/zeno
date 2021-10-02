@@ -5,6 +5,9 @@
 #include <zeno/UI/Font.h>
 
 
+namespace zeno::UI {
+
+
 struct Label : Widget {
     static constexpr float BW = 8.f;
 
@@ -30,3 +33,6 @@ struct Label : Widget {
         font.render(bbox.x0 + BW, bbox.y0, text);
     }
 };
+
+
+}  // namespace zeno::UI

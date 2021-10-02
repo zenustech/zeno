@@ -4,6 +4,9 @@
 #include <zeno/UI/Label.h>
 
 
+namespace zeno::UI {
+
+
 struct TextEdit : Label {
     int cursor = 0;
     int sellen = 0;
@@ -26,3 +29,6 @@ struct TextEdit : Label {
 
     void paint() const override;
 };
+
+
+}  // namespace zeno::UI

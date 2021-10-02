@@ -6,6 +6,9 @@
 #endif
 
 
+namespace zeno::UI {
+
+
 struct RootWindow : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
@@ -86,3 +89,6 @@ int main() {
 
     return 0;
 }
+
+
+}  // namespace zeno::UI

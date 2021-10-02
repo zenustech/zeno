@@ -1,6 +1,9 @@
 #include <zeno/UI/TextEdit.h>
 
 
+namespace zeno::UI {
+
+
 void TextEdit::on_event(Event_Hover e) {
     Widget::on_event(e);
 
@@ -105,3 +108,6 @@ void TextEdit::paint() const {
         : text.substr(0, cursor) + '|' + text.substr(cursor, sellen) + '|' + text.substr(cursor + sellen);
     font.render(bbox.x0 + BW, bbox.y0, txt);
 }
+
+
+}  // namespace zeno::UI

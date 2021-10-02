@@ -8,6 +8,9 @@
 #include <zeno/dop/DopGraph.h>
 
 
+namespace zeno::UI {
+
+
 struct UiDopEditor;
 
 
@@ -44,3 +47,6 @@ struct UiDopGraph : GraphicsView {
     void on_event(Event_Mouse e) override;
     void on_event(Event_Key e) override;
 };
+
+
+}  // namespace zeno::UI

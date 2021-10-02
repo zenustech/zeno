@@ -1,6 +1,9 @@
 #include <zeno/UI/GraphicsLineItem.h>
 
 
+namespace zeno::UI {
+
+
 bool GraphicsLineItem::contains_point(Point p) const {
     auto p0 = get_from_position();
     auto p1 = get_to_position();
@@ -35,3 +38,6 @@ void GraphicsLineItem::paint() const {
     glVertex2f(dx, dy);
     glEnd();
 }
+
+
+}  // namespace zeno::UI
