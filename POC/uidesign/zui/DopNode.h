@@ -17,12 +17,6 @@ struct DopNode {
 
     void apply_func();
     DopLazy get_output_by_name(std::string name);
-
-    bool isvalid = false;
-
-    void invalidate() {
-        isvalid = false;
-    }
-
     void serialize(std::ostream &ss) const;
+    void invalidate();
 };

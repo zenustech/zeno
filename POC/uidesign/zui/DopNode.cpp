@@ -22,20 +22,23 @@ void DopNode::apply_func() {
 
 
 DopLazy DopNode::get_output_by_name(std::string name) {
+    int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
-        if (outputs[i].name == name) {
-            auto val = outputs[i].result;
-            if (!val.has_value()) {
-                apply_func();
-                val = outputs[i].result;
-                if (!val.has_value()) {
-                    throw ztd::makeException("no value returned at socket: ", name);
-                }
-            }
-            return val;
+        if (outputs[i].name == name)
+            n = i;
+    }
+    if (n == -1)
+        throw ztd::makeException("Bad output socket name: ", name);
+
+    auto val = outputs[n].result;
+    if (!val.has_value()) {
+        apply_func();
+        val = outputs[n].result;
+        if (!val.has_value()) {
+            throw ztd::makeException("no value returned at socket: ", name);
         }
     }
-    throw ztd::makeException("Bad output socket name: ", name);
+    return val;
 }
 
 
@@ -58,4 +61,11 @@ void DopNode::serialize(std::ostream &ss) const {
     }
     ss << "  ]" << '\n';
     ss << "]" << '\n';
+}
+
+
+void DopNode::invalidate() {
+    for (auto const &output: outputs) {
+        output.result.reset();
+    }
 }
