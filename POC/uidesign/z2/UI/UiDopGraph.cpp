@@ -29,6 +29,7 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
     }
 }
 
+
 bool UiDopGraph::remove_node(UiDopNode *node) {
     bk_graph->remove_node(node->bk_node);
     for (auto *socket: node->inputs) {
@@ -49,6 +50,7 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
     }
 }
 
+
 UiDopNode *UiDopGraph::add_node(std::string kind) {
     auto p = add_child<UiDopNode>();
     p->bk_node = bk_graph->add_node(kind);
@@ -57,6 +59,7 @@ UiDopNode *UiDopGraph::add_node(std::string kind) {
     nodes.insert(p);
     return p;
 }
+
 
 UiDopLink *UiDopGraph::add_link(UiDopOutputSocket *from_socket, UiDopInputSocket *to_socket) {
     auto p = add_child<UiDopLink>(from_socket, to_socket);
@@ -67,6 +70,7 @@ UiDopLink *UiDopGraph::add_link(UiDopOutputSocket *from_socket, UiDopInputSocket
     links.insert(p);
     return p;
 }
+
 
 // add a new pending link with one side linked to |socket| if no pending link
 // create a real link from current pending link's socket to the |socket| otherwise
@@ -95,6 +99,7 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
     }
 }
 
+
 UiDopGraph::UiDopGraph() {
     auto c = add_node("readvdb", {100, 256});
     auto d = add_node("vdbsmooth", {450, 256});
@@ -111,10 +116,12 @@ UiDopGraph::UiDopGraph() {
     });
 }
 
+
 void UiDopGraph::paint() const {
     glColor3f(0.2f, 0.2f, 0.2f);
     glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 }
+
 
 void UiDopGraph::on_event(Event_Mouse e) {
     GraphicsView::on_event(e);
@@ -179,6 +186,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
     }
 }
 
+
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->position = pos;
@@ -195,6 +203,7 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     node->update_sockets();
     return node;
 }
+
 
 UiDopContextMenu *UiDopGraph::add_context_menu() {
     remove_context_menu();
@@ -213,12 +222,14 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
     return menu;
 }
 
+
 void UiDopGraph::remove_context_menu() {
     if (menu) {
         remove_child(menu);
         menu = nullptr;
     }
 }
+
 
 void UiDopGraph::on_event(Event_Key e) {
     Widget::on_event(e);

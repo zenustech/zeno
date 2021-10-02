@@ -65,6 +65,8 @@ void DopNode::serialize(std::ostream &ss) const {
 
 
 void DopNode::invalidate() {
+    // todo: this func is called when param changed in editor
+    // to supp fully sop, need invalidate its following nodes too
 }
 
 

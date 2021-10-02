@@ -17,15 +17,14 @@ struct UiDopEditor : Widget {
     UiDopNode *selected = nullptr;
     UiDopGraph *graph = nullptr;
 
-    void set_selection(UiDopNode *ptr);
-
     UiDopEditor();
-
     void clear_params();
     void update_params();
     UiDopParam *add_param();
     void paint() const override;
     void on_event(Event_Hover e) override;
+    void set_selection(UiDopNode *ptr);
 };
+
 
 }  // namespace z2::UI
