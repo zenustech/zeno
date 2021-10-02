@@ -7,10 +7,11 @@
 
 void DopNode::apply_func(DopVisited *visited) {
     DopContext ctx;
+    ctx.in.resize(inputs.size());
+
     bool valid = visited->is_visited(this);
-    for (auto const &input: inputs) {
-        auto val = graph->resolve_value(visited, input.value, &valid);
-        ctx.in.push_back(std::move(val));
+    for (int i = 0; i < ctx.in.size(); i++) {
+        ctx.in[i] = graph->resolve_value(visited, inputs[i].value, &valid);
     }
     if (valid)
         return;
@@ -26,7 +27,7 @@ void DopNode::apply_func(DopVisited *visited) {
 }
 
 
-std::any DopNode::get_output_by_name(DopVisited *visited, std::string name) {
+DopLazy DopNode::get_output_by_name(DopVisited *visited, std::string name) {
     apply_func(visited);
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)

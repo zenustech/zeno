@@ -66,7 +66,7 @@ void DopGraph::remove_node_input
 }
 
 
-std::any DopGraph::resolve_value(
+DopLazy DopGraph::resolve_value(
     DopVisited *visited, std::string expr, bool *pisvalid) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
@@ -76,21 +76,24 @@ std::any DopGraph::resolve_value(
         if (!visited->is_visited(node)) {
             *pisvalid = false;
         }
-        auto value = node->get_output_by_name(visited, socket_n);
-        return value;
+        return [=] () -> std::any {
+            return node->get_output_by_name(visited, socket_n);
+        };
 
     } else if (!expr.size()) {
-        return {};
+        return [] () -> std::any { return {}; };
 
     } else if (std::strchr("0123456789+-.", expr[0])) {
         if (expr.find('.') != std::string::npos) {
-            return std::stof(expr);
+            auto val = std::stof(expr);
+            return [=] () -> std::any { return val; };
         } else {
-            return std::stoi(expr);
+            auto val = std::stoi(expr);
+            return [=] () -> std::any { return val; };
         }
 
     } else {
-        return expr;
+        return [=] () -> std::any { return expr; };
         //throw ztd::makeException("Bad expression: ", expr);
     }
 }

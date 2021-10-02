@@ -2,6 +2,7 @@
 
 
 #include "DopSocket.h"
+#include "DopLazy.h"
 
 
 struct DopVisited;
@@ -16,7 +17,7 @@ struct DopNode {
     std::vector<DopOutputSocket> outputs;
 
     void apply_func(DopVisited *visited);
-    std::any get_output_by_name(DopVisited *visited, std::string name);
+    DopLazy get_output_by_name(DopVisited *visited, std::string name);
 
     bool isvalid = false;
 
