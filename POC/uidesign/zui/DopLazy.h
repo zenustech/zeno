@@ -10,14 +10,14 @@ class DopLazy {
         std::any val;
 
         template <class F>
-        Impl(F &&fun) : fun(fun) {}
+        Impl(F fun) : fun(fun) {}
     };
 
     std::shared_ptr<Impl> impl;
 
 public:
     template <class F>
-    DopLazy(F &&fun) : impl(std::make_shared<Impl>(std::move(fun))) {}
+    DopLazy(F fun) : impl(std::make_shared<Impl>(std::move(fun))) {}
 
     DopLazy() = default;
     DopLazy(DopLazy const &) = default;

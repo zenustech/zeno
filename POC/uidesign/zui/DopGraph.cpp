@@ -88,6 +88,5 @@ DopLazy DopGraph::resolve_value(std::string expr) {
 
     } else {
         return [=] () -> std::any { return expr; };
-        //throw ztd::makeException("Bad expression: ", expr);
     }
 }
