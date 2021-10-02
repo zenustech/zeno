@@ -1,4 +1,3 @@
-#include <zeno/UI/stdafx.h>
 #include <zeno/UI/CursorState.h>
 #include <zeno/UI/UiDopGraph.h>
 #include <zeno/UI/UiDopEditor.h>
