@@ -124,19 +124,25 @@ void UiDopGraph::on_event(Event_Mouse e) {
 
     if (e.btn == 1) {
         if (pending_link) {
+
+            //add_context_menu();
             remove_child(pending_link);
             pending_link = nullptr;
-        } else if (!menu)
-            add_context_menu();
-        else
-            remove_context_menu();
+
+        } else {
+            if (!menu)
+                add_context_menu();
+            else
+                remove_context_menu();
+        }
     }
 
     if (e.btn != 0)
         return;
 
     auto item = item_at({cur.x, cur.y}, [=] (Widget *it) {
-        return !dynamic_cast<UiDopLink *>(it);
+        // filter away UiDopPendingLink and UiDopLink:
+        return !dynamic_cast<GraphicsLineItem *>(it);
     });
 
     if (auto node = dynamic_cast<UiDopNode *>(item); node) {
