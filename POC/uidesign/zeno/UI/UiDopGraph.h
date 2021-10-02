@@ -19,7 +19,7 @@ struct UiDopGraph : GraphicsView {
     std::set<UiDopLink *> links;
     UiDopPendingLink *pending_link = nullptr;
 
-    std::unique_ptr<DopGraph> bk_graph = std::make_unique<DopGraph>();
+    std::unique_ptr<dop::DopGraph> bk_graph = std::make_unique<dop::DopGraph>();
 
     UiDopEditor *editor = nullptr;
     UiDopContextMenu *menu = nullptr;

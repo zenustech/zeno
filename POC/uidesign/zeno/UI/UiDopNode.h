@@ -21,7 +21,7 @@ struct UiDopNode : GraphicsRectItem {
     std::string name;
     std::string kind;
 
-    DopNode *bk_node = nullptr;
+    dop::DopNode *bk_node = nullptr;
 
     UiDopNode();
 

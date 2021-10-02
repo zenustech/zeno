@@ -174,7 +174,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
     remove_context_menu();
 
     menu = add_child<UiDopContextMenu>();
-    for (auto const &key: tab.entry_names()) {
+    for (auto const &key: dop::tab.entry_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();
