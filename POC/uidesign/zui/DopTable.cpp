@@ -12,8 +12,8 @@ static int def_readvdb = tab.define("readvdb", [] (DopContext *ctx) {
 });
 
 static int def_vdbsmooth = tab.define("vdbsmooth", [] (DopContext *ctx) {
+    auto grid = ctx->in[0]();
     ctx->out[0] = [=] () -> std::any {
-        auto grid = ctx->in[0]();
         printf("vdbsmooth out[0]\n");
         return 1024;
     };

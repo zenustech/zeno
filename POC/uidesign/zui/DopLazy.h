@@ -36,10 +36,7 @@ public:
             throw ztd::makeException("null dop lazy called");
         }
         if (!impl->val.has_value()) {
-            printf("reval\n");
-            printf("going %p\n", impl.get());
             impl->val = impl->fun();
-            printf("okay\n");
         }
         return impl->val;
     }
