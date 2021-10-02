@@ -3,7 +3,7 @@
 #include <exception>
 #include <string>
 
-namespace ztd {
+namespace zeno::ztd {
 
 class Exception : public std::exception {
     std::string msg;

@@ -5,6 +5,7 @@ import sys
 
 assert len(sys.argv) > 1, 'no namespace name specified'
 ns = sys.argv[1]
+assert '/' not in ns, ns + ': looks like a path?'
 paths = sys.argv[2:]
 assert len(paths), 'no path specified'
 

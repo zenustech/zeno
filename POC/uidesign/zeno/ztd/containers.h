@@ -5,7 +5,7 @@
 #include <zeno/ztd/exception.h>
 #include <zeno/ztd/format.h>
 
-namespace ztd {
+namespace zeno::ztd {
 
 template <class K, class V>
 struct Map : std::map<K, V> {

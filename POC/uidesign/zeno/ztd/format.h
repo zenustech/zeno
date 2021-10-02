@@ -5,7 +5,7 @@
 #include <sstream>
 #include <zeno/ztd/exception.h>
 
-namespace ztd {
+namespace zeno::ztd {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {
