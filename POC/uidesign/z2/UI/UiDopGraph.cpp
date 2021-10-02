@@ -122,9 +122,14 @@ void UiDopGraph::on_event(Event_Mouse e) {
     if (e.down != true)
         return;
 
-    if (e.btn == 2 && pending_link) {
-        remove_child(pending_link);
-        pending_link = nullptr;
+    if (e.btn == 1) {
+        if (pending_link) {
+            remove_child(pending_link);
+            pending_link = nullptr;
+        } else if (!menu)
+            add_context_menu();
+        else
+            remove_context_menu();
     }
 
     if (e.btn != 0)
