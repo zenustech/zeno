@@ -16,15 +16,15 @@ for path in paths:
 
         for line in lines:
             line = line.strip('\r\n')
-            if not has_ns and line.startswith('#') or not line.strip():
-                line = 'namespace ' + ns + ' {'
-                had_ns = True
+            if not had_ns:
+                if not line.startswith('#') and line.strip():
+                    ret += 'namespace ' + ns + ' {\n\n\n'
+                    had_ns = True
 
             ret += line + '\n'
 
     if had_ns:
-        line = '}  // namespace ' + ns
-        ret += line + '\n'
+        ret += '\n\n}  // namespace ' + ns + '\n'
 
     with open(path, 'w') as f:
         f.write(ret)
