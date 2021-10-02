@@ -53,55 +53,6 @@
       "ONCE"
      ]
     },
-    "7b6f9c6a-smokeSolver": {
-     "name": "smokeSolver",
-     "inputs": {
-      "smokeData": [
-       "f004cfcc-SDFtoSmoke",
-       "smokeData",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      709.5671981776765,
-      280.1822323462414
-     ],
-     "options": []
-    },
-    "f004cfcc-SDFtoSmoke": {
-     "name": "SDFtoSmoke",
-     "inputs": {
-      "sdfgrid": [
-       "18f32518-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "dt": [
-       "2a4d2b89-GetFrameTime",
-       "time",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      382.6879271070615,
-      355.3530751708427
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "2a4d2b89-GetFrameTime": {
      "name": "GetFrameTime",
      "inputs": {
@@ -115,126 +66,6 @@
      "uipos": [
       -36.44646924829158,
       493.1662870159453
-     ],
-     "options": []
-    },
-    "0840ac97-VDBVoxelAsParticles": {
-     "name": "VDBVoxelAsParticles",
-     "inputs": {
-      "vdbGrid": [
-       "db09dbaa-smokeToSDF",
-       "volumeGrid",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hasInactive": false,
-      "valToAttr": "sdf"
-     },
-     "uipos": [
-      1241.2300683371302,
-      245.375854214123
-     ],
-     "options": []
-    },
-    "db09dbaa-smokeToSDF": {
-     "name": "smokeToSDF",
-     "inputs": {
-      "smokeData": [
-       "7b6f9c6a-smokeSolver",
-       "smokeData",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      982.5968109339408,
-      292.3006833712984
-     ],
-     "options": []
-    },
-    "c3ef9b45-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "@rad = 10 * @sdf"
-     },
-     "uipos": [
-      1041.457858769932,
-      467.4259681093394
-     ],
-     "options": []
-    },
-    "793e4600-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "obj0": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "obj0"
-     },
-     "uipos": [
-      1569.476082004555,
-      680.2391799544417
-     ],
-     "options": [],
-     "socket_keys": [
-      "obj0"
-     ]
-    },
-    "c7b2d66b-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "0840ac97-VDBVoxelAsParticles",
-       "primPars",
-       null
-      ],
-      "zfxCode": [
-       "c3ef9b45-MakeMultilineString",
-       "value",
-       ""
-      ],
-      "params": [
-       "793e4600-MakeDict",
-       "dict",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1738.0410022779045,
-      320.0455580865603
      ],
      "options": []
     },
@@ -257,9 +88,7 @@
       1189.0660592255124,
       59.22551252847379
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "4d88dffe-mgSmokeSolver": {
      "name": "mgSmokeSolver",
@@ -279,37 +108,6 @@
      "uipos": [
       853.0751708428246,
       62.64236902050112
-     ],
-     "options": []
-    },
-    "a6601ea4-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "f25298cc-VDBVoxelAsParticles",
-       "primPars",
-       null
-      ],
-      "zfxCode": [
-       "c3ef9b45-MakeMultilineString",
-       "value",
-       ""
-      ],
-      "params": [
-       "793e4600-MakeDict",
-       "dict",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1739.1799544419132,
-      72.89293849658314
      ],
      "options": []
     },
@@ -408,13 +206,110 @@
       -115.03416856492026
      ],
      "options": []
+    },
+    "f3777275-generateAdaptiveGrid": {
+     "name": "generateAdaptiveGrid",
+     "inputs": {
+      "VDBGrid": [
+       "18f32518-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "dt": [
+       "2a4d2b89-GetFrameTime",
+       "time",
+       null
+      ],
+      "levelNum": [
+       "14d756d6-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      797.5512528473803,
+      -246.58314350797266
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "14d756d6-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      196.46924829157183,
+      -203.58769931662874
+     ],
+     "options": []
+    },
+    "7764f848-selectLevel": {
+     "name": "selectLevel",
+     "inputs": {
+      "agData": [
+       "f3777275-generateAdaptiveGrid",
+       "agData",
+       null
+      ],
+      "level": [
+       "af4ad800-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1254.2710706150347,
+      -283.31435079726646
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "af4ad800-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      992.3120728929387,
+      -397.2095671981777
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1113.9521640091023,
-    "y": -163.66742596810835,
-    "width": 500.0,
-    "height": 500.0
+    "x": 894.6469248291451,
+    "y": -402.1212984054657,
+    "width": 625.0,
+    "height": 625.0
    }
   }
  },
@@ -473,6 +368,51 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "AdaptiveSolver": {
+   "inputs": [
+    [
+     "",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
    ]
   },
   "AppendList": {
@@ -6529,41 +6469,6 @@
     "AdaptiveSolver"
    ]
   },
-  "SDFtoSmoke": {
-   "inputs": [
-    [
-     "",
-     "sdfgrid",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "smokeData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
   "SampleVDBToPrimitive": {
    "inputs": [
     [
@@ -8334,6 +8239,46 @@
     "openvdb"
    ]
   },
+  "generateAdaptiveGrid": {
+   "inputs": [
+    [
+     "",
+     "VDBGrid",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "levelNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
   "mgPress": {
    "inputs": [
     [
@@ -8424,11 +8369,16 @@
     "AdaptiveSolver"
    ]
   },
-  "smokeSolver": {
+  "selectLevel": {
    "inputs": [
     [
      "",
-     "smokeData",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "level",
      ""
     ],
     [
@@ -8440,7 +8390,7 @@
    "outputs": [
     [
      "",
-     "smokeData",
+     "sdf",
      ""
     ],
     [
@@ -8454,11 +8404,16 @@
     "AdaptiveSolver"
    ]
   },
-  "smokeToSDF": {
+  "selectLevelGrid": {
    "inputs": [
     [
      "",
-     "smokeData",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "level",
      ""
     ],
     [
@@ -8470,7 +8425,7 @@
    "outputs": [
     [
      "",
-     "volumeGrid",
+     "vdbGrid",
      ""
     ],
     [

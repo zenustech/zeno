@@ -4,270 +4,229 @@
 #include <cmath>
 #include <zeno/MeshObject.h>
 #include <omp.h>
-
+#include "tbb/blocked_range3d.h"
+#include <openvdb/tools/LevelSetUtil.h>
+#include <openvdb/tools/FastSweeping.h>
 namespace zeno{
-    
-void AdaptiveIndexGenerator::generateAdaptiveGrid(
-        AdaptiveIndexGenerator& data, 
-        int max_levels, 
-        double start_h,
-        std::shared_ptr<AdaptiveRule> rule
-        )
+void agIterStuff::init(std::vector<openvdb::FloatGrid::Ptr> pressField)
 {
-    data.hLevels.resize(max_levels);
-    data.hLevels[0] = start_h;
-    for(int i=1; i<max_levels; i++)
+    int num = pressField.size();
+    rhsGrid.resize(num);
+    resGrid.resize(num);
+    r2Grid.resize(num);
+    pGrid.resize(num);
+    ApGrid.resize(num);
+    for(int i=0;i<pressField.size();++i)
     {
-        data.hLevels[i] = data.hLevels[i-1]/2.0;
-        printf("%f\n", data.hLevels[i]);
+        rhsGrid[i] = pressField[i]->deepCopy();
+        resGrid[i] = pressField[i]->deepCopy();
+        r2Grid[i] = pressField[i]->deepCopy();
+        pGrid[i] = pressField[i]->deepCopy();
+        ApGrid[i] = pressField[i]->deepCopy();
     }
-    
-    //we shall assume level_max is already provided, by
-    //particular method
-    
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
-    openvdb::FloatGrid::Ptr coarse_grid;
-    openvdb::FloatGrid::Ptr fine_grid;
-    openvdb::FloatGrid::Ptr tag_grid;
-    double fine_h;
-    
-    for(int level = 1; level<max_levels; level++)
+}
+void agData::resize(int lNum)
+{
+    levelNum = lNum;
+    dx.resize(levelNum);
+    volumeField.resize(levelNum);
+    temperatureField.resize(levelNum);
+    velField[0].resize(levelNum);velField[1].resize(levelNum);velField[2].resize(levelNum);
+    pressField.resize(levelNum);
+    gradPressField[0].resize(levelNum);gradPressField[1].resize(levelNum);gradPressField[2].resize(levelNum);
+    status.resize(levelNum);
+    for(int i=0;i<levelNum;++i)
     {
-        coarse_grid = data.sdf[level-1];
-        auto transform =
-        openvdb::math::Transform::createLinearTransform(data.hLevels[level]);
-        transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5} *
-                                          double(data.hLevels[level]));
-        fine_grid = openvdb::FloatGrid::create(float(0));
-        tag_grid = openvdb::FloatGrid::create(float(0));
-        fine_grid->setTransform(transform);
-        tag_grid->setTransform(transform);
+        volumeField[i] = openvdb::FloatGrid::create(0);
+        temperatureField[i] = openvdb::FloatGrid::create(0);
+        for(int j=0;j<3;++j)
+            velField[j][i] = openvdb::FloatGrid::create(0);
+        pressField[i] = openvdb::FloatGrid::create(0);
+        status[i] = openvdb::Int32Grid::create(0);
+    }
+}
+void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
+{
+    resize(lNum);
+    dt = inputdt;
+    dens = 1;
+    dx[0] = sdf->voxelSize()[0];
+    for(int l = 1;l < levelNum;++l)
+        dx[l] = dx[l-1] * 0.5;
+    auto inputbbox = openvdb::CoordBBox();
+    auto is_valid = sdf->tree().evalLeafBoundingBox(inputbbox);
+    if (!is_valid) {
+        return;
+    }
+    auto worldinputbbox = openvdb::BBoxd(sdf->indexToWorld(inputbbox.min()),
+                                    sdf->indexToWorld(inputbbox.max()));
+    worldinputbbox.min() += openvdb::Vec3d(-0.5);
+    worldinputbbox.max() += openvdb::Vec3d(0.5);
+    printf("generate world input box over!\n");
 
-        // openvdb::Vec3f initPos = fine_grid->indexToWorld(openvdb::Coord(openvdb::Vec3i(5,0,0)));
-        // openvdb::Vec3f coarseInitPos = coarse_grid->indexToWorld(openvdb::Coord(openvdb::Vec3i(1,0,0)));
-        // printf("init pos is (%f,%f,%f), coarse init pos is (%f,%f,%f)\n",
-        //     initPos[0], initPos[1], initPos[2], coarseInitPos[0], coarseInitPos[1], coarseInitPos[2]);
-        
-        coarse_grid->tree().getNodes(leaves);
-        fine_h = data.hLevels[level];
-        printf("fine_h is %f\n", fine_h);
-        //printf("coarse size is %d\n", leaves.size());
-        auto fine_waxr{fine_grid->getAccessor()};
-        auto tag_waxr{tag_grid->getAccessor()};
-        //loop over voxels of coarser level
-        //auto subd = [&](const tbb::blocked_range<size_t> &r) {
-        auto coarse_axr{coarse_grid->getConstUnsafeAccessor()};
-        int emitCount = 0;
-        // leaf iter
-        //#pragma omp parallel for
-        for (auto liter = 0; liter<leaves.size(); ++liter) {
-            auto &leaf = *leaves[liter];
-            for (auto offset = 0; offset < leaf.SIZE; ++offset) 
-            {
-                
-                auto voxelwpos =
-                    coarse_grid->indexToWorld(leaf.offsetToGlobalCoord(offset));
-                auto voxelipos = openvdb::Vec3i(coarse_grid->worldToIndex(voxelwpos));
-                if(coarse_grid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                    continue;
-                float value = coarse_axr.getValue(openvdb::Coord(voxelipos));
-                
-                if(value <= 2 * fine_h && value >= -2 * fine_h)
-                {
-                    emitCount++;
-                    //we need emit
-                    for(int i=-1;i<=1;i+=2)
+    volumeField[0] = sdf->deepCopy();
+    openvdb::tools::sdfToFogVolume(*volumeField[0]);
+    temperatureField[0] = volumeField[0]->deepCopy();
+    // set transform
+    for(int level = 0;level < levelNum;++level)
+    {
+        auto transform = openvdb::math::Transform::createLinearTransform(dx[level]);
+        transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*dx[level]);
+        temperatureField[level]->setTransform(transform);
+        volumeField[level]->setTransform(transform);
+        pressField[level]->setTransform(transform);
+        for(int i=0;i<3;++i)
+        {
+            auto veltrans = transform->copy();
+            auto drift = openvdb::Vec3d(0);
+            drift[i] = -0.5;
+            veltrans->postTranslate(drift * dx[level]);
+            velField[i][level]->setTransform(veltrans);
+            gradPressField[i][level]->setTransform(veltrans);
+        }
+    }
+    // init uniform grids on coarset grid
+    for(int level = 0;level < levelNum;++level)
+    {
+        auto loopbegin =
+            openvdb::tools::local_util::floorVec3(volumeField[level]->worldToIndex(worldinputbbox.min()));
+        auto loopend =
+            openvdb::tools::local_util::ceilVec3(volumeField[level]->worldToIndex(worldinputbbox.max()));
+        auto pispace_range = tbb::blocked_range3d<int, int, int>(
+            loopbegin.x(), loopend.x(), loopbegin.y(), loopend.y(), loopbegin.z(),
+            loopend.z());
+        auto vol_axr = volumeField[level]->getAccessor();
+        auto tem_axr = temperatureField[level]->getAccessor();
+        auto status_axr = status[level]->getAccessor();
+        auto press_axr = pressField[level]->getAccessor();
+        openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
+                    {velField[0][level]->getAccessor(),
+                    velField[1][level]->getAccessor(),
+                    velField[2][level]->getAccessor()};
+        openvdb::tree::ValueAccessor<openvdb::FloatTree, true> gradP_axr[3]=
+                    {gradPressField[0][level]->getAccessor(),
+                    gradPressField[1][level]->getAccessor(),
+                    gradPressField[2][level]->getAccessor()};
+        for (int i = pispace_range.pages().begin(); i < pispace_range.pages().end(); i += 1) {
+            for (int j = pispace_range.rows().begin(); j < pispace_range.rows().end(); j += 1) {
+                for (int k = pispace_range.cols().begin(); k < pispace_range.cols().end(); k += 1) {
+                    openvdb::Coord coord(i,j,k);
+                    if(!vol_axr.isValueOn(coord))
                     {
-                        for(int j=-1;j<=1;j+=2)
+                        vol_axr.setValue(coord, 0);
+                        tem_axr.setValue(coord, 0);
+                        status_axr.setValue(coord, 2);
+                    }
+                    if(level == 0)
+                        status_axr.setValue(coord, 0);
+                    press_axr.setValue(coord, 0);
+                    for(int ii=0;ii<3;++ii)
+                        for(int ss = 0;ss<=1;++ss)
                         {
-                            for(int k=-1;k<=1;k+=2)
+                            auto ipos = coord;
+                            ipos[ii] += ss;
+                            vel_axr[ii].setValue(ipos, 0);
+                            gradP_axr[ii].setValue(ipos, 0);
+                        }
+                }
+            }
+        }
+
+    }
+
+    // subdivide the cell
+    for(int level = 0;level < levelNum - 1;++level)
+    {
+        float criteria = level/levelNum + 0.01;
+        float driftdx = dx[level + 1] * 0.5;
+        {
+            auto vol_axr = volumeField[level]->getAccessor();
+            auto tem_axr = temperatureField[level]->getAccessor();
+            auto status_axr = status[level]->getAccessor();
+            auto fine_vol_axr = volumeField[level+1]->getAccessor();
+            auto fine_tem_axr = temperatureField[level+1]->getAccessor();
+            auto fine_press_axr = pressField[level+1]->getAccessor();
+            auto fine_status_axr = status[level+1]->getAccessor();
+            openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
+                    {velField[0][level+1]->getAccessor(),
+                    velField[1][level+1]->getAccessor(),
+                    velField[2][level+1]->getAccessor()};
+            for (openvdb::FloatTree::LeafCIter iter = volumeField[level]->tree().cbeginLeaf(); iter; ++iter) {
+                const openvdb::FloatTree::LeafNodeType& leaf = *iter;
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!vol_axr.isValueOn(coord))
+                        continue;
+                    auto vol = vol_axr.getValue(coord);
+                    if(vol > criteria)
+                    {
+                        auto tem = tem_axr.getValue(coord);
+                        vol_axr.setValue(coord, 0);
+                        tem_axr.setValue(coord, 0);
+                        //status_axr.setValue(coord, 1);
+                        auto wpos = volumeField[level]->indexToWorld(coord);
+                        for(int i=-1;i<=1;i+=2)
+                        for(int j=-1;j<=1;j+=2)
+                        for(int k=-1;k<=1;k+=2)
+                        {
+                            openvdb::Vec3f drift = wpos + openvdb::Vec3f(i,j,k) * driftdx;
+                            openvdb::Vec3d dindex = volumeField[level + 1]->worldToIndex(drift);
+                            openvdb::Coord nindx = 
+                                openvdb::Coord(round(dindex[0]), round(dindex[1]),round(dindex[2]));
+                            fine_vol_axr.setValue(nindx, vol);
+                            fine_tem_axr.setValue(nindx, tem);
+                            fine_press_axr.setValue(nindx, 0);
+                            fine_status_axr.setValue(nindx, 0);
+                            for(int ii=0;ii<3;++ii)
+                            for(int ss = 0;ss<=1;++ss)
                             {
-                                auto fine_pos = voxelwpos + openvdb::Vec3d{(float)i,(float)j,(float)k}*0.5*fine_h;
-                                float fine_value = 0;
-
-                                auto driftipos = openvdb::Vec3i(i,j,k);
-                                for(int tt = 0;tt<3;++tt)
-                                    if(driftipos[tt] > 0)
-                                        driftipos[tt] = 0;
-                                openvdb::Vec3d basewpos = voxelwpos + driftipos * 2 * fine_h;
-                                auto x = 0.5 / fine_h * abs(basewpos - fine_pos);
-                                float weightsum = 0;
-                                float covalue[8];
-                                for(int ii=0;ii<=1;++ii)
-                                for(int jj=0;jj<=1;++jj)
-                                for(int kk=0;kk<=1;++kk)
-                                {
-                                    auto coarse_voxelwpos = basewpos + 
-                                        openvdb::Vec3d{(float)(ii),(float)(jj),(float)(kk)}*2*fine_h;
-                                    auto coarse_voxelipos = openvdb::Vec3i(coarse_grid->worldToIndex(coarse_voxelwpos));
-                                    float coarse_value = coarse_axr.getValue(openvdb::Coord(coarse_voxelipos));
-                                    
-                                    // Trilinear interpolation
-                                    fine_value += (ii*(float)(x[0])+(1-ii)*(1-(float)(x[0])))*
-                                        (jj*(float)(x[1])+(1-jj)*(1-(float)(x[1])))*
-                                        (kk*(float)(x[2])+(1-kk)*(1-(float)(x[2])))*coarse_value;
-                                    covalue[ii*4+jj*2+kk] = coarse_value;
-                                }
-
-                                openvdb::Vec3i coarse_ipos = openvdb::Vec3i(coarse_grid->worldToIndex(basewpos));
-                                openvdb::Vec3i wpos = openvdb::Vec3i(fine_grid->worldToIndex(fine_pos));
-                                
-                                // if(fine_value < 0.1 * fine_h && fine_value > -0.1 * fine_h)
-                                //     printf("finevalue is %f. index is (%d,%d,%d), pos is (%f,%f,%f)\n",
-                                //         fine_value,
-                                //         wpos[0], wpos[1], wpos[2], fine_pos[0], fine_pos[1], fine_pos[2]);
-                                
-                                // printf("value is %f, Indexpos is (%d,%d,%d), world coord is (%f,%f,%f). baseIndexpos is (%d,%d,%d), world coord is (%f,%f,%f).\n", 
-                                //             fine_value,wpos[0],wpos[1],wpos[2], 
-                                //             fine_pos[0],fine_pos[1],fine_pos[2],
-                                //             coarse_ipos[0],coarse_ipos[1],coarse_ipos[2],
-                                //             basewpos[0],basewpos[1],basewpos[2]);
-                                fine_waxr.setValue(openvdb::Coord(wpos), fine_value);
+                                auto ipos = nindx;
+                                ipos[ii] += ss;
+                                vel_axr[ii].setValue(ipos, 0);
                             }
                         }
                     }
-                } 
-            } // end for all on voxels
+                }
+            }
+            
         }
-
-        printf("fine count is %d\n", emitCount * 8);
-        
-        //openvdb::tools::signedFloodFill(fine_grid->tree());
-        data.sdf[level] = fine_grid->deepCopy();
-        data.tag[level] = fine_grid->deepCopy();
-        data.sdf[level]->setGridClass(openvdb::GRID_LEVEL_SET);
-        printf("fine grid active voxel is %d\n", fine_grid->activeVoxelCount());
-        rule->markSubd(data.sdf[level], data.tag[level]);
-        //fine_grid->tree().getNodes(leaves);
-        leaves.clear();
     }
+
 
 }
-
 struct generateAdaptiveGrid : zeno::INode{
     virtual void apply() override {
-        double h_coarse = 0.08;
-        if(has_input("Dx"))
-        {
-            h_coarse = get_input("Dx")->as<NumericObject>()->get<float>();
-        }
-        
-        // auto coarse_grid = openvdb::FloatGrid::create(float(0));
         auto coarse_grid = get_input("VDBGrid")->as<VDBFloatGrid>();
-        
-        auto transform = openvdb::math::Transform::createLinearTransform(h_coarse);
-        transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5} *
-                                          double(h_coarse));
-        coarse_grid->setTransform(transform);
-
-        auto rule = std::make_shared<LiquidAdaptiveRule>();
-        AdaptiveIndexGenerator aig;
-        int max_level = 5;
-        aig.sdf.resize(max_level);
-        aig.tag.resize(max_level);
-        aig.sdf[0] = coarse_grid->m_grid;
-        aig.tag[0] = coarse_grid->m_grid->deepCopy();
-        aig.sdf[0]->setGridClass(openvdb::GRID_LEVEL_SET);
-        // aig.tag[0] = openvdb::FloatGrid::create(float(0));
-        // aig.tag[0]->setTransform(transform);
-        rule->markSubd(aig.sdf[0], aig.tag[0]);
-
-        aig.generateAdaptiveGrid(aig, max_level, h_coarse, rule);
-
-        auto level0 = zeno::IObject::make<VDBFloatGrid>();
-        auto level1 = zeno::IObject::make<VDBFloatGrid>();
-        auto level2 = zeno::IObject::make<VDBFloatGrid>();
-        auto level3 = zeno::IObject::make<VDBFloatGrid>();
-        auto level4 = zeno::IObject::make<VDBFloatGrid>();
-        level0->m_grid = aig.sdf[0];
-        level1->m_grid = aig.sdf[1];
-        level2->m_grid = aig.sdf[2];
-        level3->m_grid = aig.sdf[3];
-        level4->m_grid = aig.sdf[4];
-        printf("adaptive grid generate done\n");
-        set_output("level0", level0);
-        set_output("level1", level1);
-        set_output("level2", level2);
-        set_output("level3", level3);
-        set_output("level4", level4);
+        float dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
+        int levelNum = get_input("levelNum")->as<zeno::NumericObject>()->get<int>();
+            
+        auto data = zeno::IObject::make<agData>();
+        data->initData(coarse_grid->m_grid, levelNum, dt);
+        set_output("agData", data);
     }
 };
-
 ZENDEFNODE(generateAdaptiveGrid, {
-        {"VDBGrid","Dx"},
-        {"level0", "level1", "level2", "level3", "level4"},
+        {"VDBGrid", "dt", "levelNum"},
+        {"agData"},
         {},
         {"AdaptiveSolver"},
 });
 
-struct MeshToMultiGridLevelSet : zeno::INode{
-    
+struct selectLevel : zeno::INode{
     virtual void apply() override {
-        float h = 0.08;
-        int max_level = 5;
-        if(has_input("maxDx"))
-        {
-            h = get_input("maxDx")->as<NumericObject>()->get<float>();
-        }
-        if(has_input("max_level"))
-        {
-            max_level = get_input("max_level")->as<NumericObject>()->get<int>();
-        }
-        auto mesh = get_input("mesh")->as<zeno::MeshObject>();
-        
-        std::vector<openvdb::Vec3s> points;
-        std::vector<openvdb::Vec3I> triangles;
-        std::vector<openvdb::Vec4I> quads;
+        auto data = get_input("agData")->as<agData>();
+        int level = get_input("level")->as<zeno::NumericObject>()->get<int>();
 
-        auto data = zeno::IObject::make<mgData>();
-
-        data->resize(max_level);
-        data->hLevels[0] = h;
-        
-        points.resize(mesh->vertices.size());
-        triangles.resize(mesh->vertices.size()/3);
-        quads.resize(0);
-    #pragma omp parallel for
-        for(int i=0;i<mesh->vertices.size();i++)
-        {
-            points[i] = openvdb::Vec3s(mesh->vertices[i].x, mesh->vertices[i].y, mesh->vertices[i].z);
-        }
-    #pragma omp parallel for
-        for(int i=0;i<mesh->vertices.size()/3;i++)
-        {
-            triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
-        }
-        for(int i=0;i<max_level;++i)
-        {
-            if(i > 0)
-                data->hLevels[i] = data->hLevels[i - 1] / 2.0;
-            auto result = zeno::IObject::make<VDBFloatGrid>();
-            auto vdbtransform = openvdb::math::Transform::createLinearTransform(data->hLevels[i]);
-            if(std::get<std::string>(get_param("type"))==std::string("vertex"))
-            {
-                vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(data->hLevels[i]));
-            }
-            result->m_grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4);
-            openvdb::tools::signedFloodFill(result->m_grid->tree());
-            data->sdf[i] = result->m_grid;
-        }
-        printf("begin to init\n");
-        data->initData();
-        data->fillInner();
-        printf("init over\n");
-
-        printf("adaptive grid generate done\n");
-        set_output("mgData", data);
-  };
-};
-
-ZENDEFNODE(MeshToMultiGridLevelSet,
-    {
-        {"mesh","maxDx","max_level"},
-        {"mgData"},
-        {{"string", "type", "vertex"},},
-        {"AdaptiveSolver"},
+        auto result = zeno::IObject::make<VDBFloatGrid>();
+        result->m_grid = openvdb::tools::fogToSdf(*(data->volumeField[level]), 0);
+        set_output("sdf", result);
     }
-);
+};
+ZENDEFNODE(selectLevel, {
+        {"agData", "level"},
+        {"sdf"},
+        {},
+        {"AdaptiveSolver"},
+});
 
 }

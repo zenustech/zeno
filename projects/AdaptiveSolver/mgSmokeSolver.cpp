@@ -14,7 +14,6 @@ namespace zeno{
             r2Grid[i] = pressField[i]->deepCopy();
             pGrid[i] = pressField[i]->deepCopy();
             ApGrid[i] = pressField[i]->deepCopy();
-
         }
     }
     void mgIterStuff::resize(int levelNum)
