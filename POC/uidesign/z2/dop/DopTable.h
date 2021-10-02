@@ -37,7 +37,8 @@ public:
         return get_impl()->funcs.at(kind);
     }
 
-    int define(std::string const &kind, DopFunctor &&func) {
+    int define(std::string const &kind,
+               DopDescriptor &&desc, DopFunctor &&func) {
         get_impl()->funcs.emplace(kind, std::move(func));
         return 1;
     }
