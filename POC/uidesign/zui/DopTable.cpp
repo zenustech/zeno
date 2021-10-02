@@ -32,8 +32,8 @@ static int def_vdberode = tab.define("vdberode", [] (auto *node, auto *visited) 
 static int def_repeat = tab.define("repeat", [] (auto *node, auto *visited) {
     printf("repeat out[0]\n");
     for (int i = 0; i < 4; i++) {
-        auto saved_visited = visited;
-        node->get_input(0, saved_visited);
+        auto saved_visited = *visited;
+        node->get_input(0, &saved_visited);
     }
     node->set_output(0, 32);
 });

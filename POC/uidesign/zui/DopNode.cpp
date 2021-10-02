@@ -35,7 +35,6 @@ std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited)
         throw ztd::makeException("Bad output socket name: ", sock_name);
 
     _apply_func(visited);
-
     return outputs[n].result;
 }
 

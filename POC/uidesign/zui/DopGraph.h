@@ -27,7 +27,7 @@ struct DopGraph {
     std::any resolve_value(std::string expr, DopContext *visited);
 
     inline std::any resolve_value(std::string expr) {
-        std::set<std::string> visited;
+        DopContext visited;
         return resolve_value(expr, &visited);
     }
 };
