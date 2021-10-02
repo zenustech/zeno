@@ -17,9 +17,12 @@ struct GraphicsWidget : Widget {
 struct GraphicsView : Widget {
     std::set<GraphicsWidget *> children_selected;
 
+    Point translate = {0, 0};
+
     virtual void select_child(GraphicsWidget *ptr, bool multiselect);
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
+    void do_paint() override;
 };
 
 

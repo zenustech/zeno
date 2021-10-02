@@ -24,7 +24,11 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
 
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
-    if (cur.lmb) {
+    if (cur.mmb) {
+        translate.x += cur.dx;
+        translate.y += cur.dy;
+
+    } else if (cur.lmb) {
         for (auto const &child: children_selected) {
             if (child->draggable) {
                 child->position.x += cur.dx;
@@ -49,6 +53,19 @@ void GraphicsView::on_event(Event_Mouse e) {
     } else if (!cur.shift) {
         select_child(nullptr, false);
     }
+}
+
+
+void GraphicsView::do_paint() {
+    auto raii = cur.translate(-position.x, -position.y);
+    glPushMatrix();
+    glTranslatef(position.x, position.y, zvalue);
+    glTranslatef(translate.x, translate.y, 0.f);
+    paint();
+    for (auto const &child: children) {
+        child->do_paint();
+    }
+    glPopMatrix();
 }
 
 
