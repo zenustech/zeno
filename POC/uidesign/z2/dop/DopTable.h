@@ -8,13 +8,19 @@
 namespace z2::dop {
 
 
-struct DopTable {
+class DopTable {
     struct Impl {
         ztd::map<std::string, DopFunctor> funcs;
         ztd::map<std::string, DopDescriptor> descs;
     };
     mutable std::unique_ptr<Impl> impl;
 
+    Impl *get_impl() const {
+        if (!impl) impl = std::make_unique<Impl>();
+        return impl.get();
+    }
+
+public:
     std::set<std::string> entry_names() const {
         std::set<std::string> ret;
         for (auto const &[k, v]: get_impl()->funcs) {
@@ -24,12 +30,7 @@ struct DopTable {
     }
 
     DopDescriptor const &desc_of(std::string const &name) const {
-        return impl->descs.at(name);
-    }
-
-    Impl *get_impl() const {
-        if (!impl) impl = std::make_unique<Impl>();
-        return impl.get();
+        return get_impl()->descs.at(name);
     }
 
     auto const &lookup(std::string const &kind) const {
