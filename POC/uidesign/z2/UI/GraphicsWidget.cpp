@@ -59,12 +59,16 @@ void GraphicsView::on_event(Event_Mouse e) {
 void GraphicsView::do_paint() {
     auto raii = cur.translate(-position.x, -position.y);
     glPushMatrix();
-    glTranslatef(position.x, position.y, zvalue);
 
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
     glViewport(position.x + bbox.x0, position.y + bbox.y0, bbox.nx, bbox.ny);
-    glTranslatef(translate.x, translate.y, 0.f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glScalef(2.f, 2.f, -.001f);
+    glTranslatef(-.5f, -.5f, 1.f);
+    glScalef(1.f / bbox.nx, 1.f / bbox.ny, 1.f);
 
     paint();
     for (auto const &child: children) {
