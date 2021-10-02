@@ -21,7 +21,7 @@ std::string format(const char *fmt, Ts &&...ts) {
 template <class ...Ts>
 std::string toString(Ts const &...ts) {
     std::ostringstream ss;
-    (ss << ... << ts);
+    (void)(ss << ... << ts);
     return ss.str();
 }
 
