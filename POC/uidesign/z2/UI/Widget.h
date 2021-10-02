@@ -50,7 +50,8 @@ struct Widget : Object {
     bool remove_child(Widget *ptr);
 
     virtual Widget *child_at(Point p) const;
-    virtual Widget *item_at(Point p) const;
+    virtual Widget *item_at(Point p, std::function<bool(Widget *)> filter) const;
+    Widget *item_at(Point p) const;
 
     virtual void on_event(Event_Hover e);
     virtual void on_event(Event_Motion e);

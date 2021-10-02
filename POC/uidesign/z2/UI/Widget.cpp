@@ -41,13 +41,19 @@ Widget *Widget::child_at(Point p) const {
 }
 
 Widget *Widget::item_at(Point p) const {
+    return item_at(p, [] (Widget *) {
+        return true;
+    });
+}
+
+Widget *Widget::item_at(Point p, std::function<bool(Widget *)> filter) const {
     if (!contains_point(p)) {
         return nullptr;
     }
     Widget *found = nullptr;
     float found_zvalue = 0.0f;
     for (auto const &child: children) {
-        if (auto it = child->item_at(p - child->position)) {
+        if (auto it = child->item_at(p - child->position); it && filter(it)) {
             auto it_zvalue = child->absolute_zvalue();
             if (!found || it_zvalue >= found_zvalue) {
                 found = it;
