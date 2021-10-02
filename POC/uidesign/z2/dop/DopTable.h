@@ -2,6 +2,7 @@
 
 
 #include <z2/dop/DopFunctor.h>
+#include <z2/dop/DopDescriptor.h>
 
 
 namespace z2::dop {
@@ -10,6 +11,7 @@ namespace z2::dop {
 struct DopTable {
     struct Impl {
         ztd::map<std::string, DopFunctor> funcs;
+        ztd::map<std::string, DopDescriptor> descs;
     };
     mutable std::unique_ptr<Impl> impl;
 
@@ -19,6 +21,10 @@ struct DopTable {
             ret.insert(k);
         }
         return ret;
+    }
+
+    DopDescriptor const &desc_of(std::string const &name) const {
+        return impl->descs.at(name);
     }
 
     Impl *get_impl() const {

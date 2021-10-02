@@ -162,10 +162,15 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->position = pos;
     node->kind = kind;
-    // TODO: from descriptors
-    node->add_input_socket()->name = "path";
-    node->add_input_socket()->name = "type";
-    node->add_output_socket()->name = "grid";
+    auto const &desc = dop::tab.desc_of(kind);
+    for (auto const &sock_info: desc.inputs) {
+        auto socket = node->add_input_socket();
+        socket->name = sock_info.name;
+    }
+    for (auto const &sock_info: desc.outputs) {
+        auto socket = node->add_output_socket();
+        socket->name = sock_info.name;
+    }
     node->update_sockets();
     return node;
 }
