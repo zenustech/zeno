@@ -9,7 +9,7 @@ namespace zeno::dop {
 
 struct DopTable {
     struct Impl {
-        ztd::Map<std::string, DopFunctor> funcs;
+        ztd::map<std::string, DopFunctor> funcs;
     };
     mutable std::unique_ptr<Impl> impl;
 

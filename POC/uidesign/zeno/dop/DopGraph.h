@@ -8,7 +8,7 @@ namespace zeno::dop {
 
 
 struct DopGraph {
-    ztd::Map<std::string, std::unique_ptr<DopNode>> nodes;
+    ztd::map<std::string, std::unique_ptr<DopNode>> nodes;
 
     DopNode *add_node(std::string kind);
     std::string _determine_name(std::string kind);

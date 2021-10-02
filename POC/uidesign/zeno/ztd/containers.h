@@ -8,7 +8,7 @@
 namespace zeno::ztd {
 
 template <class K, class V>
-struct Map : std::map<K, V> {
+struct map : std::map<K, V> {
     using std::map<K, V>::map;
 
     V &at(K const &k) {
@@ -29,7 +29,7 @@ struct Map : std::map<K, V> {
 };
 
 template <class T>
-struct Vector : std::vector<T> {
+struct vector : std::vector<T> {
     using std::vector<T>::vector;
 
     T &at(size_t i) {

@@ -27,7 +27,7 @@ std::string to_string(Ts const &...ts) {
 
 template <class ...Ts>
 inline auto make_error(Ts const &...ts) {
-    return error(toString<Ts...>(ts...));
+    return error(to_string<Ts...>(ts...));
 }
 
 }
