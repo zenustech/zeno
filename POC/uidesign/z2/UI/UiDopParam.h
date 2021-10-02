@@ -5,6 +5,8 @@
 #include <z2/UI/TextEdit.h>
 #include <z2/UI/UiDopSocket.h>
 #include <z2/UI/Font.h>
+#include <z2/dop/DopNode.h>
+#include <z2/dop/DopSocket.h>
 
 
 namespace z2::UI {

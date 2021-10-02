@@ -20,6 +20,7 @@ struct RootWindow : Widget {
         editor = add_child<UiDopEditor>();
         editor->bbox = {0, 0, 1024, 256};
         graph->editor = editor;
+        editor->graph = graph;
     }
 };
 
