@@ -1,5 +1,5 @@
 #include "DopNode.h"
-#include "DopContext.h"
+#include "DopFunctor.h"
 #include "DopGraph.h"
 #include "DopTable.h"
 
@@ -22,10 +22,18 @@ void DopNode::apply_func() {
 
 
 DopLazy DopNode::get_output_by_name(std::string name) {
-    apply_func();
     for (int i = 0; i < outputs.size(); i++) {
-        if (outputs[i].name == name)
-            return outputs[i].result;
+        if (outputs[i].name == name) {
+            auto val = outputs[i].result;
+            if (!val.has_value()) {
+                apply_func();
+                val = outputs[i].result;
+                if (!val.has_value()) {
+                    throw ztd::makeException("no value returned at socket: ", name);
+                }
+            }
+            return val;
+        }
     }
     throw ztd::makeException("Bad output socket name: ", name);
 }

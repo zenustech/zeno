@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "DopContext.h"
+#include "DopFunctor.h"
 
 
 struct DopTable {

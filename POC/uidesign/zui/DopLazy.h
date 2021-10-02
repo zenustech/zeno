@@ -7,7 +7,7 @@
 class DopLazy {
     struct Impl {
         std::function<std::any()> fun;
-        std::any val{};
+        std::any val;
 
         template <class F>
         Impl(F fun) : fun(fun) {}
@@ -44,5 +44,9 @@ public:
     DopLazy const &reset() const {
         impl->val = {};
         return *this;
+    }
+
+    bool has_value() const {
+        return impl != nullptr;
     }
 };
