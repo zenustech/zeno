@@ -15,7 +15,7 @@ static int def_readvdb = tab.define("readvdb", {{
     {"type"},
 }, {
     {"grid"},
-}, [] (auto *node, auto *visited) {
+}, [] (DopNode *node, DopContext *visited) {
     printf("readvdb out[0]\n");
     node->set_output(0, 1024);
 }});
@@ -29,7 +29,7 @@ static int def_vdbsmooth = tab.define("vdbsmooth", {{
     {"width"},
 }, {
     {"grid"},
-}, [] (auto *node, auto *visited) {
+}, [] (DopNode *node, DopContext *visited) {
     auto grid = std::any_cast<int>(node->get_input(0, visited));
     auto type = node->get_input(1, visited);
     grid += 1;
@@ -45,7 +45,7 @@ static int def_vdberode = tab.define("vdberode", {{
     {"levels"},
 }, {
     {"grid"},
-}, [] (auto *node, auto *visited) {
+}, [] (DopNode *node, DopContext *visited) {
     auto grid = std::any_cast<int>(node->get_input(0, visited));
     auto levels = node->get_input(1, visited);
     grid -= 3;
@@ -61,7 +61,7 @@ static int def_repeat = tab.define("repeat", {{
     {"times"},
 }, {
     {"value"},
-}, [] (auto *node, auto *visited) {
+}, [] (DopNode *node, DopContext *visited) {
     printf("repeat out[0]\n");
     for (int i = 0; i < 4; i++) {
         auto saved_visited = *visited;
