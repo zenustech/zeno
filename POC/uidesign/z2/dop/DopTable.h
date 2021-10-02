@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <z2/dop/DopFunctor.h>
 #include <z2/dop/DopDescriptor.h>
 
 
@@ -10,7 +9,6 @@ namespace z2::dop {
 
 class DopTable {
     struct Impl {
-        ztd::map<std::string, DopFunctor> funcs;
         ztd::map<std::string, DopDescriptor> descs;
     };
     mutable std::unique_ptr<Impl> impl;
@@ -23,23 +21,22 @@ class DopTable {
 public:
     std::set<std::string> entry_names() const {
         std::set<std::string> ret;
-        for (auto const &[k, v]: get_impl()->funcs) {
+        for (auto const &[k, v]: get_impl()->descs) {
             ret.insert(k);
         }
         return ret;
     }
 
-    DopDescriptor const &desc_of(std::string const &name) const {
-        return get_impl()->descs.at(name);
+    DopDescriptor const &desc_of(std::string const &kind) const {
+        return get_impl()->descs.at(kind);
     }
 
-    auto const &lookup(std::string const &kind) const {
-        return get_impl()->funcs.at(kind);
+    DopFunctor const &lookup(std::string const &kind) const {
+        return desc_of(kind).func;
     }
 
-    int define(std::string const &kind,
-               DopDescriptor &&desc, DopFunctor &&func) {
-        get_impl()->funcs.emplace(kind, std::move(func));
+    int define(std::string const &kind, DopDescriptor &&desc) {
+        get_impl()->descs.emplace(kind, std::move(desc));
         return 1;
     }
 };

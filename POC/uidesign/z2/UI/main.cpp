@@ -9,7 +9,7 @@
 namespace z2::UI {
 
 
-static struct RootWindow : Widget {
+struct RootWindow : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
 
@@ -21,21 +21,24 @@ static struct RootWindow : Widget {
         editor->bbox = {0, 0, 1024, 256};
         graph->editor = editor;
     }
-} win;
+};
+
+
+std::unique_ptr<RootWindow> win;
 
 
 static void process_input() {
     if (glfwGetKey(cur.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(cur.window, GLFW_TRUE);
     }
-    cur.update_window(&win);
+    cur.update_window(win.get());
 }
 
 
 static void draw_graphics() {
     if (cur.is_invalidated()) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        win.do_paint();
+        win->do_paint();
         glfwSwapBuffers(cur.window);
     }
 }
@@ -70,7 +73,9 @@ int main() {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+
     cur.init_callbacks();
+    win = std::make_unique<RootWindow>();
 
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(cur.window)) {

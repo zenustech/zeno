@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <z2/ztd/stdafx.h>
+#include <z2/dop/DopFunctor.h>
 
 
 namespace z2::dop {
@@ -16,6 +16,8 @@ struct DopDescriptor {
 
     ztd::vector<SocketInfo> inputs;
     ztd::vector<SocketInfo> outputs;
+
+    DopFunctor func;
 };
 
 
