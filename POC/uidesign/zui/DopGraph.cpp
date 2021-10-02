@@ -66,7 +66,7 @@ void DopGraph::remove_node_input
 }
 
 
-DopLazy DopGraph::resolve_value(std::string expr, std::set<std::string> &visited) {
+std::any DopGraph::resolve_value(std::string expr, std::set<std::string> &visited) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
@@ -76,18 +76,16 @@ DopLazy DopGraph::resolve_value(std::string expr, std::set<std::string> &visited
         return val;
 
     } else if (!expr.size()) {
-        return [] () -> std::any { return {}; };
+        return {};
 
     } else if (std::strchr("0123456789+-.", expr[0])) {
         if (expr.find('.') != std::string::npos) {
-            auto val = std::stof(expr);
-            return [=] () -> std::any { return val; };
+            return std::stof(expr);
         } else {
-            auto val = std::stoi(expr);
-            return [=] () -> std::any { return val; };
+            return std::stoi(expr);
         }
 
     } else {
-        return [=] () -> std::any { return expr; };
+        return expr;
     }
 }

@@ -104,7 +104,7 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        bk_graph->resolve_value("@vdberode1:grid")();
+        bk_graph->resolve_value("@vdberode1:grid");
     });
 }
 

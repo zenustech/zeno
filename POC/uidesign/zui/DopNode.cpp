@@ -4,24 +4,23 @@
 #include "DopTable.h"
 
 
-void DopNode::_apply_func(std::set<std::string> &visited) {
-    ztd::Vector<DopLazy> in(inputs.size());
-
-    for (int i = 0; i < in.size(); i++) {
-        in[i] = graph->resolve_value(inputs[i].value, visited);
-    }
-
-    auto func = tab.lookup(kind);
-    ztd::Vector<DopLazy> out(outputs.size());
-    func(in, out);
-
-    for (int i = 0; i < out.size(); i++) {
-        outputs.at(i).result = std::move(out[i]);
-    }
+std::any DopNode::get_input(int i, std::set<std::string> &visited) {
+    return graph->resolve_value(inputs[i].value, visited);
 }
 
 
-DopLazy DopNode::get_output_by_name(std::string name, std::set<std::string> &visited) {
+void DopNode::set_output(int i, std::any val) {
+    outputs.at(i).result = std::move(val);
+}
+
+
+void DopNode::_apply_func(std::set<std::string> &visited) {
+    auto func = tab.lookup(kind);
+    func(this, visited);
+}
+
+
+std::any DopNode::get_output_by_name(std::string name, std::set<std::string> &visited) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)

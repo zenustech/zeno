@@ -4,4 +4,6 @@
 #include "DopLazy.h"
 
 
-using DopFunctor = std::function<void(ztd::Vector<DopLazy> const &, ztd::Vector<DopLazy> &)>;
+struct DopNode;
+
+using DopFunctor = std::function<void(DopNode *, std::set<std::string> &)>;

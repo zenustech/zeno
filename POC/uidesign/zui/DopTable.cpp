@@ -1,44 +1,38 @@
 #include "DopTable.h"
+#include "DopNode.h"
 
 
 DopTable tab;
 
 
-static int def_readvdb = tab.define("readvdb", [] (auto const &in, auto &out) {
-    out[0] = [=] () -> std::any {
-        printf("readvdb out[0]\n");
-        return 1024;
-    };
+static int def_readvdb = tab.define("readvdb", [] (auto *node, auto &visited) {
+    printf("readvdb out[0]\n");
+    node->set_output(0, 1024);
 });
 
 
-static int def_vdbsmooth = tab.define("vdbsmooth", [] (auto const &in, auto &out) {
-    out[0] = [=] () -> std::any {
-        auto grid = std::any_cast<int>(in[0]());
-        auto type = in[1]();
-        grid += 1;
-        printf("vdbsmooth out[0] %d\n", grid);
-        return grid;
-    };
+static int def_vdbsmooth = tab.define("vdbsmooth", [] (auto *node, auto &visited) {
+    auto grid = std::any_cast<int>(node->get_input(0, visited));
+    auto type = node->get_input(1, visited);
+    grid += 1;
+    printf("vdbsmooth out[0] %d\n", grid);
+    node->set_output(0, grid);
 });
 
 
-static int def_vdberode = tab.define("vdberode", [] (auto const &in, auto &out) {
-    out[0] = [=] () -> std::any {
-        auto grid = std::any_cast<int>(in[0]());
-        grid -= 3;
-        printf("vdberode out[0] %d\n", grid);
-        return grid;
-    };
+static int def_vdberode = tab.define("vdberode", [] (auto *node, auto &visited) {
+    auto grid = std::any_cast<int>(node->get_input(0, visited));
+    grid -= 3;
+    printf("vdberode out[0] %d\n", grid);
+    node->set_output(0, grid);
 });
 
 
-static int def_repeat = tab.define("repeat", [] (auto const &in, auto &out) {
-    out[0] = [=] () -> std::any {
-        printf("repeat out[0]\n");
-        for (int i = 0; i < 4; i++) {
-            in[0].reset()();
-        }
-        return 32;
-    };
+static int def_repeat = tab.define("repeat", [] (auto *node, auto &visited) {
+    printf("repeat out[0]\n");
+    for (int i = 0; i < 4; i++) {
+        auto saved_visited = visited;
+        node->get_input(0, saved_visited);
+    }
+    node->set_output(0, 32);
 });

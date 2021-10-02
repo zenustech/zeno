@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 
-#if 1
+#if 0
 class DopLazy {
     struct Impl {
         std::function<std::any()> fun;

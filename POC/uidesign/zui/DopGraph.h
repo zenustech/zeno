@@ -25,9 +25,9 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    DopLazy resolve_value(std::string expr, std::set<std::string> &visited);
+    std::any resolve_value(std::string expr, std::set<std::string> &visited);
 
-    inline DopLazy resolve_value(std::string expr) {
+    inline std::any resolve_value(std::string expr) {
         std::set<std::string> visited;
         return resolve_value(expr, visited);
     }
