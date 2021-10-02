@@ -10,6 +10,14 @@ struct DopTable {
     };
     mutable std::unique_ptr<Impl> impl;
 
+    std::set<std::string> entry_names() const {
+        std::set<std::string> ret;
+        for (auto const &[k, v]: get_impl()->funcs) {
+            ret.insert(k);
+        }
+        return ret;
+    }
+
     Impl *get_impl() const {
         if (!impl) impl = std::make_unique<Impl>();
         return impl.get();

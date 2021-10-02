@@ -24,6 +24,7 @@ Button *UiDopContextMenu::add_entry(std::string name) {
 void UiDopContextMenu::update_entries() {
     for (int i = 0; i < entries.size(); i++) {
         entries[i]->position = {0, -(i + 1) * EH};
+        entries[i]->bbox = {0, 0, EW, EH};
     }
     bbox = {0, entries.size() * -EH, EW, entries.size() * EH};
 }

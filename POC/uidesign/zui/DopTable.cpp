@@ -31,3 +31,13 @@ static int def_vdberode = tab.define("vdberode", [] (auto const &in, auto &out) 
         return grid;
     };
 });
+
+
+static int def_repeat = tab.define("repeat", [] (auto const &in, auto &out) {
+    out[0] = [=] () -> std::any {
+        for (int i = 0; i < 4; i++) {
+            in[0]();
+        }
+        return 32;
+    };
+});

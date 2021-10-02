@@ -1,6 +1,7 @@
 #include "UiDopGraph.h"
 #include "UiDopNode.h"
 #include "UiDopEditor.h"
+#include "DopTable.h"
 
 
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
@@ -164,11 +165,11 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
 
 UiDopContextMenu *UiDopGraph::add_context_menu() {
     remove_context_menu();
-    menu = add_child<UiDopContextMenu>();
 
-    menu->add_entry("vdbsmooth");
-    menu->add_entry("readvdb");
-    menu->add_entry("vdberode");
+    menu = add_child<UiDopContextMenu>();
+    for (auto const &key: tab.entry_names()) {
+        menu->add_entry(key);
+    }
     menu->update_entries();
 
     menu->on_selected.connect([this] {
