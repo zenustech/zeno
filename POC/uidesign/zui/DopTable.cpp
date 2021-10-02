@@ -5,8 +5,6 @@ DopTable tab;
 
 
 static int def_readvdb = tab.define("readvdb", [] (DopContext *ctx) {
-    //auto dx = std::any_cast<float>(ctx.in[0]);
-    //printf("readvdb %f\n", dx);
     printf("readvdb\n");
 });
 

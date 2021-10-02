@@ -101,7 +101,7 @@ UiDopGraph::UiDopGraph() {
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         DopVisited visited;
-        bk_graph->nodes.at("vdbsmooth1")->apply_func(&visited);
+        bk_graph->nodes.at("vdbsmooth1")->get_output_by_name(&visited, "grid")();
     });
 }
 
