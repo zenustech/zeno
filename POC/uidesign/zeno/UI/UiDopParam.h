@@ -26,7 +26,7 @@ struct UiDopParam : Widget {
 
     void set_bk_socket
         ( UiDopInputSocket *socket
-        , DopInputSocket *bk_socket
+        , dop::DopInputSocket *bk_socket
         , dop::DopNode *bk_node
         ) {
         label->text = socket->name;

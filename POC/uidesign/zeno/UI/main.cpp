@@ -9,7 +9,7 @@
 namespace zeno::UI {
 
 
-struct RootWindow : Widget {
+static struct RootWindow : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
 
@@ -24,7 +24,7 @@ struct RootWindow : Widget {
 } win;
 
 
-void process_input() {
+static void process_input() {
     if (glfwGetKey(cur.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(cur.window, GLFW_TRUE);
     }
@@ -32,7 +32,7 @@ void process_input() {
 }
 
 
-void draw_graphics() {
+static void draw_graphics() {
     if (cur.is_invalidated()) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win.do_paint();
@@ -92,3 +92,8 @@ int main() {
 
 
 }  // namespace zeno::UI
+
+
+int main() {
+    return zeno::UI::main();
+}
