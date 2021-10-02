@@ -9,6 +9,8 @@ DopTable tab;
 
 
 static int def_readvdb = tab.define("readvdb", {{
+    "openvdb", "load from .vdb file",
+}, {
     {"path"},
     {"type"},
 }, {
@@ -20,8 +22,11 @@ static int def_readvdb = tab.define("readvdb", {{
 
 
 static int def_vdbsmooth = tab.define("vdbsmooth", {{
+    "openvdb", "gaussian smooth vdb grid",
+}, {
     {"grid"},
-    {"type"},
+    {"times"},
+    {"width"},
 }, {
     {"grid"},
 }, [] (auto *node, auto *visited) {
@@ -34,13 +39,15 @@ static int def_vdbsmooth = tab.define("vdbsmooth", {{
 
 
 static int def_vdberode = tab.define("vdberode", {{
+    "openvdb", "erode the levelset by levels",
+}, {
     {"grid"},
-    {"type"},
+    {"levels"},
 }, {
     {"grid"},
 }, [] (auto *node, auto *visited) {
     auto grid = std::any_cast<int>(node->get_input(0, visited));
-    auto type = node->get_input(1, visited);
+    auto levels = node->get_input(1, visited);
     grid -= 3;
     printf("vdberode out[0] %d\n", grid);
     node->set_output(0, grid);
@@ -48,10 +55,12 @@ static int def_vdberode = tab.define("vdberode", {{
 
 
 static int def_repeat = tab.define("repeat", {{
-    {"grid"},
-    {"type"},
+    "control", "repeat an operation for multiple times",
 }, {
-    {"grid"},
+    {"value"},
+    {"times"},
+}, {
+    {"value"},
 }, [] (auto *node, auto *visited) {
     printf("repeat out[0]\n");
     for (int i = 0; i < 4; i++) {

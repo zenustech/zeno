@@ -10,10 +10,14 @@ namespace z2::dop {
 struct DopDescriptor {
     struct SocketInfo {
         std::string name;
-
-        SocketInfo(std::string const &name) : name(name) {}
     };
 
+    struct CategoryInfo {
+        std::string category;
+        std::string documentation;
+    };
+
+    CategoryInfo cate;
     ztd::vector<SocketInfo> inputs;
     ztd::vector<SocketInfo> outputs;
 
