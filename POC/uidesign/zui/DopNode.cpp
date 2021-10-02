@@ -15,6 +15,8 @@ void DopNode::set_output(int i, std::any val) {
 
 
 void DopNode::_apply_func(DopContext *visited) {
+    if (visited->contains(name))
+        return;
     auto func = tab.lookup(kind);
     func(this, visited);
     visited->insert(name);
@@ -32,7 +34,6 @@ std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited)
     if (n == -1)
         throw ztd::makeException("Bad output socket name: ", sock_name);
 
-    printf("do %s %s\n", name.c_str(), sock_name.c_str());
     _apply_func(visited);
 
     return outputs[n].result;
