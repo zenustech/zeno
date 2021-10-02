@@ -56,7 +56,7 @@ void GraphicsView::on_event(Event_Mouse e) {
 }
 
 
-void GraphicsView::do_paint() {
+/*void GraphicsView::do_paint() {
     auto raii = cur.translate(-position.x, -position.y);
     glPushMatrix();
     glTranslatef(position.x, position.y, zvalue);
@@ -66,7 +66,7 @@ void GraphicsView::do_paint() {
         child->do_paint();
     }
     glPopMatrix();
-}
+}*/
 
 
 }  // namespace z2::UI
