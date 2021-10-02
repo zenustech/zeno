@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "DopLazy.h"
+#include "stdafx.h"
 
 
 struct DopInputSocket {
@@ -16,7 +16,7 @@ struct DopInputSocket {
 
 struct DopOutputSocket {
     std::string name;
-    DopLazy result;
+    std::any result;
 
     void serialize(std::ostream &ss) const {
         ss << name;

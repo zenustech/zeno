@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "DopLazy.h"
+#include "stdafx.h"
 
 
 struct DopNode;
