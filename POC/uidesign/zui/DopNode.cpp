@@ -1,20 +1,16 @@
 #include "DopNode.h"
 #include "DopContext.h"
-#include "DopVisited.h"
 #include "DopGraph.h"
 #include "DopTable.h"
 
 
-void DopNode::apply_func(DopVisited *visited) {
+void DopNode::apply_func() {
     DopContext ctx;
     ctx.in.resize(inputs.size());
 
-    bool valid = visited->is_visited(this);
     for (int i = 0; i < ctx.in.size(); i++) {
-        ctx.in[i] = graph->resolve_value(visited, inputs[i].value, &valid);
+        ctx.in[i] = graph->resolve_value(inputs[i].value);
     }
-    if (valid)
-        return;
 
     ctx.out.resize(outputs.size());
     auto func = tab.lookup(kind);
@@ -23,12 +19,11 @@ void DopNode::apply_func(DopVisited *visited) {
     for (int i = 0; i < ctx.out.size(); i++) {
         outputs[i].result = std::move(ctx.out[i]);
     }
-    visited->mark_visited(this);
 }
 
 
-DopLazy DopNode::get_output_by_name(DopVisited *visited, std::string name) {
-    apply_func(visited);
+DopLazy DopNode::get_output_by_name(std::string name) {
+    apply_func();
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == name)
             return outputs[i].result;

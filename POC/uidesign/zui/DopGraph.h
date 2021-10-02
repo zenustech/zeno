@@ -3,7 +3,6 @@
 
 #include "DopLazy.h"
 #include "DopNode.h"
-#include "DopVisited.h"
 
 
 struct DopGraph {
@@ -26,5 +25,5 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    DopLazy resolve_value(DopVisited *visited, std::string expr, bool *papplied);
+    DopLazy resolve_value(std::string expr);
 };
