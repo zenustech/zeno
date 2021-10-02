@@ -95,13 +95,15 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 UiDopGraph::UiDopGraph() {
     auto c = add_node("readvdb", {100, 256});
     auto d = add_node("vdbsmooth", {450, 256});
+    auto e = add_node("repeat", {750, 256});
 
     add_link(c->outputs[0], d->inputs[0]);
+    add_link(d->outputs[0], e->inputs[0]);
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        bk_graph->resolve_value("@vdbsmooth1:grid")();
+        bk_graph->resolve_value("@repeat1:grid")();
     });
 }
 
@@ -156,6 +158,7 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->position = pos;
     node->kind = kind;
+    // TODO: from descriptors
     node->add_input_socket()->name = "path";
     node->add_input_socket()->name = "type";
     node->add_output_socket()->name = "grid";

@@ -35,8 +35,9 @@ static int def_vdberode = tab.define("vdberode", [] (auto const &in, auto &out) 
 
 static int def_repeat = tab.define("repeat", [] (auto const &in, auto &out) {
     out[0] = [=] () -> std::any {
+        printf("repeat out[0]\n");
         for (int i = 0; i < 4; i++) {
-            in[0]();
+            in[0].reset()();
         }
         return 32;
     };
