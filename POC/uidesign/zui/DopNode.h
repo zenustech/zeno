@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "DopSocket.h"
 #include "DopLazy.h"
+#include "DopSocket.h"
 
 
 struct DopGraph;

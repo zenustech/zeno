@@ -10,7 +10,9 @@ class DopLazy {
         std::any val;
 
         template <class F>
-        Impl(F fun) : fun(fun) {}
+        Impl(F fun)
+            : fun(std::move(fun))
+        {}
     };
 
     std::shared_ptr<Impl> impl;
@@ -23,12 +25,9 @@ public:
     DopLazy &operator=(DopLazy &&) = default;
 
     template <class F>
-    DopLazy(F fun) : impl(std::make_shared<Impl>(std::move(fun))) {}
-
-    template <class F>
-    DopLazy &operator=(F fun) {
-        impl = std::make_shared<Impl>(std::move(fun));
-        return *this;
+    DopLazy(F fun)
+        : impl(std::make_shared<Impl>(std::move(fun)))
+    {
     }
 
     std::any operator()() const {
