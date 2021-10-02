@@ -22,7 +22,7 @@ struct GraphicsView : Widget {
     virtual void select_child(GraphicsWidget *ptr, bool multiselect);
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
-    //void do_paint() override;
+    void do_paint() override;
 };
 
 
