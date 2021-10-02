@@ -19,15 +19,15 @@ std::string format(const char *fmt, Ts &&...ts) {
 }
 
 template <class ...Ts>
-std::string toString(Ts const &...ts) {
+std::string to_string(Ts const &...ts) {
     std::ostringstream ss;
     (void)(ss << ... << ts);
     return ss.str();
 }
 
 template <class ...Ts>
-inline auto makeException(Ts const &...ts) {
-    return Exception(toString<Ts...>(ts...));
+inline auto make_error(Ts const &...ts) {
+    return error(toString<Ts...>(ts...));
 }
 
 }

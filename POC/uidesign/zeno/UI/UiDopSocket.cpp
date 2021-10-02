@@ -13,7 +13,7 @@ int UiDopInputSocket::get_index() const {
             return i;
         }
     }
-    throw ztd::makeException("Cannot find index of input node");
+    throw ztd::make_error("Cannot find index of input node");
 }
 
 int UiDopOutputSocket::get_index() const {
@@ -23,7 +23,7 @@ int UiDopOutputSocket::get_index() const {
             return i;
         }
     }
-    throw ztd::makeException("Cannot find index of output node");
+    throw ztd::make_error("Cannot find index of output node");
 }
 
 

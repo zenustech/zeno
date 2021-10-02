@@ -5,12 +5,12 @@
 
 namespace zeno::ztd {
 
-class Exception : public std::exception {
+class error : public std::exception {
     std::string msg;
 public:
-    Exception(std::string &&msg) noexcept : msg(std::move(msg)) {}
+    error(std::string &&msg) noexcept : msg(std::move(msg)) {}
     virtual const char *what() const noexcept { return msg.c_str(); }
-    ~Exception() noexcept = default;
+    ~error() noexcept = default;
 };
 
 }
