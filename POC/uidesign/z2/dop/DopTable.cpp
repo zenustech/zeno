@@ -71,4 +71,22 @@ static int def_repeat = tab.define("repeat", {{
 }});
 
 
+static int def_if = tab.define("if", {{
+    "control", "if 'cond' is true, return 'then'; otherwise, return 'else'.",
+}, {
+    {"cond"},
+    {"then"},
+    {"else"},
+}, {
+    {"value"},
+}, [] (DopNode *node, DopContext *visited) {
+    auto cond = std::any_cast<int>(node->get_input(0, visited));
+    if (cond) {
+        node->set_output(0, node->get_input(1, visited));
+    } else {
+        node->set_output(0, node->get_input(2, visited));
+    }
+}});
+
+
 }  // namespace z2::dop
