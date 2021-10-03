@@ -103,13 +103,14 @@ void CursorState::update_window(Widget *win) {
 ztd::dtor_function CursorState::translate(float dx, float dy, float ds) {
     x += dx; y += dy;
     x *= ds; y *= ds;
-    tx += dx; ty += dy;
+    // todo: might be incorrect:
+    tx += dx * s; ty += dy * s;
     s *= ds;
     return [=, this] () {
         x /= ds; y /= ds;
         x -= dx; y -= dy;
-        tx -= dx; ty -= dy;
         s /= ds;
+        tx -= dx * s; ty -= dy * s;
     };
 }
 
@@ -122,13 +123,31 @@ bool CursorState::is_invalid() {
     }
 }
 
+static auto pymod(auto x, auto y) {
+    auto z = x / y;
+    z -= std::floor(z);
+    z *= y;
+    return z;
+};
+
 void CursorState::focus_on(Widget *widget) {
-    focus_widget = widget;
-    if (focus_widget) {
+    if (widget) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     } else {
+        auto bbox = focus_widget->bbox;
+        bbox.x0 += focus_widget->position.x;
+        bbox.y0 += focus_widget->position.y;
+        float cx = x / s - tx;
+        float cy = y / s - ty;
+        cx = pymod(cx - bbox.x0, bbox.nx) + bbox.x0;
+        cy = pymod(cy - bbox.y0, bbox.ny) + bbox.y0;
+        GLint nx, ny;
+        glfwGetFramebufferSize(window, &nx, &ny);
+        cy = ny - 1 - cy;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetCursorPos(window, cx, cy);
     }
+    focus_widget = widget;
 }
 
 

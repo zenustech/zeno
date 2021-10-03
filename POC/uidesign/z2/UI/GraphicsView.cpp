@@ -26,9 +26,9 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
-        constexpr float SPEEDUP = 1.375f;
-        translate.x += cur.dx * SPEEDUP;
-        translate.y += cur.dy * SPEEDUP;
+        //constexpr float SPEEDUP = 1.375f;
+        translate.x += cur.dx;// * SPEEDUP;
+        translate.y += cur.dy;// * SPEEDUP;
 
     } else if (cur.lmb) {
         for (auto const &child: children_selected) {
