@@ -14,10 +14,13 @@ struct UiDopScene : Widget {
 
     UiDopScene() {
         graph = add_child<UiDopGraph>();
-        graph->bbox = {0, 0, 1024, 512};
-        graph->position = {0, 256};
+        graph->bbox = {0, 0, 1088, 440};
+        graph->position = {0, 0};
+
         editor = add_child<UiDopEditor>();
-        editor->bbox = {0, 0, 1024, 256};
+        editor->bbox = {0, 0, 512, 440};
+        editor->position = {1088, 0};
+
         graph->editor = editor;
         editor->graph = graph;
         bbox = {0, 0, 1024, 768};

@@ -14,8 +14,8 @@ struct UiMainWindow : Widget {
     UiVisViewport *viewport;
 
     UiMainWindow() {
-        viewport = add_child<UiVisViewport>();
         scene = add_child<UiDopScene>();
+        viewport = add_child<UiVisViewport>();
     }
 };
 
@@ -48,7 +48,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    cur.window = glfwCreateWindow(1024, 768, "Zeno Editor", nullptr, nullptr);
+    cur.window = glfwCreateWindow(1600, 900, "Zeno Editor", nullptr, nullptr);
     glfwSetWindowPos(cur.window, 0, 0);
     if (!cur.window) {
         const char *err = "unknown error"; glfwGetError(&err);
