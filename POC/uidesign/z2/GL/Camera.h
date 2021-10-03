@@ -14,9 +14,12 @@ struct Camera {
     glm::mat4x4 view;
     glm::mat4x4 proj;
 
-    void look_at(double cx, double cy, double cz,
-                 double theta, double phi, double radius,
-                 double fov, bool ortho_mode);
+    glm::dvec3 center;
+    double theta = 0.f;
+    double phi = 0.f;
+    double radius = 3.f;
+    double fov = 30.f;
+    bool ortho_mode = false;
 };
 
 
