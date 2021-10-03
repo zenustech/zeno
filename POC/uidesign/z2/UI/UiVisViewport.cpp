@@ -64,10 +64,24 @@ void UiVisViewport::paint() const {
 }
 
 
+void UiVisViewport::on_event(Event_Mouse e) {
+    Widget::on_event(e);
+
+    if (e.btn != 2)
+        return;
+
+    if (e.down)
+        cur.focus_on(this);
+    else
+        cur.focus_on(nullptr);
+}
+
+
 void UiVisViewport::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
-        camera->move(cur.dx, cur.dy, cur.shift);
+        float n = (bbox.nx + bbox.ny) / (2 * 1.8f);
+        camera->move(cur.dx / n, cur.dy / n, cur.shift);
     }
 }
 

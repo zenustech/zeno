@@ -9,8 +9,8 @@ namespace z2::GL {
 
 
 void Camera::move(double dx, double dy, bool pan_mode) {
-    theta -= dy * std::numbers::pi;
-    phi -= dx * std::numbers::pi;
+    theta += dy * std::numbers::pi;
+    phi += dx * std::numbers::pi;
 }
 
 
