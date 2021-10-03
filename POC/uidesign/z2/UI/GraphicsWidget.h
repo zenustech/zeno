@@ -21,7 +21,6 @@ struct GraphicsView : Widget {
 
     virtual void select_child(GraphicsWidget *ptr, bool multiselect);
     ztd::dtor_function do_transform() const override;
-    bool is_periodic_mouse() const override;
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
     void do_paint() override;

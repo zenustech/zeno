@@ -23,11 +23,6 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
 }
 
 
-bool GraphicsView::is_periodic_mouse() const {
-    return cur.lmb || cur.mmb;
-}
-
-
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
@@ -47,6 +42,14 @@ void GraphicsView::on_event(Event_Motion e) {
 
 void GraphicsView::on_event(Event_Mouse e) {
     Widget::on_event(e);
+
+    if (e.btn == 2) {
+        if (e.down == true) {
+            cur.focus_on(this);
+        } else {
+            cur.focus_on(nullptr);
+        }
+    }
 
     if (e.down != true)
         return;

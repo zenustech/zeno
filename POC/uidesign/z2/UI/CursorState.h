@@ -21,14 +21,14 @@ struct CursorState {
     bool shift = false, ctrl = false, alt = false;
     float tx = 0, ty = 0;
 
-    void on_update();
-    void after_update();
-
     std::vector<Event> events;
-
+    Widget *focus_widget = nullptr;
     bool need_repaint = true;
 
+    void on_update();
+    void after_update();
     void init_callbacks();
+    void focus_on(Widget *widget);
     ztd::dtor_function translate(float dx, float dy);
     static AABB update_transforms();
     void update_window(Widget *win);

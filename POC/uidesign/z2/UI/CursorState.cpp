@@ -91,8 +91,11 @@ void CursorState::update_window(Widget *win) {
 }
 
 void CursorState::update_cursor_pos() {
-    printf("%f %f\n", x - tx, y - ty);
-    glfwSetCursorPos(window, x - tx, y - ty);
+    GLint nx, ny;
+    glfwGetFramebufferSize(cur.window, &nx, &ny);
+    float u = x - tx, v = ny - 1 - (y - ty);
+    //float u = 128.f, v = 128.f;
+    glfwSetCursorPos(window, u, v);
 }
 
 ztd::dtor_function CursorState::translate(float dx, float dy) {
@@ -110,6 +113,15 @@ bool CursorState::is_invalid() {
         return true;
     } else {
         return false;
+    }
+}
+
+void CursorState::focus_on(Widget *widget) {
+    focus_widget = widget;
+    if (focus_widget) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
