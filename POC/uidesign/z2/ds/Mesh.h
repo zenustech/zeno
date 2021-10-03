@@ -17,7 +17,11 @@ struct Mesh {
     std::vector<ztd::vec2f> loop_uv;
 
     // faces
-    std::vector<ztd::vec2i> poly;
+    struct MPoly {
+        int start;
+        int num;
+    };
+    std::vector<MPoly> poly;
 };
 
 

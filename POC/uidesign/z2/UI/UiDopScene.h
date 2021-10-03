@@ -12,6 +12,12 @@ struct UiDopScene : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
     std::any view_result;
+    SignalSlot on_result_changed;
+
+    void set_view_result(std::any val) {
+        view_result = val;
+        on_result_changed();
+    }
 
     UiDopScene() {
         graph = add_child<UiDopGraph>();
