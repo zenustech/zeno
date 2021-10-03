@@ -1,5 +1,6 @@
 #include <z2/UI/CursorState.h>
 #include <z2/UI/Widget.h>
+#include <z2/ztd/math.h>
 
 
 namespace z2::UI {
@@ -123,13 +124,6 @@ bool CursorState::is_invalid() {
     }
 }
 
-static auto pymod(auto x, auto y) {
-    auto z = x / y;
-    z -= std::floor(z);
-    z *= y;
-    return z;
-};
-
 void CursorState::focus_on(Widget *widget) {
     if (widget) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -139,8 +133,8 @@ void CursorState::focus_on(Widget *widget) {
         bbox.y0 += focus_widget->position.y;
         float cx = x / s - tx;
         float cy = y / s - ty;
-        cx = pymod(cx - bbox.x0, bbox.nx) + bbox.x0;
-        cy = pymod(cy - bbox.y0, bbox.ny) + bbox.y0;
+        cx = ztd::pymod(cx - bbox.x0, bbox.nx) + bbox.x0;
+        cy = ztd::pymod(cy - bbox.y0, bbox.ny) + bbox.y0;
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
