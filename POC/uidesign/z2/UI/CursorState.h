@@ -27,7 +27,7 @@ struct CursorState {
         return glfwGetKey(window, key) == GLFW_PRESS;
     }
 
-    ztd::CallOnDtor translate(float dx, float dy) {
+    ztd::dtor_function translate(float dx, float dy) {
         auto ox = x, oy = y;
         x += dx; y += dy;
         return [=, this] () {

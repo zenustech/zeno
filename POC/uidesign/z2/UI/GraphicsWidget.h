@@ -20,7 +20,7 @@ struct GraphicsView : Widget {
     Point translate = {0, 0};
 
     virtual void select_child(GraphicsWidget *ptr, bool multiselect);
-    ztd::CallOnDtor do_transform() const override;
+    ztd::dtor_function do_transform() const override;
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
     void do_paint() override;

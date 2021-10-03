@@ -2,6 +2,7 @@
 
 
 #include <z2/ztd/functional.h>
+#include <z2/ztd/exception.h>
 #include <z2/UI/CursorState.h>
 #include <z2/UI/Event.h>
 #include <z2/UI/Point.h>
@@ -13,7 +14,7 @@ namespace z2::UI {
 
 template <class T>
 inline T notnull(T &&t) {
-    if (!t) throw std::bad_optional_access();
+    if (!t) throw ztd::error("null pointer exception");
     return t;
 }
 
@@ -67,7 +68,7 @@ struct Widget : Object {
     virtual void do_update();
     virtual void do_paint();
     virtual void paint() const;
-    virtual ztd::CallOnDtor do_transform() const;
+    virtual ztd::dtor_function do_transform() const;
 
     float absolute_zvalue() const {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;

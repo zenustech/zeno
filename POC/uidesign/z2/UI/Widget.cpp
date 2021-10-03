@@ -110,7 +110,7 @@ void Widget::after_update() {
     children_gc.clear();
 }
 
-ztd::CallOnDtor Widget::do_transform() const {
+ztd::dtor_function Widget::do_transform() const {
     return cur.translate(-position.x, -position.y);
 }
 

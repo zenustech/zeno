@@ -56,7 +56,7 @@ void GraphicsView::on_event(Event_Mouse e) {
 }
 
 
-ztd::CallOnDtor GraphicsView::do_transform() const {
+ztd::dtor_function GraphicsView::do_transform() const {
     auto offs = position + translate;
     auto raii = cur.translate(-offs.x, -offs.y);
     return raii;
@@ -77,9 +77,10 @@ void GraphicsView::do_paint() {
     glTranslatef(-.5f, -.5f, 1.f);
     glScalef(1.f / bbox.nx, 1.f / bbox.ny, 1.f);
 
+    paint();
+
     glTranslatef(translate.x, translate.y, 1.f);
 
-    paint();
     for (auto const &child: children) {
         child->do_paint();
     }

@@ -1,36 +1,36 @@
 #pragma once
 
 
-#include <z2/ztd/stdafx.h>
+#include <functional>
 
 
 namespace z2::ztd {
 
 
-struct CallOnDtor : std::function<void()> {
+struct dtor_function : std::function<void()> {
     using std::function<void()>::function;
 
-    CallOnDtor(CallOnDtor const &) = delete;
-    CallOnDtor &operator=(CallOnDtor const &) = delete;
-    CallOnDtor(CallOnDtor &&) = default;
-    CallOnDtor &operator=(CallOnDtor &&) = default;
+    dtor_function(dtor_function const &) = delete;
+    dtor_function &operator=(dtor_function const &) = delete;
+    dtor_function(dtor_function &&) = default;
+    dtor_function &operator=(dtor_function &&) = default;
 
-    ~CallOnDtor() {
+    ~dtor_function() {
         std::function<void()>::operator()();
     }
 };
 
 
 template <class ...Fs>
-struct Overloaded : Fs... {
-    Overloaded(Fs &&...fs)
+struct overloaded : Fs... {
+    overloaded(Fs &&...fs)
         : Fs(std::forward<Fs>(fs))... {}
 
     using Fs::operator()...;
 };
 
 template <class ...Fs>
-Overloaded(Fs &&...) -> Overloaded<Fs...>;
+overloaded(Fs &&...) -> overloaded<Fs...>;
 
 
 };
