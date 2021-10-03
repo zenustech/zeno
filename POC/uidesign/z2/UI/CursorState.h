@@ -3,6 +3,7 @@
 
 #include <z2/UI/Event.h>
 #include <z2/UI/AABB.h>
+#include <z2/ztd/functional.h>
 
 
 namespace z2::UI {
@@ -26,16 +27,12 @@ struct CursorState {
         return glfwGetKey(window, key) == GLFW_PRESS;
     }
 
-    auto translate(float dx, float dy) {
+    ztd::CallOnDtor translate(float dx, float dy) {
         auto ox = x, oy = y;
         x += dx; y += dy;
-        struct RAII : std::function<void()> {
-            using std::function<void()>::function;
-            ~RAII() { std::function<void()>::operator()(); }
-        } raii {[=, this] () {
+        return [=, this] () {
             x = ox; y = oy;
-        }};
-        return raii;
+        };
     }
 
     std::vector<Event> events;

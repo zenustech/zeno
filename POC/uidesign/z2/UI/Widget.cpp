@@ -110,8 +110,13 @@ void Widget::after_update() {
     children_gc.clear();
 }
 
+Point Widget::get_offset() const {
+    return position;
+}
+
 void Widget::do_update_event() {
-    auto raii = cur.translate(-position.x, -position.y);
+    auto offs = get_offset();
+    auto raii = cur.translate(-offs.x, -offs.y);
 
     if (auto child = child_at({cur.x, cur.y}); child) {
         child->do_update_event();

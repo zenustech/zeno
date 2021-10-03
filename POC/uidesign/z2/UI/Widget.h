@@ -66,6 +66,7 @@ struct Widget : Object {
     virtual void do_update();
     virtual void do_paint();
     virtual void paint() const;
+    virtual Point get_offset() const;
 
     float absolute_zvalue() const {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;
