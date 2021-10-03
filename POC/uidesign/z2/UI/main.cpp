@@ -1,6 +1,5 @@
 #include <z2/UI/CursorState.h>
-#include <z2/UI/UiDopGraph.h>
-#include <z2/UI/UiDopEditor.h>
+#include <z2/UI/UiDopScene.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif
@@ -9,23 +8,7 @@
 namespace z2::UI {
 
 
-struct RootWindow : Widget {
-    UiDopGraph *graph;
-    UiDopEditor *editor;
-
-    RootWindow() {
-        graph = add_child<UiDopGraph>();
-        graph->bbox = {0, 0, 1024, 512};
-        graph->position = {0, 256};
-        editor = add_child<UiDopEditor>();
-        editor->bbox = {0, 0, 1024, 256};
-        graph->editor = editor;
-        editor->graph = graph;
-    }
-};
-
-
-std::unique_ptr<RootWindow> win;
+std::unique_ptr<UiDopScene> win;
 
 
 static void process_input() {
@@ -76,7 +59,7 @@ int main() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 
     cur.init_callbacks();
-    win = std::make_unique<RootWindow>();
+    win = std::make_unique<UiDopScene>();
 
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(cur.window)) {
