@@ -20,7 +20,7 @@ struct UiMainWindow : Widget {
 };
 
 
-std::unique_ptr<UiMainWindow> win;
+std::unique_ptr<Widget> win;
 
 
 static void process_input() {

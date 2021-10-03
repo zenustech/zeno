@@ -20,6 +20,7 @@ struct UiDopScene : Widget {
         editor->bbox = {0, 0, 1024, 256};
         graph->editor = editor;
         editor->graph = graph;
+        bbox = {0, 0, 1024, 768};
     }
 };
 
