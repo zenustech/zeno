@@ -110,13 +110,12 @@ void Widget::after_update() {
     children_gc.clear();
 }
 
-Point Widget::get_offset() const {
-    return position;
+ztd::CallOnDtor Widget::do_transform() const {
+    return cur.translate(-position.x, -position.y);
 }
 
 void Widget::do_update_event() {
-    auto offs = get_offset();
-    auto raii = cur.translate(-offs.x, -offs.y);
+    auto raii = do_transform();
 
     if (auto child = child_at({cur.x, cur.y}); child) {
         child->do_update_event();
@@ -132,7 +131,7 @@ void Widget::do_update_event() {
 }
 
 void Widget::do_update() {
-    auto raii = cur.translate(-position.x, -position.y);
+    auto raii = do_transform();
 
     auto old_hovered = hovered;
     hovered = contains_point({cur.x, cur.y});
@@ -149,7 +148,7 @@ void Widget::do_update() {
 }
 
 void Widget::do_paint() {
-    auto raii = cur.translate(-position.x, -position.y);
+    auto raii = do_transform();
     glPushMatrix();
     glTranslatef(position.x, position.y, zvalue);
     paint();

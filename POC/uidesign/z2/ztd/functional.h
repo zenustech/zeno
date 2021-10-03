@@ -6,6 +6,7 @@
 
 namespace z2::ztd {
 
+
 struct CallOnDtor : std::function<void()> {
     using std::function<void()>::function;
 
@@ -18,5 +19,18 @@ struct CallOnDtor : std::function<void()> {
         std::function<void()>::operator()();
     }
 };
+
+
+template <class ...Fs>
+struct Overloaded : Fs... {
+    Overloaded(Fs ...&&fs)
+        : Fs(std::forward<Fs>(fs))... {}
+
+    using Fs::operator()...;
+};
+
+template <class ...Fs>
+Overloaded(Fs ...&&fs) -> Overloaded<Fs...>;
+
 
 };

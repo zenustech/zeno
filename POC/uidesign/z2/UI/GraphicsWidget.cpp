@@ -56,6 +56,12 @@ void GraphicsView::on_event(Event_Mouse e) {
 }
 
 
+ztd::CallOnDtor GraphicsView::do_transform() const {
+    auto raii = cur.translate(-position.x, -position.y);
+    return raii;
+}
+
+
 void GraphicsView::do_paint() {
     auto raii = cur.translate(-position.x, -position.y);
     glPushMatrix();
@@ -69,6 +75,8 @@ void GraphicsView::do_paint() {
     glScalef(2.f, 2.f, -.001f);
     glTranslatef(-.5f, -.5f, 1.f);
     glScalef(1.f / bbox.nx, 1.f / bbox.ny, 1.f);
+
+    glTranslatef(translate.x, translate.y, 1.f);
 
     paint();
     for (auto const &child: children) {

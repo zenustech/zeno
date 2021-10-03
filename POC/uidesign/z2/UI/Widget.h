@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <z2/ztd/functional.h>
 #include <z2/UI/CursorState.h>
 #include <z2/UI/Event.h>
 #include <z2/UI/Point.h>
@@ -66,7 +67,7 @@ struct Widget : Object {
     virtual void do_update();
     virtual void do_paint();
     virtual void paint() const;
-    virtual Point get_offset() const;
+    virtual ztd::CallOnDtor do_transform() const;
 
     float absolute_zvalue() const {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;
