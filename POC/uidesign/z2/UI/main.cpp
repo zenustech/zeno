@@ -1,25 +1,11 @@
 #include <z2/UI/CursorState.h>
-#include <z2/UI/UiDopScene.h>
-#include <z2/UI/UiVisViewport.h>
+#include <z2/UI/UiMainWindow.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif
 
 
 namespace z2::UI {
-
-
-struct UiMainWindow : Widget {
-    UiDopScene *scene;
-    UiVisViewport *viewport;
-
-    UiMainWindow() {
-        scene = add_child<UiDopScene>();
-        viewport = add_child<UiVisViewport>();
-        viewport->bbox = {0, 0, 1600, 460};
-        viewport->position = {0, 440};
-    }
-};
 
 
 std::unique_ptr<Widget> win;
