@@ -49,7 +49,7 @@ struct UiDopInputSocket : UiDopSocket {
         UiDopSocket::paint();
 
         if (is_parent_active()) {
-            Font font("assets/regular.ttf");
+            Font font("regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_LEFT);
@@ -72,7 +72,7 @@ struct UiDopOutputSocket : UiDopSocket {
         UiDopSocket::paint();
 
         if (is_parent_active()) {
-            Font font("assets/regular.ttf");
+            Font font("regular.ttf");
             font.set_font_size(FH);
             font.set_fixed_height(2 * R);
             font.set_fixed_width(NW, FTGL::ALIGN_RIGHT);

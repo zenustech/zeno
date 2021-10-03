@@ -70,7 +70,7 @@ void UiDopNode::paint() const {
     }
     glRectf(0.f, 0.f, W, TH);
 
-    Font font("assets/regular.ttf");
+    Font font("regular.ttf");
     font.set_font_size(FH);
     font.set_fixed_width(W);
     font.set_fixed_height(TH);
