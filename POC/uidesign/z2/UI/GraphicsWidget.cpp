@@ -66,9 +66,19 @@ void GraphicsView::on_event(Event_Mouse e) {
 }
 
 
+void GraphicsView::on_event(Event_Scroll e) {
+    Widget::on_event(e);
+
+    float dy = e.dy > 0 ? 1 : -1;
+
+    scaling *= std::pow(1.3f, dy);
+    printf("%f\n", scaling);
+}
+
+
 ztd::dtor_function GraphicsView::do_transform() const {
     auto offs = position + translate;
-    auto raii = cur.translate(-offs.x, -offs.y);
+    auto raii = cur.translate(-offs.x, -offs.y, 1 / scaling);
     return raii;
 }
 
@@ -90,6 +100,7 @@ void GraphicsView::do_paint() {
     paint();
 
     glTranslatef(translate.x, translate.y, 1.f);
+    glScalef(scaling, scaling, 1.f);
 
     for (auto const &child: children) {
         child->do_paint();

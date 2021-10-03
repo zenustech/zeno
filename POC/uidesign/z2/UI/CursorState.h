@@ -19,7 +19,7 @@ struct CursorState {
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool shift = false, ctrl = false, alt = false;
-    float tx = 0, ty = 0;
+    float tx = 0, ty = 0, s = 1;
 
     std::vector<Event> events;
     Widget *focus_widget = nullptr;
@@ -29,10 +29,9 @@ struct CursorState {
     void after_update();
     void init_callbacks();
     void focus_on(Widget *widget);
-    ztd::dtor_function translate(float dx, float dy);
+    ztd::dtor_function translate(float dx, float dy, float ds = 1.f);
     static AABB update_transforms();
     void update_window(Widget *win);
-    void update_cursor_pos();
     bool is_invalid();
 };
 

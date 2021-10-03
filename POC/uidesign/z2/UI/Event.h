@@ -30,12 +30,17 @@ struct Event_Motion {
     float x, y;
 };
 
+struct Event_Scroll {
+    float dx, dy;
+};
+
 using Event = std::variant
     < Event_Key
     , Event_Char
     , Event_Hover
     , Event_Mouse
     , Event_Motion
+    , Event_Scroll
     >;
 
 

@@ -43,6 +43,10 @@ static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
     //cur.events.push_back(Event_Motion{.x = x, .y = y});
 }
 
+static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+    cur.events.push_back(Event_Scroll{.dx = (float)xoffset, .dy = (float)yoffset});
+}
+
 static void mouse_button_callback(GLFWwindow *window, int btn, int action, int mode) {
     cur.events.push_back(Event_Mouse{.btn = btn, .down = action == GLFW_PRESS});
 }
@@ -65,6 +69,7 @@ void CursorState::init_callbacks() {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetWindowRefreshCallback(window, window_refresh_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 }
 
 AABB CursorState::update_transforms() {
@@ -95,20 +100,16 @@ void CursorState::update_window(Widget *win) {
     after_update();
 }
 
-void CursorState::update_cursor_pos() {
-    GLint nx, ny;
-    glfwGetFramebufferSize(cur.window, &nx, &ny);
-    float u = x - tx, v = ny - 1 - (y - ty);
-    //float u = 128.f, v = 128.f;
-    glfwSetCursorPos(window, u, v);
-}
-
-ztd::dtor_function CursorState::translate(float dx, float dy) {
+ztd::dtor_function CursorState::translate(float dx, float dy, float ds) {
     x += dx; y += dy;
+    x *= ds; y *= ds;
     tx += dx; ty += dy;
+    s *= ds;
     return [=, this] () {
+        x /= ds; y /= ds;
         x -= dx; y -= dy;
         tx -= dx; ty -= dy;
+        s /= ds;
     };
 }
 

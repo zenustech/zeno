@@ -60,6 +60,7 @@ struct Widget : Object {
     virtual void on_event(Event_Mouse e);
     virtual void on_event(Event_Key e);
     virtual void on_event(Event_Char e);
+    virtual void on_event(Event_Scroll e);
     virtual void on_generic_event(Event e);
 
     virtual bool contains_point(Point p) const;

@@ -81,6 +81,9 @@ void Widget::on_event(Event_Key e) {
 void Widget::on_event(Event_Char e) {
 }
 
+void Widget::on_event(Event_Scroll e) {
+}
+
 void Widget::on_generic_event(Event e) {
     std::visit([this] (auto e) {
         on_event(e);
