@@ -12,7 +12,7 @@ struct UiMainWindow;
 
 
 struct UiVisViewport : GraphicsView {
-    GL::Camera camera;
+    std::unique_ptr<GL::Camera> camera = std::make_unique<GL::Camera>();
 
     void do_paint() override;
     void paint() const override;

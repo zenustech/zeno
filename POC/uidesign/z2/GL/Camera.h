@@ -20,6 +20,8 @@ struct Camera {
     double radius = 3.f;
     double fov = 30.f;
     bool ortho_mode = false;
+
+    void update();
 };
 
 

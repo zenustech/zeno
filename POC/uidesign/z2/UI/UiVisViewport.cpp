@@ -1,6 +1,7 @@
 #include <z2/UI/UiVisViewport.h>
 #include <z2/UI/UiMainWindow.h>
 #include <z2/ds/Mesh.h>
+#include <glm/gtc/type_ptr.hpp>
 
 
 namespace z2::UI {
@@ -24,10 +25,18 @@ void UiVisViewport::do_paint() {
 
 
 void UiVisViewport::paint() const {
-    auto view = get_parent()->scene->view_result;
+    auto object = get_parent()->scene->view_result;
 
-    if (view.has_value()) {
-        auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(view);
+    camera->update();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadMatrixf(glm::value_ptr(camera->view));
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadMatrixf(glm::value_ptr(camera->proj));
+
+    if (object.has_value()) {
+        auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
 
         glBegin(GL_TRIANGLES);
         for (auto const &poly: mesh->poly) {
@@ -47,6 +56,11 @@ void UiVisViewport::paint() const {
         }
         glEnd();
     }
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
 }
 
 
