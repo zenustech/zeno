@@ -1,6 +1,9 @@
+#include <z2/dop/DopTable.h>
+#include <z2/dop/DopNode.h>
 #include <z2/ds/Mesh.h>
 #include <string_view>
 #include <sstream>
+#include <fstream>
 #include <cstring>
 #include <tuple>
 
@@ -40,7 +43,7 @@ inline std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
 }
 
 
-void readMeshFromOBJ(std::istream in, Mesh &mesh) {
+static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     std::vector<ztd::vec2f> uv_vert;
     std::vector<int> uv_loop;
 
@@ -85,6 +88,21 @@ void readMeshFromOBJ(std::istream in, Mesh &mesh) {
         mesh.loop_uv.push_back(uv_vert.at(uv_loop[i]));
     }
 }
+
+
+static int def_readobj = dop::tab.define("readobj", {{
+    "mesh", "load mesh from .obj file",
+}, {
+    {"path"},
+}, {
+    {"mesh"},
+}, [] (dop::DopNode *node, dop::DopContext *visited) {
+    auto path = std::any_cast<std::string>(node->get_input(0, visited));
+    auto mesh = std::make_shared<Mesh>();
+    std::ifstream ifs(path);
+    readMeshFromOBJ(ifs, *mesh);
+    node->set_output(0, mesh);
+}});
 
 
 }
