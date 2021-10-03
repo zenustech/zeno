@@ -32,7 +32,7 @@ void GraphicsLineItem::paint() const {
     glColor3fv(get_line_color().data());
     auto [sx, sy] = get_from_position();
     auto [dx, dy] = get_to_position();
-    glLineWidth(LW);
+    glLineWidth(LW / cur.s);
     glBegin(GL_LINE_STRIP);
     glVertex2f(sx, sy);
     glVertex2f(dx, dy);
