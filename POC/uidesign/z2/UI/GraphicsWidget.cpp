@@ -26,8 +26,9 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
-        translate.x += cur.dx;
-        translate.y += cur.dy;
+        constexpr float SPEEDUP = 1.375f;
+        translate.x += cur.dx * SPEEDUP;
+        translate.y += cur.dy * SPEEDUP;
 
     } else if (cur.lmb) {
         for (auto const &child: children_selected) {
@@ -68,11 +69,19 @@ void GraphicsView::on_event(Event_Mouse e) {
 
 void GraphicsView::on_event(Event_Scroll e) {
     Widget::on_event(e);
-
     float dy = e.dy > 0 ? 1 : -1;
 
+    float old_scaling = scaling;
     scaling *= std::pow(1.3f, dy);
-    printf("%f\n", scaling);
+
+    Point curpos(cur.x, cur.y);
+    translate = translate + curpos * (old_scaling - scaling);
+    /*
+     * given c, s, s'
+     * c' = t + c * s = t' + c * s'
+     * show t' = ?
+     * t' = t + c * (s - s')
+     */
 }
 
 
