@@ -57,13 +57,14 @@ void GraphicsView::on_event(Event_Mouse e) {
 
 
 ztd::CallOnDtor GraphicsView::do_transform() const {
-    auto raii = cur.translate(-position.x, -position.y);
+    auto offs = position + translate;
+    auto raii = cur.translate(-offs.x, -offs.y);
     return raii;
 }
 
 
 void GraphicsView::do_paint() {
-    auto raii = cur.translate(-position.x, -position.y);
+    auto raii = do_transform();
     glPushMatrix();
 
     GLint viewport[4];

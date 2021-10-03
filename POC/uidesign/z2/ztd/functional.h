@@ -23,14 +23,14 @@ struct CallOnDtor : std::function<void()> {
 
 template <class ...Fs>
 struct Overloaded : Fs... {
-    Overloaded(Fs ...&&fs)
+    Overloaded(Fs &&...fs)
         : Fs(std::forward<Fs>(fs))... {}
 
     using Fs::operator()...;
 };
 
 template <class ...Fs>
-Overloaded(Fs ...&&fs) -> Overloaded<Fs...>;
+Overloaded(Fs &&...) -> Overloaded<Fs...>;
 
 
 };
