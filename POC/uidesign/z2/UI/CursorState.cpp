@@ -84,8 +84,13 @@ void CursorState::update_window(Widget *win) {
     auto bbox = update_transforms();
     on_update();
     win->bbox = bbox;
-    win->do_update();
-    win->do_update_event();
+    if (focus_widget) {
+        focus_widget->do_update();
+        focus_widget->do_update_event();
+    } else {
+        win->do_update();
+        win->do_update_event();
+    }
     win->after_update();
     after_update();
 }

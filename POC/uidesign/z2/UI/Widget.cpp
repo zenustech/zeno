@@ -132,7 +132,8 @@ void Widget::do_update_event() {
 
 void Widget::do_update() {
     auto old_hovered = hovered;
-    hovered = cur.focus_widget == this || contains_point({cur.x - position.x, cur.y - position.y});
+    hovered = cur.focus_widget == this ||
+        contains_point({cur.x - position.x, cur.y - position.y});
 
     auto raii = do_transform();
 
