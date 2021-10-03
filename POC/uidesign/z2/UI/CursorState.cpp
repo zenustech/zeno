@@ -90,6 +90,11 @@ void CursorState::update_window(Widget *win) {
     after_update();
 }
 
+void CursorState::update_cursor_pos() {
+    printf("%f %f\n", x - tx, y - ty);
+    glfwSetCursorPos(window, x - tx, y - ty);
+}
+
 ztd::dtor_function CursorState::translate(float dx, float dy) {
     x += dx; y += dy;
     tx += dx; ty += dy;

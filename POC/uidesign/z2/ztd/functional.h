@@ -7,6 +7,10 @@
 namespace z2::ztd {
 
 
+template <class Ret = void, class ...Args>
+using function_r = std::function<Ret(Args...)>;
+
+
 struct dtor_function : std::function<void()> {
     using std::function<void()>::function;
 
@@ -22,7 +26,7 @@ struct dtor_function : std::function<void()> {
 
 
 template <class ...Fs>
-struct overloaded : Fs... {
+struct overloaded : private Fs... {
     overloaded(Fs &&...fs)
         : Fs(std::forward<Fs>(fs))... {}
 

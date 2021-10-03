@@ -110,6 +110,10 @@ void Widget::after_update() {
     children_gc.clear();
 }
 
+bool Widget::is_periodic_mouse() const {
+    return false;
+}
+
 ztd::dtor_function Widget::do_transform() const {
     return cur.translate(-position.x, -position.y);
 }
@@ -135,6 +139,11 @@ void Widget::do_update() {
 
     auto old_hovered = hovered;
     hovered = contains_point({cur.x, cur.y});
+    if (!hovered && is_periodic_mouse()) {
+        cur.x = bbox.x0 + std::floor((cur.x - bbox.x0) / bbox.nx) * bbox.nx;
+        cur.y = bbox.y0 + std::floor((cur.y - bbox.y0) / bbox.ny) * bbox.ny;
+        cur.update_cursor_pos();
+    }
 
     for (auto const &child: children) {
         child->do_update();

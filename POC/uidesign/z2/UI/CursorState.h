@@ -32,6 +32,7 @@ struct CursorState {
     ztd::dtor_function translate(float dx, float dy);
     static AABB update_transforms();
     void update_window(Widget *win);
+    void update_cursor_pos();
     bool is_invalid();
 };
 

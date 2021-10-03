@@ -23,6 +23,11 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
 }
 
 
+bool GraphicsView::is_periodic_mouse() const {
+    return cur.lmb || cur.mmb;
+}
+
+
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
