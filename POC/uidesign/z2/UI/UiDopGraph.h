@@ -3,6 +3,7 @@
 
 #include <z2/UI/UiDopNode.h>
 #include <z2/UI/UiDopLink.h>
+#include <z2/UI/GraphicsView.h>
 #include <z2/UI/UiDopContextMenu.h>
 #include <z2/UI/UiDopSocket.h>
 #include <z2/dop/DopGraph.h>

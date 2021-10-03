@@ -1,4 +1,4 @@
-#include <z2/UI/GraphicsWidget.h>
+#include <z2/UI/GraphicsView.h>
 
 
 namespace z2::UI {
