@@ -17,7 +17,7 @@ struct Camera {
     glm::dvec3 center;
     double theta = 0.f;
     double phi = 0.f;
-    double radius = 3.f;
+    double radius = 4.f;
     double fov = 30.f;
     bool ortho_mode = false;
 

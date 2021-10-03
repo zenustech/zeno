@@ -27,6 +27,8 @@ void UiVisViewport::do_paint() {
 void UiVisViewport::paint() const {
     auto object = get_parent()->scene->view_result;
 
+    camera->nx = bbox.nx;
+    camera->ny = bbox.ny;
     camera->update();
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
