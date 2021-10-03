@@ -22,6 +22,7 @@ struct Camera {
     bool ortho_mode = false;
 
     void update();
+    void move(double dx, double dy, bool pan_mode);
 };
 
 

@@ -25,8 +25,6 @@ void UiVisViewport::do_paint() {
 
 
 void UiVisViewport::paint() const {
-    auto object = get_parent()->scene->view_result;
-
     camera->nx = bbox.nx;
     camera->ny = bbox.ny;
     camera->update();
@@ -37,7 +35,7 @@ void UiVisViewport::paint() const {
     glPushMatrix();
     glLoadMatrixf(glm::value_ptr(camera->proj));
 
-    if (object.has_value()) {
+    if (auto object = get_parent()->scene->view_result; object.has_value()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
 
         glBegin(GL_TRIANGLES);
@@ -63,6 +61,14 @@ void UiVisViewport::paint() const {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+}
+
+
+void UiVisViewport::on_event(Event_Motion e) {
+    Widget::on_event(e);
+    if (cur.mmb) {
+        camera->move(cur.dx, cur.dy, cur.shift);
+    }
 }
 
 

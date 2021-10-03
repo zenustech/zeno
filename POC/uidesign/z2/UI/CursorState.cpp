@@ -128,7 +128,7 @@ bool CursorState::is_invalid() {
 void CursorState::focus_on(Widget *widget) {
     if (widget) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    } else {
+    } else if (focus_widget) {
         auto bbox = focus_widget->bbox;
         bbox.x0 += focus_widget->position.x;
         bbox.y0 += focus_widget->position.y;

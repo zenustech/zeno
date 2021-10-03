@@ -2,9 +2,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>
+#include <numbers>
 
 
 namespace z2::GL {
+
+
+void Camera::move(double dx, double dy, bool pan_mode) {
+    theta -= dy * std::numbers::pi;
+    phi -= dx * std::numbers::pi;
+}
 
 
 void Camera::update() {
