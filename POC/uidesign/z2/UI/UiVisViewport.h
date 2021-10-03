@@ -8,6 +8,8 @@ namespace z2::UI {
 
 
 struct UiVisViewport : GraphicsView {
+    void do_paint() override;
+    void paint() const override;
 };
 
 

@@ -37,6 +37,7 @@ void CursorState::after_update() {
 
 
 static void cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
+    // only cursor motion events are not given by glfw, but calc'ed within on_event
     //GLint nx, ny;
     //glfwGetFramebufferSize(window, &nx, &ny);
     //auto x = 0.5f + (float)xpos;

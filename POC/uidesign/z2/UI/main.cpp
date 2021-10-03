@@ -1,5 +1,6 @@
 #include <z2/UI/CursorState.h>
 #include <z2/UI/UiDopScene.h>
+#include <z2/UI/UiVisViewport.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif
@@ -8,7 +9,18 @@
 namespace z2::UI {
 
 
-std::unique_ptr<UiDopScene> win;
+struct UiMainWindow : Widget {
+    UiDopScene *scene;
+    UiVisViewport *viewport;
+
+    UiMainWindow() {
+        viewport = add_child<UiVisViewport>();
+        scene = add_child<UiDopScene>();
+    }
+};
+
+
+std::unique_ptr<UiMainWindow> win;
 
 
 static void process_input() {
@@ -59,7 +71,7 @@ int main() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 
     cur.init_callbacks();
-    win = std::make_unique<UiDopScene>();
+    win = std::make_unique<UiMainWindow>();
 
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(cur.window)) {

@@ -94,13 +94,13 @@ ztd::dtor_function GraphicsView::do_transform() const {
 
 void GraphicsView::do_paint() {
     auto raii = do_transform();
-    glPushMatrix();
 
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
     glViewport(position.x + bbox.x0, position.y + bbox.y0, bbox.nx, bbox.ny);
 
     glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
     glLoadIdentity();
     glScalef(2.f, 2.f, -.001f);
     glTranslatef(-.5f, -.5f, 1.f);
