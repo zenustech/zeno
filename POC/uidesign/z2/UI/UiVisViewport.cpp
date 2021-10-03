@@ -1,4 +1,5 @@
 #include <z2/UI/UiVisViewport.h>
+#include <z2/UI/UiMainWindow.h>
 
 
 namespace z2::UI {
