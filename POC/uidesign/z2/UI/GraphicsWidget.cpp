@@ -22,6 +22,7 @@ void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
     }
 }
 
+
 void GraphicsView::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
@@ -37,6 +38,7 @@ void GraphicsView::on_event(Event_Motion e) {
         }
     }
 }
+
 
 void GraphicsView::on_event(Event_Mouse e) {
     Widget::on_event(e);

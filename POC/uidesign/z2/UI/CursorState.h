@@ -19,6 +19,7 @@ struct CursorState {
     float last_x = 0, last_y = 0;
     bool lmb = false, mmb = false, rmb = false;
     bool shift = false, ctrl = false, alt = false;
+    float tx = 0, ty = 0;
 
     void on_update();
     void after_update();
@@ -28,10 +29,11 @@ struct CursorState {
     }
 
     ztd::dtor_function translate(float dx, float dy) {
-        auto ox = x, oy = y;
         x += dx; y += dy;
+        tx += dx; ty += dy;
         return [=, this] () {
-            x = ox; y = oy;
+            x -= dx; y -= dy;
+            tx -= dx; ty -= dy;
         };
     }
 
@@ -43,7 +45,7 @@ struct CursorState {
     static AABB update_transforms();
     void update_window(Widget *win);
 
-    bool is_invalidated() {
+    bool is_invalid() {
         if (need_repaint) {
             need_repaint = false;
             return true;

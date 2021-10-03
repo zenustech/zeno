@@ -37,7 +37,7 @@ static void process_input() {
 
 
 static void draw_graphics() {
-    if (cur.is_invalidated()) {
+    if (cur.is_invalid()) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         win->do_paint();
         glfwSwapBuffers(cur.window);
