@@ -67,7 +67,7 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
             line = line.substr(2);
 
             int start = mesh.loop.size(), num = 0;
-            for (; num < 4096; num++) {
+            while (num++ < 4096) {
                 auto next = line.find(' ');
                 auto [v, vt, vn] = read_tuple3i(line.substr(0, next));
 

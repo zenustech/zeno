@@ -29,10 +29,8 @@ void UiVisViewport::paint() const {
     if (view.has_value()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(view);
 
-        //glColor3f(0.375f, 0.75f, 1.f);
         glBegin(GL_TRIANGLES);
-        for (int i = 0; i < mesh->poly.size(); i++) {
-            auto poly = mesh->poly[i];
+        for (auto const &poly: mesh->poly) {
             if (poly.num <= 2) continue;
             int first = mesh->loop[poly.start];
             int last = mesh->loop[poly.start + 1];
