@@ -47,17 +47,16 @@ Widget *Widget::item_at(Point p) const {
 }
 
 Widget *Widget::item_at(Point p, std::function<bool(Widget *)> filter) const {
-    if (!contains_point(p)) {
-        return nullptr;
-    }
     Widget *found = nullptr;
     float found_zvalue = 0.0f;
     for (auto const &child: children) {
-        if (auto it = child->item_at(p - child->position); it && filter(it)) {
-            auto it_zvalue = child->absolute_zvalue();
-            if (!found || it_zvalue >= found_zvalue) {
-                found = it;
-                found_zvalue = it_zvalue;
+        if (auto pt = p - child->position; child->contains_point(pt)) {
+            if (auto it = child->item_at(pt); it && filter(it)) {
+                auto it_zvalue = child->absolute_zvalue();
+                if (!found || it_zvalue >= found_zvalue) {
+                    found = it;
+                    found_zvalue = it_zvalue;
+                }
             }
         }
     }
@@ -123,7 +122,6 @@ void Widget::do_update_event() {
     if (auto child = child_at({cur.x, cur.y}); child) {
         child->do_update_event();
     }
-    printf("%s got event! %d\n", typeid(*this).name(), std::rand());
 
     for (auto const &e: cur.events) {
         on_generic_event(e);
