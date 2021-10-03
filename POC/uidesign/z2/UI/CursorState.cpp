@@ -16,8 +16,8 @@ void CursorState::on_update() {
     glfwGetFramebufferSize(window, &nx, &ny);
     GLdouble _x, _y;
     glfwGetCursorPos(window, &_x, &_y);
-    x = 0.5f + (float)_x;
-    y = ny - 0.5f - (float)_y;
+    x = .5f + (float)_x;
+    y = ny - .5f - (float)_y;
     dx = x - last_x;
     dy = y - last_y;
     lmb = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -143,9 +143,8 @@ void CursorState::focus_on(Widget *widget) {
         cy = pymod(cy - bbox.y0, bbox.ny) + bbox.y0;
         GLint nx, ny;
         glfwGetFramebufferSize(window, &nx, &ny);
-        cy = ny - 1 - cy;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        glfwSetCursorPos(window, cx, cy);
+        glfwSetCursorPos(window, cx - .5f, ny - .5f - cy);
     }
     focus_widget = widget;
 }
