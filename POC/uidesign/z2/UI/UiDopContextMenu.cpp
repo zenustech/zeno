@@ -5,7 +5,6 @@ namespace z2::UI {
 
 
 UiDopContextMenu::UiDopContextMenu() {
-    position = {cur.x, cur.y};
     zvalue = 10.f;
 }
 

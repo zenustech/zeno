@@ -24,8 +24,7 @@ std::string DopGraph::_determine_name(std::string kind) {
             return name;
         }
     }
-    auto r = std::rand() * RAND_MAX + std::rand();
-    return kind + std::to_string(std::abs(r)) + 'a';
+    return kind + std::to_string(std::rand()) + 'a';
 }
 
 bool DopGraph::remove_node(DopNode *node) {

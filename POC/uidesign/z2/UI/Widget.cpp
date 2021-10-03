@@ -123,6 +123,7 @@ void Widget::do_update_event() {
     if (auto child = child_at({cur.x, cur.y}); child) {
         child->do_update_event();
     }
+    printf("%s got event! %d\n", typeid(*this).name(), std::rand());
 
     for (auto const &e: cur.events) {
         on_generic_event(e);

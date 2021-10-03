@@ -12,6 +12,7 @@ namespace z2::UI {
 
 
 struct UiDopEditor;
+struct UiDopScene;
 
 
 struct UiDopGraph : GraphicsView {
@@ -46,6 +47,10 @@ struct UiDopGraph : GraphicsView {
 
     void on_event(Event_Mouse e) override;
     void on_event(Event_Key e) override;
+
+    inline UiDopScene *get_parent() const {
+        return (UiDopScene *)parent;
+    }
 };
 
 

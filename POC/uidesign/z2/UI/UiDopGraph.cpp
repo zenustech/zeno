@@ -1,5 +1,6 @@
 #include <z2/UI/UiDopGraph.h>
 #include <z2/UI/UiDopNode.h>
+#include <z2/UI/UiDopScene.h>
 #include <z2/UI/UiDopEditor.h>
 #include <z2/dop/DopTable.h>
 
@@ -202,14 +203,15 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
 UiDopContextMenu *UiDopGraph::add_context_menu() {
     remove_context_menu();
 
-    menu = add_child<UiDopContextMenu>();
+    menu = get_parent()->add_child<UiDopContextMenu>();
+    menu->position = position + translate + Point(cur.x, cur.y) * scaling;
     for (auto const &key: dop::tab.entry_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();
 
     menu->on_selected.connect([this] {
-        add_node(menu->selection, menu->position);
+        add_node(menu->selection, (menu->position - position - translate) * (1.f / scaling));
         remove_context_menu();
     });
 
@@ -219,7 +221,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
 
 void UiDopGraph::remove_context_menu() {
     if (menu) {
-        remove_child(menu);
+        get_parent()->remove_child(menu);
         menu = nullptr;
     }
 }
