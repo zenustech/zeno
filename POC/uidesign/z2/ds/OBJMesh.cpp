@@ -65,9 +65,9 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
         } else if (line.starts_with("f ")) {
             line = line.substr(2);
+
             int start = mesh.loop.size(), num = 0;
-            while (1) {
-                num++;
+            for (; num < 4096; num++) {
                 auto next = line.find(' ');
                 auto [v, vt, vn] = read_tuple3i(line.substr(0, next));
 
@@ -77,7 +77,7 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
                 if (next == std::string::npos)
                     break;
-                line = line.substr(next);
+                line = line.substr(next + 1);
             }
             mesh.poly.emplace_back(start, num);
         }

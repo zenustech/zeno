@@ -11,6 +11,7 @@ namespace z2::UI {
 struct UiDopScene : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
+    std::any view_result;
 
     UiDopScene() {
         graph = add_child<UiDopGraph>();
