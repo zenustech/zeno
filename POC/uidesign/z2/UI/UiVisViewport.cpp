@@ -22,7 +22,8 @@ void UiVisViewport::do_paint() {
 
 
 void UiVisViewport::paint() const {
-    glRectf(0.f, 0.f, 1.f, 1.f);
+    glColor3f(0.375f, 0.75f, 1.f);
+    glRectf(-.5f, -.5f, .5f, .5f);
 }
 
 

@@ -16,6 +16,8 @@ struct UiMainWindow : Widget {
     UiMainWindow() {
         scene = add_child<UiDopScene>();
         viewport = add_child<UiVisViewport>();
+        viewport->bbox = {0, 0, 1600, 460};
+        viewport->position = {0, 440};
     }
 };
 
