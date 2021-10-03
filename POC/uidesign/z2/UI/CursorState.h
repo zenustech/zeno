@@ -24,35 +24,15 @@ struct CursorState {
     void on_update();
     void after_update();
 
-    bool is_pressed(int key) const {
-        return glfwGetKey(window, key) == GLFW_PRESS;
-    }
-
-    ztd::dtor_function translate(float dx, float dy) {
-        x += dx; y += dy;
-        tx += dx; ty += dy;
-        return [=, this] () {
-            x -= dx; y -= dy;
-            tx -= dx; ty -= dy;
-        };
-    }
-
     std::vector<Event> events;
 
     bool need_repaint = true;
 
     void init_callbacks();
+    ztd::dtor_function translate(float dx, float dy);
     static AABB update_transforms();
     void update_window(Widget *win);
-
-    bool is_invalid() {
-        if (need_repaint) {
-            need_repaint = false;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    bool is_invalid();
 };
 
 extern CursorState cur;

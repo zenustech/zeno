@@ -90,5 +90,23 @@ void CursorState::update_window(Widget *win) {
     after_update();
 }
 
+ztd::dtor_function CursorState::translate(float dx, float dy) {
+    x += dx; y += dy;
+    tx += dx; ty += dy;
+    return [=, this] () {
+        x -= dx; y -= dy;
+        tx -= dx; ty -= dy;
+    };
+}
+
+bool CursorState::is_invalid() {
+    if (need_repaint) {
+        need_repaint = false;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 
 }  // namespace z2::UI
