@@ -67,5 +67,7 @@ namespace zeno{
         void computeDivP(int level);//div of grad press, store result on buffer.ApGrid
         void comptueRES(int level, openvdb::FloatGrid::Ptr p);
 
+        // normal functions
+        float dotTree(int level, openvdb::FloatGrid::Ptr a, openvdb::FloatGrid::Ptr b);
     };
 }
