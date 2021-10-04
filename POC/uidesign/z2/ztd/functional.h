@@ -11,7 +11,7 @@ template <class T = void, class ...Ts>
 using promise = std::function<T(Ts...)>;
 
 
-template <class T, class ...Ts>
+template <class ...Ts, class T>
 promise<T, Ts...> make_promise(T val) {
     return [val = std::move(val)] (Ts...) -> T { return val; };
 }
