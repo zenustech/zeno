@@ -91,7 +91,8 @@ void main() {
     light_dir = faceforward(light_dir, -light_dir, normal);
 
     vec3 view_dir = -calc_ray_dir(v_position);
-    vec3 color = pbr(vec3(0.8), 0.4, 0.0, 0.5, normal, light_dir, view_dir);
+    vec3 color = pbr(vec3(0.8), 0.4, 0.0, 1.0, normal, light_dir, view_dir);
+    color = mix(color, vec3(0.55), 0.24);
     gl_FragColor = vec4(color, 1.0);
 }
     )");
