@@ -2,7 +2,7 @@
 
 #include <map>
 #include <vector>
-#include <z2/ztd/exception.h>
+#include <z2/ztd/error.h>
 #include <z2/ztd/format.h>
 
 namespace z2::ztd {

@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
-#include <z2/ztd/exception.h>
+#include <z2/ztd/error.h>
 
 namespace z2::ztd {
 

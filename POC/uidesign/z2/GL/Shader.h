@@ -5,6 +5,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <z2/GL/utils.h>
 
 
 namespace z2::GL {

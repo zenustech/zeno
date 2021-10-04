@@ -30,10 +30,78 @@ static GL::Program *make_mesh_shader() {
     static std::unique_ptr<GL::Program> prog;
     if (!prog) {
         GL::Shader vert(GL_VERTEX_SHADER);
-        vert.compile(R"(#version 310 core
+        vert.compile(R"(#version 120
+
+uniform mat4 u_mvp;
+uniform mat4 u_inv_mvp;
+
+attribute vec3 a_position;
+attribute vec3 a_color;
+
+varying vec3 v_position;
+varying vec3 v_color;
+
+void main() {
+    v_position = a_position;
+    v_color = a_color;
+    gl_Position = u_mvp * vec4(a_position, 1.0);
+}
     )");
         GL::Shader frag(GL_FRAGMENT_SHADER);
-        frag.compile(R"(#version 310 core
+        frag.compile(R"(#version 120
+
+uniform mat4 u_mvp;
+uniform mat4 u_inv_mvp;
+
+varying vec3 v_position;
+varying vec3 v_color;
+
+vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
+    vec3 nrm, vec3 idir, vec3 odir) {
+  float roughness = 0.4;
+  float metallic = 0.0;
+  float specular = 0.5;
+  vec3 albedo = vec3(0.8, 0.8, 0.8);
+
+  vec3 hdir = normalize(idir + odir);
+  float NoH = max(0, dot(hdir, nrm));
+  float NoL = max(0, dot(idir, nrm));
+  float NoV = max(0, dot(odir, nrm));
+  float VoH = clamp(dot(odir, hdir), 0, 1);
+  float LoH = clamp(dot(idir, hdir), 0, 1);
+
+  vec3 f0 = metallic * albedo + (1 - metallic) * 0.16 * specular * specular;
+  vec3 fdf = f0 + (1 - f0) * pow(1 - VoH, 5);
+
+  float k = (roughness + 1) * (roughness + 1) / 8;
+  float vdf = 0.25 / ((NoV * k + 1 - k) * (NoL * k + 1 - k));
+
+  float alpha2 = max(0, roughness * roughness);
+  float denom = 1 - NoH * NoH * (1 - alpha2);
+  float ndf = alpha2 / (denom * denom);
+
+  vec3 brdf = fdf * vdf * ndf * f0 + (1 - f0) * albedo;
+  return brdf * NoL;
+}
+
+vec3 calc_ray_dir(vec3 pos) {
+    vec4 vpos = u_mvp * vec4(pos, 1);
+    vec2 uv = vpos.xy / vpos.w;
+    vec4 ro = u_inv_mvp * vec4(uv, -1, 1);
+    vec4 re = u_inv_mvp * vec4(uv, +1, 1);
+    vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
+    return rd;
+}
+
+void main() {
+    vec3 light_dir = normalize((u_mvp * vec4(-1, -2, 5, 0)).xyz);
+    light_dir = faceforward(light_dir, -light_dir, normal);
+
+    vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
+    vec3 view_dir = -calc_ray_dir(v_position);
+    vec3 color = pbr(v_color, 0.4, 0.0, 0.5, normal, light_dir, view_dir);
+    gl_FragColor = vec4(color, 1.0);
+}
     )");
         prog = std::make_unique<GL::Program>();
         prog->attach(vert);
