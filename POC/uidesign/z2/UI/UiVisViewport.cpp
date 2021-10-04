@@ -1,6 +1,6 @@
 #include <z2/UI/UiVisViewport.h>
 #include <z2/UI/UiMainWindow.h>
-#include <z2/GL/Shader.h>
+#include <z2/GL/VisRender.h>
 #include <z2/ds/Mesh.h>
 
 
@@ -28,7 +28,7 @@ void UiVisViewport::paint() const {
     camera->resize(bbox.nx, bbox.ny);
 
     for (auto const &object: get_parent()->view_results()) {
-        auto render = VisRender::make_for(object);
+        auto render = GL::VisRender::make_for(object);
         render->render(camera.get());
     }
 

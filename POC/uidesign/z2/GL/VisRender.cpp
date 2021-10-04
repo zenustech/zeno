@@ -1,4 +1,4 @@
-#include <z2/UI/VisRender.h>
+#include <z2/GL/VisRender.h>
 #include <z2/GL/Shader.h>
 
 
