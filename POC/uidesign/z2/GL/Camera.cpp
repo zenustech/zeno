@@ -18,13 +18,14 @@ void Camera::resize(int nx, int ny) {
 
 void Camera::uniform(Program *prog) {
     glm::mat4x4 mvp = proj * view;
-    //glm::mat4x4 mvp = view * proj;
     glm::mat4x4 inv_mvp = inverse(mvp);
+    glm::mat4x4 mv = view;
+    glm::mat4x4 inv_mv = inverse(mv);
     prog->use();
     prog->set_uniform("u_mvp", mvp);
     prog->set_uniform("u_inv_mvp", inv_mvp);
-    prog->set_uniform("u_view", view);
-    prog->set_uniform("u_proj", proj);
+    prog->set_uniform("u_mv", mv);
+    prog->set_uniform("u_inv_mv", inv_mv);
 }
 
 

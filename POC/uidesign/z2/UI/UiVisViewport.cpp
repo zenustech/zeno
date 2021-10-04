@@ -31,6 +31,8 @@ static GL::Program *make_mesh_shader() {
         GL::Shader vert(GL_VERTEX_SHADER);
         vert.compile(R"(#version 120
 
+uniform mat4 u_mv;
+uniform mat4 u_inv_mv;
 uniform mat4 u_mvp;
 uniform mat4 u_inv_mvp;
 
@@ -46,6 +48,8 @@ void main() {
         GL::Shader frag(GL_FRAGMENT_SHADER);
         frag.compile(R"(#version 120
 
+uniform mat4 u_mv;
+uniform mat4 u_inv_mv;
 uniform mat4 u_mvp;
 uniform mat4 u_inv_mvp;
 
@@ -85,14 +89,19 @@ vec3 calc_ray_dir(vec3 pos) {
 }
 
 void main() {
+    vec3 view_dir = -calc_ray_dir(v_position);
     vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
 
-    vec3 light_dir = normalize((u_mvp * vec4(-1, -2, 5, 0)).xyz);
-    light_dir = faceforward(light_dir, -light_dir, normal);
+    vec3 v_color = vec3(0.8);
+    vec3 color = vec3(0.25);
+    vec3 light_dir;
 
-    vec3 view_dir = -calc_ray_dir(v_position);
-    vec3 color = pbr(vec3(0.8), 0.4, 0.0, 1.0, normal, light_dir, view_dir);
-    color = mix(color, vec3(0.55), 0.24);
+    light_dir = normalize((u_inv_mv * vec4(1, 2, 5, 0)).xyz);
+    color += vec3(0.45, 0.47, 0.5) * pbr(v_color, 0.25, 0.0, 1.0, normal, light_dir, view_dir);
+
+    light_dir = normalize((u_inv_mv * vec4(-4, -2, 1, 0)).xyz);
+    color += vec3(0.3, 0.28, 0.25) * pbr(v_color, 0.2, 0.0, 1.0, normal, light_dir, view_dir);
+
     gl_FragColor = vec4(color, 1.0);
 }
     )");
