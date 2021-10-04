@@ -92,8 +92,8 @@ void main() {
     vec3 view_dir = -calc_ray_dir(v_position);
     vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
 
-    vec3 v_color = vec3(1.0);
-    vec3 color = vec3(0.1);
+    vec3 v_color = vec3(0.96);
+    vec3 color = vec3(0.0);
     vec3 light_dir;
 
     light_dir = normalize((u_inv_mv * vec4(1, 2, 5, 0)).xyz);
@@ -104,6 +104,8 @@ void main() {
 
     light_dir = normalize((u_inv_mv * vec4(3, -5, 2, 0)).xyz);
     color += vec3(0.15, 0.2, 0.22) * pbr(v_color, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
+
+    color *= 1.2;
 
     //color = pow(clamp(color, 0, 1), vec3(1/2.2));
     gl_FragColor = vec4(color, 1.0);

@@ -31,8 +31,8 @@ inline auto make_error(Ts const &...ts) {
 }
 
 template <class ...Ts>
-inline auto format_error(Ts &&...ts) {
-    return error(format<Ts...>(std::forward<Ts>(ts)...));
+inline auto format_error(const char *fmt, Ts &&...ts) {
+    return error(format<Ts...>(fmt, std::forward<Ts>(ts)...));
 }
 
 }
