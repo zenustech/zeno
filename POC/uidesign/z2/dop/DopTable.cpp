@@ -62,8 +62,8 @@ static int def_repeat = tab.define("repeat", {{
 }, {
     {"value"},
 }, [] (DopNode *node, DopContext *visited) {
-    printf("repeat out[0]\n");
-    for (int i = 0; i < 4; i++) {
+    auto times = std::any_cast<int>(node->get_input(1, visited));
+    for (int i = 0; i < times; i++) {
         auto saved_visited = *visited;
         node->get_input(0, &saved_visited);
     }
