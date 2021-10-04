@@ -8,49 +8,17 @@ namespace z2::dop {
 DopTable tab;
 
 
-static int def_readvdb = tab.define("readvdb", {{
-    "openvdb", "load from .vdb file",
+static int def_first = tab.define("first", {{
+    "control", "return the first argument",
 }, {
-    {"path"},
-    {"type"},
+    {"lhs"},
+    {"rhs"},
 }, {
-    {"grid"},
+    {"lhs"},
 }, [] (DopNode *node, DopContext *visited) {
-    printf("readvdb out[0]\n");
-    node->set_output(0, 1024);
-}});
-
-
-static int def_vdbsmooth = tab.define("vdbsmooth", {{
-    "openvdb", "gaussian smooth vdb grid",
-}, {
-    {"grid"},
-    {"times"},
-    {"width"},
-}, {
-    {"grid"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto grid = std::any_cast<int>(node->get_input(0, visited));
-    auto type = node->get_input(1, visited);
-    grid += 1;
-    printf("vdbsmooth out[0] %d\n", grid);
-    node->set_output(0, grid);
-}});
-
-
-static int def_vdberode = tab.define("vdberode", {{
-    "openvdb", "erode the levelset by levels",
-}, {
-    {"grid"},
-    {"levels"},
-}, {
-    {"grid"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto grid = std::any_cast<int>(node->get_input(0, visited));
-    auto levels = node->get_input(1, visited);
-    grid -= 3;
-    printf("vdberode out[0] %d\n", grid);
-    node->set_output(0, grid);
+    auto lhs = node->get_input(0, visited);
+    auto rhs = node->get_input(1, visited);
+    node->set_output(0, lhs);
 }});
 
 
