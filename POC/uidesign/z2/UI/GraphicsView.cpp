@@ -35,6 +35,7 @@ void GraphicsView::on_event(Event_Motion e) {
             if (child->draggable) {
                 child->position.x += cur.dx;
                 child->position.y += cur.dy;
+                child->on_position_changed();
             }
         }
     }
@@ -117,6 +118,10 @@ void GraphicsView::do_paint() {
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
     glPopMatrix();
+}
+
+
+void GraphicsWidget::on_position_changed() {
 }
 
 

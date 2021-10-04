@@ -24,11 +24,11 @@ struct UiDopNode : GraphicsRectItem {
     dop::DopNode *bk_node = nullptr;
 
     UiDopNode();
-
     void update_sockets();
     void _update_backend_data() const;
     UiDopInputSocket *add_input_socket();
     UiDopOutputSocket *add_output_socket();
+    void on_position_changed() override;
     UiDopGraph *get_parent() const;
     void paint() const override;
 };
