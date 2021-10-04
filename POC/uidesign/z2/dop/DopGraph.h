@@ -2,6 +2,7 @@
 
 
 #include <z2/dop/DopNode.h>
+#include <z2/dop/DopContext.h>
 
 
 namespace z2::dop {
@@ -27,9 +28,9 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    std::any resolve_value(std::string expr, DopContext *visited);
+    DopPromise resolve_value(std::string expr, DopContext *visited);
 
-    inline std::any resolve_value(std::string expr) {
+    inline DopPromise resolve_value(std::string expr) {
         DopContext visited;
         return resolve_value(expr, &visited);
     }

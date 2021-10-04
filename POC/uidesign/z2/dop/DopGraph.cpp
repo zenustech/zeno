@@ -68,27 +68,26 @@ void DopGraph::remove_node_input
 }
 
 
-std::any DopGraph::resolve_value(std::string expr, DopContext *visited) {
+DopPromise DopGraph::resolve_value(std::string expr, DopContext *visited) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
-        auto val = node->get_output_by_name(socket_n, visited);
-        return val;
+        return node->get_output_by_name(socket_n, visited);
 
     } else if (!expr.size()) {
         return {};
 
     } else if (std::strchr("0123456789+-.", expr[0])) {
         if (expr.find('.') != std::string::npos) {
-            return std::stof(expr);
+            return visited->immediate(std::stof(expr));
         } else {
-            return std::stoi(expr);
+            return visited->immediate(std::stoi(expr));
         }
 
     } else {
-        return expr;
+        return visited->immediate(expr);
     }
 }
 

@@ -7,21 +7,17 @@
 namespace z2::dop {
 
 
+struct DopNode;
+
+
+using DopPromise = std::function<std::any()>;
+
+
 struct DopContext {
     std::set<std::string> visited;
 
-    void insert(std::string const &name) {
-        visited.insert(name);
-    }
-
-    bool contains(std::string const &name) const {
-        return visited.contains(name);
-    }
-
-    void erase(std::string const &name) {
-        visited.erase(name);
-    }
-}
+    DopPromise promise(DopNode *node, int idx);
+};
 
 
 }  // namespace z2::dop

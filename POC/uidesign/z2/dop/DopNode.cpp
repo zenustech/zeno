@@ -7,7 +7,7 @@
 namespace z2::dop {
 
 
-std::any DopNode::get_input(int i, DopContext *visited) const {
+DopPromise DopNode::get_input(int i, DopContext *visited) const {
     return graph->resolve_value(inputs[i].value, visited);
 }
 
@@ -18,15 +18,12 @@ void DopNode::set_output(int i, std::any val) {
 
 
 void DopNode::_apply_func(DopContext *visited) {
-    if (visited->contains(name))
-        return;
     auto func = tab.lookup(kind);
     func(this, visited);
-    visited->insert(name);
 }
 
 
-std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited) {
+DopPromise DopNode::get_output_by_name(std::string sock_name, DopContext *visited) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == sock_name) {
@@ -37,8 +34,7 @@ std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited)
     if (n == -1)
         throw ztd::make_error("Bad output socket name: ", sock_name);
 
-    _apply_func(visited);
-    return outputs[n].result;
+    return visited->promise(this, n);
 }
 
 
