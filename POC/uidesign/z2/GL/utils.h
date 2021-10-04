@@ -2,7 +2,7 @@
 
 
 #include <z2/ztd/error.h>
-#include <z2/ztd/opengl.h>
+#include <z2/GL/opengl.h>
 
 
 namespace z2::GL {
