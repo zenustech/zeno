@@ -124,7 +124,7 @@ void UiVisViewport::paint() const {
     auto prog = make_mesh_shader();
     camera->uniform(prog);
 
-    if (auto object = get_parent()->scene->view_result; object.has_value()) {
+    for (auto const &object: get_parent()->view_results()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
 
         std::vector<ztd::vec3f> vertices;
