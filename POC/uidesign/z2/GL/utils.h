@@ -2,7 +2,10 @@
 
 
 #include <z2/ztd/error.h>
+#include <z2/ztd/format.h>
 #include <z2/GL/opengl.h>
+#include <vector>
+#include <cstdio>
 
 
 namespace z2::GL {
@@ -31,7 +34,6 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     if (err != GL_NO_ERROR) {
       auto msg = get_opengl_error_string(err);
       throw ztd::make_error(file, ':', line, ':', hint, ": ", msg);
-      abort();
     }
 }
 
