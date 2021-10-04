@@ -2,6 +2,7 @@
 
 
 #include <z2/ztd/error.h>
+#include <z2/ztd/opengl.h>
 
 
 namespace z2::GL {

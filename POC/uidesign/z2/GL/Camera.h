@@ -8,6 +8,9 @@
 namespace z2::GL {
 
 
+struct Program;
+
+
 struct Camera {
     int nx = 512, ny = 512;
     float point_scale = 1.f;
@@ -26,6 +29,7 @@ struct Camera {
     void update();
     void move(double dx, double dy, bool pan_mode);
     void zoom(double dy, bool fov_mode);
+    void uniform(Program *prog);
 };
 
 

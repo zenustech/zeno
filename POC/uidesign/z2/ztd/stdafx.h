@@ -10,7 +10,7 @@
 #include <optional>
 #include <iostream>
 #include <functional>
-#include <glad/glad.h>
+#include <z2/GL/opengl.h>
 #include <GLFW/glfw3.h>
 #include <FTGL/ftgl.h>
 #include <memory>

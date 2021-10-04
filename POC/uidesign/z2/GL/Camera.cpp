@@ -1,4 +1,5 @@
 #include <z2/GL/Camera.h>
+#include <z2/GL/Shader.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>
@@ -6,6 +7,16 @@
 
 
 namespace z2::GL {
+
+
+void Camera::uniform(Program *prog) {
+    glm::mat4x4 mvp = proj * view;
+    glm::mat4x4 inv_mvp = inverse(mvp);
+    prog->set_uniform("u_mvp", mvp);
+    prog->set_uniform("u_inv_mvp", inv_mvp);
+    prog->set_uniform("u_view", view);
+    prog->set_uniform("u_proj", proj);
+}
 
 
 void Camera::zoom(double dy, bool fov_mode) {

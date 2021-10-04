@@ -1,4 +1,3 @@
-#include <glm/gtc/type_ptr.hpp>
 #include <z2/UI/UiVisViewport.h>
 #include <z2/UI/UiMainWindow.h>
 #include <z2/GL/Shader.h>
@@ -58,10 +57,6 @@ varying vec3 v_color;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
-  float roughness = 0.4;
-  float metallic = 0.0;
-  float specular = 0.5;
-  vec3 albedo = vec3(0.8, 0.8, 0.8);
 
   vec3 hdir = normalize(idir + odir);
   float NoH = max(0, dot(hdir, nrm));
@@ -94,10 +89,11 @@ vec3 calc_ray_dir(vec3 pos) {
 }
 
 void main() {
+    vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
+
     vec3 light_dir = normalize((u_mvp * vec4(-1, -2, 5, 0)).xyz);
     light_dir = faceforward(light_dir, -light_dir, normal);
 
-    vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
     vec3 view_dir = -calc_ray_dir(v_position);
     vec3 color = pbr(v_color, 0.4, 0.0, 0.5, normal, light_dir, view_dir);
     gl_FragColor = vec4(color, 1.0);
@@ -118,12 +114,11 @@ void UiVisViewport::paint() const {
     camera->update();
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glLoadMatrixf(glm::value_ptr(camera->view));
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    glLoadMatrixf(glm::value_ptr(camera->proj));
 
     auto prog = make_mesh_shader();
+    camera->uniform(prog);
     prog->use();
 
     if (auto object = get_parent()->scene->view_result; object.has_value()) {
@@ -152,6 +147,7 @@ void UiVisViewport::paint() const {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+    glUseProgram(0);
 }
 
 
