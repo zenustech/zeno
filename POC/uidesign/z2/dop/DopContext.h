@@ -12,7 +12,17 @@ namespace z2::dop {
 
 
 //using DopPromise = ztd::promise<std::any>;
-using DopContext = std::set<std::string>;
+struct DopContext {
+    std::set<std::string> visited;
+
+    bool contains(std::string const &key) const {
+        return visited.contains(key);
+    }
+
+    void insert(std::string const &key) {
+        visited.insert(key);
+    }
+};
 
 
 //struct DopContext {

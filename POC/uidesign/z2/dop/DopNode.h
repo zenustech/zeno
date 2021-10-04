@@ -9,6 +9,8 @@ namespace z2::dop {
 
 
 struct DopGraph;
+struct DopNode;
+
 
 struct DopNode {
     DopGraph *graph = nullptr;
