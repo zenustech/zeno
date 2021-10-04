@@ -18,8 +18,11 @@ void DopNode::set_output(int i, std::any val) {
 
 
 void DopNode::_apply_func(DopContext *visited) {
-    auto func = tab.lookup(kind);
-    func(this, visited);
+    if (!visited->contains(this->name)) {
+        auto func = tab.lookup(kind);
+        func(this, visited);
+        visited->insert(this->name);
+    }
 }
 
 
@@ -34,11 +37,8 @@ std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited)
     if (n == -1)
         throw ztd::make_error("Bad output socket name: ", sock_name);
 
-    auto task = visited->enqueue(this);
-    return [=] () -> std::any {
-        task.wait();
-        return task.node->outputs[n].result;
-    };
+    _apply_func(visited);
+    return outputs[n].result;
 }
 
 
