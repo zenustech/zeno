@@ -34,6 +34,7 @@ DopPromise DopNode::get_output_by_name(std::string sock_name, DopContext *visite
     if (n == -1)
         throw ztd::make_error("Bad output socket name: ", sock_name);
 
+    _apply_func(visited);
     return visited->promise(this, n);
 }
 

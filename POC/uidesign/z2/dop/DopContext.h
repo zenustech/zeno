@@ -2,24 +2,14 @@
 
 
 #include <z2/ztd/stdafx.h>
+#include <z2/ztd/functional.h>
 
 
 namespace z2::dop {
 
 
-struct DopNode;
-
-
-using DopPromise = std::function<std::any()>;
-
-
-struct DopContext {
-    std::set<std::string> promised;
-    std::set<std::string> evaluated;
-
-    DopPromise promise(DopNode *node, int idx);
-    DopPromise immediate(std::any val);
-};
+using DopPromise = ztd::promise<std::any>;
+using DopContext = std::set<std::string>;
 
 
 }  // namespace z2::dop

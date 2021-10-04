@@ -81,13 +81,13 @@ DopPromise DopGraph::resolve_value(std::string expr, DopContext *visited) {
 
     } else if (std::strchr("0123456789+-.", expr[0])) {
         if (expr.find('.') != std::string::npos) {
-            return visited->immediate(std::stof(expr));
+            return ztd::make_promise(std::stof(expr));
         } else {
-            return visited->immediate(std::stoi(expr));
+            return ztd::make_promise(std::stoi(expr));
         }
 
     } else {
-        return visited->immediate(expr);
+        return ztd::make_promise(expr);
     }
 }
 

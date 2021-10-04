@@ -7,8 +7,14 @@
 namespace z2::ztd {
 
 
-template <class Ret = void, class ...Args>
-using delegate = std::function<Ret(Args...)>;
+template <class T = void, class ...Ts>
+using promise = std::function<T(Ts...)>;
+
+
+template <class T, class ...Ts>
+promise<T, Ts...> make_promise(T val) {
+    return [val = std::move(val)] (Ts...) -> T { return val; };
+}
 
 
 struct dtor_function : std::function<void()> {
