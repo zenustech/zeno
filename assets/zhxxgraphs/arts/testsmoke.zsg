@@ -69,81 +69,6 @@
      ],
      "options": []
     },
-    "f30ec586-mgSmokeToSDF": {
-     "name": "mgSmokeToSDF",
-     "inputs": {
-      "mgSmokeData": [
-       "4d88dffe-mgSmokeSolver",
-       "mgSmokeData",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1189.0660592255124,
-      59.22551252847379
-     ],
-     "options": []
-    },
-    "4d88dffe-mgSmokeSolver": {
-     "name": "mgSmokeSolver",
-     "inputs": {
-      "mgSmokeData": [
-       "e9d209c2-SDFtoMGSmoke",
-       "mgSmokeData",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      853.0751708428246,
-      62.64236902050112
-     ],
-     "options": []
-    },
-    "e9d209c2-SDFtoMGSmoke": {
-     "name": "SDFtoMGSmoke",
-     "inputs": {
-      "sdfgrid": [
-       "18f32518-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "dt": [
-       "2a4d2b89-GetFrameTime",
-       "time",
-       null
-      ],
-      "levelNum": [
-       "41a98ce3-NumericInt",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      551.9646924829158,
-      4.555808656036433
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "41a98ce3-NumericInt": {
      "name": "NumericInt",
      "inputs": {
@@ -159,51 +84,6 @@
      "uipos": [
       138.95216400911158,
       6.833712984054667
-     ],
-     "options": []
-    },
-    "f25298cc-VDBVoxelAsParticles": {
-     "name": "VDBVoxelAsParticles",
-     "inputs": {
-      "vdbGrid": [
-       "bfed494e-mgPress",
-       "pressVDB",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hasInactive": false,
-      "valToAttr": "sdf"
-     },
-     "uipos": [
-      1438.4965831435077,
-      -7.972665148063783
-     ],
-     "options": []
-    },
-    "bfed494e-mgPress": {
-     "name": "mgPress",
-     "inputs": {
-      "mgSmokeData": [
-       "4d88dffe-mgSmokeSolver",
-       "mgSmokeData",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1169.7038724373579,
-      -115.03416856492026
      ],
      "options": []
     },
@@ -306,8 +186,8 @@
     }
    },
    "view_rect": {
-    "x": 894.6469248291451,
-    "y": -402.1212984054657,
+    "x": 792.1412300683237,
+    "y": -333.78416856491924,
     "width": 625.0,
     "height": 625.0
    }
@@ -368,51 +248,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "AdaptiveSolver": {
-   "inputs": [
-    [
-     "",
-     "agData",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "density",
-     ""
-    ],
-    [
-     "",
-     "frameNum",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "agData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
    ]
   },
   "AppendList": {
@@ -6429,46 +6264,6 @@
     "openvdb"
    ]
   },
-  "SDFtoMGSmoke": {
-   "inputs": [
-    [
-     "",
-     "sdfgrid",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "levelNum",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mgSmokeData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
   "SampleVDBToPrimitive": {
    "inputs": [
     [
@@ -8279,96 +8074,6 @@
     "AdaptiveSolver"
    ]
   },
-  "mgPress": {
-   "inputs": [
-    [
-     "",
-     "mgSmokeData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pressVDB",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
-  "mgSmokeSolver": {
-   "inputs": [
-    [
-     "",
-     "mgSmokeData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mgSmokeData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
-  "mgSmokeToSDF": {
-   "inputs": [
-    [
-     "",
-     "mgSmokeData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "volumeGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
   "selectLevel": {
    "inputs": [
     [
@@ -8391,41 +8096,6 @@
     [
      "",
      "sdf",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "AdaptiveSolver"
-   ]
-  },
-  "selectLevelGrid": {
-   "inputs": [
-    [
-     "",
-     "agData",
-     ""
-    ],
-    [
-     "",
-     "level",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "vdbGrid",
      ""
     ],
     [
