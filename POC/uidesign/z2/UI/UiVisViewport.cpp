@@ -35,14 +35,11 @@ uniform mat4 u_mvp;
 uniform mat4 u_inv_mvp;
 
 attribute vec3 a_position;
-attribute vec3 a_color;
 
 varying vec3 v_position;
-varying vec3 v_color;
 
 void main() {
     v_position = a_position;
-    v_color = a_color;
     gl_Position = u_mvp * vec4(a_position, 1.0);
 }
     )");
@@ -53,7 +50,6 @@ uniform mat4 u_mvp;
 uniform mat4 u_inv_mvp;
 
 varying vec3 v_position;
-varying vec3 v_color;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -95,7 +91,7 @@ void main() {
     light_dir = faceforward(light_dir, -light_dir, normal);
 
     vec3 view_dir = -calc_ray_dir(v_position);
-    vec3 color = pbr(v_color, 0.4, 0.0, 0.5, normal, light_dir, view_dir);
+    vec3 color = pbr(vec3(0.8), 0.4, 0.0, 0.5, normal, light_dir, view_dir);
     gl_FragColor = vec4(color, 1.0);
 }
     )");
