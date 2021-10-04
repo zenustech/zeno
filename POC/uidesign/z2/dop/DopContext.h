@@ -14,9 +14,11 @@ using DopPromise = std::function<std::any()>;
 
 
 struct DopContext {
-    std::set<std::string> visited;
+    std::set<std::string> promised;
+    std::set<std::string> evaluated;
 
     DopPromise promise(DopNode *node, int idx);
+    DopPromise immediate(std::any val);
 };
 
 
