@@ -581,7 +581,7 @@ void agData::PossionSolver(int level)
  
     auto computeRes = [&](const tbb::blocked_range<size_t> &r)
     {
-        auto res_axr = buffer.resGrid[level]->getConstAccessor();
+        auto res_axr = buffer.resGrid[level]->getAccessor();
         auto s_axr = s->getConstAccessor();
         auto status_axr = status[level]->getConstAccessor();
         auto ap_axr = buffer.ApGrid[level]->getConstAccessor();
