@@ -30,4 +30,9 @@ inline auto make_error(Ts const &...ts) {
     return error(to_string<Ts...>(ts...));
 }
 
+template <class ...Ts>
+inline auto format_error(Ts &&...ts) {
+    return error(format<Ts...>(std::forward<Ts>(ts)...));
+}
+
 }

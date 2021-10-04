@@ -34,8 +34,7 @@ struct Shader {
             std::vector<GLchar> log(logLength + 1);
             CHECK_GL(glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            printf("Error compiling shader:\n%s\n%s\n", source.c_str(), log.data());
-            abort();
+            throw ztd::format_error("Error compiling shader:\n%s\n%s\n", source.c_str(), log.data());
         }
     }
 };
@@ -66,8 +65,7 @@ struct Program {
             std::vector<GLchar> log(logLength + 1);
             CHECK_GL(glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            printf("Error linking program:\n%s\n", log.data());
-            abort();
+            throw ztd::format_error("Error linking program:\n%s\n", log.data());
         }
     }
 

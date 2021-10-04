@@ -109,7 +109,7 @@ UiDopGraph::UiDopGraph() {
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         auto val = bk_graph->resolve_value("@readobj1:mesh");
-        get_parent()->view_result = val;
+        get_parent()->set_view_result(val);
     });
 }
 
