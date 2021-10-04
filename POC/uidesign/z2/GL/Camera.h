@@ -21,8 +21,11 @@ struct Camera {
     double fov = 30.f;
     bool ortho_mode = false;
 
+    Camera() { update(); }
+
     void update();
     void move(double dx, double dy, bool pan_mode);
+    void zoom(double dy, bool fov_mode);
 };
 
 

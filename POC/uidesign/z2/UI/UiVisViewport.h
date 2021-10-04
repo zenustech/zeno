@@ -18,6 +18,7 @@ struct UiVisViewport : Widget {
     void paint() const override;
     void on_event(Event_Motion e) override;
     void on_event(Event_Mouse e) override;
+    void on_event(Event_Scroll e) override;
 
     inline UiMainWindow *get_parent() const {
         return (UiMainWindow *)parent;

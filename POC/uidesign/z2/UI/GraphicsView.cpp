@@ -69,10 +69,9 @@ void GraphicsView::on_event(Event_Mouse e) {
 
 void GraphicsView::on_event(Event_Scroll e) {
     Widget::on_event(e);
-    float dy = e.dy > 0 ? 1 : -1;
 
     float old_scaling = scaling;
-    scaling *= std::pow(1.3f, dy);
+    scaling *= std::pow(1.3f, e.dy);
 
     Point curpos(cur.x, cur.y);
     translate = translate + curpos * (old_scaling - scaling);

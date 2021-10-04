@@ -8,6 +8,15 @@
 namespace z2::GL {
 
 
+void Camera::zoom(double dy, bool fov_mode) {
+    auto scale = std::pow(0.89, dy);
+    if (fov_mode)
+        fov /= scale;
+    radius *= scale;
+    update();
+}
+
+
 void Camera::move(double dx, double dy, bool pan_mode) {
     if (pan_mode) {
         auto cos_t = std::cos(theta);
@@ -24,6 +33,7 @@ void Camera::move(double dx, double dy, bool pan_mode) {
         theta += dy * std::numbers::pi;
         phi += dx * std::numbers::pi;
     }
+    update();
 }
 
 

@@ -80,9 +80,15 @@ void UiVisViewport::on_event(Event_Mouse e) {
 void UiVisViewport::on_event(Event_Motion e) {
     Widget::on_event(e);
     if (cur.mmb) {
-        float n = (bbox.nx + bbox.ny) / (2 * 1.8f);
+        float n = (bbox.nx + bbox.ny) / (2 * 1.75f);
         camera->move(cur.dx / n, cur.dy / n, cur.shift);
     }
+}
+
+
+void UiVisViewport::on_event(Event_Scroll e) {
+    Widget::on_event(e);
+    camera->zoom(e.dy, cur.shift);
 }
 
 
