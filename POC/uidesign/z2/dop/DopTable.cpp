@@ -62,10 +62,10 @@ static int def_repeat = tab.define("repeat", {{
 }, {
     {"value"},
 }, [] (DopNode *node, DopContext *visited) {
-    auto times = std::any_cast<int>(node->get_input(1, visited));
+    auto times = std::any_cast<int>(node->get_input(1, visited)());
     for (int i = 0; i < times; i++) {
         auto saved_visited = *visited;
-        node->get_input(0, &saved_visited);
+        node->get_input(0, &saved_visited)();
     }
     node->set_output(0, 32);
 }});
@@ -80,11 +80,11 @@ static int def_if = tab.define("if", {{
 }, {
     {"value"},
 }, [] (DopNode *node, DopContext *visited) {
-    auto cond = std::any_cast<int>(node->get_input(0, visited));
+    auto cond = std::any_cast<int>(node->get_input(0, visited)());
     if (cond) {
-        node->set_output(0, node->get_input(1, visited));
+        node->set_output(0, node->get_input(1, visited)());
     } else {
-        node->set_output(0, node->get_input(2, visited));
+        node->set_output(0, node->get_input(2, visited)());
     }
 }});
 
