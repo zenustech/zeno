@@ -5,6 +5,7 @@
 #include <string>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+#include <direct.h>
 #elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
 #include <unistd.h>
 #endif
@@ -40,10 +41,10 @@ static void report() {
     printf("Compiler: %s %d, C++ %ld\n",
 #if defined(_MSC_VER)
     "MSVC", _MSC_VER
-#elif defined(__GNUC__)
-    "GCC", __GNUC__
 #elif defined(__clang__)
     "Clang", __clang__
+#elif defined(__GNUC__)
+    "GCC", __GNUC__
 #elif defined(__DPCPP__)
     "DPC++", __DPCPP__
 #else
@@ -84,6 +85,12 @@ static void failure(int stat) {
     exit(stat);
 }
 
+#if defined(_WIN32)
+#define popen(x, y) _popen(x, y)
+#define pclose(x) _pclose(x)
+#define setenv(x, y, z) SetEnvironmentVariable(x, y)
+#endif
+
 static void start(const char *path) {
     char *buf = (char *)alloca(strlen(path) + 64);
     sprintf(buf, "'%s' 2>&1", path);
@@ -116,17 +123,17 @@ int main(int argc, char **argv) {
     fprintf(stderr, "==> working directory: %s\n", path.c_str());
 #if defined(_WIN32)
     SetCurrentDirectory(path.c_str());
-    if (argv[1]) {
-        setenv("ZEN_OPEN", argv[1], 1);
-    }
 #else
     chdir(path.c_str());
 #endif
+    if (argv[1]) {
+        setenv("ZEN_OPEN", argv[1], 1);
+    }
     freopen(logfile, "w", stdout);
     report();
     start(
 #if defined(_WIN32)
-            "zenqte.exe"
+            ".\\zenqte.exe"
 #else
             "./zenqte"
 #endif

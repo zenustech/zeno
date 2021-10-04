@@ -50,7 +50,7 @@ FTGL_BEGIN_C_DECLS
         return ftgl; \
     }
 
-// FTBitmapGlyph::FTBitmapGlyph();
+/*// FTBitmapGlyph::FTBitmapGlyph();
 C_TOR(ftglCreateBitmapGlyph, (FT_GlyphSlot glyph),
       FTBitmapGlyph, (glyph), GLYPH_BITMAP);
 
@@ -75,7 +75,7 @@ C_TOR(ftglCreatePixmapGlyph, (FT_GlyphSlot glyph),
 // FTPolygonGlyph::FTPolygonGlyph();
 C_TOR(ftglCreatePolygonGlyph, (FT_GlyphSlot glyph, float outset,
                                int useDisplayList),
-      FTPolygonGlyph, (glyph, outset, (useDisplayList != 0)), GLYPH_POLYGON);
+      FTPolygonGlyph, (glyph, outset, (useDisplayList != 0)), GLYPH_POLYGON);*/
 
 // FTTextureGlyph::FTTextureGlyph();
 C_TOR(ftglCreateTextureGlyph, (FT_GlyphSlot glyph, int id, int xOffset,

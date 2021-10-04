@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -157,3 +158,4 @@ void FTPolygonGlyphImpl::DoRender()
     }
 }
 
+#endif

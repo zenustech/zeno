@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -263,3 +264,4 @@ void FTExtrudeGlyphImpl::RenderSide()
     }
 }
 
+#endif

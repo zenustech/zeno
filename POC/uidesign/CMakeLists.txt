@@ -1,18 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_CXX_STANDARD 17)
+# GCC 11, Clang 12, MSVC 19.28
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE Debug)
 project(ZenoEditor LANGUAGES C CXX)
 
+add_subdirectory(glad)
+add_subdirectory(glfw)
 add_subdirectory(ftgl)
 add_subdirectory(backward-cpp)
 
-file(GLOB PROJECT_SOURCE *.cpp)
+file(GLOB PROJECT_SOURCE z2/*/*.cpp z2/*/*.h)
 add_executable(ZenoEditor ${PROJECT_SOURCE} ${BACKWARD_ENABLE})
-target_link_libraries(ZenoEditor PRIVATE GL glfw)
-target_compile_options(ZenoEditor PRIVATE -lbfd -liberty)
-
-
-target_link_libraries(ZenoEditor PRIVATE ftgl)
 add_backward(ZenoEditor)
-find_package(Freetype REQUIRED)
-target_include_directories(ZenoEditor PRIVATE ftgl/src ftgl/src/FTFont ftgl/src/FTGlyph ftgl/src/FTLayout ${FREETYPE_INCLUDE_DIRS})
+
+target_include_directories(ZenoEditor PRIVATE .)
+target_link_libraries(ZenoEditor PRIVATE glad glfw ftgl)

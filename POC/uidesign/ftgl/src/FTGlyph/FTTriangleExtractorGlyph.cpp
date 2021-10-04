@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -163,3 +164,4 @@ void FTTriangleExtractorGlyphImpl::AddVertex(const FTPoint& pen, const FTPoint& 
     triangles_.push_back(pen.Zf());
 }
 
+#endif

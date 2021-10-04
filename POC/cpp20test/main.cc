@@ -1,11 +1,9 @@
-#include <openvdb/openvdb.h>
-#include <openvdb/tools/LevelSetSphere.h>
-
-import helloworld__hello;
-import helloworld__world;
+#include <array>
+#include "hello.hh"
+#include "world.hh"
 
 int main() {
     hello();
-    Test<int>();
     world();
+    auto p = get_array<int>();
 }

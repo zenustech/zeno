@@ -1,3 +1,4 @@
+#if 0
 /*
  * FTGL - OpenGL font library
  *
@@ -67,3 +68,4 @@ class FTExtrudeGlyphImpl : public FTGlyphImpl
 
 #endif  //  __FTExtrudeGlyphImpl__
 
+#endif
