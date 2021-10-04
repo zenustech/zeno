@@ -1,15 +1,19 @@
 #include <z2/GL/VisRender.h>
 #include <z2/GL/Shader.h>
+#include <z2/ds/Mesh.h>
 
 
 namespace z2::GL {
 
 
-std::unique_ptr<VisRender> VisRender::make_for(std::any object) {
-    auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
-    return std::make_unique<VisRender_Mesh>(mesh);
-}
+// todo: futher sep this file into pieces
+struct VisRender_Mesh : VisRender {
+    std::shared_ptr<ds::Mesh> mesh;
+    VisRender_Mesh(std::shared_ptr<ds::Mesh> mesh) : mesh(mesh) {}
 
+    static GL::Program *_get_shader();
+    void render(GL::Camera *camera) override;
+};
 
 
 GL::Program *VisRender_Mesh::_get_shader() {
@@ -129,6 +133,12 @@ void VisRender_Mesh::render(GL::Camera *camera) {
                           sizeof(vertices[0]), vertices.data()));
     CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertices.size()));
     CHECK_GL(glDisableVertexAttribArray(0));
+}
+
+
+std::unique_ptr<VisRender> VisRender::make_for(std::any object) {
+    auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
+    return std::make_unique<VisRender_Mesh>(mesh);
 }
 
 
