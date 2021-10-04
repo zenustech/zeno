@@ -101,6 +101,7 @@ static int def_readobj = dop::tab.define("readobj", {{
     auto mesh = std::make_shared<Mesh>();
     std::ifstream ifs(path);
     readMeshFromOBJ(ifs, *mesh);
+    printf("readobj\n");
     node->set_output(0, mesh);
 }});
 

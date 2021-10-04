@@ -102,13 +102,16 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 
 
 UiDopGraph::UiDopGraph() {
-    auto c = add_node("readobj", {100, 256});
-    c->bk_node->inputs[0].value = "assets/monkey.obj";
+    auto n1 = add_node("readobj", {100, 256});
+    auto n2 = add_node("route", {400, 256});
+    auto n3 = add_node("first", {400, 256});
+    n1->bk_node->inputs[0].value = "assets/monkey.obj";
+    add_link(n1->outputs[0], n3->inputs[0]);
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        auto val = bk_graph->resolve_value("@readobj1:mesh");
+        auto val = bk_graph->resolve_value("@first1:mesh");
         get_parent()->set_view_result(val);
     });
 }
