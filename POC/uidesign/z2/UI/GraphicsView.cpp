@@ -111,7 +111,8 @@ void GraphicsView::do_paint() {
     glScalef(scaling, scaling, 1.f);
 
     for (auto const &child: children) {
-        child->do_paint();
+        if (!child->hidden)
+            child->do_paint();
     }
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);

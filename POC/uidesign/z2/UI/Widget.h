@@ -38,6 +38,7 @@ struct Widget : Object {
     bool hovered = false;
     bool pressed[3] = {false, false, false};
     AABB bbox{0, 0, 10, 10};
+    bool hidden = false;
 
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {

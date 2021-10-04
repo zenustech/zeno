@@ -156,7 +156,8 @@ void Widget::do_paint() {
     glTranslatef(position.x, position.y, zvalue);
     paint();
     for (auto const &child: children) {
-        child->do_paint();
+        if (!child->hidden)
+            child->do_paint();
     }
     glPopMatrix();
 }
