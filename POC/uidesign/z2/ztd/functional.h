@@ -8,7 +8,7 @@ namespace z2::ztd {
 
 
 template <class Ret = void, class ...Args>
-using function_r = std::function<Ret(Args...)>;
+using delegate = std::function<Ret(Args...)>;
 
 
 struct dtor_function : std::function<void()> {
