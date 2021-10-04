@@ -9,8 +9,21 @@ namespace z2::GL {
 
 
 void Camera::move(double dx, double dy, bool pan_mode) {
-    theta += dy * std::numbers::pi;
-    phi += dx * std::numbers::pi;
+    if (pan_mode) {
+        auto cos_t = std::cos(theta);
+        auto sin_t = std::sin(theta);
+        auto cos_p = std::cos(phi);
+        auto sin_p = std::sin(phi);
+        glm::dvec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+        glm::dvec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+        glm::dvec3 right = normalize(cross(up, back));
+        up = normalize(cross(right, back));
+        auto delta = right * dx + up * dy;
+        center += delta * radius;
+    } else {
+        theta += dy * std::numbers::pi;
+        phi += dx * std::numbers::pi;
+    }
 }
 
 
