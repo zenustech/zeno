@@ -78,42 +78,49 @@ struct Program {
     void set_uniformi(const char *name, int val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniform1i(loc, val));
     }
 
     void set_uniform(const char *name, float val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniform1f(loc, val));
     }
 
     void set_uniform(const char *name, glm::vec2 const &val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniform2fv(loc, 1, glm::value_ptr(val)));
     }
 
     void set_uniform(const char *name, glm::vec3 const &val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniform3fv(loc, 1, glm::value_ptr(val)));
     }
 
     void set_uniform(const char *name, glm::vec4 const &val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniform4fv(loc, 1, glm::value_ptr(val)));
     }
 
     void set_uniform(const char *name, glm::mat3x3 const &val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(val)));
     }
 
     void set_uniform(const char *name, glm::mat4x4 const &val) const {
         GLuint loc;
         CHECK_GL(loc = glGetUniformLocation(pro, name));
+        if (loc == -1) return;
         CHECK_GL(glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(val)));
     }
 
