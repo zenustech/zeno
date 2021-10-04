@@ -7,7 +7,7 @@
 namespace z2::dop {
 
 
-DopPromise DopNode::get_input(int i, DopContext *visited) const {
+std::any DopNode::get_input(int i, DopContext *visited) const {
     return graph->resolve_value(inputs[i].value, visited);
 }
 
@@ -23,7 +23,7 @@ void DopNode::_apply_func(DopContext *visited) {
 }
 
 
-DopPromise DopNode::get_output_by_name(std::string sock_name, DopContext *visited) {
+std::any DopNode::get_output_by_name(std::string sock_name, DopContext *visited) {
     int n = -1;
     for (int i = 0; i < outputs.size(); i++) {
         if (outputs[i].name == sock_name) {

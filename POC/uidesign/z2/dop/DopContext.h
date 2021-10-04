@@ -8,29 +8,29 @@
 namespace z2::dop {
 
 
-struct DopNode;
+//struct DopNode;
 
 
-using DopPromise = ztd::promise<std::any>;
-//using DopContext = std::set<std::string>;
+//using DopPromise = ztd::promise<std::any>;
+using DopContext = std::set<std::string>;
 
 
-struct DopContext {
-    std::vector<DopNode *> tasks;
-    std::set<DopNode *> visited;
+//struct DopContext {
+    //std::vector<DopNode *> tasks;
+    //std::set<DopNode *> visited;
 
-    struct Ticket {
-        DopContext *ctx;
-        DopNode *node;
+    //struct Ticket {
+        //DopContext *ctx;
+        //DopNode *node;
 
-        void wait() const;
-    };
+        //void wait() const;
+    //};
 
-    Ticket enqueue(DopNode *node) {
-        tasks.push_back(node);
-        return {this, node};
-    }
-};
+    //Ticket enqueue(DopNode *node) {
+        //tasks.push_back(node);
+        //return {this, node};
+    //}
+//};
 
 
 }  // namespace z2::dop

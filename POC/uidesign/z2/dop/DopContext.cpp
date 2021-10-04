@@ -5,12 +5,12 @@
 namespace z2::dop {
 
 
-void DopContext::Ticket::wait() const {
+/*void DopContext::Ticket::wait() const {
     if (!ctx->visited.contains(node)) {
         ctx->visited.insert(node);
         node->_apply_func(ctx);
     }
-}
+}*/
 
 
 }

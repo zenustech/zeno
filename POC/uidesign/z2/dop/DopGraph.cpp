@@ -68,7 +68,7 @@ void DopGraph::remove_node_input
 }
 
 
-DopPromise DopGraph::resolve_value(std::string expr, DopContext *visited) {
+std::any DopGraph::resolve_value(std::string expr, DopContext *visited) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
