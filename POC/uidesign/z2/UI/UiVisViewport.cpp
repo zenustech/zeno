@@ -1,7 +1,8 @@
+#include <glm/gtc/type_ptr.hpp>
 #include <z2/UI/UiVisViewport.h>
 #include <z2/UI/UiMainWindow.h>
+#include <z2/GL/Shader.h>
 #include <z2/ds/Mesh.h>
-#include <glm/gtc/type_ptr.hpp>
 
 
 namespace z2::UI {
@@ -24,6 +25,25 @@ void UiVisViewport::do_paint() {
 }
 
 
+
+static GL::Program *make_mesh_shader() {
+    static std::unique_ptr<GL::Program> prog;
+    if (!prog) {
+        GL::Shader vert(GL_VERTEX_SHADER);
+        vert.compile(R"(#version 310 core
+    )");
+        GL::Shader frag(GL_FRAGMENT_SHADER);
+        frag.compile(R"(#version 310 core
+    )");
+        prog = std::make_unique<GL::Program>();
+        prog->attach(vert);
+        prog->attach(frag);
+        prog->link();
+    }
+    return prog.get();
+}
+
+
 void UiVisViewport::paint() const {
     camera->nx = bbox.nx;
     camera->ny = bbox.ny;
@@ -34,6 +54,9 @@ void UiVisViewport::paint() const {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadMatrixf(glm::value_ptr(camera->proj));
+
+    auto prog = make_mesh_shader();
+    prog->use();
 
     if (auto object = get_parent()->scene->view_result; object.has_value()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);

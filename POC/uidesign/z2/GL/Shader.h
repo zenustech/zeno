@@ -12,7 +12,6 @@ namespace z2::GL {
 
 struct Shader {
     GLuint sha;
-    GLuint target{GL_ARRAY_BUFFER};
 
     Shader(GLuint type) {
         CHECK_GL(sha = glCreateShader(type));
