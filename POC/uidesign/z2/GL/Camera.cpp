@@ -9,9 +9,18 @@
 namespace z2::GL {
 
 
+void Camera::resize(int nx, int ny) {
+    this->nx = nx;
+    this->ny = ny;
+    update();
+}
+
+
 void Camera::uniform(Program *prog) {
     glm::mat4x4 mvp = proj * view;
+    //glm::mat4x4 mvp = view * proj;
     glm::mat4x4 inv_mvp = inverse(mvp);
+    prog->use();
     prog->set_uniform("u_mvp", mvp);
     prog->set_uniform("u_inv_mvp", inv_mvp);
     prog->set_uniform("u_view", view);

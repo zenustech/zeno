@@ -109,17 +109,10 @@ void main() {
 
 
 void UiVisViewport::paint() const {
-    camera->nx = bbox.nx;
-    camera->ny = bbox.ny;
-    camera->update();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
+    camera->resize(bbox.nx, bbox.ny);
 
     auto prog = make_mesh_shader();
     camera->uniform(prog);
-    prog->use();
 
     if (auto object = get_parent()->scene->view_result; object.has_value()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
@@ -143,10 +136,6 @@ void UiVisViewport::paint() const {
         glEnd();
     }
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
     glUseProgram(0);
 }
 
