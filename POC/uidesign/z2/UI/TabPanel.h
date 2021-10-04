@@ -7,10 +7,8 @@
 namespace z2::UI {
 
 
-struct TabPanel : Widget {
+struct TabPanel : Widget {  // TODO: WIP, complete to unlock a multi-dop-graph editor
     std::set<Widget *> elements;
-
-    TabPanel();
 
     template <class T, class ...Ts>
     Widget *add_element(Ts &&...ts) {
