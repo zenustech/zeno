@@ -126,23 +126,24 @@ void UiVisViewport::paint() const {
     if (auto object = get_parent()->scene->view_result; object.has_value()) {
         auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
 
-        glBegin(GL_TRIANGLES);
+        std::vector<ztd::vec3f> vertices;
         for (auto const &poly: mesh->poly) {
             if (poly.num <= 2) continue;
             int first = mesh->loop[poly.start];
             int last = mesh->loop[poly.start + 1];
             for (int l = poly.start + 2; l < poly.start + poly.num; l++) {
                 int now = mesh->loop[l];
-                glColor3f(1.f, 0.f, 0.f);
-                glVertex3fv(mesh->vert[first].data());
-                glColor3f(0.f, 1.f, 0.f);
-                glVertex3fv(mesh->vert[last].data());
-                glColor3f(0.f, 0.f, 1.f);
-                glVertex3fv(mesh->vert[now].data());
+                vertices.push_back(mesh->vert[first]);
+                vertices.push_back(mesh->vert[last]);
+                vertices.push_back(mesh->vert[now]);
                 last = now;
             }
         }
-        glEnd();
+        CHECK_GL(glEnableVertexAttribArray(0));
+        CHECK_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+                              sizeof(vertices[0]), vertices.data()));
+        CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 3 * vertices.size()));
+        CHECK_GL(glDisableVertexAttribArray(0));
     }
 
     glUseProgram(0);
