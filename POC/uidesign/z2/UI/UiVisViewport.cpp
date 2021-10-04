@@ -93,14 +93,17 @@ void main() {
     vec3 normal = normalize(cross(dFdx(v_position), dFdy(v_position)));
 
     vec3 v_color = vec3(0.8);
-    vec3 color = vec3(0.25);
+    vec3 color = vec3(0.1);
     vec3 light_dir;
 
     light_dir = normalize((u_inv_mv * vec4(1, 2, 5, 0)).xyz);
-    color += vec3(0.45, 0.47, 0.5) * pbr(v_color, 0.25, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.45, 0.47, 0.5) * pbr(v_color, 0.19, 0.0, 1.0, normal, light_dir, view_dir);
 
     light_dir = normalize((u_inv_mv * vec4(-4, -2, 1, 0)).xyz);
-    color += vec3(0.3, 0.28, 0.25) * pbr(v_color, 0.2, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.3, 0.23, 0.18) * pbr(v_color, 0.14, 0.0, 1.0, normal, light_dir, view_dir);
+
+    light_dir = normalize((u_inv_mv * vec4(3, -5, 2, 0)).xyz);
+    color += vec3(0.15, 0.2, 0.22) * pbr(v_color, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
 
     gl_FragColor = vec4(color, 1.0);
 }

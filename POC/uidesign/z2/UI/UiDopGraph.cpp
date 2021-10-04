@@ -103,7 +103,7 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 
 UiDopGraph::UiDopGraph() {
     auto c = add_node("readobj", {100, 256});
-    c->bk_node->inputs[0].value = "assets/bowl.obj";
+    c->bk_node->inputs[0].value = "assets/monkey.obj";
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
