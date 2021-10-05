@@ -39,15 +39,16 @@ std::any DopNode::get_output_by_name(std::string sock_name) {
 
 
 void DopNode::resolve_depends(DopDepsgraph *deps) {
-    if (!deps->contains_node(this)) {
-        std::set<DopNode *> depnodes;
-        for (int i = 0; i < inputs.size(); i++) {
-            if (auto n = graph->resolve_depends(inputs[i].value, deps)) {
-                depnodes.insert(n);
-            }
+    if (deps->contains_node(this))
+        return;
+
+    std::set<DopNode *> depnodes;
+    for (int i = 0; i < inputs.size(); i++) {
+        if (auto n = graph->resolve_depends(inputs[i].value, deps)) {
+            depnodes.insert(n);
         }
-        deps->insert_node(this, std::move(depnodes));
     }
+    deps->insert_node(this, std::move(depnodes));
 }
 
 
