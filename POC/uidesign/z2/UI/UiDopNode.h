@@ -28,7 +28,7 @@ struct UiDopNode : GraphicsRectItem {
     void _update_backend_data() const;
     UiDopInputSocket *add_input_socket();
     UiDopOutputSocket *add_output_socket();
-    void on_position_changed() override;
+    void set_position(Point pos) override;
     UiDopGraph *get_parent() const;
     void paint() const override;
 };

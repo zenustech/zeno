@@ -41,7 +41,7 @@ void DopDepsgraph::execute() {
 
     auto touch = [&] (auto touch, DopNode *node) -> OrderInfo & {
         OrderInfo ord{node->xpos, 0};
-        if (!order.contains(node)) {
+        if (order.contains(node)) {
             return order.at(node);
         } else {
             auto const &deps = nodes.at(node);

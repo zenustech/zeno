@@ -11,8 +11,6 @@ struct GraphicsWidget : Widget {
     bool selected = false;
     bool selectable = false;
     bool draggable = false;
-
-    virtual void on_position_changed();
 };
 
 

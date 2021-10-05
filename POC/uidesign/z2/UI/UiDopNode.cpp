@@ -3,7 +3,8 @@
 namespace z2::UI {
 
 
-void UiDopNode::on_position_changed() {
+void UiDopNode::set_position(Point pos) {
+    Widget::set_position(pos);
     bk_node->xpos = position.x;
     bk_node->ypos = position.y;
 }
