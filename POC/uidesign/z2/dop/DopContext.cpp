@@ -28,11 +28,13 @@ void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
 
 void DopDepsgraph::execute() {
     struct OrderInfo {
-        float xorder = 0;
-        int torder = 0;
+        float new_order = 0;
+        int dep_order = 0;
+        float old_order = 0;
 
         bool operator<(OrderInfo const &that) const {
-            return xorder < that.xorder || torder < that.torder;
+            return new_order < that.new_order
+                || dep_order < that.dep_order;
         }
     };
 
@@ -47,9 +49,10 @@ void DopDepsgraph::execute() {
             auto const &deps = nodes.at(node);
             for (auto *dep: deps) {
                 auto &depord = touch(touch, dep);
-                if (ord.xorder < depord.xorder) {
-                    ord.xorder = depord.xorder;
-                    ord.torder = depord.torder - 1;
+                if (depord.new_order >= ord.new_order) {
+                    depord.new_order = ord.new_order;
+                    depord.dep_order = std::min(
+                        depord.dep_order, ord.dep_order - 1);
                 }
             }
             auto it = order.emplace(node, ord).first;
