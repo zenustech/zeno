@@ -12,7 +12,7 @@ struct DopNode;
 
 
 struct DopDepsgraph {
-    std::map<DopNode *, std::set<DopNode *>> nodes;
+    std::map<DopNode *, std::set<DopNode *>> nodeps;
 
     bool contains_node(DopNode *node) const;
     void insert_node(DopNode *node, std::set<DopNode *> &&deps);
