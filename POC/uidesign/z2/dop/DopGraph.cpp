@@ -74,9 +74,7 @@ void DopGraph::resolve_depends(std::string expr, DopDepsgraph *deps) {
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
-        if (deps->insert_node(node)) {
-            node->resolve_depends(deps);
-        }
+        node->resolve_depends(deps);
     }
 }
 

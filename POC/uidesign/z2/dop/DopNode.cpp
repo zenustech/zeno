@@ -17,7 +17,7 @@ void DopNode::set_output(int i, std::any val) {
 }
 
 
-void DopNode::_apply_func() {
+void DopNode::execute() {
     auto func = tab.lookup(kind);
     func(this);
 }
@@ -39,7 +39,7 @@ std::any DopNode::get_output_by_name(std::string sock_name) {
 
 
 void DopNode::resolve_depends(DopDepsgraph *deps) {
-    if (deps->insert_node(node)) {
+    if (deps->insert_node(this)) {
         for (int i = 0; i < inputs.size(); i++) {
             graph->resolve_depends(inputs[i].value, deps);
         }

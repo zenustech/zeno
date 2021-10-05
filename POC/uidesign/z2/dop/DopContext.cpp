@@ -16,9 +16,17 @@ namespace z2::dop {
 bool DopDepsgraph::insert_node(DopNode *node) {
     if (!nodes.contains(node)) {
         nodes.insert(node);
+        order.push_back(node);
         return true;
     } else {
         return false;
+    }
+}
+
+
+void DopDepsgraph::execute() {
+    for (auto *node: order) {
+        node->execute();
     }
 }
 

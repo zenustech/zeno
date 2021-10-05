@@ -21,7 +21,7 @@ struct DopNode {
     std::vector<DopOutputSocket> outputs;
     float xorder = 0;
 
-    void _apply_func();
+    void execute();
     std::any get_output_by_name(std::string sock_name);
     void resolve_depends(DopDepsgraph *deps);
     void serialize(std::ostream &ss) const;

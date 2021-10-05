@@ -112,7 +112,11 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        auto val = bk_graph->resolve_value("@first1:lhs");
+        std::string expr = "@first1:lhs";
+        dop::DopDepsgraph deps;
+        bk_graph->resolve_depends(expr, &deps);
+        deps.execute();
+        auto val = bk_graph->resolve_value(expr);
         get_parent()->set_view_result(val);
     });
 }

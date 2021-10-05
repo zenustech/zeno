@@ -13,8 +13,10 @@ struct DopNode;
 
 struct DopDepsgraph {
     std::set<DopNode *> nodes;
+    std::vector<DopNode *> order;
 
     bool insert_node(DopNode *node);
+    void execute();
 };
 
 
