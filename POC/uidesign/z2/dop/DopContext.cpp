@@ -1,5 +1,6 @@
 #include <z2/dop/DopContext.h>
 #include <z2/dop/DopNode.h>
+#include <ranges>
 
 
 namespace z2::dop {
@@ -25,9 +26,11 @@ bool DopDepsgraph::insert_node(DopNode *node) {
 
 
 void DopDepsgraph::execute() {
-    for (auto *node: order) {
+#ifndef __CLANGD__
+    for (auto *node: order | std::views::reverse) {
         node->execute();
     }
+#endif
 }
 
 
