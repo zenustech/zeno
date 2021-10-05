@@ -26,22 +26,25 @@ void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
 }
 
 
+struct OrderInfo {
+    float new_order = 0;
+    int dep_order = 0;
+    float old_order = 0;
+
+    bool operator<(OrderInfo const &that) const {
+        return new_order < that.new_order || dep_order < that.dep_order;
+    }
+};
+
+
 void DopDepsgraph::execute() {
-    std::vector<DopNode *> nodes;
-    {   /* pre-sort to make x-ordering work */
-        struct OrderInfo {
-            float new_order = 0;
-            int dep_order = 0;
-            float old_order = 0;
+    std::set<DopNode *> visited;
 
-            bool operator<(OrderInfo const &that) const {
-                return new_order < that.new_order || dep_order < that.dep_order;
-            }
-        };
-
+    auto resolve = [&, this] (auto resolve) {
+        std::vector<DopNode *> nodes;
         std::map<DopNode *, OrderInfo> order;
 
-        auto touch = [&] (auto touch, DopNode *node) -> OrderInfo & {
+        auto touch = [&, this] (auto touch, DopNode *node) -> OrderInfo & {
             OrderInfo ord{node->xpos, 0};
             if (order.contains(node)) {
                 return order.at(node);
@@ -67,7 +70,16 @@ void DopDepsgraph::execute() {
         std::sort(nodes.begin(), nodes.end(), [&] (DopNode *p, DopNode *q) {
             return order.at(p) < order.at(q);
         });
-    }
+
+        for (auto *node: nodes) {
+            if (!visited.contains(node)) {
+                visited.insert(node);
+                node->execute();
+            }
+        }
+    };
+
+    resolve(resolve);
 
 #if 0
     0 = readobj;
@@ -99,7 +111,6 @@ void DopDepsgraph::execute() {
             }
         }
     }
-#endif
 
     {   /* cihou control flow nodes */
         auto touch = [&] (auto touch, int idx0) -> std::any {
@@ -126,12 +137,7 @@ void DopDepsgraph::execute() {
             }
         };
     }
-
-    {   /* final execution */
-        for (auto *node: nodes) {
-            node->execute();
-        }
-    }
+#endif
 }
 
 
