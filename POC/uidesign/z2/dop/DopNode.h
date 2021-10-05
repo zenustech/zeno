@@ -23,6 +23,7 @@ struct DopNode {
     float xpos = 0, ypos = 0;
 
     void execute();
+    //void prepare();
     std::any get_output_by_name(std::string sock_name);
     void resolve_depends(DopDepsgraph *deps);
     void serialize(std::ostream &ss) const;

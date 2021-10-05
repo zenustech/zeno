@@ -33,8 +33,7 @@ void DopDepsgraph::execute() {
         float old_order = 0;
 
         bool operator<(OrderInfo const &that) const {
-            return new_order < that.new_order
-                || dep_order < that.dep_order;
+            return new_order < that.new_order || dep_order < that.dep_order;
         }
     };
 
@@ -67,6 +66,10 @@ void DopDepsgraph::execute() {
     std::sort(node_list.begin(), node_list.end(), [&] (DopNode *p, DopNode *q) {
         return order.at(p) < order.at(q);
     });
+
+    /*for (auto *node: node_list noclangd(| std::views::reverse)) {
+        node->prepare();
+    }*/
 
     for (auto *node: node_list) {
         node->execute();
