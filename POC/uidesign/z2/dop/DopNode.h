@@ -19,7 +19,8 @@ struct DopNode {
     std::string kind;
     std::vector<DopInputSocket> inputs;
     std::vector<DopOutputSocket> outputs;
-    float xorder = 0;
+
+    float xpos = 0, ypos = 0;
 
     void execute();
     std::any get_output_by_name(std::string sock_name);

@@ -27,18 +27,30 @@ void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
 
 
 void DopDepsgraph::execute() {
-    //std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> order;
-    std::vector<DopNode *> order;
+    struct OrderInfo {
+        float xorder = 0;
+        int torder = 0;
+
+        bool operator<(OrderInfo const &that) const {
+            return xorder < that.xorder || torder < that.torder;
+        }
+    };
+
+    std::vector<DopNode *> node_list;
+    std::map<DopNode *, OrderInfo> order;
 
     for (auto const &[node, deps]: nodes) {
-        order.push_back(node);
+        if (!order.contains(node)) {
+            order.emplace(node, OrderInfo{node->xpos, 0});
+        }
+        node_list.push_back(node);
     }
 
-    std::sort(order.begin(), order.end(), [] (DopNode *p, DopNode *q) {
-        return p->xorder < q->xorder;
+    std::sort(node_list.begin(), node_list.end(), [&] (DopNode *p, DopNode *q) {
+        return order.at(p) < order.at(q);
     });
 
-    for (auto *node: order) {
+    for (auto *node: node_list) {
         node->execute();
     }
 }

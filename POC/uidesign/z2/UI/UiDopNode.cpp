@@ -4,7 +4,8 @@ namespace z2::UI {
 
 
 void UiDopNode::on_position_changed() {
-    bk_node->xorder = position.x;
+    bk_node->xpos = position.x;
+    bk_node->ypos = position.y;
 }
 
 
