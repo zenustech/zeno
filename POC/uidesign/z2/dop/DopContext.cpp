@@ -40,7 +40,7 @@ struct OrderInfo {
 void DopDepsgraph::execute() {
     std::set<DopNode *> visited;
 
-    auto resolve = [&, this] (auto resolve) {
+    auto resolve = [&, this] (auto resolve, DopNode *root) {
         std::vector<DopNode *> nodes;
         std::map<DopNode *, OrderInfo> order;
 
@@ -49,6 +49,7 @@ void DopDepsgraph::execute() {
             if (order.contains(node)) {
                 return order.at(node);
             } else {
+                nodes.push_back(node);
                 auto const &deps = nodeps.at(node);
                 for (auto *dep: deps) {
                     auto &depord = touch(touch, dep);
@@ -62,10 +63,7 @@ void DopDepsgraph::execute() {
             }
         };
 
-        for (auto const &[node, deps]: nodeps) {
-            touch(touch, node);
-            nodes.push_back(node);
-        }
+        touch(touch, root);
 
         std::sort(nodes.begin(), nodes.end(), [&] (DopNode *p, DopNode *q) {
             return order.at(p) < order.at(q);
@@ -79,7 +77,9 @@ void DopDepsgraph::execute() {
         }
     };
 
-    resolve(resolve);
+    for (auto const &[node, deps]: nodeps) {
+        resolve(resolve, node);
+    }
 
 #if 0
     0 = readobj;
