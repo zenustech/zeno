@@ -15,7 +15,8 @@ struct DopDepsgraph {
     std::set<DopNode *> nodes;
     std::vector<DopNode *> order;
 
-    bool insert_node(DopNode *node);
+    bool contains_node(DopNode *node) const;
+    void insert_node(DopNode *node);
     void execute();
 };
 
