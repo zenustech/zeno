@@ -13,4 +13,14 @@ namespace z2::dop {
 }*/
 
 
+bool DopDepsgraph::insert_node(DopNode *node) {
+    if (!nodes.contains(node)) {
+        nodes.insert(node);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
 }

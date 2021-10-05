@@ -34,8 +34,16 @@ std::any DopNode::get_output_by_name(std::string sock_name) {
     if (n == -1)
         throw ztd::make_error("Bad output socket name: ", sock_name);
 
-    _apply_func();
     return outputs[n].result;
+}
+
+
+void DopNode::resolve_depends(DopDepsgraph *deps) {
+    if (deps->insert_node(node)) {
+        for (int i = 0; i < inputs.size(); i++) {
+            graph->resolve_depends(inputs[i].value, deps);
+        }
+    }
 }
 
 
