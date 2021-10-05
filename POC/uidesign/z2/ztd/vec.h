@@ -408,6 +408,22 @@ constexpr auto operator~(T1 const &t1) {
 /* scalar math functions */
 
 template <class T1>
+    requires (std::is_void_v<std::void_t<decltype(std::floor(std::declval<typename vec_traits<T1>::type>()))>>)
+constexpr auto floor(T1 const &t1) {
+    return vapply([] (auto const &t1) -> decltype(auto) {
+        return std::floor(t1);
+    }, t1);
+}
+
+template <class T1>
+    requires (std::is_void_v<std::void_t<decltype(std::ceil(std::declval<typename vec_traits<T1>::type>()))>>)
+constexpr auto ceil(T1 const &t1) {
+    return vapply([] (auto const &t1) -> decltype(auto) {
+        return std::ceil(t1);
+    }, t1);
+}
+
+template <class T1>
     requires (std::is_void_v<std::void_t<decltype(std::sin(std::declval<typename vec_traits<T1>::type>()))>>)
 constexpr auto sin(T1 const &t1) {
     return vapply([] (auto const &t1) -> decltype(auto) {
@@ -628,7 +644,7 @@ constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool anytrue(vec<N, T> const &a) {
+bool vany(vec<N, T> const &a) {
     bool ret = false;
     for (size_t i = 0; i < N; i++) {
         ret = ret || (bool)a[i];
@@ -638,13 +654,13 @@ bool anytrue(vec<N, T> const &a) {
 
 template <class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool anytrue(T const &t) {
+bool vany(T const &t) {
     return (bool)t;
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool alltrue(vec<N, T> const &t) {
+bool vall(vec<N, T> const &t) {
     bool ret = true;
     for (size_t i = 0; i < N; i++) {
         ret = ret && (bool)t[i];
@@ -654,7 +670,7 @@ bool alltrue(vec<N, T> const &t) {
 
 template <class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool alltrue(T const &t) {
+bool vall(T const &t) {
     return (bool)t;
 }
 
