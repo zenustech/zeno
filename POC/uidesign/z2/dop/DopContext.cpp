@@ -23,25 +23,24 @@ bool DopDepsgraph::contains_node(DopNode *node) const {
 
 void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
     nodes.emplace(node, std::move(deps));
-    order.push_back(node);
 }
 
 
-/*struct compare_op {
-    bool operator()(DopNode *p, DopNode *q) const {
-        return p->xorder > q->xorder;
-    }
-};
-
-std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> que;*/
-
-
 void DopDepsgraph::execute() {
+    //std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> order;
+    std::vector<DopNode *> order;
+
+    for (auto const &[node, deps]: nodes) {
+        order.push_back(node);
+    }
+
+    std::sort(order.begin(), order.end(), [] (DopNode *p, DopNode *q) {
+        return p->xorder < q->xorder;
+    });
+
     for (auto *node: order) {
         node->execute();
     }
-    //for (auto const &[node, deps]: nodes) {
-    //}
 }
 
 
