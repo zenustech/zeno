@@ -1,6 +1,8 @@
 #include <z2/dop/DopContext.h>
 #include <z2/dop/DopNode.h>
+#include <algorithm>
 #include <ranges>
+#include <queue>
 
 
 namespace z2::dop {
@@ -25,12 +27,18 @@ void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
 }
 
 
-void DopDepsgraph::execute() {
-#ifndef __CLANGD__
-    for (auto *node: order) {
-        node->execute();
+struct compare_op {
+    bool operator()(DopNode *p, DopNode *q) const {
+        return p->xorder > q->xorder;
     }
-#endif
+};
+
+std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> que;
+
+
+void DopDepsgraph::execute() {
+    for (auto const &[node, deps]: nodes) {
+    }
 }
 
 
