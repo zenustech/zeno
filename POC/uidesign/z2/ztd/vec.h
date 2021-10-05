@@ -223,7 +223,7 @@ constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2, vec<N, T3> con
 /* casting utilities */
 
 template <class S, size_t N, class T>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && (std::convertible_to<T, S> || std::constructible_from<S, T>))
+    requires (!vec_traits<S>::value && !vec_traits<T>::value && (std::convertible_to<T, S> || std::constructible_from<S, T>))
 constexpr vec<N, S> vcast(vec<N, T> const &t) {
     if constexpr (std::is_convertible_v<T, S>) {
         return t;
@@ -233,7 +233,7 @@ constexpr vec<N, S> vcast(vec<N, T> const &t) {
 }
 
 template <class S, class T>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && (std::convertible_to<T, S> || std::constructible_from<S, T>))
+    requires (!vec_traits<S>::value && !vec_traits<T>::value && (std::convertible_to<T, S> || std::constructible_from<S, T>))
 constexpr S vcast(T const &t) {
     if constexpr (std::is_convertible_v<T, S>) {
         return t;
@@ -677,15 +677,15 @@ constexpr bool vall(T const &t) {
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
 constexpr auto dot(T1 const &t1, T2 const &t2) {
-    return a * b;
+    return t1 * t2;
 }
 
 template <size_t N, class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
 constexpr auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
-    std::decay_t<decltype(a[0] * b[0])> res(0);
+    std::decay_t<decltype(t1[0] * t2[0])> res(0);
     for (size_t i = 0; i < N; i++) {
-        res += a[i] * b[i];
+        res += t1[i] * t2[i];
     }
     return res;
 }
@@ -693,7 +693,7 @@ constexpr auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
 constexpr auto length(vec<N, T> const &t) {
-    std::decay_t<decltype(a[0])> res(0);
+    T res(0);
     for (size_t i = 0; i < N; i++) {
         res += t[i] * t[i];
     }
@@ -707,36 +707,36 @@ constexpr auto distance(vec<N, T1> const &t1, vec<N, T2> const &t2) {
 }
 
 template <size_t N, class T>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+    requires (!vec_traits<T>::value)
 constexpr auto normalize(vec<N, T> const &t) {
     return t * (T(1) / length(t));
 }
 
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-constexpr auto cross(vec<2, T1> const &a, vec<2, T2> const &b) {
-    return a[0] * b[1] - b[0] * a[1];
+constexpr auto cross(vec<2, T1> const &t1, vec<2, T2> const &t2) {
+    return t1[0] * t2[1] - t2[0] * t1[1];
 }
 
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-constexpr auto cross(vec<3, T1> const &a, vec<3, T2> const &b) {
-    return vec<3, std::decay_t<decltype(a[0] * b[0])>>(
-      a[1] * b[2] - b[1] * a[2],
-      a[2] * b[0] - b[2] * a[0],
-      a[0] * b[1] - b[0] * a[1]);
+constexpr auto cross(vec<3, T1> const &t1, vec<3, T2> const &t2) {
+    return vec<3, std::decay_t<decltype(t1[0] * t2[0])>>(
+      t1[1] * t2[2] - t2[1] * t1[2],
+      t1[2] * t2[0] - t2[2] * t1[0],
+      t1[0] * t2[1] - t2[0] * t1[1]);
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-constexpr auto tovec(T const &x) {
-  return vec<N, T>(x);
+constexpr auto tovec(T const &t) {
+  return vec<N, T>(t);
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-constexpr auto tovec(vec<N, T> const &x) {
-    return x;
+constexpr auto tovec(vec<N, T> const &t) {
+    return t;
 }
 
 
