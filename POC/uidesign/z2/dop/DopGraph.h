@@ -28,12 +28,7 @@ struct DopGraph {
         , int to_socket_index
         );
 
-    std::any resolve_value(std::string expr, DopContext *visited);
-
-    inline std::any resolve_value(std::string expr) {
-        DopContext visited;
-        return resolve_value(expr, &visited);
-    }
+    std::any resolve_value(std::string expr);
 };
 
 

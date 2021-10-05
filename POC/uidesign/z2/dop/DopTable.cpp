@@ -14,8 +14,8 @@ static int def_route = tab.define("route", {{
     {"value"},
 }, {
     {"value"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto value = node->get_input(0, visited);
+}, [] (DopNode *node) {
+    auto value = node->get_input(0);
     printf("route\n");
     node->set_output(0, value);
 }});
@@ -28,9 +28,9 @@ static int def_first = tab.define("first", {{
     {"rhs"},
 }, {
     {"lhs"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto lhs = node->get_input(0, visited);
-    auto rhs = node->get_input(1, visited);
+}, [] (DopNode *node) {
+    auto lhs = node->get_input(0);
+    auto rhs = node->get_input(1);
     printf("first\n");
     node->set_output(0, lhs);
 }});
@@ -43,11 +43,10 @@ static int def_repeat = tab.define("repeat", {{
     {"times"},
 }, {
     {"value"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto times = std::any_cast<int>(node->get_input(1, visited));
+}, [] (DopNode *node) {
+    auto times = std::any_cast<int>(node->get_input(1));
     for (int i = 0; i < times; i++) {
-        auto saved_visited = *visited;
-        node->get_input(0, &saved_visited);
+        node->get_input(0);
     }
     printf("repeat\n");
     node->set_output(0, 32);
@@ -62,14 +61,14 @@ static int def_if = tab.define("if", {{
     {"else"},
 }, {
     {"value"},
-}, [] (DopNode *node, DopContext *visited) {
-    auto cond = std::any_cast<int>(node->get_input(0, visited));
+}, [] (DopNode *node) {
+    auto cond = std::any_cast<int>(node->get_input(0));
     if (cond) {
         printf("if[1]\n");
-        node->set_output(0, node->get_input(1, visited));
+        node->set_output(0, node->get_input(1));
     } else {
         printf("if[0]\n");
-        node->set_output(0, node->get_input(2, visited));
+        node->set_output(0, node->get_input(2));
     }
 }});
 

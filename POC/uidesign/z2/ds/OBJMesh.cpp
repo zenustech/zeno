@@ -96,8 +96,8 @@ static int def_readobj = dop::tab.define("readobj", {{
     {"path"},
 }, {
     {"mesh"},
-}, [] (dop::DopNode *node, dop::DopContext *visited) {
-    auto path = std::any_cast<std::string>(node->get_input(0, visited));
+}, [] (dop::DopNode *node) {
+    auto path = std::any_cast<std::string>(node->get_input(0));
     auto mesh = std::make_shared<Mesh>();
     std::ifstream ifs(path);
     readMeshFromOBJ(ifs, *mesh);
