@@ -39,10 +39,26 @@ void DopDepsgraph::execute() {
     std::vector<DopNode *> node_list;
     std::map<DopNode *, OrderInfo> order;
 
-    for (auto const &[node, deps]: nodes) {
+    auto touch = [&] (auto touch, DopNode *node) -> OrderInfo & {
+        OrderInfo ord{node->xpos, 0};
         if (!order.contains(node)) {
-            order.emplace(node, OrderInfo{node->xpos, 0});
+            return order.at(node);
+        } else {
+            auto const &deps = nodes.at(node);
+            for (auto *dep: deps) {
+                auto &depord = touch(touch, dep);
+                if (ord.xorder < depord.xorder) {
+                    ord.xorder = depord.xorder;
+                    ord.torder = depord.torder - 1;
+                }
+            }
+            auto it = order.emplace(node, ord).first;
+            return it->second;
         }
+    };
+
+    for (auto const &[node, deps]: nodes) {
+        touch(touch, node);
         node_list.push_back(node);
     }
 
