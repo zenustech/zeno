@@ -27,18 +27,21 @@ void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
 }
 
 
-struct compare_op {
+/*struct compare_op {
     bool operator()(DopNode *p, DopNode *q) const {
         return p->xorder > q->xorder;
     }
 };
 
-std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> que;
+std::priority_queue<DopNode *, std::vector<DopNode *>, compare_op> que;*/
 
 
 void DopDepsgraph::execute() {
-    for (auto const &[node, deps]: nodes) {
+    for (auto *node: order) {
+        node->execute();
     }
+    //for (auto const &[node, deps]: nodes) {
+    //}
 }
 
 
