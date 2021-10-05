@@ -405,7 +405,7 @@ constexpr auto operator~(T1 const &t1) {
 }
 
 
-/* math functions */
+/* scalar math functions */
 
 template <class T1>
     requires (std::is_void_v<std::void_t<decltype(std::sin(std::declval<typename vec_traits<T1>::type>()))>>)
@@ -623,6 +623,105 @@ constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
     }, t1, t2, t3);
 }
 
+
+/* vector math functions */
+
+template <size_t N, class T>
+    requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
+bool anytrue(vec<N, T> const &a) {
+    bool ret = false;
+    for (size_t i = 0; i < N; i++) {
+        ret = ret || (bool)a[i];
+    }
+    return ret;
+}
+
+template <class T>
+    requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
+bool anytrue(T const &t) {
+    return (bool)t;
+}
+
+template <size_t N, class T>
+    requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
+bool alltrue(vec<N, T> const &t) {
+    bool ret = true;
+    for (size_t i = 0; i < N; i++) {
+        ret = ret && (bool)t[i];
+    }
+    return ret;
+}
+
+template <class T>
+    requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
+bool alltrue(T const &t) {
+    return (bool)t;
+}
+
+template <class T1, class T2>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto dot(T1 const &t1, T2 const &t2) {
+    return a * b;
+}
+
+template <size_t N, class T1, class T2>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
+    std::decay_t<decltype(a[0] * b[0])> res(0);
+    for (size_t i = 0; i < N; i++) {
+        res += a[i] * b[i];
+    }
+    return res;
+}
+
+template <size_t N, class T>
+    requires (!vec_traits<T>::value)
+auto length(vec<N, T> const &t) {
+    std::decay_t<decltype(a[0])> res(0);
+    for (size_t i = 0; i < N; i++) {
+        res += t[i] * t[i];
+    }
+    return std::sqrt(res);
+}
+
+template <size_t N, class T1, class T2>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto distance(vec<N, T1> const &t1, vec<N, T2> const &t2) {
+    return length(t2 - t1);
+}
+
+template <size_t N, class T>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto normalize(vec<N, T> const &t) {
+    return t * (T(1) / length(t));
+}
+
+template <class T1, class T2>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto cross(vec<2, T1> const &a, vec<2, T2> const &b) {
+    return a[0] * b[1] - b[0] * a[1];
+}
+
+template <class T1, class T2>
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
+auto cross(vec<3, T1> const &a, vec<3, T2> const &b) {
+    return vec<3, std::decay_t<decltype(a[0] * b[0])>>(
+      a[1] * b[2] - b[1] * a[2],
+      a[2] * b[0] - b[2] * a[0],
+      a[0] * b[1] - b[0] * a[1]);
+}
+
+template <size_t N, class T>
+    requires (!vec_traits<T>::value)
+auto tovec(T const &x) {
+  return vec<N, T>(x);
+}
+
+template <size_t N, class T>
+    requires (!vec_traits<T>::value)
+auto tovec(vec<N, T> const &x) {
+    return x;
+}
 
 
 /* common type aliases */
