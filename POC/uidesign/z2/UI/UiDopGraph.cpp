@@ -188,7 +188,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
-    node->position = pos;
+    node->set_position(pos);
     node->kind = kind;
     auto const &desc = dop::tab.desc_of(kind);
     for (auto const &sock_info: desc.inputs) {
