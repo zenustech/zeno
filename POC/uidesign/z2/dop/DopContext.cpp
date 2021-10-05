@@ -51,8 +51,7 @@ void DopDepsgraph::execute() {
                 auto &depord = touch(touch, dep);
                 if (depord.new_order >= ord.new_order) {
                     depord.new_order = ord.new_order;
-                    depord.dep_order = std::min(
-                        depord.dep_order, ord.dep_order - 1);
+                    depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
                 }
             }
             auto it = order.emplace(node, ord).first;
