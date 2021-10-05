@@ -68,14 +68,16 @@ void DopGraph::remove_node_input
 }
 
 
-void DopGraph::resolve_depends(std::string expr, DopDepsgraph *deps) {
+DopNode *DopGraph::resolve_depends(std::string expr, DopDepsgraph *deps) {
     if (expr[0] == '@') {
         auto i = expr.find(':');
         auto node_n = expr.substr(1, i - 1);
         auto socket_n = expr.substr(i + 1);
         auto *node = nodes.at(node_n).get();
         node->resolve_depends(deps);
+        return node;
     }
+    return nullptr;
 }
 
 

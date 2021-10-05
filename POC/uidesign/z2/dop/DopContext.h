@@ -12,11 +12,11 @@ struct DopNode;
 
 
 struct DopDepsgraph {
-    std::set<DopNode *> nodes;
+    std::map<DopNode *, std::set<DopNode *>> nodes;
     std::vector<DopNode *> order;
 
     bool contains_node(DopNode *node) const;
-    void insert_node(DopNode *node);
+    void insert_node(DopNode *node, std::set<DopNode *> &&deps);
     void execute();
 };
 

@@ -29,7 +29,7 @@ struct DopGraph {
         );
 
     std::any resolve_value(std::string expr);
-    void resolve_depends(std::string expr, DopDepsgraph *deps);
+    DopNode *resolve_depends(std::string expr, DopDepsgraph *deps);
 };
 
 

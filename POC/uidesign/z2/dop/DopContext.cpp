@@ -19,15 +19,15 @@ bool DopDepsgraph::contains_node(DopNode *node) const {
 }
 
 
-void DopDepsgraph::insert_node(DopNode *node) {
-    nodes.insert(node);
+void DopDepsgraph::insert_node(DopNode *node, std::set<DopNode *> &&deps) {
+    nodes.emplace(node, std::move(deps));
     order.push_back(node);
 }
 
 
 void DopDepsgraph::execute() {
 #ifndef __CLANGD__
-    for (auto *node: order | std::views::reverse) {
+    for (auto *node: order) {
         node->execute();
     }
 #endif
