@@ -243,7 +243,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
 
     menu = get_parent()->add_child<UiDopContextMenu>();
     menu->position = position + translate + Point(cur.x, cur.y) * scaling;
-    for (auto const &key: dop::entry_names()) {
+    for (auto const &key: dop::desc_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();
