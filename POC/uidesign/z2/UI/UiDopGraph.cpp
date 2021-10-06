@@ -112,11 +112,19 @@ static std::any parse_any(std::string const &expr) {
 
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
+
+    std::map<std::string, UiDopNode *> nodes_lut;
+    for (auto *node: nodes) {
+        nodes_lut.emplace(node->name, node);
+    }
+
     for (auto *node: nodes) {
         auto n = g->add_node(dop::desc_of(node->kind));
+
         for (int i = 0; node->inputs.size(); i++) {
             auto expr = node->inputs[i]->value;
             dop::Input input;
+
             if (expr.starts_with("@")) {
                 expr = expr.substr(1);
                 auto p = expr.find(':');
@@ -126,14 +134,17 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                     outid = get_outid(outname);
                 }*/
                 auto outnodename = expr.substr(0, p);
-                auto outnode = nodes_lut.at(nodename);
+                auto outnode = nodes_lut.at(outnodename);
                 input = outnode; // dop::Input_Link(outnode, outid);
+
             } else {
                 input = parse_any(expr); // dop::Input_Param(parse_any(expr));
             }
+
             n->inputs.at(i) = input;
         }
     }
+    return g;
 }
 
 
@@ -148,7 +159,7 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        auto g = this->dump();
+        auto g = this->dump_graph();
         std::set<dop::Node *> visited;
         auto val = dop::resolve(g->nodes.at(2).get(), visited);
         get_parent()->set_view_result(val);
