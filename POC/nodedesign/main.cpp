@@ -9,14 +9,9 @@
 
 template <class ...Fs>
 struct match : private Fs... {
-    match(Fs &&...fs)
-        : Fs(std::forward<Fs>(fs))... {}
-
+    match(Fs &&...fs) : Fs(std::forward<Fs>(fs))... {}
     using Fs::operator()...;
 };
-
-template <class ...Fs>
-match(Fs &&...) -> match<Fs...>;
 
 
 struct Node;
@@ -136,6 +131,7 @@ std::any getval(Input const &input) {
     }), input);
 }
 
+
 int main() {
     auto g = std::make_unique<Graph>();
     g->nodes.resize(5);
@@ -154,7 +150,7 @@ int main() {
     g->nodes[2]->inputs[1] = g->nodes[1].get();
 
     std::set<Node *> visited;
-    g->resolve(g->nodes[2].get(), visited);
+    resolve(g->nodes[2].get(), visited);
     //printf("%d\n", std::any_cast<int>(ret));
     return 0;
 }
