@@ -9,6 +9,7 @@
 
 
 namespace z2::ds {
+namespace {
 
 
 inline ztd::vec3f read_vec3f(std::string_view const &exp) {
@@ -90,20 +91,25 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 }
 
 
-static int def_readobj = dop::tab.define("readobj", {{
+
+struct ReadOBJ : dop::Node {
+    void apply() override {
+        auto path = get_input<std::string>(0);
+        auto mesh = std::make_shared<Mesh>();
+        std::ifstream fin(path);
+        readMeshFromOBJ(fin, *mesh);
+        set_output(0, mesh);
+    }
+};
+
+static int def_readobj = dop::define<ReadOBJ>("readobj", {{
     "mesh", "load mesh from .obj file",
 }, {
     {"path"},
 }, {
     {"mesh"},
-}, [] (dop::DopNode *node) {
-    auto path = std::any_cast<std::string>(node->get_input(0));
-    auto mesh = std::make_shared<Mesh>();
-    std::ifstream ifs(path);
-    readMeshFromOBJ(ifs, *mesh);
-    printf("readobj\n");
-    node->set_output(0, mesh);
-}});
+});
 
 
+}
 }
