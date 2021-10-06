@@ -27,12 +27,13 @@ using Input = std::variant<std::any, Node *>;
 
 struct Graph {
     std::vector<std::unique_ptr<Node>> nodes;
-
-    static std::any getval(Input const &input);
-    static std::any resolve(Input const &input, std::set<Node *> &visited);
-    static void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
-    static void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 };
+
+
+static std::any getval(Input const &input);
+static std::any resolve(Input const &input, std::set<Node *> &visited);
+static void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
+static void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 
 
 struct Node {
@@ -40,24 +41,27 @@ struct Node {
     std::vector<Input> inputs;
     std::any result;
 
-    virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
-        for (auto node: inputs) {
-            Graph::touch(node, tolink, visited);
-        }
-        tolink.push_back(this);
-    }
-
+    virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
     virtual void apply() = 0;
 };
 
 
+
+void Node::preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
+    for (auto node: inputs) {
+        touch(node, tolink, visited);
+    }
+    tolink.push_back(this);
+}
+
+
 struct If : Node {
     void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
-        auto cond = std::any_cast<int>(Graph::resolve(inputs[0], visited));
+        auto cond = std::any_cast<int>(resolve(inputs[0], visited));
         if (cond) {
-            Graph::touch(inputs[1], tolink, visited);
+            touch(inputs[1], tolink, visited);
         } else {
-            Graph::touch(inputs[2], tolink, visited);
+            touch(inputs[2], tolink, visited);
         }
     }
 
@@ -67,10 +71,10 @@ struct If : Node {
 
 struct For : Node {
     void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
-        auto cond = std::any_cast<int>(Graph::resolve(inputs[0], visited));
+        auto cond = std::any_cast<int>(resolve(inputs[0], visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
-            Graph::resolve(inputs[1], tmp_visited);
+            resolve(inputs[1], tmp_visited);
         }
     }
 
@@ -80,7 +84,7 @@ struct For : Node {
 
 struct Route : Node {
     void apply() override {
-        auto val = std::any_cast<int>(Graph::getval(inputs[0]));
+        auto val = std::any_cast<int>(getval(inputs[0]));
         Node::result = val;
     }
 };
@@ -88,13 +92,13 @@ struct Route : Node {
 
 struct Print : Node {
     void apply() override {
-        auto val = std::any_cast<int>(Graph::getval(inputs[0]));
+        auto val = std::any_cast<int>(getval(inputs[0]));
         printf("Print %d\n", val);
     }
 };
 
 
-void Graph::sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
+void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     std::sort(tolink.begin(), tolink.end(), [&] (Node *i, Node *j) {
         return i->xorder < j->xorder;
     });
@@ -106,14 +110,14 @@ void Graph::sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     }
 }
 
-void Graph::touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
+void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
     return std::visit(match([&] (Node *node) {
         node->preapply(tolink, visited);
     }, [&] (auto const &) {
     }), input);
 }
 
-std::any Graph::resolve(Input const &input, std::set<Node *> &visited) {
+std::any resolve(Input const &input, std::set<Node *> &visited) {
     return std::visit(match([&] (Node *node) {
         std::vector<Node *> tolink;
         touch(node, tolink, visited);
@@ -124,7 +128,7 @@ std::any Graph::resolve(Input const &input, std::set<Node *> &visited) {
     }), input);
 }
 
-std::any Graph::getval(Input const &input) {
+std::any getval(Input const &input) {
     return std::visit(match([&] (Node *node) {
         return node->result;
     }, [&] (std::any const &val) {
