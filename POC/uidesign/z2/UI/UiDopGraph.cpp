@@ -113,9 +113,9 @@ static std::any parse_any(std::string const &expr) {
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
     for (auto *node: nodes) {
-        auto n = g->add_node(dop::desc_of(kind));
+        auto n = g->add_node(dop::desc_of(node->kind));
         for (int i = 0; node->inputs.size(); i++) {
-            auto expr = node->inputs[i].value;
+            auto expr = node->inputs[i]->value;
             dop::Input input;
             if (expr.starts_with("@")) {
                 expr = expr.substr(1);
@@ -131,7 +131,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
             } else {
                 input = parse_any(expr); // dop::Input_Param(parse_any(expr));
             }
-            n->inputs[i] = input;
+            n->inputs.at(i) = input;
         }
     }
 }

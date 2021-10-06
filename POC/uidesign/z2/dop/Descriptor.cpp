@@ -1,4 +1,5 @@
 #include <z2/dop/Descriptor.h>
+#include <z2/dop/Node.h>
 
 
 namespace z2::dop {
@@ -36,7 +37,7 @@ Node *Graph::add_node(Descriptor const &desc) {
     //node->outputs.resize(desc.outputs.size());
 
     auto p = node.get();
-    nodes.push_back(node);
+    nodes.push_back(std::move(node));
     return p;
 }
 
