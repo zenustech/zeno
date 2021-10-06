@@ -130,7 +130,7 @@
       ]
      },
      "params": {
-      "value": 3
+      "value": 2
      },
      "uipos": [
       196.46924829157183,
@@ -142,7 +142,7 @@
      "name": "selectLevel",
      "inputs": {
       "agData": [
-       "f3777275-generateAdaptiveGrid",
+       "631a3ee3-AdaptiveSolver",
        "agData",
        null
       ],
@@ -176,20 +176,56 @@
       ]
      },
      "params": {
-      "value": 1
+      "value": 0
      },
      "uipos": [
       992.3120728929387,
       -397.2095671981777
      ],
      "options": []
+    },
+    "631a3ee3-AdaptiveSolver": {
+     "name": "AdaptiveSolver",
+     "inputs": {
+      "agData": [
+       "f3777275-generateAdaptiveGrid",
+       "agData",
+       null
+      ],
+      "dt": [
+       "2a4d2b89-GetFrameTime",
+       "time",
+       null
+      ],
+      "density": [
+       null,
+       null,
+       null
+      ],
+      "frameNum": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1022.7790432801823,
+      -53.53075170842824
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 792.1412300683237,
-    "y": -333.78416856491924,
-    "width": 625.0,
-    "height": 625.0
+    "x": 691.0592255125129,
+    "y": -290.14806378132084,
+    "width": 500.0,
+    "height": 500.0
    }
   }
  },
@@ -250,6 +286,51 @@
     "math"
    ]
   },
+  "AdaptiveSolver": {
+   "inputs": [
+    [
+     "",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "agData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
   "AppendList": {
    "inputs": [
     [
@@ -283,6 +364,77 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "AssembleSolvePPE": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "SolidVelocity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "Assign": {
@@ -468,6 +620,47 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "CFL_dt": {
+   "inputs": [
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "cfl_dt",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "CacheLastFrameBegin": {
@@ -861,6 +1054,41 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "CutCellWeight": {
+   "inputs": [
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "FaceWeight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "DelUserData": {
@@ -1431,6 +1659,137 @@
     "list"
    ]
   },
+  "FLIPApplyBoundary": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DynaSolid_SDF",
+     ""
+    ],
+    [
+     "",
+     "StatSolid_SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FLIP_P2G": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "PostP2GVelocity",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FieldAddVector": {
+   "inputs": [
+    [
+     "",
+     "invec3",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "FieldWeight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "FinalOutput": {
    "inputs": [
     [
@@ -1449,6 +1808,41 @@
    "params": [],
    "categories": [
     "subgraph"
+   ]
+  },
+  "FluidReseed": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "FluidVel",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "FuncBegin": {
@@ -1554,6 +1948,158 @@
    "params": [],
    "categories": [
     "functional"
+   ]
+  },
+  "G2PAdvectorSheetty": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVelocity",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidVelocity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.1 0.0 1.0"
+    ],
+    [
+     "int",
+     "surface_size",
+     "4 0 8"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "G2P_Advector": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVelocity",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidVelocity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.02 0.0 1.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "GeoVertexVel": {
@@ -2137,6 +2683,41 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KillParticlesInSDF": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "KillerSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "ListGetItem": {
@@ -3802,6 +4383,123 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticleAddDV": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "dv",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "channel",
+     "vel"
+    ],
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ParticleEmitter": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "ShapeSDF",
+     ""
+    ],
+    [
+     "",
+     "VelocityVolume",
+     ""
+    ],
+    [
+     "",
+     "VelocityInit",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "ParticleParticleWrangle": {
@@ -5854,6 +6552,52 @@
     "numeric"
    ]
   },
+  "PushOutLiquidSDF": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -6123,6 +6867,72 @@
     "list"
    ]
   },
+  "RigidGetPressureForce": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "MassCenter",
+     ""
+    ],
+    [
+     "",
+     "Rigid",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "TotalForceImpulse",
+     ""
+    ],
+    [
+     "",
+     "TotalTorcImpulse",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "Route": {
    "inputs": [
     [
@@ -6338,6 +7148,122 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "SetFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "PressureDOFID",
+     ""
+    ],
+    [
+     "",
+     "IsolatedCellDOF",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "DeltaVelocity",
+     ""
+    ],
+    [
+     "",
+     "VelocitySnapshot",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVelocity",
+     ""
+    ],
+    [
+     "",
+     "SolidVelocity",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDFSnapshot",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "ErodedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.08 0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "SetFrameTime": {
@@ -6563,6 +7489,52 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "SprayParticles": {
+   "inputs": [
+    [
+     "",
+     "TrianglePrim",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01"
+    ],
+    [
+     "string",
+     "channel",
+     "vel"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "StringEqual": {
@@ -6863,6 +7835,77 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "SubtractPressureGradient": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "SolidSDF",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "SolidVelocity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "TraceOneStep": {
@@ -7875,6 +8918,37 @@
     "zenofx"
    ]
   },
+  "Vec3FieldExtrapolate": {
+   "inputs": [
+    [
+     "",
+     "Field",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "NumIterates",
+     "1"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "VectorFieldAnalyzer": {
    "inputs": [
     [
@@ -7909,6 +8983,37 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "WriteBgeo": {
+   "inputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
    ]
   },
   "WriteObjMesh": {

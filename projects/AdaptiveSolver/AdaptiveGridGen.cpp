@@ -41,10 +41,14 @@ void agData::resize(int lNum)
         volumeField[i] = openvdb::FloatGrid::create(0);
         temperatureField[i] = openvdb::FloatGrid::create(0);
         for(int j=0;j<3;++j)
+        {    
             velField[j][i] = openvdb::FloatGrid::create(0);
+            gradPressField[j][i] = openvdb::FloatGrid::create(0);
+        }
         pressField[i] = openvdb::FloatGrid::create(0);
         status[i] = openvdb::Int32Grid::create(0);
     }
+
 }
 void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
 {
@@ -88,7 +92,8 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
             gradPressField[i][level]->setTransform(veltrans);
         }
     }
-        auto tagtrans = openvdb::math::Transform::createLinearTransform(tagdx);
+
+    auto tagtrans = openvdb::math::Transform::createLinearTransform(tagdx);
     tagtrans->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*tagdx);
     tag->setTransform(tagtrans);
     // init tag
@@ -151,6 +156,7 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
                         status_axr.setValue(coord, 0);
                         auto wpos = volumeField[level]->indexToWorld(coord);
                         auto tagindex = round(tag->worldToIndex(wpos));
+                        
                         tag_axr.setValue(tagindex, 0);
                     }
                     press_axr.setValue(coord, 0);
@@ -167,8 +173,8 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
         }
 
     }
-    makeCoarse();
-    
+    //makeCoarse();
+    buffer.init(pressField);
 }
 void agData::makeCoarse()
 {
@@ -189,12 +195,14 @@ void agData::makeCoarse()
         };
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), setTagOFF);
         leaves.clear();
+
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves2;
         auto setTagZero = [&](const tbb::blocked_range<size_t> &r)
         {
             auto tag_axr = tag->getAccessor();
             auto vol_axr = volumeField[0]->getConstAccessor();
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
+                auto &leaf = *leaves2[liter];
                 for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                     auto coord = leaf.offsetToGlobalCoord(offset);
                     if(!vol_axr.isValueOn(coord))
@@ -205,8 +213,9 @@ void agData::makeCoarse()
                 }
             }
         };
-        volumeField[0]->tree().getNodes(leaves);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), setTagZero);
+        
+        volumeField[0]->tree().getNodes(leaves2);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves2.size()), setTagZero);
     }
     auto buf = status[0]->deepCopy();
     status[0]->clear();
@@ -321,7 +330,7 @@ void agData::makeCoarse()
     
     for(int level = 0;level < levelNum;++level)
     {
-        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
         auto markGhost = [&](const tbb::blocked_range<size_t> &r)
         {
             auto status_axr = status[level]->getAccessor();

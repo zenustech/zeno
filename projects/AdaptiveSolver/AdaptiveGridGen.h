@@ -26,8 +26,7 @@ namespace zeno{
         std::vector<openvdb::FloatGrid::Ptr> pGrid;
         std::vector<openvdb::FloatGrid::Ptr> ApGrid;
         void init(std::vector<openvdb::FloatGrid::Ptr> pressField);
-        void resize(int levelNum);
-        void computeRHSgrid(int level);
+        
     };
     struct agData:IObject{
         int levelNum;
@@ -77,7 +76,7 @@ namespace zeno{
             std::vector<openvdb::FloatGrid::Ptr> a, 
             std::vector<openvdb::FloatGrid::Ptr> b,
             std::vector<openvdb::FloatGrid::Ptr> c);
-        openvdb::Coord round(openvdb::Vec3d a){openvdb::Coord coord = openvdb::Coord(std::round(a[0]), std::round(a[1]),std::round(a[2]));}
+        openvdb::Coord round(openvdb::Vec3d a){openvdb::Coord coord = openvdb::Coord(std::round(a[0]), std::round(a[1]),std::round(a[2]));return coord;}
 
         void makeCoarse();
         void transferPress(std::vector<openvdb::FloatGrid::Ptr> p);

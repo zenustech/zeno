@@ -468,23 +468,7 @@ namespace zeno{
                         auto vel = vel_axr[1].getValue(coord);
                         auto deltaV = vel - dens * 9.8 * dt;
                         vel_axr[1].setValue(coord, deltaV);
-                        // boundary condition
-                        for(int i=0;i<3;++i)
-                        {
-                            if(!vel_axr[i].isValueOn(coord))
-                                continue;
-                            for(int j=-1;j<=1;j+=2)
-                            {
-                                auto ipos = coord;
-                                ipos[i] += j;
-                                if(!vel_axr[i].isValueOn(ipos))
-                                {
-                                    auto tmpvel = vel_axr[i].getValue(coord);
-                                    if(tmpvel * j > 0)
-                                        tmpvel = 0;
-                                }
-                            }
-                        }
+                        
                     }
                 }
             };

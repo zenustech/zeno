@@ -4,7 +4,7 @@
 namespace zeno{
 void agData::computeRHS()
 {
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     auto comRHS = [&](const tbb::blocked_range<size_t> &r)
     {
@@ -45,7 +45,7 @@ void agData::computeRHS()
 
 void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<openvdb::FloatGrid::Ptr> Ap)
 {
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
 
     auto comLap = [&](const tbb::blocked_range<size_t> &r)
@@ -92,7 +92,7 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
 
 void agData::comptueRES(std::vector<openvdb::FloatGrid::Ptr> p)
 {
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     auto computeRes = [&](const tbb::blocked_range<size_t> &r)
     {
@@ -338,7 +338,7 @@ void agData::Prolongate(int level)
 
 float agData::dotTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b)
 {
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     auto reduceAlpha = [&](const tbb::blocked_range<size_t> &r, float sum)
     {
@@ -370,7 +370,7 @@ void agData::addTree(
             std::vector<openvdb::FloatGrid::Ptr> b,
             std::vector<openvdb::FloatGrid::Ptr> c)
 {
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     auto add = [&](const tbb::blocked_range<size_t> &r)
     {
@@ -399,7 +399,7 @@ void agData::addTree(
 void agData::PossionSolver()
 {
     //BiCGSTAB solver
-    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     computeLap(pressField, buffer.ApGrid);
     comptueRES(pressField);
@@ -494,7 +494,7 @@ void agData::transferPress(std::vector<openvdb::FloatGrid::Ptr> p)
 {
     for(int level = 1; level < levelNum;++level)
     {
-        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
         status[level]->tree().getNodes(leaves);
         auto TopDown = [&](const tbb::blocked_range<size_t> &r)
         {
@@ -526,7 +526,7 @@ void agData::transferPress(std::vector<openvdb::FloatGrid::Ptr> p)
     }
     for(int level = levelNum-2;level>=0;--level)
     {
-        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
         status[level]->tree().getNodes(leaves);
         auto DownTop = [&](const tbb::blocked_range<size_t> &r)
         {
@@ -597,7 +597,7 @@ void agData::applyPress()
 }
 void agData::solvePress(){
     //todo: add multigrid as a preconditioner
-    
+    makeCoarse();
     PossionSolver();
     transferPress(pressField);
     applyPress();
@@ -605,6 +605,12 @@ void agData::solvePress(){
 void agData::Advection()
 {
     // only advect the finest level grid
+    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    volumeField[0]->tree().getNodes(leaves);
+    int level = 0;
+    int sign = 1;
+    auto new_temField = temperatureField[0]->deepCopy();
+    auto new_volField = volumeField[0]->deepCopy();
     auto semiLangAdvection = [&](const tbb::blocked_range<size_t> &r) 
     {
         openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> vel_axr[3]=
@@ -659,16 +665,55 @@ void agData::Advection()
         }
     };
 
-        
+
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
+    temperatureField[0]->clear();
+    volumeField[0]->clear();
+    temperatureField[0] = new_temField;
+    volumeField[0] = new_volField;
+}
+
+void agData::applyOtherForce()
+{
+    float alpha =-0.1, beta = 0.2;
+    std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+    velField[1][0]->tree().getNodes(leaves);
+    auto applyOtherForce = [&](const tbb::blocked_range<size_t> &r)
+    {
+        openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
+            {velField[0][0]->getAccessor(),
+            velField[1][0]->getAccessor(),
+            velField[2][0]->getAccessor()};
+        auto status_axr = status[0]->getConstAccessor();
+        auto tem_axr = temperatureField[0]->getConstAccessor();
+        auto vol_axr = volumeField[0]->getConstAccessor();
+        ConstBoxSample volSample(vol_axr, volumeField[0]->transform());
+        ConstBoxSample temSample(tem_axr, temperatureField[0]->transform());
+                
+        for (auto liter = r.begin(); liter != r.end(); ++liter) {
+            auto &leaf = *leaves[liter];
+            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                if(!vel_axr[1].isValueOn(coord))
+                    continue;
+                auto wpos = velField[1][0]->indexToWorld(coord);
+                auto vol = volSample.wsSample(wpos);
+                auto tem = temSample.wsSample(wpos);
+
+                float dens = (alpha * vol -beta * tem);
+                auto vel = vel_axr[1].getValue(coord);
+                auto deltaV = vel - dens * 9.8 * dt;
+                vel_axr[1].setValue(coord, deltaV);
+            }
+        }
+    };
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyOtherForce);
+    
 }
 void agData::step()
 {
     applyOtherForce();
-
-    makeCoarse();
     solvePress();
-    // todo: transfer press back to finest level
-
     Advection();
 }
 struct AdaptiveSolver : zeno::INode
