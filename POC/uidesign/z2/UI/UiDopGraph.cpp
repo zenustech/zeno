@@ -101,6 +101,21 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 }
 
 
+static std::any parse_any(std::string const &expr) {
+    if (!expr.size()) {
+        return {};
+    }
+    if ('0' <= expr[0] && expr[0] <= '9') {
+        if (expr.find('.') != std::string::npos) {
+            return std::stof(expr);
+        } else {
+            return std::stoi(expr);
+        }
+    }
+    return expr;
+}
+
+
 std::unique_ptr<dop::Graph> UiDopGraph::dump() {
     auto g = std::make_unique<dop::Graph>();
     for (auto *node: nodes) {
