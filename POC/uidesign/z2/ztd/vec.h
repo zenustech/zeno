@@ -644,10 +644,10 @@ constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool vany(vec<N, T> const &a) {
+bool vany(vec<N, T> const &t) {
     bool ret = false;
     for (size_t i = 0; i < N; i++) {
-        ret = ret || (bool)a[i];
+        ret = ret || (bool)t[i];
     }
     return ret;
 }
@@ -685,7 +685,7 @@ template <size_t N, class T1, class T2>
 auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
     std::decay_t<decltype(t1[0] * t2[0])> res(0);
     for (size_t i = 0; i < N; i++) {
-        res += a[i] * b[i];
+        res += t1[i] * t2[i];
     }
     return res;
 }
@@ -701,7 +701,7 @@ auto length(vec<N, T> const &t) {
 }
 
 template <size_t N, class T1, class T2>
-    requires (!vec_traits<T>::value)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
 auto distance(vec<N, T1> const &t1, vec<N, T2> const &t2) {
     return length(t2 - t1);
 }
