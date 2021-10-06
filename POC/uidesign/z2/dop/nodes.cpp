@@ -19,6 +19,15 @@ struct If : dop::Node {
     void apply() override { throw "unreachable"; }
 };
 
+Z2_DOP_DEFINE(If, {{
+    "misc", "only runs one of the two chain by condition",
+}, {
+    {"cond"},
+    {"then"},
+    {"else"},
+}, {
+}});
+
 
 struct For : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
@@ -32,6 +41,14 @@ struct For : dop::Node {
     void apply() override { throw "unreachable"; }
 };
 
+Z2_DOP_DEFINE(For, {{
+    "misc", "repeat a chain for multiple times",
+}, {
+    {"times"},
+    {"chain"},
+}, {
+}});
+
 
 struct Route : dop::Node {
     void apply() override {
@@ -40,6 +57,14 @@ struct Route : dop::Node {
     }
 };
 
+Z2_DOP_DEFINE(Route, {{
+    "misc", "always return the first argument",
+}, {
+    {"value"},
+}, {
+    {"value"},
+}});
+
 
 struct Print : dop::Node {
     void apply() override {
@@ -47,6 +72,13 @@ struct Print : dop::Node {
         printf("Print %d\n", val);
     }
 };
+
+Z2_DOP_DEFINE(Print, {{
+    "misc", "prints a integer",
+}, {
+    {"value"},
+}, {
+}});
 
 
 }

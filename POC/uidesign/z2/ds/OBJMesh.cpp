@@ -91,7 +91,7 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 
 
-struct ReadOBJ : dop::Node {
+struct ReadOBJMesh : dop::Node {
     void apply() override {
         auto path = get_input<std::string>(0);
         auto mesh = std::make_shared<Mesh>();
@@ -101,13 +101,13 @@ struct ReadOBJ : dop::Node {
     }
 };
 
-static int def_readobj = dop::define<ReadOBJ>("readobj", {{
+Z2_DOP_DEFINE(ReadOBJMesh, {{
     "mesh", "load mesh from .obj file",
 }, {
     {"path"},
 }, {
     {"mesh"},
-});
+}});
 
 
 }
