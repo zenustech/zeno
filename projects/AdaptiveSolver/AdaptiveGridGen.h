@@ -4,7 +4,7 @@
 #include <vector>
 #include <zeno/zeno.h>
 #include "tbb/scalable_allocator.h"
-
+#include <cmath>
 #include <zeno/ZenoInc.h>
 #include "openvdb/points/PointConversion.h"
 #include <openvdb/Types.h>
@@ -13,6 +13,8 @@
 #include <openvdb/tools/VolumeToMesh.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <iostream>
+#include <openvdb/tools/LevelSetUtil.h>
+#include <tbb/parallel_for.h>
 namespace zeno{
     using ConstBoxSample = openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler>;
     using BoxSample = openvdb::tools::GridSampler<openvdb::FloatGrid::Accessor, openvdb::tools::BoxSampler>;
@@ -31,6 +33,8 @@ namespace zeno{
         int levelNum;
         float dt, dens;
         
+        openvdb::Int32Grid::Ptr tag;
+
         std::vector<float> dx;
         std::vector<openvdb::Int32Grid::Ptr> status;//0:active 1:ghost 2:inactive
         std::vector<openvdb::FloatGrid::Ptr> volumeField;
@@ -49,25 +53,34 @@ namespace zeno{
         void resize(int lNum);
         void initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt);
         
-        void Vcycle();
-        
-        void PossionSolver(int level);
+        void PossionSolver();
 
         // multigrid methods
+        void Vcycle();
         void Smooth(int level);
         void Restrict(int level);
-        void Propagate(int level);
+        //void Propagate(int level);
         void GhostValueAccumulate(int level);
         void GhostValuePropagate(int level);
         void Prolongate(int level);
 
         // iterate functions
-        void computeRHS(int level); //divergence of vel, store result on buffer.rhsGrid
-        void computeGradP(int level, openvdb::FloatGrid::Ptr p);//gradient of press, store result on buffer.gradp 
-        void computeDivP(int level);//div of grad press, store result on buffer.ApGrid
-        void comptueRES(int level, openvdb::FloatGrid::Ptr p);
+        void computeRHS(); //divergence of vel, store result on buffer.rhsGrid
+        void computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<openvdb::FloatGrid::Ptr> Ap);//div of grad p, store result on Ap
+        void comptueRES(std::vector<openvdb::FloatGrid::Ptr> p);
 
         // normal functions
-        float dotTree(int level, openvdb::FloatGrid::Ptr a, openvdb::FloatGrid::Ptr b);
+        float dotTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b);
+        // alpha * a + beta * b -> c
+        void addTree(
+            float alpha,float beta,
+            std::vector<openvdb::FloatGrid::Ptr> a, 
+            std::vector<openvdb::FloatGrid::Ptr> b,
+            std::vector<openvdb::FloatGrid::Ptr> c);
+        openvdb::Coord round(openvdb::Vec3d a){openvdb::Coord coord = openvdb::Coord(std::round(a[0]), std::round(a[1]),std::round(a[2]));}
+
+        void makeCoarse();
+        void transferPress(std::vector<openvdb::FloatGrid::Ptr> p);
+        void applyPress();
     };
 }
