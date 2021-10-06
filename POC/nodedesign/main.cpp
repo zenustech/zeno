@@ -21,16 +21,18 @@ match(Fs &&...) -> match<Fs...>;
 
 struct Node;
 
+
+using Input = std::variant<std::any, Node *>;
+
+
 struct Graph {
     std::vector<std::unique_ptr<Node>> nodes;
 
+    static std::any getval(Input const &input);
     static std::any resolve(Input const &input, std::set<Node *> &visited);
     static void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
     static void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 };
-
-
-using Input = std::variant<std::any, Node *>;
 
 
 struct Node {
@@ -39,10 +41,10 @@ struct Node {
     std::any result;
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
-        for (auto dep: inputs) {
-            Graph::touch(dep, tolink, visited);
+        for (auto node: inputs) {
+            Graph::touch(node, tolink, visited);
         }
-        tolink.push_back(idx);
+        tolink.push_back(this);
     }
 
     virtual void apply() = 0;
@@ -51,11 +53,11 @@ struct Node {
 
 struct If : Node {
     void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
-        auto cond = std::any_cast<int>(Graph::resolve(nodes[idx].deps[0], visited));
+        auto cond = std::any_cast<int>(Graph::resolve(inputs[0], visited));
         if (cond) {
-            Graph::touch(node->deps[1], tolink, visited);
+            Graph::touch(inputs[1], tolink, visited);
         } else {
-            Graph::touch(node->deps[2], tolink, visited);
+            Graph::touch(inputs[2], tolink, visited);
         }
     }
 
@@ -65,10 +67,10 @@ struct If : Node {
 
 struct For : Node {
     void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
-        auto cond = std::any_cast<int>(Graph::resolve(node->deps[0], visited));
+        auto cond = std::any_cast<int>(Graph::resolve(inputs[0], visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
-            Graph::resolve(node->deps[1], tmp_visited);
+            Graph::resolve(inputs[1], tmp_visited);
         }
     }
 
@@ -76,11 +78,18 @@ struct For : Node {
 };
 
 
-struct Int : Node {
-    int value = 32;
-
+struct Route : Node {
     void apply() override {
-        Node::result = value;
+        auto val = std::any_cast<int>(Graph::getval(inputs[0]));
+        Node::result = val;
+    }
+};
+
+
+struct Print : Node {
+    void apply() override {
+        auto val = std::any_cast<int>(Graph::getval(inputs[0]));
+        printf("Print %d\n", val);
     }
 };
 
@@ -92,6 +101,7 @@ void Graph::sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     for (auto node: tolink) {
         if (!visited.contains(node)) {
             visited.insert(node);
+            node->apply();
         }
     }
 }
@@ -106,22 +116,41 @@ void Graph::touch(Input const &input, std::vector<Node *> &tolink, std::set<Node
 std::any Graph::resolve(Input const &input, std::set<Node *> &visited) {
     return std::visit(match([&] (Node *node) {
         std::vector<Node *> tolink;
-        touch(idx, tolink, visited);
+        touch(node, tolink, visited);
         sortexec(tolink, visited);
         return node->result;
-    }, [&] (auto const &) {
-        return std::any{};
+    }, [&] (std::any const &val) {
+        return val;
+    }), input);
+}
+
+std::any Graph::getval(Input const &input) {
+    return std::visit(match([&] (Node *node) {
+        return node->result;
+    }, [&] (std::any const &val) {
+        return val;
     }), input);
 }
 
 int main() {
     auto g = std::make_unique<Graph>();
     g->nodes.resize(5);
-    g->nodes[0] = new Int{100, {}};
-    g->nodes[1] = new Int{200, {}};
-    g->nodes[2] = new For{"for", 400, {2, 0}};
+
+    g->nodes[0] = std::make_unique<Route>();
+    g->nodes[0]->inputs.resize(1);
+    g->nodes[0]->inputs[0] = (std::any)4;
+
+    g->nodes[1] = std::make_unique<Print>();
+    g->nodes[1]->inputs.resize(1);
+    g->nodes[1]->inputs[0] = (std::any)42;
+
+    g->nodes[2] = std::make_unique<For>();
+    g->nodes[2]->inputs.resize(2);
+    g->nodes[2]->inputs[0] = g->nodes[0].get();
+    g->nodes[2]->inputs[1] = g->nodes[1].get();
 
     std::set<Node *> visited;
     g->resolve(g->nodes[2].get(), visited);
+    //printf("%d\n", std::any_cast<int>(ret));
     return 0;
 }
