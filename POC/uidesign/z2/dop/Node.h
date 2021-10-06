@@ -13,6 +13,7 @@ namespace z2::dop {
 
 
 struct Node;
+struct Descriptor;
 
 
 using Input = std::variant<std::any, Node *>;
@@ -20,6 +21,8 @@ using Input = std::variant<std::any, Node *>;
 
 struct Graph {
     std::vector<std::unique_ptr<Node>> nodes;
+
+    Node *add_node(Descriptor const &desc);
 };
 
 

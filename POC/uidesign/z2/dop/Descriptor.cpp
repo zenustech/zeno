@@ -30,4 +30,15 @@ void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc fa
 }
 
 
+Node *Graph::add_node(Descriptor const &desc) {
+    auto node = desc.factory();
+    node->inputs.resize(desc.inputs.size());
+    //node->outputs.resize(desc.outputs.size());
+
+    auto p = node.get();
+    nodes.push_back(node);
+    return p;
+}
+
+
 }
