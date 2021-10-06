@@ -5,6 +5,11 @@
 namespace z2::dop {
 
 
+std::any Node::get_input(int idx) {
+    return getval(inputs.at(idx));
+}
+
+
 void Node::preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     for (auto node: inputs) {
         touch(node, tolink, visited);
