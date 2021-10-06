@@ -1,95 +1,106 @@
 #include <cstdio>
 #include <string>
+#include <memory>
 #include <vector>
 #include <set>
 #include <any>
 
 
-struct Node {
-    std::string kind;
-    int xorder = 0;
-    std::vector<int> deps;
-    std::any value = (int)3;
+struct Node;
+
+struct Graph {
+    std::vector<std::unique_ptr<Node>> nodes;
+
+    static std::any resolve(Node *node, std::set<Node *> &visited);
+    static void touch(Node *node, std::vector<Node *> &tolink, std::set<Node *> &visited);
+    static void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 };
 
 
-std::vector<Node> nodes;
+struct Node {
+    float xorder = 0;
+    std::vector<Node *> inputs;
+    std::any result;
+
+    virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
+        for (auto dep: inputs) {
+            Graph::touch(dep, tolink, visited);
+        }
+        tolink.push_back(idx);
+    }
+
+    virtual void apply() = 0;
+};
 
 
-/*void init() {
-    if a and b have a common trivial output, then should link.
-
-    0 = a
-    1 = b
-    2 = c 0 1
-
-    0 = a
-    1 = b
-    2 = c
-    3 = d 0 1
-    4 = e 1 2
-    5 = if 3 4
-}*/
-
-
-void sortexec(std::vector<int> &tolink, std::set<int> &visited) {
-    std::sort(tolink.begin(), tolink.end(), [&] (int i, int j) {
-        return nodes[i].xorder < nodes[j].xorder;
-    });
-    for (auto idx: tolink) {
-        if (!visited.contains(idx)) {
-            visited.insert(idx);
-            printf("%d\n", idx);
+struct If : Node {
+    void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
+        auto cond = std::any_cast<int>(Graph::resolve(nodes[idx].deps[0], visited));
+        if (cond) {
+            Graph::touch(node->deps[1], tolink, visited);
+        } else {
+            Graph::touch(node->deps[2], tolink, visited);
         }
     }
-}
 
-std::any resolve(int idx, std::set<int> &visited);
+    void apply() override { throw "unreachable"; }
+};
 
-void touch(int idx, std::vector<int> &tolink, std::set<int> &visited) {
-    if (idx == -1) return;
 
-    if (nodes[idx].kind == "if") {
-        auto cond = std::any_cast<int>(resolve(nodes[idx].deps[0], visited));
-        if (cond) {
-            touch(nodes[idx].deps[1], tolink, visited);
-        } else {
-            touch(nodes[idx].deps[2], tolink, visited);
-        }
-        return;
-
-    } else if (nodes[idx].kind == "for") {
-        auto cond = std::any_cast<int>(resolve(nodes[idx].deps[0], visited));
+struct For : Node {
+    void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) override {
+        auto cond = std::any_cast<int>(Graph::resolve(node->deps[0], visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
-            resolve(nodes[idx].deps[1], tmp_visited);
+            Graph::resolve(node->deps[1], tmp_visited);
         }
-        return;
     }
 
-    for (auto dep: nodes[idx].deps) {
-        touch(dep, tolink, visited);
+    void apply() override { throw "unreachable"; }
+};
+
+
+struct Int : Node {
+    int value = 32;
+
+    void apply() override {
+        Node::result = value;
     }
-    tolink.push_back(idx);
+};
+
+
+void Graph::sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
+    std::sort(tolink.begin(), tolink.end(), [&] (Node *i, Node *j) {
+        return i->xorder < j->xorder;
+    });
+    for (auto node: tolink) {
+        if (!visited.contains(node)) {
+            visited.insert(node);
+        }
+    }
 }
 
-std::any resolve(int idx, std::set<int> &visited) {
-    if (idx == -1) return {};
-    std::vector<int> tolink;
+void Graph::touch(Node *node, std::vector<Node *> &tolink, std::set<Node *> &visited) {
+    if (!node) return;
+    node->preapply(tolink, visited);
+}
+
+std::any Graph::resolve(Node *node, std::set<Node *> &visited) {
+    if (!node) return {};
+    std::vector<Node *> tolink;
     touch(idx, tolink, visited);
     sortexec(tolink, visited);
-    return nodes[idx].value;
+    return node->result;
 }
 
 int main() {
-    nodes.resize(5);
-    nodes[0] = {"float", 100, {}};
-    nodes[1] = {"float", 200, {}};
-    nodes[2] = {"float", 300, {}};
-    nodes[3] = {"for", 400, {2, 0}};
-    nodes[4] = {"test", 500, {3, 0}};
+    auto g = std::make_unique<Graph>();
+    g->nodes.resize(5);
+    g->nodes[0] = new Int{100, {}};
+    g->nodes[1] = new Int{200, {}};
+    g->nodes[2] = new For{"for", 400, {2, 0}};
 
-    std::set<int> visited;
-    resolve(4, visited);
+    std::set<Node *> visited;
+    g->resolve(g->nodes[2].get(), visited);
     return 0;
 }
