@@ -10,6 +10,11 @@ std::any Node::get_input(int idx) const {
 }
 
 
+void Node::set_output(int idx, std::any val) {
+    result = std::move(val);
+}
+
+
 void Node::preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     for (auto node: inputs) {
         touch(node, tolink, visited);

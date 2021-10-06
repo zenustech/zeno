@@ -42,9 +42,7 @@ struct Node {
         return std::any_cast<T>(get_input(idx));
     }
 
-    void set_output(int idx, std::any val) {
-        result = std::move(val);
-    }
+    void set_output(int idx, std::any val);
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
     virtual void apply() = 0;

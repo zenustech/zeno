@@ -6,6 +6,7 @@
 #include <z2/UI/GraphicsView.h>
 #include <z2/UI/UiDopContextMenu.h>
 #include <z2/UI/UiDopSocket.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -45,6 +46,8 @@ struct UiDopGraph : GraphicsView {
 
     void on_event(Event_Mouse e) override;
     void on_event(Event_Key e) override;
+
+    std::unique_ptr<dop::Graph> dump_graph();
 
     inline UiDopScene *get_parent() const {
         return (UiDopScene *)parent;

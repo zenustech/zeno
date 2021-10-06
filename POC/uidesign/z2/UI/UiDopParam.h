@@ -15,7 +15,7 @@ struct UiDopParam : Widget {
     TextEdit *edit;
 
     UiDopParam();
-    void set_socket(UiDopSocket *socket);
+    void set_socket(UiDopInputSocket *socket);
 };
 
 

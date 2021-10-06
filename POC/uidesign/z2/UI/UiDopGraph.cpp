@@ -110,7 +110,7 @@ static std::any parse_any(std::string const &expr) {
 }
 
 
-std::unique_ptr<dop::Graph> UiDopGraph::dump() {
+std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
     for (auto *node: nodes) {
         auto n = g->add_node(dop::desc_of(kind));
@@ -148,10 +148,9 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        std::string expr = "@first1:lhs";
-        auto node = std::get<dop::Node *>(evaluate(expr));
+        auto g = this->dump();
         std::set<dop::Node *> visited;
-        auto val = dop::resolve(node, visited);
+        auto val = dop::resolve(g->nodes.at(2).get(), visited);
         get_parent()->set_view_result(val);
     });
 }
