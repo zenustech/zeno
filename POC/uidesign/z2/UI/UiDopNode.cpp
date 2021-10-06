@@ -3,24 +3,6 @@
 namespace z2::UI {
 
 
-void UiDopNode::set_position(Point pos) {
-    Widget::set_position(pos);
-    bk_node->xorder = position.x;
-}
-
-
-void UiDopNode::_update_backend_data() const {
-    //bk_node->name = name;
-    bk_node->inputs.resize(inputs.size());
-    /*for (int i = 0; i < inputs.size(); i++) {
-        bk_node->inputs[i].name = inputs[i]->name;
-    }*/
-    bk_node->outputs.resize(outputs.size());
-    /*for (int i = 0; i < outputs.size(); i++) {
-        bk_node->outputs[i].name = outputs[i]->name;
-    }*/
-}
-
 void UiDopNode::update_sockets() {
     for (int i = 0; i < inputs.size(); i++) {
         auto y = DH * (i + 0.5f);
@@ -32,8 +14,6 @@ void UiDopNode::update_sockets() {
     }
     auto h = std::max(outputs.size(), inputs.size()) * DH;
     bbox = {0, -h, W, h + TH};
-
-    _update_backend_data();
 }
 
 UiDopInputSocket *UiDopNode::add_input_socket() {

@@ -5,7 +5,7 @@
 namespace z2::dop {
 
 
-std::any Node::get_input(int idx) {
+std::any Node::get_input(int idx) const {
     return getval(inputs.at(idx));
 }
 

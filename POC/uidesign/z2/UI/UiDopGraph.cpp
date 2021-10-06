@@ -21,8 +21,6 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
         link->to_socket->links.erase(link);
         auto to_node = link->to_socket->get_parent();
         auto from_node = link->from_socket->get_parent();
-        bk_graph->remove_node_input(to_node->bk_node,
-                link->to_socket->get_index());
         links.erase(link);
         return true;
     } else {
@@ -32,7 +30,6 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
 
 
 bool UiDopGraph::remove_node(UiDopNode *node) {
-    bk_graph->remove_node(node->bk_node);
     for (auto *socket: node->inputs) {
         for (auto *link: std::set(socket->links)) {
             remove_link(link);
@@ -54,9 +51,8 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind) {
     auto p = add_child<UiDopNode>();
-    p->bk_node = bk_graph->add_node(kind);
-    p->name = p->bk_node->name;
-    p->kind = p->bk_node->kind;
+    p->name = kind + '1';
+    p->kind = kind;
     nodes.insert(p);
     return p;
 }
@@ -66,8 +62,6 @@ UiDopLink *UiDopGraph::add_link(UiDopOutputSocket *from_socket, UiDopInputSocket
     auto p = add_child<UiDopLink>(from_socket, to_socket);
     auto to_node = to_socket->get_parent();
     auto from_node = from_socket->get_parent();
-    bk_graph->set_node_input(to_node->bk_node, to_socket->get_index(),
-            from_node->bk_node, from_socket->get_index());
     links.insert(p);
     return p;
 }
