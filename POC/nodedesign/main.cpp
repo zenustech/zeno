@@ -1,17 +1,19 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <set>
+#include <any>
 
 
 struct Node {
     std::string kind;
     int xorder = 0;
     std::vector<int> deps;
-    float value = 0;
+    std::any value = (int)0;
 };
 
 
-std::vector<Node> nodes(4);
+std::vector<Node> nodes;
 
 
 /*void init() {
@@ -30,44 +32,53 @@ std::vector<Node> nodes(4);
 }*/
 
 
-void sortexec(std::vector<int> &tolink) {
+void sortexec(std::vector<int> &tolink, std::set<int> &visited) {
     std::sort(tolink.begin(), tolink.end(), [&] (int i, int j) {
         return nodes[i].xorder < nodes[j].xorder;
     });
     for (auto idx: tolink) {
-        printf("%d\n", idx);
+        if (!visited.contains(idx)) {
+            visited.insert(idx);
+            printf("%d\n", idx);
+        }
     }
 }
 
-float resolve(int idx);
+std::any resolve(int idx);
 
-void touch(int idx, std::vector<int> &tolink) {
+void touch(int idx, std::vector<int> &tolink, std::set<int> &visited) {
+    if (idx == -1) return;
     if (nodes[idx].kind == "if") {
-        if (resolve(nodes[idx].deps[0])) {
-            return touch(nodes[idx].deps[1], tolink);
+        auto cond = resolve(nodes[idx].deps[0]);
+        if (std::any_cast<int>(cond)) {
+            return touch(nodes[idx].deps[1], tolink, visited);
         } else {
-            return touch(nodes[idx].deps[2], tolink);
+            return touch(nodes[idx].deps[2], tolink, visited);
         }
     }
     for (auto dep: nodes[idx].deps) {
-        touch(dep, tolink);
+        touch(dep, tolink, visited);
     }
     tolink.push_back(idx);
 }
 
-float resolve(int idx) {
+std::any resolve(int idx) {
+    if (idx == -1) return {};
     std::vector<int> tolink;
-    touch(idx, tolink);
-    sortexec(tolink);
+    std::set<int> visited;
+    touch(idx, tolink, visited);
+    sortexec(tolink, visited);
     return nodes[idx].value;
 }
 
 int main() {
+    nodes.resize(5);
     nodes[0] = {"float", 100, {}};
     nodes[1] = {"float", 200, {}};
     nodes[2] = {"float", 300, {}};
     nodes[3] = {"iff", 400, {2, 0, 1}};
+    nodes[4] = {"test", 500, {3, 0}};
 
-    resolve(3);
+    resolve(4);
     return 0;
 }
