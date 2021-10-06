@@ -24,9 +24,8 @@
 #include <z2/ztd/containers.h>
 
 
-//#ifdef __CLANGD__
-//#define nclangd(...)
-//#else
-//#define nclangd(...) __VA_ARGS__
-//#endif
-//#define typenameof(x) typeid(*(x)).name()
+#ifdef __CLANGD__
+#define noclangd(...)
+#else
+#define noclangd(...) __VA_ARGS__
+#endif

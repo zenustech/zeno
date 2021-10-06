@@ -32,15 +32,15 @@ struct dtor_function : std::function<void()> {
 
 
 template <class ...Fs>
-struct overloaded : private Fs... {
-    overloaded(Fs &&...fs)
+struct match : private Fs... {
+    match(Fs &&...fs)
         : Fs(std::forward<Fs>(fs))... {}
 
     using Fs::operator()...;
 };
 
 template <class ...Fs>
-overloaded(Fs &&...) -> overloaded<Fs...>;
+match(Fs &&...) -> match<Fs...>;
 
 
 };

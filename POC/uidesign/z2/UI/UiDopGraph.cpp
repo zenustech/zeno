@@ -102,13 +102,21 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 
 
 UiDopGraph::UiDopGraph() {
-    auto c = add_node("readobj", {100, 256});
-    c->bk_node->inputs[0].value = "assets/monkey.obj";
+    auto n1 = add_node("readobj", {400, 384});
+    auto n2 = add_node("route", {100, 128});
+    auto n3 = add_node("first", {700, 256});
+    n1->bk_node->inputs[0].value = "assets/monkey.obj";
+    add_link(n1->outputs[0], n3->inputs[0]);
+    add_link(n2->outputs[0], n3->inputs[1]);
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        auto val = bk_graph->resolve_value("@readobj1:mesh");
+        std::string expr = "@first1:lhs";
+        dop::DopDepsgraph deps;
+        bk_graph->resolve_depends(expr, &deps);
+        deps.execute();
+        auto val = bk_graph->resolve_value(expr);
         get_parent()->set_view_result(val);
     });
 }
@@ -180,7 +188,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
-    node->position = pos;
+    node->set_position(pos);
     node->kind = kind;
     auto const &desc = dop::tab.desc_of(kind);
     for (auto const &sock_info: desc.inputs) {

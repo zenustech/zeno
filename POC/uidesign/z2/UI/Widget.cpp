@@ -166,4 +166,11 @@ void Widget::paint() const {
 }
 
 
+void Widget::set_position(Point pos) {
+    this->position = pos;
+}
+
+
+
+
 }  // namespace z2::UI

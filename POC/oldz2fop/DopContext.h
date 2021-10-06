@@ -8,11 +8,33 @@
 namespace z2::dop {
 
 
+struct DopNode;
+
+
+struct DopDepsgraph {
+    std::map<DopNode *, std::set<DopNode *>> nodes;
+
+    bool contains_node(DopNode *node) const;
+    void insert_node(DopNode *node, std::set<DopNode *> &&deps);
+    void execute();
+};
+
+
 //struct DopNode;
 
 
 //using DopPromise = ztd::promise<std::any>;
-using DopContext = std::set<std::string>;
+//struct DopContext {
+    //std::set<std::string> visited;
+
+    //bool contains(std::string const &key) const {
+        //return visited.contains(key);
+    //}
+
+    //void insert(std::string const &key) {
+        //visited.insert(key);
+    //}
+//};
 
 
 //struct DopContext {

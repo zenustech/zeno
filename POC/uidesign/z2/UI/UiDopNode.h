@@ -3,8 +3,7 @@
 
 #include <z2/UI/UiDopSocket.h>
 #include <z2/UI/GraphicsRectItem.h>
-#include <z2/dop/DopNode.h>
-#include <z2/dop/DopSocket.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -21,14 +20,14 @@ struct UiDopNode : GraphicsRectItem {
     std::string name;
     std::string kind;
 
-    dop::DopNode *bk_node = nullptr;
+    dop::Node *bk_node = nullptr;
 
     UiDopNode();
-
     void update_sockets();
     void _update_backend_data() const;
     UiDopInputSocket *add_input_socket();
     UiDopOutputSocket *add_output_socket();
+    void set_position(Point pos) override;
     UiDopGraph *get_parent() const;
     void paint() const override;
 };

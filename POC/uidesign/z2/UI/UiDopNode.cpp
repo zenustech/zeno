@@ -3,6 +3,13 @@
 namespace z2::UI {
 
 
+void UiDopNode::set_position(Point pos) {
+    Widget::set_position(pos);
+    bk_node->xpos = position.x;
+    bk_node->ypos = position.y;
+}
+
+
 void UiDopNode::_update_backend_data() const {
     bk_node->name = name;
     bk_node->inputs.resize(inputs.size());
