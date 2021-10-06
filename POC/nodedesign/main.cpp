@@ -2,8 +2,21 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <variant>
 #include <set>
 #include <any>
+
+
+template <class ...Fs>
+struct match : private Fs... {
+    match(Fs &&...fs)
+        : Fs(std::forward<Fs>(fs))... {}
+
+    using Fs::operator()...;
+};
+
+template <class ...Fs>
+match(Fs &&...) -> match<Fs...>;
 
 
 struct Node;
@@ -11,15 +24,18 @@ struct Node;
 struct Graph {
     std::vector<std::unique_ptr<Node>> nodes;
 
-    static std::any resolve(Node *node, std::set<Node *> &visited);
-    static void touch(Node *node, std::vector<Node *> &tolink, std::set<Node *> &visited);
+    static std::any resolve(Input const &input, std::set<Node *> &visited);
+    static void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
     static void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 };
 
 
+using Input = std::variant<std::any, Node *>;
+
+
 struct Node {
     float xorder = 0;
-    std::vector<Node *> inputs;
+    std::vector<Input> inputs;
     std::any result;
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
@@ -80,17 +96,22 @@ void Graph::sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
     }
 }
 
-void Graph::touch(Node *node, std::vector<Node *> &tolink, std::set<Node *> &visited) {
-    if (!node) return;
-    node->preapply(tolink, visited);
+void Graph::touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
+    return std::visit(match([&] (Node *node) {
+        node->preapply(tolink, visited);
+    }, [&] (auto const &) {
+    }), input);
 }
 
-std::any Graph::resolve(Node *node, std::set<Node *> &visited) {
-    if (!node) return {};
-    std::vector<Node *> tolink;
-    touch(idx, tolink, visited);
-    sortexec(tolink, visited);
-    return node->result;
+std::any Graph::resolve(Input const &input, std::set<Node *> &visited) {
+    return std::visit(match([&] (Node *node) {
+        std::vector<Node *> tolink;
+        touch(idx, tolink, visited);
+        sortexec(tolink, visited);
+        return node->result;
+    }, [&] (auto const &) {
+        return std::any{};
+    }), input);
 }
 
 int main() {
