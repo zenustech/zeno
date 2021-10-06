@@ -14,15 +14,8 @@ struct UiDopParam : Widget {
     Label *label;
     TextEdit *edit;
 
-    UiDopParam() {
-        bbox = {0, 0, 500, 50};
-        label = add_child<Label>();
-        label->position = {0, 5};
-        label->bbox = {0, 0, 100, 40};
-        edit = add_child<TextEdit>();
-        edit->position = {100, 5};
-        edit->bbox = {0, 0, 400, 40};
-    }
+    UiDopParam();
+    void set_socket(UiDopSocket *socket);
 };
 
 
