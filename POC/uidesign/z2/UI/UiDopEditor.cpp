@@ -13,8 +13,7 @@ void UiDopEditor::set_selection(UiDopNode *ptr) {
         for (int i = 0; i < ptr->inputs.size(); i++) {
             auto param = add_param();
             auto *socket = ptr->inputs[i];
-            auto *bk_socket = &ptr->bk_node->inputs.at(i);
-            param->set_bk_socket(socket, bk_socket, ptr->bk_node);
+            param->set_socket(socket);
         }
     }
     update_params();

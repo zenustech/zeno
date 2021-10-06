@@ -2,7 +2,7 @@
 #include <z2/UI/UiDopNode.h>
 #include <z2/UI/UiDopScene.h>
 #include <z2/UI/UiDopEditor.h>
-#include <z2/dop/DopTable.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -101,11 +101,38 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 }
 
 
+std::unique_ptr<dop::Graph> UiDopGraph::dump() {
+    auto g = std::make_unique<dop::Graph>();
+    for (auto *node: nodes) {
+        auto n = g->add_node(dop::desc_of(kind));
+        for (int i = 0; node->inputs.size(); i++) {
+            auto expr = node->inputs[i].value;
+            dop::Input input;
+            if (expr.starts_with("@")) {
+                expr = expr.substr(1);
+                auto p = expr.find(':');
+                int outid = 0;
+                /*if (p == std::string::npos) {
+                    auto outname = expr.substr(p + 1);
+                    outid = get_outid(outname);
+                }*/
+                auto outnodename = expr.substr(0, p);
+                auto outnode = nodes_lut.at(nodename);
+                input = outnode; // dop::Input_Link(outnode, outid);
+            } else {
+                input = parse_any(expr); // dop::Input_Param(parse_any(expr));
+            }
+            n->inputs[i] = input;
+        }
+    }
+}
+
+
 UiDopGraph::UiDopGraph() {
     auto n1 = add_node("readobj", {400, 384});
     auto n2 = add_node("route", {100, 128});
     auto n3 = add_node("first", {700, 256});
-    n1->bk_node->inputs[0].value = "assets/monkey.obj";
+    n1->inputs[0]->edit.text = "assets/monkey.obj";
     add_link(n1->outputs[0], n3->inputs[0]);
     add_link(n2->outputs[0], n3->inputs[1]);
 
@@ -113,10 +140,9 @@ UiDopGraph::UiDopGraph() {
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         std::string expr = "@first1:lhs";
-        dop::DopDepsgraph deps;
-        bk_graph->resolve_depends(expr, &deps);
-        deps.execute();
-        auto val = bk_graph->resolve_value(expr);
+        auto node = std::get<dop::Node *>(evaluate(expr));
+        std::set<dop::Node *> visited;
+        auto val = dop::resolve(node, visited);
         get_parent()->set_view_result(val);
     });
 }
@@ -190,7 +216,7 @@ UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->set_position(pos);
     node->kind = kind;
-    auto const &desc = dop::tab.desc_of(kind);
+    auto const &desc = dop::desc_of(kind);
     for (auto const &sock_info: desc.inputs) {
         auto socket = node->add_input_socket();
         socket->name = sock_info.name;
@@ -209,7 +235,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
 
     menu = get_parent()->add_child<UiDopContextMenu>();
     menu->position = position + translate + Point(cur.x, cur.y) * scaling;
-    for (auto const &key: dop::tab.entry_names()) {
+    for (auto const &key: dop::entry_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();

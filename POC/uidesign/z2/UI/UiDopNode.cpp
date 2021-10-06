@@ -5,21 +5,20 @@ namespace z2::UI {
 
 void UiDopNode::set_position(Point pos) {
     Widget::set_position(pos);
-    bk_node->xpos = position.x;
-    bk_node->ypos = position.y;
+    bk_node->xorder = position.x;
 }
 
 
 void UiDopNode::_update_backend_data() const {
-    bk_node->name = name;
+    //bk_node->name = name;
     bk_node->inputs.resize(inputs.size());
-    for (int i = 0; i < inputs.size(); i++) {
+    /*for (int i = 0; i < inputs.size(); i++) {
         bk_node->inputs[i].name = inputs[i]->name;
-    }
+    }*/
     bk_node->outputs.resize(outputs.size());
-    for (int i = 0; i < outputs.size(); i++) {
+    /*for (int i = 0; i < outputs.size(); i++) {
         bk_node->outputs[i].name = outputs[i]->name;
-    }
+    }*/
 }
 
 void UiDopNode::update_sockets() {

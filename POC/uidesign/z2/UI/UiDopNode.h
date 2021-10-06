@@ -3,7 +3,6 @@
 
 #include <z2/UI/UiDopSocket.h>
 #include <z2/UI/GraphicsRectItem.h>
-#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -19,8 +18,6 @@ struct UiDopNode : GraphicsRectItem {
     std::vector<UiDopOutputSocket *> outputs;
     std::string name;
     std::string kind;
-
-    dop::Node *bk_node = nullptr;
 
     UiDopNode();
     void update_sockets();
