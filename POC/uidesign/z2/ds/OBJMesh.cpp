@@ -1,5 +1,4 @@
-#include <z2/dop/DopTable.h>
-#include <z2/dop/DopNode.h>
+#include <z2/dop/dop.h>
 #include <z2/ds/Mesh.h>
 #include <string_view>
 #include <sstream>

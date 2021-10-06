@@ -5,8 +5,7 @@
 #include <z2/UI/TextEdit.h>
 #include <z2/UI/UiDopSocket.h>
 #include <z2/UI/Font.h>
-#include <z2/dop/DopNode.h>
-#include <z2/dop/DopSocket.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -28,18 +27,16 @@ struct UiDopParam : Widget {
 
     void set_bk_socket
         ( UiDopInputSocket *socket
-        , dop::DopInputSocket *bk_socket
-        , dop::DopNode *bk_node
+        , dop::Input *bk_socket
+        , dop::Node *bk_node
         ) {
         label->text = socket->name;
         edit->text = bk_socket->value;
         edit->disabled = socket->links.size();
 
         edit->on_editing_finished.connect([=, this] {
-            if (bk_socket->value != edit->text) {
-                bk_socket->value = edit->text;
-                bk_node->invalidate();
-            }
+            bk_socket->value = edit->text;
+            bk_node->invalidate();
         });
     }
 };
