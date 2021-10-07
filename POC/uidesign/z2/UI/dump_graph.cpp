@@ -46,21 +46,29 @@ static dop::Input parse_socket
 
         if (expr.starts_with('@')) {
             expr = expr.substr(1);
+
             auto p = expr.find(':');
             if (p == std::string::npos) {  // @Route1
                 auto outnode = g->get_node(expr);
                 return dop::Input_Link{.node = outnode, .sockid = 0};
+
             } else {
                 auto sockname = expr.substr(p + 1);
                 auto nodename = expr.substr(0, p);
                 auto *outn = g->get_node(nodename);
-                if (sockname.size() && std::isdigit(sockname[0])) {  // @Route1:0
+
+                if (!sockname.size()) {  // @Route1:
+                    return dop::Input_Link{.node = outn, .sockid = 0};
+
+                } else if (std::isdigit(sockname[0])) {  // @Route1:0
                     int outid = std::stoi(sockname);
                     return dop::Input_Link{.node = outn, .sockid = outid};
-                } else if (sockname.size()) {  // @Route1:value
+
+                } else {  // @Route1:value
                     return exprlut.at(expr);
                 }
             }
+
         } else {  // 3.14
             return dop::Input_Value{.value = parse_any(expr)};
         }
