@@ -130,6 +130,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         }
         n->xpos = node->position.x;
         n->name = node->name;
+        n->desc = &dop::desc_of(node->kind);
     }
 
     for (auto const &[_, node]: nodes) {

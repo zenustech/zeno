@@ -14,6 +14,7 @@ namespace z2::dop {
 
 
 struct Node;
+struct Descriptor;
 
 
 struct Input_Value {
@@ -49,6 +50,7 @@ struct Node {
 
     float xpos = 0;
     std::string name;
+    Descriptor *desc = nullptr;
 
     std::any get_input(int idx) const;
     void set_output(int idx, std::any val);
