@@ -5,6 +5,7 @@
 #include <z2/dop/Descriptor.h>
 #include "utils/safe_at.h"
 #include "utils/safe_dynamic_cast.h"
+#include "utils/UserData.h"
 
 
 
@@ -13,6 +14,8 @@ namespace zeno {
 
 struct IObject {
     using polymorphic_base_type = IObject;
+
+    UserData userData;
 
     IObject();
     virtual ~IObject();
