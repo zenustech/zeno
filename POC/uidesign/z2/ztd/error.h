@@ -1,7 +1,7 @@
 #pragma once
 
-#include <exception>
 #include <string>
+#include <exception>
 #include <z2/ztd/format.h>
 
 namespace z2::ztd {
