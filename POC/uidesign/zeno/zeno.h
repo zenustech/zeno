@@ -176,6 +176,15 @@ struct Descriptor {
   std::vector<std::string> categories;
 };
 
+void defNodeClass(std::function<std::unique_ptr<z2::dop::Node>()> func,
+        std::string const &name, Descriptor const &desc);
+
+template <class T>
+int defNodeClass(std::string const &name, Descriptor const &desc) {
+    defNodeClass(std::make_unique<T>, name, desc);
+    return 1;
+}
+
 template <class F>
 auto defNodeClassHelper(F const &func, std::string const &name) {
     return [=] (Descriptor const &desc) -> int {

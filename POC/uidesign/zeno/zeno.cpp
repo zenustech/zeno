@@ -7,6 +7,24 @@
 namespace zeno {
 
 
+void defNodeClass(std::function<std::unique_ptr<z2::dop::Node>()> func,
+        std::string const &name, Descriptor const &desc) {
+    z2::dop::Descriptor nd;
+    nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";
+    nd.cate.documentation = "A legacy node class defined via ZDK version 1";
+    for (auto i: desc.inputs) {
+        nd.inputs.push_back({i.name});
+    }
+    for (auto p: desc.params) {
+        nd.inputs.push_back({p.name + ':'});
+    }
+    for (auto o: desc.outputs) {
+        nd.outputs.push_back({o.name});
+    }
+    z2::dop::define(name, std::move(nd), std::move(func));
+}
+
+
 IObject::IObject() = default;
 IObject::~IObject() = default;
 std::shared_ptr<IObject> IObject::clone() const {

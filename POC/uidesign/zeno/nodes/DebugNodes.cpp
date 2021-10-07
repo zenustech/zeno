@@ -1,6 +1,5 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/logger.h>
 #include <cstdio>
 
 namespace {
@@ -106,7 +105,7 @@ ZENDEFNODE(TriggerAbortSignal, {
 
 
 
-struct SpdlogInfoMessage : zeno::INode {
+/*struct SpdlogInfoMessage : zeno::INode {
     virtual void apply() override {
         zeno::log_info("{}", get_param<std::string>("message"));
     }
@@ -131,7 +130,7 @@ ZENDEFNODE(SpdlogErrorMessage, {
     {},
     {{"string", "message", "error from spdlog!"}},
     {"debug"},
-});
+});*/
 
 
 struct TriggerException : zeno::INode {
