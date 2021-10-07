@@ -28,6 +28,10 @@ struct vec {
         };
     };
 
+    constexpr size_t size() const {
+        return N;
+    }
+
     constexpr T *data() {
         return _M_data;
     }
@@ -224,6 +228,11 @@ constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2, vec<N, T3> con
         ret[i] = func(t1[i], t2, t3[i]);
     }
     return ret;
+}
+
+template <class F, class T1, class T2>
+constexpr auto &ivapply(F func, T1 &t1, T2 const &t2) {
+    return (t1 = vapply(func, t1, t2));
 }
 
 
@@ -424,6 +433,65 @@ template <class T1>
     requires (vec_traits<T1>::value && true_v<decltype(~(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto operator~(T1 const &t1) {
     return vapply(std::bit_not{}, t1);
+}
+
+
+/* inplace operators */
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() + std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator+=(T1 &t1, T2 const &t2) {
+    return ivapply(std::plus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() - std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator-=(T1 &t1, T2 const &t2) {
+    return ivapply(std::minus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() * std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator*=(T1 &t1, T2 const &t2) {
+    return ivapply(std::multiplies{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() / std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator/=(T1 &t1, T2 const &t2) {
+    return ivapply(std::divides{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() % std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator%=(T1 &t1, T2 const &t2) {
+    return ivapply(std::modulus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() & std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator&=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_and{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() | std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator|=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_or{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() ^ std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator^=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_xor{}, t1, t2);
 }
 
 
