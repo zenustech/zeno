@@ -248,85 +248,99 @@ constexpr S vcast(T const &t) {
 /* operators */
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() + std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator+(T1 const &t1, T2 const &t2) {
     return vapply(std::plus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() - std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator-(T1 const &t1, T2 const &t2) {
     return vapply(std::minus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() * std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator*(T1 const &t1, T2 const &t2) {
     return vapply(std::multiplies{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() / std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator/(T1 const &t1, T2 const &t2) {
     return vapply(std::divides{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() % std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator%(T1 const &t1, T2 const &t2) {
     return vapply(std::modulus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() == std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator==(T1 const &t1, T2 const &t2) {
     return vapply(std::equal_to{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() != std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator!=(T1 const &t1, T2 const &t2) {
     return vapply(std::not_equal_to{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() > std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator>(T1 const &t1, T2 const &t2) {
     return vapply(std::greater{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() < std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator<(T1 const &t1, T2 const &t2) {
     return vapply(std::less{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() >= std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator>=(T1 const &t1, T2 const &t2) {
     return vapply(std::greater_equal{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() <= std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator<=(T1 const &t1, T2 const &t2) {
     return vapply(std::less_equal{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() & std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator&(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_and{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() | std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator|(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_or{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() ^ std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator^(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_xor{}, t1, t2);
 }
@@ -341,7 +355,8 @@ struct __bit_shr {
 };
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() >> std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator>>(T1 const &t1, T2 const &t2) {
     return vapply(__bit_shr{}, t1, t2);
 }
@@ -356,25 +371,28 @@ struct __bit_shl {
 };
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() << std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator<<(T1 const &t1, T2 const &t2) {
     return vapply(__bit_shl{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() && std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator&&(T1 const &t1, T2 const &t2) {
     return vapply(std::logical_and{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value)
+        && std::is_void_v<std::void_t<decltype(std::declval<typename vec_traits<T1>::type>() || std::declval<typename vec_traits<T2>::type>())>>)
 constexpr auto operator||(T1 const &t1, T2 const &t2) {
     return vapply(std::logical_or{}, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+template <class T1>
+    requires (vec_traits<T1>::value && std::is_void_v<std::void_t<decltype(!(std::declval<typename vec_traits<T1>::type>()))>>)
 constexpr auto operator!(T1 const &t1) {
     return vapply(std::logical_not{}, t1);
 }
@@ -389,19 +407,19 @@ struct __positive {
 };
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && std::is_void_v<std::void_t<decltype(+(std::declval<typename vec_traits<T1>::type>()))>>)
 constexpr auto operator+(T1 const &t1) {
     return vapply(__positive{}, t1);
 }
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && std::is_void_v<std::void_t<decltype(-(std::declval<typename vec_traits<T1>::type>()))>>)
 constexpr auto operator-(T1 const &t1) {
     return vapply(std::negate{}, t1);
 }
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && std::is_void_v<std::void_t<decltype(~(std::declval<typename vec_traits<T1>::type>()))>>)
 constexpr auto operator~(T1 const &t1) {
     return vapply(std::bit_not{}, t1);
 }

@@ -158,7 +158,7 @@ ZENDEFNODE(MakeSmallList, {
     {"list"},
 });
 
-struct MakeList : zeno::INode {
+/*struct MakeList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
 
@@ -185,7 +185,7 @@ ZENDEFNODE(MakeList, {
     {"list"},
     {},
     {"list"},
-    });
+    });*/
 
 
 struct NumericRangeList : zeno::INode {

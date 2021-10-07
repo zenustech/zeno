@@ -78,7 +78,8 @@ ZENDEFNODE(TriggerSegFault, {
 struct TriggerDivideZero : zeno::INode {
     virtual void apply() override {
         volatile int x = 0;
-        x /= x;
+        volatile int y = 0;
+        x = x / y;
     }
 };
 

@@ -23,4 +23,8 @@ inline auto toint(auto x) {
     return vcast<int>(x);
 }
 
+inline auto mix(auto x, auto y, auto z) {
+    return lerp(x, y, z);
+}
+
 }
