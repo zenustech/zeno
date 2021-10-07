@@ -64,8 +64,6 @@ struct UiDopInputSocket : UiDopSocket {
         clear_links();
         links.insert(link);
     }
-
-    int get_index() const;
 };
 
 
@@ -86,8 +84,6 @@ struct UiDopOutputSocket : UiDopSocket {
     void attach_link(UiDopLink *link) {
         links.insert(link);
     }
-
-    int get_index() const;
 };
 
 
