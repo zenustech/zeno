@@ -90,7 +90,6 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 }
 
 
-
 struct ReadOBJMesh : dop::Node {
     void apply() override {
         auto path = get_input<std::string>(0);
