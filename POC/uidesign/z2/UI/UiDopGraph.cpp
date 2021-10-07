@@ -116,7 +116,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
     for (auto *node: nodes) {
-        auto n = g->add_node(node->name, dop::desc_of(node->kind));
+        g->add_node(node->name, dop::desc_of(node->kind));
     }
 
     for (auto *node: nodes) {
@@ -126,28 +126,32 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
             auto expr = node->inputs[i]->value;
             dop::Input input;
 
-            if (expr.starts_with('@')) {
+            if (expr.starts_with('@')) {  // @Route1:value
                 expr = expr.substr(1);
                 auto p = expr.find(':');
-                int outid = 0;
-                if (p != std::string::npos) {
-                    auto outname = expr.substr(p + 1);
-                    expr = expr.substr(0, p);
-                    if (outname.size() && std::isdigit(outname[0])) {
-                        outid = std::stoi(outname);
-                    } else if (outname.size()) {
+                if (p == std::string::npos) {
+                    auto outnode = g->get_node(expr);
+                    input = dop::Input_Link{.node = outnode, .sockid = 0};
+                } else {
+                    auto sockname = expr.substr(p + 1);
+                    auto nodename = expr.substr(0, p);
+                    auto *outnode = g->get_node(nodename);
+                    int outid = 0;
+                    if (sockname.size() && std::isdigit(sockname[0])) {
+                        outid = std::stoi(sockname);
+                    } else if (sockname.size()) {
                         for (int i = 0; i < node->outputs.size(); i++) {
-                            if (node->outputs[i]->name == outname) {
+                            if (node->outputs[i]->name == sockname) {
                                 outid = i;
                                 break;
                             }
+                            throw ztd::make_error("bad output socket name: ", sockname);
                         }
                     }
+                    input = dop::Input_Link{.node = outnode, .sockid = outid};
                 }
-                auto outnode = g->get_node(expr);
-                input = dop::Input_Link{.node = outnode, .sockid = outid};
 
-            } else {
+            } else {  // 3.14
                 input = dop::Input_Value{.value = parse_any(expr)};
             }
 
