@@ -113,13 +113,14 @@ static std::any parse_any(std::string const &expr) {
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
-    std::map<std::string, UiDopNode *> nodes_lut;
+    std::map<std::string, dop::Node *> nodes_lut;
     for (auto *node: nodes) {
-        nodes_lut.emplace(node->name, node);
+        auto n = g->add_node(dop::desc_of(node->kind));
+        nodes_lut.emplace(node->name, n);
     }
 
     for (auto *node: nodes) {
-        auto n = g->add_node(dop::desc_of(node->kind));
+        auto n = nodes_lut.at(node->name);
 
         for (int i = 0; i < node->inputs.size(); i++) {
             auto expr = node->inputs[i]->value;
@@ -135,10 +136,10 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                 }*/
                 auto outnodename = expr.substr(0, p);
                 auto outnode = nodes_lut.at(outnodename);
-                input = outnode; // dop::Input_Link(outnode, outid);
+                input = dop::Input_Link{.node = outnode, .sockid = outid};
 
             } else {
-                input = parse_any(expr); // dop::Input_Param(parse_any(expr));
+                input = dop::Input_Value{.value = parse_any(expr)};
             }
 
             n->inputs.at(i) = input;

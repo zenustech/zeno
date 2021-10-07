@@ -16,7 +16,19 @@ struct Node;
 struct Descriptor;
 
 
-using Input = std::variant<std::any, Node *>;
+struct Input_Value {
+    std::any value;
+};
+
+struct Input_Link {
+    Node *node = nullptr;
+    int sockid = 0;
+};
+
+using Input = std::variant
+< Input_Value
+, Input_Link
+>;
 
 
 struct Graph {
@@ -35,16 +47,15 @@ void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
 struct Node {
     float xorder = 0;
     std::vector<Input> inputs;
-    std::any result;
+    std::vector<std::any> outputs;
 
     std::any get_input(int idx) const;
+    void set_output(int idx, std::any val);
 
     template <class T>
     T get_input(int idx) const {
         return std::any_cast<T>(get_input(idx));
     }
-
-    void set_output(int idx, std::any val);
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
     virtual void apply() = 0;

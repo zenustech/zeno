@@ -11,7 +11,7 @@ std::any Node::get_input(int idx) const {
 
 
 void Node::set_output(int idx, std::any val) {
-    result = std::move(val);
+    outputs.at(idx) = std::move(val);
 }
 
 
@@ -37,30 +37,30 @@ void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited) {
 
 
 void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
-    return std::visit(ztd::match([&] (Node *node) {
-        node->preapply(tolink, visited);
-    }, [&] (std::any const &) {
+    return std::visit(ztd::match([&] (Input_Link const &input) {
+        input.node->preapply(tolink, visited);
+    }, [&] (Input_Value const &) {
     }), input);
 }
 
 
 std::any resolve(Input const &input, std::set<Node *> &visited) {
-    return std::visit(ztd::match([&] (Node *node) {
+    return std::visit(ztd::match([&] (Input_Link const &input) {
         std::vector<Node *> tolink;
-        touch(node, tolink, visited);
+        touch(input, tolink, visited);
         sortexec(tolink, visited);
-        return node->result;
-    }, [&] (std::any const &val) {
-        return val;
+        return input.node->outputs.at(input.sockid);
+    }, [&] (Input_Value const &val) {
+        return val.value;
     }), input);
 }
 
 
 std::any getval(Input const &input) {
-    return std::visit(ztd::match([&] (Node *node) {
-        return node->result;
-    }, [&] (std::any const &val) {
-        return val;
+    return std::visit(ztd::match([&] (Input_Link const &input) {
+        return input.node->outputs.at(input.sockid);
+    }, [&] (Input_Value const &val) {
+        return val.value;
     }), input);
 }
 
