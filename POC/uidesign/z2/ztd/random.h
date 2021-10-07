@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 namespace z2::ztd {
+inline namespace random {
 
 template <class T = unsigned int>
 static inline T irand(unsigned int i) {
@@ -35,4 +36,5 @@ static inline void srand(unsigned long i) {
 #endif
 }
 
+}
 }

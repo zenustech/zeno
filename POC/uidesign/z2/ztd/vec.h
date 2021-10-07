@@ -9,6 +9,7 @@
 
 
 namespace z2::ztd {
+inline namespace mathvec {
 
 
 /* main class */
@@ -781,4 +782,5 @@ using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
 
 
+}
 }

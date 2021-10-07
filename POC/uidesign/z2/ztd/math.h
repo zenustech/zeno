@@ -3,6 +3,7 @@
 #include <cmath>
 
 namespace z2::ztd {
+inline namespace math {
 
 static auto pymod(auto x, auto y) {
     auto z = x / y;
@@ -25,4 +26,5 @@ static auto &ipymod(auto &x, auto y) {
     return x;
 }
 
+}
 }
