@@ -47,7 +47,16 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
             auto *socket = node->inputs[i];
             if (socket->links.size()) {
                 auto *link = *socket->links.begin();
-                auto *another = link->from_socket;
+                auto *outsocket = link->from_socket;
+                auto *outnode = outsocket->get_parent();
+                auto outn = g->get_node(outnode->name);
+                int outid = 0;
+                for (int i = 0; i < outnode->outputs.size(); i++) {
+                    if (outnode->outputs[i]->name == outsocket->name) {
+                        outid = i;
+                    }
+                }
+                input = dop::Input_Link{.node = outn, .sockid = outid};
 
             } else {
                 auto expr = socket->value;
@@ -61,10 +70,10 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                     } else {
                         auto sockname = expr.substr(p + 1);
                         auto nodename = expr.substr(0, p);
-                        auto *outnode = g->get_node(nodename);
+                        auto *outn = g->get_node(nodename);
                         if (sockname.size() && std::isdigit(sockname[0])) {  // @Route1:0
                             int outid = std::stoi(sockname);
-                            input = dop::Input_Link{.node = outnode, .sockid = outid};
+                            input = dop::Input_Link{.node = outn, .sockid = outid};
                         } else if (sockname.size()) {  // @Route1:value
                             input = exprlut.at(expr);
                         }
