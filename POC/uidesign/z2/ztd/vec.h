@@ -570,83 +570,83 @@ constexpr auto log(T1 const &t1) {
     }, t1);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::fmod(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::fmod(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmod(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
         return std::fmod(t1, t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::fmin(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::fmin(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmin(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
         return std::fmin(t1, t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::fmax(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::fmax(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmax(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
         return std::fmax(t1, t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::min(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::min(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto min(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::min(t1, t2);
+        return std::min((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::max(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::max(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto max(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::max(t1, t2);
+        return std::max((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::atan2(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::atan2(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto atan2(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::atan2(t1, t2);
+        return std::atan2((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (true_v<decltype(std::pow(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (true_v<decltype(std::pow(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto pow(T1 const &t1, T2 const &t2) {
     return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::pow(t1, t2);
+        return std::pow((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2, class T3>
-    requires (true_v<decltype(std::fma(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (true_v<decltype(std::fma(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fma(T1 const &t1, T2 const &t2, T3 const &t3) {
     return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::fma(t1, t2, t3);
+        return std::fma((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 
-template <class T1, class T2, class T3>
-    requires (true_v<decltype(std::clamp(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (true_v<decltype(std::clamp(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto clamp(T1 const &t1, T2 const &t2, T3 const &t3) {
     return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::clamp(t1, t2, t3);
+        return std::clamp((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 
-template <class T1, class T2, class T3>
-    requires (true_v<decltype(std::lerp(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (true_v<decltype(std::lerp(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
     return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::lerp(t1, t2, t3);
+        return std::lerp((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 

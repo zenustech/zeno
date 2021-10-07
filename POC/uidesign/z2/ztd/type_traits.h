@@ -25,7 +25,7 @@ struct promoted<T> {
 };
 
 template <class ...Ts>
-using promoted_t = typename promoted<...Ts>::type;
+using promoted_t = typename promoted<Ts...>::type;
 
 template <class T, class ...Ts>
 using first_t = T;
