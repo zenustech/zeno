@@ -3,6 +3,7 @@
 #include <z2/UI/UiDopScene.h>
 #include <z2/UI/UiDopEditor.h>
 #include <z2/dop/dop.h>
+#include <algorithm>
 
 
 namespace z2::UI {
@@ -130,10 +131,15 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                 expr = expr.substr(1);
                 auto p = expr.find(':');
                 int outid = 0;
-                /*if (p == std::string::npos) {
+                if (p == std::string::npos) {
                     auto outname = expr.substr(p + 1);
-                    outid = get_outid(outname);
-                }*/
+                    for (int i = 0; i < node->outputs.size(); i++) {
+                        if (node->outputs[i]->name == outname) {
+                            outid = i;
+                            break;
+                        }
+                    }
+                }
                 auto outnodename = expr.substr(0, p);
                 auto outnode = nodes_lut.at(outnodename);
                 input = dop::Input_Link{.node = outnode, .sockid = outid};
@@ -158,7 +164,7 @@ UiDopGraph::UiDopGraph() {
     btn->on_clicked.connect([this] () {
         auto g = this->dump_graph();
         std::set<dop::Node *> visited;
-        auto val = dop::resolve(g->nodes.at(0).get(), visited);
+        auto val = dop::resolve(dop::Input_Link{.node = g->nodes.at(0).get()}, visited);
         get_parent()->set_view_result(val);
     });
 }

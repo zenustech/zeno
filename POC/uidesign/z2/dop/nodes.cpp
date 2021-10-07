@@ -8,11 +8,11 @@ namespace {
 
 struct If : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = std::any_cast<int>(resolve(inputs[0], visited));
+        auto cond = std::any_cast<int>(resolve(inputs.at(0), visited));
         if (cond) {
-            touch(inputs[1], tolink, visited);
+            touch(inputs.at(1), tolink, visited);
         } else {
-            touch(inputs[2], tolink, visited);
+            touch(inputs.at(2), tolink, visited);
         }
     }
 
@@ -31,10 +31,10 @@ Z2_DOP_DEFINE(If, {{
 
 struct For : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = std::any_cast<int>(resolve(inputs[0], visited));
+        auto cond = std::any_cast<int>(resolve(inputs.at(0), visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
-            resolve(inputs[1], tmp_visited);
+            resolve(inputs.at(1), tmp_visited);
         }
     }
 
@@ -52,8 +52,8 @@ Z2_DOP_DEFINE(For, {{
 
 struct Route : dop::Node {
     void apply() override {
-        auto val = std::any_cast<int>(getval(inputs[0]));
-        result = val;
+        auto val = get_input<int>(0);
+        set_output(0, val);
     }
 };
 
@@ -68,7 +68,7 @@ Z2_DOP_DEFINE(Route, {{
 
 struct Print : dop::Node {
     void apply() override {
-        auto val = std::any_cast<int>(getval(inputs[0]));
+        auto val = get_input<int>(0);
         printf("Print %d\n", val);
     }
 };
