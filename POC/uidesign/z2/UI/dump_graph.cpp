@@ -23,6 +23,51 @@ static std::any parse_any(std::string const &expr) {
 }
 
 
+static dop::Input parse_socket
+    ( dop::Graph *g
+    , ztd::map<std::string, dop::Input_Link> const &exprlut
+    , UiDopInputSocket *socket
+    ) {
+    if (socket->links.size()) {
+        auto *link = *socket->links.begin();
+        auto *outsocket = link->from_socket;
+        auto *outnode = outsocket->get_parent();
+        auto outn = g->get_node(outnode->name);
+        int outid = 0;
+        for (int i = 0; i < outnode->outputs.size(); i++) {
+            if (outnode->outputs[i]->name == outsocket->name) {
+                outid = i;
+            }
+        }
+        return dop::Input_Link{.node = outn, .sockid = outid};
+
+    } else {
+        auto expr = socket->value;
+
+        if (expr.starts_with('@')) {
+            expr = expr.substr(1);
+            auto p = expr.find(':');
+            if (p == std::string::npos) {  // @Route1
+                auto outnode = g->get_node(expr);
+                return dop::Input_Link{.node = outnode, .sockid = 0};
+            } else {
+                auto sockname = expr.substr(p + 1);
+                auto nodename = expr.substr(0, p);
+                auto *outn = g->get_node(nodename);
+                if (sockname.size() && std::isdigit(sockname[0])) {  // @Route1:0
+                    int outid = std::stoi(sockname);
+                    return dop::Input_Link{.node = outn, .sockid = outid};
+                } else if (sockname.size()) {  // @Route1:value
+                    return exprlut.at(expr);
+                }
+            }
+        } else {  // 3.14
+            return dop::Input_Value{.value = parse_any(expr)};
+        }
+    }
+}
+
+
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
@@ -42,47 +87,8 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         auto n = g->get_node(node->name);
 
         for (int i = 0; i < node->inputs.size(); i++) {
-            dop::Input input;
-
             auto *socket = node->inputs[i];
-            if (socket->links.size()) {
-                auto *link = *socket->links.begin();
-                auto *outsocket = link->from_socket;
-                auto *outnode = outsocket->get_parent();
-                auto outn = g->get_node(outnode->name);
-                int outid = 0;
-                for (int i = 0; i < outnode->outputs.size(); i++) {
-                    if (outnode->outputs[i]->name == outsocket->name) {
-                        outid = i;
-                    }
-                }
-                input = dop::Input_Link{.node = outn, .sockid = outid};
-
-            } else {
-                auto expr = socket->value;
-
-                if (expr.starts_with('@')) {
-                    expr = expr.substr(1);
-                    auto p = expr.find(':');
-                    if (p == std::string::npos) {  // @Route1
-                        auto outnode = g->get_node(expr);
-                        input = dop::Input_Link{.node = outnode, .sockid = 0};
-                    } else {
-                        auto sockname = expr.substr(p + 1);
-                        auto nodename = expr.substr(0, p);
-                        auto *outn = g->get_node(nodename);
-                        if (sockname.size() && std::isdigit(sockname[0])) {  // @Route1:0
-                            int outid = std::stoi(sockname);
-                            input = dop::Input_Link{.node = outn, .sockid = outid};
-                        } else if (sockname.size()) {  // @Route1:value
-                            input = exprlut.at(expr);
-                        }
-                    }
-                } else {  // 3.14
-                    input = dop::Input_Value{.value = parse_any(expr)};
-                }
-            }
-
+            auto input = parse_socket(g.get(), exprlut, socket);
             n->inputs.at(i) = input;
         }
     }
