@@ -1,4 +1,6 @@
 #include "zeno.h"
+#include "types/NumericObject.h"
+#include "types/StringObject.h"
 #include <z2/dop/execute.h>
 
 
