@@ -115,8 +115,13 @@ static std::any parse_any(std::string const &expr) {
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
+    ztd::map<std::string, dop::Input_Link> exprlut;
     for (auto *node: nodes) {
-        g->add_node(node->name, dop::desc_of(node->kind));
+        auto n = g->add_node(node->name, dop::desc_of(node->kind));
+        for (int i = 0; i < node->outputs.size(); i++) {
+            auto key = node->name + ':' + node->outputs[i]->name;
+            exprlut.emplace(key, dop::Input_Link{.node = n, .sockid = i});
+        }
     }
 
     for (auto *node: nodes) {
@@ -140,13 +145,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                     if (sockname.size() && std::isdigit(sockname[0])) {
                         outid = std::stoi(sockname);
                     } else if (sockname.size()) {
-                        for (int i = 0; i < node->outputs.size(); i++) {
-                            if (node->outputs[i]->name == sockname) {
-                                outid = i;
-                                break;
-                            }
-                            throw ztd::make_error("bad output socket name: ", sockname);
-                        }
+                        exprlut.at(expr);
                     }
                     input = dop::Input_Link{.node = outnode, .sockid = outid};
                 }
