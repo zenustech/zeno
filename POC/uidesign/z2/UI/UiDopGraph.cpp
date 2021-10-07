@@ -121,8 +121,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     for (auto *node: nodes) {
         auto n = g->add_node(dop::desc_of(node->kind));
 
-        for (int i = 0; node->inputs.size(); i++) {
-            printf("%p %d %p\n", n, i, node->inputs[i]);
+        for (int i = 0; i < node->inputs.size(); i++) {
             auto expr = node->inputs[i]->value;
             dop::Input input;
 
