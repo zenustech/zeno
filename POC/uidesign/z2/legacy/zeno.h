@@ -3,8 +3,8 @@
 
 #include <z2/dop/Node.h>
 #include <z2/dop/Descriptor.h>
-#include "safe_at.h"
-#include "safe_dynamic_cast.h"
+#include "utils/safe_at.h"
+#include "utils/safe_dynamic_cast.h"
 
 
 

@@ -1,4 +1,4 @@
-#include <z2/legacy/legacy.h>
+#include "zeno.h"
 #include <z2/dop/execute.h>
 
 
