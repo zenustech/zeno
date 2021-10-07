@@ -45,6 +45,8 @@ struct UiDopSocket : GraphicsRectItem {
 
 
 struct UiDopInputSocket : UiDopSocket {
+    std::string value;
+
     void paint() const override {
         UiDopSocket::paint();
 

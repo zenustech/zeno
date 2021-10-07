@@ -644,10 +644,10 @@ constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-constexpr bool vany(vec<N, T> const &a) {
+constexpr bool vany(vec<N, T> const &t) {
     bool ret = false;
     for (size_t i = 0; i < N; i++) {
-        ret = ret || (bool)a[i];
+        ret = ret || (bool)t[i];
     }
     return ret;
 }
