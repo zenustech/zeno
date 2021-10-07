@@ -72,8 +72,8 @@ protected:
     virtual void apply() = 0;
 
     bool has_input2(std::string const &id) const;
-    std::any get_input2(std::string const &id) const;
-    void set_output2(std::string const &id, std::any &&obj);
+    Any get_input2(std::string const &id) const;
+    void set_output2(std::string const &id, Any &&obj);
 
     /* todo: deprecated */
     bool has_input(std::string const &id) const;
@@ -110,29 +110,9 @@ protected:
         return (bool)p;
     }
 
-    bool _implicit_cast_from_to(std::string const &id,
-        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to);
-
     /* todo: deprecated */
     template <class T>
-    std::enable_if_t<!std::is_abstract_v<T> && std::is_trivially_constructible_v<T>,
-    std::shared_ptr<T>> get_input(std::string const &id) const {
-        auto obj = get_input(id, typeid(T).name());
-        if (auto p = std::dynamic_pointer_cast<T>(obj); p) {
-            return p;
-        }
-        auto ret = std::make_shared<T>();
-        if (!const_cast<INode *>(this)->_implicit_cast_from_to(id, obj, ret)) {
-            throw ztd::make_error("input socket `" + id + "` expect IObject of `"
-                + typeid(T).name() + "`, got `" + typeid(*obj).name() + "` (get_input)");
-        }
-        return ret;
-    }
-
-    /* todo: deprecated */
-    template <class T>
-    std::enable_if_t<std::is_abstract_v<T> || !std::is_trivially_constructible_v<T>,
-    std::shared_ptr<T>> get_input(std::string const &id) const {
+    std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id, typeid(T).name());
         return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` ");
     }
@@ -141,19 +121,6 @@ protected:
     auto get_param(std::string const &id) const {
         std::variant<int, float, std::string> res;
         auto inpid = id + ":";
-        using scalar_type_variant = std::variant
-            < bool
-            , uint8_t
-            , uint16_t
-            , uint32_t
-            , uint64_t
-            , int8_t
-            , int16_t
-            , int32_t
-            , int64_t
-            , float
-            , double
-            >;
         if (has_input2<scalar_type_variant>(inpid)) {
             std::visit([&] (auto const &x) {
                 using T = std::decay_t<decltype(x)>;
@@ -178,4 +145,60 @@ protected:
 };
 
 
+struct ParamDescriptor {
+  std::string type, name, defl;
+
+  ParamDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl)
+      : type(type), name(name), defl(defl) {}
+};
+
+struct SocketDescriptor {
+  std::string type, name, defl;
+
+  SocketDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl = {})
+      : type(type), name(name), defl(defl) {}
+
+  //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
+  SocketDescriptor(const char *name)
+      : SocketDescriptor({}, name) {}
+};
+
+struct Descriptor {
+  std::vector<SocketDescriptor> inputs;
+  std::vector<SocketDescriptor> outputs;
+  std::vector<ParamDescriptor> params;
+  std::vector<std::string> categories;
+};
+
+template <class F>
+auto defNodeClassHelper(F const &func, std::string const &name) {
+    return [=] (Descriptor const &desc) -> int {
+        defNodeClass(func, name, desc);
+        return 1;
+    };
 }
+
+#define ZENO_DEFNODE(Class) \
+    static int def##Class = ::z2::legacy::defNodeClassHelper(std::make_unique<Class>, #Class)
+
+#define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \
+    static int def##Class##PostFix = ::z2::legacy::defOverloadNodeClassHelper(std::make_unique<Class##PostFix>, #Class, {__VA_ARGS__})
+
+#define ZENDEFNODE(Class, ...) \
+    ZENO_DEFNODE(Class)(__VA_ARGS__)
+
+
+template <class T>
+using SharedPtr = std::shared_ptr<T>;
+
+template <class T, class ...Ts>
+auto makeShared(Ts &&...ts) {
+    return std::make_shared<T>(std::forward<Ts>(ts)...);
+}
+
+
+}
+
+namespace zeno = z2::legacy;
