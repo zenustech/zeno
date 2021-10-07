@@ -258,6 +258,21 @@ constexpr S vcast(T const &t) {
     }
 }
 
+template <class S, size_t N, class T>
+constexpr S vec_to_other(vec<N, T> const &t) {
+    return ([&] <size_t ...I> (std::index_sequence<I...>) {
+        return S(t[I]...);
+    })(std::make_index_sequence<N>());
+}
+
+template <size_t N, class S>
+constexpr auto other_to_vec(S const &s) {
+    return ([&] <size_t ...I> (std::index_sequence<I...>) {
+        using T = std::remove_cvref_t<decltype(s[0])>;
+        return vec<N, T>(s[I]...);
+    })(std::make_index_sequence<N>());
+}
+
 
 /* operators */
 
