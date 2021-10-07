@@ -13,7 +13,6 @@ namespace z2::dop {
 
 
 struct Node;
-struct Descriptor;
 
 
 struct Input_Value {
@@ -31,17 +30,16 @@ using Input = std::variant
 >;
 
 
-struct Graph {
-    std::vector<std::unique_ptr<Node>> nodes;
-
-    Node *add_node(Descriptor const &desc);
-};
-
-
 std::any getval(Input const &input);
 std::any resolve(Input const &input, std::set<Node *> &visited);
 void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
 void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
+
+
+inline std::any resolve(Input const &input) {
+    std::set<Node *> visited;
+    return resolve(input, visited);
+}
 
 
 struct Node {

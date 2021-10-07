@@ -1,5 +1,4 @@
 #include <z2/dop/Descriptor.h>
-#include <z2/dop/Node.h>
 
 
 namespace z2::dop {
@@ -28,16 +27,6 @@ std::vector<std::string> desc_names() {
 void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory) {
     desc.factory = std::move(factory);
     desc_table().emplace(kind, std::move(desc));
-}
-
-
-Node *Graph::add_node(Descriptor const &desc) {
-    auto node = desc.factory();
-    node->inputs.resize(desc.inputs.size());
-    node->outputs.resize(desc.outputs.size());
-    auto p = node.get();
-    nodes.push_back(std::move(node));
-    return p;
 }
 
 

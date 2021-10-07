@@ -115,14 +115,12 @@ static std::any parse_any(std::string const &expr) {
 std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
-    std::map<std::string, dop::Node *> nodes_lut;
     for (auto *node: nodes) {
-        auto n = g->add_node(dop::desc_of(node->kind));
-        nodes_lut.emplace(node->name, n);
+        auto n = g->add_node(node->name, dop::desc_of(node->kind));
     }
 
     for (auto *node: nodes) {
-        auto n = nodes_lut.at(node->name);
+        auto n = g->get_node(node->name);
 
         for (int i = 0; i < node->inputs.size(); i++) {
             auto expr = node->inputs[i]->value;
@@ -134,6 +132,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                 int outid = 0;
                 if (p == std::string::npos) {
                     auto outname = expr.substr(p + 1);
+                    expr = expr.substr(0, p);
                     if (outname.size() && std::isdigit(outname[0])) {
                         outid = std::stoi(outname);
                     } else {
@@ -144,9 +143,8 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                             }
                         }
                     }
-                    expr = expr.substr(0, p);
                 }
-                auto outnode = nodes_lut.at(expr);
+                auto outnode = g->get_node(expr);
                 input = dop::Input_Link{.node = outnode, .sockid = outid};
 
             } else {
@@ -161,15 +159,16 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("ReadOBJMesh", {400, 384});
+    auto n1 = add_node("Route", {400, 384});
+    auto n2 = add_node("ReadOBJMesh", {400, 384});
+    n1->inputs[0]->value = "assets/monkey.obj";
     n1->inputs[0]->value = "assets/monkey.obj";
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         auto g = this->dump_graph();
-        std::set<dop::Node *> visited;
-        auto val = dop::resolve(dop::Input_Link{.node = g->nodes.at(0).get()}, visited);
+        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ReadOBJMesh1")});
         get_parent()->set_view_result(val);
     });
 }
