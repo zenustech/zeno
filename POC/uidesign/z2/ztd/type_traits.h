@@ -10,6 +10,10 @@
 namespace z2::ztd {
 inline namespace type_traits {
 
+template <class F, class ...Ts>
+using nocvref_invoke_result_t = std::remove_cvref_t<decltype(std::declval<F>()(
+        std::declval<std::remove_cvref_t<Ts>>()...))>;
+
 template <class ...Ts>
 struct promoted {
 };
@@ -25,7 +29,7 @@ struct promoted<T> {
 };
 
 template <class ...Ts>
-using promoted_t = typename promoted<Ts...>::type;
+using promoted_t = std::remove_cvref_t<typename promoted<Ts...>::type>;
 
 template <class T, class ...Ts>
 using first_t = T;
