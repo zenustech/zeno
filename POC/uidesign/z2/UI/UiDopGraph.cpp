@@ -122,6 +122,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         auto n = g->add_node(dop::desc_of(node->kind));
 
         for (int i = 0; node->inputs.size(); i++) {
+            printf("%p %d %p\n", n, i, node->inputs[i]);
             auto expr = node->inputs[i]->value;
             dop::Input input;
 
@@ -149,19 +150,15 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("readobj", {400, 384});
-    auto n2 = add_node("route", {100, 128});
-    auto n3 = add_node("first", {700, 256});
-    //n1->inputs[0]->edit.text = "assets/monkey.obj";
-    add_link(n1->outputs[0], n3->inputs[0]);
-    add_link(n2->outputs[0], n3->inputs[1]);
+    auto n1 = add_node("ReadOBJMesh", {400, 384});
+    n1->inputs[0]->value = "assets/monkey.obj";
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         auto g = this->dump_graph();
         std::set<dop::Node *> visited;
-        auto val = dop::resolve(g->nodes.at(2).get(), visited);
+        auto val = dop::resolve(g->nodes.at(0).get(), visited);
         get_parent()->set_view_result(val);
     });
 }

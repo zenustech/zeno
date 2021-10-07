@@ -17,6 +17,8 @@ UiDopParam::UiDopParam() {
 
 
 void UiDopParam::set_socket(UiDopInputSocket *socket) {
+    label->text = socket->name;
+    edit->text = socket->value;
     edit->on_editing_finished.connect([=, this] {
         socket->value = edit->text;
     });
