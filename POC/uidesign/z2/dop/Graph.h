@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include <map>
+#include <z2/ztd/map.h>
 
 
 namespace z2::dop {
@@ -14,7 +14,7 @@ struct Descriptor;
 
 
 struct Graph {
-    std::map<std::string, std::unique_ptr<Node>> nodes;
+    ztd::map<std::string, std::unique_ptr<Node>> nodes;
 
     Node *get_node(std::string const &name) const;
     Node *add_node(std::string const &name, Descriptor const &desc);

@@ -1,11 +1,12 @@
 #include <z2/dop/Descriptor.h>
+#include <z2/ztd/map.h>
 
 
 namespace z2::dop {
 
 
 static auto &desc_table() {
-    static std::map<std::string, Descriptor> impl;
+    static ztd::map<std::string, Descriptor> impl;
     return impl;
 }
 

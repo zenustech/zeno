@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <z2/ztd/vector.h>
 #include <variant>
 #include <string>
 #include <memory>
@@ -44,8 +45,8 @@ inline std::any resolve(Input const &input) {
 
 struct Node {
     float xorder = 0;
-    std::vector<Input> inputs;
-    std::vector<std::any> outputs;
+    ztd::vector<Input> inputs;
+    ztd::vector<std::any> outputs;
 
     std::any get_input(int idx) const;
     void set_output(int idx, std::any val);

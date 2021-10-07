@@ -52,13 +52,12 @@ Z2_DOP_DEFINE(For, {{
 
 struct Route : dop::Node {
     void apply() override {
-        auto val = get_input<int>(0);
-        set_output(0, val);
+        set_output(0, get_input(0));
     }
 };
 
 Z2_DOP_DEFINE(Route, {{
-    "misc", "always return the first argument",
+    "misc", "always return the first input",
 }, {
     {"value"},
 }, {
@@ -66,14 +65,14 @@ Z2_DOP_DEFINE(Route, {{
 }});
 
 
-struct Print : dop::Node {
+struct PrintInt : dop::Node {
     void apply() override {
         auto val = get_input<int>(0);
         printf("Print %d\n", val);
     }
 };
 
-Z2_DOP_DEFINE(Print, {{
+Z2_DOP_DEFINE(PrintInt, {{
     "misc", "prints a integer",
 }, {
     {"value"},

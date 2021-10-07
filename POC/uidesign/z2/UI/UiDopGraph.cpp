@@ -130,12 +130,12 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
                 expr = expr.substr(1);
                 auto p = expr.find(':');
                 int outid = 0;
-                if (p == std::string::npos) {
+                if (p != std::string::npos) {
                     auto outname = expr.substr(p + 1);
                     expr = expr.substr(0, p);
                     if (outname.size() && std::isdigit(outname[0])) {
                         outid = std::stoi(outname);
-                    } else {
+                    } else if (outname.size()) {
                         for (int i = 0; i < node->outputs.size(); i++) {
                             if (node->outputs[i]->name == outname) {
                                 outid = i;
@@ -159,10 +159,10 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("Route", {400, 384});
+    auto n1 = add_node("Route", {200, 128});
     auto n2 = add_node("ReadOBJMesh", {400, 384});
     n1->inputs[0]->value = "assets/monkey.obj";
-    n1->inputs[0]->value = "assets/monkey.obj";
+    n2->inputs[0]->value = "@Route1";
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
