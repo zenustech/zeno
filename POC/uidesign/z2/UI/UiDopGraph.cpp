@@ -169,9 +169,11 @@ UiDopGraph::UiDopGraph() {
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        auto g = this->dump_graph();
-        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ReadOBJMesh1")});
-        get_parent()->set_view_result(val);
+        ztd::catch_error([&] () {
+            auto g = this->dump_graph();
+            auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ReadOBJMesh1")});
+            get_parent()->set_view_result(val);
+        });
     });
 }
 

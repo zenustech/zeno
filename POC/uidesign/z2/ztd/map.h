@@ -2,7 +2,6 @@
 
 #include <map>
 #include <z2/ztd/error.h>
-#include <z2/ztd/format.h>
 
 namespace z2::ztd {
 

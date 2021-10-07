@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <z2/ztd/error.h>
 
 namespace z2::ztd {
@@ -26,13 +27,13 @@ std::string to_string(Ts const &...ts) {
 }
 
 template <class ...Ts>
-inline auto make_error(Ts const &...ts) {
-    return error(to_string<Ts...>(ts...));
+void println(Ts const &...ts) {
+    (std::cout << ... << ts) << std::endl;
 }
 
 template <class ...Ts>
-inline auto format_error(const char *fmt, Ts &&...ts) {
-    return error(format<Ts...>(fmt, std::forward<Ts>(ts)...));
+void eprintln(Ts const &...ts) {
+    (std::cerr << ... << ts) << std::endl;
 }
 
 }
