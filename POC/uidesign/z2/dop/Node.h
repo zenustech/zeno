@@ -34,7 +34,7 @@ using Input = std::variant
 std::any getval(Input const &input);
 std::any resolve(Input const &input, std::set<Node *> &visited);
 void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited);
-void sortexec(std::vector<Node *> &tolink, std::set<Node *> &visited);
+void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited);
 
 
 inline std::any resolve(Input const &input) {
@@ -44,9 +44,11 @@ inline std::any resolve(Input const &input) {
 
 
 struct Node {
-    float xorder = 0;
     ztd::vector<Input> inputs;
     ztd::vector<std::any> outputs;
+
+    float xpos = 0;
+    std::string name;
 
     std::any get_input(int idx) const;
     void set_output(int idx, std::any val);

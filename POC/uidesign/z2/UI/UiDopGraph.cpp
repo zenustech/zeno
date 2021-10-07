@@ -128,6 +128,8 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
             auto key = node->name + ':' + node->outputs[i]->name;
             exprlut.emplace(key, dop::Input_Link{.node = n, .sockid = i});
         }
+        n->xpos = node->position.x;
+        n->name = node->name;
     }
 
     for (auto const &[_, node]: nodes) {
@@ -167,8 +169,8 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("Route", {200, 128});
-    auto n2 = add_node("ReadOBJMesh", {400, 384});
+    auto n1 = add_node("Route", {400, 128});
+    auto n2 = add_node("ReadOBJMesh", {200, 384});
     n1->inputs[0]->value = "assets/monkey.obj";
     n2->inputs[0]->value = "@Route1";
 
