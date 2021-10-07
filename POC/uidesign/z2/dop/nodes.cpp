@@ -5,7 +5,6 @@ namespace z2 {
 namespace {
 
 
-
 struct If : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
         auto cond = std::any_cast<int>(resolve(inputs.at(0), visited));

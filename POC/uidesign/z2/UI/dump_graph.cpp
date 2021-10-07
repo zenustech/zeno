@@ -9,17 +9,17 @@ namespace z2::UI {
 
 
 static std::any parse_any(std::string const &expr) {
-    if (!expr.size()) {
+    if (!expr.size()) {  // (empty string)
         return {};
-    }
-    if (std::isdigit(expr[0])) {
+    } else if (std::isdigit(expr[0])) {
         if (expr.find('.') != std::string::npos) {  // 3.14
             return std::stof(expr);
         } else {  // 42
             return std::stoi(expr);
         }
+    } else {  // string
+        return expr;
     }
-    return expr;
 }
 
 
@@ -28,7 +28,7 @@ static dop::Input parse_socket
     , ztd::map<std::string, dop::Input_Link> const &exprlut
     , UiDopInputSocket *socket
     ) {
-    if (socket->links.size()) {
+    if (socket->links.size()) {  // (physically linked)
         auto *link = *socket->links.begin();
         auto *outsocket = link->from_socket;
         auto *outnode = outsocket->get_parent();
@@ -84,6 +84,8 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         auto n = g->add_node(node->name, dop::desc_of(node->kind));
         for (int i = 0; i < node->outputs.size(); i++) {
             auto key = node->name + ':' + node->outputs[i]->name;
+            // (todo: really necessary here? may use get_index...)
+            // for fast lookup like exprlut.at("Route1:value") in later pass
             exprlut.emplace(key, dop::Input_Link{.node = n, .sockid = i});
         }
         n->xpos = node->position.x;
