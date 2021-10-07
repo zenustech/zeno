@@ -18,6 +18,7 @@ struct UiDopNode : GraphicsRectItem {
     std::vector<UiDopOutputSocket *> outputs;
     std::string name;
     std::string kind;
+    bool failed = false;
 
     UiDopNode();
     void update_sockets();

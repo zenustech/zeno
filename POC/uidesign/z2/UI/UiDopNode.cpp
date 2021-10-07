@@ -46,7 +46,11 @@ void UiDopNode::paint() const {
     }
     glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);
 
-    glColor3f(0.375f, 0.375f, 0.375f);
+    if (failed) {
+        glColor3f(0.5f, 0.125f, 0.075f);
+    } else {
+        glColor3f(0.375f, 0.375f, 0.375f);
+    }
     glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
     if (selected) {
