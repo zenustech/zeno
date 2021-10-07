@@ -27,4 +27,13 @@ inline auto mix(auto x, auto y, auto z) {
     return lerp(x, y, z);
 }
 
+template <class T>
+static constexpr auto is_vec_n = std::max((size_t)1, vec_traits<T>::dim);
+
+template <class T>
+static constexpr auto is_vec_v = vec_traits<T>::value;
+
+template <class T>
+using decay_vec_t = typename vec_traits<T>::type;
+
 }

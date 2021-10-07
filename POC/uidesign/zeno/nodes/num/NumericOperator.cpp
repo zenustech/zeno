@@ -10,7 +10,6 @@ auto remove_bool(zeno::vec<N, bool> const &v) {
 }
 
 template <class T>
-    requires (!zeno::vec_traits<T>::value)
 decltype(auto) remove_bool(T const &t) {
     return t;
 }
