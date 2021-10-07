@@ -59,7 +59,8 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
                     continue;
                 int level = tag_axr.getValue(coord);
                 auto wpos = tag->indexToWorld(coord);
-                auto index = round(status[level]->worldToIndex(wpos));
+                auto tmp = status[level]->worldToIndex(wpos);
+                auto index = round(tmp);
                 auto status_axr = status[level]->getAccessor();
                 auto p_axr = p[level]->getConstAccessor();
                 auto ap_axr = Ap[level]->getAccessor();
@@ -75,7 +76,8 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
                     int stat = status_axr.getValue(ipos);
                     if(stat == 2)
                     {
-                        printf("computeLap error! stat is 2\n");
+                        printf("computeLap error! stat is 2, level is %d, coord is (%d,%d,%d)\n",
+                           level, ipos[0],ipos[1],ipos[2]);
                         break;
                     }
                     float p = p_axr.getValue(ipos);
@@ -84,13 +86,22 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
                 lapP += 6 * p_axr.getValue(index);
                 lapP *= dt / dx[level];
                 ap_axr.setValue(index, lapP);
+                float pv = p_axr.getValue(index);
+                auto pwpos = p[level]->indexToWorld(index);
+                if(std::isnan(lapP) || std::isnan(pv))
+                    printf("p is %f, lapP is %f, level is %d, index is (%d,%d,%d),tmp is (%f,%f,%f) wpos is (%f,%f,%f), pwpos is (%f,%f,%f)\n", 
+                        pv, lapP, level,
+                        index[0],index[1],index[2],
+                        tmp[0],tmp[1],tmp[2],
+                        wpos[0],wpos[1],wpos[2],
+                        pwpos[0],pwpos[1],pwpos[2]);
             }
         }
     };
     tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), comLap);   
 }
 
-void agData::comptueRES(std::vector<openvdb::FloatGrid::Ptr> p)
+void agData::comptueRES()
 {
     std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
@@ -402,92 +413,110 @@ void agData::PossionSolver()
     std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     computeLap(pressField, buffer.ApGrid);
-    comptueRES(pressField);
-    std::vector<openvdb::FloatGrid::Ptr> r0, s, h;
-    r0.resize(levelNum);s.resize(levelNum);h.resize(levelNum);
-    for(int i=0;i<levelNum;++i)
-    {
-        r0[i] = buffer.resGrid[i]->deepCopy();
-        buffer.pGrid[i]->clear();
-        buffer.pGrid[i]->setTree((std::make_shared<openvdb::FloatTree>(
-            pressField[i]->tree(), /*bgval*/ float(0),
-            openvdb::TopologyCopy())));
-        s[i] = buffer.pGrid[i]->deepCopy();
-        h[i] = buffer.pGrid[i]->deepCopy();
-    }
-
+    comptueRES();
     float dens_pre = 1,alpha = 1, omg = 1;
-    float dens, beta;
-    
-    auto computeP = [&](const tbb::blocked_range<size_t> &r)
+    float dens, beta, error;
+    error = dotTree(buffer.resGrid, buffer.resGrid);
+    if(error < 0.00001 * pressField[0]->activeVoxelCount())
     {
-        //auto press_axr
-        auto tag_axr = tag->getConstAccessor();
-        for (auto liter = r.begin(); liter != r.end(); ++liter) {
-            auto &leaf = *leaves[liter];
-            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                openvdb::Coord tagcoord = leaf.offsetToGlobalCoord(offset);
-                if(!tag_axr.isValueOn(tagcoord))
-                    continue;
-                int level = tag_axr.getValue(tagcoord);
-                auto wpos = tag->indexToWorld(tagcoord);
-                auto coord = round(status[level]->worldToIndex(wpos));
-
-                auto res_axr = buffer.resGrid[level]->getConstAccessor();
-                auto p_axr = buffer.pGrid[level]->getAccessor();
-                auto ap_axr = buffer.ApGrid[level]->getConstAccessor();
-
-                float p = p_axr.getValue(coord);
-                float res = res_axr.getValue(coord);
-                float ap = ap_axr.getValue(coord);
-                p = res + beta *(p-omg * ap);
-                p_axr.setValue(coord, p);
-            }
-        }
-    };
-
-    int iterCount = 0;
-    do
-    {
-        dens = dotTree(r0, buffer.resGrid);
-        beta = dens * alpha / (dens_pre * omg);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
-        
-        transferPress(buffer.pGrid);
-        // store v on apgrid
-        computeLap(buffer.pGrid, buffer.ApGrid);
-        alpha = dotTree(r0, buffer.ApGrid);
-        alpha = dens / alpha;
-        addTree(1, alpha, pressField, buffer.pGrid, h);
-        addTree(1, -alpha, buffer.resGrid, buffer.ApGrid, s);
-        
-        float error = dotTree(s, s);
-        if(error < 0.00001 * pressField[0]->activeVoxelCount())
-        {
-            for(int level = 0;level<levelNum;++level)
-            {
-                pressField[level]->clear();
-                pressField[level] = h[level]->deepCopy();
-            }
-            break;
-        }
-        transferPress(s);
-        // store t on apgrid
-        computeLap(s, buffer.ApGrid);
-        
-        omg = dotTree(s, buffer.ApGrid) /  dotTree(buffer.ApGrid, buffer.ApGrid);
-        addTree(1, omg, h, s, pressField);
-        
-        addTree(1, -omg, s, buffer.ApGrid, buffer.resGrid);
-        error = dotTree(buffer.resGrid, buffer.resGrid);
-        if(error < 0.00001 * pressField[0]->activeVoxelCount())
-            break;
-        iterCount++;
-        printf("iter num is %d, error is %f\n", iterCount, error);
+        printf("error is %f, exit iteration\n", error);
+        return;
     }
-    while(iterCount < 20);
-    //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), propagate);
+    printf("error is %f, start to iter. active voxel count is %d\n", 
+        error, pressField[0]->activeVoxelCount());
+    // std::vector<openvdb::FloatGrid::Ptr> r0, s, h;
+    // r0.resize(levelNum);s.resize(levelNum);h.resize(levelNum);
+    // for(int i=0;i<levelNum;++i)
+    // {
+    //     r0[i] = buffer.resGrid[i]->deepCopy();
+    //     buffer.pGrid[i]->clear();
+    //     buffer.pGrid[i]->setTree((std::make_shared<openvdb::FloatTree>(
+    //         pressField[i]->tree(), /*bgval*/ float(0),
+    //         openvdb::TopologyCopy())));
+    //     s[i] = buffer.pGrid[i]->deepCopy();
+    //     h[i] = buffer.pGrid[i]->deepCopy();
+    // }
+    
+    // auto computeP = [&](const tbb::blocked_range<size_t> &r)
+    // {
+    //     //auto press_axr
+    //     auto tag_axr = tag->getConstAccessor();
+    //     for (auto liter = r.begin(); liter != r.end(); ++liter) {
+    //         auto &leaf = *leaves[liter];
+    //         for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+    //             openvdb::Coord tagcoord = leaf.offsetToGlobalCoord(offset);
+    //             if(!tag_axr.isValueOn(tagcoord))
+    //                 continue;
+    //             int level = tag_axr.getValue(tagcoord);
+    //             auto wpos = tag->indexToWorld(tagcoord);
+    //             auto coord = round(status[level]->worldToIndex(wpos));
 
+    //             auto res_axr = buffer.resGrid[level]->getConstAccessor();
+    //             auto p_axr = buffer.pGrid[level]->getAccessor();
+    //             auto ap_axr = buffer.ApGrid[level]->getConstAccessor();
+
+    //             float p = p_axr.getValue(coord);
+    //             float res = res_axr.getValue(coord);
+    //             float ap = ap_axr.getValue(coord);
+    //             p = res + beta *(p-omg * ap);
+    //             p_axr.setValue(coord, p);
+    //         }
+    //     }
+    // };
+
+    // int iterCount = 0;
+    // do
+    // {
+    //     dens = dotTree(r0, buffer.resGrid);
+    //     beta = dens * alpha / (dens_pre * omg);
+    //     printf("dens is %f, beta is %f\n", dens, beta);
+    //     tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
+        
+    //     transferPress(buffer.pGrid);
+    //     // store v on apgrid
+    //     computeLap(buffer.pGrid, buffer.ApGrid);
+    //     alpha = dotTree(r0, buffer.ApGrid);
+    //     alpha = dens / alpha;
+        
+    //     addTree(1, alpha, pressField, buffer.pGrid, h);
+    //     addTree(1, -alpha, buffer.resGrid, buffer.ApGrid, s);
+        
+    //     error = dotTree(s, s);
+    //     printf("alpha is %f, error is %f\n", alpha, error);
+        
+    //     if(error < 0.00001 * pressField[0]->activeVoxelCount())
+    //     {
+    //         for(int level = 0;level<levelNum;++level)
+    //         {
+    //             pressField[level]->clear();
+    //             pressField[level] = h[level]->deepCopy();
+    //         }
+    //         break;
+    //     }
+    //     transferPress(s);
+    //     // store t on apgrid
+    //     computeLap(s, buffer.ApGrid);
+        
+    //     omg = dotTree(s, buffer.ApGrid) /  dotTree(buffer.ApGrid, buffer.ApGrid);
+    //     addTree(1, omg, h, s, pressField);
+        
+    //     addTree(1, -omg, s, buffer.ApGrid, buffer.resGrid);
+    //     error = dotTree(buffer.resGrid, buffer.resGrid);
+    //     printf("omg is %f, error is %f\n", omg, error);
+    //     if(error < 0.00001 * pressField[0]->activeVoxelCount())
+    //         break;
+    //     iterCount++;
+    //     printf("iter num is %d, error is %f\n", iterCount, error);
+    // }
+    // while(iterCount < 20);
+    // //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), propagate);
+    
+    // for(int i=0;i<levelNum;++i)
+    // {
+    //     r0[i]->clear();
+    //     s[i]->clear();
+    //     h[i]->clear();
+    // }
 }
 
 void agData::transferPress(std::vector<openvdb::FloatGrid::Ptr> p)
@@ -600,6 +629,7 @@ void agData::solvePress(){
     makeCoarse();
     PossionSolver();
     transferPress(pressField);
+
     applyPress();
 };
 void agData::Advection()
@@ -654,9 +684,9 @@ void agData::Advection()
                 auto pwpos = wpos - sign * midvel * dt;
                 auto volume = volSample.wsSample(pwpos);
                 auto tem = temSample.wsSample(pwpos);
-                if(volume < 0.01)
+                if(volume < 0.001)
                     volume = 0;
-                if(tem < 0.01)
+                if(tem < 0.001)
                     tem = 0;
                 
                 new_tem_axr.setValue(coord, tem);
@@ -665,12 +695,75 @@ void agData::Advection()
         }
     };
 
-
     tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
     temperatureField[0]->clear();
     volumeField[0]->clear();
     temperatureField[0] = new_temField;
     volumeField[0] = new_volField;
+
+    leaves.clear();
+    velField[0][0]->tree().getNodes(leaves);
+    openvdb::FloatGrid::Ptr new_vel[3], inte_vel[3];
+    for(int i=0;i<3;++i)
+    {
+        new_vel[i] = velField[i][0]->deepCopy();
+        inte_vel[i] = velField[i][0];
+    }
+    auto velAdvection = [&](const tbb::blocked_range<size_t> &r){
+        openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+            vel_axr[3]=
+            {velField[0][0]->getConstAccessor(),
+            velField[1][0]->getConstAccessor(),
+            velField[2][0]->getConstAccessor()};
+        openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> 
+            inte_axr[3]=
+            {inte_vel[0]->getConstAccessor(),inte_vel[1]->getConstAccessor(),inte_vel[2]->getConstAccessor()};
+        openvdb::tree::ValueAccessor<openvdb::FloatTree, true> 
+            new_vel_axr[3]=
+            {new_vel[0]->getAccessor(),new_vel[1]->getAccessor(),new_vel[2]->getAccessor()};
+        ConstBoxSample velSampler1[3] = {
+            ConstBoxSample(vel_axr[0], velField[0][level]->transform()),
+            ConstBoxSample(vel_axr[1], velField[1][level]->transform()),
+            ConstBoxSample(vel_axr[2], velField[2][level]->transform())
+        };
+        ConstBoxSample velSampler[3] = {
+            ConstBoxSample(inte_axr[0], inte_vel[0]->transform()),
+            ConstBoxSample(inte_axr[1], inte_vel[1]->transform()),
+            ConstBoxSample(inte_axr[2], inte_vel[2]->transform())
+        };
+        // leaf iter
+        for (auto liter = r.begin(); liter != r.end(); ++liter) {
+            auto &leaf = *leaves[liter];
+            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                if(!vel_axr[0].isValueOn(coord))
+                    continue;
+                // advect u,v,w separately
+                for(int i=0;i<3;++i)
+                {
+                    auto wpos = velField[i][level]->indexToWorld(coord);
+                    openvdb::Vec3f vel, midvel;
+                    for(int j=0;j<3;++j)
+                        vel[j] = velSampler1[j].wsSample(wpos);
+                
+                    auto midwpos = wpos - sign *0.5 * dt * vel;
+                    for(int j=0;j<3;++j)
+                        midvel[j] = velSampler1[j].wsSample(midwpos);
+                    auto pwpos = wpos - sign * dt * midvel;
+                    auto pvel = velSampler[i].wsSample(pwpos);
+                    new_vel_axr[i].setValue(coord, pvel);
+                }
+            }
+        }
+
+    };
+    
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), velAdvection);
+    for(int i=0;i<3;++i)
+    {
+        velField[i][0]->clear();
+        velField[i][0] = new_vel[i];
+    }
 }
 
 void agData::applyOtherForce()
@@ -700,10 +793,12 @@ void agData::applyOtherForce()
                 auto vol = volSample.wsSample(wpos);
                 auto tem = temSample.wsSample(wpos);
 
-                float dens = (alpha * vol -beta * tem);
+                float voldens = (alpha * vol -beta * tem);
                 auto vel = vel_axr[1].getValue(coord);
-                auto deltaV = vel - dens * 9.8 * dt;
+                auto deltaV = vel - voldens * 9.8 * dt;
                 vel_axr[1].setValue(coord, deltaV);
+                //if(deltaV != 0)
+                //    printf("apply force, deltaV is %f\n", deltaV);
             }
         }
     };

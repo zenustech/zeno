@@ -66,7 +66,7 @@ namespace zeno{
         // iterate functions
         void computeRHS(); //divergence of vel, store result on buffer.rhsGrid
         void computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<openvdb::FloatGrid::Ptr> Ap);//div of grad p, store result on Ap
-        void comptueRES(std::vector<openvdb::FloatGrid::Ptr> p);
+        void comptueRES();
 
         // normal functions
         float dotTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b);

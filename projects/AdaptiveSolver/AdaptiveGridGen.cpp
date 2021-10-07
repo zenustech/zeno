@@ -82,6 +82,7 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
         temperatureField[level]->setTransform(transform);
         volumeField[level]->setTransform(transform);
         pressField[level]->setTransform(transform);
+        status[level]->setTransform(transform);
         for(int i=0;i<3;++i)
         {
             auto veltrans = transform->copy();
@@ -94,7 +95,7 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
     }
 
     auto tagtrans = openvdb::math::Transform::createLinearTransform(tagdx);
-    tagtrans->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*tagdx);
+    //tagtrans->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*tagdx);
     tag->setTransform(tagtrans);
     // init tag
     {
@@ -173,7 +174,7 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
         }
 
     }
-    //makeCoarse();
+    
     buffer.init(pressField);
 }
 void agData::makeCoarse()
@@ -190,6 +191,9 @@ void agData::makeCoarse()
                 for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                     auto coord = leaf.offsetToGlobalCoord(offset);
                     tag_axr.setValueOff(coord);
+                    //if(!tag_axr.isValueOn(coord))
+                    //    continue;
+                    //tag_axr.setValue(coord, -1);
                 }
             }
         };
@@ -222,17 +226,19 @@ void agData::makeCoarse()
     status[0]->setTree((std::make_shared<openvdb::Int32Tree>(
                     buf->tree(), /*bgval*/ float(0),
                     openvdb::TopologyCopy())));
+    buf->clear();
     for(int level = 1;level < levelNum;++level)
     {
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
         buf = status[level]->deepCopy();
         status[level]->clear();
         status[level]->setTree((std::make_shared<openvdb::Int32Tree>(
                     buf->tree(), /*bgval*/ float(2),
                     openvdb::TopologyCopy())));
-        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        buf->clear();
         pressField[level]->tree().getNodes(leaves);
-        float criteria = level/levelNum + 0.01;
-        float driftdx = dx[level + 1] * 0.5;
+
+        auto new_status = status[level-1]->deepCopy();
         auto make_Coarse = [&](const tbb::blocked_range<size_t> &r)
         {
             auto vol_axr = volumeField[level]->getAccessor();
@@ -244,26 +250,12 @@ void agData::makeCoarse()
             auto fine_vol_axr = volumeField[level-1]->getAccessor();
             auto fine_tem_axr = temperatureField[level-1]->getAccessor();
             auto fine_press_axr = pressField[level-1]->getAccessor();
-            auto fine_status_axr = status[level-1]->getAccessor();
+            auto fine_status_axr = status[level-1]->getConstAccessor();
 
+            auto new_fine_status_axr = new_status->getAccessor();
             BoxSample vol_sampler(fine_vol_axr, volumeField[level-1]->transform());
             BoxSample tem_sampler(fine_tem_axr, temperatureField[level-1]->transform());
             BoxSample press_sampler(fine_press_axr, pressField[level-1]->transform());
-            
-            openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
-                    {velField[0][level]->getAccessor(),
-                    velField[1][level]->getAccessor(),
-                    velField[2][level]->getAccessor()};
-
-            openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> fine_vel_axr[3]=
-                    {velField[0][level-1]->getConstAccessor(),
-                    velField[1][level-1]->getConstAccessor(),
-                    velField[2][level-1]->getConstAccessor()};
-            ConstBoxSample velSampler[3] = {
-                    ConstBoxSample(fine_vel_axr[0], velField[0][level-1]->transform()),
-                    ConstBoxSample(fine_vel_axr[1], velField[1][level-1]->transform()),
-                    ConstBoxSample(fine_vel_axr[2], velField[2][level-1]->transform())
-                };
 
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -296,36 +288,75 @@ void agData::makeCoarse()
                             auto fwpos = wpos + openvdb::Vec3i(i,j,k) * 0.25 * dx[level];
                             
                             auto findex = round(volumeField[level-1]->worldToIndex(fwpos));
-                            fine_status_axr.setValue(findex, 2);
+                            new_fine_status_axr.setValue(findex, 2);
 
                             auto tindex = round(tag->worldToIndex(fwpos));
                             tag_axr.setValueOff(tindex);
                         }
                         auto tindex = round(tag->worldToIndex(wpos));
                         tag_axr.setValue(tindex, level);
-
+                        
                         auto press = press_sampler.wsSample(wpos);
                         auto tem = tem_sampler.wsSample(wpos);
                         press_axr.setValue(coord, press);
                         tem_axr.setValue(coord, tem);
                         status_axr.setValue(coord, 0);
-
-                        for(int ss=0;ss<3;++ss)
-                        for(int i=0;i<=1;++i)
-                        {
-                            auto ipos = coord;
-                            ipos[ss] += i;
-                            auto vwpos = velField[ss][level]->indexToWorld(ipos);
-                            auto vel = velSampler[ss].wsSample(vwpos);
-                            vel_axr[ss].setValue(ipos, vel);
-                        }
                     }
                 }
             }
             
         };
-    
+
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), make_Coarse);
+        leaves.clear();
+        velField[0][level]->tree().getNodes(leaves);
+        auto computeVel = [&](const tbb::blocked_range<size_t> &r)
+        {
+            auto status_axr = status[level]->getConstAccessor();
+            openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
+                    {velField[0][level]->getAccessor(),
+                    velField[1][level]->getAccessor(),
+                    velField[2][level]->getAccessor()};
+
+            openvdb::tree::ValueAccessor<const openvdb::FloatTree, true> fine_vel_axr[3]=
+                    {velField[0][level-1]->getConstAccessor(),
+                    velField[1][level-1]->getConstAccessor(),
+                    velField[2][level-1]->getConstAccessor()};
+            ConstBoxSample velSampler[3] = {
+                    ConstBoxSample(fine_vel_axr[0], velField[0][level-1]->transform()),
+                    ConstBoxSample(fine_vel_axr[1], velField[1][level-1]->transform()),
+                    ConstBoxSample(fine_vel_axr[2], velField[2][level-1]->transform())
+                };
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    for(int i=0;i<3;++i)
+                    {
+                        if(!vel_axr[i].isValueOn(coord))
+                            continue;
+                        bool needAvg = false;
+                        for(int ss = -1;ss<=0;++ss)
+                        {
+                            auto ipos = coord;
+                            ipos[i] += ss;
+                            if(status_axr.isValueOn(ipos) && status_axr.getValue(ipos) == 0)
+                            {
+                                needAvg = true;
+                                break;
+                            }
+                        }
+                        auto wpos = velField[i][level]->indexToWorld(coord);
+                        auto vel = velSampler[i].wsSample(wpos);
+                        vel_axr[i].setValue(coord, vel);
+                    }
+                }
+            }
+        };
+        
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeVel);
+        status[level - 1]->clear();
+        status[level - 1] = new_status;
     }
     
     for(int level = 0;level < levelNum;++level)
@@ -362,8 +393,6 @@ void agData::makeCoarse()
     }
 
 }
-
-
 struct generateAdaptiveGrid : zeno::INode{
     virtual void apply() override {
         auto coarse_grid = get_input("VDBGrid")->as<VDBFloatGrid>();
