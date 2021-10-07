@@ -407,12 +407,23 @@ void agData::addTree(
     };
     tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), add);
 }
+
+void agData::copyTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b)
+{
+    for(int level = 0;level<levelNum;++level)
+    {
+        b[level]->clear();
+        b[level] = a[level]->deepCopy();
+    }
+} 
+
 void agData::PossionSolver()
 {
     //BiCGSTAB solver
     std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
     computeLap(pressField, buffer.ApGrid);
+    computeRHS();
     comptueRES();
     float dens_pre = 1,alpha = 1, omg = 1;
     float dens, beta, error;
@@ -424,99 +435,104 @@ void agData::PossionSolver()
     }
     printf("error is %f, start to iter. active voxel count is %d\n", 
         error, pressField[0]->activeVoxelCount());
-    // std::vector<openvdb::FloatGrid::Ptr> r0, s, h;
-    // r0.resize(levelNum);s.resize(levelNum);h.resize(levelNum);
-    // for(int i=0;i<levelNum;++i)
-    // {
-    //     r0[i] = buffer.resGrid[i]->deepCopy();
-    //     buffer.pGrid[i]->clear();
-    //     buffer.pGrid[i]->setTree((std::make_shared<openvdb::FloatTree>(
-    //         pressField[i]->tree(), /*bgval*/ float(0),
-    //         openvdb::TopologyCopy())));
-    //     s[i] = buffer.pGrid[i]->deepCopy();
-    //     h[i] = buffer.pGrid[i]->deepCopy();
-    // }
+    std::vector<openvdb::FloatGrid::Ptr> r0, s, h, v, t;
+    r0.resize(levelNum);s.resize(levelNum);h.resize(levelNum);
+    v.resize(levelNum);t.resize(levelNum);
+    for(int i=0;i<levelNum;++i)
+    {
+        r0[i] = buffer.resGrid[i]->deepCopy();
+        buffer.ApGrid[i]->clear();
+        buffer.ApGrid[i]->setTree((std::make_shared<openvdb::FloatTree>(
+            pressField[i]->tree(), /*bgval*/ float(0),
+            openvdb::TopologyCopy())));
+        buffer.pGrid[i]->clear();
+        buffer.pGrid[i]->setTree((std::make_shared<openvdb::FloatTree>(
+            pressField[i]->tree(), /*bgval*/ float(0),
+            openvdb::TopologyCopy())));
+        s[i] = buffer.pGrid[i]->deepCopy();
+        h[i] = buffer.pGrid[i]->deepCopy();
+        v[i] = buffer.pGrid[i]->deepCopy();
+        t[i] = buffer.pGrid[i]->deepCopy();
+    }
     
-    // auto computeP = [&](const tbb::blocked_range<size_t> &r)
-    // {
-    //     //auto press_axr
-    //     auto tag_axr = tag->getConstAccessor();
-    //     for (auto liter = r.begin(); liter != r.end(); ++liter) {
-    //         auto &leaf = *leaves[liter];
-    //         for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-    //             openvdb::Coord tagcoord = leaf.offsetToGlobalCoord(offset);
-    //             if(!tag_axr.isValueOn(tagcoord))
-    //                 continue;
-    //             int level = tag_axr.getValue(tagcoord);
-    //             auto wpos = tag->indexToWorld(tagcoord);
-    //             auto coord = round(status[level]->worldToIndex(wpos));
+    auto computeP = [&](const tbb::blocked_range<size_t> &r)
+    {
+        //auto press_axr
+        auto tag_axr = tag->getConstAccessor();
+        for (auto liter = r.begin(); liter != r.end(); ++liter) {
+            auto &leaf = *leaves[liter];
+            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                openvdb::Coord tagcoord = leaf.offsetToGlobalCoord(offset);
+                if(!tag_axr.isValueOn(tagcoord))
+                    continue;
+                int level = tag_axr.getValue(tagcoord);
+                auto wpos = tag->indexToWorld(tagcoord);
+                auto coord = round(status[level]->worldToIndex(wpos));
 
-    //             auto res_axr = buffer.resGrid[level]->getConstAccessor();
-    //             auto p_axr = buffer.pGrid[level]->getAccessor();
-    //             auto ap_axr = buffer.ApGrid[level]->getConstAccessor();
+                auto res_axr = buffer.resGrid[level]->getConstAccessor();
+                auto p_axr = buffer.pGrid[level]->getAccessor();
+                auto ap_axr = v[level]->getConstAccessor();
 
-    //             float p = p_axr.getValue(coord);
-    //             float res = res_axr.getValue(coord);
-    //             float ap = ap_axr.getValue(coord);
-    //             p = res + beta *(p-omg * ap);
-    //             p_axr.setValue(coord, p);
-    //         }
-    //     }
-    // };
+                float p = p_axr.getValue(coord);
+                float res = res_axr.getValue(coord);
+                float ap = ap_axr.getValue(coord);
+                p = res + beta * (p - omg * ap);
+                p_axr.setValue(coord, p);
+            }
+        }
+    };
 
-    // int iterCount = 0;
-    // do
-    // {
-    //     dens = dotTree(r0, buffer.resGrid);
-    //     beta = dens * alpha / (dens_pre * omg);
-    //     printf("dens is %f, beta is %f\n", dens, beta);
-    //     tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
+    int iterCount = 0;
+    do
+    {
+        dens = dotTree(r0, buffer.resGrid);
+        beta = dens * alpha / (dens_pre * omg);
+        //printf("dens is %f, beta is %f\n", dens, beta);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
         
-    //     transferPress(buffer.pGrid);
-    //     // store v on apgrid
-    //     computeLap(buffer.pGrid, buffer.ApGrid);
-    //     alpha = dotTree(r0, buffer.ApGrid);
-    //     alpha = dens / alpha;
+        transferPress(buffer.pGrid);
+        // store v on apgrid
+        computeLap(buffer.pGrid, v);
+        alpha = dotTree(r0, v);
+        alpha = dens / alpha;
+
+        addTree(1, alpha, pressField, buffer.pGrid, h);
+        addTree(1, -alpha, buffer.resGrid, v, s);
         
-    //     addTree(1, alpha, pressField, buffer.pGrid, h);
-    //     addTree(1, -alpha, buffer.resGrid, buffer.ApGrid, s);
+        error = dotTree(s, s);
+        printf("alpha is %f, error is %f\n", alpha, error);
         
-    //     error = dotTree(s, s);
-    //     printf("alpha is %f, error is %f\n", alpha, error);
+        if(error < 0.00001 * pressField[0]->activeVoxelCount())
+        {
+            copyTree(h, pressField);
+            break;
+        }
+        transferPress(s);
         
-    //     if(error < 0.00001 * pressField[0]->activeVoxelCount())
-    //     {
-    //         for(int level = 0;level<levelNum;++level)
-    //         {
-    //             pressField[level]->clear();
-    //             pressField[level] = h[level]->deepCopy();
-    //         }
-    //         break;
-    //     }
-    //     transferPress(s);
-    //     // store t on apgrid
-    //     computeLap(s, buffer.ApGrid);
+        computeLap(s, t);
         
-    //     omg = dotTree(s, buffer.ApGrid) /  dotTree(buffer.ApGrid, buffer.ApGrid);
-    //     addTree(1, omg, h, s, pressField);
+        omg = dotTree(s, t) /  dotTree(t, t);
+        addTree(1, omg, h, s, pressField);
         
-    //     addTree(1, -omg, s, buffer.ApGrid, buffer.resGrid);
-    //     error = dotTree(buffer.resGrid, buffer.resGrid);
-    //     printf("omg is %f, error is %f\n", omg, error);
-    //     if(error < 0.00001 * pressField[0]->activeVoxelCount())
-    //         break;
-    //     iterCount++;
-    //     printf("iter num is %d, error is %f\n", iterCount, error);
-    // }
-    // while(iterCount < 20);
-    // //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), propagate);
+        addTree(1, -omg, s, t, buffer.resGrid);
+        error = dotTree(buffer.resGrid, buffer.resGrid);
+        printf("omg is %f, error is %f\n", omg, error);
+        if(error < 0.00001 * pressField[0]->activeVoxelCount())
+            break;
+        iterCount++;
+        //printf("iter num is %d, error is %f\n", iterCount, error);
+        dens_pre = dens;
+    }
+    while(iterCount < 100);
+    printf("iter over. error is %f\n", error);
+    //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), propagate);
     
-    // for(int i=0;i<levelNum;++i)
-    // {
-    //     r0[i]->clear();
-    //     s[i]->clear();
-    //     h[i]->clear();
-    // }
+    for(int i=0;i<levelNum;++i)
+    {
+        r0[i]->clear();
+        s[i]->clear();
+        h[i]->clear();
+    }
 }
 
 void agData::transferPress(std::vector<openvdb::FloatGrid::Ptr> p)

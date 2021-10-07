@@ -70,6 +70,9 @@ namespace zeno{
 
         // normal functions
         float dotTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b);
+        // copy a to b
+        void copyTree(std::vector<openvdb::FloatGrid::Ptr> a, std::vector<openvdb::FloatGrid::Ptr> b);
+        
         // alpha * a + beta * b -> c
         void addTree(
             float alpha,float beta,
