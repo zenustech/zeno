@@ -3,10 +3,12 @@
 
 #include <z2/dop/Node.h>
 #include <z2/dop/Descriptor.h>
+#include "safe_at.h"
+#include "safe_dynamic_cast.h"
 
 
 
-namespace z2::dop::legacy {
+namespace z2::legacy {
 
 
 struct IObject {
@@ -65,7 +67,7 @@ struct IObjectClone : Base {
 };
 
 
-struct INode : Node {
+struct INode : dop::Node {
 protected:
     virtual void apply() = 0;
 

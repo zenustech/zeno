@@ -1,8 +1,8 @@
-#include <z2/dop/legacy.h>
+#include <z2/legacy/legacy.h>
 #include <z2/dop/execute.h>
 
 
-namespace z2::dop::legacy {
+namespace z2::legacy {
 
 
 std::any INode::get_input2(std::string const &name) const {
