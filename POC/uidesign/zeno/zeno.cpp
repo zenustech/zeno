@@ -4,7 +4,7 @@
 #include <z2/dop/execute.h>
 
 
-namespace z2::legacy {
+namespace zeno {
 
 
 bool INode::has_input2(std::string const &name) const {

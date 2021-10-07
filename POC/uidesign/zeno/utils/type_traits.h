@@ -5,7 +5,7 @@
 #include <variant>
 #include <functional>
 
-namespace z2::legacy {
+namespace zeno {
 
 template <class T>
 struct is_tuple : std::false_type {

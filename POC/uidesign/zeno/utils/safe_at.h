@@ -7,7 +7,7 @@
 #include "Exception.h"
 
 
-namespace z2::legacy {
+namespace zeno {
 
 
 template <class T>

@@ -9,7 +9,7 @@
 #include "vec.h"
 
 
-namespace z2::legacy {
+namespace zeno {
 
 using scalar_type_variant = std::variant
         < bool

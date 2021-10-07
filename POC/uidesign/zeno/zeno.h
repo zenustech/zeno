@@ -8,7 +8,7 @@
 
 
 
-namespace z2::legacy {
+namespace zeno {
 
 
 struct IObject {
@@ -67,7 +67,7 @@ struct IObjectClone : Base {
 };
 
 
-struct INode : dop::Node {
+struct INode : z2::dop::Node {
 protected:
     virtual void apply() = 0;
 
@@ -181,10 +181,10 @@ auto defNodeClassHelper(F const &func, std::string const &name) {
 }
 
 #define ZENO_DEFNODE(Class) \
-    static int def##Class = ::z2::legacy::defNodeClassHelper(std::make_unique<Class>, #Class)
+    static int def##Class = ::zeno::defNodeClassHelper(std::make_unique<Class>, #Class)
 
 #define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \
-    static int def##Class##PostFix = ::z2::legacy::defOverloadNodeClassHelper(std::make_unique<Class##PostFix>, #Class, {__VA_ARGS__})
+    static int def##Class##PostFix = ::zeno::defOverloadNodeClassHelper(std::make_unique<Class##PostFix>, #Class, {__VA_ARGS__})
 
 #define ZENDEFNODE(Class, ...) \
     ZENO_DEFNODE(Class)(__VA_ARGS__)
@@ -201,4 +201,4 @@ auto makeShared(Ts &&...ts) {
 
 }
 
-namespace zeno = z2::legacy;
+namespace zeno = zeno;

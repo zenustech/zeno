@@ -3,9 +3,9 @@
 #include <z2/ztd/vec.h>
 
 
-namespace z2::legacy {
+namespace zeno {
 
 template <size_t N, class T>
-using vec = ztd::vec<N, T>;
+using vec = z2::ztd::vec<N, T>;
 
 }

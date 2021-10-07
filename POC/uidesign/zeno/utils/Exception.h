@@ -3,8 +3,8 @@
 #include <z2/ztd/error.h>
 
 
-namespace z2::legacy {
+namespace zeno {
 
-using Exception = ztd::error;
+using Exception = z2::ztd::error;
 
 }

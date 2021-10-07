@@ -7,7 +7,7 @@
 #include "Any.h"
 #include "Exception.h"
 
-namespace z2::legacy {
+namespace zeno {
 
 template <class T, class S>
 T *safe_dynamic_cast(S *s, std::string const &msg = {}) {
