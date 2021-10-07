@@ -4,6 +4,7 @@
 #include <z2/UI/UiDopEditor.h>
 #include <z2/dop/dop.h>
 #include <algorithm>
+#include <cctype>
 
 
 namespace z2::UI {
@@ -100,7 +101,7 @@ static std::any parse_any(std::string const &expr) {
     if (!expr.size()) {
         return {};
     }
-    if ('0' <= expr[0] && expr[0] <= '9') {
+    if (std::isdigit(expr[0])) {
         if (expr.find('.') != std::string::npos) {
             return std::stof(expr);
         } else {
@@ -127,21 +128,25 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
             auto expr = node->inputs[i]->value;
             dop::Input input;
 
-            if (expr.starts_with("@")) {
+            if (expr.starts_with('@')) {
                 expr = expr.substr(1);
                 auto p = expr.find(':');
                 int outid = 0;
                 if (p == std::string::npos) {
                     auto outname = expr.substr(p + 1);
-                    for (int i = 0; i < node->outputs.size(); i++) {
-                        if (node->outputs[i]->name == outname) {
-                            outid = i;
-                            break;
+                    if (outname.size() && std::isdigit(outname[0])) {
+                        outid = std::stoi(outname);
+                    } else {
+                        for (int i = 0; i < node->outputs.size(); i++) {
+                            if (node->outputs[i]->name == outname) {
+                                outid = i;
+                                break;
+                            }
                         }
                     }
+                    expr = expr.substr(0, p);
                 }
-                auto outnodename = expr.substr(0, p);
-                auto outnode = nodes_lut.at(outnodename);
+                auto outnode = nodes_lut.at(expr);
                 input = dop::Input_Link{.node = outnode, .sockid = outid};
 
             } else {
