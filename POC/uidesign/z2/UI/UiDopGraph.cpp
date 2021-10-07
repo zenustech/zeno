@@ -43,7 +43,7 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
         }
     }
     if (remove_child(node)) {
-        nodes.erase(node);
+        nodes.erase(node->name);
         return true;
     } else {
         return false;
@@ -53,9 +53,15 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind) {
     auto p = add_child<UiDopNode>();
-    p->name = kind + '1';
+    for (int i = 1;; i++) {
+        auto name = kind + std::to_string(i);
+        if (!nodes.contains(name)) {
+            p->name = name;
+            break;
+        }
+    }
     p->kind = kind;
-    nodes.insert(p);
+    nodes.emplace(p->name, p);
     return p;
 }
 
@@ -116,7 +122,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
     auto g = std::make_unique<dop::Graph>();
 
     ztd::map<std::string, dop::Input_Link> exprlut;
-    for (auto *node: nodes) {
+    for (auto const &[_, node]: nodes) {
         auto n = g->add_node(node->name, dop::desc_of(node->kind));
         for (int i = 0; i < node->outputs.size(); i++) {
             auto key = node->name + ':' + node->outputs[i]->name;
@@ -124,7 +130,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         }
     }
 
-    for (auto *node: nodes) {
+    for (auto const &[_, node]: nodes) {
         auto n = g->get_node(node->name);
 
         for (int i = 0; i < node->inputs.size(); i++) {
@@ -245,7 +251,6 @@ void UiDopGraph::on_event(Event_Mouse e) {
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->position = pos;
-    node->kind = kind;
     auto const &desc = dop::desc_of(kind);
     for (auto const &sock_info: desc.inputs) {
         auto socket = node->add_input_socket();

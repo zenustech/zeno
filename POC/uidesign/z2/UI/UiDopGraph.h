@@ -17,9 +17,9 @@ struct UiDopScene;
 
 
 struct UiDopGraph : GraphicsView {
-    std::set<UiDopNode *> nodes;
-    std::set<UiDopLink *> links;
     UiDopPendingLink *pending_link = nullptr;
+    std::map<std::string, UiDopNode *> nodes;
+    std::set<UiDopLink *> links;
 
     UiDopEditor *editor = nullptr;
     UiDopContextMenu *menu = nullptr;
