@@ -41,17 +41,11 @@ struct Node {
     Descriptor *desc = nullptr;
 
     std::any get_input(int idx) const;
-    std::any get_input(std::string const &name) const;
     void set_output(int idx, std::any val);
     
     template <class T>
     T get_input(int idx) const {
         return std::any_cast<T>(get_input(idx));
-    }
-
-    template <class T>
-    T get_input(std::string const &name) const {
-        return std::any_cast<T>(get_input(name));
     }
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
