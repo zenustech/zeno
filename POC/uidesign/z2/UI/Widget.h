@@ -72,8 +72,6 @@ struct Widget : Object {
     virtual void paint() const;
     virtual ztd::dtor_function do_transform() const;
 
-    virtual void set_position(Point pos);
-
     float absolute_zvalue() const {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;
     }
