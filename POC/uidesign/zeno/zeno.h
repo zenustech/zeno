@@ -74,6 +74,7 @@ protected:
     bool has_input2(std::string const &id) const;
     Any get_input2(std::string const &id) const;
     void set_output2(std::string const &id, Any &&obj);
+    void _set_output2(std::string const &name, Any &&val);
 
     /* todo: deprecated */
     bool has_input(std::string const &id) const;

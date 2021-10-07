@@ -1,10 +1,26 @@
 #include "zeno.h"
-#include "types/NumericObject.h"
-#include "types/StringObject.h"
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 #include <z2/dop/execute.h>
 
 
 namespace zeno {
+
+
+IObject::IObject() = default;
+IObject::~IObject() = default;
+std::shared_ptr<IObject> IObject::clone() const {
+    return nullptr;
+}
+std::shared_ptr<IObject> IObject::move_clone() {
+    return nullptr;
+}
+bool IObject::assign(IObject *other) {
+    return false;
+}
+bool IObject::move_assign(IObject *other) {
+    return false;
+}
 
 
 bool INode::has_input2(std::string const &name) const {
@@ -20,10 +36,10 @@ bool INode::has_input2(std::string const &name) const {
 void INode::set_output2(std::string const &id, zany &&obj) {
     if (auto num = silent_any_cast<std::shared_ptr<NumericObject>>(obj); num.has_value()) {
         std::visit([&] (auto const &x) {
-            outputs[id] = x;
+            _set_output2(id, x);
         }, num.value()->value);
     } else {
-        outputs[id] = std::move(obj);
+        _set_output2(id, std::move(obj));
     }
 }
 
@@ -97,7 +113,7 @@ Any INode::get_input2(std::string const &name) const {
 }
 
 
-void INode::set_output2(std::string const &name, Any &&val) {
+void INode::_set_output2(std::string const &name, Any &&val) {
     for (int i = 0; i < desc->inputs.size(); i++) {
         if (desc->outputs[i].name == name) {
             return Node::set_output(i, std::move(val));
