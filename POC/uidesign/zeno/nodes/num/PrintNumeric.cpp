@@ -47,18 +47,11 @@ ZENDEFNODE(PrintNumeric, {
 });
 
 
-struct ToVisualize_NumericObject : PrintNumeric {
+/*struct ToVisualize_NumericObject : PrintNumeric {
     virtual void apply() override {
         inputs["hint:"] = std::string("VIEW of NumericObject");
         PrintNumeric::apply();
     }
-};
-
-ZENO_DEFOVERLOADNODE(ToVisualize, _NumericObject, typeid(zeno::NumericObject).name())({
-        {"value"},
-        {},
-        {{"string", "path", ""}},
-        {"numeric"},
-});
+};*/
 
 }

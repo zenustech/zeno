@@ -7,7 +7,7 @@
 
 namespace zeno {
 
-struct ToVisualize_PrimitiveObject : zeno::INode {
+/*struct ToVisualize_PrimitiveObject : zeno::INode {
     virtual void apply() override {
         auto that = get_input<PrimitiveObject>("prim");
         auto path = get_param<std::string>("path");
@@ -48,7 +48,7 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _PrimitiveShadeObject, typeid(PrimitiveShadeOb
         {},
         {{"string", "path", ""}},
         {"primitive"},
-});
+});*/
 
 
 struct PrimitiveShade : zeno::INode {
