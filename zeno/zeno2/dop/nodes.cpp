@@ -18,7 +18,7 @@ struct If : dop::Node {
     void apply() override { throw "unreachable"; }
 };
 
-Z2_DOP_DEFINE(If, {{
+ZENO2_DOP_DEFINE(If, {{
     "misc", "only runs one of the two chain by condition",
 }, {
     {"cond"},
@@ -40,7 +40,7 @@ struct For : dop::Node {
     void apply() override { throw "unreachable"; }
 };
 
-Z2_DOP_DEFINE(For, {{
+ZENO2_DOP_DEFINE(For, {{
     "misc", "repeat a chain for multiple times",
 }, {
     {"times"},
@@ -55,7 +55,7 @@ struct Route : dop::Node {
     }
 };
 
-Z2_DOP_DEFINE(Route, {{
+ZENO2_DOP_DEFINE(Route, {{
     "misc", "always return the first input",
 }, {
     {"value"},
@@ -71,7 +71,7 @@ struct PrintInt : dop::Node {
     }
 };
 
-Z2_DOP_DEFINE(PrintInt, {{
+ZENO2_DOP_DEFINE(PrintInt, {{
     "misc", "prints a integer",
 }, {
     {"value"},
