@@ -51,19 +51,13 @@ If you find the binary version didn't worked properly or some error message has 
 
 To build ZENO, you need:
 
-- GCC 9+ or MSVC 19+, CMake 3.12+, and Python 3.6+ to build ZENO.
-- Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
+- GCC 11+ or MSVC 19.28+, and CMake 3.12+ to build ZENO.
 - (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
 
-> Hint: for Python, please try avoid using virtualenv and Conda if possible.
-> WSL is also not recommended because of its limited GUI and OpenGL support.
+> Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 
-Click links below for detailed setup for each platform:
+[Click me for detailed build instructions](BUILD.md)
 
-- [Windows 10](/docs/dev_win10.md)
-- [Ubuntu 20.04](/docs/dev_ubuntu20.md)
-- [CentOS 7](/docs/dev_centos7.md)
-- [Arch Linux](/docs/dev_archlinux.md)
 
 After finishing building, use `run.py` to run ZENO for development! You may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
 
