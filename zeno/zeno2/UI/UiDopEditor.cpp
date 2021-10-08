@@ -1,9 +1,9 @@
-#include <z2/UI/UiDopEditor.h>
-#include <z2/UI/UiDopGraph.h>
-#include <z2/UI/UiDopNode.h>
+#include <zeno2/UI/UiDopEditor.h>
+#include <zeno2/UI/UiDopGraph.h>
+#include <zeno2/UI/UiDopNode.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 void UiDopEditor::set_selection(UiDopNode *ptr) {
@@ -62,4 +62,4 @@ void UiDopEditor::on_event(Event_Hover e) {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

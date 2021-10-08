@@ -1,6 +1,6 @@
-#include <z2/ztd/vec.h>
+#include <zeno2/ztd/vec.h>
 
-namespace z2 {
+namespace zeno2 {
 
 int test_main() {
     ztd::vec3f x;

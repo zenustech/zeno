@@ -4,9 +4,9 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <z2/ztd/error.h>
+#include <zeno2/ztd/error.h>
 
-namespace z2::ztd {
+namespace zeno2::ztd {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {

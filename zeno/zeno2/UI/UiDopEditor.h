@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/UiDopParam.h>
-#include <z2/UI/TextEdit.h>
+#include <zeno2/UI/UiDopParam.h>
+#include <zeno2/UI/TextEdit.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopGraph;
@@ -27,4 +27,4 @@ struct UiDopEditor : Widget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

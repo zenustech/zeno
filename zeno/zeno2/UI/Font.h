@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/ztd/stdafx.h>
+#include <zeno2/ztd/stdafx.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Font {
@@ -63,4 +63,4 @@ struct Font {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

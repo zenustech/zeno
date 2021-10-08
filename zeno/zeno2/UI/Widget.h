@@ -1,15 +1,15 @@
 #pragma once
 
 
-#include <z2/ztd/error.h>
-#include <z2/ztd/functional.h>
-#include <z2/UI/CursorState.h>
-#include <z2/UI/Event.h>
-#include <z2/UI/Point.h>
-#include <z2/UI/AABB.h>
+#include <zeno2/ztd/error.h>
+#include <zeno2/ztd/functional.h>
+#include <zeno2/UI/CursorState.h>
+#include <zeno2/UI/Event.h>
+#include <zeno2/UI/Point.h>
+#include <zeno2/UI/AABB.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Object {
@@ -72,4 +72,4 @@ struct Widget : Object {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

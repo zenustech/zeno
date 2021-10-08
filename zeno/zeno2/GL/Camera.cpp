@@ -1,12 +1,12 @@
-#include <z2/GL/Camera.h>
-#include <z2/GL/Shader.h>
+#include <zeno2/GL/Camera.h>
+#include <zeno2/GL/Shader.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>
 #include <numbers>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 void Camera::resize(int nx, int ny) {

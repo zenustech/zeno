@@ -1,8 +1,8 @@
-#include <z2/GL/Shader.h>
+#include <zeno2/GL/Shader.h>
 #include <glm/gtc/type_ptr.hpp>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 Shader::Shader(GLuint type) {

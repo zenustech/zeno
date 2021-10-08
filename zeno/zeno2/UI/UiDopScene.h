@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/UiDopGraph.h>
-#include <z2/UI/UiDopEditor.h>
+#include <zeno2/UI/UiDopGraph.h>
+#include <zeno2/UI/UiDopEditor.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopScene : Widget {

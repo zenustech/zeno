@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/GraphicsView.h>
-#include <z2/GL/Camera.h>
+#include <zeno2/UI/GraphicsView.h>
+#include <zeno2/GL/Camera.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiMainWindow;

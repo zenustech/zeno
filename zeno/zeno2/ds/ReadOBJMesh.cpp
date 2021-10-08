@@ -1,5 +1,5 @@
-#include <z2/dop/dop.h>
-#include <z2/ds/Mesh.h>
+#include <zeno2/dop/dop.h>
+#include <zeno2/ds/Mesh.h>
 #include <string_view>
 #include <sstream>
 #include <fstream>
@@ -7,7 +7,7 @@
 #include <tuple>
 
 
-namespace z2::ds {
+namespace zeno2::ds {
 namespace {
 
 

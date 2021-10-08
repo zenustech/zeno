@@ -1,9 +1,9 @@
-#include <z2/dop/Graph.h>
-#include <z2/dop/Node.h>
-#include <z2/dop/Descriptor.h>
+#include <zeno2/dop/Graph.h>
+#include <zeno2/dop/Node.h>
+#include <zeno2/dop/Descriptor.h>
 
 
-namespace z2::dop {
+namespace zeno2::dop {
 
 
 Node *Graph::get_node(std::string const &name) const {

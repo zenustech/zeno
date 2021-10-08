@@ -1,8 +1,8 @@
-#include <z2/dop/Descriptor.h>
-#include <z2/ztd/map.h>
+#include <zeno2/dop/Descriptor.h>
+#include <zeno2/ztd/map.h>
 
 
-namespace z2::dop {
+namespace zeno2::dop {
 
 
 static auto &desc_table() {

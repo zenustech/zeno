@@ -1,7 +1,7 @@
-#include <z2/UI/Widget.h>
+#include <zeno2/UI/Widget.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 void Widget::remove_all_children() {
@@ -166,4 +166,4 @@ void Widget::paint() const {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

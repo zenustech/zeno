@@ -1,11 +1,11 @@
-#include <z2/UI/CursorState.h>
-#include <z2/UI/UiMainWindow.h>
+#include <zeno2/UI/CursorState.h>
+#include <zeno2/UI/UiMainWindow.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 std::unique_ptr<Widget> win;
@@ -80,9 +80,9 @@ int main() {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI
 
 
 int main() {
-    return z2::UI::main();
+    return zeno2::UI::main();
 }

@@ -1,10 +1,10 @@
-#include <z2/UI/UiVisViewport.h>
-#include <z2/UI/UiMainWindow.h>
-#include <z2/GL/VisRender.h>
-#include <z2/ds/Mesh.h>
+#include <zeno2/UI/UiVisViewport.h>
+#include <zeno2/UI/UiMainWindow.h>
+#include <zeno2/GL/VisRender.h>
+#include <zeno2/ds/Mesh.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 void UiVisViewport::do_paint() {

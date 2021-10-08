@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <z2/ztd/type_traits.h>
+#include <zeno2/ztd/type_traits.h>
 #include <functional>
 #include <concepts>
 #include <utility>
@@ -9,7 +9,7 @@
 #include <cmath>
 
 
-namespace z2::ztd {
+namespace zeno2::ztd {
 inline namespace mathvec {
 
 

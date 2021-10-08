@@ -1,12 +1,12 @@
 #pragma once
 
 
-#include <z2/UI/Widget.h>
-#include <z2/UI/Button.h>
-#include <z2/UI/Event.h>
+#include <zeno2/UI/Widget.h>
+#include <zeno2/UI/Button.h>
+#include <zeno2/UI/Event.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopContextMenu : Widget {
@@ -23,4 +23,4 @@ struct UiDopContextMenu : Widget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

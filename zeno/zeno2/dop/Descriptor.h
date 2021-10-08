@@ -8,7 +8,7 @@
 #include <vector>
 
 
-namespace z2::dop {
+namespace zeno2::dop {
 
 
 struct Node;
@@ -46,7 +46,7 @@ int define(std::string const &kind, Descriptor desc) {
 }
 
 
-#define Z2_DOP_DEFINE(T, ...) static int def##T = ::z2::dop::define<T>(#T, __VA_ARGS__)
+#define Z2_DOP_DEFINE(T, ...) static int def##T = ::zeno2::dop::define<T>(#T, __VA_ARGS__)
 
 
 }

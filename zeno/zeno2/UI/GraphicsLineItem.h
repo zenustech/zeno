@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/GraphicsWidget.h>
-#include <z2/UI/Color.h>
+#include <zeno2/UI/GraphicsWidget.h>
+#include <zeno2/UI/Color.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct GraphicsLineItem : GraphicsWidget {
@@ -20,4 +20,4 @@ struct GraphicsLineItem : GraphicsWidget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

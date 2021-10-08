@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/GraphicsRectItem.h>
-#include <z2/UI/Font.h>
+#include <zeno2/UI/GraphicsRectItem.h>
+#include <zeno2/UI/Font.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopLink;
@@ -51,4 +51,4 @@ struct UiDopOutputSocket : UiDopSocket {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

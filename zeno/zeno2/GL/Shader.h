@@ -4,10 +4,10 @@
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
-#include <z2/GL/utils.h>
+#include <zeno2/GL/utils.h>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 struct Shader {
@@ -36,4 +36,4 @@ struct Program {
     void set_uniform(const char *name, glm::mat4x4 const &val) const;
 };
 
-}  // namespace z2::GL
+}  // namespace zeno2::GL

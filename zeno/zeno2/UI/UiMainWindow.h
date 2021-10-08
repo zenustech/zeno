@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/UiDopScene.h>
-#include <z2/UI/UiVisViewport.h>
+#include <zeno2/UI/UiDopScene.h>
+#include <zeno2/UI/UiVisViewport.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiMainWindow : Widget {

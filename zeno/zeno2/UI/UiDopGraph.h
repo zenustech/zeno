@@ -1,15 +1,15 @@
 #pragma once
 
 
-#include <z2/UI/UiDopNode.h>
-#include <z2/UI/UiDopLink.h>
-#include <z2/UI/GraphicsView.h>
-#include <z2/UI/UiDopContextMenu.h>
-#include <z2/UI/UiDopSocket.h>
-#include <z2/dop/dop.h>
+#include <zeno2/UI/UiDopNode.h>
+#include <zeno2/UI/UiDopLink.h>
+#include <zeno2/UI/GraphicsView.h>
+#include <zeno2/UI/UiDopContextMenu.h>
+#include <zeno2/UI/UiDopSocket.h>
+#include <zeno2/dop/dop.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopEditor;
@@ -55,4 +55,4 @@ struct UiDopGraph : GraphicsView {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

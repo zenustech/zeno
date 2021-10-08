@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/UI/Label.h>
+#include <zeno2/UI/Label.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct TextEdit : Label {
@@ -31,4 +31,4 @@ struct TextEdit : Label {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

@@ -2,11 +2,11 @@
 
 
 #include <memory>
-#include <z2/ztd/zany.h>
-#include <z2/GL/Camera.h>
+#include <zeno2/ztd/zany.h>
+#include <zeno2/GL/Camera.h>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 struct VisRender {

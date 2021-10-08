@@ -1,7 +1,7 @@
-#include <z2/UI/TextEdit.h>
+#include <zeno2/UI/TextEdit.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 void TextEdit::on_event(Event_Hover e) {
@@ -110,4 +110,4 @@ void TextEdit::paint() const {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

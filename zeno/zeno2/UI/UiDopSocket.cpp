@@ -1,9 +1,9 @@
-#include <z2/UI/UiDopSocket.h>
-#include <z2/UI/UiDopNode.h>
-#include <z2/UI/UiDopGraph.h>
+#include <zeno2/UI/UiDopSocket.h>
+#include <zeno2/UI/UiDopNode.h>
+#include <zeno2/UI/UiDopGraph.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 UiDopSocket::UiDopSocket() {
@@ -66,4 +66,4 @@ void UiDopOutputSocket::paint() const {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

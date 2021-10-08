@@ -1,7 +1,7 @@
-#include <z2/dop/dop.h>
+#include <zeno2/dop/dop.h>
 
 
-namespace z2 {
+namespace zeno2 {
 namespace {
 
 

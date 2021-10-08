@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <z2/UI/Widget.h>
-#include <z2/UI/Font.h>
+#include <zeno2/UI/Widget.h>
+#include <zeno2/UI/Font.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Label : Widget {
@@ -35,4 +35,4 @@ struct Label : Widget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

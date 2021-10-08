@@ -5,7 +5,7 @@
 #include <glm/mat4x4.hpp>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 struct Program;

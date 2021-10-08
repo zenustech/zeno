@@ -2,9 +2,9 @@
 
 #include <string>
 #include <exception>
-#include <z2/ztd/format.h>
+#include <zeno2/ztd/format.h>
 
-namespace z2::ztd {
+namespace zeno2::ztd {
 
 class error : public std::exception {
     std::string msg;

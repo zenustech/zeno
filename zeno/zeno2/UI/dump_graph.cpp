@@ -1,11 +1,11 @@
-#include <z2/UI/UiDopGraph.h>
-#include <z2/UI/UiDopNode.h>
-#include <z2/UI/UiDopScene.h>
-#include <z2/dop/dop.h>
+#include <zeno2/UI/UiDopGraph.h>
+#include <zeno2/UI/UiDopNode.h>
+#include <zeno2/UI/UiDopScene.h>
+#include <zeno2/dop/dop.h>
 #include <cctype>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 static ztd::zany parse_any(std::string const &expr) {

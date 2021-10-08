@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/dop/Node.h>
+#include <zeno2/dop/Node.h>
 
 
-namespace z2::dop {
+namespace zeno2::dop {
 
 
 ztd::zany getval(Input const &input);

@@ -1,14 +1,14 @@
 #pragma once
 
 
-#include <z2/ztd/error.h>
-#include <z2/ztd/format.h>
-#include <z2/GL/opengl.h>
+#include <zeno2/ztd/error.h>
+#include <zeno2/ztd/format.h>
+#include <zeno2/GL/opengl.h>
 #include <vector>
 #include <cstdio>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 static const char *get_opengl_error_string(GLenum err) {
@@ -40,7 +40,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
 #define CHECK_GL(x) \
 do { \
     (x); \
-    ::z2::GL::_check_opengl_error(__FILE__, __LINE__, #x); \
+    ::zeno2::GL::_check_opengl_error(__FILE__, __LINE__, #x); \
 } while (0)
 
 

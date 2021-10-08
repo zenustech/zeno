@@ -4,7 +4,7 @@
 #include <functional>
 
 
-namespace z2::ztd {
+namespace zeno2::ztd {
 
 
 template <class T = void, class ...Ts>

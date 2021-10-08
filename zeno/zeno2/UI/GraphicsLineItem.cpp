@@ -1,7 +1,7 @@
-#include <z2/UI/GraphicsLineItem.h>
+#include <zeno2/UI/GraphicsLineItem.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 bool GraphicsLineItem::contains_point(Point p) const {
@@ -40,4 +40,4 @@ void GraphicsLineItem::paint() const {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

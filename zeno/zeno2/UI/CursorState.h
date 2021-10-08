@@ -1,12 +1,12 @@
 #pragma once
 
 
-#include <z2/UI/Event.h>
-#include <z2/UI/AABB.h>
-#include <z2/ztd/functional.h>
+#include <zeno2/UI/Event.h>
+#include <zeno2/UI/AABB.h>
+#include <zeno2/ztd/functional.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Widget;
@@ -38,4 +38,4 @@ struct CursorState {
 extern CursorState cur;
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

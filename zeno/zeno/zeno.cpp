@@ -1,15 +1,15 @@
 #include "zeno.h"
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#include <z2/dop/execute.h>
+#include <zeno2/dop/execute.h>
 
 
 namespace zeno {
 
 
-void defNodeClass(std::function<std::unique_ptr<z2::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<zeno2::dop::Node>()> func,
         std::string const &name, Descriptor const &desc) {
-    z2::dop::Descriptor nd;
+    zeno2::dop::Descriptor nd;
     nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";
     nd.cate.documentation = "A legacy node class defined via ZDK version 1";
     for (auto i: desc.inputs) {
@@ -21,7 +21,7 @@ void defNodeClass(std::function<std::unique_ptr<z2::dop::Node>()> func,
     for (auto o: desc.outputs) {
         nd.outputs.push_back({o.name});
     }
-    z2::dop::define(name, std::move(nd), std::move(func));
+    zeno2::dop::define(name, std::move(nd), std::move(func));
 }
 
 

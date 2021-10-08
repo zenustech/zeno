@@ -1,13 +1,13 @@
 #pragma once
 
 
-#include <z2/UI/Label.h>
-#include <z2/UI/TextEdit.h>
-#include <z2/UI/UiDopSocket.h>
-#include <z2/UI/Font.h>
+#include <zeno2/UI/Label.h>
+#include <zeno2/UI/TextEdit.h>
+#include <zeno2/UI/UiDopSocket.h>
+#include <zeno2/UI/Font.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopParam : Widget {
@@ -19,4 +19,4 @@ struct UiDopParam : Widget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

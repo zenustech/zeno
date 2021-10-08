@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/UI/Color.h>
+#include <zeno2/UI/Color.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Color {
@@ -23,4 +23,4 @@ struct Color {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

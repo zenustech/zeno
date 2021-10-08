@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/ztd/stdafx.h>
+#include <zeno2/ztd/stdafx.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct Point {
@@ -27,4 +27,4 @@ struct Point {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

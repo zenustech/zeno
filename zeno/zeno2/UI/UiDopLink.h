@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/UI/GraphicsLineItem.h>
+#include <zeno2/UI/GraphicsLineItem.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct UiDopLink : GraphicsLineItem {
@@ -65,4 +65,4 @@ struct UiDopPendingLink : GraphicsLineItem {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

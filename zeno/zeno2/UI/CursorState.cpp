@@ -1,9 +1,9 @@
-#include <z2/UI/CursorState.h>
-#include <z2/UI/Widget.h>
-#include <z2/ztd/math.h>
+#include <zeno2/UI/CursorState.h>
+#include <zeno2/UI/Widget.h>
+#include <zeno2/ztd/math.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 CursorState cur;
@@ -145,4 +145,4 @@ void CursorState::focus_on(Widget *widget) {
 }
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

@@ -1,9 +1,9 @@
-#include <z2/GL/VisRender.h>
-#include <z2/GL/Shader.h>
-#include <z2/ds/Mesh.h>
+#include <zeno2/GL/VisRender.h>
+#include <zeno2/GL/Shader.h>
+#include <zeno2/ds/Mesh.h>
 
 
-namespace z2::GL {
+namespace zeno2::GL {
 
 
 // todo: futher sep this file into pieces

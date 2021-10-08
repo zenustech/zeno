@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/UI/Widget.h>
+#include <zeno2/UI/Widget.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct GraphicsWidget : Widget {
@@ -14,4 +14,4 @@ struct GraphicsWidget : Widget {
 };
 
 
-}  // namespace z2::UI
+}  // namespace zeno2::UI

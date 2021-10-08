@@ -1,8 +1,8 @@
-#include <z2/UI/UiDopParam.h>
-#include <z2/UI/UiDopSocket.h>
+#include <zeno2/UI/UiDopParam.h>
+#include <zeno2/UI/UiDopSocket.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 UiDopParam::UiDopParam() {

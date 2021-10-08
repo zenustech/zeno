@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <z2/UI/Widget.h>
+#include <zeno2/UI/Widget.h>
 
 
-namespace z2::UI {
+namespace zeno2::UI {
 
 
 struct TabPanel : Widget {  // TODO: WIP, complete to unlock a multi-dop-graph editor
