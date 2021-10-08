@@ -20,7 +20,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
 
 project(ZenoEditor LANGUAGES C CXX)
 
-add_subdirectory(external)
+add_subdirectory(tpls)
 add_subdirectory(zeno)
 add_subdirectory(modules)
 
