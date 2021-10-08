@@ -12,12 +12,6 @@
 namespace z2::UI {
 
 
-template <class T>
-inline T notnull(T &&t) {
-    if (!t) throw ztd::error("null pointer exception");
-    return t;
-}
-
 struct Object {
     Object() = default;
     Object(Object const &) = delete;

@@ -11,7 +11,7 @@ struct vector : std::vector<T> {
 
     T &at(size_t i) {
         auto n = this->size();
-        if (i >= n) {
+        [[unlikely]] if (i >= n) {
             throw make_error("IndexError: ", i, " >= ", n);
         }
         return this->operator[](i);
@@ -19,7 +19,7 @@ struct vector : std::vector<T> {
 
     T const &at(size_t i) const {
         auto n = this->size();
-        if (i >= n) {
+        [[unlikely]] if (i >= n) {
             throw make_error("IndexError: ", i, " >= ", n);
         }
         return this->operator[](i);

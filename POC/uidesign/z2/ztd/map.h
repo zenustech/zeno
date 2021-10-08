@@ -11,7 +11,7 @@ struct map : std::map<K, V> {
 
     V &at(K const &k) {
         auto it = this->find(k);
-        if (it == this->end()) {
+        [[unlikely]] if (it == this->end()) {
             throw make_error("KeyError: ", k);
         }
         return it->second;
@@ -19,7 +19,7 @@ struct map : std::map<K, V> {
 
     V const &at(K const &k) const {
         auto it = this->find(k);
-        if (it == this->end()) {
+        [[unlikely]] if (it == this->end()) {
             throw make_error("KeyError: ", k);
         }
         return it->second;
