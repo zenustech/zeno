@@ -24,7 +24,7 @@ add_subdirectory(tpls)
 add_subdirectory(core)
 add_subdirectory(editor)
 add_subdirectory(modules)
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
 add_executable(zeno.main)
 target_sources(zeno.main PRIVATE ${BACKWARD_ENABLE})
