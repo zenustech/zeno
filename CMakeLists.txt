@@ -28,3 +28,8 @@ add_subdirectory(external/spdlog)
 add_subdirectory(external/backward-cpp)
 add_subdirectory(zeno)
 add_subdirectory(modules)
+
+add_executable(ZenoEditor)
+target_link_libraries(ZenoEditor PRIVATE ZenoCore ZenoModule_primitive)
+target_sources(ZenoEditor PRIVATE ${BACKWARD_ENABLE})
+add_backward(ZenoEditor)
