@@ -21,11 +21,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
 project(ZenoEditor LANGUAGES C CXX)
 
 add_subdirectory(tpls)
-add_subdirectory(zeno)
+add_subdirectory(core)
+add_subdirectory(editor)
 add_subdirectory(modules)
 
-add_executable(ZenoEditor)
-target_sources(ZenoEditor PRIVATE ${BACKWARD_ENABLE})
-add_backward(ZenoEditor)
+add_executable(Zeno)
+target_sources(Zeno PRIVATE ${BACKWARD_ENABLE})
+add_backward(Zeno)
 
-target_link_libraries(ZenoEditor PRIVATE ZenoCore ZenoModules)
+target_link_libraries(Zeno PRIVATE ZenoCore ZenoModules ZenoEditor)
