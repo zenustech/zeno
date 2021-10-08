@@ -119,8 +119,8 @@ struct zany {
     explicit operator T() const {
         auto o = cast<T>();
         [[unlikely]] if (!o.has_value())
-            throw make_error("TypeError: cannot cast ", cpp_type_name(type()),
-                             " -> ", cpp_type_name(typeid(T)));
+            throw format_error("TypeError: cannot cast {} -> {}",
+                               cpp_type_name(type()), cpp_type_name(typeid(T)));
         return o.value();
     }
 

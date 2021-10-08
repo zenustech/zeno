@@ -2,7 +2,8 @@
 
 #include <string>
 #include <exception>
-#include <zeno2/ztd/format.h>
+#include <fmt/core.h>
+#include <spdlog/spdlog.h>
 
 namespace zeno2::ztd {
 
@@ -14,14 +15,9 @@ public:
     ~error() noexcept = default;
 };
 
-template <class ...Ts>
-inline auto make_error(Ts const &...ts) {
-    return error(to_string<Ts...>(ts...));
-}
-
-template <class ...Ts>
-inline auto format_error(const char *fmt, Ts &&...ts) {
-    return error(format<Ts...>(fmt, std::forward<Ts>(ts)...));
+template <class ...Args>
+inline auto format_error(fmt::format_string<Args...> fmt, Args &&...args) {
+    return error(fmt::format(fmt, std::forward<Args>(args)...));
 }
 
 template <class F>
@@ -29,7 +25,7 @@ void catch_error(F const &f) {
     try {
         f();
     } catch (std::exception const &e) {
-        println("exception occurred:\n", e.what());
+        SPDLOG_ERROR("exception occurred:\n{}\n", e.what());
     }
 }
 

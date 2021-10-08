@@ -80,7 +80,7 @@ void TextEdit::on_event(Event_Char e) {
     if (disabled)
         return;
     char c = e.code;
-    _insert_text(ztd::to_string(c));
+    _insert_text(fmt::format("{}", c));
 }
 
 void TextEdit::paint() const {

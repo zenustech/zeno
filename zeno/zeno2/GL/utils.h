@@ -2,7 +2,6 @@
 
 
 #include <zeno2/ztd/error.h>
-#include <zeno2/ztd/format.h>
 #include <zeno2/GL/opengl.h>
 #include <vector>
 #include <cstdio>
@@ -33,7 +32,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     auto err = glGetError();
     [[unlikely]] if (err != GL_NO_ERROR) {
       auto msg = get_opengl_error_string(err);
-      throw ztd::make_error(file, ':', line, ':', hint, ": ", msg);
+      throw ztd::format_error("{}:{}: {}: {}", file, line, hint, msg);
     }
 }
 
