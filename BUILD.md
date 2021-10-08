@@ -73,7 +73,7 @@ cd zeno
 Configure CMake:
 
 ```bash
-cmake -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
 
 > Please replace the `[path to vcpkg]` here to the path where we previously cloned vcpkg, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced with `/` to make cmake happy.
