@@ -25,7 +25,8 @@ struct dtor_function : std::function<void()> {
     dtor_function &operator=(dtor_function &&) = default;
 
     ~dtor_function() {
-        std::function<void()>::operator()();
+        if (std::function<void()>::operator bool())
+            std::function<void()>::operator()();
     }
 };
 
