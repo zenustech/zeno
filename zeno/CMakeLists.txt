@@ -6,5 +6,8 @@ target_link_libraries(ZenoEditor PRIVATE glad glfw ftgl)
 target_sources(ZenoEditor PRIVATE ${BACKWARD_ENABLE})
 add_backward(ZenoEditor)
 
-file(GLOB_RECURSE source FOLLOW_SYMLINKS LIST_DIRECTORIES FALSE CONFIGURE_DEPENDS zeno2/*.h zeno2/*.cpp)
+file(GLOB_RECURSE source CONFIGURE_DEPENDS
+    zeno/*.h zeno/*.cpp
+    zeno2/*.h zeno2/*.cpp
+    )
 target_sources(ZenoEditor PRIVATE ${source})
