@@ -2,7 +2,6 @@
 
 #include <string>
 #include <exception>
-#include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
 namespace zeno2::ztd {
