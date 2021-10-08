@@ -136,8 +136,8 @@ void VisRender_Mesh::render(GL::Camera *camera) {
 }
 
 
-std::unique_ptr<VisRender> VisRender::make_for(std::any object) {
-    auto mesh = std::any_cast<std::shared_ptr<ds::Mesh>>(object);
+std::unique_ptr<VisRender> VisRender::make_for(ztd::zany object) {
+    auto mesh = ztd::zany_cast<std::shared_ptr<ds::Mesh>>(object);
     return std::make_unique<VisRender_Mesh>(mesh);
 }
 

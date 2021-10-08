@@ -8,7 +8,7 @@
 namespace z2::UI {
 
 
-static std::any parse_any(std::string const &expr) {
+static ztd::zany parse_any(std::string const &expr) {
     if (!expr.size()) {  // (empty string)
         return {};
     } else if (std::isdigit(expr[0])) {

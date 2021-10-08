@@ -64,7 +64,7 @@ void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &vi
 }
 
 
-std::any resolve(Input const &input, std::set<Node *> &visited) {
+ztd::zany resolve(Input const &input, std::set<Node *> &visited) {
     return std::visit(ztd::match([&] (Input_Link const &input) {
         std::vector<Node *> tolink;
         touch(input, tolink, visited);
@@ -76,7 +76,7 @@ std::any resolve(Input const &input, std::set<Node *> &visited) {
 }
 
 
-std::any getval(Input const &input) {
+ztd::zany getval(Input const &input) {
     return std::visit(ztd::match([&] (Input_Link const &input) {
         return input.node->outputs.at(input.sockid);
     }, [&] (Input_Value const &val) {

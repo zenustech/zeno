@@ -72,6 +72,12 @@ struct is_variant<std::variant<Ts...>> : std::true_type {
     using tuple_type = std::tuple<Ts...>;
 };
 
+template <class T, class V>
+static constexpr bool variant_contains_v = false;
+
+template <class T, class ...Ts>
+static constexpr bool variant_contains_v<T, std::variant<Ts...>> = (std::is_same_v<T, Ts> || ...);
+
 template <class T>
 struct variant_to_tuple {
 };

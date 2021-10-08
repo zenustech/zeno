@@ -1,12 +1,8 @@
 #pragma once
 
-#include <any>
-#include <memory>
-#include <variant>
-#include <cstdint>
-#include <optional>
-#include "type_traits.h"
 #include "vec.h"
+#include <z2/ztd/zany.h>
+#include "type_traits.h"
 
 
 namespace zeno {
@@ -40,67 +36,10 @@ using vector_type_variant = std::variant
         , vec<N, double>
         >;
 
-template <class T, class = void>
-struct any_traits {
-    using underlying_type = T;
-};
-
 template <class T>
-struct any_traits<T, std::void_t<decltype(
-        std::declval<scalar_type_variant &>() = std::declval<T>()
-        )>> {
-    using underlying_type = scalar_type_variant;
-};
+using any_underlying_type_t = z2::ztd::zany_underlying_t<T>;
 
-template <size_t N, class T>
-struct any_traits<vec<N, T>, std::void_t<decltype(
-        std::declval<scalar_type_variant &>() = std::declval<T>()
-        )>> {
-    using underlying_type = vector_type_variant<N>;
-};
-
-template <class T>
-struct any_traits<T *, std::void_t<typename T::polymorphic_base_type>> {
-    using underlying_type = typename T::polymorphic_base_type *;
-};
-
-template <class T>
-struct any_traits<T const *, std::void_t<typename T::polymorphic_base_type>> {
-    using underlying_type = typename T::polymorphic_base_type const *;
-};
-
-template <class T>
-struct any_traits<std::unique_ptr<T>, std::void_t<typename T::polymorphic_base_type>> {
-    using underlying_type = std::unique_ptr<typename T::polymorphic_base_type>;
-};
-
-template <class T>
-struct any_traits<std::shared_ptr<T>, std::void_t<typename T::polymorphic_base_type>> {
-    using underlying_type = std::shared_ptr<typename T::polymorphic_base_type>;
-};
-
-template <class T>
-using any_underlying_type_t = typename any_traits<std::decay_t<T>>::underlying_type;
-
-struct Any : std::any {
-    Any() = default;
-
-    Any(Any const &a) = default;
-
-    template <class T>
-    Any(T const &t)
-    : std::any(static_cast<any_underlying_type_t<T> const &>(t))
-    {}
-
-    Any &operator=(Any const &a) = default;
-
-    template <class T>
-    Any &operator=(T const &t) {
-        std::any::operator=(
-                static_cast<any_underlying_type_t<T>>(t));
-        return *this;
-    }
-};
+using Any = z2::ztd::zany;
 
 template <class T>
 std::optional<T> exact_any_cast(Any a) {
@@ -110,11 +49,7 @@ std::optional<T> exact_any_cast(Any a) {
         using V = any_underlying_type_t<T>;
         if (typeid(V) != a.type()) return std::nullopt;
         decltype(auto) v = std::any_cast<V const &>(a);
-        if constexpr (std::is_pointer_v<T>) {
-            auto ptr = static_cast<T>(v);
-            if (!ptr) return std::nullopt;
-            return std::make_optional(ptr);
-        } else if constexpr (is_shared_ptr<T>::value) {
+        if constexpr (is_shared_ptr<T>::value) {
             using U = typename remove_shared_ptr<T>::type;
             decltype(auto) ptr = std::static_pointer_cast<U>(std::move(v));
             if (!ptr) return std::nullopt;
@@ -151,11 +86,7 @@ std::optional<T> silent_any_cast(Any const &a) {
         using V = any_underlying_type_t<T>;
         if (typeid(V) != a.type()) return std::nullopt;
         decltype(auto) v = std::any_cast<V const &>(a);
-        if constexpr (std::is_pointer_v<T>) {
-            auto ptr = dynamic_cast<T>(v);
-            if (!ptr) return std::nullopt;
-            return std::make_optional(ptr);
-        } else if constexpr (is_shared_ptr<T>::value) {
+        if constexpr (is_shared_ptr<T>::value) {
             using U = typename remove_shared_ptr<T>::type;
             auto ptr = std::dynamic_pointer_cast<U>(v);
             if (!ptr) return std::nullopt;
@@ -170,6 +101,6 @@ std::optional<T> silent_any_cast(Any const &a) {
     }
 }
 
-using zany = Any;  /* deprecated: use zeno::Any instead */
+using zany = Any;
 
 }

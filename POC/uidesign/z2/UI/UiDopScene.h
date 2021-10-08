@@ -11,10 +11,10 @@ namespace z2::UI {
 struct UiDopScene : Widget {
     UiDopGraph *graph;
     UiDopEditor *editor;
-    std::any view_result;
+    ztd::zany view_result;
     SignalSlot on_result_changed;
 
-    void set_view_result(std::any val) {
+    void set_view_result(ztd::zany val) {
         view_result = val;
         on_result_changed();
     }

@@ -7,7 +7,7 @@ namespace {
 
 struct If : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = std::any_cast<int>(resolve(inputs.at(0), visited));
+        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
         if (cond) {
             touch(inputs.at(1), tolink, visited);
         } else {
@@ -30,7 +30,7 @@ Z2_DOP_DEFINE(If, {{
 
 struct For : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = std::any_cast<int>(resolve(inputs.at(0), visited));
+        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
             resolve(inputs.at(1), tmp_visited);

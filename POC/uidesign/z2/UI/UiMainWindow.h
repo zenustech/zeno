@@ -19,8 +19,8 @@ struct UiMainWindow : Widget {
         viewport->position = {0, 440};
     }
 
-    std::vector<std::any> view_results() const {
-        std::vector<std::any> res;
+    std::vector<ztd::zany> view_results() const {
+        std::vector<ztd::zany> res;
         if (auto obj = scene->view_result; obj.has_value())
             res.push_back(obj);
         return res;

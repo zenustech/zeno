@@ -54,4 +54,10 @@ T safe_any_cast(Any const &a, std::string const &msg = {}) {
     }
 }
 
+template <class T, class ...Ts>
+[[deprecated("use safe_any_cast<T>() instead")]]
+auto smart_any_cast(Ts &&...ts) {
+    return safe_any_cast<T>(std::forward<Ts>(ts)...);
+}
+
 }

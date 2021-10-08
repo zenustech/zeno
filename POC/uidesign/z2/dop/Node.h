@@ -2,12 +2,12 @@
 
 
 #include <z2/ztd/vector.h>
+#include <z2/ztd/zany.h>
 #include <variant>
 #include <string>
 #include <memory>
 #include <vector>
 #include <set>
-#include <any>
 
 
 namespace z2::dop {
@@ -18,7 +18,7 @@ struct Descriptor;
 
 
 struct Input_Value {
-    std::any value;
+    ztd::zany value;
 };
 
 struct Input_Link {
@@ -34,18 +34,18 @@ using Input = std::variant
 
 struct Node {
     ztd::vector<Input> inputs;
-    ztd::vector<std::any> outputs;
+    ztd::vector<ztd::zany> outputs;
 
     float xpos = 0;
     std::string name;
     Descriptor *desc = nullptr;
 
-    std::any get_input(int idx) const;
-    void set_output(int idx, std::any val);
+    ztd::zany get_input(int idx) const;
+    void set_output(int idx, ztd::zany val);
     
     template <class T>
     T get_input(int idx) const {
-        return std::any_cast<T>(get_input(idx));
+        return ztd::zany_cast<T>(get_input(idx));
     }
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);

@@ -5,12 +5,12 @@
 namespace z2::dop {
 
 
-std::any Node::get_input(int idx) const {
+ztd::zany Node::get_input(int idx) const {
     return getval(inputs.at(idx));
 }
 
 
-void Node::set_output(int idx, std::any val) {
+void Node::set_output(int idx, ztd::zany val) {
     outputs.at(idx) = std::move(val);
 }
 
