@@ -20,6 +20,8 @@ void agData::computeRHS()
 
                 auto lpos = round(status[level]->worldToIndex(wpos));
                 auto status_axr = status[level]->getAccessor();
+                if(!status_axr.isValueOn(lpos) || status_axr.getValue(lpos) != 0)
+                    printf("error! tag doesn't match status\n");
                 auto rhs_axr = buffer.rhsGrid[level]->getAccessor();
                 openvdb::tree::ValueAccessor<openvdb::FloatTree, true> vel_axr[3]=
                     {velField[0][level]->getAccessor(),
@@ -64,7 +66,7 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
                 auto status_axr = status[level]->getAccessor();
                 auto p_axr = p[level]->getConstAccessor();
                 auto ap_axr = Ap[level]->getAccessor();
-                float lapP;
+                float lapP = 0;
                 // don't care about the symmetry things
                 for(int ss= 0;ss<3;++ss)
                 for(int i=-1;i<=1;i+=2)
@@ -81,20 +83,21 @@ void agData::computeLap(std::vector<openvdb::FloatGrid::Ptr> p, std::vector<open
                         break;
                     }
                     float p = p_axr.getValue(ipos);
-                    lapP -= p;
+                    lapP += p;
                 }
-                lapP += 6 * p_axr.getValue(index);
-                lapP *= dt / dx[level];
-                ap_axr.setValue(index, lapP);
+                lapP -= 6 * p_axr.getValue(index);
+                
                 float pv = p_axr.getValue(index);
                 auto pwpos = p[level]->indexToWorld(index);
-                if(std::isnan(lapP) || std::isnan(pv))
-                    printf("p is %f, lapP is %f, level is %d, index is (%d,%d,%d),tmp is (%f,%f,%f) wpos is (%f,%f,%f), pwpos is (%f,%f,%f)\n", 
-                        pv, lapP, level,
+                if(std::isnan(lapP) || std::isnan(pv) || std::isinf(pv) || std::isinf(lapP))
+                    printf("p is %f, lapP is %f, level is %d, dx is %f, dt is %f, index is (%d,%d,%d),tmp is (%f,%f,%f) wpos is (%f,%f,%f), pwpos is (%f,%f,%f)\n", 
+                        pv, lapP, level, dx[level],dt,
                         index[0],index[1],index[2],
                         tmp[0],tmp[1],tmp[2],
                         wpos[0],wpos[1],wpos[2],
                         pwpos[0],pwpos[1],pwpos[2]);
+                lapP *= dt / (dx[level] * dx[level]);
+                ap_axr.setValue(index, lapP);
             }
         }
     };
@@ -422,6 +425,28 @@ void agData::PossionSolver()
     //BiCGSTAB solver
     std::vector<openvdb::Int32Tree::LeafNodeType *> leaves;
     tag->tree().getNodes(leaves);
+    auto printPress = [&](const tbb::blocked_range<size_t> &r)
+    {
+        auto tag_axr = tag->getConstAccessor();
+        for (auto liter = r.begin(); liter != r.end(); ++liter) {
+            auto &leaf = *leaves[liter];
+            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                openvdb::Coord tagcoord = leaf.offsetToGlobalCoord(offset);
+                if(!tag_axr.isValueOn(tagcoord))
+                    continue;
+                int level = tag_axr.getValue(tagcoord);
+                auto wpos = tag->indexToWorld(tagcoord);
+                auto coord = round(status[level]->worldToIndex(wpos));
+
+                auto press_axr = pressField[level]->getConstAccessor();
+                auto press = press_axr.getValue(coord);
+                //if(std::isnan(press))
+                printf("coord (%d,%d,%d) press is %f\n",
+                    coord[0], coord[1], coord[2], press);
+            }
+        }
+    };
+    
     computeLap(pressField, buffer.ApGrid);
     computeRHS();
     comptueRES();
@@ -435,6 +460,7 @@ void agData::PossionSolver()
     }
     printf("error is %f, start to iter. active voxel count is %d\n", 
         error, pressField[0]->activeVoxelCount());
+    
     std::vector<openvdb::FloatGrid::Ptr> r0, s, h, v, t;
     r0.resize(levelNum);s.resize(levelNum);h.resize(levelNum);
     v.resize(levelNum);t.resize(levelNum);
@@ -500,7 +526,7 @@ void agData::PossionSolver()
         addTree(1, -alpha, buffer.resGrid, v, s);
         
         error = dotTree(s, s);
-        printf("alpha is %f, error is %f\n", alpha, error);
+        //printf("alpha is %f, error is %f\n", alpha, error);
         
         if(error < 0.00001 * pressField[0]->activeVoxelCount())
         {
@@ -516,17 +542,18 @@ void agData::PossionSolver()
         
         addTree(1, -omg, s, t, buffer.resGrid);
         error = dotTree(buffer.resGrid, buffer.resGrid);
-        printf("omg is %f, error is %f\n", omg, error);
+        //printf("omg is %f, error is %f\n", omg, error);
         if(error < 0.00001 * pressField[0]->activeVoxelCount())
             break;
         iterCount++;
         //printf("iter num is %d, error is %f\n", iterCount, error);
         dens_pre = dens;
     }
-    while(iterCount < 100);
+    while(iterCount < 20);
     printf("iter over. error is %f\n", error);
     //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), propagate);
-    
+    //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), printPress);
+     
     for(int i=0;i<levelNum;++i)
     {
         r0[i]->clear();
@@ -616,24 +643,20 @@ void agData::applyPress()
                     if(!vel_axr[i].isValueOn(coord))
                         continue;
                     bool canApply = true;
-                    float sum = 0;
-                    for(int ss = -1; ss<=0;++ss)
-                    {
+                    float vel = vel_axr[i].getValue(coord);
+                    float gradP = 0;
+                    for(int j=0;j<=1;++j){
                         auto ipos = coord;
-                        ipos[i] += ss;
-                        if(!status_axr.isValueOn(ipos))
-                        {
-                            canApply = false;
-                            break;
-                        }
-                        sum += (ss + 0.5)*2*press_axr.getValue(ipos);
+                        ipos[i] += j;
+                        gradP += (j-0.5)*2*press_axr.getValue(ipos);
                     }
-                    sum *= dt / dx[0];
-                    if(canApply)
-                    {
-                        auto vel = vel_axr[i].getValue(coord);
-                        vel_axr[i].setValue(coord, vel + sum);
-                    }
+                    
+                    vel -= dt * gradP /(dx[0] * dens);
+                    float mol = abs(vel);
+                    float maxvel = 1;
+                    if(mol > maxvel)
+                        vel = vel / mol * maxvel;
+                    vel_axr[i].setValue(coord, vel);
                 }
             }
         }   

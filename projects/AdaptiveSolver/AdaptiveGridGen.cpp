@@ -172,7 +172,15 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
                 }
             }
         }
-
+        for (openvdb::FloatGrid::ValueOffIter iter = volumeField[level]->beginValueOff(); iter.test(); ++iter) {
+            iter.setValue(0);
+        }
+        for (openvdb::FloatGrid::ValueOffIter iter = temperatureField[level]->beginValueOff(); iter.test(); ++iter) {
+            iter.setValue(0);
+        }
+        for (openvdb::FloatGrid::ValueOffIter iter = pressField[level]->beginValueOff(); iter.test(); ++iter) {
+            iter.setValue(0);
+        }
     }
     
     buffer.init(pressField);
@@ -390,6 +398,13 @@ void agData::makeCoarse()
         };
         status[level]->tree().getNodes(leaves);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), markGhost);
+    }
+    for(int level = 0;level < levelNum;++level)
+    {
+        pressField[level]->clear();
+        pressField[level]->setTree((std::make_shared<openvdb::FloatTree>(
+                        status[level]->tree(), /*bgval*/ float(0),
+                        openvdb::TopologyCopy())));
     }
 
 }
