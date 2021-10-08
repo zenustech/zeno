@@ -1,11 +1,11 @@
+#include <gtest/gtest.h>
 #include <zeno2/ztd/vec.h>
 
 namespace zeno2 {
 
-int test_main() {
+TEST(test_vec, test_clamp) {
     ztd::vec3f x;
     x = ztd::clamp(x, 0, 1);
-    return 0;
 }
 
 }

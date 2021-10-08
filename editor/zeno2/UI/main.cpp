@@ -8,7 +8,7 @@
 namespace zeno2::UI {
 
 
-std::unique_ptr<Widget> win;
+static std::unique_ptr<Widget> win;
 
 
 static void process_input() {
@@ -81,8 +81,3 @@ int main() {
 
 
 }  // namespace zeno2::UI
-
-
-int main() {
-    return zeno2::UI::main();
-}

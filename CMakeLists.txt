@@ -25,9 +25,4 @@ add_subdirectory(core)
 add_subdirectory(editor)
 add_subdirectory(modules)
 add_subdirectory(tests)
-
-add_executable(zeno.main)
-target_sources(zeno.main PRIVATE ${BACKWARD_ENABLE})
-add_backward(zeno.main)
-
-target_link_libraries(zeno.main PRIVATE zeno.core zeno.modules zeno.editor)
+add_subdirectory(main)
