@@ -21,7 +21,7 @@ Font &Font::set_font_size(float font_size) {
     return *this;
 }
 
-Font &Font::set_fixed_width(float width, FTGL::TextAlignment align = FTGL::ALIGN_CENTER) {
+Font &Font::set_fixed_width(float width, FTGL::TextAlignment align) {
     layout->SetLineLength(width);
     layout->SetAlignment(align);
     return *this;
