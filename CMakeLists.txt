@@ -26,6 +26,7 @@ add_subdirectory(external/ftgl)
 add_subdirectory(external/fmt)
 add_subdirectory(external/spdlog)
 add_subdirectory(external/backward-cpp)
+add_subdirectory(external/eigen)
 add_subdirectory(zeno)
 add_subdirectory(modules)
 
