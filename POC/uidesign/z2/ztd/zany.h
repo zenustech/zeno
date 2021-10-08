@@ -7,6 +7,8 @@
 #include <variant>
 #include <optional>
 #include <z2/ztd/type_traits.h>
+#include <z2/ztd/type_info.h>
+#include <z2/ztd/error.h>
 #include <z2/ztd/vec.h>
 
 
@@ -115,7 +117,11 @@ struct zany {
     template <class T>
         requires (!std::is_same_v<T, std::any> && !std::is_same_v<T, zany>)
     explicit operator T() const {
-        return cast<T>().value();
+        auto o = cast<T>();
+        [[unlikely]] if (!o.has_value())
+            throw make_error("TypeError: cannot cast ", cpp_type_name(type()),
+                             " -> ", cpp_type_name(typeid(T)));
+        return o.value();
     }
 
     template <class T>
@@ -142,7 +148,7 @@ struct zany {
 
 template <class T>
 T zany_cast(zany const &a) {
-    return a.cast<T>().value();
+    return a.operator T();
 }
 
 }
