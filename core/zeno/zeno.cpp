@@ -76,7 +76,7 @@ std::shared_ptr<IObject> INode::get_input(std::string const &id, std::string con
     auto num = std::make_shared<NumericObject>();
     using Types = typename is_variant<NumericValue>::tuple_type;
     if (static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
-        using T = std::tuple_element_t<i, Types>;
+        using T = std::tuple_element_t<i.value, Types>;
         if (auto o = exact_any_cast<T>(obj); o.has_value()) {
             num->set(o.value());
             return true;
@@ -106,7 +106,7 @@ bool INode::has_input(std::string const &id) const {
 
     using Types = typename is_variant<NumericValue>::tuple_type;
     if (static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
-        using T = std::tuple_element_t<i, Types>;
+        using T = std::tuple_element_t<i.value, Types>;
         if (auto o = exact_any_cast<T>(obj); o.has_value()) {
             return true;
         }

@@ -72,7 +72,7 @@ std::optional<T> silent_any_cast(Any const &a) {
     using TupleT = typename variant_to_tuple<T>::type;
     T v;
     if (static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
-        using Ti = std::tuple_element_t<i, TupleT>;
+        using Ti = std::tuple_element_t<i.value, TupleT>;
         auto o = exact_any_cast<Ti>(std::move(a));
         if (o.has_value()) {
             v = o.value();

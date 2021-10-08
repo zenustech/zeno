@@ -3,6 +3,7 @@
 
 #include <zeno2/ztd/type_traits.h>
 #include <functional>
+#include <algorithm>
 #include <concepts>
 #include <utility>
 #include <cstdint>
