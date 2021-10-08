@@ -27,12 +27,4 @@ add_subdirectory(external/ftgl)
 add_subdirectory(external/fmt)
 add_subdirectory(external/spdlog)
 add_subdirectory(external/backward-cpp)
-
-file(GLOB PROJECT_SOURCE z2/*/*.cpp z2/*/*.h)# zeno/*.cpp zeno/*.h zeno/*/*.cpp zeno/*/*.h zeno/*/*/*.cpp zeno/*/*/*.h)
-add_executable(ZenoEditor ${PROJECT_SOURCE})
-
-target_include_directories(ZenoEditor PRIVATE .)
-target_link_libraries(ZenoEditor PRIVATE spdlog fmt)
-target_link_libraries(ZenoEditor PRIVATE glad glfw ftgl)
-target_sources(ZenoEditor PRIVATE ${BACKWARD_ENABLE})
-add_backward(ZenoEditor)
+add_subdirectory(zeno)
