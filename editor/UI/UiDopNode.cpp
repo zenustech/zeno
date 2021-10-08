@@ -60,7 +60,7 @@ void UiDopNode::paint() const {
     }
     glRectf(0.f, 0.f, W, TH);
 
-    Font font("regular.ttf");
+    auto font = get_default_font();
     font.set_font_size(FH);
     font.set_fixed_width(W);
     font.set_fixed_height(TH);

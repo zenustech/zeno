@@ -42,7 +42,7 @@ void UiDopInputSocket::paint() const {
     UiDopSocket::paint();
 
     if (get_parent()->hovered) {
-        Font font("regular.ttf");
+        auto font = get_default_font();
         font.set_font_size(FH);
         font.set_fixed_height(2 * R);
         font.set_fixed_width(NW, FTGL::ALIGN_LEFT);

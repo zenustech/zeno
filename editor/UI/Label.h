@@ -24,7 +24,7 @@ struct Label : Widget {
         glColor3f(0.25f, 0.25f, 0.25f);
         glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
-        Font font("regular.ttf");
+        auto font = get_default_font();
         font.set_font_size(font_size);
         font.set_fixed_width(bbox.nx - BW * 2, alignment);
         font.set_fixed_height(bbox.ny);
