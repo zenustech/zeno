@@ -1,5 +1,5 @@
-add_library(ZenoModule_primitive OBJECT)
-target_link_libraries(ZenoModule_primitive PRIVATE ZenoCore)
+add_library(zeno.modules.primitive OBJECT)
+target_link_libraries(zeno.modules.primitive PRIVATE zeno.core)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
-target_sources(ZenoModule_primitive PRIVATE ${source})
+target_sources(zeno.modules.primitive PRIVATE ${source})

@@ -1,7 +1,7 @@
-add_library(ZenoEditor OBJECT)
-target_include_directories(ZenoEditor PUBLIC .)
-target_link_libraries(ZenoEditor PUBLIC fmt spdlog)
-target_link_libraries(ZenoEditor PRIVATE glad glfw ftgl glm)
+add_library(zeno.editor OBJECT)
+target_include_directories(zeno.editor PUBLIC .)
+target_link_libraries(zeno.editor PRIVATE glad glfw ftgl glm)
+target_link_libraries(zeno.editor PUBLIC zeno.core)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
-target_sources(ZenoEditor PRIVATE ${source})
+target_sources(zeno.editor PRIVATE ${source})
