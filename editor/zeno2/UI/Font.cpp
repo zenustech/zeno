@@ -58,11 +58,6 @@ Font &Font::render(float x, float y, std::string const &str) {
 }
 
 
-namespace default_font {
-extern const uint8_t data[];
-extern const size_t size;
-};
-
 Font get_default_font() {
     return Font(gzeno2_assets_regular_ttfData, gzeno2_assets_regular_ttfSize);
 }
