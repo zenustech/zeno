@@ -89,13 +89,13 @@ cmake --build build --parallel 8
 * Windows (cmd)
 
 ```cmd
-build\zeno.main.exe
+build\zeno.main\zeno.main.exe
 ```
 
 * Linux (bash)
 
 ```bash
-build/zeno.main
+build/zeno.main/zeno.main
 ```
 
 ## References
