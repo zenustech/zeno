@@ -210,63 +210,63 @@ else ()
 endif ()
 
 # Create the configuration file
-if (UNIX)
-  check_include_file("unistd.h" HAVE_UNISTD_H)
-  check_include_file("fcntl.h" HAVE_FCNTL_H)
-  check_include_file("stdint.h" HAVE_STDINT_H)
+#if (UNIX)
+  #check_include_file("unistd.h" HAVE_UNISTD_H)
+  #check_include_file("fcntl.h" HAVE_FCNTL_H)
+  #check_include_file("stdint.h" HAVE_STDINT_H)
 
-  file(READ "${PROJECT_SOURCE_DIR}/builds/unix/ftconfig.in"
-    FTCONFIG_H)
-  if (HAVE_UNISTD_H)
-    string(REGEX REPLACE
-      "#undef +(HAVE_UNISTD_H)" "#define \\1 1"
-      FTCONFIG_H "${FTCONFIG_H}")
-  endif ()
-  if (HAVE_FCNTL_H)
-    string(REGEX REPLACE
-      "#undef +(HAVE_FCNTL_H)" "#define \\1 1"
-      FTCONFIG_H "${FTCONFIG_H}")
-  endif ()
-  if (HAVE_STDINT_H)
-    string(REGEX REPLACE
-      "#undef +(HAVE_STDINT_H)" "#define \\1 1"
-      FTCONFIG_H "${FTCONFIG_H}")
-  endif ()
-  string(REPLACE "/undef " "#undef "
-    FTCONFIG_H "${FTCONFIG_H}")
-else()
-  file(READ "${PROJECT_SOURCE_DIR}/include/freetype/config/ftconfig.h"
-    FTCONFIG_H)
-endif ()
-file(WRITE "${PROJECT_BINARY_DIR}/include/freetype/config/ftconfig.h"
-  "${FTCONFIG_H}")
+  #file(READ "${PROJECT_SOURCE_DIR}/builds/unix/ftconfig.in"
+    #FTCONFIG_H)
+  #if (HAVE_UNISTD_H)
+    #string(REGEX REPLACE
+      #"#undef +(HAVE_UNISTD_H)" "#define \\1 1"
+      #FTCONFIG_H "${FTCONFIG_H}")
+  #endif ()
+  #if (HAVE_FCNTL_H)
+    #string(REGEX REPLACE
+      #"#undef +(HAVE_FCNTL_H)" "#define \\1 1"
+      #FTCONFIG_H "${FTCONFIG_H}")
+  #endif ()
+  #if (HAVE_STDINT_H)
+    #string(REGEX REPLACE
+      #"#undef +(HAVE_STDINT_H)" "#define \\1 1"
+      #FTCONFIG_H "${FTCONFIG_H}")
+  #endif ()
+  #string(REPLACE "/undef " "#undef "
+    #FTCONFIG_H "${FTCONFIG_H}")
+#else()
+  #file(READ "${PROJECT_SOURCE_DIR}/include/freetype/config/ftconfig.h"
+    #FTCONFIG_H)
+#endif ()
+#file(WRITE "${PROJECT_BINARY_DIR}/include/freetype/config/ftconfig.h"
+  #"${FTCONFIG_H}")
 
 
-# Create the options file
-file(READ "${PROJECT_SOURCE_DIR}/include/freetype/config/ftoption.h"
-  FTOPTION_H)
-if (ZLIB_FOUND)
-  string(REGEX REPLACE
-    "/\\* +(#define +FT_CONFIG_OPTION_SYSTEM_ZLIB) +\\*/" "\\1"
-    FTOPTION_H "${FTOPTION_H}")
-endif ()
-if (BZIP2_FOUND)
-  string(REGEX REPLACE
-    "/\\* +(#define +FT_CONFIG_OPTION_USE_BZIP2) +\\*/" "\\1"
-    FTOPTION_H "${FTOPTION_H}")
-endif ()
-if (PNG_FOUND)
-  string(REGEX REPLACE
-    "/\\* +(#define +FT_CONFIG_OPTION_USE_PNG) +\\*/" "\\1"
-    FTOPTION_H "${FTOPTION_H}")
-endif ()
-if (HARFBUZZ_FOUND)
-  string(REGEX REPLACE
-    "/\\* +(#define +FT_CONFIG_OPTION_USE_HARFBUZZ) +\\*/" "\\1"
-    FTOPTION_H "${FTOPTION_H}")
-endif ()
-file(WRITE "${PROJECT_BINARY_DIR}/include/freetype/config/ftoption.h"
-  "${FTOPTION_H}")
+## Create the options file
+#file(READ "${PROJECT_SOURCE_DIR}/include/freetype/config/ftoption.h"
+  #FTOPTION_H)
+#if (ZLIB_FOUND)
+  #string(REGEX REPLACE
+    #"/\\* +(#define +FT_CONFIG_OPTION_SYSTEM_ZLIB) +\\*/" "\\1"
+    #FTOPTION_H "${FTOPTION_H}")
+#endif ()
+#if (BZIP2_FOUND)
+  #string(REGEX REPLACE
+    #"/\\* +(#define +FT_CONFIG_OPTION_USE_BZIP2) +\\*/" "\\1"
+    #FTOPTION_H "${FTOPTION_H}")
+#endif ()
+#if (PNG_FOUND)
+  #string(REGEX REPLACE
+    #"/\\* +(#define +FT_CONFIG_OPTION_USE_PNG) +\\*/" "\\1"
+    #FTOPTION_H "${FTOPTION_H}")
+#endif ()
+#if (HARFBUZZ_FOUND)
+  #string(REGEX REPLACE
+    #"/\\* +(#define +FT_CONFIG_OPTION_USE_HARFBUZZ) +\\*/" "\\1"
+    #FTOPTION_H "${FTOPTION_H}")
+#endif ()
+#file(WRITE "${PROJECT_BINARY_DIR}/include/freetype/config/ftoption.h"
+  #"${FTOPTION_H}")
 
 
 file(GLOB PUBLIC_HEADERS "include/ft2build.h" "include/freetype/*.h")
@@ -415,24 +415,6 @@ if (HARFBUZZ_FOUND)
 endif ()
 
 
-# Installation
-include(GNUInstallDirs)
-
-if (NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
-  install(
-    # Note the trailing slash in the argument to `DIRECTORY'!
-    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/freetype2
-      COMPONENT headers
-      PATTERN "internal" EXCLUDE
-      PATTERN "ftconfig.h" EXCLUDE
-      PATTERN "ftoption.h" EXCLUDE)
-  install(
-    FILES ${PROJECT_BINARY_DIR}/include/freetype/config/ftconfig.h
-          ${PROJECT_BINARY_DIR}/include/freetype/config/ftoption.h
-      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/freetype2/freetype/config
-      COMPONENT headers)
-endif ()
 
 if (NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
   # Generate the pkg-config file
@@ -457,54 +439,5 @@ if (NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
            FREETYPE2_PC_IN ${FREETYPE2_PC_IN})
 
     file(WRITE ${PROJECT_BINARY_DIR}/freetype2.pc ${FREETYPE2_PC_IN})
-
-    install(
-      FILES ${PROJECT_BINARY_DIR}/freetype2.pc
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-      COMPONENT pkgconfig)
   endif ()
-
-  install(
-    TARGETS freetype
-      EXPORT freetype-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      FRAMEWORK DESTINATION Library/Frameworks
-      COMPONENT libraries)
-  install(
-    EXPORT freetype-targets
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/freetype
-      FILE freetype-config.cmake
-      COMPONENT headers)
 endif ()
-
-
-# Packaging
-set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "The FreeType font rendering library.")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/docs/LICENSE.TXT")
-
-set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-
-if (WIN32)
-  set(CPACK_GENERATOR ZIP)
-else()
-  set(CPACK_GENERATOR TGZ)
-endif()
-
-set(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
-set(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "C/C++ Headers")
-set(CPACK_COMPONENT_LIBRARIES_DESCRIPTION
-  "Library used to build programs which use FreeType")
-set(CPACK_COMPONENT_HEADERS_DESCRIPTION
-  "C/C++ header files for use with FreeType")
-set(CPACK_COMPONENT_HEADERS_DEPENDS libraries)
-set(CPACK_COMPONENT_LIBRARIES_GROUP "Development")
-set(CPACK_COMPONENT_HEADERS_GROUP "Development")
-
-include(CPack)

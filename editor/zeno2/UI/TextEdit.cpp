@@ -3,6 +3,11 @@
 
 namespace zeno2::UI {
 
+void TextEdit::insert_text(std::string content) {
+    text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
+    cursor += content.size();
+    sellen = 0;
+}
 
 void TextEdit::on_event(Event_Hover e) {
     Widget::on_event(e);
@@ -50,7 +55,7 @@ void TextEdit::on_event(Event_Key e) {
 
     } else if (e.key == GLFW_KEY_V && e.mode == GLFW_MOD_CONTROL) {
         if (auto str = glfwGetClipboardString(cur.window); str)
-            _insert_text(str);
+            insert_text(str);
 
     } else if (e.key == GLFW_KEY_LEFT) {
         cursor = std::max(0, cursor - 1);
@@ -62,7 +67,7 @@ void TextEdit::on_event(Event_Key e) {
 
     } else if (e.key == GLFW_KEY_BACKSPACE) {
         if (sellen) {
-            _insert_text("");
+            insert_text("");
         } else if (cursor - 1 > 0) {
             text = text.substr(0, cursor - 1) + text.substr(cursor);
             cursor = std::max(0, cursor - 1);
@@ -80,7 +85,7 @@ void TextEdit::on_event(Event_Char e) {
     if (disabled)
         return;
     char c = e.code;
-    _insert_text(fmt::format("{}", c));
+    insert_text(fmt::format("{}", c));
 }
 
 void TextEdit::paint() const {

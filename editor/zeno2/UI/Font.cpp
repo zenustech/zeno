@@ -1,13 +1,17 @@
 #include <zeno2/UI/Font.h>
+#include <incbin.h>
+
+
+INCBIN_EXTERN(zeno2_assets_regular_ttf);
 
 
 namespace zeno2::UI {
 
 
-Font::Font(const char *path) {
-    font = std::make_unique<FTTextureFont>(path);
+Font::Font(const uint8_t *data, size_t size) {
+    font = std::make_unique<FTTextureFont>((const unsigned char *)data, size);
     if (font->Error()) {
-        fprintf(stderr, "Failed to load font: %s\n", path);
+        throw ztd::error("Failed to load FTGL font!");
         abort();
     }
     font->CharMap(ft_encoding_unicode);
@@ -42,7 +46,7 @@ AABB Font::calc_bounding_box(std::string const &str) {
 Font &Font::render(float x, float y, std::string const &str) {
     if (fixed_height > 0) {
         auto bbox = calc_bounding_box(str);
-        y += fixed_height / 2 - bbox.ny / 2;
+        y -= bbox.y0 / 2 - fixed_height * 0.25f;
     }
     if (str.size()) {
         glPushMatrix();
@@ -55,7 +59,7 @@ Font &Font::render(float x, float y, std::string const &str) {
 
 
 Font get_default_font() {
-    return Font("assets/regular.ttf");
+    return Font(gzeno2_assets_regular_ttfData, gzeno2_assets_regular_ttfSize);
 }
 
 

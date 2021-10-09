@@ -101,16 +101,13 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("Route", {400, 128});
-    auto n2 = add_node("ReadOBJMesh", {200, 384});
-    n1->inputs[0]->value = "assets/monkey.obj";
-    n2->inputs[0]->value = "@Route1";
+    add_node("ToView", {400, 128});
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
         auto g = this->dump_graph();
-        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ReadOBJMesh1")});
+        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
     });
 }

@@ -1,4 +1,4 @@
-file(GLOB dirs LIST_DIRECTORIES TRUE CONFIGURE_DEPENDS *)
+file(GLOB dirs LIST_DIRECTORIES TRUE *)
 
 foreach (dir ${dirs})
     if (IS_DIRECTORY ${dir})

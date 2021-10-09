@@ -27,6 +27,8 @@ std::vector<std::string> desc_names() {
 
 void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory) {
     desc.factory = std::move(factory);
+    desc.inputs.push_back({"SRC"});
+    desc.outputs.push_back({"DST"});
     desc_table().emplace(kind, std::move(desc));
 }
 

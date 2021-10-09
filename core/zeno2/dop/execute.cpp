@@ -7,6 +7,15 @@
 namespace zeno2::dop {
 
 
+ztd::zany resolve(Input const &input) {
+    std::set<Node *> visited;
+    SPDLOG_INFO("=== start graph ===");
+    auto ret = resolve(input, visited);
+    SPDLOG_INFO("==== end graph ====");
+    return ret;
+}
+
+
 void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited) {
     struct OrderInfo {
         float new_order = 0;
