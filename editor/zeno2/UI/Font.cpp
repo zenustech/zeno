@@ -5,7 +5,7 @@ namespace zeno2::UI {
 
 
 Font::Font(const uint8_t *data, size_t size) {
-    font = std::make_unique<FTTextureFont>((const unsigned char *)data, size);
+    font = std::make_unique<FTTextureFont>((const unsigned char *) data, size);
     if (auto err = font->Error()) {
         throw ztd::format_error("Failed to load FTGL font: {}", err);
     }

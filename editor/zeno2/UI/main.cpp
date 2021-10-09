@@ -1,5 +1,6 @@
 #include <zeno2/UI/CursorState.h>
 #include <zeno2/UI/UiMainWindow.h>
+
 #if defined(__linux__)
 #include <unistd.h>
 #endif
@@ -29,7 +30,8 @@ static void draw_graphics() {
 
 int main() {
     if (!glfwInit()) {
-        const char *err = "unknown error"; glfwGetError(&err);
+        const char *err = "unknown error";
+        glfwGetError(&err);
         fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
@@ -39,12 +41,13 @@ int main() {
     cur.window = glfwCreateWindow(1600, 900, "Zeno Editor", nullptr, nullptr);
     //glfwSetWindowPos(cur.window, 100, 100);
     if (!cur.window) {
-        const char *err = "unknown error"; glfwGetError(&err);
+        const char *err = "unknown error";
+        glfwGetError(&err);
         fprintf(stderr, "Failed to create GLFW window: %s\n", err);
         return -1;
     }
     glfwMakeContextCurrent(cur.window);
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         fprintf(stderr, "Failed to initialize GLAD\n");
         return -1;
     }
@@ -61,19 +64,17 @@ int main() {
     cur.init_callbacks();
     win = std::make_unique<UiMainWindow>();
 
-    double lasttime = glfwGetTime();
+    //double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(cur.window)) {
         glfwWaitEvents();
         process_input();
         draw_graphics();
-#if 0
-        lasttime += 1.0 / fps;
-        while (glfwGetTime() < lasttime) {
-            double sleepfor = (lasttime - glfwGetTime()) * 0.75;
-            int us(sleepfor / 1000000);
-            std::this_thread::sleep_for(std::chrono::microseconds(us));
-        }
-#endif
+//        lasttime += 1.0 / fps;
+//        while (glfwGetTime() < lasttime) {
+//            double sleepfor = (lasttime - glfwGetTime()) * 0.75;
+//            int us(sleepfor / 1000000);
+//            std::this_thread::sleep_for(std::chrono::microseconds(us));
+//        }
     }
 
     return 0;
