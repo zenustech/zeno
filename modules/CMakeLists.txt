@@ -1,4 +1,4 @@
-file(GLOB dirs LIST_DIRECTORIES TRUE *)
+file(GLOB dirs LIST_DIRECTORIES TRUE CONFIGURE_DEPENDS *)
 
 add_library(zeno.modules INTERFACE)
 foreach (dir ${dirs})
