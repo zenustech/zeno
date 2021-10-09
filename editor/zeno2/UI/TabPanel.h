@@ -24,7 +24,7 @@ struct TabPanel : Widget {
         for (auto *e: elements) {
             e->hidden = e != elm;
         }
-        bbox = elm->bbox;
+        bbox = elm->bbox + elm->position;
         current = elm;
     }
 
