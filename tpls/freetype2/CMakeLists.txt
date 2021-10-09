@@ -415,24 +415,6 @@ if (HARFBUZZ_FOUND)
 endif ()
 
 
-# Installation
-include(GNUInstallDirs)
-
-if (NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
-  install(
-    # Note the trailing slash in the argument to `DIRECTORY'!
-    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/freetype2
-      COMPONENT headers
-      PATTERN "internal" EXCLUDE
-      PATTERN "ftconfig.h" EXCLUDE
-      PATTERN "ftoption.h" EXCLUDE)
-  install(
-    FILES ${PROJECT_BINARY_DIR}/include/freetype/config/ftconfig.h
-          ${PROJECT_BINARY_DIR}/include/freetype/config/ftoption.h
-      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/freetype2/freetype/config
-      COMPONENT headers)
-endif ()
 
 if (NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
   # Generate the pkg-config file
@@ -457,26 +439,7 @@ if (NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
            FREETYPE2_PC_IN ${FREETYPE2_PC_IN})
 
     file(WRITE ${PROJECT_BINARY_DIR}/freetype2.pc ${FREETYPE2_PC_IN})
-
-    install(
-      FILES ${PROJECT_BINARY_DIR}/freetype2.pc
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-      COMPONENT pkgconfig)
   endif ()
-
-  install(
-    TARGETS freetype
-      EXPORT freetype-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      FRAMEWORK DESTINATION Library/Frameworks
-      COMPONENT libraries)
-  install(
-    EXPORT freetype-targets
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/freetype
-      FILE freetype-config.cmake
-      COMPONENT headers)
 endif ()
 
 
