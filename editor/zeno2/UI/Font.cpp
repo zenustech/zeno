@@ -1,8 +1,4 @@
 #include <zeno2/UI/Font.h>
-#include <incbin.h>
-
-
-INCBIN_EXTERN(zeno2_assets_regular_ttf);
 
 
 namespace zeno2::UI {
@@ -55,11 +51,6 @@ Font &Font::render(float x, float y, std::string const &str) {
         glPopMatrix();
     }
     return *this;
-}
-
-
-Font get_default_font() {
-    return Font(gzeno2_assets_regular_ttfData, gzeno2_assets_regular_ttfSize);
 }
 
 

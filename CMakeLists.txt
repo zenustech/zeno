@@ -7,7 +7,8 @@ endif()
 # GCC 11, Clang 12, MSVC 19.28
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set(BUILD_SHARED_LIBS ON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -23,6 +24,7 @@ project(zeno LANGUAGES C CXX)
 
 add_subdirectory(tpls)
 add_subdirectory(core)
+add_subdirectory(assets)
 add_subdirectory(editor)
 #add_subdirectory(legacy)
 #add_subdirectory(modules)
