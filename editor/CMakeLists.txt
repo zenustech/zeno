@@ -6,3 +6,15 @@ target_link_libraries(zeno.editor PUBLIC zeno.core)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
 target_sources(zeno.editor PRIVATE ${source})
+
+function(make_includable input_file output_file)
+    file(READ ${input_file} content)
+    set(delim "for_c++_include")
+    set(content "R\"${delim}(\n${content})${delim}\"")
+    file(WRITE ${output_file} "${content}")
+endfunction(make_includable)
+
+file(GLOB assets LIST_DIRECTORIES FALSE CONFIGURE_DEPENDS assets/*)
+foreach (dir ${dirs})
+    make_includable(assets/regular.ttf assets.cpp)
+endforeach()
