@@ -23,6 +23,7 @@ project(zeno LANGUAGES C CXX)
 
 add_subdirectory(tpls)
 add_subdirectory(core)
+add_subdirectory(legacy)
 add_subdirectory(editor)
 add_subdirectory(modules)
 add_subdirectory(tests)

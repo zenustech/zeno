@@ -49,6 +49,29 @@ ZENO2_DOP_DEFINE(For, {{
 }});
 
 
+#if 0
+struct ListForeach : dop::Node {
+    void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
+        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
+        for (int i = 0; i < cond; i++) {
+            auto tmp_visited = visited;
+            resolve(inputs.at(1), tmp_visited);
+        }
+    }
+
+    void apply() override { throw "unreachable"; }
+};
+
+ZENO2_DOP_DEFINE(ListForeach, {{
+    "misc", "apply for each elements in list",
+}, {
+    {"list"},
+    {"list"},
+}, {
+}});
+#endif
+
+
 struct Route : dop::Node {
     void apply() override {
         set_output(0, get_input(0));
