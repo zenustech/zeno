@@ -1,13 +1,17 @@
 #include <zeno2/UI/Font.h>
+#include <incbin.h>
+
+
+INCBIN_EXTERN(zeno2_assets_regular_ttf);
 
 
 namespace zeno2::UI {
 
 
-Font::Font(const char *path) {
-    font = std::make_unique<FTTextureFont>(path);
+Font::Font(const uint8_t *data, size_t size) {
+    font = std::make_unique<FTTextureFont>((const unsigned char *)data, size);
     if (font->Error()) {
-        fprintf(stderr, "Failed to load font: %s\n", path);
+        throw ztd::error("Failed to load FTGL font!");
         abort();
     }
     font->CharMap(ft_encoding_unicode);
@@ -54,8 +58,13 @@ Font &Font::render(float x, float y, std::string const &str) {
 }
 
 
+namespace default_font {
+extern const uint8_t data[];
+extern const size_t size;
+};
+
 Font get_default_font() {
-    return Font("assets/regular.ttf");
+    return Font(gzeno2_assets_regular_ttfData, gzeno2_assets_regular_ttfSize);
 }
 
 

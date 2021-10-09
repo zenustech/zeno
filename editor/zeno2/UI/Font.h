@@ -12,7 +12,7 @@ struct Font {
     std::unique_ptr<FTSimpleLayout> layout;
     float fixed_height = -1;
 
-    Font(const char *path);
+    Font(const uint8_t *data, size_t size);
     Font &set_font_size(float font_size);
     Font &set_fixed_width(float width, FTGL::TextAlignment align = FTGL::ALIGN_CENTER);
     Font &set_fixed_height(float height);
