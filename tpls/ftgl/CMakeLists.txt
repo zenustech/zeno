@@ -16,7 +16,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # Allow the developer to select if Dynamic or Static libraries are built
-OPTION(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
+#OPTION(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 IF(BUILD_SHARED_LIBS)
  	SET(LIB_TYPE SHARED)
 ELSE(BUILD_SHARED_LIBS)
