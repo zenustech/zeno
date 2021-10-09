@@ -46,7 +46,6 @@ AABB Font::calc_bounding_box(std::string const &str) {
 Font &Font::render(float x, float y, std::string const &str) {
     if (fixed_height > 0) {
         auto bbox = calc_bounding_box(str);
-        printf("%f %f %f\n", fixed_height, bbox.ny, bbox.y0);
         y -= bbox.y0 / 2 - fixed_height * 0.25f;
     }
     if (str.size()) {
