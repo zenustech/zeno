@@ -15,7 +15,7 @@ struct If : dop::Node {
         }
     }
 
-    void apply() override { throw "unreachable"; }
+    void apply() override {}
 };
 
 ZENO2_DOP_DEFINE(If, {{
@@ -37,7 +37,7 @@ struct For : dop::Node {
         }
     }
 
-    void apply() override { throw "unreachable"; }
+    void apply() override {}
 };
 
 ZENO2_DOP_DEFINE(For, {{
@@ -59,7 +59,7 @@ struct ListForeach : dop::Node {
         }
     }
 
-    void apply() override { throw "unreachable"; }
+    void apply() override {}
 };
 
 ZENO2_DOP_DEFINE(ListForeach, {{
