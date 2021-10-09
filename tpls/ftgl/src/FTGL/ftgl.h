@@ -120,13 +120,13 @@ namespace FTGL
     // FTGL_LIBRARY macro is defined, as it will mark symbols for
     // export. If compiling a project to _use_ the _dynamic_ library
     // version of the library, no definition is required.
-    #ifdef FTGL_LIBRARY_STATIC      // static lib - no special export required
+    //#ifdef FTGL_LIBRARY_STATIC      // static lib - no special export required
     #  define FTGL_EXPORT
-    #elif FTGL_LIBRARY              // dynamic lib - must export/import symbols appropriately.
+    /*#elif FTGL_LIBRARY              // dynamic lib - must export/import symbols appropriately.
     #  define FTGL_EXPORT   __declspec(dllexport)
     #else
     #  define FTGL_EXPORT   __declspec(dllimport)
-    #endif
+    #endif*/
 
 #else
     // Compiler that is not MS Visual C++.

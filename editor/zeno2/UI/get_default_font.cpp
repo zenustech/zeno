@@ -5,9 +5,10 @@ namespace zeno2::UI {
 
 
 Font get_default_font() {
-    static const char data[] =
-#include <zeno2/assets/regular.ttf.h>
-    return Font(data, size);
+    static const uint8_t data[] = {
+#include <zeno2/assets/regular.ttf.inl>
+    };
+    return Font(data, sizeof(data));
 }
 
 
