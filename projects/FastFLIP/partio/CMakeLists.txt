@@ -55,7 +55,7 @@ IF(APPLE)
   set (CMAKE_SHARED_LINKER_FLAGS "-undefined dynamic_lookup")
 ENDIF()
 
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "type of build" FORCE)
+#SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "type of build" FORCE)
 
 ## Set install location
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

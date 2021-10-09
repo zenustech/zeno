@@ -1,7 +1,10 @@
+add_subdirectory(ZFX)
+
 add_library(zeno_ZenoFX SHARED)
 target_include_directories(zeno_ZenoFX PRIVATE .)
 
 target_link_libraries(zeno_ZenoFX PUBLIC zeno ZFX)
+target_link_libraries(zeno_ZenoFX PRIVATE zeno_nodep)
 target_sources(zeno_ZenoFX PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp)
 
 if (EXTENSION_zenvdb)
@@ -10,15 +13,6 @@ else()
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" OFF)
 endif()
 
-if (CMAKE_BUILD_TYPE EQUAL Debug)
-    option(ZENOFX_PRINT_LOGS "Enable detailed logs for ZenoFX" ON)
-else()
-    option(ZENOFX_PRINT_LOGS "Enable detailed logs for ZenoFX" OFF)
-endif()
-
-if (ZENOFX_PRINT_LOGS)
-    target_compile_definitions(ZFX PRIVATE -DZENOFX_PRINT_LOGS)
-endif()
 if (ZENOFX_ENABLE_OPENVDB)
     find_package(OpenVDB REQUIRED)
     target_sources(zeno_ZenoFX PRIVATE vw.cpp)

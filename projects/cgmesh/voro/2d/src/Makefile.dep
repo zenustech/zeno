@@ -1,0 +1,22 @@
+common.o: common.cc common.hh config.hh
+cell_2d.o: cell_2d.cc cell_2d.hh common.hh config.hh cell_nc_2d.hh
+container_2d.o: container_2d.cc container_2d.hh config.hh common.hh \
+ v_base_2d.hh worklist_2d.hh cell_2d.hh c_loops_2d.hh rad_option.hh \
+ v_compute_2d.hh cell_nc_2d.hh
+v_base_2d.o: v_base_2d.cc v_base_2d.hh worklist_2d.hh config.hh \
+ v_base_wl_2d.cc
+v_compute_2d.o: v_compute_2d.cc worklist_2d.hh v_compute_2d.hh config.hh \
+ cell_2d.hh common.hh cell_nc_2d.hh rad_option.hh container_2d.hh \
+ v_base_2d.hh c_loops_2d.hh ctr_boundary_2d.hh
+c_loops_2d.o: c_loops_2d.cc c_loops_2d.hh config.hh
+wall_2d.o: wall_2d.cc wall_2d.hh cell_2d.hh common.hh config.hh \
+ container_2d.hh v_base_2d.hh worklist_2d.hh c_loops_2d.hh rad_option.hh \
+ v_compute_2d.hh cell_nc_2d.hh
+cell_nc_2d.o: cell_nc_2d.cc cell_nc_2d.hh cell_2d.hh common.hh config.hh
+ctr_boundary_2d.o: ctr_boundary_2d.cc ctr_boundary_2d.hh config.hh \
+ common.hh v_base_2d.hh worklist_2d.hh cell_2d.hh c_loops_2d.hh \
+ rad_option.hh v_compute_2d.hh cell_nc_2d.hh
+ctr_quad_2d.o: ctr_quad_2d.cc ctr_quad_2d.hh config.hh common.hh \
+ quad_march.hh
+quad_march.o: quad_march.cc quad_march.hh ctr_quad_2d.hh config.hh \
+ common.hh

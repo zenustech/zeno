@@ -67,7 +67,7 @@ struct VDBWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
+            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -83,7 +83,7 @@ struct VDBWrangle : zeno::INode {
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else return 0;
-            }, par->value);
+            }, par);
             opts.define_param(key, dim);
         }
 
@@ -112,7 +112,7 @@ struct VDBWrangle : zeno::INode {
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid"}, {"StringObject", "zfxCode"},
+    {{"VDBGrid", "grid"}, {"string", "zfxCode"},
      {"DictObject:NumericObject", "params"}},
     {{"VDBGrid", "grid"}},
     {},

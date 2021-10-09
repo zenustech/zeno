@@ -11,8 +11,9 @@ namespace zenvis {
 
 int curr_frameid = -1;
 
-static bool playing = true;
 static bool show_grid = true;
+static bool smooth_shading = false;
+bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
 
@@ -51,7 +52,7 @@ void look_perspective(
                       -100.0, 100.0);
   } else {
     view = glm::lookAt(center - back * radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0);
   }
 }
 
@@ -66,6 +67,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvView", glm::inverse(view));
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
+  pro->set_uniform("mSmoothShading", smooth_shading);
 }
 
 static std::unique_ptr<VAO> vao;
@@ -77,6 +79,9 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 
 void initialize() {
   gladLoadGL();
+
+  auto version = (const char *)glGetString(GL_VERSION);
+  printf("OpenGL version: %s\n", version ? version : "null");
 
   //CHECK_GL(glEnable(GL_BLEND));//??
   //CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -133,10 +138,6 @@ void set_window_size(int nx_, int ny_) {
   ny = ny_;
 }
 
-void set_curr_playing(bool playing_) {
-  playing = playing_;
-}
-
 void set_curr_frameid(int frameid) {
   curr_frameid = std::max(frameid, 0);
 }
@@ -157,23 +158,17 @@ void set_show_grid(bool flag) {
     show_grid = flag;
 }
 
-void do_screenshot(std::string path) {
-    CHECK_GL(glReadBuffer(GL_FRONT));
-    void *pixels = malloc(nx * ny * 3);
-    CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, pixels));
-    stbi_flip_vertically_on_write(true);
-    stbi_write_png(path.c_str(), nx, ny, 3, pixels, 0);
-    free(pixels);
-}
+std::vector<char> record_frame_offline() {
+    std::vector<char> pixels(nx * ny * 3);
 
-void new_frame_offline(std::string path) {
+    // multi-sampling buffer
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -186,21 +181,34 @@ void new_frame_offline(std::string path) {
     paint_graphics();
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        // normal buffer as intermedia
+        GLuint sfbo, srbo1, srbo2;
+        CHECK_GL(glGenRenderbuffers(1, &srbo1));
+        CHECK_GL(glGenRenderbuffers(1, &srbo2));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo1));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo2));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+
+        CHECK_GL(glGenFramebuffers(1, &sfbo));
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sfbo));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                    GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srbo1));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                    GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, srbo2));
+        CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, sfbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        char buf[1024];
-        sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
-        printf("saving screen %dx%d to %s\n", nx, ny, buf);
+        CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0]));
 
-        void *pixels = malloc(nx * ny * 3);
-        CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, pixels));
-        stbi_flip_vertically_on_write(true);
-        stbi_write_png(buf, nx, ny, 3, pixels, 0);
-        free(pixels);
+        CHECK_GL(glDeleteRenderbuffers(1, &srbo1));
+        CHECK_GL(glDeleteRenderbuffers(1, &srbo2));
+        CHECK_GL(glDeleteFramebuffers(1, &sfbo));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
@@ -209,6 +217,24 @@ void new_frame_offline(std::string path) {
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
     CHECK_GL(glDeleteFramebuffers(1, &fbo));
+
+    return pixels;
+}
+
+void new_frame_offline(std::string path) {
+    char buf[1024];
+    sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
+    printf("saving screen %dx%d to %s\n", nx, ny, buf);
+
+    std::vector<char> pixels = record_frame_offline();
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(buf, nx, ny, 3, &pixels[0], 0);
+}
+
+void do_screenshot(std::string path) {
+    std::vector<char> pixels = record_frame_offline();
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(path.c_str(), nx, ny, 3, &pixels[0], 0);
 }
 
 void set_background_color(float r, float g, float b) {
@@ -217,6 +243,14 @@ void set_background_color(float r, float g, float b) {
 
 std::tuple<float, float, float> get_background_color() {
     return {bgcolor.r, bgcolor.g, bgcolor.b};
+}
+
+void set_smooth_shading(bool smooth) {
+    smooth_shading = smooth;
+}
+
+void set_render_wireframe(bool render_wireframe_) {
+    render_wireframe = render_wireframe_;
 }
 
 }

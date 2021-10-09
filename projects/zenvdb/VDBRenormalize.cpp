@@ -44,14 +44,49 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      }, /* outputs: */ {
      "inoutSDF",
      }, /* params: */ {
-         {"string", "method", "1oUpwind"},
+         {"enum 1oUpwind", "method", "1oUpwind"},
          {"int", "iterations", "4"},
          {"int", "dilateIters", "0"},
      }, /* category: */ {
      "openvdb",
      }});
 
-struct  VDBSmoothSDF : zeno::INode {
+struct VDBSmooth : zeno::INode {
+    virtual void apply() override {
+        auto inoutVDBtype = get_input<VDBGrid>("inoutVDB")->getType();
+        int width = get_input<NumericObject>("width")->get<int>();
+        int iterations = get_input<NumericObject>("iterations")->get<int>();
+        if (inoutVDBtype == std::string("FloatGrid")) {
+            auto inoutVDB = get_input("inoutVDB")->as<VDBFloatGrid>();
+            auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutVDB->m_grid));
+            lsf.setGrainSize(1);
+            lsf.gaussian(width, iterations, nullptr);
+            //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
+            set_output("inoutVDB", get_input("inoutVDB"));
+        }
+        else if (inoutVDBtype == std::string("Vec3fGrid")) {
+            auto inoutVDB = get_input("inoutVDB")->as<VDBFloat3Grid>();
+            auto lsf = openvdb::tools::Filter<openvdb::Vec3fGrid>(*(inoutVDB->m_grid));
+            lsf.setGrainSize(1);
+            lsf.gaussian(width, iterations, nullptr);
+            set_output("inoutVDB", get_input("inoutVDB"));
+        }
+    }
+};
+
+ZENO_DEFNODE(VDBSmooth)(
+    { /* inputs: */ {
+    "inoutVDB",
+    {"int", "width", "1"},
+    {"int", "iterations", "1"},
+    }, /* outputs: */ {
+    "inoutVDB",
+    }, /* params: */ {
+    }, /* category: */ {
+    "openvdb",
+} });
+
+struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
   virtual void apply() override {
 
     auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
@@ -73,6 +108,7 @@ static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
      }, /* params: */ {
          {"int", "width", "1"},
          {"int", "iterations", "1"},
+         {"string", "DEPRECATED", "Use VDBSmooth Instead"},
      }, /* category: */ {
      "openvdb",
      }});
@@ -89,7 +125,7 @@ struct  VDBDilateTopo : zeno::INode {
 
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
-     "inField", "layers", 
+     "inField", {"int", "layers",} 
      }, /* outputs: */ {
        "oField"
      }, /* params: */ {
@@ -117,13 +153,12 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     "inoutSDF", "depth", 
+     "inoutSDF", {"float", "depth"}, 
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
      }});
-
 
 }

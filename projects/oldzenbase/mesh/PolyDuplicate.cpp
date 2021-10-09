@@ -9,7 +9,7 @@
 //points, triangles, quads, 4, 4);
 
 namespace zeno {
-void MergeMesh(std::shared_ptr<MeshObject> &to, std::shared_ptr<MeshObject> &from)
+static void MergeMesh(std::shared_ptr<MeshObject> &to, std::shared_ptr<MeshObject> &from)
 {
     size_t n = to->vertices.size();
     to->vertices.resize(n+from->size());

@@ -74,6 +74,7 @@ set_target_properties(zeno_gmpm
 
 target_link_libraries(zeno_gmpm PRIVATE zensim)
 target_link_libraries(zeno_gmpm PUBLIC zeno)
+target_link_libraries(zeno_gmpm PRIVATE zeno_nodep)
 target_link_libraries(zeno_gmpm PUBLIC ZFX)
 target_include_directories(zeno_gmpm PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_gmpm PRIVATE ../zenvdb/include)

@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: @CMAKE_PROJECT_NAME@
+Description: Direct solution of large, sparse systems of linear equations
+Version: @PROJECT_VERSION@
+URL: http://crd-legacy.lbl.gov/~xiaoye/SuperLU/
+
+Libs: -L${libdir} -lsuperlu
+Libs.private: @BLAS_LIB@ -lm
+Cflags: -I${includedir}

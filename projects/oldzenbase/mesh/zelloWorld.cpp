@@ -27,7 +27,7 @@ struct StringToMesh : zeno::INode {
                 auto vec = zeno::IObject::make<zeno::NumericObject>();
                 vec->set<zeno::vec3f>(zeno::vec3f((float)count * spacing, 0.0f,0.0f));
                 //auto p = zeno::IObject::make<PrimitiveObject>();
-                auto const &obj = AZ->arr[idx];
+                auto const &obj = smart_any_cast<std::shared_ptr<IObject>>(AZ->arr[idx]);
                 auto p = obj->clone();
                 //p->copy(dynamic_cast<PrimitiveObject *>(obj.get()));
                 list->arr.push_back(std::move(p));

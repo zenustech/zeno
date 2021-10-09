@@ -13,3 +13,4 @@ endif()
 #target_link_libraries(zeno_oldzenbase PRIVATE TBB::tbb TBB::tbbmalloc)
 
 target_link_libraries(zeno_oldzenbase PUBLIC zeno)
+target_link_libraries(zeno_oldzenbase PRIVATE zeno_nodep)

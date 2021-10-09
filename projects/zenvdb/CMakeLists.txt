@@ -37,3 +37,4 @@ if (WIN32)
 endif()
 
 target_link_libraries(zeno_zenvdb PUBLIC zeno)
+target_link_libraries(zeno_zenvdb PRIVATE zeno_nodep)

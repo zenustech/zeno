@@ -31,7 +31,7 @@ struct GLFramebuffer : zeno::IObjectClone<GLFramebuffer> {
 
     void checkStatusComplete() const {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            zlog::error("glFramebufferTexture2D: incomplete framebuffer!\n");
+            //zlog::error("glFramebufferTexture2D: incomplete framebuffer!\n");
         }
     }
 };

@@ -26,14 +26,15 @@ struct SpatialPartitionForParticles : zeno::INode {
     auto blocklen = std::get<int>(get_param("block_side_length"));
     // auto &particles = get_input("ZSParticles")->as<ZenoParticles>()->get();
     ZenoParticleObjects parObjPtrs{};
-    if (get_input("ZSParticles")->as<ZenoParticles>())
-      parObjPtrs.push_back(get_input("ZSParticles")->as<ZenoParticles>());
-    else if (get_input("ZSParticles")->as<ZenoParticleList>()) {
-      auto &list = get_input("ZSParticles")->as<ZenoParticleList>()->get();
+    if (has_input<ZenoParticles>("ZSParticles"))
+      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
+    else if (has_input<ZenoParticleList>("ZSParticles")) {
+      auto &list = get_input<ZenoParticleList>("ZSParticles")->get();
       parObjPtrs.insert(parObjPtrs.end(), list.begin(), list.end());
-    } else if (get_input("ZSParticles")->as<ListObject>()) {
-      auto &objSharedPtrLists = *get_input("ZSParticles")->as<ListObject>();
-      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+    } else if (has_input<ListObject>("ZSParticles")) {
+      // auto &objSharedPtrLists = *get_input("ZSParticles")->as<ListObject>();
+      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
+      for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
           parObjPtrs.push_back(ptr);

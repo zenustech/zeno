@@ -10,8 +10,8 @@ namespace zeno {
 
 struct WriteVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
-    auto data = get_input("data")->as<VDBGrid>();
+    auto path = get_param<std::string>("path");
+    auto data = get_input<VDBGrid>("data");
     data->output(path);
   }
 };
@@ -21,7 +21,7 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
     "data",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"string", "path", ""},
+    {"writepath", "path", ""},
     }, /* category: */ {
     "openvdb",
     }});

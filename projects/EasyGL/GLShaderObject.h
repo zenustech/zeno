@@ -24,7 +24,7 @@ struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
             if (infoLen) {
                 std::vector<char> infoLog(infoLen);
                 glGetShaderInfoLog(id, infoLen, NULL, infoLog.data());
-                zlog::error("error compiling shader: {}", infoLog.data());
+                //zlog::error("error compiling shader: {}", infoLog.data());
             }
         }
         impl = std::make_shared<Impl>();

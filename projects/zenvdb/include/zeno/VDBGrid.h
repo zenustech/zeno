@@ -57,7 +57,9 @@ struct VDBGrid : zeno::IObject {
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
-  virtual std::string getType() { return std::string(); }
+  virtual void setName(std::string const &name) = 0;
+  virtual std::string getType() const =0;
+  virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
 };
 
@@ -66,6 +68,8 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
 
   VDBGridWrapper() { m_grid = GridT::create(); }
+
+  VDBGridWrapper(typename GridT::Ptr &&ptr) { m_grid = std::move(ptr); }
 
   VDBGridWrapper(VDBGridWrapper const &other) {
       m_grid = other.m_grid->deepCopy();
@@ -91,7 +95,8 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
     return m_grid->transform().worldToIndex(c);
   }
   virtual void output(std::string path) override {
-    writeFloatGrid<GridT>(path, m_grid);
+    //writeFloatGrid<GridT>(path, m_grid);
+    openvdb::io::File(path).write({ m_grid });
   }
 
   virtual void input(std::string path) override {
@@ -109,7 +114,16 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
       openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
   }
 
-  virtual std::string getType() {
+  virtual zeno::vec3f getVoxelSize() const override {
+      auto del = m_grid->voxelSize();
+      return zeno::vec3f(del[0], del[1], del[2]);
+  }
+
+  virtual void setName(std::string const &name) override {
+      m_grid->setName(name);
+  }
+
+  virtual std::string getType() const override {
     if (std::is_same<GridT, openvdb::FloatGrid>::value) {
       return std::string("FloatGrid");
     } else if (std::is_same<GridT, openvdb::Int32Grid>::value) {

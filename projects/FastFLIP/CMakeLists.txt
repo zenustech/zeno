@@ -72,5 +72,6 @@ target_link_libraries(zeno_FastFLIP PRIVATE partio)
 
 
 target_link_libraries(zeno_FastFLIP PUBLIC zeno)
+target_link_libraries(zeno_FastFLIP PRIVATE zeno_nodep)
 target_include_directories(zeno_FastFLIP PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FastFLIP PRIVATE ../zenvdb/include)

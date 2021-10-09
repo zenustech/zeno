@@ -47,7 +47,7 @@ struct ZSParticlesWrangle : zeno::INode {
     } else if (get_input("ZSParticles")->as<zeno::ListObject>()) {
       auto &objSharedPtrLists =
           *get_input("ZSParticles")->as<zeno::ListObject>();
-      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+      for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<zeno::ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
           parObjPtrs.push_back(ptr);
@@ -66,7 +66,8 @@ struct ZSParticlesWrangle : zeno::INode {
     std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
-      auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
+      auto par =
+          zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
       auto dim = std::visit(
           [&](auto const &v) -> int {
             using T = std::decay_t<decltype(v)>;

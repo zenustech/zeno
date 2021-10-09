@@ -162,6 +162,7 @@ class TimelineWidget(QWidget):
         self.editor.on_kill()
 
     def on_execute(self):
+        self.editor.on_kill()
         self.editor.on_execute()
         self.slider.setValue(0)
         self.start_play()
@@ -174,13 +175,13 @@ class TimelineWidget(QWidget):
         self.slider.setMaximum(int('0' + self.maxframe.text()))
 
     def on_update(self):
-        frameid = zenvis.status['frameid']
+        frameid = zenvis.get_curr_frameid()
         self.slider.setValue(frameid)
         self.label.setText(str(frameid))
         self.status.setText(self.get_status_string())
 
     def value_changed(self):
-        zenvis.status['next_frameid'] = self.slider.value()
+        zenvis.set_curr_frameid(self.slider.value())
         zenvis.status['playing'] = self.player.isChecked()
 
     def start_play(self):
@@ -200,15 +201,15 @@ class TimelineWidget(QWidget):
 
     def next_frame(self):
         self.stop_play()
-        f = zenvis.status['frameid']
-        zenvis.status['next_frameid'] = f + 1
+        f = zenvis.get_curr_frameid()
+        zenvis.set_curr_frameid(f + 1)
 
     def prev_frame(self):
         self.stop_play()
-        f = zenvis.status['frameid']
-        zenvis.status['next_frameid'] = f - 1
+        f = zenvis.get_curr_frameid()
+        zenvis.set_curr_frameid(f - 1)
 
     def jump_frame(self, frameid):
         self.stop_play()
         self.slider.setValue(frameid)
-        zenvis.status['frameid'] = frameid
+        zenvis.set_curr_frameid(frameid)

@@ -1,0 +1,12848 @@
+{
+ "graph": {
+  "main": {
+   "nodes": {
+    "3cdc84e8-RigidMakeShape": {
+     "name": "RigidMakeShape",
+     "inputs": {
+      "prim": [
+       "0a05fa87-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "type": [
+       null,
+       null,
+       "convex"
+      ],
+      "margin": [
+       null,
+       null,
+       0.0
+      ],
+      "recentered": [
+       null,
+       null,
+       true
+      ],
+      "auto_mass": [
+       null,
+       null,
+       false
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -114.56560770542706,
+      89.35783111795212
+     ],
+     "options": []
+    },
+    "0a05fa87-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -385.6676570458403,
+      140.4248726655348
+     ],
+     "options": []
+    },
+    "f18c1ffd-RigidMakeObject": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "shape": [
+       "3cdc84e8-RigidMakeShape",
+       "shape",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "mass": [
+       null,
+       null,
+       1.0
+      ],
+      "material": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      184.13879456706297,
+      132.16680814940577
+     ],
+     "options": []
+    },
+    "af8c23fd-RigidMakeWorld": {
+     "name": "RigidMakeWorld",
+     "inputs": {
+      "gravity": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      547.3684210526317,
+      -88.9643463497454
+     ],
+     "options": []
+    },
+    "9ce604af-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "af8c23fd-RigidMakeWorld",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      840.7470288624788,
+      -23.089983022071365
+     ],
+     "options": []
+    },
+    "0271d940-RigidStepWorld": {
+     "name": "RigidStepWorld",
+     "inputs": {
+      "world": [
+       "9ce604af-CachedOnce",
+       "output",
+       null
+      ],
+      "objList": [
+       "930fc311-MakeSmallList",
+       "list",
+       null
+      ],
+      "consList": [
+       "dcfaad7a-MakeSmallList",
+       "list",
+       null
+      ],
+      "steps": [
+       null,
+       null,
+       10
+      ],
+      "dt": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1157.8947368421063,
+      27.20713073005092
+     ],
+     "options": []
+    },
+    "930fc311-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "7f844a9a-x",
+       "output",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      844.142614601019,
+      173.8539898132428
+     ],
+     "options": []
+    },
+    "dcfaad7a-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       null,
+       null,
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1124.6179966044144,
+      371.4770797962649
+     ],
+     "options": []
+    },
+    "b9f1b874-RigidGetPrimitive": {
+     "name": "RigidGetPrimitive",
+     "inputs": {
+      "object": [
+       "7f844a9a-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       "0271d940-RigidStepWorld",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1526.9524617996603,
+      273.7691001697793
+     ],
+     "options": []
+    },
+    "7f844a9a-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "f18c1ffd-RigidMakeObject",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      485.46264855687605,
+      226.8145161290322
+     ],
+     "options": []
+    },
+    "f3b980a8-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "b9f1b874-RigidGetPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1830.3416856492026,
+      291.57175398633257
+     ],
+     "options": [
+      "VIEW"
+     ]
+    }
+   },
+   "view_rect": {
+    "x": -87.00558067223216,
+    "y": -47.00991217112083,
+    "width": 400.0,
+    "height": 400.0
+   }
+  },
+  "RigidStepWorld": {
+   "nodes": {
+    "881c8622-x": {
+     "name": "BulletStepWorld",
+     "inputs": {
+      "world": [
+       "78687fa8-BulletWorldSetConsList",
+       "world",
+       null
+      ],
+      "dt": [
+       "3f5c47c3-x",
+       "port",
+       0.04
+      ],
+      "steps": [
+       "a67b9505-x",
+       "port",
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1144.3546273705,
+      626.9783955357176
+     ],
+     "options": []
+    },
+    "791830ef-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "20154a69-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj\nobj1"
+     },
+     "uipos": [
+      -426.4003889920837,
+      340.09823898942795
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj",
+      "obj1"
+     ]
+    },
+    "19b87e02-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "791830ef-x",
+       "BulletObj",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "20154a69-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -162.73080578651587,
+      357.51839523806245
+     ],
+     "options": []
+    },
+    "4caf47b8-x": {
+     "name": "BulletWorldSetObjList",
+     "inputs": {
+      "world": [
+       "0871d035-SubInput",
+       "port",
+       null
+      ],
+      "objList": [
+       "9e6d65b1-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      351.5692843366694,
+      398.4199297733737
+     ],
+     "options": []
+    },
+    "20154a69-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "9e6d65b1-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -699.3476543722892,
+      344.15266040682525
+     ],
+     "options": []
+    },
+    "0871d035-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -146.32357985729982,
+      6.431805708013087
+     ],
+     "options": []
+    },
+    "082e319f-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -526.3361004390779,
+      68.60592755214054
+     ],
+     "options": []
+    },
+    "9e6d65b1-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "objList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -992.6420142700331,
+      323.38249804965386
+     ],
+     "options": []
+    },
+    "df7818f7-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "881c8622-x",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1495.069474091618,
+      619.7579849370665
+     ],
+     "options": []
+    },
+    "78687fa8-BulletWorldSetConsList": {
+     "name": "BulletWorldSetConsList",
+     "inputs": {
+      "world": [
+       "4caf47b8-x",
+       "world",
+       null
+      ],
+      "consList": [
+       "8b422ccf-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      727.5132275132274,
+      458.8293650793653
+     ],
+     "options": []
+    },
+    "8b422ccf-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "consList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -465.59217831583265,
+      731.8251134395184
+     ],
+     "options": []
+    },
+    "175ebd07-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "8b422ccf-x",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -172.29781841808875,
+      751.1715855916784
+     ],
+     "options": []
+    },
+    "83ac3cfe-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "175ebd07-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletCons\nobj1"
+     },
+     "uipos": [
+      100.64944696211671,
+      747.117164174281
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletCons",
+      "obj1"
+     ]
+    },
+    "c4242ea7-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "83ac3cfe-x",
+       "BulletCons",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "175ebd07-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      364.31903016768456,
+      764.5373204229156
+     ],
+     "options": []
+    },
+    "a67b9505-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "steps",
+      "type": "int",
+      "defl": "10"
+     },
+     "uipos": [
+      1091.4421868080321,
+      923.6130618233282
+     ],
+     "options": []
+    },
+    "3f5c47c3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "float",
+      "defl": "0.04"
+     },
+     "uipos": [
+      755.7593674247723,
+      855.7716521316985
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 238.50831085905656,
+    "y": 469.03872180375384,
+    "width": 625.0,
+    "height": 625.0
+   }
+  },
+  "RigidMakeWorld": {
+   "nodes": {
+    "63ca24d8-x": {
+     "name": "BulletMakeWorld",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -590.678209206968,
+      -108.46561056486807
+     ],
+     "options": []
+    },
+    "2fcc727a-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "398c9bd1-BulletSetWorldGravity",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      230.51591657519208,
+      209.11086717892422
+     ],
+     "options": []
+    },
+    "13678edd-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "vec3f",
+      "defl": "0,0,-9.8"
+     },
+     "uipos": [
+      -1047.8183315038418,
+      77.49039517014268
+     ],
+     "options": []
+    },
+    "b9a36d04-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -253.5675082327113,
+      363.8858397365532
+     ],
+     "options": []
+    },
+    "398c9bd1-BulletSetWorldGravity": {
+     "name": "BulletSetWorldGravity",
+     "inputs": {
+      "world": [
+       "63ca24d8-x",
+       "world",
+       null
+      ],
+      "gravity": [
+       "e20efa7e-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -190.82738748627867,
+      114.297475301866
+     ],
+     "options": []
+    },
+    "e20efa7e-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "13678edd-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "d5f32d97-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "13678edd-SubInput",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -615.7381997804611,
+      121.7755214050494
+     ],
+     "options": []
+    },
+    "d5f32d97-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -9.8,
+      "z": 0.0
+     },
+     "uipos": [
+      -611.4503293084523,
+      339.5993413830955
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -908.042825726573,
+    "y": -307.777118407267,
+    "width": 781.25,
+    "height": 781.25
+   }
+  },
+  "RigidMakeObject": {
+   "nodes": {
+    "d4323c5d-x": {
+     "name": "BulletMakeObject",
+     "inputs": {
+      "shape": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "trans": [
+       "ff4ca279-x",
+       "trans",
+       null
+      ],
+      "mass": [
+       "c774f748-x",
+       "result",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1136.3123773757902,
+      301.7825277143983
+     ],
+     "options": []
+    },
+    "ff4ca279-x": {
+     "name": "BulletMakeTransform",
+     "inputs": {
+      "origin": [
+       "adfd1fcb-NumericOperator",
+       "ret",
+       null
+      ],
+      "rotation": [
+       "04b219ff-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      581.3661301626536,
+      190.41622251148175
+     ],
+     "options": []
+    },
+    "6a8cbdd2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -93.30525119910774,
+      -1235.4685187060927
+     ],
+     "options": []
+    },
+    "0940ab4d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "c5b04261-CopyAllUserData",
+       "dst",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "object",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2943.824308195423,
+      345.63283221909023
+     ],
+     "options": []
+    },
+    "edc91d70-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "vec3f",
+      "defl": "0,0,0"
+     },
+     "uipos": [
+      -544.8475434572388,
+      -560.261444167784
+     ],
+     "options": []
+    },
+    "c7894ffe-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "rotation",
+      "type": "vec4f",
+      "defl": "0,0,0,1"
+     },
+     "uipos": [
+      -542.5853203058942,
+      -95.80923778735969
+     ],
+     "options": []
+    },
+    "04b219ff-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "c7894ffe-x",
+       "port",
+       null
+      ],
+      "false": [
+       "747e3a9b-NumericVec4",
+       "vec4",
+       null
+      ],
+      "cond": [
+       "c7894ffe-x",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -269.2511013215859,
+      4.933920704845815
+     ],
+     "options": []
+    },
+    "747e3a9b-NumericVec4": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+     },
+     "uipos": [
+      -269.7507953340403,
+      -253.84411452810184
+     ],
+     "options": []
+    },
+    "3a219a6d-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "float",
+      "defl": "0"
+     },
+     "uipos": [
+      296.79469388285,
+      393.432375563031
+     ],
+     "options": []
+    },
+    "7bc61f9a-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "edc91d70-x",
+       "port",
+       null
+      ],
+      "false": [
+       "61921ac6-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "edc91d70-x",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -251.48077098151333,
+      -487.8224246703238
+     ],
+     "options": []
+    },
+    "61921ac6-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -258.8351557583386,
+      -720.7008422862538
+     ],
+     "options": []
+    },
+    "34e54573-BulletSetObjectDamping": {
+     "name": "BulletSetObjectDamping",
+     "inputs": {
+      "object": [
+       "d4323c5d-x",
+       "object",
+       null
+      ],
+      "dampLin": [
+       "d22f3659-ExtractDict",
+       "dampLin",
+       0.0
+      ],
+      "dampAug": [
+       "d22f3659-ExtractDict",
+       "dampAng",
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1476.6546039070008,
+      254.13937276425983
+     ],
+     "options": []
+    },
+    "a1a09895-BulletSetObjectFriction": {
+     "name": "BulletSetObjectFriction",
+     "inputs": {
+      "object": [
+       "34e54573-BulletSetObjectDamping",
+       "object",
+       null
+      ],
+      "friction": [
+       "d22f3659-ExtractDict",
+       "friction",
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1838.9749430523925,
+      309.97722095671986
+     ],
+     "options": []
+    },
+    "5981514f-BulletSetObjectRestitution": {
+     "name": "BulletSetObjectRestitution",
+     "inputs": {
+      "object": [
+       "a1a09895-BulletSetObjectFriction",
+       "object",
+       null
+      ],
+      "restitution": [
+       "d22f3659-ExtractDict",
+       "restitution",
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2242.2907488986784,
+      327.7533039647576
+     ],
+     "options": []
+    },
+    "fa092108-GetUserData": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      99.0888382687927,
+      -433.6560364464694
+     ],
+     "options": []
+    },
+    "aea617f1-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fa092108-GetUserData",
+       "data",
+       null
+      ],
+      "false": [
+       "9e012264-x",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "fa092108-GetUserData",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      349.63391220618036,
+      -364.7680804858848
+     ],
+     "options": []
+    },
+    "9e012264-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      342.279527429355,
+      -597.6464981018148
+     ],
+     "options": []
+    },
+    "adfd1fcb-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "aea617f1-x",
+       "result",
+       null
+      ],
+      "rhs": [
+       "7bc61f9a-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      338.9521640091117,
+      24.60136674259681
+     ],
+     "options": []
+    },
+    "c5b04261-CopyAllUserData": {
+     "name": "CopyAllUserData",
+     "inputs": {
+      "dst": [
+       "5981514f-BulletSetObjectRestitution",
+       "object",
+       null
+      ],
+      "src": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2600.820045558087,
+      346.24145785876993
+     ],
+     "options": []
+    },
+    "a05adf2f-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      2610.0,
+      166.0
+     ],
+     "options": []
+    },
+    "c774f748-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d21bc294-NumericOperator",
+       "ret",
+       null
+      ],
+      "false": [
+       "3a219a6d-SubInput",
+       "port",
+       null
+      ],
+      "cond": [
+       "3b9be532-x",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      831.959970690857,
+      671.9303275778483
+     ],
+     "options": []
+    },
+    "3b9be532-x": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "mass_scale"
+     },
+     "uipos": [
+      302.2195096909027,
+      695.002870026595
+     ],
+     "options": []
+    },
+    "d21bc294-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "3a219a6d-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "3b9be532-x",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      565.8470307529163,
+      556.7338282078475
+     ],
+     "options": []
+    },
+    "d22f3659-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "3ee161c0-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dampLin\ndampAng\nfriction\nrestitution\nobj4"
+     },
+     "uipos": [
+      2111.6475713501645,
+      -341.1858534577387
+     ],
+     "options": [],
+     "socket_keys": [
+      "dampLin",
+      "dampAng",
+      "friction",
+      "restitution",
+      "obj4"
+     ]
+    },
+    "75fd95c0-RigidObjectProp": {
+     "name": "RigidObjectProp",
+     "inputs": {
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.06
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "restitution": [
+       null,
+       null,
+       0.6
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1585.482985729967,
+      -463.7760702524698
+     ],
+     "options": []
+    },
+    "3ee161c0-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0c07c6a6-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "75fd95c0-RigidObjectProp",
+       "material",
+       null
+      ],
+      "cond": [
+       "0c07c6a6-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1861.9648737650932,
+      -375.96048298572987
+     ],
+     "options": []
+    },
+    "0c07c6a6-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1867.4533479692643,
+      -643.5236004390779
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -49.06641806781704,
+    "y": -819.431818749825,
+    "width": 976.5625,
+    "height": 976.5625
+   }
+  },
+  "RigidRecenterPrim": {
+   "nodes": {
+    "bb70e589-PrimitiveCalcCentroid": {
+     "name": "PrimitiveCalcCentroid",
+     "inputs": {
+      "prim": [
+       "333224cd-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      45.59915164369035,
+      224.28419936373277
+     ],
+     "options": []
+    },
+    "333224cd-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -247.6139978791092,
+      174.44326617179215
+     ],
+     "options": []
+    },
+    "217a09aa-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "333224cd-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      329.2682926829269,
+      190.88016967126185
+     ],
+     "options": []
+    },
+    "7ca95586-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      327.1474019088017,
+      382.2905620360552
+     ],
+     "options": []
+    },
+    "0e9fe4eb-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "217a09aa-Clone",
+       "newObject",
+       null
+      ],
+      "translation": [
+       "7ca95586-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      620.8907741251326,
+      379.10922587486743
+     ],
+     "options": []
+    },
+    "351c376a-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "0e9fe4eb-TranslatePrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "outPrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      883.351007423118,
+      367.4443266171793
+     ],
+     "options": []
+    },
+    "72814902-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "vec3f",
+      "defl": ""
+     },
+     "uipos": [
+      623.6831621813031,
+      581.6328788951841
+     ],
+     "options": []
+    },
+    "2cab0d13-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "totalArea",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "vec3f",
+      "defl": ""
+     },
+     "uipos": [
+      331.44475920679884,
+      614.7308781869689
+     ],
+     "options": []
+    },
+    "8ba0c2f6-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      45.3125,
+      410.9375
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -4.471936267721446,
+    "y": 148.79547826039052,
+    "width": 500.0,
+    "height": 500.0
+   }
+  },
+  "RigidMakeConstraint": {
+   "nodes": {
+    "eb9f8e65-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "obj1",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -843.5056324092509,
+      155.19161713767943
+     ],
+     "options": []
+    },
+    "3fcad702-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "debb6ea8-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "constraint",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      606.8993440383404,
+      409.4147046325236
+     ],
+     "options": []
+    },
+    "5464c27e-BulletMakeConstraint": {
+     "name": "BulletMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "eb9f8e65-x",
+       "port",
+       null
+      ],
+      "obj2": [
+       "94e4709e-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -326.381808101626,
+      369.38538766556997
+     ],
+     "options": []
+    },
+    "e6f669d1-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "eb9f8e65-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj\nobj1"
+     },
+     "uipos": [
+      -586.6402116402118,
+      204.36507936507934
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj",
+      "obj1"
+     ]
+    },
+    "9f6ecfd1-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "94e4709e-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj"
+     },
+     "uipos": [
+      -587.8371308853216,
+      470.14813208512373
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj"
+     ]
+    },
+    "94e4709e-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "obj2",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -844.7025516543608,
+      420.0635081265166
+     ],
+     "options": []
+    },
+    "d23dfbe2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "breakThres",
+      "type": "float",
+      "defl": "-1"
+     },
+     "uipos": [
+      -328.7037037037037,
+      619.7089947089946
+     ],
+     "options": []
+    },
+    "0e4eb85d-BulletSetConstraintBreakThres": {
+     "name": "BulletSetConstraintBreakThres",
+     "inputs": {
+      "constraint": [
+       "5464c27e-BulletMakeConstraint",
+       "constraint",
+       null
+      ],
+      "threshold": [
+       "d23dfbe2-SubInput",
+       "port",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5.46697038724372,
+      417.31207289293866
+     ],
+     "options": []
+    },
+    "dc4b3d0f-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -15.0,
+      251.25
+     ],
+     "options": []
+    },
+    "debb6ea8-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0e4eb85d-BulletSetConstraintBreakThres",
+       "constraint",
+       null
+      ],
+      "false": [
+       "5464c27e-BulletMakeConstraint",
+       "constraint",
+       null
+      ],
+      "cond": [
+       "0f7c4817-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      289.51747088186363,
+      514.1430948419301
+     ],
+     "options": []
+    },
+    "0f7c4817-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "d23dfbe2-SubInput",
+       "port",
+       0.0
+      ],
+      "rhs": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpgt"
+     },
+     "uipos": [
+      -16.059900166389383,
+      644.8785357737104
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -108.7254168070425,
+    "y": 369.6202014768111,
+    "width": 400.0,
+    "height": 400.0
+   }
+  },
+  "RigidMakeShape": {
+   "nodes": {
+    "283f5060-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -668.1691720269334,
+      37.903594221950186
+     ],
+     "options": []
+    },
+    "f5f5a1d1-BulletMakeConvexHullShape": {
+     "name": "BulletMakeConvexHullShape",
+     "inputs": {
+      "triMesh": [
+       "387e3412-PrimitiveToBulletMesh",
+       "mesh",
+       null
+      ],
+      "margin": [
+       "f6746941-x",
+       "port",
+       0.0
+      ],
+      "highres": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      184.52858549559272,
+      2345.3090657519265
+     ],
+     "options": []
+    },
+    "387e3412-PrimitiveToBulletMesh": {
+     "name": "PrimitiveToBulletMesh",
+     "inputs": {
+      "prim": [
+       "09ca46c5-RigidRecenterPrim",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -81.52702748143724,
+      2336.323485789457
+     ],
+     "options": []
+    },
+    "88eebbd4-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "52e94c21-SetUserData",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1633.621701679829,
+      110.1384084021555
+     ],
+     "options": []
+    },
+    "52e94c21-SetUserData": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "fd3be3ee-PortalOut",
+       "port",
+       null
+      ],
+      "data": [
+       "b8707c8a-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "prim"
+     },
+     "uipos": [
+      1394.5328634110363,
+      108.6805496322238
+     ],
+     "options": []
+    },
+    "ff574332-x": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "5a562f8a-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.0
+     },
+     "uipos": [
+      -735.8552442734897,
+      1145.0553351601468
+     ],
+     "options": []
+    },
+    "fd3be3ee-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape"
+     },
+     "uipos": [
+      1019.8237885462551,
+      205.9471365638766
+     ],
+     "options": []
+    },
+    "9c00192c-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "2c56b85a-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape"
+     },
+     "uipos": [
+      2194.4984237059957,
+      1053.0586093281934
+     ],
+     "options": []
+    },
+    "b8707c8a-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      1023.8298458149776,
+      20.62224669603502
+     ],
+     "options": []
+    },
+    "336cc474-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "283f5060-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -362.0732378854624,
+      68.1167400881057
+     ],
+     "options": []
+    },
+    "73ac6637-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -1041.5305089683475,
+      2298.272319703904
+     ],
+     "options": []
+    },
+    "5a562f8a-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -1000.2936024223234,
+      1095.9724936637097
+     ],
+     "options": []
+    },
+    "41d465cd-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "ff574332-x",
+       "bmax",
+       null
+      ],
+      "rhs": [
+       "ff574332-x",
+       "bmin",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      -474.1454301431602,
+      1136.6131196977733
+     ],
+     "options": []
+    },
+    "b6ca337e-BulletMakeSphereShape": {
+     "name": "BulletMakeSphereShape",
+     "inputs": {
+      "radius": [
+       "4fd7af5e-NumericOperator",
+       "ret",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      288.04969180805944,
+      1216.9749966861084
+     ],
+     "options": []
+    },
+    "45c33cb2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "type",
+      "type": "enum convex sphere box",
+      "defl": "convex"
+     },
+     "uipos": [
+      806.0192702810182,
+      759.4218087221628
+     ],
+     "options": []
+    },
+    "47b341a3-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0438fad3-SetUserData",
+       "object",
+       null
+      ],
+      "false": [
+       "131565d5-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "e75a5d8b-StringEqual",
+       "isEqual",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1103.9489018832166,
+      1031.9148495493105
+     ],
+     "options": []
+    },
+    "e75a5d8b-StringEqual": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "sphere"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1099.124718319194,
+      839.8126822640511
+     ],
+     "options": []
+    },
+    "92290251-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b83172d1-x",
+       "bmax",
+       null
+      ],
+      "rhs": [
+       "b83172d1-x",
+       "bmin",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      -219.04359286580103,
+      1754.6603093581189
+     ],
+     "options": []
+    },
+    "2de7f349-x": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "box"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1069.6968795536354,
+      1421.1589291391547
+     ],
+     "options": []
+    },
+    "b83172d1-x": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "2f8ad289-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.0
+     },
+     "uipos": [
+      -480.75340699613054,
+      1761.0313424238857
+     ],
+     "options": []
+    },
+    "2f8ad289-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -745.1917651449644,
+      1714.0196833240552
+     ],
+     "options": []
+    },
+    "131565d5-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "b4cdb32c-x",
+       "object",
+       null
+      ],
+      "false": [
+       "fd65ac02-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "2de7f349-x",
+       "isEqual",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1071.8368902439024,
+      1616.816758351008
+     ],
+     "options": []
+    },
+    "5d41761a-BulletMakeBoxShape": {
+     "name": "BulletMakeBoxShape",
+     "inputs": {
+      "semiSize": [
+       "bf512b1c-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      268.8524199695122,
+      1801.9675197176562
+     ],
+     "options": []
+    },
+    "fff75fab-UnpackNumericVec": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "41d465cd-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -216.81950986256487,
+      1146.969824297304
+     ],
+     "options": []
+    },
+    "4fd7af5e-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "fff75fab-UnpackNumericVec",
+       "X",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      33.70849350477192,
+      1181.3506594644748
+     ],
+     "options": []
+    },
+    "4ea2809e-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "ff574332-x",
+       "bmin",
+       null
+      ],
+      "rhs": [
+       "ff574332-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -469.17459239130426,
+      1371.0709669936375
+     ],
+     "options": []
+    },
+    "3a780f68-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4ea2809e-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -204.8917185843054,
+      1397.5821016702018
+     ],
+     "options": []
+    },
+    "0438fad3-SetUserData": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "b6ca337e-BulletMakeSphereShape",
+       "shape",
+       null
+      ],
+      "data": [
+       "3a780f68-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      545.2076981707318,
+      1221.4383947507952
+     ],
+     "options": []
+    },
+    "24c62c31-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b83172d1-x",
+       "bmin",
+       null
+      ],
+      "rhs": [
+       "b83172d1-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -251.23442470837745,
+      2009.2540429480382
+     ],
+     "options": []
+    },
+    "dd7ad520-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "24c62c31-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      13.048449098621404,
+      2035.7651776246025
+     ],
+     "options": []
+    },
+    "b4cdb32c-x": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "5d41761a-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "data": [
+       "dd7ad520-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      519.8667815482501,
+      1818.325633126961
+     ],
+     "options": []
+    },
+    "fd65ac02-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0fb0e3a4-x",
+       "object",
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "3aaca6c3-x",
+       "isEqual",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1080.9327273758863,
+      2238.9137170979743
+     ],
+     "options": []
+    },
+    "3aaca6c3-x": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "convex"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1079.8283078839227,
+      2043.25588788612
+     ],
+     "options": []
+    },
+    "bf512b1c-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "92290251-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      16.856492027334838,
+      1774.4874715261958
+     ],
+     "options": []
+    },
+    "f6746941-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "margin",
+      "type": "float",
+      "defl": "0.0"
+     },
+     "uipos": [
+      189.06605922551245,
+      2579.726651480638
+     ],
+     "options": []
+    },
+    "0fb0e3a4-x": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "f5f5a1d1-BulletMakeConvexHullShape",
+       "shape",
+       null
+      ],
+      "data": [
+       "0cfb62df-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      464.68422078842883,
+      2402.0911139146456
+     ],
+     "options": []
+    },
+    "465f0746-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -305.7029092116942,
+      2859.3636325803354
+     ],
+     "options": []
+    },
+    "574603fe-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      1393.75,
+      -63.75
+     ],
+     "options": []
+    },
+    "b4d7a9c2-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "recentered",
+      "type": "bool",
+      "defl": "1"
+     },
+     "uipos": [
+      -1191.5512327677625,
+      2498.6744432661717
+     ],
+     "options": []
+    },
+    "09ca46c5-RigidRecenterPrim": {
+     "name": "RigidRecenterPrim",
+     "inputs": {
+      "prim": [
+       "73ac6637-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -764.6805408271473,
+      2375.23197242842
+     ],
+     "options": []
+    },
+    "0b1dc678-x": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "47b341a3-IfElse",
+       "result",
+       null
+      ],
+      "data": [
+       "9ca26cd7-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "mass_scale"
+     },
+     "uipos": [
+      1641.4499879616392,
+      861.5062329012011
+     ],
+     "options": []
+    },
+    "2c56b85a-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0b1dc678-x",
+       "object",
+       null
+      ],
+      "false": [
+       "47b341a3-IfElse",
+       "result",
+       null
+      ],
+      "cond": [
+       "57b98618-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1909.098533163125,
+      1018.8643154833848
+     ],
+     "options": []
+    },
+    "0cfb62df-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "09ca46c5-RigidRecenterPrim",
+       "origin",
+       null
+      ],
+      "false": [
+       "465f0746-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "b4d7a9c2-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -299.07873806998936,
+      2632.887062566278
+     ],
+     "options": []
+    },
+    "57b98618-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "auto_mass",
+      "type": "bool",
+      "defl": "0"
+     },
+     "uipos": [
+      1646.0583687940884,
+      1113.9315874876274
+     ],
+     "options": []
+    },
+    "16bc81fa-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "09ca46c5-RigidRecenterPrim",
+       "mass",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass"
+     },
+     "uipos": [
+      -385.81530782029955,
+      2425.1247920133105
+     ],
+     "options": []
+    },
+    "9ca26cd7-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass"
+     },
+     "uipos": [
+      1389.3315827787023,
+      950.1657393926788
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -976.88041043412,
+    "y": -253.3031174232646,
+    "width": 1220.703125,
+    "height": 1220.703125
+   }
+  },
+  "RigidGetPrimitive": {
+   "nodes": {
+    "fab8fd99-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -418.1693184297264,
+      -139.51488160688234
+     ],
+     "options": []
+    },
+    "13db7867-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "8348d502-x",
+       "result",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      70.98279351637348,
+      400.08649871223656
+     ],
+     "options": []
+    },
+    "9206d977-x": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "25e86319-x",
+       "newObject",
+       null
+      ],
+      "translation": [
+       "13db7867-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      423.3896346669311,
+      259.2537112928326
+     ],
+     "options": []
+    },
+    "fefe4326-x": {
+     "name": "BulletExtractTransform",
+     "inputs": {
+      "trans": [
+       "439b4832-x",
+       "trans",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -435.8640904574521,
+      512.3148816068824
+     ],
+     "options": []
+    },
+    "1e20a3df-x": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "558bbce4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      -709.7992743768629,
+      119.95648403188397
+     ],
+     "options": []
+    },
+    "439b4832-x": {
+     "name": "BulletGetObjTransform",
+     "inputs": {
+      "object": [
+       "558bbce4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -757.3167835323059,
+      467.9318521256373
+     ],
+     "options": []
+    },
+    "25e86319-x": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "6cc88613-x",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      134.85097729054075,
+      211.75163438006302
+     ],
+     "options": []
+    },
+    "fa98fedb-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "9206d977-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       "fefe4326-x",
+       "origin",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       "fefe4326-x",
+       "rotation",
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      682.1167835323057,
+      365.93418487362726
+     ],
+     "options": []
+    },
+    "6cc88613-x": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "558bbce4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "prim"
+     },
+     "uipos": [
+      -143.10426858913257,
+      118.3666685486279
+     ],
+     "options": []
+    },
+    "8348d502-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "1e20a3df-x",
+       "data",
+       null
+      ],
+      "false": [
+       "fab8fd99-x",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "1e20a3df-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -431.3851774605634,
+      113.34855451646558
+     ],
+     "options": []
+    },
+    "558bbce4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "object",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1051.25,
+      293.75
+     ],
+     "options": []
+    },
+    "05645996-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "fa98fedb-x",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      929.0,
+      420.0
+     ],
+     "options": []
+    },
+    "efe92e8f-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      35.0,
+      662.5
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -251.75000000000057,
+    "y": 157.4999999999991,
+    "width": 781.25,
+    "height": 781.25
+   }
+  },
+  "RigidMakeObjectFragments": {
+   "nodes": {
+    "3f83e33d-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "index": [
+       "b63c8e18-x",
+       "X",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1010.4062448173222,
+      237.6485684651866
+     ],
+     "options": []
+    },
+    "869e0e15-x": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "2ed85004-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      236.89302895829042,
+      433.6838107559355
+     ],
+     "options": []
+    },
+    "2ed85004-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "0fbeb637-x",
+       "object",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "938e931b-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -189.72901021869166,
+      415.3386975845215
+     ],
+     "options": []
+    },
+    "70e58ae5-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "2a354f3a-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "869e0e15-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      490.9128527468356,
+      177.7366741920589
+     ],
+     "options": []
+    },
+    "c1876381-x": {
+     "name": "RigidMakeShape",
+     "inputs": {
+      "prim": [
+       "938e931b-x",
+       "object",
+       null
+      ],
+      "type": [
+       null,
+       null,
+       "convex"
+      ],
+      "margin": [
+       null,
+       null,
+       0.0
+      ],
+      "recentered": [
+       null,
+       null,
+       true
+      ],
+      "auto_mass": [
+       null,
+       null,
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1027.3867625432222,
+      267.5774090419881
+     ],
+     "options": []
+    },
+    "938e931b-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "9c3ce484-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1380.86743219461,
+      343.26878937668573
+     ],
+     "options": []
+    },
+    "2daecb12-x": {
+     "name": "RigidMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "3f83e33d-x",
+       "object",
+       null
+      ],
+      "obj2": [
+       "b84aa89e-x",
+       "object",
+       null
+      ],
+      "breakThres": [
+       "ed15ae73-SubInput",
+       "port",
+       0.2
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1249.7794197342828,
+      243.2570800002128
+     ],
+     "options": []
+    },
+    "1d70fe8b-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "70e58ae5-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "X"
+     },
+     "uipos": [
+      974.5582271961762,
+      -117.6928412264433
+     ],
+     "options": []
+    },
+    "b84aa89e-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "index": [
+       "b63c8e18-x",
+       "Y",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1017.4547029671003,
+      443.8159693462437
+     ],
+     "options": []
+    },
+    "cfabb7bb-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "2daecb12-x",
+       "constraint",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "70e58ae5-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "1d70fe8b-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      1506.3313549494796,
+      189.19041868545082
+     ],
+     "options": []
+    },
+    "0fbeb637-x": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "shape": [
+       "c1876381-x",
+       "shape",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "mass": [
+       "be7b0867-SubInput",
+       "port",
+       1.0
+      ],
+      "material": [
+       "224fff26-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -685.2075522564155,
+      344.70992479931783
+     ],
+     "options": []
+    },
+    "b63c8e18-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "70e58ae5-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      746.6270808688361,
+      211.00025105001214
+     ],
+     "options": []
+    },
+    "9c3ce484-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "primList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1643.481529271204,
+      232.8965272839718
+     ],
+     "options": []
+    },
+    "2a354f3a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "neighList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      142.00005833772957,
+      50.28699902336683
+     ],
+     "options": []
+    },
+    "ed15ae73-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "breakThres",
+      "type": "float",
+      "defl": "0.2"
+     },
+     "uipos": [
+      1392.4708818635606,
+      552.2046589018303
+     ],
+     "options": []
+    },
+    "be7b0867-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "float",
+      "defl": "1.0"
+     },
+     "uipos": [
+      -960.4829857299669,
+      570.1152579582875
+     ],
+     "options": []
+    },
+    "c622d04b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -681.9429198682765,
+      664.1053787047199
+     ],
+     "options": []
+    },
+    "6a98ae37-RigidObjectProp": {
+     "name": "RigidObjectProp",
+     "inputs": {
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.06
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "restitution": [
+       null,
+       null,
+       0.6
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -684.131736526946,
+      932.6347305389221
+     ],
+     "options": []
+    },
+    "224fff26-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "c622d04b-x",
+       "port",
+       null
+      ],
+      "false": [
+       "6a98ae37-RigidObjectProp",
+       "material",
+       null
+      ],
+      "cond": [
+       "c622d04b-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -414.6706586826348,
+      824.8502994011974
+     ],
+     "options": []
+    },
+    "092f94f7-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "objectList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      657.3727544910178,
+      556.1377245508982
+     ],
+     "options": []
+    },
+    "a7f46bed-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "cfabb7bb-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "constrList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1871.2574850299402,
+      329.34131736526945
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -1442.0320279331193,
+    "y": 65.89175868955436,
+    "width": 625.0,
+    "height": 625.0
+   }
+  },
+  "RigidObjectProp": {
+   "nodes": {
+    "426fe08b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "friction",
+      "type": "float",
+      "defl": "0.7"
+     },
+     "uipos": [
+      -384.21187980855586,
+      441.5298780924585
+     ],
+     "options": []
+    },
+    "f12cfb22-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampAng",
+      "type": "float",
+      "defl": "0.06"
+     },
+     "uipos": [
+      -392.428541390987,
+      159.48259594987803
+     ],
+     "options": []
+    },
+    "dc72c27a-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampLin",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      -390.6331914663752,
+      -97.58837789798011
+     ],
+     "options": []
+    },
+    "12b1f6e3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "restitution",
+      "type": "float",
+      "defl": "0.6"
+     },
+     "uipos": [
+      -398.98673169498625,
+      699.4338773491327
+     ],
+     "options": []
+    },
+    "04cb817b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dampLin": [
+       "dc72c27a-x",
+       "port",
+       null
+      ],
+      "dampAng": [
+       "f12cfb22-x",
+       "port",
+       null
+      ],
+      "friction": [
+       "426fe08b-x",
+       "port",
+       null
+      ],
+      "restitution": [
+       "12b1f6e3-x",
+       "port",
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dampLin\ndampAng\nfriction\nrestitution\nobj4"
+     },
+     "uipos": [
+      73.96576564215148,
+      497.3929747530186
+     ],
+     "options": [],
+     "socket_keys": [
+      "dampLin",
+      "dampAng",
+      "friction",
+      "restitution",
+      "obj4"
+     ]
+    },
+    "825094d5-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "04cb817b-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      360.18111964873765,
+      510.256586169045
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -352.2056805708006,
+    "y": -3.130145444565869,
+    "width": 781.25,
+    "height": 781.25
+   }
+  }
+ },
+ "views": {},
+ "descs": {
+  "AABBCollideDetect": {
+   "inputs": [
+    [
+     "vec3f",
+     "bminA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bminB",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "overlap",
+     ""
+    ],
+    [
+     "bool",
+     "AinsideB",
+     ""
+    ],
+    [
+     "bool",
+     "BinsideA",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "AABBVoronoi": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "bboxMin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bboxMax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "triangulate",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "AppendList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Assign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "BeginFor": {
+   "inputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginForEach": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginSubstep": {
+   "inputs": [
+    [
+     "float",
+     "total_dt",
+     ""
+    ],
+    [
+     "float",
+     "min_scale",
+     "0.05"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "elapsed_time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BulletComposeTransform": {
+   "inputs": [
+    [
+     "",
+     "transFirst",
+     ""
+    ],
+    [
+     "",
+     "transSecond",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletCompoundAddChild": {
+   "inputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "childShape",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletExtractTransform": {
+   "inputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec4f",
+     "rotation",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletGetObjMotion": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linearVel",
+     ""
+    ],
+    [
+     "",
+     "angularVel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletGetObjTransform": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeBoxShape": {
+   "inputs": [
+    [
+     "vec3f",
+     "semiSize",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConvexHullShape": {
+   "inputs": [
+    [
+     "",
+     "triMesh",
+     ""
+    ],
+    [
+     "float",
+     "margin",
+     "0"
+    ],
+    [
+     "int",
+     "highres",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConvexMeshShape": {
+   "inputs": [
+    [
+     "",
+     "triMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeSphereShape": {
+   "inputs": [
+    [
+     "float",
+     "radius",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeTransform": {
+   "inputs": [
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "rotation",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeWorld": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletObjectApplyForce": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "vec3f",
+     "ForceImpulse",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "TorqueImpulse",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetConstraintBreakThres": {
+   "inputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "float",
+     "threshold",
+     "3.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectDamping": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "dampLin",
+     "0"
+    ],
+    [
+     "float",
+     "dampAug",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectFriction": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "friction",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectRestitution": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "restitution",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetWorldGravity": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "int",
+     "steps",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldAddConstraint": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldAddObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldRemoveConstraint": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldRemoveObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldSetConsList": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldSetObjList": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "CachePrimitive": {
+   "inputs": [
+    [
+     "",
+     "inPrim",
+     ""
+    ],
+    [
+     "int",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "CacheVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "inGrid",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "CachedByKey": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedIf": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedOnce": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "CombineVDB": {
+   "inputs": [
+    [
+     "",
+     "FieldA",
+     ""
+    ],
+    [
+     "",
+     "FieldB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FieldOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "MultiplierA",
+     "1"
+    ],
+    [
+     "float",
+     "MultiplierB",
+     "1"
+    ],
+    [
+     "enum CSGUnion CSGIntersection CSGDifference",
+     "OpType",
+     "CSGUnion"
+    ],
+    [
+     "bool",
+     "writeBack",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DelUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSize": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictUnion": {
+   "inputs": [
+    [
+     "dict1",
+     "dict",
+     ""
+    ],
+    [
+     "dict2",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "EndFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "EndForEach": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "bool",
+     "accept",
+     "1"
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "droppedList",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "0"
+    ]
+   ],
+   "categories": [
+    "control"
+   ]
+  },
+  "ExitProcess": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "status",
+     "-1"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "ExportObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExportVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ExportZpmPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExtendList": {
+   "inputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "list2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "ExtractList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "FinalOutput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    [
+     "",
+     "extraArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "GetFrameNum": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FrameNum",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFramePortion": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePortion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTimeElapsed": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "GetVDBBound": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "bmin",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPoints": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPointsDroplets": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBVoxelSize": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "dy",
+     ""
+    ],
+    [
+     "",
+     "dz",
+     ""
+    ],
+    [
+     "",
+     "dxyz",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    [
+     "",
+     "true",
+     ""
+    ],
+    [
+     "",
+     "false",
+     ""
+    ],
+    [
+     "bool",
+     "cond",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ImportObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ImportVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ImportZpmPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "IntegrateFrameTime": {
+   "inputs": [
+    [
+     "",
+     "desired_dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actual_dt",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "min_scale",
+     "0.0001"
+    ]
+   ],
+   "categories": [
+    "frame"
+   ]
+  },
+  "ListGetItem": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ListLength": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "length",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Make2DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "sizeZ",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeCubePrimitive": {
+   "inputs": [
+    [
+     "",
+     "spacing",
+     ""
+    ],
+    [
+     "",
+     "nx",
+     ""
+    ],
+    [
+     "",
+     "ny",
+     ""
+    ],
+    [
+     "",
+     "nz",
+     ""
+    ],
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "MakeGCTest": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "42"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "MakeHeatmap": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeMultilineString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeMutable": {
+   "inputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "MakePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeReadPath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    [
+     "",
+     "obj0",
+     ""
+    ],
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "",
+     "obj3",
+     ""
+    ],
+    [
+     "",
+     "obj4",
+     ""
+    ],
+    [
+     "",
+     "obj5",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeVDBGrid": {
+   "inputs": [
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum float float3 int int3 points",
+     "type",
+     "float"
+    ],
+    [
+     "enum vertex Centered Staggered",
+     "structure",
+     "Centered"
+    ],
+    [
+     "string",
+     "name",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "MakeVisualAABBPrimitive": {
+   "inputs": [
+    [
+     "",
+     "boundMin",
+     ""
+    ],
+    [
+     "",
+     "boundMax",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points edges trifaces quadfaces",
+     "type",
+     "edges"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeWritePath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MeshToSDF": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "voxel_size",
+     "0.08 0"
+    ],
+    [
+     "enum vertex cell",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "MoveAssign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveClone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveDelete": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "NumericCounter": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericFloat": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInt": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3i",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInterpolation": {
+   "inputs": [
+    [
+     "NumericObject",
+     "src",
+     ""
+    ],
+    [
+     "NumericObject",
+     "srcMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "srcMax",
+     "1"
+    ],
+    [
+     "NumericObject",
+     "dstMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "dstMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isClamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericOperator": {
+   "inputs": [
+    [
+     "NumericObject",
+     "lhs",
+     ""
+    ],
+    [
+     "NumericObject",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum add sub mul div mod and or xor shr shl cmpge cmple cmpgt cmplt cmpne cmpeq land lor pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat anytrue alltrue copy copyr",
+     "op_type",
+     "add"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRandom": {
+   "inputs": [
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ],
+    [
+     "bool",
+     "symmetric",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRangeList": {
+   "inputs": [
+    [
+     "int",
+     "start",
+     "0"
+    ],
+    [
+     "int",
+     "end",
+     "1"
+    ],
+    [
+     "int",
+     "skip",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "NumericVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2f",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericWrangle": {
+   "inputs": [
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject:NumericObject",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim1",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "prim2",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticleToLevelSet": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "float",
+     "Radius",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "SurfaceSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ParticlesBuildHashGrid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "hashgrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "HashGrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "normal",
+     ""
+    ],
+    [
+     "",
+     "tangent",
+     ""
+    ],
+    [
+     "",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "boundMin2D",
+     ""
+    ],
+    [
+     "",
+     "boundMax2D",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "PortalIn": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PortalOut": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PrimSprayParticles": {
+   "inputs": [
+    [
+     "",
+     "TrianglePrim",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimToVDBPointDataGrid": {
+   "inputs": [
+    [
+     "",
+     "ParticleGeo",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "PrimitiveAddAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "fillValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBooleanOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "NumericObject",
+     "faceAttrA",
+     ""
+    ],
+    [
+     "NumericObject",
+     "faceAttrB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primC",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Union Intersect Minus RevMinus XOR Resolve",
+     "op_type",
+     "Union"
+    ],
+    [
+     "string",
+     "faceAttrName",
+     ""
+    ],
+    [
+     "bool",
+     "calcAnyFrom",
+     "0"
+    ],
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "PrimitiveBoundingBox": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "bmin",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "exWidth",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcCentroid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "centroid",
+     ""
+    ],
+    [
+     "float",
+     "totalArea",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClearConnect": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClip": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "distance",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reverse",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "float",
+     "min",
+     "0"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rho"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveConvexDecomposition": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "PrimitiveDuplicate": {
+   "inputs": [
+    [
+     "",
+     "meshPrim",
+     ""
+    ],
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "float",
+     "uniScale",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "attrFromMesh",
+     "1"
+    ],
+    [
+     "bool",
+     "attrFromParticles",
+     "1"
+    ],
+    [
+     "string",
+     "scaleByAttr",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFaceToEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clearFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFillAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFilterByAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rad"
+    ],
+    [
+     "enum cmpgt cmplt cmpge cmple cmpeq cmpne",
+     "acceptIf",
+     "cmpgt"
+    ],
+    [
+     "enum any all",
+     "vecSelType",
+     "all"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetFaceCount": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetSize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "valueB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveListBoolOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primListB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primListAllFromB",
+     ""
+    ],
+    [
+     "",
+     "primListAnyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Union Intersect Minus RevMinus XOR Resolve",
+     "op_type",
+     "Union"
+    ],
+    [
+     "string",
+     "faceAttrName",
+     ""
+    ],
+    [
+     "bool",
+     "assignAttrs",
+     "1"
+    ],
+    [
+     "bool",
+     "calcAnyFrom",
+     "0"
+    ],
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "PrimitiveMerge": {
+   "inputs": [
+    [
+     "",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMeshingFix": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primFixed",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "coef",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePrintAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "min",
+     "-1"
+    ],
+    [
+     "NumericObject",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomizeAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ],
+    [
+     "float",
+     "min",
+     "-1"
+    ],
+    [
+     "float",
+     "minY",
+     "-1"
+    ],
+    [
+     "float",
+     "minZ",
+     "-1"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "float",
+     "maxY",
+     "1"
+    ],
+    [
+     "float",
+     "maxZ",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveReduction": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum avg max min absmax",
+     "op",
+     "avg"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveResize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveShade": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shade",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points lines tris quads",
+     "primtype",
+     "points"
+    ],
+    [
+     "readpath",
+     "vertpath",
+     "assets/particles.vert"
+    ],
+    [
+     "readpath",
+     "fragpath",
+     "assets/particles.frag"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveSimpleLines": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimplePoints": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleQuads": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleTris": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSplitEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveToBulletMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "PrimitiveToSDF": {
+   "inputs": [
+    [
+     "",
+     "PrimitiveMesh",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum vertex cell",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "PrimitiveTraceTrail": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "parsPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "trailPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveVoronoi": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "int",
+     "numParticles",
+     "64"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "interiorPrimList",
+     ""
+    ],
+    [
+     "",
+     "boundaryPrimList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "PrintNumeric": {
+   "inputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintNumeric"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "ReadMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ReadObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ResampleVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "resampleTo",
+     ""
+    ],
+    [
+     "",
+     "resampleFrom",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resampleTo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ResizeList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "newSize",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "RigidVelToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "centroid",
+     ""
+    ],
+    [
+     "",
+     "linearVel",
+     ""
+    ],
+    [
+     "",
+     "angularVel",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "Route": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SDFToPoly": {
+   "inputs": [
+    [
+     "",
+     "SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "isoValue",
+     "0"
+    ],
+    [
+     "float",
+     "adaptivity",
+     "0"
+    ],
+    [
+     "bool",
+     "allowQuads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SampleVDBToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "string",
+     "primAttr",
+     "sdf"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SetRandomSeed": {
+   "inputs": [
+    [
+     "",
+     "routeIn",
+     ""
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "routeOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "SetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SetVDBGridName": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "density"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SetVDBPointDataGrid": {
+   "inputs": [
+    [
+     "",
+     "ParticleGeo",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.08"
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "SimplifyVoroNeighborList": {
+   "inputs": [
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "newNeighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "cgmesh"
+   ]
+  },
+  "SpdlogErrorMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "error from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "SpdlogInfoMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "StringEqual": {
+   "inputs": [
+    [
+     "string",
+     "lhs",
+     ""
+    ],
+    [
+     "string",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "SubCategory": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubInput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "input1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubOutput": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubResult": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "Subgraph": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "DoNotUseThisNodeDirectly"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubstepDt": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "desired_dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "actual_dt",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "TraceOneStep": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "steps",
+     ""
+    ],
+    [
+     "",
+     "maxlength",
+     ""
+    ],
+    [
+     "",
+     "vecField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "TransformPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "eulerXYZ",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "quatRotation",
+     "0,0,0,1"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TranslatePrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TriggerAbortSignal": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerDivideZero": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerSegFault": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "X",
+     ""
+    ],
+    [
+     "float",
+     "Y",
+     ""
+    ],
+    [
+     "float",
+     "Z",
+     ""
+    ],
+    [
+     "float",
+     "W",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "UpdateMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "VDBAddPerlinNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "1.0"
+    ],
+    [
+     "float",
+     "scale",
+     "8.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBAddTurbulentNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "3.0"
+    ],
+    [
+     "float",
+     "scale",
+     "16.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBCreateLevelsetSphere": {
+   "inputs": [
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "float",
+     "radius",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "center",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "half_width",
+     "3.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBDilateTopo": {
+   "inputs": [
+    [
+     "",
+     "inField",
+     ""
+    ],
+    [
+     "int",
+     "layers",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBErodeSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBExplosiveTurbulentNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "1.0"
+    ],
+    [
+     "float",
+     "scale",
+     "8.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "UVScale",
+     "0.4"
+    ],
+    [
+     "float",
+     "Speed",
+     "0.6"
+    ],
+    [
+     "float",
+     "FBM_WarpPrimary",
+     "-0.24"
+    ],
+    [
+     "float",
+     "FBM_WarpSecond",
+     "0.29"
+    ],
+    [
+     "float",
+     "FBM_WarpPersist",
+     "0.78"
+    ],
+    [
+     "float",
+     "FBM_EvalPersist",
+     "0.62"
+    ],
+    [
+     "float",
+     "FBM_Persistence",
+     "0.5"
+    ],
+    [
+     "float",
+     "FBM_Lacunarity",
+     "2.2"
+    ],
+    [
+     "int",
+     "FBM_Octaves",
+     "5"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBFillActiveVoxels": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "NumericObject",
+     "fillValue",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBLeafAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "VDBPointsToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBRenormalizeSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 1oUpwind",
+     "method",
+     "1oUpwind"
+    ],
+    [
+     "int",
+     "iterations",
+     "4"
+    ],
+    [
+     "int",
+     "dilateIters",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBSmoothSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBTouchAABBRegion": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBVoxelAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "hasInactive",
+     "0"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "WriteObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "WriteVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidGetPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectProp": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "Blackboard": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
+   ]
+  }
+ },
+ "version": "v1"
+}

@@ -1,4 +1,26 @@
-O=arts/flip.zsg
+#O=a.zsg
+#O=b.zsg
+#O=c.zsg
+#O=d.zsg
+#O=i.zsg
+O=j.zsg
+#O=arts/testspray.zsg
+#O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
+#O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
+#O=arts/flip.zsg           # FLIPtools/stub.cpp
+
+#O=arts/ZFXv2.zsg
+#O=arts/segvtrig.zsg
+#O=arts/testtbbreduce.zsg
+#O=arts/ZFXv2.zsg
+#O=arts/vdbperlinnoise.zsg
+#O=arts/flip.zsg
+#O=arts/testvorobreak.zsg
+#O=arts/visualmarchingtetra.zsg
+#O=arts/testprimdup.zsg
+#O=arts/testnumvecop.zsg
+#O=arts/pa2ls.zsg
+#O=arts/testkillpars.zsg
 #O=arts/tmptutvdb2.zsg
 #O=arts/embeddeform.zsg
 #O=arts/prim.zsg
@@ -9,6 +31,8 @@ O=arts/flip.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
 #O=arts/blendtest.zsg
+#default: justrun
+#default: optrun
 default: run
 
 #####################################################
@@ -20,37 +44,20 @@ default: run
 #default: run
 
 all:
-	cmake -B build
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
-
-release_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
-
-debug_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
-
-configure:
-	cmake -B build
-	ccmake -B build
-
-test: all
-	build/tests/zentest
-
-easygl: all
-	build/projects/EasyGL/zeno_EasyGL_main
+	cmake -B build -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count; print(cpu_count())'`
 
 run: all
+	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt
+
+debug: all
+	ZEN_TIMER=/tmp/timer ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
+
+optrun: all
+	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O optirun python3 -m zenqt
+
+noviewrun: all
+	ZEN_TIMER=/tmp/timer ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
+
+justrun:
 	ZEN_OPEN=$O python3 -m zenqt
-
-glrun: all
-	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
-
-gldebug: debug_all
-	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
-
-debug: debug_all
-	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
-
-.PHONY: all debug_all debug run test configure default

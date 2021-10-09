@@ -34,6 +34,15 @@ vcpkg install openvdb:x64-windows
 
 @rem (Optional) Install Eigen3 for the extension FastFLIP:
 vcpkg install eigen3:x64-windows
+
+@rem (Optional) Install CGAL for the extension CGMesh:
+vcpkg install cgal:x64-windows
+
+@rem (Optional) Install OpenBLAS for the extension CGMesh:
+vcpkg install openblas:x64-windows
+
+@rem (Optional) Install LAPACK for the extension CGMesh:
+vcpkg install lapack:x64-windows
 ```
 
 > Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.

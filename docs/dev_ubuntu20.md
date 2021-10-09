@@ -38,6 +38,9 @@ cmake ..
 make -j8
 sudo make install
 cd ../..
+
+# (Optional) Install CGAL:
+sudo apt-get install -y cgal-dev
 ```
 
 See also [`Dockerfile`](/Dockerfile) as a reference for full installing steps.
@@ -51,6 +54,18 @@ cmake --build build --parallel
 
 # (Optional) Enable OpenVDB support:
 cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable CUDA support (for NVIDIA users):
+cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON -DZFX_ENABLE_CUDA:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable CGAL support:
+cmake -B build -DEXTENSION_cgmesh:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable Bullet support:
+cmake -B build -DEXTENSION_Rigid:BOOL=ON
 cmake --build build --parallel
 ```
 

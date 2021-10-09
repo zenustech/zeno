@@ -187,26 +187,26 @@ struct ParticlesNeighborWrangle : zeno::INode {
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
-        for (auto const &[key, attr]: prim->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
+        prim->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
-            }, attr);
+            })(attr);
             dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
-        }
-        for (auto const &[key, attr]: primNei->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
+        });
+        primNei->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
-            }, attr);
+            })(attr);
             dbg_printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
             opts.define_symbol("@@" + key, dim);
-        }
+        });
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -215,7 +215,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
+            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -231,7 +231,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else return 0;
-            }, par->value);
+            }, par);
             dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
@@ -286,12 +286,11 @@ struct ParticlesNeighborWrangle : zeno::INode {
                 primPtr = prim.get();
                 iob.which = 0;
             }
-            auto const &attr = primPtr->attr(name);
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
+            prim->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
+            });
             chs[i] = iob;
         }
 
@@ -303,8 +302,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"hashgrid", "hashGrid"},
-     {"StringObject", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"HashGrid", "hashGrid"},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

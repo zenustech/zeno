@@ -1,25 +1,34 @@
 cmake_minimum_required(VERSION 3.10)
+
+#if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+#set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "settle from environ VCPKG_ROOT")
+#endif()
+
 set(CMAKE_CXX_STANDARD 17)
 project(zeno LANGUAGES C CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+if (CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+endif()
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
 endif()
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-include_directories(include)
-
-option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
-option(ZENO_BUILD_ZFX "Build ZFX module for Zeno" ON)
-option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
+option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
+#option(ZENO_BUILD_LAUNCHER "Build ZENO wrapper launcher" OFF)
+option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
-option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" OFF)
+option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
+option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
 
 if (ZENO_ENABLE_PYTHON)
     set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/bin)
@@ -37,11 +46,18 @@ if (ZENO_ENABLE_PYTHON)
     endif()
 endif()
 
+include_directories(external/include)
+
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)
 endif()
 
 add_subdirectory(external/spdlog)
+
+if (ZENO_FAULTHANDLER)
+    add_subdirectory(external/backward-cpp)
+endif()
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
@@ -53,10 +69,6 @@ if (ZENO_VISUALIZATION)
     add_subdirectory(zenvis)
 endif()
 
-if (ZENO_BUILD_ZFX)
-    add_subdirectory(ZFX)
-endif()
-
 if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
 endif()
@@ -64,3 +76,7 @@ endif()
 if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+#if (ZENO_BUILD_LAUNCHER)
+#    add_subdirectory(scripts/launcher)
+#endif()

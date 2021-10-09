@@ -40,7 +40,7 @@ struct NumericWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
+            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -56,7 +56,7 @@ struct NumericWrangle : zeno::INode {
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else return 0;
-            }, par->value);
+            }, par);
             dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
@@ -122,7 +122,7 @@ struct NumericWrangle : zeno::INode {
 };
 
 ZENDEFNODE(NumericWrangle, {
-    {{"DictObject:NumericObject", "params"}, {"StringObject", "zfxCode"}},
+    {{"DictObject:NumericObject", "params"}, {"string", "zfxCode"}},
     {{"DictObject:NumericObject", "result"}},
     {},
     {"zenofx"},

@@ -57,7 +57,7 @@ class QDMGraphicsNode(QGraphicsItem):
         if self.ident is None:
             self.ident = gen_unique_ident(name)
         self.name = name
-        self.title.setPlainText(name)
+        self.title.setPlainText(translate(name))
 
     def getOptions(self):
         collapsed_status = ['collapsed'] if self.collapsed else []
@@ -120,7 +120,13 @@ class QDMGraphicsNode(QGraphicsItem):
         # todo: params are to be replaced by socket with default_value
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
-            param = globals()['QDMGraphicsParam_' + type](self)
+            if type.startswith('enum '):
+                param = QDMGraphicsParamEnum(self)
+                enums = type.split()[1:]
+                param.setEnums(enums)
+                param.setZValue(len(params) - index)
+            else:
+                param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)

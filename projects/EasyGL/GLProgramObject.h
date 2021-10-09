@@ -27,7 +27,7 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
             if (infoLen) {
                 std::vector<char> infoLog(infoLen);
                 glGetProgramInfoLog(id, infoLen, NULL, infoLog.data());
-                zlog::error("error linking program: {}", infoLog.data());
+                //zlog::error("error linking program: {}", infoLog.data());
             }
         }
         impl = std::make_shared<Impl>();

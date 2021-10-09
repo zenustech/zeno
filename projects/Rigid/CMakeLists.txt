@@ -1,3 +1,4 @@
+add_definitions(-DBT_THREAD_SAFE)
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
 
@@ -6,6 +7,14 @@ add_library(zeno_Rigid SHARED ${ZEN_RIGID_SOURCE})
 target_include_directories(zeno_Rigid PRIVATE .)
 target_include_directories(zeno_Rigid PRIVATE bullet3/src)
 
+target_link_libraries(zeno_Rigid PUBLIC zeno)
+target_link_libraries(zeno_Rigid PRIVATE zeno_nodep)
+target_link_libraries(zeno_Rigid PRIVATE spdlog)
+
+if (UNIX)
+    set(CMAKE_LINK_WHAT_YOU_USE TRUE)
+    target_link_libraries(zeno_Rigid PRIVATE -Wl,--whole-archive)
+endif()
 target_link_libraries(zeno_Rigid PRIVATE LinearMath)
 target_link_libraries(zeno_Rigid PRIVATE Bullet3Common)
 target_link_libraries(zeno_Rigid PRIVATE BulletInverseDynamics)
@@ -13,5 +22,6 @@ target_link_libraries(zeno_Rigid PRIVATE BulletCollision)
 target_link_libraries(zeno_Rigid PRIVATE BulletDynamics)
 target_link_libraries(zeno_Rigid PRIVATE BulletSoftBody)
 target_link_libraries(zeno_Rigid PRIVATE HACD)
-
-target_link_libraries(zeno_Rigid PUBLIC zeno)
+if (UNIX)
+    target_link_libraries(zeno_Rigid PRIVATE -Wl,--no-whole-archive)
+endif()

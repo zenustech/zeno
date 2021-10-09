@@ -8,6 +8,9 @@
 #ifdef ZENO_VISUALIZATION
 #include <zeno/extra/Visualization.h>
 #endif
+#ifdef ZENO_FAULTHANDLER
+#include <zeno/extra/FaultHandler.h>
+#endif
 namespace py = pybind11;
 
 

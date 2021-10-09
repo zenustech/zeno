@@ -46,13 +46,13 @@ struct MesherProcessFrame : INode {
         outPrim->resize(mesher->data->vertices.size());
         auto &pos = outPrim->add_attr<vec3f>("pos");
         #pragma omp parallel for
-        for(size_t i=0;i<mesher->data->vertices.size();i++)
+        for(int64_t i=0;i<mesher->data->vertices.size();i++)
         {
             pos[i] = zeno::vec3f(mesher->data->vertices[i][0], mesher->data->vertices[i][1], mesher->data->vertices[i][2]);
         }
         outPrim->tris.resize(mesher->data->tris.size());
         #pragma omp parallel for
-        for(size_t i=0;i<mesher->data->tris.size();i++)
+        for(int64_t i=0;i<mesher->data->tris.size();i++)
         {
             outPrim->tris[i] = zeno::vec3i(mesher->data->tris[i][0], mesher->data->tris[i][1], mesher->data->tris[i][2]);
         }

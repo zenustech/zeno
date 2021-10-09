@@ -95,19 +95,32 @@ class QDMFindBar(QWidget):
 
     def do_search(self, text):
         scene = self.window.view.scene()
-        return [n for n in scene.nodes if text.lower() in n.name.lower()]
+        text = text.lower()
+        result = []
+        for n in scene.nodes:
+            if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
+                name = n.params['name'].getValue().lower()
+                if text in name:
+                    result.append(n)
+                    continue
+
+            name = n.name.lower()
+            if text in name:
+                result.append(n)
+
+        return result
 
     def textChanged(self, text):
         if text == '':
             self.resultLabel.setText('')
             return
         ns = self.do_search(text)
+        self.current_index = 0
+        self.total_count = len(ns)
+
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-
-        self.current_index = 0
-        self.total_count = len(ns)
         self.on_jump()
 
     def on_jump(self):
@@ -118,11 +131,20 @@ class QDMFindBar(QWidget):
         n = ns[self.current_index]
 
         view = self.window.view
-        view.resetTransform()
-        trans_x = n.pos().x() - view.geometry().width() // 2 + style['node_width'] // 2
-        trans_y = n.pos().y() - view.geometry().height() // 2
-        view.horizontalScrollBar().setValue(trans_x)
-        view.verticalScrollBar().setValue(trans_y)
+        rect = view.scene()._scene_rect
+        node_scene_center_x = n.pos().x() + style['node_width'] // 2
+        diff_x = node_scene_center_x - rect.center().x()
+
+        node_scene_center_y = n.pos().y()
+        diff_y = node_scene_center_y - rect.center().y()
+
+        view.scene()._scene_rect = QRectF(
+            rect.x() + diff_x,
+            rect.y() + diff_y,
+            rect.width(),
+            rect.height()
+        )
+        view._update_scene_rect()
 
     def jump_prev(self):
         if self.total_count == 0:
@@ -135,6 +157,10 @@ class QDMFindBar(QWidget):
             return
         self.current_index = (self.current_index + 1) % self.total_count
         self.on_jump()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.lineEdit.setFocus()
 
     def close(self):
         self.current_index = 0
@@ -159,9 +185,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
-        self.scale = 1
-        self.trans_x = 0
-        self.trans_y = 0
+        self._scene_rect = QRectF(0, 0, 500, 500)
 
     @property
     def descs(self):
@@ -176,7 +200,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
-        if input_nodes == None:
+        if input_nodes is None:
             input_nodes = self.nodes
         for node in input_nodes:
             ident, data = node.dump()
@@ -191,10 +215,14 @@ class QDMGraphicsScene(QGraphicsScene):
     def loadGraphEx(self, graph):
         nodes = graph['nodes']
         self.loadGraph(nodes)
-        view = graph['view']
-        self.scale = view['scale']
-        self.trans_x = view['trans_x']
-        self.trans_y = view['trans_y']
+        if 'view_rect' in graph:
+            r = graph['view_rect']
+            self._scene_rect = QRectF(
+                r['x'],
+                r['y'],
+                r['width'],
+                r['height']
+            )
 
     def loadGraph(self, nodes, select_all=False):
         edges = []
@@ -369,18 +397,12 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
+        self._last_mouse_pos = None
+
     def setScene(self, scene):
         super().setScene(scene)
-        transform = QTransform()
-        transform.scale(scene.scale, scene.scale)
-        self.setTransform(transform)
-        self.horizontalScrollBar().setValue(scene.trans_x)
-        self.verticalScrollBar().setValue(scene.trans_y)
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.scene().trans_x = self.horizontalScrollBar().value()
-        self.scene().trans_y = self.verticalScrollBar().value()
+        if scene._scene_rect:
+            self._update_scene_rect()
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
@@ -445,8 +467,10 @@ class QDMGraphicsView(QGraphicsView):
             src = node.outputs[sock_name]
             dst = new_node.inputs[sock_name]
             self.addEdge(src, dst)
-        if node.name in ['BeginFor', 'BeginForEach', 'BeginSubstep']:
+        if node.name in ('BeginFor', 'BeginSubstep'):
             connectWith('EndFor', 'FOR')
+        if node.name == 'BeginForEach':
+            connectWith('EndForEach', 'FOR')
         elif node.name == 'FuncBegin':
             connectWith('FuncEnd', 'FUNC')
 
@@ -534,7 +558,13 @@ class QDMGraphicsView(QGraphicsView):
             edge.setEndPos(pos)
             edge.updatePath()
             self.scene().update()
-
+        if self.scene().mmb_press:
+            last_pos = self.mapToScene(self._last_mouse_pos)
+            current_pos = self.mapToScene(event.pos())
+            delta = last_pos - current_pos
+            self._last_mouse_pos = event.pos()
+            self.scene()._scene_rect.translate(delta)
+            self._update_scene_rect()
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -543,9 +573,6 @@ class QDMGraphicsView(QGraphicsView):
         if event.button() == Qt.MiddleButton:
             self.scene().mmb_press = False
             self.setDragMode(QGraphicsView.NoDrag)
-
-            self.scene().trans_x = self.horizontalScrollBar().value()
-            self.scene().trans_y = self.verticalScrollBar().value()
 
         elif event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.NoDrag)
@@ -561,8 +588,39 @@ class QDMGraphicsView(QGraphicsView):
         elif event.angleDelta().y() < 0:
             zoomFactor = 1 / self.ZOOM_FACTOR
 
-        self.scale(zoomFactor, zoomFactor)
-        self.scene().scale = self.transform().m11()
+
+        self.scale(zoomFactor, zoomFactor, event.pos())
+        self._update_scene_rect()
+
+    '''
+    def resizeEvent(self, event):
+        if self.scene()._scene_rect is None:
+            self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
+            self._update_scene_rect()
+        super().resizeEvent(event)
+    '''
+
+    def scale(self, sx, sy, pos=None):
+        rect = self.scene()._scene_rect
+        if (rect.width() > 10000 and sx < 1) or \
+            (rect.width() < 200 and sx > 1):
+            return
+        if pos:
+            pos = self.mapToScene(pos)
+        center = pos or rect.center()
+        w = rect.width() / sx
+        h = rect.height() / sy
+        self.scene()._scene_rect = QRectF(
+            center.x() - (center.x() - rect.left()) / sx,
+            center.y() - (center.y() - rect.top()) / sy,
+            w, h
+        )
+        self._update_scene_rect()
+
+    def _update_scene_rect(self):
+        rect = self.scene()._scene_rect
+        self.setSceneRect(rect)
+        self.fitInView(rect, Qt.KeepAspectRatio)
 
     def addEdge(self, a, b):
         if a is None or b is None:

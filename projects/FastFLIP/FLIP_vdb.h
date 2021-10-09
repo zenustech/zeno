@@ -19,10 +19,6 @@ static inline struct MakeZhxxHappyRandomTable {
     float operator[](unsigned int i) { return frand(i); }
 } randomTable;
 
-struct OpenvdbInitializer {
-  OpenvdbInitializer() { openvdb::initialize(); }
-};
-static OpenvdbInitializer g_openvdb_initializer{};
 struct FLIP_vdb {
   using vec_tree_t = openvdb::Vec3fGrid::TreeType;
   using scalar_tree_t = openvdb::FloatGrid::TreeType;
@@ -148,7 +144,7 @@ struct FLIP_vdb {
   static void calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
                                      openvdb::FloatGrid::Ptr &liquid_sdf,
                                      openvdb::FloatGrid::Ptr &solid_sdf);
-
+  
   static void clamp_liquid_phi_in_solids(
       openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
       openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx);
@@ -170,7 +166,6 @@ struct FLIP_vdb {
   static void field_add_vector(openvdb::Vec3fGrid::Ptr &velocity_field,
                                openvdb::Vec3fGrid::Ptr &face_weight, float x,
                                float y, float z, float dt);
-
   static void emit_liquid(openvdb::points::PointDataGrid::Ptr &in_out_particles,
                           openvdb::FloatGrid::Ptr &sdf,
                           openvdb::Vec3fGrid::Ptr &vel,

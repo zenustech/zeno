@@ -39,7 +39,7 @@ struct GLCreateProgram : zeno::INode {
         auto shaderList = get_input<zeno::ListObject>("shaderList");
         auto program = std::make_shared<GLProgramObject>();
         std::vector<GLShaderObject> shaders;
-        for (auto const &obj: shaderList->arr) {
+        for (auto &&obj: shaderList->get()) {
             auto shader = zeno::safe_dynamic_cast<GLShaderObject>(obj.get());
             shaders.push_back(*shader);
         }

@@ -17,6 +17,7 @@ from ...system import launch
 from ..utils import asset_path, fuzzy_search
 
 from .misc import *
+from .locale import *
 from .edge import *
 from .param import *
 from .button import *

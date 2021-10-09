@@ -7,6 +7,17 @@ def serializeScene(graphs):
         yield from serializeGraph(graph['nodes'], subgkeys)
 
 
+def serializeGraphs(graphs, has_subgraphs=True):
+    if has_subgraphs:
+        subgkeys = set(graphs.keys())
+    else:
+        subgkeys = set()
+    res = {}
+    for name, graph in graphs.items():
+        res[name] = list(serializeGraph(graph['nodes'], subgkeys))
+    return res
+
+
 def serializeGraph(nodes, subgkeys):
     for ident, data in nodes.items():
         if 'special' in data:

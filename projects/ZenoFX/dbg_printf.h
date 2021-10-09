@@ -1,9 +1,11 @@
 #pragma once
 
-#include <cstdio>
-
-#ifdef ZENOFX_PRINT_LOGS
-#define dbg_printf(...) printf("[ZenoFX] " __VA_ARGS__)
+#if __has_include(<zeno/utils/logger.h>)
+#include <zeno/utils/logger.h>
+using namespace zeno::loggerstd;
 #else
-#define dbg_printf(...) /* nothing */
+#include <cstdio>
 #endif
+
+
+#define dbg_printf(...) log_printf("[ZenoFX] " __VA_ARGS__)
