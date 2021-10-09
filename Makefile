@@ -1,10 +1,16 @@
-run: all
+run:
+	cmake -Bbuild
+	make -Cbuild -j12 zeno.main
 	build/main/zeno.main
 
-debug: all
+debug:
+	cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug
+	make -Cbuild -j12 zeno.main
 	gdb build/main/zeno.main -ex r
 
-test: all
+test:
+	cmake -Bbuild
+	make -Cbuild -j12 zeno.tests
 	build/tests/zeno.tests
 
 all:

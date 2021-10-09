@@ -103,12 +103,19 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 UiDopGraph::UiDopGraph() {
     add_node("ToView", {400, 128});
 
-    auto btn = add_child<Button>();
-    btn->text = "Apply";
-    btn->on_clicked.connect([this] () {
+    auto apply_btn = add_child<Button>();
+    apply_btn->text = "Apply";
+    apply_btn->on_clicked.connect([this] () {
         auto g = this->dump_graph();
         auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
+    });
+
+    auto save_btn = add_child<Button>();
+    save_btn->position = {300, 0};
+    save_btn->text = "Save";
+    save_btn->on_clicked.connect([this] () {
+        this->serialize_graph();
     });
 }
 
