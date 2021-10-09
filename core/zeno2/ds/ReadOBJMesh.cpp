@@ -95,6 +95,7 @@ struct ReadOBJMesh : dop::Node {
         auto path = get_input<std::string>(0);
         auto mesh = std::make_shared<Mesh>();
         std::ifstream fin(path);
+        if (!fin) throw ztd::format_error("OSError: cannot open file for read: {}", path);
         readMeshFromOBJ(fin, *mesh);
         set_output(0, mesh);
     }

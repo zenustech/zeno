@@ -126,7 +126,9 @@ ZENO2_DOP_DEFINE(Route, {{
 
 
 struct ToView : dop::Node {
-    void apply() override {}
+    void apply() override {
+        set_output(0, get_input(0));
+    }
 };
 
 ZENO2_DOP_DEFINE(ToView, {{
@@ -134,6 +136,7 @@ ZENO2_DOP_DEFINE(ToView, {{
 }, {
     {"object"},
 }, {
+    {"object"},
 }});
 
 
