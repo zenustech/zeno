@@ -14,11 +14,7 @@ struct TextEdit : Label {
 
     float font_size = 20.f;
 
-    void _insert_text(std::string content) {
-        text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
-        cursor += content.size();
-        sellen = 0;
-    }
+    void insert_text(std::string content);
 
     SignalSlot on_editing_finished;
 
