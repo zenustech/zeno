@@ -152,6 +152,11 @@ void agData::initData(openvdb::FloatGrid::Ptr sdf, int lNum, float inputdt)
                         tem_axr.setValue(coord, 0);
                         status_axr.setValue(coord, 2);
                     }
+                    else
+                    {
+                        vol_axr.setValue(coord, 1);
+                        tem_axr.setValue(coord, 1);
+                    }
                     if(level == 0)
                     {
                         status_axr.setValue(coord, 0);
@@ -399,13 +404,13 @@ void agData::makeCoarse()
         status[level]->tree().getNodes(leaves);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), markGhost);
     }
-    for(int level = 0;level < levelNum;++level)
-    {
-        pressField[level]->clear();
-        pressField[level]->setTree((std::make_shared<openvdb::FloatTree>(
-                        status[level]->tree(), /*bgval*/ float(0),
-                        openvdb::TopologyCopy())));
-    }
+    // for(int level = 0;level < levelNum;++level)
+    // {
+    //     pressField[level]->clear();
+    //     pressField[level]->setTree((std::make_shared<openvdb::FloatTree>(
+    //                     status[level]->tree(), /*bgval*/ float(0),
+    //                     openvdb::TopologyCopy())));
+    // }
 
 }
 struct generateAdaptiveGrid : zeno::INode{
