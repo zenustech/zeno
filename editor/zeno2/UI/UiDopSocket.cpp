@@ -12,6 +12,19 @@ UiDopSocket::UiDopSocket() {
 }
 
 
+Color UiDopSocket::get_color() const {
+    if (hovered) {
+        return {0.75f, 0.5f, 0.375f};
+    } else if (failed) {
+        return {0.825f, 0.225f, 0.125f};
+    } else if (links.size()) {
+        return {0.375f, 0.5f, 1.0f};
+    } else {
+        return {0.375f, 0.375f, 0.375f};
+    }
+}
+
+
 void UiDopSocket::clear_links() {
     auto graph = get_parent()->get_parent();
     if (links.size()) {
@@ -25,15 +38,7 @@ void UiDopSocket::clear_links() {
 void UiDopSocket::paint() const {
     glColor3f(0.75f, 0.75f, 0.75f);
     glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
-    if (hovered) {
-        glColor3f(0.75f, 0.5f, 0.375f);
-    } else if (failed) {
-        glColor3f(0.825f, 0.225f, 0.125f);
-    } else if (links.size()) {
-        glColor3f(0.375f, 0.5f, 1.0f);
-    } else {
-        glColor3f(0.375f, 0.375f, 0.375f);
-    }
+    glColor3fv(get_color().data());
     glRectf(bbox.x0 + BW, bbox.y0 + BW, bbox.x0 + bbox.nx - BW, bbox.y0 + bbox.ny - BW);
 }
 
@@ -63,6 +68,13 @@ void UiDopOutputSocket::paint() const {
         glColor3f(1.f, 1.f, 1.f);
         font.render(-NW - R * 1.5f, -R + FH * 0.15f, name);
     }
+}
+
+
+Color UiDopInputSocket::get_color() const {
+    if (value.size() && !hovered && !failed && !links.size())
+        return {0.75f, 0.25f, 0.6f};
+    return UiDopSocket::get_color();
 }
 
 

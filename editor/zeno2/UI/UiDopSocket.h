@@ -3,6 +3,7 @@
 
 #include <zeno2/UI/GraphicsRectItem.h>
 #include <zeno2/UI/Font.h>
+#include <zeno2/UI/Color.h>
 
 
 namespace zeno2::UI {
@@ -21,6 +22,7 @@ struct UiDopSocket : GraphicsRectItem {
     UiDopSocket();
 
     void paint() const override;
+    virtual Color get_color() const;
 
     UiDopNode *get_parent() const {
         return (UiDopNode *)(parent);
@@ -34,6 +36,7 @@ struct UiDopInputSocket : UiDopSocket {
     std::string value;
 
     void paint() const override;
+    Color get_color() const override;
 
     void attach_link(UiDopLink *link) {
         clear_links();
