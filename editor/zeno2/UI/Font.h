@@ -16,7 +16,7 @@ struct Font {
     Font &set_font_size(float font_size);
     Font &set_fixed_width(float width, FTGL::TextAlignment align = FTGL::ALIGN_CENTER);
     Font &set_fixed_height(float height);
-    AABB calc_bounding_box(std::string const &str);
+    AABB calc_bounding_box(std::string const &str) const;
     Font &render(float x, float y, std::string const &str);
 };
 

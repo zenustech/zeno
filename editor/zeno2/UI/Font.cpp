@@ -6,9 +6,8 @@ namespace zeno2::UI {
 
 Font::Font(const uint8_t *data, size_t size) {
     font = std::make_unique<FTTextureFont>((const unsigned char *)data, size);
-    if (font->Error()) {
-        throw ztd::error("Failed to load FTGL font!");
-        abort();
+    if (auto err = font->Error()) {
+        throw ztd::format_error("Failed to load FTGL font: {}", err);
     }
     font->CharMap(ft_encoding_unicode);
 
@@ -32,7 +31,7 @@ Font &Font::set_fixed_height(float height) {
     return *this;
 }
 
-AABB Font::calc_bounding_box(std::string const &str) {
+AABB Font::calc_bounding_box(std::string const &str) const {
     auto bbox = layout->BBox(str.data(), str.size());
     return AABB(bbox.Lower().X(), bbox.Lower().Y(),
                 bbox.Upper().X() - bbox.Lower().X(),
@@ -44,7 +43,7 @@ Font &Font::render(float x, float y, std::string const &str) {
         auto bbox = calc_bounding_box(str);
         y -= bbox.y0 / 2 - fixed_height * 0.25f;
     }
-    if (str.size()) {
+    if (!str.empty()) {
         glPushMatrix();
         glTranslatef(x, y, 0.f);
         layout->Render(str.data(), str.size());

@@ -37,7 +37,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     cur.window = glfwCreateWindow(1600, 900, "Zeno Editor", nullptr, nullptr);
-    glfwSetWindowPos(cur.window, 0, 0);
+    //glfwSetWindowPos(cur.window, 100, 100);
     if (!cur.window) {
         const char *err = "unknown error"; glfwGetError(&err);
         fprintf(stderr, "Failed to create GLFW window: %s\n", err);
