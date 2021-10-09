@@ -1,11 +1,11 @@
 run: all
-	build/zeno.main/zeno.main
+	build/main/zeno.main
 
 debug: all
-	gdb build/zeno.main -ex r
+	gdb build/main/zeno.main -ex r
 
 test: all
-	build/zeno.tests/zeno.tests
+	build/tests/zeno.tests
 
 all:
 	cmake -Bbuild
