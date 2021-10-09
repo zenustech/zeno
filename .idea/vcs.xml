@@ -2,7 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/projects/cgmesh/libigl" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/projects/gmpm/zecomp" vcs="Git" />
   </component>
 </project>
