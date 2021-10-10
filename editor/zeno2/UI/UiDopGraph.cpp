@@ -118,7 +118,7 @@ UiDopGraph::UiDopGraph() {
 
     auto apply_btn = add_child<Button>();
     apply_btn->text = "Apply";
-    apply_btn->on_clicked.connect([this] () {
+    apply_btn->on_clicked.connect([this] {
         auto g = dump_graph(this);
         auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
@@ -127,7 +127,7 @@ UiDopGraph::UiDopGraph() {
     auto save_btn = add_child<Button>();
     save_btn->position = {300, 0};
     save_btn->text = "Save";
-    save_btn->on_clicked.connect([this] () {
+    save_btn->on_clicked.connect([this] {
         rapidjson::Document doc;
         doc.SetObject();
         auto v_graph = serialize(this, doc.GetAllocator());
@@ -144,7 +144,7 @@ UiDopGraph::UiDopGraph() {
     auto load_btn = add_child<Button>();
     load_btn->position = {600, 0};
     load_btn->text = "Load";
-    load_btn->on_clicked.connect([this] () {
+    load_btn->on_clicked.connect([this] {
         auto json = glfwGetClipboardString(cur.window);
         if (!json) return;
         SPDLOG_INFO("loading graph from JSON: {}", json);

@@ -76,7 +76,7 @@ struct SignalSlot {
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
 
     void operator()() const {
-        for (auto const &func: *impl->callbacks) {
+        for (auto const &func: impl->callbacks) {
             func();
         }
     }
@@ -84,10 +84,10 @@ struct SignalSlot {
     void connect(Callback &&f, SignalInst *inst) {
         auto it = impl->callbacks.insert(impl->callbacks.begin(), std::move(f));
         if (inst) {
-            std::weak_ptr cbwp(impl->callbacks);
+            std::weak_ptr impl_wp(impl);
             inst->on_destroy([=] {
-                if (auto cb = cbwp.lock()) {
-                    cb->erase(it);
+                if (auto impl = impl_wp.lock()) {
+                    impl->callbacks.erase(it);
                 }
             });
         }
