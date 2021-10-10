@@ -68,18 +68,23 @@ struct SignalInst {
 
 struct SignalSlot {
     using Callback = std::function<void()>;
-    std::shared_ptr<std::list<Callback>> callbacks = std::make_shared<std::list<Callback>>();
+
+    struct Impl {
+        std::list<Callback> callbacks;
+    };
+
+    std::shared_ptr<Impl> impl = std::make_shared<Impl>();
 
     void operator()() const {
-        for (auto const &func: *callbacks) {
+        for (auto const &func: *impl->callbacks) {
             func();
         }
     }
 
     void connect(Callback &&f, SignalInst *inst) {
-        auto it = callbacks->insert(callbacks->begin(), std::move(f));
+        auto it = impl->callbacks.insert(impl->callbacks.begin(), std::move(f));
         if (inst) {
-            std::weak_ptr cbwp(callbacks);
+            std::weak_ptr cbwp(impl->callbacks);
             inst->on_destroy([=] {
                 if (auto cb = cbwp.lock()) {
                     cb->erase(it);
