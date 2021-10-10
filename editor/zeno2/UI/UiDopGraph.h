@@ -48,6 +48,7 @@ struct UiDopGraph : GraphicsView {
     void on_event(Event_Key e) override;
 
     std::unique_ptr<dop::Graph> dump_graph();
+    void deserialize_graph(std::string const &buffer);
     std::string serialize_graph();
 
     inline UiDopScene *get_parent() const {
