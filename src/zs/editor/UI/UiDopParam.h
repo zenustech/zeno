@@ -7,7 +7,7 @@
 #include <zs/editor/UI/Font.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopParam : Widget {
@@ -19,4 +19,4 @@ struct UiDopParam : Widget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

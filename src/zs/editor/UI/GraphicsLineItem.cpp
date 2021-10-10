@@ -1,7 +1,7 @@
 #include <zs/editor/UI/GraphicsLineItem.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 bool GraphicsLineItem::contains_point(Point p) const {
@@ -40,4 +40,4 @@ void GraphicsLineItem::paint() const {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -4,7 +4,7 @@
 #include <zs/editor/UI/AABB.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Font {
@@ -24,4 +24,4 @@ struct Font {
 Font get_default_font();
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

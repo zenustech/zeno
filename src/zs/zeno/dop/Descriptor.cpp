@@ -2,7 +2,7 @@
 #include <zs/zeno/ztd/map.h>
 
 
-namespace zeno2::dop {
+namespace zs::zeno::dop {
 
 
 static auto &desc_table() {

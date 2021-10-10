@@ -6,7 +6,7 @@
 #include <numbers>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 void Camera::resize(int nx, int ny) {

@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Point.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct AABB {
@@ -27,4 +27,4 @@ struct AABB {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

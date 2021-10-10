@@ -3,7 +3,7 @@
 #include <zs/zeno/ds/Mesh.h>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 // todo: futher sep this file into pieces

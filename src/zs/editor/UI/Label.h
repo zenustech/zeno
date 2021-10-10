@@ -5,7 +5,7 @@
 #include <zs/editor/UI/Font.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Label : Widget {
@@ -22,4 +22,4 @@ struct Label : Widget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

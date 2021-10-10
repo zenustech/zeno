@@ -5,7 +5,7 @@
 #include <zs/editor/GL/Camera.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiMainWindow;

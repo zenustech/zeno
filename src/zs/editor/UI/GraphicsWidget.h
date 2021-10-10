@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Widget.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct GraphicsWidget : Widget {
@@ -14,4 +14,4 @@ struct GraphicsWidget : Widget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -1,7 +1,7 @@
 #include <zs/editor/UI/Button.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void Button::on_event(Event_Mouse e) {
@@ -37,4 +37,4 @@ void Button::paint() const {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

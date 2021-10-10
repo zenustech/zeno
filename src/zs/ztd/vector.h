@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vector>
-#include <zs/zeno/ztd/error.h>
+#include <zs/ztd/error.h>
 
-namespace zeno2::ztd {
+namespace zs::ztd::ztd {
 
 template <class T>
 struct vector : std::vector<T> {

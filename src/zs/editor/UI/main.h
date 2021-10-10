@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 int main();
 

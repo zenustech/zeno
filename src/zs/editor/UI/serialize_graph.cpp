@@ -4,7 +4,7 @@
 #include <rapidjson/document.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 using namespace rapidjson;
 

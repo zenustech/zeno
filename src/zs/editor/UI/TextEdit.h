@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Label.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct TextEdit : Label {
@@ -27,4 +27,4 @@ struct TextEdit : Label {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

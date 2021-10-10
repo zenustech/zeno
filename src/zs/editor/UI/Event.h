@@ -4,7 +4,7 @@
 #include <zs/editor/UI/stdafx.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Event_Key {
@@ -95,4 +95,4 @@ struct SignalSlot {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

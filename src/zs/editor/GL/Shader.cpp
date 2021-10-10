@@ -2,7 +2,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 Shader::Shader(GLuint type) {

@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 
-namespace zeno2::ztd {
+namespace zs::ztd::ztd {
 inline namespace random {
 
 template <class T = unsigned int>

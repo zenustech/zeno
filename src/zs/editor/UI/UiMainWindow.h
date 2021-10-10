@@ -6,7 +6,7 @@
 #include <zs/editor/UI/TabPanel.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiMainWindow : Widget {

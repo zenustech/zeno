@@ -4,7 +4,7 @@
 #include <zs/editor/UI/GraphicsLineItem.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopLink : GraphicsLineItem {
@@ -65,4 +65,4 @@ struct UiDopPendingLink : GraphicsLineItem {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -6,7 +6,7 @@
 #include <zs/zeno/ztd/functional.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Widget;
@@ -38,4 +38,4 @@ struct CursorState {
 extern CursorState cur;
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

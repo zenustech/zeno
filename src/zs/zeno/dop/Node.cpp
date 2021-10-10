@@ -2,7 +2,7 @@
 #include <zs/zeno/dop/execute.h>
 
 
-namespace zeno2::dop {
+namespace zs::zeno::dop {
 
 
 ztd::zany Node::get_input(int idx) const {

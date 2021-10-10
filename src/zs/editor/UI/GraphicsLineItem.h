@@ -5,7 +5,7 @@
 #include <zs/editor/UI/Color.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct GraphicsLineItem : GraphicsWidget {
@@ -20,4 +20,4 @@ struct GraphicsLineItem : GraphicsWidget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -9,7 +9,7 @@
 #include <zs/editor/UI/AABB.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Object {
@@ -73,4 +73,4 @@ struct Widget : Object, SignalInst {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

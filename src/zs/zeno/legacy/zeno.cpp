@@ -9,7 +9,7 @@ namespace zeno {
 
 void defNodeClass(std::function<std::unique_ptr<zs/zeno::dop::Node>()> func,
         std::string const &name, Descriptor const &desc) {
-    zeno2::dop::Descriptor nd;
+    zs::zeno::dop::Descriptor nd;
     nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";
     nd.cate.documentation = "A legacy node class defined via ZDK version 1";
     for (auto i: desc.inputs) {
@@ -21,7 +21,7 @@ void defNodeClass(std::function<std::unique_ptr<zs/zeno::dop::Node>()> func,
     for (auto o: desc.outputs) {
         nd.outputs.push_back({o.name});
     }
-    zeno2::dop::define(name, std::move(nd), std::move(func));
+    zs::zeno::dop::define(name, std::move(nd), std::move(func));
 }
 
 

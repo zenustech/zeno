@@ -7,7 +7,7 @@
 #include <functional>
 
 
-namespace zeno2::ztd {
+namespace zs::ztd::ztd {
 inline namespace type_traits {
 
 template <class F, class ...Ts>

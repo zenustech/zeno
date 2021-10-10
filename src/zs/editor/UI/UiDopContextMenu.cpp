@@ -1,7 +1,7 @@
 #include <zs/editor/UI/UiDopContextMenu.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 UiDopContextMenu::UiDopContextMenu() {
@@ -32,4 +32,4 @@ void UiDopContextMenu::update_entries() {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -1,7 +1,7 @@
 #include <zs/editor/UI/GraphicsRectItem.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void GraphicsRectItem::paint() const {

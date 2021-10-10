@@ -7,7 +7,7 @@
 #include <cstdio>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 static const char *get_opengl_error_string(GLenum err) {
@@ -39,7 +39,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
 #define CHECK_GL(x) \
 do { \
     (x); \
-    ::zeno2::GL::_check_opengl_error(__FILE__, __LINE__, #x); \
+    ::zs::editor::GL::_check_opengl_error(__FILE__, __LINE__, #x); \
 } while (0)
 
 

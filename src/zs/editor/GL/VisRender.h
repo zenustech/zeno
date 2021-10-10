@@ -6,7 +6,7 @@
 #include <zs/editor/GL/Camera.h>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 struct VisRender {

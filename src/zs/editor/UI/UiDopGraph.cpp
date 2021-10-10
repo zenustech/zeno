@@ -10,7 +10,7 @@
 #include <zs/zeno/dop/dop.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
@@ -295,4 +295,4 @@ void UiDopGraph::on_event(Event_Key e) {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

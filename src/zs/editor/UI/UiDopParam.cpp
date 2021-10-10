@@ -2,7 +2,7 @@
 #include <zs/editor/UI/UiDopSocket.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 UiDopParam::UiDopParam() {

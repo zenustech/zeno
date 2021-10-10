@@ -1,6 +1,6 @@
 #include <zs/editor/UI/UiDopNode.h>
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void UiDopNode::update_sockets() {
@@ -69,4 +69,4 @@ void UiDopNode::paint() const {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

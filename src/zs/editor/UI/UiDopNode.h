@@ -5,7 +5,7 @@
 #include <zs/editor/UI/GraphicsRectItem.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopGraph;
@@ -29,4 +29,4 @@ struct UiDopNode : GraphicsRectItem {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

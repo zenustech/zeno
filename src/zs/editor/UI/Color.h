@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Color.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Color {
@@ -23,4 +23,4 @@ struct Color {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

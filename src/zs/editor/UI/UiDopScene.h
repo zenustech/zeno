@@ -5,7 +5,7 @@
 #include <zs/editor/UI/UiDopEditor.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopScene : Widget {

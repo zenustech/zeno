@@ -5,7 +5,7 @@
 #include <glm/mat4x4.hpp>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 struct Program;

@@ -5,7 +5,7 @@
 #include <zs/zeno/ztd/vec.h>
 
 
-namespace zeno2::ds {
+namespace zs::zeno::ds {
 
 
 struct Mesh {

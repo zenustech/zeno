@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Widget.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 template <class Element = Widget>

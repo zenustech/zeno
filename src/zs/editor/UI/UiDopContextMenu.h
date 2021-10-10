@@ -6,7 +6,7 @@
 #include <zs/editor/UI/Event.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopContextMenu : Widget {
@@ -23,4 +23,4 @@ struct UiDopContextMenu : Widget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

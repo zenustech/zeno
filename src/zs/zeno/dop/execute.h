@@ -4,7 +4,7 @@
 #include <zs/zeno/dop/Node.h>
 
 
-namespace zeno2::dop {
+namespace zs::zeno::dop {
 
 
 ztd::zany getval(Input const &input);

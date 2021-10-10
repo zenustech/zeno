@@ -3,7 +3,7 @@
 #include <zs/zeno/dop/Descriptor.h>
 
 
-namespace zeno2::dop {
+namespace zs::zeno::dop {
 
 
 Node *Graph::get_node(std::string const &name) const {

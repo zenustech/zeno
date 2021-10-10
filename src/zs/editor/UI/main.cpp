@@ -6,7 +6,7 @@
 #endif
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 static std::unique_ptr<Widget> win;
@@ -81,4 +81,4 @@ int main() {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

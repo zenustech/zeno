@@ -3,7 +3,7 @@
 #include <zs/editor/UI/UiDopGraph.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 UiDopSocket::UiDopSocket() {
@@ -78,4 +78,4 @@ Color UiDopInputSocket::get_color() const {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

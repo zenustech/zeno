@@ -4,7 +4,7 @@
 #include <zs/zeno/ds/Mesh.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void UiVisViewport::do_paint() {

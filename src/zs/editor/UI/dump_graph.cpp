@@ -5,7 +5,7 @@
 #include <cctype>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 static ztd::zany parse_any(std::string const &expr) {

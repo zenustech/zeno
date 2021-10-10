@@ -5,7 +5,7 @@
 #include <zs/editor/UI/TextEdit.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct UiDopGraph;
@@ -27,4 +27,4 @@ struct UiDopEditor : Widget {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

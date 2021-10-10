@@ -3,7 +3,7 @@
 #include <zs/zeno/ztd/math.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 CursorState cur;
@@ -145,4 +145,4 @@ void CursorState::focus_on(Widget *widget) {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <zs/zeno/ztd/error.h>
+#include <zs/ztd/error.h>
 
-namespace zeno2::ztd {
+namespace zs::ztd::ztd {
 
 #define __ZENO2_ZTD_ASSERT_PRED(y, ...) y
 #define __ZENO2_ZTD_ASSERT_EXT(xs, y, ...) __VA_OPT__(": {}"), xs __VA_ARGS__

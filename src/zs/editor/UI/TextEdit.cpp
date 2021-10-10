@@ -1,7 +1,7 @@
 #include <zs/editor/UI/TextEdit.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 void TextEdit::insert_text(std::string content) {
     text = text.substr(0, cursor) + content + text.substr(cursor + sellen);
@@ -115,4 +115,4 @@ void TextEdit::paint() const {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -70,7 +70,7 @@ struct IObjectClone : Base {
 };
 
 
-struct INode : zeno2::dop::Node {
+struct INode : zs::zeno::dop::Node {
 protected:
     virtual void apply() = 0;
 

@@ -1,7 +1,7 @@
 #include <zs/editor/UI/Label.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 Label::Label() {

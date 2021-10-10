@@ -1,7 +1,7 @@
 #include <zs/editor/UI/Font.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 Font::Font(const uint8_t *data, size_t size) {

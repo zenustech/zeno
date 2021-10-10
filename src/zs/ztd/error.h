@@ -4,7 +4,7 @@
 #include <exception>
 #include <spdlog/spdlog.h>
 
-namespace zeno2::ztd {
+namespace zs::ztd::ztd {
 
 class error : public std::exception {
     std::string msg;

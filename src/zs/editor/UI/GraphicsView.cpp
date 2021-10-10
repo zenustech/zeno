@@ -1,7 +1,7 @@
 #include <zs/editor/UI/GraphicsView.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void GraphicsView::select_child(GraphicsWidget *ptr, bool multiselect) {
@@ -122,4 +122,4 @@ void GraphicsView::do_paint() {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

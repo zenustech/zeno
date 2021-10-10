@@ -4,7 +4,7 @@
 #include <zs/editor/UI/Label.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 struct Button : Label {
@@ -15,4 +15,4 @@ struct Button : Label {
 };
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

@@ -6,7 +6,7 @@
 #include <rapidjson/document.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void deserialize(UiDopGraph *graph, rapidjson::Value const &v_graph);

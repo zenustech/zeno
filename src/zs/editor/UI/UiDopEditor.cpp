@@ -3,7 +3,7 @@
 #include <zs/editor/UI/UiDopNode.h>
 
 
-namespace zeno2::UI {
+namespace zs::editor::UI {
 
 
 void UiDopEditor::set_selection(UiDopNode *ptr) {
@@ -62,4 +62,4 @@ void UiDopEditor::on_event(Event_Hover e) {
 }
 
 
-}  // namespace zeno2::UI
+}  // namespace zs::editor::UI

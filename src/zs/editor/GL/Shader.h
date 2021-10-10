@@ -7,7 +7,7 @@
 #include <zs/editor/GL/utils.h>
 
 
-namespace zeno2::GL {
+namespace zs::editor::GL {
 
 
 struct Shader {
@@ -36,4 +36,4 @@ struct Program {
     void set_uniform(const char *name, glm::mat4x4 const &val) const;
 };
 
-}  // namespace zeno2::GL
+}  // namespace zs::editor::GL
