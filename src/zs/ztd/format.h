@@ -6,7 +6,7 @@
 #include <iostream>
 #include <zs/ztd/error.h>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {

@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 inline namespace random {
 
 template <class T = unsigned int>

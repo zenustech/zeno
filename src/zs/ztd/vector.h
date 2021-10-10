@@ -3,7 +3,7 @@
 #include <vector>
 #include <zs/ztd/error.h>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 template <class T>
 struct vector : std::vector<T> {

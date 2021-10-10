@@ -3,7 +3,7 @@
 #include <map>
 #include <zs/ztd/error.h>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 template <class K, class V>
 struct map : std::map<K, V> {

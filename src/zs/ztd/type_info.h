@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cxxabi.h>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 inline std::string cpp_demangle(const char *name) {
     int status;
@@ -26,7 +26,7 @@ inline std::string cpp_type_name(std::type_info const &type) {
 
 #else
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 inline std::string cpp_type_name(std::type_info const &type) {
     // MSVC is able to return demanged name directly via name()

@@ -12,7 +12,7 @@
 #include <zs/ztd/vec.h>
 
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 namespace zany_details {
 

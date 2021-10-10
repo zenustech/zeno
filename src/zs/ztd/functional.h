@@ -4,7 +4,7 @@
 #include <functional>
 
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 
 template <class T = void, class ...Ts>

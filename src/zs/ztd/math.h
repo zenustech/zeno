@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 inline namespace math {
 
 static auto pymod(auto x, auto y) {

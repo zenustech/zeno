@@ -10,7 +10,7 @@
 #include <cmath>
 
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 inline namespace mathvec {
 
 

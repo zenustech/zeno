@@ -5,7 +5,7 @@
 #include <sstream>
 #include <zs/ztd/error.h>
 
-namespace zs::ztd::ztd {
+namespace zs::ztd {
 
 static inline auto split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;
