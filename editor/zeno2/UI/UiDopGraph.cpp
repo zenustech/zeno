@@ -2,7 +2,11 @@
 #include <zeno2/UI/UiDopNode.h>
 #include <zeno2/UI/UiDopScene.h>
 #include <zeno2/UI/UiDopEditor.h>
+#include <zeno2/UI/dump_graph.h>
+#include <zeno2/UI/serialize_graph.h>
 #include <zeno2/dop/dop.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 
 namespace zeno2::UI {
@@ -106,7 +110,7 @@ UiDopGraph::UiDopGraph() {
     auto apply_btn = add_child<Button>();
     apply_btn->text = "Apply";
     apply_btn->on_clicked.connect([this] () {
-        auto g = this->dump_graph();
+        auto g = dump_graph(this);
         auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
     });
@@ -115,7 +119,30 @@ UiDopGraph::UiDopGraph() {
     save_btn->position = {300, 0};
     save_btn->text = "Save";
     save_btn->on_clicked.connect([this] () {
-        this->serialize_graph();
+        rapidjson::Document doc;
+        doc.SetObject();
+        auto v_graph = serialize(this, doc.GetAllocator());
+        doc.AddMember("version", rapidjson::Value().SetString("v2", 2), doc.GetAllocator());
+        doc.AddMember("graph", v_graph, doc.GetAllocator());
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer writer(buffer);
+        doc.Accept(writer);
+        glfwSetClipboardString(cur.window, buffer.GetString());
+    });
+
+    auto load_btn = add_child<Button>();
+    load_btn->position = {600, 0};
+    load_btn->text = "Load";
+    load_btn->on_clicked.connect([this] () {
+        rapidjson::Document doc;
+        doc.SetObject();
+        auto v_graph = serialize(this, doc.GetAllocator());
+        auto it_graph = doc.FindMember("graph");
+        ZENO2_ZTD_ASSERT(it_graph != doc.MemberEnd());
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer writer(buffer);
+        doc.Accept(writer);
+        glfwSetClipboardString(cur.window, buffer.GetString());
     });
 }
 

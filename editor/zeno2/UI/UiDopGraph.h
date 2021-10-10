@@ -6,7 +6,6 @@
 #include <zeno2/UI/GraphicsView.h>
 #include <zeno2/UI/UiDopContextMenu.h>
 #include <zeno2/UI/UiDopSocket.h>
-#include <zeno2/dop/dop.h>
 
 
 namespace zeno2::UI {
@@ -46,10 +45,6 @@ struct UiDopGraph : GraphicsView {
 
     void on_event(Event_Mouse e) override;
     void on_event(Event_Key e) override;
-
-    std::unique_ptr<dop::Graph> dump_graph();
-    void deserialize_graph(std::string const &buffer);
-    std::string serialize_graph();
 
     inline UiDopScene *get_parent() const {
         return (UiDopScene *)parent;
