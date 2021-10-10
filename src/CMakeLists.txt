@@ -1,4 +1,5 @@
 include_directories(.)
+include_directories(zs/legacy)
 
 add_subdirectory(zs/ztd)
 add_subdirectory(zs/zeno)
