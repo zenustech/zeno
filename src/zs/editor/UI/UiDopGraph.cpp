@@ -120,7 +120,7 @@ UiDopGraph::UiDopGraph() {
     apply_btn->text = "Apply";
     apply_btn->on_clicked.connect([this] {
         auto g = dump_graph(this);
-        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
+        auto val = zeno::dop::resolve(zeno::dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
     }, this);
 
@@ -228,7 +228,7 @@ void UiDopGraph::on_event(Event_Mouse e) {
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
     node->position = pos;
-    auto const &desc = dop::desc_of(kind);
+    auto const &desc = zeno::dop::desc_of(kind);
     for (auto const &sock_info: desc.inputs) {
         auto socket = node->add_input_socket();
         socket->name = sock_info.name;
@@ -247,7 +247,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
 
     menu = get_parent()->add_child<UiDopContextMenu>();
     menu->position = position + translate + Point(cur.x, cur.y) * scaling;
-    for (auto const &key: dop::desc_names()) {
+    for (auto const &key: zeno::dop::desc_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();

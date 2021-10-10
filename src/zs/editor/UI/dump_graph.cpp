@@ -23,9 +23,9 @@ static ztd::zany parse_any(std::string const &expr) {
 }
 
 
-static dop::Input parse_socket
-    ( dop::Graph *g
-    , ztd::map<std::string, dop::Input_Link> const &exprlut
+static zeno::dop::Input parse_socket
+    ( zeno::dop::Graph *g
+    , ztd::map<std::string, zeno::dop::Input_Link> const &exprlut
     , UiDopInputSocket *socket
     ) {
     if (socket->links.size()) {  // (physically linked)
@@ -39,7 +39,7 @@ static dop::Input parse_socket
                 outid = i;
             }
         }
-        return dop::Input_Link{.node = outn, .sockid = outid};
+        return zeno::dop::Input_Link{.node = outn, .sockid = outid};
 
     } else {
         auto expr = socket->value;
@@ -50,7 +50,7 @@ static dop::Input parse_socket
             auto p = expr.find(':');
             if (p == std::string::npos) {  // @Route1
                 auto outnode = g->get_node(expr);
-                return dop::Input_Link{.node = outnode, .sockid = 0};
+                return zeno::dop::Input_Link{.node = outnode, .sockid = 0};
 
             } else {
                 auto sockname = expr.substr(p + 1);
@@ -58,11 +58,11 @@ static dop::Input parse_socket
                 auto *outn = g->get_node(nodename);
 
                 if (!sockname.size()) {  // @Route1:
-                    return dop::Input_Link{.node = outn, .sockid = 0};
+                    return zeno::dop::Input_Link{.node = outn, .sockid = 0};
 
                 } else if (std::isdigit(sockname[0])) {  // @Route1:0
                     int outid = std::stoi(sockname);
-                    return dop::Input_Link{.node = outn, .sockid = outid};
+                    return zeno::dop::Input_Link{.node = outn, .sockid = outid};
 
                 } else {  // @Route1:value
                     return exprlut.at(expr);
@@ -70,27 +70,27 @@ static dop::Input parse_socket
             }
 
         } else {  // 3.14
-            return dop::Input_Value{.value = parse_any(expr)};
+            return zeno::dop::Input_Value{.value = parse_any(expr)};
         }
     }
 }
 
 
-std::unique_ptr<dop::Graph> dump_graph(UiDopGraph const *graph) {
-    auto g = std::make_unique<dop::Graph>();
+std::unique_ptr<zeno::dop::Graph> dump_graph(UiDopGraph const *graph) {
+    auto g = std::make_unique<zeno::dop::Graph>();
 
-    ztd::map<std::string, dop::Input_Link> exprlut;
+    ztd::map<std::string, zeno::dop::Input_Link> exprlut;
     for (auto const &[_, node]: graph->nodes) {
-        auto n = g->add_node(node->name, dop::desc_of(node->kind));
+        auto n = g->add_node(node->name, zeno::dop::desc_of(node->kind));
         for (int i = 0; i < node->outputs.size(); i++) {
             auto key = node->name + ':' + node->outputs[i]->name;
             // (todo: really necessary here? may use get_index...)
             // for fast lookup like exprlut.at("Route1:value") in later pass
-            exprlut.emplace(key, dop::Input_Link{.node = n, .sockid = i});
+            exprlut.emplace(key, zeno::dop::Input_Link{.node = n, .sockid = i});
         }
         n->xpos = node->position.x;
         n->name = node->name;
-        n->desc = &dop::desc_of(node->kind);
+        n->desc = &zeno::dop::desc_of(node->kind);
     }
 
     for (auto const &[_, node]: graph->nodes) {

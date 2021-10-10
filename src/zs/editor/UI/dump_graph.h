@@ -8,7 +8,7 @@
 namespace zs::editor::UI {
 
 
-std::unique_ptr<dop::Graph> dump_graph(UiDopGraph const *graph);
+std::unique_ptr<zeno::dop::Graph> dump_graph(UiDopGraph const *graph);
 
 
 }
