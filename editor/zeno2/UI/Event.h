@@ -48,10 +48,11 @@ struct SignalInst {
     using Callback = std::function<void()>;
     std::vector<Callback> callbacks;
 
-    SignalInst(SignalObject const &) = delete;
-    SignalInst &operator=(SignalObject const &) = delete;
-    SignalInst(SignalObject &&) = default;
-    SignalInst &operator=(SignalObject &&) = default;
+    SignalInst() = default;
+    SignalInst(SignalInst const &) = delete;
+    SignalInst &operator=(SignalInst const &) = delete;
+    SignalInst(SignalInst &&) = default;
+    SignalInst &operator=(SignalInst &&) = default;
 
     ~SignalInst() {
         for (auto const &func: callbacks) {
@@ -59,7 +60,7 @@ struct SignalInst {
         }
     }
 
-    void connect(Callback &&f) {
+    void on_destroy(Callback &&f) {
         callbacks.push_back(std::move(f));
     }
 };
@@ -67,19 +68,22 @@ struct SignalInst {
 
 struct SignalSlot {
     using Callback = std::function<void()>;
-    std::list<Callback> callbacks;
+    std::shared_ptr<std::list<Callback>> callbacks;
 
     void operator()() const {
-        for (auto const &func: callbacks) {
+        for (auto const &func: *callbacks) {
             func();
         }
     }
 
-    void connect(Callback &&f, SignalInst *inst = nullptr) {
-        auto it = callbacks.insert(std::move(f));
+    void connect(Callback &&f, SignalInst *inst) {
+        auto it = callbacks->insert(callbacks->begin(), std::move(f));
         if (inst) {
-            inst.connect([=] () {
-                callbacks.erase(it);
+            std::weak_ptr cbwp(callbacks);
+            inst->on_destroy([=] {
+                if (auto cb = cbwp.lock()) {
+                    cb->erase(it);
+                }
             });
         }
     }

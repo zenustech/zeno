@@ -122,7 +122,7 @@ UiDopGraph::UiDopGraph() {
         auto g = dump_graph(this);
         auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ToView1")});
         get_parent()->set_view_result(val);
-    });
+    }, this);
 
     auto save_btn = add_child<Button>();
     save_btn->position = {300, 0};
@@ -139,7 +139,7 @@ UiDopGraph::UiDopGraph() {
         std::string json = buffer.GetString();
         SPDLOG_INFO("dumped graph to JSON: {}", json);
         glfwSetClipboardString(cur.window, json.c_str());
-    });
+    }, this);
 
     auto load_btn = add_child<Button>();
     load_btn->position = {600, 0};
@@ -157,7 +157,7 @@ UiDopGraph::UiDopGraph() {
         }
         auto const &v_graph = ZENO2_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd())->value;
         deserialize(this, v_graph);
-    });
+    }, this);
 }
 
 
@@ -255,7 +255,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
     menu->on_selected.connect([this] {
         add_node(menu->selection, (menu->position - position - translate) * (1.f / scaling));
         remove_context_menu();
-    });
+    }, this);
 
     return menu;
 }

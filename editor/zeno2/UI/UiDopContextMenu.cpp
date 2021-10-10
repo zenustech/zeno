@@ -17,7 +17,7 @@ Button *UiDopContextMenu::add_entry(std::string name) {
     btn->on_clicked.connect([=, this] {
         selection = name;
         on_selected();
-    });
+    }, this);
     entries.push_back(btn);
     return btn;
 }
