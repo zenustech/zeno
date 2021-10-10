@@ -9,7 +9,7 @@ function(make_include_asset input_file output_file)
     endif()
 endfunction(make_include_asset)
 
-set(header_dir ${CMAKE_CURRENT_BINARY_DIR}/include/zs.assets)
+set(header_dir ${CMAKE_CURRENT_BINARY_DIR}/include/zs/assets)
 file(MAKE_DIRECTORY ${header_dir})
 message("-- Header asset output directory: ${header_dir}")
 file(GLOB files LIST_DIRECTORIES FALSE CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/assets/*)

@@ -8,8 +8,8 @@ namespace zs::editor::GL {
 
 // todo: futher sep this file into pieces
 struct VisRender_Mesh : VisRender {
-    std::shared_ptr<ds::Mesh> mesh;
-    VisRender_Mesh(std::shared_ptr<ds::Mesh> mesh) : mesh(mesh) {}
+    std::shared_ptr<zeno::ds::Mesh> mesh;
+    VisRender_Mesh(std::shared_ptr<zeno::ds::Mesh> mesh) : mesh(mesh) {}
 
     static GL::Program *_get_shader();
     void render(GL::Camera *camera) override;
@@ -137,7 +137,7 @@ void VisRender_Mesh::render(GL::Camera *camera) {
 
 
 std::unique_ptr<VisRender> VisRender::make_for(ztd::zany object) {
-    auto mesh = ztd::zany_cast<std::shared_ptr<ds::Mesh>>(object);
+    auto mesh = ztd::zany_cast<std::shared_ptr<zeno::ds::Mesh>>(object);
     return std::make_unique<VisRender_Mesh>(mesh);
 }
 
