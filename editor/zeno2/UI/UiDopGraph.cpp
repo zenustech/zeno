@@ -142,7 +142,8 @@ UiDopGraph::UiDopGraph() {
         SPDLOG_INFO("JSON: {}", json);
         rapidjson::Document doc;
         doc.Parse(json);
-        ZENO2_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd());
+        auto const &v_graph = ZENO2_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd())->value;
+        deserialize(this, v_graph);
     });
 }
 

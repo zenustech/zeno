@@ -80,6 +80,8 @@ rapidjson::Value serialize(UiDopGraph const *graph, rapidjson::Document::Allocat
 
         v_links.PushBack(v_link, alloc);
     }
+    v_graph.AddMember("links", v_links, alloc);
+
     return v_graph;
 }
 
