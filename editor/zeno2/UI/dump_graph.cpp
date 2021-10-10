@@ -76,11 +76,11 @@ static dop::Input parse_socket
 }
 
 
-std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
+std::unique_ptr<dop::Graph> dump_graph(UiDopGraph const *graph) {
     auto g = std::make_unique<dop::Graph>();
 
     ztd::map<std::string, dop::Input_Link> exprlut;
-    for (auto const &[_, node]: nodes) {
+    for (auto const &[_, node]: graph->nodes) {
         auto n = g->add_node(node->name, dop::desc_of(node->kind));
         for (int i = 0; i < node->outputs.size(); i++) {
             auto key = node->name + ':' + node->outputs[i]->name;
@@ -93,7 +93,7 @@ std::unique_ptr<dop::Graph> UiDopGraph::dump_graph() {
         n->desc = &dop::desc_of(node->kind);
     }
 
-    for (auto const &[_, node]: nodes) {
+    for (auto const &[_, node]: graph->nodes) {
         auto n = g->get_node(node->name);
 
         for (int i = 0; i < node->inputs.size(); i++) {

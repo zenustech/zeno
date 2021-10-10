@@ -8,7 +8,7 @@
 namespace zeno2::UI {
 
 
-std::unique_ptr<dop::Graph> dump_graph(UiDopGraph *graph);
+std::unique_ptr<dop::Graph> dump_graph(UiDopGraph const *graph);
 
 
 }

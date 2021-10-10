@@ -16,7 +16,7 @@ static Value dump_string(std::string const &s) {
 }
 
 
-rapidjson::Value serialize(UiDopGraph *graph, rapidjson::Document::AllocatorType &alloc) {
+rapidjson::Value serialize(UiDopGraph const *graph, rapidjson::Document::AllocatorType &alloc) {
     Value v_graph(kObjectType);
 
     Value v_view(kObjectType);

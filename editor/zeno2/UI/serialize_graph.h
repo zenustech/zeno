@@ -10,7 +10,7 @@ namespace zeno2::UI {
 
 
 void deserialize(UiDopGraph *graph, rapidjson::Value const &v_graph);
-rapidjson::Value serialize(UiDopGraph *graph, rapidjson::Document::AllocatorType &alloc);
+rapidjson::Value serialize(UiDopGraph const *graph, rapidjson::Document::AllocatorType &alloc);
 
 
 }
