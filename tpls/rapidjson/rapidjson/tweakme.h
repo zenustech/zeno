@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cassert>
 #include <exception>
 
 #define RAPIDJSON_NAMESPACE rapidjson
@@ -17,8 +18,9 @@ public:
 
 }
 
+#define RAPIDJSON_NOEXCEPT_ASSERT(x) assert(x)
 #define RAPIDJSON_ASSERT(x) do { \
     if (!(x)) { \
-        throw rapidjson::AssertionFailure(#x); \
+        throw rapidjson::AssertionFailure("RAPIDJSON_ASSERT(" #x ")"); \
     } \
 } while (0)
