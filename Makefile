@@ -1,17 +1,17 @@
 run:
 	cmake -Bbuild
-	make -Cbuild -j12 zeno.main
-	build/main/zeno.main
+	make -Cbuild -j12 zs.main
+	build/src/zs/main/zs.main
 
 debug:
 	cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug
-	make -Cbuild -j12 zeno.main
-	gdb build/main/zeno.main -ex r
+	make -Cbuild -j12 zs.main
+	gdb build/src/zs/main/zs.main -ex r
 
 test:
 	cmake -Bbuild
-	make -Cbuild -j12 zeno.tests
-	build/tests/zeno.tests
+	make -Cbuild -j12 zs.tests
+	build/src/zs/tests/zs.tests
 
 all:
 	cmake -Bbuild
