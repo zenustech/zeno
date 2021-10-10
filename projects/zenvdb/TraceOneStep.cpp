@@ -48,10 +48,6 @@ struct TraceOneStep : INode {
         prim->lines[i-size] = zeno::vec2i(i-size, i);
       }
     }
-    
-
-    
-    
     set_output("prim", std::move(prim));
   }
 };

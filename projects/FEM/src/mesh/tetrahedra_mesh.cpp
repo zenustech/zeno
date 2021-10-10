@@ -6,8 +6,6 @@ int TetrahedraMesh::LoadTetrahedraFromFile(std::shared_ptr<TetrahedraMesh>& mesh
             const char* elm_file,
             const char* node_file,
             const char* bou_file){
-    std::cout << "check point 0" << std::endl;
-    
     std::vector<size_t> elements;
     VecXd vertices;
     std::vector<size_t> bou_indices;
@@ -20,13 +18,16 @@ int TetrahedraMesh::LoadTetrahedraFromFile(std::shared_ptr<TetrahedraMesh>& mesh
 
     size_t nm_vertices = vertices.size()/3;
     size_t nm_elms = elements.size()/4;
+
     mesh_ptr = std::shared_ptr<TetrahedraMesh>(new TetrahedraMesh(vertices.data(),nm_vertices,elements.data(),nm_elms));
     // mesh_ptr->SetConstrainedNodes(bou_indices.data(),bou_indices.size());  
     mesh_ptr->SetConstrainedDoFs(bou_indices.data(),bou_indices.size());
+
     // the material is by default to be isotropic
     mesh_ptr->elm_anisotropic_weight.resize(nm_elms,Vec3d::Constant(1.0));
     mesh_ptr->elm_anisotropic_orients.resize(nm_elms,Mat3x3d::Identity());
     mesh_ptr->elm_activation.resize(nm_elms,Mat3x3d::Identity());
+
     return 0;  
 }
 
@@ -40,7 +41,7 @@ int TetrahedraMesh::LoadElmsFromFile(const char* filename,std::vector<size_t>& e
             std::cerr << "ERROR::TET::FAILED::" << std::string(filename) << std::endl;
             return -1;
         }
-        fin >> nm_elms >> elm_size >> v_start_idx; 
+        fin >> nm_elms >> elm_size >> v_start_idx;
         elements.resize(nm_elms * elm_size);
 
         for(size_t elm_id = 0;elm_id < nm_elms;++elm_id) {
@@ -197,14 +198,6 @@ TetrahedraMesh::TetrahedraMesh(const SPMAT_SCALER* _vertices, size_t _nm_vertice
 
     conn_matrix = SpMat(GetNumDoF(),GetNumDoF());
     conn_matrix.setZero();
-    size_t iter_idx = 0;
-    for(auto iter = connectivity.begin();iter != connectivity.end();++iter){
-        if(iter->row() >= GetNumDoF() || iter->row() < 0)
-            std::cout << "invalid row : " << iter_idx << "\t" << iter->row() << std::endl;
-        if(iter->col() >= GetNumDoF() || iter->col() < 0)
-            std::cout << "invalid col : " << iter_idx << "\t" << iter->col() << std::endl;
-        iter_idx++;
-    }
     conn_matrix.setFromTriplets(connectivity.begin(),connectivity.end());
     conn_matrix.makeCompressed();
     if(conn_matrix.nonZeros() != connectivity.size()){

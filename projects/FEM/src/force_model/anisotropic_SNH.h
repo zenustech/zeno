@@ -23,15 +23,16 @@ public:
 
     void ComputePhi(const Mat3x3d& Act,
             const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,
-            const VecXd& model_params,const Mat3x3d& F,FEM_Scaler& phi) const override {
+            const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
+            const Mat3x3d& F,FEM_Scaler& phi) const override {
         Vec3d Is;
         Mat3x3d F_act = F * Act.inverse();
         ComputeAnisotrpicInvarients(fiber_direction,aniso_weight,F_act,Is);
         // std::cout << "ComputePhi Is " << Is.transpose() << "\n" << fiber_direction << "\n" << aniso_weight << "\n" << F_act << std::endl;
         FEM_Scaler I1_d = evalI1_delta(aniso_weight,fiber_direction,F_act);
 
-        FEM_Scaler E = model_params[0];
-        FEM_Scaler nu = model_params[1];
+        FEM_Scaler E = YoungModulus;
+        FEM_Scaler nu = PossonRatio;
         FEM_Scaler lambda = Enu2Lambda(E,nu);
         FEM_Scaler mu = Enu2Mu(E,nu);
 
@@ -39,7 +40,10 @@ public:
     }
     void ComputePhiDeriv(const Mat3x3d& Act,
             const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,
-            const VecXd& model_params, const Mat3x3d& F,FEM_Scaler &phi,Vec9d &dphi) const override{
+            const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
+            const Mat3x3d& F,FEM_Scaler &phi,Vec9d &dphi) const override{
+        
+
         Vec3d Is;
         std::vector<Vec9d> Ds(3);
 
@@ -53,19 +57,37 @@ public:
         FEM_Scaler I1_d = evalI1_delta(aniso_weight,fiber_direction,F_act);
         Vec9d I1_d_deriv = MatHelper::VEC(evalI1_delta_deriv(aniso_weight,fiber_direction));
 
-        FEM_Scaler E = model_params[0];
-        FEM_Scaler nu = model_params[1];
+        FEM_Scaler E = YoungModulus;
+        FEM_Scaler nu = PossonRatio;
         FEM_Scaler lambda = Enu2Lambda(E,nu);
         FEM_Scaler mu = Enu2Mu(E,nu);
         Mat9x9d dFactdF = EvaldFactdF(A_inv);
 
         phi = mu/2 * (Is[0] - I1_d) + lambda/2 * (Is[2] - 1) * (Is[2] - 1);
         dphi = mu/2 * (Ds[0] - I1_d_deriv) + lambda * (Is[2] - 1) * Ds[2];
+
+        // std::cout << "Is : " << Is.transpose() << std::endl;
+        // std::cout << "Ds[0] : " << std::endl << MatHelper::MAT(Ds[0]) << std::endl;
+        // std::cout << "I1_d_deriv : " << std::endl << MatHelper::MAT(I1_d_deriv) << std::endl;
+
+        // std::cout << "Ds[2] : \n" << Ds[2] << std::endl;
+
         dphi = dFactdF.transpose() * dphi;
+
+        // std::cout << "dFactdF:" << std::endl << dFactdF << std::endl;
+
+        // std::cout << "ComputePhiDeriv : " << std::endl;
+        // std::cout << "Act : " << std::endl << Act << std::endl;
+        // std::cout << "Weight : " << aniso_weight.transpose() << std::endl;
+        // std::cout << "Orient : " << std::endl << fiber_direction << std::endl;
+        // std::cout << "F : " << std::endl << F << std::endl;
+        // std::cout << "dphi : " << std::endl << dphi << std::endl;
+
     }
     void ComputePhiDerivHessian(const Mat3x3d& Act,
             const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,
-            const VecXd& model_params,const Mat3x3d &F,FEM_Scaler& phi,Vec9d &dphi, Mat9x9d &ddphi,bool enforcing_spd = true) const override{
+            const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
+            const Mat3x3d &F,FEM_Scaler& phi,Vec9d &dphi, Mat9x9d &ddphi,bool enforcing_spd = true) const override{
         Vec3d Is;
         std::vector<Vec9d> Ds(3);
         std::vector<Mat9x9d> Hs(3);
@@ -75,12 +97,15 @@ public:
 
         ComputeAnisotropicInvarientsDerivHessian(fiber_direction,aniso_weight,F_act,Is,Ds,Hs);
 
+        // std::cout << "F_act : \n" << F_act << std::endl;
+        // throw std::runtime_error("F_actcheck");
+
         FEM_Scaler I1_d = evalI1_delta(aniso_weight,fiber_direction,F_act);
         Vec9d I1_d_deriv = MatHelper::VEC(evalI1_delta_deriv(aniso_weight,fiber_direction));
         Mat9x9d dFactdF = EvaldFactdF(A_inv);
 
-        FEM_Scaler E = model_params[0];
-        FEM_Scaler nu = model_params[1];
+        FEM_Scaler E = YoungModulus;
+        FEM_Scaler nu = PossonRatio;
         FEM_Scaler lambda = Enu2Lambda(E,nu);
         FEM_Scaler mu = Enu2Mu(E,nu);
         phi = mu/2 * (Is[0] - I1_d) + lambda/2 * (Is[2] - 1) * (Is[2] - 1);
@@ -137,6 +162,8 @@ public:
                 FEM_Scaler weight = _weight[i] * _weight[i];
                 invarients[0] += weight * EvalI1Deriv(F,_orient.col(i),buffer);
                 derivs[0] += weight * buffer;
+                // std::cout << "ORIENT : " << _orient.col(i).transpose() << std::endl;
+                // std::cout << "ADD_BUFFER<" << i << "> : " << std::endl << MatHelper::MAT(buffer) << std::endl;
                 weight_sum += weight;
             }
             invarients[0] /= weight_sum;
@@ -155,7 +182,9 @@ public:
             invarients[1] /= weight_sum;
             derivs[1] /= weight_sum;
 
-            invarients[2] = EvalI3Deriv(F,derivs[2]);           
+            invarients[2] = EvalI3Deriv(F,derivs[2]);  
+
+            // std::cout << "IN DS[0]:" << std::endl << MatHelper::MAT(derivs[0]) << std::endl;         
     }
 
     inline void ComputeAnisotropicInvarientsDerivHessian(const Mat3x3d &_orient,
@@ -312,7 +341,7 @@ public:
     }
 
     Mat3x3d evalI1_delta_deriv(const Vec3d& aw,const Mat3x3d& fiber_dir) const {
-        Mat3x3d dM = fiber_dir.transpose() * get_I1_Sigma(aw) * fiber_dir;
+        Mat3x3d dM = fiber_dir * get_I1_Sigma(aw) * fiber_dir.transpose();
         return 2*3*dM/aw.squaredNorm();
     }
 };

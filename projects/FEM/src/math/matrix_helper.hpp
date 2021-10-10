@@ -73,30 +73,30 @@ typedef struct triplet_cmp{
 
 class MatHelper{
 public:
-    static void UpdateDoFs(const SPMAT_SCALER* _src,SPMAT_SCALER* _des,size_t nm_updofs,const size_t *updofs){
-        for(size_t i = 0;i < nm_updofs;++i){
+    static void UpdateDoFs(const SPMAT_SCALER* _src,SPMAT_SCALER* _des,int nm_updofs,const int *updofs){
+        for(int i = 0;i < nm_updofs;++i){
             _des[updofs[i]] = _src[i];
         }
     }
 
-     static void UpdateDoFs(FEM_Scaler up_value,SPMAT_SCALER* _des,size_t nm_updofs,const size_t *updofs){
-        for(size_t i = 0;i < nm_updofs;++i){
+     static void UpdateDoFs(FEM_Scaler up_value,SPMAT_SCALER* _des,int nm_updofs,const int *updofs){
+        for(int i = 0;i < nm_updofs;++i){
             _des[updofs[i]] = up_value;
         }
     }   
-    static void RetrieveDoFs(const SPMAT_SCALER* _src, SPMAT_SCALER* _des,size_t nm_rtdofs,const size_t *rtdofs){
-        for(size_t i = 0;i < nm_rtdofs;++i)
+    static void RetrieveDoFs(const SPMAT_SCALER* _src, SPMAT_SCALER* _des,int nm_rtdofs,const int *rtdofs){
+        for(int i = 0;i < nm_rtdofs;++i)
             _des[i] = _src[rtdofs[i]];
     }
-    static void RetrieveDoFs(const SPMAT_SCALER* from,SPMAT_SCALER* to,size_t nm_rtdofs,const size_t *rtdofs,size_t width){
-        for(size_t i = 0;i < nm_rtdofs;++i)
+    static void RetrieveDoFs(const SPMAT_SCALER* from,SPMAT_SCALER* to,int nm_rtdofs,const int *rtdofs,int width){
+        for(int i = 0;i < nm_rtdofs;++i)
             memcpy(&to[i*width],&from[rtdofs[i]*width],sizeof(SPMAT_SCALER)*width);  
     }
-    static void AssembleSpMatAdd(const SpMat& src,SpMat &des,size_t row_offset,size_t col_offset,FEM_Scaler scale = 1.0){
-        for(size_t k =0;k < size_t(src.outerSize());++k){
+    static void AssembleSpMatAdd(const SpMat& src,SpMat &des,int row_offset,int col_offset,FEM_Scaler scale = 1.0){
+        for(int k =0;k < int(src.outerSize());++k){
             for(SpMat::InnerIterator it(src,k);it;++it){
-                size_t row = size_t(it.row());
-                size_t col = size_t(it.col());
+                int row = int(it.row());
+                int col = int(it.col());
                 des.coeffRef(row + row_offset,col + col_offset) += it.value()*scale;
             }
         }
@@ -110,7 +110,7 @@ public:
 
     static Mat9x9d VEC(const std::vector<Mat3x3d> T4){
         Mat9x9d mat;
-        for(size_t i = 0;i < 9;++i)
+        for(int i = 0;i < 9;++i)
             mat.col(i) = VEC(T4[i]);
 
         return mat;
@@ -133,8 +133,8 @@ public:
     static Mat3x3d DYADIC(const Vec3d& v1,const Vec3d& v2){
         Mat3x3d C;
         C.setZero();
-        for(size_t i = 0;i < 3;++i)
-            for(size_t j = 0;j < 3;++j)
+        for(int i = 0;i < 3;++i)
+            for(int j = 0;j < 3;++j)
                 C(i,j) = v1[i] * v2[j];
 
         return C;
@@ -143,8 +143,8 @@ public:
     static Mat9x9d DYADIC(const Vec9d& v1,const Vec9d& v2){
         Mat9x9d C;
         C.setZero();
-        for(size_t i = 0;i < 9;++i)
-            for(size_t j = 0;j < 9;++j)
+        for(int i = 0;i < 9;++i)
+            for(int j = 0;j < 9;++j)
                 C(i,j) = v1[i] * v2[j];
 
         return C;

@@ -347,7 +347,7 @@ public:
         DoPreComputation();
     }
 
-public:
+private:
     FEM_Scaler mesh_scale;                          /** the mesh scale due to the normalization */
     std::vector<FEM_Scaler> vertices;               /** the rest shape of the mesh */
     size_t num_vertices;                            
@@ -394,7 +394,7 @@ public:
 
     std::vector<size_t> surface_dofs;   
 
-public:
+private:
     TetrahedraMesh(const FEM_Scaler* vertices, size_t nm_vertices, const size_t* elements, size_t nm_elements);
     static int LoadElmsFromFile(const char* filename, std::vector<size_t>& elms);
     static int LoadNodesFromFile(const char* filename, VecXd& vertices);

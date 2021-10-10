@@ -33,7 +33,7 @@ public:
      * @param energy the potential energy output
      */
     virtual void ComputePhi(const Mat3x3d& activation,
-        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const VecXd& model_params,
+        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
         const Mat3x3d& F,FEM_Scaler& energy) const = 0;
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -45,7 +45,7 @@ public:
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
     virtual void ComputePhiDeriv(const Mat3x3d& activation,
-        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const VecXd& model_params,
+        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
         const Mat3x3d& F,FEM_Scaler &energy,Vec9d &derivative) const = 0;
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -59,7 +59,7 @@ public:
      * @param <enforcing_spd> decide whether we should enforce the SPD of hessian matrix
      */
     virtual void ComputePhiDerivHessian(const Mat3x3d& activation,
-        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const VecXd& model_params,
+        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
         const Mat3x3d &F,FEM_Scaler& energy,Vec9d &derivative, Mat9x9d &Hessian,bool enforcing_spd = true) const = 0;
 
     static FEM_Scaler Enu2Lambda(FEM_Scaler E,FEM_Scaler nu) {return (nu * E)/((1 + nu) * (1 - 2*nu));}
