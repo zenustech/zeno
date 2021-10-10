@@ -23,7 +23,7 @@ void UiDopParam::set_socket(UiDopInputSocket *socket) {
     edit->disabled = socket->links.size() != 0;
     edit->on_editing_finished.connect([=, this] {
         socket->value = edit->text;
-    });
+    }, this);
 }
 
 

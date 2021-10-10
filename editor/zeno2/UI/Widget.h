@@ -22,10 +22,11 @@ struct Object {
 };
 
 
-struct Widget : Object {
+struct Widget : Object, SignalInst {
     Widget *parent = nullptr;
     std::list<std::unique_ptr<Widget>> children;
     std::vector<std::unique_ptr<Widget>> children_gc;
+
     Point position{0, 0};
     float zvalue{0};
 

@@ -75,15 +75,13 @@ struct SignalSlot {
         }
     }
 
-    void connect(Callback &&f) {
+    void connect(Callback &&f, SignalInst *inst = nullptr) {
         auto it = callbacks.insert(std::move(f));
-    }
-
-    void connect(Callback &&f, SignalInst &inst) {
-        auto it = callbacks.insert(std::move(f));
-        inst.connect([=] () {
-            callbacks.erase(it);
-        });
+        if (inst) {
+            inst.connect([=] () {
+                callbacks.erase(it);
+            });
+        }
     }
 };
 
