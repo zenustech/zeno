@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include <zeno2/UI/GraphicsRectItem.h>
-#include <zeno2/UI/Font.h>
-#include <zeno2/UI/Color.h>
+#include <zs/editor/UI/GraphicsRectItem.h>
+#include <zs/editor/UI/Font.h>
+#include <zs/editor/UI/Color.h>
 
 
 namespace zeno2::UI {

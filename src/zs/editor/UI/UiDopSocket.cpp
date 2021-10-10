@@ -1,6 +1,6 @@
-#include <zeno2/UI/UiDopSocket.h>
-#include <zeno2/UI/UiDopNode.h>
-#include <zeno2/UI/UiDopGraph.h>
+#include <zs/editor/UI/UiDopSocket.h>
+#include <zs/editor/UI/UiDopNode.h>
+#include <zs/editor/UI/UiDopGraph.h>
 
 
 namespace zeno2::UI {

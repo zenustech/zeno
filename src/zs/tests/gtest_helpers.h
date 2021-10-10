@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <zeno2/ztd/vec.h>
-#include <zeno2/ztd/type_info.h>
+#include <zs/zeno/ztd/vec.h>
+#include <zs/zeno/ztd/type_info.h>
 
 namespace zeno2::ztd::mathvec {
 

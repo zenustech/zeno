@@ -1,6 +1,6 @@
-#include <zeno2/dop/Graph.h>
-#include <zeno2/dop/Node.h>
-#include <zeno2/dop/Descriptor.h>
+#include <zs/zeno/dop/Graph.h>
+#include <zs/zeno/dop/Node.h>
+#include <zs/zeno/dop/Descriptor.h>
 
 
 namespace zeno2::dop {

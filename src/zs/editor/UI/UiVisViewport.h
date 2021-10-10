@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zeno2/UI/GraphicsView.h>
-#include <zeno2/GL/Camera.h>
+#include <zs/editor/UI/GraphicsView.h>
+#include <zs/editor/GL/Camera.h>
 
 
 namespace zeno2::UI {

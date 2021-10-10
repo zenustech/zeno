@@ -1,12 +1,12 @@
 #pragma once
 
 
-#include <zeno2/ztd/error.h>
-#include <zeno2/ztd/functional.h>
-#include <zeno2/UI/CursorState.h>
-#include <zeno2/UI/Event.h>
-#include <zeno2/UI/Point.h>
-#include <zeno2/UI/AABB.h>
+#include <zs/zeno/ztd/error.h>
+#include <zs/zeno/ztd/functional.h>
+#include <zs/editor/UI/CursorState.h>
+#include <zs/editor/UI/Event.h>
+#include <zs/editor/UI/Point.h>
+#include <zs/editor/UI/AABB.h>
 
 
 namespace zeno2::UI {

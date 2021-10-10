@@ -1,4 +1,4 @@
-#include <zeno2/UI/Label.h>
+#include <zs/editor/UI/Label.h>
 
 
 namespace zeno2::UI {

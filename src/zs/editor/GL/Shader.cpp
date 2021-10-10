@@ -1,4 +1,4 @@
-#include <zeno2/GL/Shader.h>
+#include <zs/editor/GL/Shader.h>
 #include <glm/gtc/type_ptr.hpp>
 
 

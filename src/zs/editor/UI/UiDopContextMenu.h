@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include <zeno2/UI/Widget.h>
-#include <zeno2/UI/Button.h>
-#include <zeno2/UI/Event.h>
+#include <zs/editor/UI/Widget.h>
+#include <zs/editor/UI/Button.h>
+#include <zs/editor/UI/Event.h>
 
 
 namespace zeno2::UI {

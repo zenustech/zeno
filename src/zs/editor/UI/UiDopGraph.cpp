@@ -1,13 +1,13 @@
-#include <zeno2/UI/UiDopGraph.h>
-#include <zeno2/UI/UiDopNode.h>
-#include <zeno2/UI/UiDopScene.h>
-#include <zeno2/UI/UiDopEditor.h>
-#include <zeno2/UI/dump_graph.h>
-#include <zeno2/UI/serialize_graph.h>
+#include <zs/editor/UI/UiDopGraph.h>
+#include <zs/editor/UI/UiDopNode.h>
+#include <zs/editor/UI/UiDopScene.h>
+#include <zs/editor/UI/UiDopEditor.h>
+#include <zs/editor/UI/dump_graph.h>
+#include <zs/editor/UI/serialize_graph.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
-#include <zeno2/ztd/assert.h>
-#include <zeno2/dop/dop.h>
+#include <zs/zeno/ztd/assert.h>
+#include <zs/zeno/dop/dop.h>
 
 
 namespace zeno2::UI {

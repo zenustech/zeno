@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zeno2/UI/UiDopSocket.h>
-#include <zeno2/UI/GraphicsRectItem.h>
+#include <zs/editor/UI/UiDopSocket.h>
+#include <zs/editor/UI/GraphicsRectItem.h>
 
 
 namespace zeno2::UI {

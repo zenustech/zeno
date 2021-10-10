@@ -6,10 +6,10 @@
 #include <cstdint>
 #include <variant>
 #include <optional>
-#include <zeno2/ztd/type_traits.h>
-#include <zeno2/ztd/type_info.h>
-#include <zeno2/ztd/error.h>
-#include <zeno2/ztd/vec.h>
+#include <zs/zeno/ztd/type_traits.h>
+#include <zs/zeno/ztd/type_info.h>
+#include <zs/zeno/ztd/error.h>
+#include <zs/zeno/ztd/vec.h>
 
 
 namespace zeno2::ztd {

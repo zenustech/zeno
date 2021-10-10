@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno2/dop/Node.h>
+#include <zs/zeno/dop/Node.h>
 
 
 namespace zeno2::dop {

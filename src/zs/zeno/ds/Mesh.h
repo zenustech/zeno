@@ -2,7 +2,7 @@
 
 
 #include <vector>
-#include <zeno2/ztd/vec.h>
+#include <zs/zeno/ztd/vec.h>
 
 
 namespace zeno2::ds {

@@ -1,5 +1,5 @@
-#include <zeno2/GL/Camera.h>
-#include <zeno2/GL/Shader.h>
+#include <zs/editor/GL/Camera.h>
+#include <zs/editor/GL/Shader.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>

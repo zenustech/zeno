@@ -1,5 +1,5 @@
-#include <zeno2/UI/CursorState.h>
-#include <zeno2/UI/UiMainWindow.h>
+#include <zs/editor/UI/CursorState.h>
+#include <zs/editor/UI/UiMainWindow.h>
 
 #if defined(__linux__)
 #include <unistd.h>

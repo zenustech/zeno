@@ -1,4 +1,4 @@
-#include <zeno2/UI/GraphicsRectItem.h>
+#include <zs/editor/UI/GraphicsRectItem.h>
 
 
 namespace zeno2::UI {

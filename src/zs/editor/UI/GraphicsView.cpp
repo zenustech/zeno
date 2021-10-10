@@ -1,4 +1,4 @@
-#include <zeno2/UI/GraphicsView.h>
+#include <zs/editor/UI/GraphicsView.h>
 
 
 namespace zeno2::UI {

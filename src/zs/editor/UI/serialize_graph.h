@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zeno2/dop/Graph.h>
-#include <zeno2/UI/UiDopGraph.h>
+#include <zs/zeno/dop/Graph.h>
+#include <zs/editor/UI/UiDopGraph.h>
 #include <rapidjson/document.h>
 
 

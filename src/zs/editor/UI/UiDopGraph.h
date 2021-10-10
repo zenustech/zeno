@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include <zeno2/UI/UiDopNode.h>
-#include <zeno2/UI/UiDopLink.h>
-#include <zeno2/UI/GraphicsView.h>
-#include <zeno2/UI/UiDopContextMenu.h>
-#include <zeno2/UI/UiDopSocket.h>
+#include <zs/editor/UI/UiDopNode.h>
+#include <zs/editor/UI/UiDopLink.h>
+#include <zs/editor/UI/GraphicsView.h>
+#include <zs/editor/UI/UiDopContextMenu.h>
+#include <zs/editor/UI/UiDopSocket.h>
 
 
 namespace zeno2::UI {

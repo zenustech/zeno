@@ -1,13 +1,13 @@
 #include "zeno.h"
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno2/dop/execute.h>
+#include <zs/zeno/dop/execute.h>
 
 
 namespace zeno {
 
 
-void defNodeClass(std::function<std::unique_ptr<zeno2::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<zs/zeno::dop::Node>()> func,
         std::string const &name, Descriptor const &desc) {
     zeno2::dop::Descriptor nd;
     nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";

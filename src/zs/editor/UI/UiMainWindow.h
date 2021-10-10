@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include <zeno2/UI/UiDopScene.h>
-#include <zeno2/UI/UiVisViewport.h>
-#include <zeno2/UI/TabPanel.h>
+#include <zs/editor/UI/UiDopScene.h>
+#include <zs/editor/UI/UiVisViewport.h>
+#include <zs/editor/UI/TabPanel.h>
 
 
 namespace zeno2::UI {

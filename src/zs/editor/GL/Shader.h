@@ -4,7 +4,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
-#include <zeno2/GL/utils.h>
+#include <zs/editor/GL/utils.h>
 
 
 namespace zeno2::GL {

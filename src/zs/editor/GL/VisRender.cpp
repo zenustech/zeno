@@ -1,6 +1,6 @@
-#include <zeno2/GL/VisRender.h>
-#include <zeno2/GL/Shader.h>
-#include <zeno2/ds/Mesh.h>
+#include <zs/editor/GL/VisRender.h>
+#include <zs/editor/GL/Shader.h>
+#include <zs/zeno/ds/Mesh.h>
 
 
 namespace zeno2::GL {

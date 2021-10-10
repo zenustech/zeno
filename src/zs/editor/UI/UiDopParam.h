@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <zeno2/UI/Label.h>
-#include <zeno2/UI/TextEdit.h>
-#include <zeno2/UI/UiDopSocket.h>
-#include <zeno2/UI/Font.h>
+#include <zs/editor/UI/Label.h>
+#include <zs/editor/UI/TextEdit.h>
+#include <zs/editor/UI/UiDopSocket.h>
+#include <zs/editor/UI/Font.h>
 
 
 namespace zeno2::UI {

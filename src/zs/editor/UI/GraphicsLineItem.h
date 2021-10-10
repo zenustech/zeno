@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zeno2/UI/GraphicsWidget.h>
-#include <zeno2/UI/Color.h>
+#include <zs/editor/UI/GraphicsWidget.h>
+#include <zs/editor/UI/Color.h>
 
 
 namespace zeno2::UI {

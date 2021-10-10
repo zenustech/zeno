@@ -1,5 +1,5 @@
-#include <zeno2/UI/UiDopParam.h>
-#include <zeno2/UI/UiDopSocket.h>
+#include <zs/editor/UI/UiDopParam.h>
+#include <zs/editor/UI/UiDopSocket.h>
 
 
 namespace zeno2::UI {

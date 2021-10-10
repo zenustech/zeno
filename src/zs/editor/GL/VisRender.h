@@ -2,8 +2,8 @@
 
 
 #include <memory>
-#include <zeno2/ztd/zany.h>
-#include <zeno2/GL/Camera.h>
+#include <zs/zeno/ztd/zany.h>
+#include <zs/editor/GL/Camera.h>
 
 
 namespace zeno2::GL {

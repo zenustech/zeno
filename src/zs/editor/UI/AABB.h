@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno2/UI/Point.h>
+#include <zs/editor/UI/Point.h>
 
 
 namespace zeno2::UI {

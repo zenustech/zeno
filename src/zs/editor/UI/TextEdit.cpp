@@ -1,4 +1,4 @@
-#include <zeno2/UI/TextEdit.h>
+#include <zs/editor/UI/TextEdit.h>
 
 
 namespace zeno2::UI {

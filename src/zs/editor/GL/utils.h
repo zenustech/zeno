@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zeno2/ztd/error.h>
-#include <zeno2/GL/opengl.h>
+#include <zs/zeno/ztd/error.h>
+#include <zs/editor/GL/opengl.h>
 #include <vector>
 #include <cstdio>
 

@@ -1,7 +1,7 @@
-#include <zeno2/UI/UiVisViewport.h>
-#include <zeno2/UI/UiMainWindow.h>
-#include <zeno2/GL/VisRender.h>
-#include <zeno2/ds/Mesh.h>
+#include <zs/editor/UI/UiVisViewport.h>
+#include <zs/editor/UI/UiMainWindow.h>
+#include <zs/editor/GL/VisRender.h>
+#include <zs/zeno/ds/Mesh.h>
 
 
 namespace zeno2::UI {
