@@ -1,4 +1,4 @@
-add_library(zs.legacy STATIC)
+add_library(zs.legacy OBJECT)
 target_link_libraries(zs.legacy PUBLIC spdlog)
 target_link_libraries(zs.legacy PUBLIC zs.ztd)
 

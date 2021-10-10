@@ -1,4 +1,4 @@
-add_library(zs.zeno STATIC)
+add_library(zs.zeno OBJECT)
 target_link_libraries(zs.zeno PUBLIC spdlog)
 target_link_libraries(zs.zeno PUBLIC zs.ztd)
 

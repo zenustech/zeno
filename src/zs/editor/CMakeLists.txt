@@ -1,4 +1,4 @@
-add_library(zs.editor STATIC)
+add_library(zs.editor OBJECT)
 target_link_libraries(zs.editor PUBLIC glad glfw ftgl glm spdlog)
 target_link_libraries(zs.editor PUBLIC tinyfiledialogs rapidjson)
 target_link_libraries(zs.editor PUBLIC zs.ztd zs.zeno zs.assets)
