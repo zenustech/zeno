@@ -11,7 +11,7 @@ namespace zeno2::UI {
 using namespace rapidjson;
 
 
-Value dump_string(std::string const &s) {
+static Value dump_string(std::string const &s) {
     Value v(kStringType);
     v.SetString(s.data(), s.size());
     return v;
@@ -20,62 +20,69 @@ Value dump_string(std::string const &s) {
 
 std::string UiDopGraph::serialize_graph() {
     Document doc(kObjectType);
-    doc.AddMember("version", dump_string("v2.0"), doc.GetAllocator());
+    auto &alloc = doc.GetAllocator();
+    doc.AddMember("version", dump_string("v2.0"), alloc);
+
+    Value v_view(kObjectType);
+    v_view.AddMember("scale", Value().SetFloat(GraphicsView::scaling), alloc);
+    v_view.AddMember("x", Value().SetFloat(GraphicsView::translate.x), alloc);
+    v_view.AddMember("y", Value().SetFloat(GraphicsView::translate.y), alloc);
+    doc.AddMember("view", v_view, alloc);
 
     Value v_nodes(kArrayType);
     for (auto const &[_, node]: nodes) {
         Value v_node(kObjectType);
-        v_node.AddMember("name", dump_string(node->name), doc.GetAllocator());
-        v_node.AddMember("kind", dump_string(node->kind), doc.GetAllocator());
-        v_node.AddMember("xpos", Value().SetFloat(node->position.x), doc.GetAllocator());
-        v_node.AddMember("ypos", Value().SetFloat(node->position.y), doc.GetAllocator());
+        v_node.AddMember("name", dump_string(node->name), alloc);
+        v_node.AddMember("kind", dump_string(node->kind), alloc);
+        v_node.AddMember("xpos", Value().SetFloat(node->position.x), alloc);
+        v_node.AddMember("ypos", Value().SetFloat(node->position.y), alloc);
 
         Value v_inputs(kArrayType);
         for (int i = 0; i < node->inputs.size(); i++) {
             auto *socket = node->inputs[i];
             Value v_socket(kObjectType);
-            v_socket.AddMember("name", dump_string(socket->name), doc.GetAllocator());
-            v_socket.AddMember("value", dump_string(socket->value), doc.GetAllocator());
-            v_inputs.PushBack(v_socket, doc.GetAllocator());
+            v_socket.AddMember("name", dump_string(socket->name), alloc);
+            v_socket.AddMember("value", dump_string(socket->value), alloc);
+            v_inputs.PushBack(v_socket, alloc);
         }
-        v_node.AddMember("inputs", v_inputs, doc.GetAllocator());
+        v_node.AddMember("inputs", v_inputs, alloc);
 
         Value v_outputs(kArrayType);
         for (int i = 0; i < node->inputs.size(); i++) {
             auto *socket = node->inputs[i];
             Value v_socket(kObjectType);
-            v_socket.AddMember("name", dump_string(socket->name), doc.GetAllocator());
-            v_outputs.PushBack(v_socket, doc.GetAllocator());
+            v_socket.AddMember("name", dump_string(socket->name), alloc);
+            v_outputs.PushBack(v_socket, alloc);
         }
-        v_node.AddMember("outputs", v_outputs, doc.GetAllocator());
+        v_node.AddMember("outputs", v_outputs, alloc);
 
-        v_nodes.PushBack(v_node, doc.GetAllocator());
+        v_nodes.PushBack(v_node, alloc);
     }
-    doc.AddMember("nodes", v_nodes, doc.GetAllocator());
+    doc.AddMember("nodes", v_nodes, alloc);
 
     Value v_links(kArrayType);
     for (auto const &link: links) {
         Value v_link(kObjectType);
 
         auto from_node = link->from_socket->get_parent();
-        v_link.AddMember("from_node", dump_string(from_node->name), doc.GetAllocator());
+        v_link.AddMember("from_node", dump_string(from_node->name), alloc);
         for (int i = 0; i < from_node->outputs.size(); i++) {
             if (from_node->outputs[i] == link->from_socket) {
-                v_link.AddMember("from_socket", Value().SetInt(i), doc.GetAllocator());
+                v_link.AddMember("from_socket", Value().SetInt(i), alloc);
                 break;
             }
         }
 
         auto to_node = link->to_socket->get_parent();
-        v_link.AddMember("to_node", dump_string(to_node->name), doc.GetAllocator());
+        v_link.AddMember("to_node", dump_string(to_node->name), alloc);
         for (int i = 0; i < to_node->inputs.size(); i++) {
             if (to_node->inputs[i] == link->to_socket) {
-                v_link.AddMember("to_socket", Value().SetInt(i), doc.GetAllocator());
+                v_link.AddMember("to_socket", Value().SetInt(i), alloc);
                 break;
             }
         }
 
-        v_links.PushBack(v_link, doc.GetAllocator());
+        v_links.PushBack(v_link, alloc);
     }
 
     StringBuffer buffer;
