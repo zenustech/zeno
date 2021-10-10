@@ -137,7 +137,7 @@ UiDopGraph::UiDopGraph() {
         rapidjson::Writer writer(buffer);
         doc.Accept(writer);
         std::string json = buffer.GetString();
-        SPDLOG_INFO("JSON: {}", json);
+        SPDLOG_INFO("dumped graph to JSON: {}", json);
         glfwSetClipboardString(cur.window, json.c_str());
     });
 
@@ -147,10 +147,14 @@ UiDopGraph::UiDopGraph() {
     load_btn->on_clicked.connect([this] () {
         auto json = glfwGetClipboardString(cur.window);
         if (!json) return;
-        SPDLOG_INFO("JSON: {}", json);
+        SPDLOG_INFO("loading graph from JSON: {}", json);
         rapidjson::Document doc;
         doc.Parse(json);
-        RAPIDJSON_ASSERT(1);
+        [[unlikely]] if (
+            auto version = ZENO2_ZTD_ASSERT(doc.FindMember("version"), != doc.MemberEnd()
+                                           )->value.GetString(); std::strcmp("v2", version)) {
+            SPDLOG_WARN("found incompatible version: {} != v2", version);
+        }
         auto const &v_graph = ZENO2_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd())->value;
         deserialize(this, v_graph);
     });
