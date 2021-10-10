@@ -33,6 +33,14 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
 }
 
 
+void UiDopGraph::reset_graph() {
+    for (auto const &[_, node]: std::map(nodes)) {
+        remove_node(node);
+    }
+    //remove_all_children();
+}
+
+
 bool UiDopGraph::remove_node(UiDopNode *node) {
     for (auto *socket: node->inputs) {
         for (auto *link: std::set(socket->links)) {

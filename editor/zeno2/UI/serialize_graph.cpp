@@ -21,8 +21,8 @@ rapidjson::Value serialize(UiDopGraph const *graph, rapidjson::Document::Allocat
 
     Value v_view(kObjectType);
     v_view.AddMember("scale", Value().SetFloat(graph->scaling), alloc);
-    v_view.AddMember("x", Value().SetFloat(graph->translate.x), alloc);
-    v_view.AddMember("y", Value().SetFloat(graph->translate.y), alloc);
+    v_view.AddMember("xoffs", Value().SetFloat(graph->translate.x), alloc);
+    v_view.AddMember("yoffs", Value().SetFloat(graph->translate.y), alloc);
     v_graph.AddMember("view", v_view, alloc);
 
     Value v_nodes(kArrayType);
@@ -96,7 +96,12 @@ auto const &load_member(Doc &&doc, const char *name) {
 
 
 void deserialize(UiDopGraph *graph, rapidjson::Value const &v_graph) {
-    graph->nodes.clear();
+    graph->reset_graph();
+    auto v_view = load_member(v_graph, "view").GetObject();
+    graph->scaling = load_member(v_view, "scale").GetFloat();
+    graph->translate.x = load_member(v_view, "xoffs").GetFloat();
+    graph->translate.y = load_member(v_view, "yoffs").GetFloat();
+
     auto v_nodes = load_member(v_graph, "nodes").GetArray();
     for (auto const &_: v_nodes) {
         auto v_node = _.GetObject();
@@ -105,7 +110,7 @@ void deserialize(UiDopGraph *graph, rapidjson::Value const &v_graph) {
         node->kind = load_member(v_node, "kind").GetString();
         node->name = load_member(v_node, "name").GetString();
         node->position.x = load_member(v_node, "xpos").GetFloat();
-        node->position.y = load_member(v_node, "xpos").GetFloat();
+        node->position.y = load_member(v_node, "ypos").GetFloat();
 
         auto v_inputs = load_member(v_node, "inputs").GetArray();
         for (auto const &_: v_inputs) {
