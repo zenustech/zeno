@@ -8,7 +8,6 @@
 #include <rapidjson/stringbuffer.h>
 #include <zeno2/ztd/assert.h>
 #include <zeno2/dop/dop.h>
-#include <tinyfiledialogs.h>
 
 
 namespace zeno2::UI {
@@ -147,7 +146,6 @@ UiDopGraph::UiDopGraph() {
     load_btn->text = "Load";
     load_btn->on_clicked.connect([this] () {
         auto json = glfwGetClipboardString(cur.window);
-        ::tinyfd_messageBox("title", "message", "ok", "info", 1);
         if (!json) return;
         SPDLOG_INFO("JSON: {}", json);
         rapidjson::Document doc;

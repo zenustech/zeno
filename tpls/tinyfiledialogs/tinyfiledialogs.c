@@ -92,6 +92,12 @@ Thanks for contributions, bug corrections & thorough testing to:
 
 #include "tinyfiledialogs.h"
 
+#ifdef	__cplusplus
+/* if tinydialogs.c is compiled as C++ code rather than C code, you may need to comment this out
+				and the corresponding closing bracket near the end of this file. */
+extern "C" {
+#endif
+
 #define MAX_PATH_OR_CMD 1024 /* _MAX_PATH or MAX_PATH */
 
 #ifndef MAX_MULTIPLE_FILES
@@ -7742,6 +7748,10 @@ tinyfd_messageBox("The selected hexcolor is",
         return 0;
 }
 */
+
+#ifdef	__cplusplus
+} /*extern "C"*/
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(default:4996)
