@@ -15,6 +15,8 @@
 #ifndef RAPIDJSON_RAPIDJSON_H_
 #define RAPIDJSON_RAPIDJSON_H_
 
+#include "tweakme.h"
+
 /*!\file rapidjson.h
     \brief common definitions and configuration
     
