@@ -68,7 +68,7 @@ struct SignalInst {
 
 struct SignalSlot {
     using Callback = std::function<void()>;
-    std::shared_ptr<std::list<Callback>> callbacks;
+    std::shared_ptr<std::list<Callback>> callbacks = std::make_shared<std::list<Callback>>();
 
     void operator()() const {
         for (auto const &func: *callbacks) {
