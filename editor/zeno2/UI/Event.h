@@ -44,9 +44,30 @@ using Event = std::variant
     >;
 
 
-struct SignalSlot {
+struct SignalInst {
     using Callback = std::function<void()>;
     std::vector<Callback> callbacks;
+
+    SignalInst(SignalObject const &) = delete;
+    SignalInst &operator=(SignalObject const &) = delete;
+    SignalInst(SignalObject &&) = default;
+    SignalInst &operator=(SignalObject &&) = default;
+
+    ~SignalInst() {
+        for (auto const &func: callbacks) {
+            func();
+        }
+    }
+
+    void connect(Callback &&f) {
+        callbacks.push_back(std::move(f));
+    }
+};
+
+
+struct SignalSlot {
+    using Callback = std::function<void()>;
+    std::list<Callback> callbacks;
 
     void operator()() const {
         for (auto const &func: callbacks) {
@@ -55,7 +76,14 @@ struct SignalSlot {
     }
 
     void connect(Callback &&f) {
-        callbacks.push_back(std::move(f));
+        auto it = callbacks.insert(std::move(f));
+    }
+
+    void connect(Callback &&f, SignalInst &inst) {
+        auto it = callbacks.insert(std::move(f));
+        inst.connect([=] () {
+            callbacks.erase(it);
+        });
     }
 };
 
