@@ -34,8 +34,8 @@ void GraphicsView::on_event(Event_Motion e) {
         for (auto const &child: children_selected) {
             if (child->draggable) {
                 child->position = {
-                    child->position.x + cur.dx,
-                    child->position.y + cur.dy,
+                    child->position.x + cur.dx / scaling,
+                    child->position.y + cur.dy / scaling,
                 };
             }
         }
