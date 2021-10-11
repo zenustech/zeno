@@ -1,10 +1,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <zs/zeno/ztd/vec.h>
-#include <zs/zeno/ztd/type_info.h>
+#include <zs/ztd/vec.h>
+#include <zs/ztd/type_info.h>
 
-namespace zeno2::ztd::mathvec {
+namespace zs::ztd::mathvec {
 
 template <size_t N, class T, class Stream>
     requires (ztd::tuple_contains<Stream, std::tuple<std::stringstream, std::ostream>>::value)

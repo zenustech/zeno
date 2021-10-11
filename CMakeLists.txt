@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -10,7 +10,7 @@ set(BUILD_SHARED_LIBS OFF)
 
 project(zeno LANGUAGES C CXX)
 
+add_subdirectory(tpls)
 add_subdirectory(src)
 add_subdirectory(main)
 add_subdirectory(tests)
-add_subdirectory(tpls)
