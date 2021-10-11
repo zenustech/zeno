@@ -18,5 +18,4 @@ foreach (file ${files})
     make_include_asset(${file} ${header_dir}/${name}.inl)
 endforeach()
 
-add_library(zs.assets INTERFACE)
-target_include_directories(zs.assets INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(zs PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)

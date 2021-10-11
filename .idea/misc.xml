@@ -2,9 +2,15 @@
 <project version="4">
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
+    <libraryRoots>
+      <file path="$PROJECT_DIR$/src/zs/tpls" />
+    </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/POC" />
+      <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/docs" />
       <file path="$PROJECT_DIR$/models" />
+      <file path="$PROJECT_DIR$/projects" />
     </excludeRoots>
   </component>
 </project>

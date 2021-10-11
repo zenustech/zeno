@@ -1,4 +1,4 @@
-x=concepttest
+x=pimpl
 
 x: $x.exe Makefile
 	./$<

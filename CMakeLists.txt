@@ -11,3 +11,6 @@ set(BUILD_SHARED_LIBS OFF)
 project(zeno LANGUAGES C CXX)
 
 add_subdirectory(src)
+add_subdirectory(main)
+add_subdirectory(tests)
+add_subdirectory(tpls)
