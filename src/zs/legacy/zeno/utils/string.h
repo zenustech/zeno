@@ -1,13 +1,13 @@
 #pragma once
 
-#include <zeno2/ztd/string.h>
+#include <zs/ztd/string.h>
 
 
 namespace zeno {
 
-using zeno2::ztd::split_str;
-using zeno2::ztd::join_str;
-using zeno2::ztd::trim_string;
-using zeno2::ztd::starts_with;
+using zs::ztd::split_str;
+using zs::ztd::join_str;
+using zs::ztd::trim_string;
+using zs::ztd::starts_with;
 
 }

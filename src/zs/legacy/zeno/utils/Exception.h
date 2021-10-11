@@ -1,10 +1,10 @@
 #pragma once
 
-#include <zeno2/ztd/error.h>
+#include <zs/ztd/error.h>
 
 
 namespace zeno {
 
-using Exception = zeno2::ztd::error;
+using Exception = zs::ztd::error;
 
 }
