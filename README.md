@@ -51,7 +51,7 @@ If you find the binary version didn't worked properly or some error message has 
 
 To build ZENO, you need:
 
-- GCC 11+ or MSVC 19.28+, and CMake 3.20+ to build ZENO.
+- GCC 11+ or MSVC 19.28+, and CMake 3.18+ to build ZENO.
 - (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
