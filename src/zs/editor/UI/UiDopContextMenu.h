@@ -10,16 +10,16 @@ namespace zs::editor::UI {
 
 
 struct UiDopContextMenu : Widget {
-    static constexpr float EH = 32.f, EW = 210.f, FH = 20.f;
-
     std::vector<Button *> entries;
     std::string selection;
+    float scroll = 0;
 
     SignalSlot on_selected;
 
     UiDopContextMenu();
-    Button *add_entry(std::string name);
+    Button *add_entry(std::string const &name);
     void update_entries();
+    void on_event(Event_Scroll e) override;
 };
 
 
