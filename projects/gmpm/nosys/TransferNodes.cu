@@ -41,19 +41,22 @@ struct P2G : zeno::INode {
 
     for (auto &&parObjPtr : parObjPtrs) {
       auto &particles = parObjPtr->get();
-      zs::match([&](const auto &constitutiveModel, auto &obj, auto &partition,
-                    auto &grid)
-                    -> std::enable_if_t<
-                        zs::remove_cvref_t<decltype(obj)>::dim ==
-                            zs::remove_cvref_t<decltype(partition)>::dim &&
-                        zs::remove_cvref_t<decltype(obj)>::dim ==
-                            zs::remove_cvref_t<decltype(grid)>::dim> {
-        cudaPol({obj.size()},
-                zs::P2GTransfer{zs::wrapv<zs::execspace_e::cuda>{},
-                                zs::wrapv<zs::transfer_scheme_e::apic>{},
-                                stepDt, constitutiveModel, obj, partition,
-                                grid});
-      })(parObjPtr->model, particles, partition, grid);
+      zs::match(
+          [&](const auto &constitutiveModel, auto &obj, auto &partition,
+              auto &grid)
+              -> std::enable_if_t<
+                  zs::remove_cvref_t<decltype(obj)>::dim ==
+                      zs::remove_cvref_t<decltype(partition)>::dim &&
+                  zs::remove_cvref_t<decltype(obj)>::dim ==
+                      zs::remove_cvref_t<decltype(grid)>::dim> {
+            cudaPol({obj.size()},
+                    zs::P2GTransfer{zs::wrapv<zs::execspace_e::cuda>{},
+                                    zs::wrapv<zs::transfer_scheme_e::apic>{},
+                                    stepDt, constitutiveModel, obj, partition,
+                                    grid});
+          },
+          [](...) { throw std::runtime_error("not implemented!"); })(
+          parObjPtr->model, particles, partition, grid);
     }
     fmt::print(fg(fmt::color::cyan), "done executing P2G\n");
   }
@@ -94,20 +97,23 @@ struct G2P : zeno::INode {
     auto cudaPol = zs::cuda_exec().device(0);
     for (auto &&parObjPtr : parObjPtrs) {
       auto &particles = parObjPtr->get();
-      zs::match([&](const auto &constitutiveModel, auto &grid, auto &partition,
-                    auto &obj)
-                    -> std::enable_if_t<
-                        zs::remove_cvref_t<decltype(obj)>::dim ==
-                            zs::remove_cvref_t<decltype(partition)>::dim &&
-                        zs::remove_cvref_t<decltype(obj)>::dim ==
-                            zs::remove_cvref_t<decltype(grid)>::dim> {
-        // fmt::print("{} particles g2p\n", obj.size());
-        cudaPol({obj.size()},
-                zs::G2PTransfer{zs::wrapv<zs::execspace_e::cuda>{},
-                                zs::wrapv<zs::transfer_scheme_e::apic>{},
-                                stepDt, constitutiveModel, grid, partition,
-                                obj});
-      })(parObjPtr->model, grid, partition, particles);
+      zs::match(
+          [&](const auto &constitutiveModel, auto &grid, auto &partition,
+              auto &obj)
+              -> std::enable_if_t<
+                  zs::remove_cvref_t<decltype(obj)>::dim ==
+                      zs::remove_cvref_t<decltype(partition)>::dim &&
+                  zs::remove_cvref_t<decltype(obj)>::dim ==
+                      zs::remove_cvref_t<decltype(grid)>::dim> {
+            // fmt::print("{} particles g2p\n", obj.size());
+            cudaPol({obj.size()},
+                    zs::G2PTransfer{zs::wrapv<zs::execspace_e::cuda>{},
+                                    zs::wrapv<zs::transfer_scheme_e::apic>{},
+                                    stepDt, constitutiveModel, grid, partition,
+                                    obj});
+          },
+          [](...) { throw std::runtime_error("not implemented!"); })(
+          parObjPtr->model, grid, partition, particles);
     }
     fmt::print(fg(fmt::color::cyan), "done executing G2P\n");
   }

@@ -50,16 +50,28 @@ struct ToZensimParticles : zeno::INode {
             for (auto &&m : res.attrScalar("mass"))
               m = mass;
             for (auto &&[dst, src] :
-                 zs::zip(res.attrVector("pos"), inParticles->pos))
-              dst = TV{src[0], src[1], src[2]};
+                 zs::zip(res.attrVector("pos"), inParticles->pos)) {
+              if constexpr (TV::extent == 3)
+                dst = TV{src[0], src[1], src[2]};
+              else
+                throw std::runtime_error("not implemented");
+            }
             for (auto &&[dst, src] :
-                 zs::zip(res.attrVector("vel"), inParticles->vel))
-              dst = TV{src[0], src[1], src[2]};
+                 zs::zip(res.attrVector("vel"), inParticles->vel)) {
+              if constexpr (TV::extent == 3)
+                dst = TV{src[0], src[1], src[2]};
+              else
+                throw std::runtime_error("not implemented");
+            }
             for (auto &&c : res.attrMatrix("C"))
-              c = TM{0, 0, 0, 0, 0, 0, 0, 0, 0};
+              c = TM::zeros();
             if (hasF)
-              for (auto &&f : res.attrMatrix("F"))
-                f = TM{1, 0, 0, 0, 1, 0, 0, 0, 1};
+              for (auto &&f : res.attrMatrix("F")) {
+                if constexpr (TV::extent == 3) {
+                  f = TM{1, 0, 0, 0, 1, 0, 0, 0, 1};
+                } else
+                  throw std::runtime_error("not implemented");
+              }
             else
               for (auto &&j : res.attrScalar("J"))
                 j = 1.f;
