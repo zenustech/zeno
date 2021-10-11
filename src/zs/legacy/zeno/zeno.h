@@ -176,7 +176,7 @@ struct Descriptor {
   std::vector<std::string> categories;
 };
 
-void defNodeClass(std::function<std::unique_ptr<zs/zeno::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<zs::zeno::dop::Node>()> func,
         std::string const &name, Descriptor const &desc);
 
 template <class T>

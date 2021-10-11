@@ -7,7 +7,7 @@
 namespace zeno {
 
 
-void defNodeClass(std::function<std::unique_ptr<zs/zeno::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<zs::zeno::dop::Node>()> func,
         std::string const &name, Descriptor const &desc) {
     zs::zeno::dop::Descriptor nd;
     nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";
