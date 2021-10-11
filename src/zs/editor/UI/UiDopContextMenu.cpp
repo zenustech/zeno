@@ -4,7 +4,7 @@
 namespace zs::editor::UI {
 
 
-static constexpr float EH = 32.f, EW = 210.f, FH = 20.f, VS = 16.0f;
+static constexpr float EH = 32.f, EW = 280.f, FH = 20.f, VS = 16.0f;
 
 
 
