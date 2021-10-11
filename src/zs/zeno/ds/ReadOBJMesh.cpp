@@ -102,7 +102,7 @@ struct ReadOBJMesh : dop::Node {
     }
 };
 
-ZENO2_DOP_DEFINE(ReadOBJMesh, {{
+ZS_DOP_DEFINE(ReadOBJMesh, {{
     "mesh", "load mesh from .obj file",
 }, {
     {"path"},

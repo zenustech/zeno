@@ -151,11 +151,11 @@ UiDopGraph::UiDopGraph() {
         rapidjson::Document doc;
         doc.Parse(json);
         [[unlikely]] if (
-            auto version = ZENO2_ZTD_ASSERT(doc.FindMember("version"), != doc.MemberEnd()
+            auto version = ZS_ZTD_ASSERT(doc.FindMember("version"), != doc.MemberEnd()
                                            )->value.GetString(); std::strcmp("v2", version)) {
             SPDLOG_WARN("found incompatible version: {} != v2", version);
         }
-        auto const &v_graph = ZENO2_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd())->value;
+        auto const &v_graph = ZS_ZTD_ASSERT(doc.FindMember("graph"), != doc.MemberEnd())->value;
         deserialize(this, v_graph);
     }, this);
 }

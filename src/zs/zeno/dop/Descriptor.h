@@ -46,7 +46,7 @@ int define(std::string const &kind, Descriptor desc) {
 }
 
 
-#define ZENO2_DOP_DEFINE(T, ...) static int def##T = ::zs::zeno::dop::define<T>(#T, __VA_ARGS__)
+#define ZS_DOP_DEFINE(T, ...) static int def##T = ::zs::zeno::dop::define<T>(#T, __VA_ARGS__)
 
 
 }
