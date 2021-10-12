@@ -14,11 +14,18 @@ struct ZenoFEMMesh : zeno::IObject {
   using allocator_type = zs::ZSPmrAllocator<>;
 
   using vec3 = zs::vec<value_type, 3>;
+  using vec3i = zs::vec<int, 3>;
+  using vec4i = zs::vec<int, 4>;
   using mat3 = zs::vec<value_type, 3, 3>;
   using mat4 = zs::vec<value_type, 4, 4>;
   using mat_9_12 = zs::vec<value_type, 9, 12>;
 
   std::shared_ptr<zeno::PrimitiveObject> _mesh;
+
+  /// counterparts to primitive object
+  zs::Vector<vec3> _X;
+  zs::Vector<vec4i> _tets;
+  zs::Vector<vec3i> _tris;
 
   zs::Vector<int> _bouDoFs;
   zs::Vector<int> _freeDoFs;
@@ -53,7 +60,8 @@ struct ZenoFEMMesh : zeno::IObject {
   }
 
   ZenoFEMMesh(const allocator_type &allocator)
-      : _bouDoFs{allocator, 0}, _freeDoFs{allocator, 0},
+      : _X{allocator, 0}, _tets{allocator, 0}, _tris{allocator, 0},
+        _bouDoFs{allocator, 0}, _freeDoFs{allocator, 0},
         _DoF2FreeDoF{allocator, 0}, _elmMass{allocator, 0},
         _elmVolume{allocator, 0}, _elmdFdx{allocator, 0}, _elmMinv{allocator,
                                                                    0},
@@ -69,6 +77,9 @@ struct ZenoFEMMesh : zeno::IObject {
       return;
     auto newAllocator = _bouDoFs.get_default_allocator(mre, devid);
 
+    _X = _X.clone(newAllocator);
+    _tets = _tets.clone(newAllocator);
+    _tris = _tris.clone(newAllocator);
     _bouDoFs = _bouDoFs.clone(newAllocator);
     _freeDoFs = _freeDoFs.clone(newAllocator);
     _DoF2FreeDoF = _DoF2FreeDoF.clone(newAllocator);
@@ -156,6 +167,15 @@ struct ZenoFEMMesh : zeno::IObject {
           node_fin >> pos[vert_id][i];
       }
       node_fin.close();
+
+      _X.resize(num_vertices);
+#if 0
+      for (auto &&[dst, src] : zs::zip(_X, pos))
+        dst = vec3{src[0], src[1], src[2]};
+#else
+      memcpy(_X.data(), pos.data(), sizeof(vec3) * num_vertices);
+#endif
+
     } catch (std::exception &e) {
       std::cerr << e.what() << std::endl;
     }
@@ -183,6 +203,32 @@ struct ZenoFEMMesh : zeno::IObject {
         }
       }
       ele_fin.close();
+
+      _tets.resize(nm_elms);
+#if 0
+      for (auto &&[dst, src] : zs::zip(_tets, quads))
+        dst = vec4i{src[0], src[1], src[2], src[3]};
+#else
+      memcpy(_tets.data(), quads.data(), sizeof(vec4i) * nm_elms);
+#endif
+
+      for (size_t i = 0; i != nm_elms; ++i) {
+        auto tet = _mesh->quads[i];
+        _mesh->tris.emplace_back(tet[0], tet[1], tet[2]);
+        _mesh->tris.emplace_back(tet[1], tet[3], tet[2]);
+        _mesh->tris.emplace_back(tet[0], tet[2], tet[3]);
+        _mesh->tris.emplace_back(tet[0], tet[3], tet[1]);
+      }
+
+      _tris.resize(_mesh->tris.size());
+#if 0
+      for (auto &&[dst, src] : zs::zip(_tris, _mesh->tris))
+        dst = vec3i{src[0], src[1], src[2]};
+#else
+      memcpy(_tris.data(), _mesh->tris.data(),
+             sizeof(typename ZenoFEMMesh::vec3i) * _tris.size());
+#endif
+
     } catch (std::exception &e) {
       std::cerr << e.what() << std::endl;
     }
