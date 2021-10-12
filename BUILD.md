@@ -13,8 +13,9 @@ Git >= 2.0 && CMake >= 3.18 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Wi
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
 3. Download and install Visual Studio 2019 Community Edition (which is free): https://visualstudio.microsoft.com/zh-hans/downloads/
 
-> Note that we install Visual Studio **only to get the compiler bundled with it**.
-> So feel free to use your favorite editor like VSCode, CLion, Vim, other than Visual Studio.
+> Note that we install Visual Studio **only to get the compiler bundled with it**. feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
+
+> It's recommended to install in trivial locations, like `C:/Programs Files (x86)/xxx` or `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
 * Linux (Ubuntu)
 
@@ -45,9 +46,9 @@ vcpkg install openblas:x64-windows
 vcpkg install lapack:x64-windows
 ```
 
-> Windows users may need to **install the `English Pack` of Visual Studio** for vcpkg to work.
+> Windows users may need to **install the `English Pack` of Visual Studio** for VCPKG to work.
 
-> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+> Note that the `x64-windows` suffix **must be specified** otherwise VCPKG will install 32-bit packages by default :)
 
 * Linux (bash)
 
@@ -60,7 +61,7 @@ vcpkg install lapack:x64-windows
 ./vcpkg install lapack:x64-linux
 ```
 
-> Note that the `x64-windows` suffix **must be specified** otherwise vcpkg will install 32-bit packages by default :)
+> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
 
 ## Building Zeno from Source
 
@@ -77,9 +78,11 @@ Configure CMake:
 cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
 
-> Please replace the `[path to vcpkg]` here to the path where we previously cloned vcpkg, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced with `/` to make cmake happy.
+> Please replace the `[path to vcpkg]` here to the path where we previously cloned vcpkg, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
 
-Starts to build (CMake will automatically find your VS2019 thanks to VCPKG):
+> CLion users on Windows may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
+
+Starts to build (`8` here means using 8 CPU cores):
 
 ```bash
 cmake --build build --parallel 8
