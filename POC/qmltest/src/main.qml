@@ -33,7 +33,10 @@ ApplicationWindow {
                 id: hinter
                 width: 20
                 height: 40
-                color: "green"
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "lightsteelblue" }
+                    GradientStop { position: 1.0; color: "blue" }
+                }
             }
         }
     }
