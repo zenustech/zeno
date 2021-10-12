@@ -13,7 +13,8 @@ Git >= 2.0 && CMake >= 3.18 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Wi
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
 3. Download and install Visual Studio 2019 Community Edition (which is free): https://visualstudio.microsoft.com/zh-hans/downloads/
 
-> As we all know, Visual Studio is a compiler that bundled with an IDE :)
+> Note that we install Visual Studio **only to get the compiler bundled with it**.
+> So feel free to use your favorite editor like VSCode, CLion, Vim, other than Visual Studio.
 
 * Linux (Ubuntu)
 
@@ -89,13 +90,13 @@ cmake --build build --parallel 8
 * Windows (cmd)
 
 ```cmd
-build\main\zeno.main.exe
+build\main\zs_main.exe
 ```
 
 * Linux (bash)
 
 ```bash
-build/main/zeno.main
+build/main/zs_main
 ```
 
 ## References
