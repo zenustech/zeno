@@ -93,13 +93,13 @@ cmake --build build --parallel 8
 * Windows (cmd)
 
 ```cmd
-build\main\zs_main.exe
+build\editor\zs_editor.exe
 ```
 
 * Linux (bash)
 
 ```bash
-build/main/zs_main
+build/editor/zs_editor
 ```
 
 ## References

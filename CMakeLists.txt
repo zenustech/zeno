@@ -13,5 +13,5 @@ project(zeno LANGUAGES C CXX)
 
 add_subdirectory(tpls)
 add_subdirectory(src)
-add_subdirectory(main)
+add_subdirectory(editor)
 add_subdirectory(tests)

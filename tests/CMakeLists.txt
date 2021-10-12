@@ -1,9 +1,9 @@
 add_executable(zs_tests)
 
-target_link_libraries(zs_tests PRIVATE zs)
-
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
 target_sources(zs_tests PRIVATE ${source})
+
+target_link_libraries(zs_tests PRIVATE zs)
 
 enable_testing()
 target_link_libraries(zs_tests PRIVATE gtest_main)

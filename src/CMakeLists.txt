@@ -4,7 +4,5 @@ target_include_directories(zs PUBLIC zs/legacy)
 
 add_subdirectory(zs/ztd)
 add_subdirectory(zs/zeno)
-add_subdirectory(zs/assets)
 add_subdirectory(zs/modules)
 add_subdirectory(zs/legacy)
-add_subdirectory(zs/editor)
