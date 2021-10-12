@@ -17,7 +17,6 @@ ApplicationWindow {
         interactive: true
 
         Rectangle {
-            anchors.fill: scene
             width: 400
             height: 120
             color: "red"
