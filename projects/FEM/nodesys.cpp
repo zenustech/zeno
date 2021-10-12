@@ -291,13 +291,198 @@ struct FEMMeshToPrimitive : zeno::INode{
     }
 };
 
-
 ZENDEFNODE(FEMMeshToPrimitive, {
     {"femmesh"},
     {"primitive"},
     {},
     {"FEM"},
 });
+
+struct FiberParticleToFEMFiber : zeno::INode {
+    virtual void apply() override {
+        auto fp = get_input<zeno::PrimitiveObject>("fp");
+        auto femmesh = get_input<FEMMesh>("femMesh");
+
+        auto fiber = std::make_shared<zeno::PrimitiveObject>();
+        fiber->add_attr<float>("elmID");
+        fiber->add_attr<zeno::vec3f>("vel");
+        fiber->resize(femmesh->_mesh->quads.size()); 
+
+        const auto& tets = femmesh->_mesh->quads;  
+        const auto& mpos = femmesh->_mesh->verts;
+
+        float sigma = 2;
+
+        for(size_t elm_id = 0;elm_id < tets.size();++elm_id){
+            fiber->attr<float>("elmID")[elm_id] = float(elm_id);
+
+            auto tet = tets[elm_id];
+            auto& fpos = fiber->attr<zeno::vec3f>("pos")[elm_id];
+            for(size_t i = 0;i < 4;++i){
+                fpos += mpos[tet[i]];
+            }
+            fpos /= 4;
+
+            auto& fdir = fiber->attr<zeno::vec3f>("vel")[elm_id];
+            fdir = zeno::vec3f(0);
+            for(size_t i = 0;i < fp->size();++i){
+                const auto& ppos = fp->verts[i];
+                const auto& pdir = fp->attr<zeno::vec3f>("vel")[i];
+
+                float dissqrt = zeno::lengthSquared(fpos - ppos);
+                float weight = exp(-dissqrt / pow(sigma,2));
+
+                fdir += pdir * weight;
+            }
+
+            fdir /= zeno::length(fdir);
+        }
+
+        set_output("fiberOut",fiber);     
+    }
+};
+
+ZENDEFNODE(FiberParticleToFEMFiber, {
+    {"fp","femMesh"},
+    {"fiberOut"},
+    {},
+    {"FEM"}
+});
+
+
+struct FEMMAddFibers : zeno::INode {
+    virtual void apply() override {
+        const auto& fibers = get_input<zeno::PrimitiveObject>("fibers");
+        auto femmesh = get_input<FEMMesh>("inMesh");
+        auto fweight = get_input<zeno::NumericObject>("weight")->get<zeno::vec3f>();
+        
+        assert(fibers->size() == femmesh->_mesh->quads.size());
+
+        const auto& fposs = fibers->attr<zeno::vec3f>("pos");
+        const auto& fdirs = fibers->attr<zeno::vec3f>("vel");
+        const auto& elmIDs = fibers->attr<float>("elmID");
+
+        const auto& mtets = femmesh->_mesh->quads;
+        const auto& mverts = femmesh->_mesh->verts;
+        auto& mOrients = femmesh->_elmOrient;
+        auto& mWeights = femmesh->_elmWeight;
+
+        for(size_t elm_id = 0;elm_id < femmesh->_mesh->quads.size();++elm_id){
+            assert(elmIDs[elm_id] == elm_id);
+            mWeights[elm_id] << fweight[0],fweight[1],fweight[2];
+
+            auto dir0 = fdirs[elm_id] / zeno::length(fdirs[elm_id]);
+            auto tmp_dir = dir0;
+            tmp_dir[0] += 1;
+            auto dir1 = zeno::cross(dir0,tmp_dir);
+            dir1 /= zeno::length(dir1);
+            auto dir2 = zeno::cross(dir0,dir1);
+            dir2 /= zeno::length(dir2);
+
+            Mat3x3d orient;
+            orient.col(0) << dir0[0],dir0[1],dir0[2];
+            orient.col(1) << dir1[0],dir1[1],dir1[2];
+            orient.col(2) << dir2[0],dir2[1],dir2[2];
+
+            mOrients[elm_id] = orient;
+        }
+
+        set_output("outMesh",femmesh);
+
+    }
+};
+
+ZENDEFNODE(FEMMAddFibers, {
+    {"fibers","inMesh","weight"},
+    {"outMesh"},
+    {},
+    {"FEM"},
+});
+
+
+struct FiberToFiberSegements : zeno::INode {
+    virtual void apply() override {
+        auto fiber = get_input<zeno::PrimitiveObject>("fibers");
+        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        const auto& mpos = fiber->verts;
+        const auto& mvel = fiber->attr<zeno::vec3f>("vel");
+
+        auto fiberSeg = std::make_shared<zeno::PrimitiveObject>();
+        fiberSeg->resize(fiber->size() * 2);
+        auto& flines = fiberSeg->lines;
+        flines.resize(fiber->size());
+        auto& fpos = fiberSeg->verts;
+
+        for(size_t i = 0;i < fiber->size();++i){
+            flines[i] = zeno::vec2i(i,i + fiber->size());
+            fpos[i] = mpos[i];
+            fpos[i + fiber->size()] = fpos[i] + dt * mvel[i];
+        }
+
+        set_output("fseg",fiberSeg);
+    }
+};
+
+ZENDEFNODE(FiberToFiberSegements, {
+    {"fibers","dt"},
+    {"fseg"},
+    {},
+    {"FEM"},
+});
+
+
+struct DeformFiberWithFE : zeno::INode {
+    virtual void apply() override {
+        auto rfiber = get_input<zeno::PrimitiveObject>("restFibers");
+
+        const auto& restm = get_input<FEMMesh>("restShape");
+        const auto& deform = get_input<zeno::PrimitiveObject>("deformedShape");
+
+        const auto& elmIDs = rfiber->attr<float>("elmID");
+
+        auto dfiber = std::make_shared<zeno::PrimitiveObject>();
+        dfiber->add_attr<float>("elmID");
+        dfiber->add_attr<zeno::vec3f>("vel");
+        dfiber->resize(rfiber->size());
+        dfiber->lines = rfiber->lines;
+
+        auto& fverts = dfiber->verts;
+        auto& fdirs = dfiber->attr<zeno::vec3f>("vel"); 
+        for(size_t fid = 0;fid < dfiber->size();++fid){
+            size_t elm_id = size_t(elmIDs[fid]);
+            const auto& tet = restm->_mesh->quads[elm_id];
+            fverts[fid] = zeno::vec3f(0);
+            for(size_t i = 0;i < 4;++i){
+                fverts[fid] += deform->verts[tet[i]];
+            }
+            fverts[fid] /= 4;
+
+            // compute the deformation gradient
+            Mat4x4d G;
+            for(size_t i = 0;i < 4;++i){
+                G.col(i) << deform->verts[tet[i]][0],deform->verts[tet[i]][1],deform->verts[tet[i]][2],1.0;
+            }
+            G = G * restm->_elmMinv[elm_id];
+            auto F = G.topLeftCorner(3,3);  
+
+            auto rdir = rfiber->attr<zeno::vec3f>("vel")[fid];
+            Vec3d dir;
+            dir << rdir[0],rdir[1],rdir[2];
+            dir = F * dir;
+            fdirs[fid] = zeno::vec3f(dir[0],dir[1],dir[2]);
+        }
+
+        set_output("deformedFiber",std::move(dfiber));
+    }
+};
+
+ZENDEFNODE(DeformFiberWithFE, {
+    {"restFibers","restShape","deformedShape"},
+    {"deformedFiber"},
+    {},
+    {"FEM"},
+});
+
 
 
 struct AddMuscleFibers : zeno::INode {
@@ -365,29 +550,40 @@ struct AddMuscleFibers : zeno::INode {
 
         std::cout << "output fiber geo" << std::endl;
 
-        auto fgeo = std::make_shared<zeno::PrimitiveObject>();
-        fgeo->resize(tets.size() * 2);
+        auto fiber = std::make_shared<zeno::PrimitiveObject>();
+        fiber->add_attr<float>("elmID");
+        fiber->add_attr<zeno::vec3f>("int_weight");
+        fiber->resize(tets.size() * 2);
+
         float length = 400;
         if(has_input("length")){
             length = get_input<NumericObject>("length")->get<float>();
         }
 
-        auto& pos = fgeo->attr<zeno::vec3f>("pos");
-        auto& lines = fgeo->lines;
+        auto& pos = fiber->attr<zeno::vec3f>("pos");
+        auto& lines = fiber->lines;
+        auto& elmIDs = fiber->attr<float>("elmID");
+        auto& intWeights = fiber->attr<zeno::vec3f>("int_weight");
+
         lines.resize(tets.size());
         float dt = 0.01;
-
-        std::cout << "build geo" << std::endl;
 
         for(size_t elm_id = 0;elm_id < tets.size();++elm_id){
             pos[elm_id] = tet_pos[elm_id];
             auto pend = tet_pos[elm_id] + dt * tet_dirs[elm_id] * length;
             pos[elm_id + tets.size()] = pend;
             lines[elm_id] = zeno::vec2i(elm_id,elm_id + tets.size());
+
+            elmIDs[elm_id] = elm_id;
+            elmIDs[elm_id + tets.size()] = elm_id;
+
+            intWeights[elm_id] = zeno::vec3f(0.25,0.25,0.25);
+
+
         }
 
+        set_output("fiberGeo",fiber);
 
-        set_output("fiberGeo",fgeo);
     }
 };
 
@@ -400,7 +596,7 @@ ZENDEFNODE(AddMuscleFibers, {
 
 struct PrimitieveOut : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("pin");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
         set_output("pout",prim);
     }
 };
@@ -411,7 +607,6 @@ ZENDEFNODE(PrimitieveOut, {
     {},
     {"FEM"},
 });
-
 
 struct MakeFEMMeshFromFile : zeno::INode{
     virtual void apply() override {
@@ -501,6 +696,8 @@ ZENDEFNODE(SetUniformMuscleAnisotropicWeight, {
 });
 
 
+
+
 struct SetUniformActivation : zeno::INode {
     virtual void apply() override {
         auto mesh = get_input<FEMMesh>("inputMesh");
@@ -524,6 +721,42 @@ ZENDEFNODE(SetUniformActivation, {
     {"FEM"},
 });
 
+
+struct DeformPrimitiveWithFE : zeno::INode {
+    virtual void apply() override {
+        auto mesh = get_input<zeno::PrimitiveObject>("bindMesh");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+
+        const auto& bindElmIDs = prim->attr<float>("elmID");
+        const auto& interpWeight = prim->attr<zeno::vec3f>("interp_weight");
+
+        for(size_t i = 0;i < prim->size();++i){
+            size_t elm_id = int(bindElmIDs[i]);
+            auto& vert = prim->verts[i];
+
+            const auto& tet = mesh->quads[elm_id];
+            Vec4d weight = Vec4d(
+                interpWeight[i][0],
+                interpWeight[i][1],
+                interpWeight[i][2],
+                1 - interpWeight[i][0] - interpWeight[i][1] - interpWeight[i][2]);
+
+            prim->verts[i] = zeno::vec3f(0);
+            for(size_t j = 0;j < 4;++j){
+                const auto& int_vert = mesh->verts[tet[j]];
+                prim->verts[i] += weight[j] * int_vert;
+            }
+        }
+        set_output("primOut",std::move(prim));
+    }
+};
+
+ZENDEFNODE(DeformPrimitiveWithFE, {
+    {{"bindMesh"},{"prim"}},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
 
 struct TransformFEMMesh : zeno::INode {
     virtual void apply() override {

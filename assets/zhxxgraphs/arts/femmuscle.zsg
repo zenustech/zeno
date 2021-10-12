@@ -66,8 +66,8 @@
       "op_type": "add"
      },
      "uipos": [
-      -2159.496809914743,
-      -2213.759185509064
+      -2134.5822313270437,
+      -2252.9106661468772
      ],
      "options": []
     },
@@ -171,8 +171,8 @@
      },
      "params": {},
      "uipos": [
-      -43.69513137345962,
-      -1169.6665764275558
+      1088.0273558133283,
+      -1353.1891419173053
      ],
      "options": [
       "ONCE"
@@ -189,8 +189,8 @@
      },
      "params": {},
      "uipos": [
-      598.8954593147199,
-      -1354.795796219774
+      1964.1921207611892,
+      -1705.1570576092959
      ],
      "options": [
       "ONCE"
@@ -209,8 +209,8 @@
       "value": 1e-05
      },
      "uipos": [
-      624.9546824330907,
-      -985.8165936935585
+      1756.6771696198791,
+      -1169.3391591833079
      ],
      "options": [
       "ONCE"
@@ -226,9 +226,9 @@
       ]
      },
      "params": {
-      "x": 2.0,
-      "y": 0.717,
-      "z": 0.717
+      "x": 0.5,
+      "y": 1.414,
+      "z": 1.414
      },
      "uipos": [
       292.653794393177,
@@ -257,8 +257,8 @@
      },
      "params": {},
      "uipos": [
-      613.2591974328656,
-      -1771.9720660316761
+      760.2151698132757,
+      -1873.3076654052522
      ],
      "options": [
       "ONCE"
@@ -377,8 +377,8 @@
      },
      "params": {},
      "uipos": [
-      -1145.8203798824297,
-      -1925.0303828070455
+      -1357.1671908163705,
+      -2219.3783326931502
      ],
      "options": []
     },
@@ -398,8 +398,8 @@
      },
      "params": {},
      "uipos": [
-      -842.1562308701587,
-      -1757.8305573962134
+      -960.3225178861039,
+      -1652.4774822253705
      ],
      "options": []
     },
@@ -438,8 +438,8 @@
      },
      "params": {},
      "uipos": [
-      -2907.036493288591,
-      -2208.1249075108985
+      -2846.1959821838072,
+      -2376.4095387751354
      ],
      "options": []
     },
@@ -573,38 +573,10 @@
       "op_type": "sub"
      },
      "uipos": [
-      -1605.3014783446215,
-      -2069.096431283219
+      -1629.2194737888128,
+      -2108.959757023538
      ],
      "options": []
-    },
-    "25e79a0c-AddMuscleFibers": {
-     "name": "AddMuscleFibers",
-     "inputs": {
-      "fibers": [
-       "da725a28-VDBPointsToPrimitive",
-       "prim",
-       null
-      ],
-      "femmesh": [
-       "10f0f21f-TransformFEMMesh",
-       "outMesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -743.6257965658172,
-      -2094.623881431766
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "7d6db30c-CachedOnce": {
      "name": "CachedOnce",
@@ -622,8 +594,8 @@
      },
      "params": {},
      "uipos": [
-      360.97418311395114,
-      -2127.482539888807
+      394.5070508931723,
+      -2191.9228600188967
      ],
      "options": []
     },
@@ -631,8 +603,8 @@
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "25e79a0c-AddMuscleFibers",
-       "fiberGeo",
+       "bab941bc-FEMMAddFibers",
+       "outMesh",
        null
       ],
       "translation": [
@@ -672,7 +644,7 @@
      "name": "TransformFEMMesh",
      "inputs": {
       "inputMesh": [
-       "25e79a0c-AddMuscleFibers",
+       "bab941bc-FEMMAddFibers",
        "outMesh",
        null
       ],
@@ -694,8 +666,8 @@
      },
      "params": {},
      "uipos": [
-      -91.58277404921701,
-      -1761.7449664429523
+      -58.83789933395505,
+      -1808.7267432083283
      ],
      "options": []
     },
@@ -802,19 +774,293 @@
      },
      "params": {},
      "uipos": [
-      1769.8234227769508,
-      -1267.2623966509893
+      2835.7144748840124,
+      -1419.8054632796911
+     ],
+     "options": []
+    },
+    "02d7d93f-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.5,
+      "z": 0.5
+     },
+     "uipos": [
+      -781.605922551253,
+      -2154.3992027334853
+     ],
+     "options": []
+    },
+    "a5a2a963-PrimitiveClip": {
+     "name": "PrimitiveClip",
+     "inputs": {
+      "prim": [
+       "3ccc9cab-DoTimeStep",
+       "curentFrame",
+       null
+      ],
+      "origin": [
+       "b99609d9-NumericVec3",
+       "vec3",
+       null
+      ],
+      "direction": [
+       "6c11ad09-x",
+       "vec3",
+       null
+      ],
+      "distance": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "reverse": false
+     },
+     "uipos": [
+      3246.0136674259684,
+      -1210.136674259681
+     ],
+     "options": []
+    },
+    "b99609d9-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      2712.528473804101,
+      -1178.1321184510248
+     ],
+     "options": []
+    },
+    "6c11ad09-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": -1.0
+     },
+     "uipos": [
+      2844.646924829157,
+      -1107.972665148064
+     ],
+     "options": []
+    },
+    "4665e7c8-FiberParticleToFEMFiber": {
+     "name": "FiberParticleToFEMFiber",
+     "inputs": {
+      "fp": [
+       "da725a28-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "femMesh": [
+       "10f0f21f-TransformFEMMesh",
+       "outMesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1060.0797266514805,
+      -2480.1395216400906
+     ],
+     "options": []
+    },
+    "bab941bc-FEMMAddFibers": {
+     "name": "FEMMAddFibers",
+     "inputs": {
+      "fibers": [
+       "4665e7c8-FiberParticleToFEMFiber",
+       "fiberOut",
+       null
+      ],
+      "inMesh": [
+       "10f0f21f-TransformFEMMesh",
+       "outMesh",
+       null
+      ],
+      "weight": [
+       "02d7d93f-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -457.00455580865605,
+      -2445.1879271070616
+     ],
+     "options": []
+    },
+    "a70d79b5-FiberToFiberSegements": {
+     "name": "FiberToFiberSegements",
+     "inputs": {
+      "fibers": [
+       "4665e7c8-FiberParticleToFEMFiber",
+       "fiberOut",
+       null
+      ],
+      "dt": [
+       "144c9340-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -548.4253986332574,
+      -2664.1400911161745
+     ],
+     "options": []
+    },
+    "144c9340-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 4.0
+     },
+     "uipos": [
+      -934.9800683371298,
+      -2799.5106064920287
+     ],
+     "options": []
+    },
+    "cd6de600-DeformFiberWithFE": {
+     "name": "DeformFiberWithFE",
+     "inputs": {
+      "restFibers": [
+       "4665e7c8-FiberParticleToFEMFiber",
+       "fiberOut",
+       null
+      ],
+      "restShape": [
+       "05cbe499-SetUniformActivation",
+       "actMesh",
+       null
+      ],
+      "deformedShape": [
+       "3ccc9cab-DoTimeStep",
+       "curentFrame",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3339.5241496231674,
+      -1518.3907163441863
+     ],
+     "options": []
+    },
+    "0fd8b55c-FiberToFiberSegements": {
+     "name": "FiberToFiberSegements",
+     "inputs": {
+      "fibers": [
+       "cd6de600-DeformFiberWithFE",
+       "deformedFiber",
+       null
+      ],
+      "dt": [
+       "1fbc428f-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3733.485193621868,
+      -1515.9453302961276
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "1fbc428f-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.04
+     },
+     "uipos": [
+      3450.990888382688,
+      -1685.3804100227792
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -611.8453122924407,
-    "y": -2145.7939270471934,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": 3567.936440677638,
+    "y": -1804.857800478391,
+    "width": 320.0,
+    "height": 320.0
    }
   }
  },
@@ -2751,6 +2997,81 @@
     "FLIPSolver"
    ]
   },
+  "DeformFiberWithFE": {
+   "inputs": [
+    [
+     "",
+     "restFibers",
+     ""
+    ],
+    [
+     "",
+     "restShape",
+     ""
+    ],
+    [
+     "",
+     "deformedShape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "deformedFiber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "DeformPrimitiveWithFE": {
+   "inputs": [
+    [
+     "",
+     "bindMesh",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "DelUserData": {
    "inputs": [
     [
@@ -3481,6 +3802,46 @@
     "list"
    ]
   },
+  "FEMMAddFibers": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "inMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FEMMeshToPrimitive": {
    "inputs": [
     [
@@ -3605,6 +3966,76 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "FiberParticleToFEMFiber": {
+   "inputs": [
+    [
+     "",
+     "fp",
+     ""
+    ],
+    [
+     "",
+     "femMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fiberOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "FiberToFiberSegements": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fseg",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "FieldAddVector": {
@@ -11146,6 +11577,41 @@
     [
      "",
      "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetUniformMuscleAnisotropicWeight": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "aniMesh",
      ""
     ],
     [
