@@ -1,10 +1,10 @@
-name: CMake
+name: Intergrated Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   BUILD_TYPE: Debug
@@ -14,19 +14,20 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-20.04
-          python: 3.7
+        - os: ubuntu-latest
         - os: windows-latest
-          python: 3.9
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+    continue-on-error: true
 
-    - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.options}}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
 
     - name: Test
-      run: ${{github.workspace}}/build/zeno.tests
+      run: build/tests/zs_tests
