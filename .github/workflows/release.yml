@@ -20,7 +20,7 @@ jobs:
       with:
         draft: true
         tag_name: rel-${{ github.ref }}
-        release_name: rel-${{ github.ref }}
+        release_name: ${{ github.ref }}
         body: "(Automated Release by Github Actions)"
 
     outputs:
@@ -60,6 +60,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/citest.zip
-        asset_name: citest-${{ github.ref }}-${{ steps.packaging.outputs.arch }}.zip
+        asset_path: ${{github.workspace}}/packaged.zip
+        asset_name: zeno-${{ github.ref }}-${{ steps.packaging.outputs.arch }}.zip
         asset_content_type: application/zip
