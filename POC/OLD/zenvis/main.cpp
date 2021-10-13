@@ -4,6 +4,7 @@
 #include <Hg/FPSCounter.hpp>
 #include <sstream>
 #include <cstdlib>
+#include <cmath>
 #include <array>
 #include <stb_image_write.h>
 
@@ -20,10 +21,13 @@ static int nx = 960, ny = 800;
 static glm::vec3 bgcolor(0.23f, 0.23f, 0.23f);
 
 static double last_xpos, last_ypos;
-static glm::dvec3 center;
+static glm::vec3 center;
 
 static glm::mat4x4 view(1), proj(1);
 static float point_scale = 1.f;
+static float camera_radius = 1.f;
+static float grid_scale = 1.f;
+static float grid_blend = 0.f;
 
 void set_perspective(
     std::array<double, 16> viewArr,
@@ -37,23 +41,31 @@ void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
-  glm::dvec3 center(cx, cy, cz);
+  center = glm::vec3(cx, cy, cz);
 
   point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
 
   double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
   double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
-  glm::dvec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-  glm::dvec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+  glm::vec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+  glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
   if (ortho_mode) {
     view = glm::lookAt(center - back, center, up);
     proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
                       -100.0, 100.0);
   } else {
-    view = glm::lookAt(center - back * radius, center, up);
+    view = glm::lookAt(center - back * (float)radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0);
   }
+  camera_radius = radius;
+  float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
+  grid_scale = std::pow(5, std::floor(level));
+  auto ratio_clamp = [](float value, float lower_bound, float upper_bound) {
+      float ratio = (value - lower_bound) / (upper_bound - lower_bound);
+      return fmin(fmax(ratio, 0.0), 1.0);
+  };
+  grid_blend = ratio_clamp(level - std::floor(level), 0.8, 1.0);
 }
 
 void set_program_uniforms(Program *pro) {
@@ -68,6 +80,10 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
   pro->set_uniform("mSmoothShading", smooth_shading);
+  pro->set_uniform("mCameraRadius", camera_radius);
+  pro->set_uniform("mCameraCenter", center);
+  pro->set_uniform("mGridScale", grid_scale);
+  pro->set_uniform("mGridBlend", grid_blend);
 }
 
 static std::unique_ptr<VAO> vao;
@@ -83,8 +99,8 @@ void initialize() {
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
-  //CHECK_GL(glEnable(GL_BLEND));//??
-  //CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+  CHECK_GL(glEnable(GL_BLEND));
+  CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
   //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
@@ -103,12 +119,12 @@ static void paint_graphics(void) {
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
-  if (show_grid) {
-    grid->draw();
-    axis->draw();
-  }
   for (auto const &[key, gra]: current_frame_data()->graphics) {
     gra->draw();
+  }
+  if (show_grid) {
+      grid->draw();
+      axis->draw();
   }
   vao->unbind();
   CHECK_GL(glFlush());

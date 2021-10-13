@@ -16,7 +16,8 @@ struct OutputZensimParticles : zeno::INode {
     auto inParticles = get_input("ZensimParticles")->as<ZenoParticles>();
     auto path = std::get<std::string>(get_param("path"));
     zs::match([&path](auto &p) {
-      zs::write_partio<float, 3>(path, p.retrievePositions());
+      const auto &pos = p.retrievePositions();
+      zs::write_partio<float, std::tuple_size_v<RM_CVREF_T(pos[0])>>(path, pos);
     })(inParticles->get());
     fmt::print(fg(fmt::color::cyan), "done executing OutputZensimParticles\n");
   }
