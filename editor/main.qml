@@ -20,6 +20,13 @@ ApplicationWindow {
             console.log('doSelect', item)
         }
 
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                scene.doSelect(null)
+            }
+        }
+
         Rectangle {
             width: 400
             height: 120
