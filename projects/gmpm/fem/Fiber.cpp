@@ -1,4 +1,5 @@
 #include "../ZensimMesh.h"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
@@ -107,5 +108,62 @@ ZENDEFNODE(AddMuscleFibers, {
                                 {},
                                 {"FEM"},
                             });
+
+// _elmWeight
+struct SetUniformMuscleAnisotropicWeight : zeno::INode {
+  virtual void apply() override {
+    auto mesh = get_input<ZenoFEMMesh>("inputMesh");
+    auto uni_weight =
+        get_input<zeno::NumericObject>("weight")->get<zeno::vec3f>();
+    using vec3 = typename ZenoFEMMesh::vec3;
+    zs::omp_exec()(zs::range(mesh->_mesh->quads.size()), [&](size_t i) {
+      mesh->_elmWeight[i] = vec3{uni_weight[0], uni_weight[1], uni_weight[2]};
+    });
+    // for (size_t i = 0; i != mesh->_mesh->quads.size(); ++i)
+    //  mesh->_elmWeight[i] << uni_weight[0], uni_weight[1], uni_weight[2];
+    set_output("aniMesh", mesh);
+  }
+};
+
+ZENDEFNODE(SetUniformMuscleAnisotropicWeight, {
+                                                  {{"inputMesh"}, {"weight"}},
+                                                  {"aniMesh"},
+                                                  {},
+                                                  {"FEM"},
+                                              });
+
+// _elmAct
+struct SetUniformActivation : zeno::INode {
+  virtual void apply() override {
+    auto mesh = get_input<ZenoFEMMesh>("inputMesh");
+    auto uniform_Act =
+        get_input<zeno::NumericObject>("uniform_act")->get<zeno::vec3f>();
+
+    using mat3 = typename ZenoFEMMesh::mat3;
+    using vec3 = typename ZenoFEMMesh::vec3;
+    zs::omp_exec()(zs::range(mesh->_mesh->quads.size()), [&](size_t i) {
+      mat3 fdir = mesh->_elmOrient[i];
+      vec3 act_vec{uniform_Act[0], uniform_Act[1], uniform_Act[2]};
+      mesh->_elmAct[i] = mul(diag_mul(fdir, act_vec), fdir.transpose());
+    });
+#if 0
+    for (size_t i = 0; i < mesh->_mesh->quads.size(); ++i) {
+      Mat3x3d fdir = mesh->_elmOrient[i];
+      Vec3d act_vec;
+      act_vec << uniform_Act[0], uniform_Act[1], uniform_Act[2];
+      mesh->_elmAct[i] << fdir * act_vec.asDiagonal() * fdir.transpose();
+    }
+#endif
+
+    set_output("actMesh", mesh);
+  }
+};
+
+ZENDEFNODE(SetUniformActivation, {
+                                     {{"inputMesh"}, {"uniform_act"}},
+                                     {"actMesh"},
+                                     {},
+                                     {"FEM"},
+                                 });
 
 } // namespace zeno
