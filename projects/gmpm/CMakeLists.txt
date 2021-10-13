@@ -23,6 +23,7 @@ add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
   fem/test.cpp
   fem/MeshIO.cpp
+  fem/Fiber.cpp
 )
 
 add_library(zeno_gmpm SHARED)
