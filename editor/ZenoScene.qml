@@ -4,8 +4,9 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.12
 
 Rectangle {
-    color: '#222'
+    id: zenoScene
     anchors.fill: parent
+    color: '#222'
 
     property var selectedChildren: []
 
@@ -43,8 +44,6 @@ Rectangle {
     }
 
     Flickable {
-        id: zenoScene
-
         anchors.fill: parent
         boundsBehavior: Flickable.StopAtBounds
         clip: true

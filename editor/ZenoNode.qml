@@ -4,6 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.12
 
 Rectangle {
+    id: zenoNode
     width: 400
     height: 120
     radius: 5.0
@@ -17,7 +18,7 @@ Rectangle {
         anchors.fill: parent
         drag.target: parent
         onClicked: {
-            parent.parent.parent.doSelect(parent)
+            zenoScene.doSelect(zenoNode)
         }
     }
 }
