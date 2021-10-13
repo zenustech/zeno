@@ -1,81 +1,65 @@
-name: Release
+name: Automated Release
 
 on:
   push:
-    branches: [ stable ]
+    tags: [ 'v*' ]
 
 env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-        #- os: ubuntu-latest  # TODO: use containers for linux release
-        #  python: 3.8
-        #  container: archibate/zeno_build:latest
-        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
-        #  packaging: linux_full
-        - os: ubuntu-20.04
-          python: 3.7
-          packaging: linux
-        #- os: windows-latest
-        #  python: 3.9
-        #  packaging: win
-
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+  release:
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python }}
-
-    - uses: actions/cache@v2  # to be removed
-      with:
-        key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
-        path: |
-          ${{github.workspace}}/build
-
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_BUILD_TESTS:BOOL=ON ${{matrix.options}}
-
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    - name: Test Import ZENO DLLs
-      run: python -c "import zenqt.system.dll"
-
-    - name: Install Python Packages
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install pybind11 numpy PySide2 pyinstaller
-
-    - name: Packaging into ZIP
-      run: python scripts/makezip.py
-
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Automatically Released by GitHub Actions
         draft: true
-        prerelease: false
+        tag_name: rel-${{ github.ref }}
+        release_name: rel-${{ github.ref }}
+        body: "(Automated Release by Github Actions)"
+
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+  build:
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-latest
+        - os: windows-latest
+
+    needs: release
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      run: build/bin/citest
+
+    - name: Packaging
+      id: packaging
+      run: python .packaging.py
 
     - name: Upload Release Asset
-      if: ${{ matrix.packaging }}
+      id: upload_release_asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/launcher.zip
-        asset_name: zeno-${{ github.ref }}-${{ matrix.packaging }}.zip
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/citest.zip
+        asset_name: citest-${{ github.ref }}-${{ steps.packaging.outputs.arch }}.zip
         asset_content_type: application/zip
