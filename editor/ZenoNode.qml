@@ -1,11 +1,8 @@
 import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.12
 
 Rectangle {
     id: thisNode
-    width: 400
+    width: 250
     height: 120
     radius: 5.0
     color: '#555'

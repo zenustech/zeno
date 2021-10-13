@@ -1,7 +1,4 @@
 import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.12
 
 Rectangle {
     id: thisScene
@@ -58,7 +55,11 @@ Rectangle {
         }
 
         Component.onCompleted: {
-            compZenoNode.createObject(this, {scene: thisScene});
+            compZenoNode.createObject(this, {
+                x: 64,
+                y: 32,
+                scene: thisScene,
+            });
         }
     }
 }
