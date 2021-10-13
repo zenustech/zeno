@@ -15,18 +15,21 @@ ApplicationWindow {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         interactive: true
-        property var selected: null
+
+        function doSelect(item) {
+            console.log('doSelect', item)
+        }
 
         Rectangle {
             width: 400
             height: 120
+            radius: 5.0
             color: "red"
             MouseArea {
                 anchors.fill: parent
                 drag.target: parent
                 onClicked: {
-                    parent.parent.selected = parent
-                    console.log(parent.parent.selected)
+                    scene.doSelect(parent)
                 }
             }
         }
