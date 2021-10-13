@@ -11,7 +11,7 @@ TEST_P(test_vec, test_clamp) {
     ztd::vec3f x = GetParam();
     x = clamp(x, -0.5f, 1);
     EXPECT_TRUE(
-            vall(x == min(max(x, ztd::vec3f(-0.f)), ztd::vec3f(1.0f)))
+            vall(x == min(max(x, ztd::vec3f(-0.5f)), ztd::vec3f(1.0f)))
             ) << SHOW_VAR(x);
 }
 

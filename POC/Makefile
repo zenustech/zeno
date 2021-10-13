@@ -1,4 +1,4 @@
-x=pimpl
+x=slowfile
 
 x: $x.exe Makefile
 	./$<

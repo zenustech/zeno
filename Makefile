@@ -16,6 +16,7 @@ config:
 	ccmake -B/tmp/zeno-build
 
 %:
+	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -s /tmp/zeno-build build
 	cmake -B/tmp/zeno-build
 	make -C/tmp/zeno-build -j12 $<

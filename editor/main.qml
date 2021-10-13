@@ -1,6 +1,6 @@
-import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQuick.Controls 2.15
+import QtQuick 2.2
+import QtQuick.Window 2.2
+import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.12
 
 ApplicationWindow {
@@ -17,24 +17,15 @@ ApplicationWindow {
         interactive: true
 
         Rectangle {
+            selectable: true
             width: 400
             height: 120
             color: "red"
             MouseArea {
                 anchors.fill: parent
                 drag.target: parent
-                hoverEnabled: true
-                onPositionChanged: {
-                    hinter.x = mouseX - hinter.width / 2
-                }
-            }
-            Rectangle {
-                id: hinter
-                width: 20
-                height: 40
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "lightsteelblue" }
-                    GradientStop { position: 1.0; color: "blue" }
+                onClicked: {
+                    console.log('clicked');
                 }
             }
         }
