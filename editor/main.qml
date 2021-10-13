@@ -15,6 +15,7 @@ ApplicationWindow {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         interactive: true
+        property var selected: null
 
         Rectangle {
             width: 400
@@ -24,7 +25,8 @@ ApplicationWindow {
                 anchors.fill: parent
                 drag.target: parent
                 onClicked: {
-                    console.log('clicked');
+                    parent.parent.selected = parent
+                    console.log(parent.parent.selected)
                 }
             }
         }
