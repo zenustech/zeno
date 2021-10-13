@@ -16,8 +16,15 @@ ApplicationWindow {
         clip: true
         interactive: true
 
+        property var selectedChildren: []
+
         function doSelect(item) {
-            console.log('doSelect', item)
+            if (item == null) {
+                selectedChildren = []
+            } else {
+                if (!selectedChildren.includes(item))
+                    selectedChildren.push(item)
+            }
         }
 
         MouseArea {
