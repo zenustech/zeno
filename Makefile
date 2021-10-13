@@ -7,16 +7,13 @@ debug: zs_editor
 test: zs_tests
 	/tmp/zeno-build/tests/zs_tests
 
-all:
-	cmake -B/tmp/zeno-build
-	make -C/tmp/zeno-build -j12
-
-config:
-	cmake -B/tmp/zeno-build
-	ccmake -B/tmp/zeno-build
-
 %:
+	test -d /tmp/zeno-ccache || mkdir /tmp/zeno-ccache
+	test -d ~/.cache/ccache || ln -s /tmp/zeno-ccache ~/.cache/ccache
 	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -s /tmp/zeno-build build
-	cmake -B/tmp/zeno-build
-	make -C/tmp/zeno-build -j12 $<
+	cmake -B /tmp/zeno-build -G Ninja
+	cmake --build /tmp/zeno-build --parallel
+
+config:
+	ccmake -B /tmp/zeno-build
