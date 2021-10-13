@@ -5,5 +5,6 @@ vim: ft=xml
     <qresource prefix="/">
         <file>main.qml</file>
         <file>ZenoNode.qml</file>
+        <file>ZenoScene.qml</file>
     </qresource>
 </RCC>
