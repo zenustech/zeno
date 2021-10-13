@@ -1,16 +1,10 @@
-run:
-	cmake -B/tmp/zeno-build
-	make -C/tmp/zeno-build -j12 zs_editor
+run: zs_editor
 	/tmp/zeno-build/editor/zs_editor
 
-debug:
-	cmake -B/tmp/zeno-build -DCMAKE_BUILD_TYPE=Debug
-	make -C/tmp/zeno-build -j12 zs_editor
+debug: zs_editor
 	gdb /tmp/zeno-build/editor/zs_editor -ex r
 
-test:
-	cmake -B/tmp/zeno-build
-	make -C/tmp/zeno-build -j12 zs_tests
+test: zs_tests
 	/tmp/zeno-build/tests/zs_tests
 
 all:
@@ -20,3 +14,8 @@ all:
 config:
 	cmake -B/tmp/zeno-build
 	ccmake -B/tmp/zeno-build
+
+%:
+	test -d build || ln -s /tmp/zeno-build build
+	cmake -B/tmp/zeno-build
+	make -C/tmp/zeno-build -j12 $<
