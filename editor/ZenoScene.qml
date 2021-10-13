@@ -4,7 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.12
 
 Rectangle {
-    id: zenoScene
+    id: thisScene
     anchors.fill: parent
     color: '#222'
 
@@ -53,12 +53,12 @@ Rectangle {
             anchors.fill: parent
 
             onClicked: {
-                zenoScene.doSelect(null)
+                thisScene.doSelect(null)
             }
         }
 
         Component.onCompleted: {
-            compZenoNode.createObject(this);
+            compZenoNode.createObject(this, {scene: thisScene});
         }
     }
 }
