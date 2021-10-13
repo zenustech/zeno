@@ -18,12 +18,31 @@ ApplicationWindow {
 
         property var selectedChildren: []
 
-        function doSelect(item) {
+        function doSelect(item, multiselect) {
             if (item == null) {
+                for (var i in selectedChildren)
+                    selectedChildren[i].selected = false
                 selectedChildren = []
-            } else {
-                if (!selectedChildren.includes(item))
+            } else if (multiselect) {
+                if (!selectedChildren.includes(item)) {
                     selectedChildren.push(item)
+                    item.selected = true
+                } else {
+                    selectedChildren.remove(item)
+                    item.selected = false
+                }
+            } else {
+                if (selectedChildren.length == 1 && selectedChildren.includes(item)) {
+                    for (var i in selectedChildren)
+                        selectedChildren[i].selected = false
+                    selectedChildren = []
+                    item.selected = false
+                } else {
+                    for (var i in selectedChildren)
+                        selectedChildren[i].selected = false
+                    selectedChildren = [item]
+                    item.selected = true
+                }
             }
         }
 
@@ -38,7 +57,12 @@ ApplicationWindow {
             width: 400
             height: 120
             radius: 5.0
-            color: "red"
+            color: '#aaa'
+            border.color: '#6cf'
+            border.width: selected ? 4 : 0
+
+            property var selected: false
+
             MouseArea {
                 anchors.fill: parent
                 drag.target: parent
