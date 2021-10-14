@@ -56,7 +56,7 @@ Rectangle {
 
         Label {
             id: label
-            anchors.topMargin: 3
+            anchors.topMargin: 2
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right

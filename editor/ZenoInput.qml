@@ -6,7 +6,6 @@ Item {
     anchors.topMargin: ypos
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: parent.right
 
     property var node: null
     property alias title: label.text
@@ -25,7 +24,8 @@ Item {
         id: label
         anchors.leftMargin: 6
         anchors.rightMargin: 6
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
         text: '(untitled input)'
         color: '#ccc'
         horizontalAlignment: Text.AlignHLeft

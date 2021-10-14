@@ -33,7 +33,7 @@ endif()
 
 option(ZENO_WITH_TESTS "Build Zeno Google Tests" ON)
 if (ZENO_WITH_TESTS)
-    message("-- Building Zeno Google Tets")
+    message("-- Building Zeno Google Tests")
     enable_testing()
     add_subdirectory(tests)
 endif()

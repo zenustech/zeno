@@ -5,7 +5,6 @@ Item {
     id: thisSocket
     anchors.topMargin: ypos
     anchors.top: parent.top
-    anchors.left: parent.left
     anchors.right: parent.right
 
     property var node: null
@@ -15,7 +14,7 @@ Item {
     Rectangle {
         id: port
         anchors.left: parent.right
-        y: -8
+        y: -10
         color: '#aaa'
         width: 20
         height: 20
@@ -25,10 +24,11 @@ Item {
         id: label
         anchors.leftMargin: 6
         anchors.rightMargin: 6
-        anchors.fill: parent
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
         text: '(untitled output)'
         color: '#ccc'
-        horizontalAlignment: Text.AlignHRight
+        horizontalAlignment: Text.AlignHLeft
         verticalAlignment: Text.AlignVCenter
         font.pixelSize: 22
     }
