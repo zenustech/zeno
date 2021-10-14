@@ -4,7 +4,7 @@ Item {
     id: thisEdge
 
     property point src: Qt.point(300, 300)
-    property point dst: Qt.point(400, 10)
+    property point dst: Qt.point(400, 200)
 
     Rectangle {
         id: rectangle
