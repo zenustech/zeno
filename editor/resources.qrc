@@ -6,6 +6,7 @@ vim: ft=xml
         <file>main.qml</file>
         <file>ZenoNode.qml</file>
         <file>ZenoScene.qml</file>
-        <file>ZenoSocket.qml</file>
+        <file>ZenoInput.qml</file>
+        <file>ZenoOutput.qml</file>
     </qresource>
 </RCC>

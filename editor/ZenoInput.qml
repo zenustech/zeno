@@ -11,7 +11,6 @@ Item {
     property var node: null
     property alias title: label.text
     property var ypos: 0
-    property bool selected: false
 
     Rectangle {
         id: port
@@ -27,7 +26,7 @@ Item {
         anchors.leftMargin: 6
         anchors.rightMargin: 6
         anchors.fill: parent
-        text: '(untitled socket)'
+        text: '(untitled input)'
         color: '#ccc'
         horizontalAlignment: Text.AlignHLeft
         verticalAlignment: Text.AlignVCenter

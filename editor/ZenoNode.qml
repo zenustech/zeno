@@ -11,18 +11,31 @@ Rectangle {
     property var scene: null
     property alias title: label.text
     property bool selected: false
-    property var inputSockets: []
+    property var inputs: []
+    property var outputs: []
 
-    function addInputSocket(args) {
+    function addInput(args) {
         args.node = thisNode
-        args.ypos = 48 + 30 * inputSockets.length
-        inputSockets.push(compZenoInputSocket.createObject(thisNode, args))
-        thisNode.height = 38 + 30 * inputSockets.length
+        args.ypos = 48 + 30 * inputs.length
+        inputs.push(compZenoInput.createObject(thisNode, args))
+        thisNode.height = 38 + 30 * Math.max(inputs.length, outputs.length)
+    }
+
+    function addOutput(args) {
+        args.node = thisNode
+        args.ypos = 48 + 30 * outputs.length
+        outputs.push(compZenoOutput.createObject(thisNode, args))
+        thisNode.height = 38 + 30 * Math.max(inputs.length, outputs.length)
     }
 
     Component {
-        id: compZenoInputSocket
-        ZenoSocket {}
+        id: compZenoInput
+        ZenoInput {}
+    }
+
+    Component {
+        id: compZenoOutput
+        ZenoOutput {}
     }
 
     Rectangle {
@@ -73,11 +86,14 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        thisNode.addInputSocket({
+        thisNode.addInput({
             title: 'path',
         })
-        thisNode.addInputSocket({
+        thisNode.addInput({
             title: 'options',
+        })
+        thisNode.addOutput({
+            title: 'mesh',
         })
     }
 }
