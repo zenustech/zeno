@@ -35,6 +35,11 @@ Rectangle {
         }
     }
 
+    function addNode(args) {
+        args.scene = thisScene
+        compZenoNode.createObject(this, args)
+    }
+
     Component {
         id: compZenoNode
         ZenoNode {}
@@ -55,11 +60,11 @@ Rectangle {
         }
 
         Component.onCompleted: {
-            compZenoNode.createObject(this, {
+            thisScene.addNode({
+                title: 'readobj',
                 x: 64,
                 y: 32,
-                scene: thisScene,
-            });
+            })
         }
     }
 }
