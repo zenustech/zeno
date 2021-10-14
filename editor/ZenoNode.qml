@@ -14,13 +14,23 @@ Rectangle {
     property alias title: label.text
     property bool selected: false
 
+    function addSocket(args) {
+        args.node = thisNode
+        compZenoSocket.createObject(thisNode, args)
+    }
+
+    Component {
+        id: compZenoSocket
+        ZenoSocket {}
+    }
+
     Label {
         id: label
         anchors.topMargin: 3
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        text: '(untitled)'
+        text: '(untitled node)'
         color: '#ccc'
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
@@ -33,5 +43,12 @@ Rectangle {
         onClicked: {
             scene.doSelect(thisNode)
         }
+    }
+
+    Component.onCompleted: {
+        thisNode.addSocket({
+            title: 'path',
+            ypos: 40,
+        })
     }
 }

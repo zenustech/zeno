@@ -37,7 +37,7 @@ Rectangle {
 
     function addNode(args) {
         args.scene = thisScene
-        compZenoNode.createObject(this, args)
+        compZenoNode.createObject(thisScene, args)
     }
 
     Component {
@@ -58,13 +58,13 @@ Rectangle {
                 thisScene.doSelect(null)
             }
         }
+    }
 
-        Component.onCompleted: {
-            thisScene.addNode({
-                title: 'readobj',
-                x: 64,
-                y: 32,
-            })
-        }
+    Component.onCompleted: {
+        thisScene.addNode({
+            title: 'readobj',
+            x: 64,
+            y: 32,
+        })
     }
 }
