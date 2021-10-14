@@ -13,6 +13,15 @@ Item {
     property var ypos: 0
     property bool selected: false
 
+    Rectangle {
+        id: port
+        anchors.right: parent.left
+        y: -8
+        color: '#aaa'
+        width: 20
+        height: 20
+    }
+
     Label {
         id: label
         anchors.leftMargin: 6
