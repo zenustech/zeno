@@ -40,9 +40,22 @@ Rectangle {
         compZenoNode.createObject(thisScene, args)
     }
 
+    function linkInput(input) {
+        compZenoEdge.createObject(thisScene, {})
+    }
+
+    function linkOutput(output) {
+        compZenoEdge.createObject(thisScene, {})
+    }
+
     Component {
         id: compZenoNode
         ZenoNode {}
+    }
+
+    Component {
+        id: compZenoEdge
+        ZenoEdge {}
     }
 
     Flickable {
@@ -66,5 +79,6 @@ Rectangle {
             x: 64,
             y: 32,
         })
+        thisScene.linkInput(null)
     }
 }

@@ -18,6 +18,13 @@ Item {
         color: '#aaa'
         width: 20
         height: 20
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                scene.linkOutput(thisSocket)
+            }
+        }
     }
 
     Label {
