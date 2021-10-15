@@ -49,7 +49,9 @@ class MainWindow(QWidget):
         if hasattr(self, 'viewport'):
             self.mainsplit.addWidget(self.viewport)
         self.mainsplit.addWidget(self.editorTimeline)
-
+        if hasattr(self, 'viewport'):
+            self.mainsplit.setStretchFactor(0, 1)
+            self.mainsplit.setStretchFactor(1, 3)
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.mainsplit)
