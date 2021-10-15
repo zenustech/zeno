@@ -14,7 +14,7 @@ Item {
         property alias src: thisEdge.src
         property alias dst: thisEdge.dst
 
-        x: dst.x - height / 2 * Math.sin(rotation * (Math.PI / 180))
+        x: dst.x - height / 2 * Math.sin(rotation * (Math.PI / 180)) - width / 2
         y: dst.y - height / 2 * (1 - Math.cos(rotation * (Math.PI / 180)))
         height: Math.sqrt(Math.pow(dst.x - src.x, 2) + Math.pow(dst.y - src.y, 2))
         rotation: Math.atan2(dst.x - src.x, src.y - dst.y) * (180 / Math.PI)

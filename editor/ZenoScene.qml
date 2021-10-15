@@ -6,7 +6,7 @@ Rectangle {
     color: '#222'
 
     property var selectedChildren: []
-    property var pendingLinkedSocket: null
+    property var pendingLink: null
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -42,17 +42,26 @@ Rectangle {
     }
 
     function linkInput(input) {
-        compZenoLink.createObject(thisScene, {
+        pendingLink = compZenoLink.createObject(thisScene, {
             srcSocket: null,
             dstSocket: input,
+            mousePos: input.getPos(),
         })
     }
 
     function linkOutput(output) {
-        compZenoLink.createObject(thisScene, {
+        pendingLink = compZenoLink.createObject(thisScene, {
             srcSocket: output,
             dstSocket: null,
+            mousePos: output.getPos(),
         })
+    }
+
+    function mousePosition(mpos) {
+        print(mpos)
+        if (pendingLink != null) {
+            pendingLink.mousePos = mpos
+        }
     }
 
     Component {
@@ -73,9 +82,14 @@ Rectangle {
 
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
 
             onClicked: {
                 thisScene.doSelect(null)
+            }
+
+            onPositionChanged: {
+                thisScene.mousePosition(Qt.point(mouseX, mouseY))
             }
         }
     }
