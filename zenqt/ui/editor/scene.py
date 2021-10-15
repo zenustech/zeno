@@ -451,6 +451,7 @@ class QDMGraphicsView(QGraphicsView):
         if event.button() == Qt.MiddleButton:
             self._last_mouse_pos = event.pos()
             self.setDragMode(QGraphicsView.NoDrag)
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
             self.scene().mmb_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
