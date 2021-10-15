@@ -1527,10 +1527,10 @@
     }
    },
    "view_rect": {
-    "x": -3724.5107119219606,
-    "y": -545.1043806814025,
-    "width": 400.0,
-    "height": 400.0
+    "x": -3624.067337163754,
+    "y": -634.8775817536583,
+    "width": 781.25,
+    "height": 781.25
    }
   },
   "FLIPSimTemplate": {
@@ -5399,7 +5399,7 @@
     [
      "int",
      "numRandPoints",
-     "256"
+     "64"
     ],
     [
      "bool",
@@ -6708,6 +6708,76 @@
     "FLIPSolver"
    ]
   },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachePrimitive": {
    "inputs": [
     [
@@ -6716,7 +6786,7 @@
      ""
     ],
     [
-     "int",
+     "",
      "frameNum",
      ""
     ],
@@ -10159,6 +10229,57 @@
     "primitive"
    ]
   },
+  "MakeBoxPrimitive": {
+   "inputs": [
+    [
+     "float",
+     "size_x",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_y",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_z",
+     "2.0"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "use_quads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "MakeCompressibleFlow": {
    "inputs": [
     [
@@ -13310,7 +13431,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -13993,6 +14120,11 @@
      "bool",
      "noNullMesh",
      "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     ""
     ]
    ],
    "categories": [
@@ -14848,7 +14980,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "DEPRECATED",
+     ""
+    ]
+   ],
    "categories": [
     "cgmesh"
    ]
@@ -15331,6 +15469,461 @@
     "FLIPSolver"
    ]
   },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex decomp sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectListToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mergedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -15404,6 +15997,71 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "SDFAdvect": {
+   "inputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "SpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TemporalScheme",
+     "Order_2_Runge_Kuta"
+    ],
+    [
+     "int",
+     "RenormalizeStep",
+     "3"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "TrackerSpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TrackerTemporalScheme",
+     "Explicit_Euler"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "SDFToPoly": {
@@ -15488,6 +16146,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ScalarFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Gradient Curvature Laplacian ClosestPoint",
+     "Operator",
+     "Gradient"
+    ]
+   ],
    "categories": [
     "openvdb"
    ]
@@ -16834,6 +17528,32 @@
     "debug"
    ]
   },
+  "TriggerException": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "exception occurred!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
   "TriggerSegFault": {
    "inputs": [
     [
@@ -17386,6 +18106,46 @@
     "openvdb"
    ]
   },
+  "VDBSmooth": {
+   "inputs": [
+    [
+     "",
+     "inoutVDB",
+     ""
+    ],
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "VDBSmoothSDF": {
    "inputs": [
     [
@@ -17421,6 +18181,11 @@
      "int",
      "iterations",
      "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     "Use VDBSmooth Instead"
     ]
    ],
    "categories": [
@@ -17577,6 +18342,113 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "VectorFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Divergence Curl Magnitude Normalize",
+     "Operator",
+     "Divergence"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VoronoiFracture": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "meshPrim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ],
+    [
+     "bool",
+     "doMeshFix2",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
    ]
   },
   "WriteBgeo": {
