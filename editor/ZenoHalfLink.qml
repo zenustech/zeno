@@ -2,6 +2,7 @@ import QtQuick 2.15
 
 ZenoEdge {
     id: thisHalfLink
+    z: 2
 
     property var scene: null
     property ZenoOutput srcSocket: null

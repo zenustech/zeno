@@ -5,16 +5,17 @@ Item {
 
     property point src: Qt.point(300, 300)
     property point dst: Qt.point(400, 200)
-    property real thickness: 5
+    property color lineColor: '#6cf'
+    property real lineWidth: 5
 
     Rectangle {
-        id: rectangle
-        color: '#6cf'
+        id: line
+        color: thisEdge.lineColor
 
         property alias src: thisEdge.src
         property alias dst: thisEdge.dst
 
-        width: thisEdge.thickness
+        width: thisEdge.lineWidth
         height: Math.hypot(dst.x - src.x, dst.y - src.y)
         rotation: Math.atan2(dst.x - src.x, src.y - dst.y) * (180 / Math.PI)
         x: dst.x - height / 2 * Math.sin(rotation * (Math.PI / 180)) - width / 2
