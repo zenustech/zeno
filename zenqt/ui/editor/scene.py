@@ -1,5 +1,5 @@
 from . import *
-import math 
+
 
 class HistoryStack:
     def __init__(self, scene):
@@ -174,8 +174,6 @@ class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        width, height = 64000, 64000
-        self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor(style['background_color']))
 
         self.nodes = []
@@ -334,43 +332,6 @@ class QDMGraphicsScene(QGraphicsScene):
             return
         super().mousePressEvent(event)
 
-    def _draw_dots(self, painter, rect, grid_size):
-        viewer = self.views()[0]
-        zoom = viewer.transform().m11()
-        if zoom < 0.05:
-            return
-
-        if zoom < 1:
-            grid_size = int(abs(zoom - 1) / 0.3 + 1) * grid_size
-
-        left = int(rect.left())
-        right = int(rect.right())
-        top = int(rect.top())
-        bottom = int(rect.bottom())
-
-        first_left = left - (left % grid_size)
-        first_top = top - (top % grid_size)
-
-        pen = QPen(QColor(255, 255, 255, 50), 0.65)
-        if (1.0 / zoom) > 3:
-            zoom *=  (0.3333333 / zoom) ** 1.5
-        elif zoom > 1:
-            zoom = math.log(zoom + 1, 2)
-        pen.setWidth(3.0 / zoom)
-        
-        painter.setPen(pen)
-        painter.drawPoints([QPoint(x, y) for x in range(first_left, right, grid_size) for y in range(first_top, bottom, grid_size)])
-
-    def drawBackground(self, painter, rect):
-        super().drawBackground(painter, rect)
-        painter.save()
-
-        if style['background_style'] is BackgroundStyle.DOT:
-            painter.setRenderHint(QPainter.Antialiasing, False)
-            painter.setBrush(self.backgroundBrush())
-            self._draw_dots(painter, rect, 50)
-
-        painter.restore()
 
 class QDMGraphicsView(QGraphicsView):
     ZOOM_FACTOR = 1.25
@@ -488,7 +449,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._last_mouse_pos = event.pos()
+            self.setDragMode(QGraphicsView.NoDrag)
             self.scene().mmb_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
@@ -587,7 +549,6 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = self.ZOOM_FACTOR
         elif event.angleDelta().y() < 0:
             zoomFactor = 1 / self.ZOOM_FACTOR
-
 
         self.scale(zoomFactor, zoomFactor, event.pos())
         self._update_scene_rect()
