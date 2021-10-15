@@ -488,6 +488,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
+            self._last_mouse_pos = event.pos()
+            self.setDragMode(QGraphicsView.NoDrag)
             self.setDragMode(QGraphicsView.ScrollHandDrag)
             self.scene().mmb_press = True
 
