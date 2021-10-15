@@ -29,7 +29,10 @@ Rectangle {
     }
 
     function detachNode() {
-        thisNode.ss
+        for (var i in inputs)
+            inputs[i].clearLinks()
+        for (var i in outputs)
+            outputs[i].clearLinks()
     }
 
     function deleteThisNode() {

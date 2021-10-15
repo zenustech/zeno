@@ -17,11 +17,20 @@ Item {
     }
 
     function attachLink(link) {
+        for (var i in links)
+            links[i].deleteThisLink()
+        links = []
         links.push(link)
     }
 
     function removeLink(link) {
         links = links.filter(function (e) { return e != link })
+    }
+
+    function clearLinks() {
+        for (var i in links)
+            links[i].deleteThisLink()
+        links = []
     }
 
     Rectangle {

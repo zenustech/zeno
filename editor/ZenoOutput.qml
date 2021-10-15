@@ -24,6 +24,12 @@ Item {
         links = links.filter(function (e) { return e != link })
     }
 
+    function clearLinks() {
+        for (var i in links)
+            links[i].deleteThisLink()
+        links = []
+    }
+
     Rectangle {
         id: port
         anchors.left: parent.right
