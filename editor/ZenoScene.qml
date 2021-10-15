@@ -60,12 +60,11 @@ Rectangle {
                     dstSocket: input,
                 })
             }
-            halfLink.destroy()
-            halfLink = null
+            linkDestroy()
         }
     }
 
-    function linkEmpty() {
+    function linkDestroy() {
         if (halfLink != null) {
             halfLink.destroy()
             halfLink = null
@@ -86,8 +85,7 @@ Rectangle {
                     dstSocket: halfLink.dstSocket,
                 })
             }
-            halfLink.destroy()
-            halfLink = null
+            linkDestroy()
         }
     }
 
@@ -124,7 +122,7 @@ Rectangle {
 
             onClicked: {
                 if (halfLink != null) {
-                    thisScene.linkEmpty()
+                    thisScene.linkDestroy()
                 } else {
                     thisScene.doSelect(null)
                 }
