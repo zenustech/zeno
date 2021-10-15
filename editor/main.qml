@@ -9,11 +9,15 @@ ApplicationWindow {
     title: qsTr("Zeno Editor")
 
     ZenoScene {
+        id: currScene
         anchors.fill: parent
         focus: true
     }
 
     Button {
         text: qsTr("Apply")
+        onClicked: {
+            currScene.dumpScene()
+        }
     }
 }

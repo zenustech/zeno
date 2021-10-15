@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import ZenusTech.Zeno 1.0
 
 Rectangle {
     id: thisEdge

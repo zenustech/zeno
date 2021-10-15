@@ -14,6 +14,22 @@ Rectangle {
     property var inputs: []
     property var outputs: []
 
+    function dumpNode() {
+        var r_node = {}
+        r_node.inputs = []
+        r_node.outputs = []
+        for (var i in inputs) {
+            var input = inputs[i]
+            var r_input = {title: input.title}
+            r_node.inputs.push(r_input)
+        }
+        for (var i in outputs) {
+            var output = outputs[i]
+            var r_output = {title: output.title}
+            r_node.outputs.push(r_output)
+        }
+    }
+
     function addInput(args) {
         args.node = thisNode
         args.ypos = 48 + 30 * inputs.length
