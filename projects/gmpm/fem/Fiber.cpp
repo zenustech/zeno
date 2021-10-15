@@ -144,7 +144,7 @@ struct SetUniformActivation : zeno::INode {
     zs::omp_exec()(zs::range(mesh->_mesh->quads.size()), [&](size_t i) {
       mat3 fdir = mesh->_elmOrient[i];
       vec3 act_vec{uniform_Act[0], uniform_Act[1], uniform_Act[2]};
-      mesh->_elmAct[i] = mul(diag_mul(fdir, act_vec), fdir.transpose());
+      mesh->_elmAct[i] = (diag_mul(fdir, act_vec) * fdir.transpose());
     });
 #if 0
     for (size_t i = 0; i < mesh->_mesh->quads.size(); ++i) {
