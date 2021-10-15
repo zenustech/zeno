@@ -2,7 +2,6 @@ from . import *
 
 translation = {}
 
-@eval('lambda x: x()')
 def load_translation():
     import os
     translation.clear()
@@ -15,6 +14,8 @@ def load_translation():
                 translation[en.lower()] = zh
             except ValueError:
                 pass
+
+load_translation()
 
 def translate(x):
     return translation.get(x.lower(), x)
