@@ -24,16 +24,23 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 ## Gallery
 
 ![robot hit water](/images/crag_hit_water.gif)
+robot hit water
 
 ![SuperSonic Flow](/images/shock.gif)
+SuperSonic Flow
+
 
  <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water.gif" width="640" position="left">
+ fluid-structure interaction in ZENO
 
  <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/mid-autumn-festival.gif" width="640" position="left">
+ rigid fracture in ZENO
 
  <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/muscle2.gif" width="640" position="left">
+ muscular-skeleton simulation in ZENO
 
  <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
+ large scale Fluids in ZENO
 
 # End-user Installation
 
