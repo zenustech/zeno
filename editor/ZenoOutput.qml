@@ -37,6 +37,7 @@ Item {
         color: '#aaa'
         width: 20
         height: 20
+        radius: 5
 
         MouseArea {
             anchors.fill: parent
