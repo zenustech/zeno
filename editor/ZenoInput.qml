@@ -9,7 +9,7 @@ Item {
 
     property var node: null
     property alias title: label.text
-    property var ypos: 0
+    property int ypos: 0
 
     Rectangle {
         id: port

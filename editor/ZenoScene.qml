@@ -79,6 +79,5 @@ Rectangle {
             x: 64,
             y: 32,
         })
-        thisScene.linkInput(null)
     }
 }

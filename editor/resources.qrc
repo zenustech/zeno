@@ -9,5 +9,6 @@ vim: ft=xml
         <file>ZenoInput.qml</file>
         <file>ZenoOutput.qml</file>
         <file>ZenoEdge.qml</file>
+        <file>ZenoLink.qml</file>
     </qresource>
 </RCC>
