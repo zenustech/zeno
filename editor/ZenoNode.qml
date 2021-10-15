@@ -36,9 +36,6 @@ Rectangle {
         scene.removeNode(thisNode)
     }
 
-    function deleteThisLink() {
-    }
-
     Component {
         id: compZenoInput
         ZenoInput {}

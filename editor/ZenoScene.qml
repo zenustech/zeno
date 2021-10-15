@@ -55,11 +55,13 @@ Rectangle {
     function deleteSelection() {
         for (var i in selectedChildren) {
             var o = selectedChildren[i]
-            o.deleteThisLink()
+            if (typeof o.deleteThisLink == 'function')
+                o.deleteThisLink()
         }
         for (var i in selectedChildren) {
             var o = selectedChildren[i]
-            o.deleteThisNode()
+            if (typeof o.deleteThisNode == 'function')
+                o.deleteThisNode()
         }
     }
 
