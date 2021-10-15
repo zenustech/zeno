@@ -6,8 +6,8 @@ ZenoEdge {
     property ZenoOutput srcSocket: null
     property ZenoInput dstSocket: null
 
-    src: srcSocket.pos
-    dst: dstSocket.pos
+    src: srcSocket == null ? Qt.point(100, 100) : srcSocket.getPos()
+    dst: dstSocket == null ? Qt.point(100, 100) : dstSocket.getPos()
 }
 
 /*

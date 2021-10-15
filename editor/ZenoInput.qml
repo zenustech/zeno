@@ -9,7 +9,11 @@ Item {
 
     property var node: null
     property alias title: label.text
-    property int ypos: 0
+    property real ypos: 0
+
+    function getPos() {
+        return Qt.point(parent.x - 10, parent.y + this.ypos)
+    }
 
     Rectangle {
         id: port

@@ -6,6 +6,7 @@ Rectangle {
     color: '#222'
 
     property var selectedChildren: []
+    property var pendingLinkedSocket: null
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -41,11 +42,17 @@ Rectangle {
     }
 
     function linkInput(input) {
-        compZenoEdge.createObject(thisScene, {})
+        compZenoLink.createObject(thisScene, {
+            srcSocket: null,
+            dstSocket: input,
+        })
     }
 
     function linkOutput(output) {
-        compZenoEdge.createObject(thisScene, {})
+        compZenoLink.createObject(thisScene, {
+            srcSocket: output,
+            dstSocket: null,
+        })
     }
 
     Component {
@@ -54,8 +61,8 @@ Rectangle {
     }
 
     Component {
-        id: compZenoEdge
-        ZenoEdge {}
+        id: compZenoLink
+        ZenoLink {}
     }
 
     Flickable {
