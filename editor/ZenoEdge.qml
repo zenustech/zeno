@@ -5,10 +5,11 @@ Item {
 
     property point src: Qt.point(300, 300)
     property point dst: Qt.point(400, 200)
+    property real thickness: 5
 
     Rectangle {
         id: rectangle
-        width: 10
+        width: thisEdge.thickness
         color: '#6cf'
 
         property alias src: thisEdge.src
