@@ -10,6 +10,7 @@ Item {
 
     Rectangle {
         id: line
+        antialiasing: true
         color: thisEdge.lineColor
 
         property alias src: thisEdge.src
