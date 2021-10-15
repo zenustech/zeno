@@ -5,7 +5,9 @@ translation = {}
 def load_translation():
     import os
     translation.clear()
-    if os.environ.get('ZEN_ENG'):
+    with open(asset_path('language.txt')) as f:
+        lang = f.read()
+    if lang == 'en':
         return
     with open(asset_path('zh-cn.txt'), 'r', encoding='utf-8') as f:
         for line in f.readlines():

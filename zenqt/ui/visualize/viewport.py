@@ -12,6 +12,7 @@ from . import zenvis
 from .dialog import RecordVideoDialog
 from .camera_keyframe import CameraKeyframeWidget
 
+from ..utils import asset_path
 from ..editor import locale
 
 
@@ -193,6 +194,9 @@ class QDMDisplayMenu(QMenu):
 
         action = QAction('Use English', self)
         action.setCheckable(True)
+        with open(asset_path('language.txt')) as f:
+            lang = f.read()
+            action.setChecked(lang == 'en')
         self.addAction(action)
 
 class QDMRecordMenu(QMenu):
@@ -277,11 +281,10 @@ class DisplayWidget(QWidget):
 
         elif name == 'Use English':
             checked = act.isChecked()
-            if checked:
-                os.environ['ZEN_ENG'] = '1'
-            else:
-                os.environ.pop('ZEN_ENG')
-            locale.load_translation()
+            with open(asset_path('language.txt'), 'w') as f:
+                f.write('en' if checked else 'zh-cn')
+            QMessageBox.information(None, 'Zeno', 'Language switched! Please reboot zeno!')
+
 
     def get_output_path(self, extname):
         dir_path = 'outputs'
