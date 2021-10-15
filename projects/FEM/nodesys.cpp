@@ -953,7 +953,7 @@ struct MakeMuscleForceModel : zeno::INode {
 ZENDEFNODE(MakeMuscleForceModel, {
     {},
     {"MuscleForceModel"},
-    {{"enum HyperElastic Fiberic", "ForceModel", ""}},
+    {{"enum HyperElastic Fiberic", "ForceModel", "HyperElastic"}},
     {"FEM"},
 });
 
