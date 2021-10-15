@@ -138,7 +138,12 @@ Rectangle {
         thisScene.addNode({
             title: 'readobj',
             x: 64,
-            y: 32,
+            y: 128,
+        })
+        thisScene.addNode({
+            title: 'transform',
+            x: 352,
+            y: 64,
         })
     }
 }
