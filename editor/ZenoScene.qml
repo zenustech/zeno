@@ -61,6 +61,14 @@ Rectangle {
                 })
             }
             halfLink.destroy()
+            halfLink = null
+        }
+    }
+
+    function linkEmpty() {
+        if (halfLink != null) {
+            halfLink.destroy()
+            halfLink = null
         }
     }
 
@@ -79,6 +87,7 @@ Rectangle {
                 })
             }
             halfLink.destroy()
+            halfLink = null
         }
     }
 
@@ -114,7 +123,11 @@ Rectangle {
             hoverEnabled: true
 
             onClicked: {
-                thisScene.doSelect(null)
+                if (halfLink != null) {
+                    thisScene.linkEmpty()
+                } else {
+                    thisScene.doSelect(null)
+                }
             }
 
             onPositionChanged: {
