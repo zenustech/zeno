@@ -4,9 +4,12 @@ Rectangle {
     id: thisScene
     anchors.fill: parent
     color: '#222'
+    focus: true
 
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
+    property var nodes: []
+    property var links: []
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -18,7 +21,7 @@ Rectangle {
                 selectedChildren.push(item)
                 item.selected = true
             } else {
-                selectedChildren = selectedChildren.filter(function(e) { return e != item; })
+                selectedChildren = selectedChildren.filter(function(e) { return e != item })
                 item.selected = false
             }
         } else {
@@ -36,14 +39,42 @@ Rectangle {
         }
     }
 
-    function addNode(args) {
-        args.scene = thisScene
-        compZenoNode.createObject(thisScene, args)
+    function removeNode(node) {
+        nodes = nodes.filter(function (e) { return e != node })
+        node.detachNode()
+        node.destroy()
     }
 
-    function createLink(args) {
+    function removeLink(link) {
+        links = links.filter(function (e) { return e != link })
+        link.srcSocket.removeLink(link)
+        link.dstSocket.removeLink(link)
+        link.destroy()
+    }
+
+    function deleteSelection() {
+        for (var i in selectedChildren) {
+            var o = selectedChildren[i]
+            o.deleteThisLink()
+        }
+        for (var i in selectedChildren) {
+            var o = selectedChildren[i]
+            o.deleteThisNode()
+        }
+    }
+
+    function addNode(args) {
         args.scene = thisScene
-        compZenoLink.createObject(thisScene, args)
+        var node = compZenoNode.createObject(thisScene, args)
+        nodes.push(node)
+    }
+
+    function addLink(args) {
+        args.scene = thisScene
+        var link = compZenoLink.createObject(thisScene, args)
+        args.srcSocket.attachLink(link)
+        args.dstSocket.attachLink(link)
+        links.push(link)
     }
 
     function linkInput(input) {
@@ -55,19 +86,12 @@ Rectangle {
             })
         } else {
             if (halfLink.srcSocket != null) {
-                createLink({
+                addLink({
                     srcSocket: halfLink.srcSocket,
                     dstSocket: input,
                 })
             }
             linkDestroy()
-        }
-    }
-
-    function linkDestroy() {
-        if (halfLink != null) {
-            halfLink.destroy()
-            halfLink = null
         }
     }
 
@@ -80,12 +104,19 @@ Rectangle {
             })
         } else {
             if (halfLink.dstSocket != null) {
-                createLink({
+                addLink({
                     srcSocket: output,
                     dstSocket: halfLink.dstSocket,
                 })
             }
             linkDestroy()
+        }
+    }
+
+    function linkDestroy() {
+        if (halfLink != null) {
+            halfLink.destroy()
+            halfLink = null
         }
     }
 
@@ -110,28 +141,25 @@ Rectangle {
         ZenoHalfLink {}
     }
 
-    Flickable {
+    MouseArea {
         anchors.fill: parent
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        interactive: true
+        hoverEnabled: true
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-
-            onClicked: {
-                if (halfLink != null) {
-                    thisScene.linkDestroy()
-                } else {
-                    thisScene.doSelect(null)
-                }
-            }
-
-            onPositionChanged: {
-                thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
+        onClicked: {
+            if (halfLink != null) {
+                thisScene.linkDestroy()
+            } else {
+                thisScene.doSelect(null)
             }
         }
+
+        onPositionChanged: {
+            thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
+        }
+    }
+
+    Keys.onDeletePressed: {
+        deleteSelection()
     }
 
     Component.onCompleted: {

@@ -10,9 +10,18 @@ Item {
     property var node: null
     property alias title: label.text
     property real ypos: 0
+    property var links: []
 
     function getPos() {
         return Qt.point(parent.x - 10, parent.y + this.ypos)
+    }
+
+    function attachLink(link) {
+        links.push(link)
+    }
+
+    function removeLink(link) {
+        links = links.filter(function (e) { return e != link })
     }
 
     Rectangle {

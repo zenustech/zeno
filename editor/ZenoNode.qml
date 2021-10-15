@@ -28,6 +28,17 @@ Rectangle {
         thisNode.height = 38 + 30 * Math.max(inputs.length, outputs.length)
     }
 
+    function detachNode() {
+        thisNode.ss
+    }
+
+    function deleteThisNode() {
+        scene.removeNode(thisNode)
+    }
+
+    function deleteThisLink() {
+    }
+
     Component {
         id: compZenoInput
         ZenoInput {}

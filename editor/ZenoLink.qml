@@ -13,6 +13,13 @@ ZenoEdge {
     src: srcSocket.getPos()
     dst: dstSocket.getPos()
 
+    function deleteThisNode() {
+    }
+
+    function deleteThisLink() {
+        scene.removeLink(thisLink)
+    }
+
     MouseArea {
         anchors.fill: parent
         onClicked: {
