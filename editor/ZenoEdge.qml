@@ -9,16 +9,16 @@ Item {
 
     Rectangle {
         id: rectangle
-        width: thisEdge.thickness
         color: '#6cf'
 
         property alias src: thisEdge.src
         property alias dst: thisEdge.dst
 
-        x: dst.x - height / 2 * Math.sin(rotation * (Math.PI / 180)) - width / 2
-        y: dst.y - height / 2 * (1 - Math.cos(rotation * (Math.PI / 180)))
+        width: thisEdge.thickness
         height: Math.hypot(dst.x - src.x, dst.y - src.y)
         rotation: Math.atan2(dst.x - src.x, src.y - dst.y) * (180 / Math.PI)
+        x: dst.x - height / 2 * Math.sin(rotation * (Math.PI / 180)) - width / 2
+        y: dst.y - height / 2 * (1 - Math.cos(rotation * (Math.PI / 180)))
     }
 }
 

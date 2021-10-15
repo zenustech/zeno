@@ -6,7 +6,7 @@ Rectangle {
     color: '#222'
 
     property var selectedChildren: []
-    property var pendingLink: null
+    property ZenoHalfLink halfLink: null
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -41,26 +41,50 @@ Rectangle {
         compZenoNode.createObject(thisScene, args)
     }
 
+    function createLink(args) {
+        args.scene = thisScene
+        compZenoLink.createObject(thisScene, args)
+    }
+
     function linkInput(input) {
-        pendingLink = compZenoLink.createObject(thisScene, {
-            srcSocket: null,
-            dstSocket: input,
-            mousePos: input.getPos(),
-        })
+        if (halfLink == null) {
+            halfLink = compZenoHalfLink.createObject(thisScene, {
+                srcSocket: null,
+                dstSocket: input,
+                mousePos: input.getPos(),
+            })
+        } else {
+            if (halfLink.srcSocket != null) {
+                createLink({
+                    srcSocket: halfLink.srcSocket,
+                    dstSocket: input,
+                })
+            }
+            halfLink.destroy()
+        }
     }
 
     function linkOutput(output) {
-        pendingLink = compZenoLink.createObject(thisScene, {
-            srcSocket: output,
-            dstSocket: null,
-            mousePos: output.getPos(),
-        })
+        if (halfLink == null) {
+            halfLink = compZenoHalfLink.createObject(thisScene, {
+                srcSocket: output,
+                dstSocket: null,
+                mousePos: output.getPos(),
+            })
+        } else {
+            if (halfLink.dstSocket != null) {
+                createLink({
+                    srcSocket: output,
+                    dstSocket: halfLink.dstSocket,
+                })
+            }
+            halfLink.destroy()
+        }
     }
 
     function mousePosition(mpos) {
-        print(mpos)
-        if (pendingLink != null) {
-            pendingLink.mousePos = mpos
+        if (halfLink != null) {
+            halfLink.mousePos = mpos
         }
     }
 
@@ -72,6 +96,11 @@ Rectangle {
     Component {
         id: compZenoLink
         ZenoLink {}
+    }
+
+    Component {
+        id: compZenoHalfLink
+        ZenoHalfLink {}
     }
 
     Flickable {
