@@ -81,7 +81,7 @@ Rectangle {
         anchors.fill: parent
         drag.target: parent
         onClicked: {
-            scene.doSelect(thisNode)
+            scene.doSelect(thisNode, mouse.modifiers & Qt.ShiftModifier)
         }
     }
 

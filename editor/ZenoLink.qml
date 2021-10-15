@@ -13,13 +13,12 @@ ZenoEdge {
     src: srcSocket.getPos()
     dst: dstSocket.getPos()
 
-    /*MouseArea {
+    MouseArea {
         anchors.fill: parent
         onClicked: {
-            print('click link')
-            scene.doSelect(thisLink)
+            scene.doSelect(thisLink, mouse.modifiers & Qt.ShiftModifier)
         }
-    }*/
+    }
 }
 
 /*

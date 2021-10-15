@@ -18,7 +18,7 @@ Rectangle {
                 selectedChildren.push(item)
                 item.selected = true
             } else {
-                selectedChildren.remove(item)
+                selectedChildren = selectedChildren.filter(function(e) { return e != item; })
                 item.selected = false
             }
         } else {
@@ -129,7 +129,7 @@ Rectangle {
             }
 
             onPositionChanged: {
-                thisScene.mousePosition(Qt.point(mouseX, mouseY))
+                thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
             }
         }
     }
