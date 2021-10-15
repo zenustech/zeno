@@ -2,9 +2,7 @@ import QtQuick 2.15
 
 Rectangle {
     id: thisScene
-    anchors.fill: parent
     color: '#222'
-    focus: true
 
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
@@ -156,6 +154,8 @@ Rectangle {
         }
 
         onPositionChanged: {
+            if (!thisScene.focus)
+                thisScene.focus = true
             thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
         }
     }

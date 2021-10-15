@@ -8,5 +8,12 @@ ApplicationWindow {
     height: 480
     title: qsTr("Zeno Editor")
 
-    ZenoScene {}
+    ZenoScene {
+        anchors.fill: parent
+        focus: true
+    }
+
+    Button {
+        text: qsTr("Apply")
+    }
 }
