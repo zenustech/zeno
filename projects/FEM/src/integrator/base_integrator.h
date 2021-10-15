@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base_force_model.h"
+#include "diriclet_damping.h"
 #include <string>
 
 struct TetAttributes{
@@ -11,6 +12,7 @@ struct TetAttributes{
     Vec3d _fiberWeight;
     Mat3x3d _activation;
     FEM_Scaler _E,_nu;
+    FEM_Scaler _d;
     FEM_Scaler _volume;
     FEM_Scaler _density;
 };
@@ -61,6 +63,7 @@ public:
      */
     virtual int EvalElmObj(const TetAttributes tet_attribs,
             const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj) const = 0;
     /**
      * @brief Interface for defining element-wise objective function and its derivative.
@@ -72,6 +75,7 @@ public:
      */
     virtual int EvalElmObjDeriv(const TetAttributes tet_attribs,
             const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv) const = 0;
     /**
      * @brief Interface for defining element-wise objective function, its derivative and Jacobi.
@@ -86,6 +90,7 @@ public:
      */
     virtual int EvalElmObjDerivJacobi(const TetAttributes tet_attribs,
             const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd) const = 0;
 protected:
     size_t _couplingLength;
