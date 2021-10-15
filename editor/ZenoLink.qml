@@ -2,8 +2,8 @@ import QtQuick 2.15
 
 ZenoEdge {
     id: thisLink
+    color: selected ? 'orange' : '#6cf'
     z: 1
-    lineColor: selected ? 'orange' : '#6cf'
 
     property var scene: null
     property ZenoOutput srcSocket: null
@@ -13,13 +13,13 @@ ZenoEdge {
     src: srcSocket.getPos()
     dst: dstSocket.getPos()
 
-    MouseArea {
+    /*MouseArea {
         anchors.fill: parent
         onClicked: {
             print('click link')
             scene.doSelect(thisLink)
         }
-    }
+    }*/
 }
 
 /*
