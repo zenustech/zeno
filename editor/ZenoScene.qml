@@ -38,9 +38,12 @@ Rectangle {
     }
 
     function dumpScene() {
+        var r_scene = []
         for (var i in nodes) {
-            nodes[i];
+            var r_node = nodes[i].dumpNode
+            r_scene.push(r_node)
         }
+        return r_scene
     }
 
     function removeNode(node) {

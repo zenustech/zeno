@@ -28,6 +28,7 @@ Rectangle {
             var r_output = {title: output.title}
             r_node.outputs.push(r_output)
         }
+        return r_node
     }
 
     function addInput(args) {
