@@ -935,11 +935,11 @@ struct DampingForceModel : zeno::IObject {
 
 struct MakeMuscleForceModel : zeno::INode {
     virtual void apply() override {
-        auto model_type = get_input<zeno::StringObject>("model_type")->get();
+        auto model_type = std::get<std::string>(get_param("ForceModel"));
         auto res = std::make_shared<MuscleForceModel>();
-        if(model_type == "ANISO_SNH")
+        if(model_type == "Fiberic")
             res->_forceModel = std::shared_ptr<BaseForceModel>(new AnisotropicSNHModel());
-        else if(model_type == "ISO_SNH")
+        else if(model_type == "HyperElastic")
             res->_forceModel = std::shared_ptr<BaseForceModel>(new SmithSNHModel());
         else{
             std::cerr << "UNKNOWN MODEL_TYPE" << std::endl;
@@ -951,9 +951,9 @@ struct MakeMuscleForceModel : zeno::INode {
 };
 
 ZENDEFNODE(MakeMuscleForceModel, {
-    {{"string","model_type"}},
-    {"MuscleForceModel"},
     {},
+    {"MuscleForceModel"},
+    {{"enum HyperElastic Fiberic", "ForceModel", ""}},
     {"FEM"},
 });
 
