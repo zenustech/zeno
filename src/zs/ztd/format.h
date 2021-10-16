@@ -4,7 +4,6 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <zs/ztd/error.h>
 
 namespace zs::ztd {
 
@@ -27,13 +26,8 @@ std::string to_string(Ts const &...ts) {
 }
 
 template <class ...Ts>
-void println(Ts const &...ts) {
+void print(Ts const &...ts) {
     (std::cout << ... << ts) << std::endl;
-}
-
-template <class ...Ts>
-void eprintln(Ts const &...ts) {
-    (std::cerr << ... << ts) << std::endl;
 }
 
 }

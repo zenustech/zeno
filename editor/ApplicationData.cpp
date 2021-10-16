@@ -1,11 +1,14 @@
 #include "ApplicationData.h"
+#include <zs/ztd/format.h>
+
+using namespace zs;
 
 
 ApplicationData::ApplicationData(QObject *parent)
     : QObject(parent) {}
 
 Q_INVOKABLE void ApplicationData::load_scene(QString str) const {
-    printf("load_scene %s\n", str.toStdString().c_str());
+    ztd::print("load_scene", str.toStdString());
 }
 
 ApplicationData::~ApplicationData() = default;
