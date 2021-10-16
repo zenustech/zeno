@@ -74,13 +74,13 @@ Rectangle {
 
     function addNode(args) {
         args.scene = thisScene
-        var node = compZenoNode.createObject(thisScene, args)
+        var node = compZenoNode.createObject(sceneRect, args)
         nodes.push(node)
     }
 
     function addLink(args) {
         args.scene = thisScene
-        var link = compZenoLink.createObject(thisScene, args)
+        var link = compZenoLink.createObject(sceneRect, args)
         args.srcSocket.attachLink(link)
         args.dstSocket.attachLink(link)
         links.push(link)
@@ -150,22 +150,32 @@ Rectangle {
         ZenoHalfLink {}
     }
 
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-
-        onClicked: {
-            if (halfLink != null) {
-                thisScene.linkDestroy()
-            } else {
-                thisScene.doSelect(null)
-            }
+    Rectangle {
+        id: sceneRect
+        transform: Translate {
+            x: 200
         }
 
-        onPositionChanged: {
-            if (!thisScene.focus)
-                thisScene.focus = true
-            thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
+        width: 100000
+        height: 100000
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+
+            onClicked: {
+                if (halfLink != null) {
+                    thisScene.linkDestroy()
+                } else {
+                    thisScene.doSelect(null)
+                }
+            }
+
+            onPositionChanged: {
+                if (!thisScene.focus)
+                    thisScene.focus = true
+                thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
+            }
         }
     }
 

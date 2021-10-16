@@ -4,6 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.2
 
 ApplicationWindow {
+    id: applicationWindow
     visible: true
     width: 640
     height: 480
