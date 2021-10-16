@@ -15,17 +15,34 @@ ApplicationWindow {
         focus: true
     }
 
-
     header: ToolBar {
         Flow {
             anchors.fill: parent
+
             ToolButton {
                 text: qsTr("Open")
                 icon.name: 'document-open'
                 onClicked: {
                     fileOpenDialog.open()
                 }
+
+                FileDialog {
+                    property var choice: null
+                    id: fileOpenDialog
+                    title: qsTr("Select an image file")
+                    folder: shortcuts.documents
+                    nameFilters: [
+                        qsTr("Image files (*.png *.jpeg *.jpg)"),
+                    ]
+                    onAccepted: {
+                        fileOpenDialog.choice = fileOpenDialog.fileUrl
+                    }
+                    onRejected: {
+                        fileOpenDialog.choice = null
+                    }
+                }
             }
+
             ToolButton {
                 text: qsTr("Apply")
                 icon.name: 'edit-cut'
