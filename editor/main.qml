@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
-import ZenusTech.Zeno 1.0
 
 ApplicationWindow {
     visible: true
@@ -18,7 +17,9 @@ ApplicationWindow {
     Button {
         text: qsTr("Apply")
         onClicked: {
-            currScene.dumpScene()
+            var r_scene = currScene.dumpScene()
+            var str_scene = JSON.stringify(r_scene)
+            applicationData.load_scene(str_scene)
         }
     }
 }

@@ -1,12 +1,13 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
-#include "ZenoSceneObject.h"
+#include <QQmlContext>
+#include "ApplicationData.h"
+
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
-    qmlRegisterType<ZenoSceneObject>("ZenusTech.Zeno", 1, 0, "ZenoSceneObject");
-
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("applicationData", new ApplicationData);
     engine.load(QUrl("qrc:/main.qml"));
 
     return app.exec();

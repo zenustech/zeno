@@ -43,7 +43,6 @@ Rectangle {
             var r_node = nodes[i].dumpNode()
             r_scene.push(r_node)
         }
-        print(JSON.stringify(r_scene))
         return r_scene
     }
 
