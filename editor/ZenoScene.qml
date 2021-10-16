@@ -4,8 +4,8 @@ Rectangle {
     id: thisScene
     color: '#222'
 
-    property point viewOrigin: Qt.point(0, 0)
-    property real viewScale: 1.0
+    property point viewOrigin: Qt.point(-100, 0)
+    property real viewScale: 1.2
 
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
@@ -179,8 +179,8 @@ Rectangle {
                 if (!thisScene.focus)
                     thisScene.focus = true
                 var mpos = Qt.point(
-                    (mouse.x + sceneRect.x + x) * sceneRect.scale,
-                    (mouse.y + sceneRect.y + y) * sceneRect.scale)
+                    (mouse.x + x) * viewScale - viewOrigin.x,
+                    (mouse.y + y) * viewScale - viewOrigin.y)
                 thisScene.mousePosition(mpos)
             }
         }
