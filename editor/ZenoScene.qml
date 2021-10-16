@@ -160,10 +160,10 @@ Rectangle {
         scale: viewScale
 
         MouseArea {
-            x: -Infinity
-            y: -Infinity
-            width: Infinity
-            height: Infinity
+            width: 524288
+            height: 524288
+            x: -width / 2
+            y: -height / 2
 
             hoverEnabled: true
 
@@ -178,7 +178,10 @@ Rectangle {
             onPositionChanged: {
                 if (!thisScene.focus)
                     thisScene.focus = true
-                thisScene.mousePosition(Qt.point(mouse.x, mouse.y))
+                var mpos = Qt.point(
+                    (mouse.x + sceneRect.x + x) * sceneRect.scale,
+                    (mouse.y + sceneRect.y + y) * sceneRect.scale)
+                thisScene.mousePosition(mpos)
             }
         }
     }
