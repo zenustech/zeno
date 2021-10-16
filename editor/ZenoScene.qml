@@ -4,6 +4,9 @@ Rectangle {
     id: thisScene
     color: '#222'
 
+    property point viewOrigin: Qt.point(0, 0)
+    property real viewScale: 1.0
+
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
     property var nodes: []
@@ -150,17 +153,18 @@ Rectangle {
         ZenoHalfLink {}
     }
 
-    Rectangle {
+    Item {
         id: sceneRect
-        transform: Translate {
-            x: 200
-        }
-
-        width: 100000
-        height: 100000
+        x: viewOrigin.x
+        y: viewOrigin.y
+        scale: viewScale
 
         MouseArea {
-            anchors.fill: parent
+            x: -Infinity
+            y: -Infinity
+            width: Infinity
+            height: Infinity
+
             hoverEnabled: true
 
             onClicked: {
