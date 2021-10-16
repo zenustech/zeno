@@ -155,17 +155,17 @@ Rectangle {
 
     Item {
         id: sceneRect
-        x: viewOrigin.x
-        y: viewOrigin.y
+        x: -viewOrigin.x
+        y: -viewOrigin.y
         scale: viewScale
 
         MouseArea {
-            width: 524288
-            height: 524288
-            x: -width / 2
-            y: -height / 2
+            width: thisScene.width / viewScale
+            height: thisScene.height / viewScale
+            x: viewOrigin.x / viewScale
+            y: viewOrigin.y / viewScale
 
-            hoverEnabled: true
+            hoverEnabled: halfLink != null
 
             onClicked: {
                 if (halfLink != null) {
