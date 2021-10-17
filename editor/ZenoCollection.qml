@@ -6,7 +6,7 @@ import QtQuick.Dialogs 1.2
 Item {
     id: thisCollection
 
-    property var descs: []
+    property var descs: [{kind: '(no descriptors)'}]
     property var currScene: null
 
     Component {

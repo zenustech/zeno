@@ -12,7 +12,6 @@ Rectangle {
     property ZenoHalfLink halfLink: null
     property var nodes: []
     property var links: []
-    property var descs: []
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -213,23 +212,16 @@ Rectangle {
             z: 5
 
             Repeater {
-                model: thisScene.descs
+                model: thisScene.collection.descs
 
                 Button {
                     text: modelData.kind
 
                     onClicked: {
                         addNodeByName(text, Qt.point(addNodeMenu.x, addNodeMenu.y))
+                        addNodeMenu.visible = false
                     }
                 }
-            }
-
-            Rectangle {
-                x: 0
-                y: 0
-                width: 100
-                height: 100
-                color: 'red'
             }
         }
 
