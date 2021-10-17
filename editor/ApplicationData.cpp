@@ -2,6 +2,7 @@
 #include <rapidjson/document.h>
 #include <range/v3/view/zip.hpp>
 #include <range/v3/view/transform.hpp>
+#include <range/v3/algorithm/find_if.hpp>
 #include <zs/zeno/dop/dop.h>
 #include <zs/ztd/format.h>
 #include <zs/ztd/assert.h>
@@ -61,24 +62,24 @@ static std::unique_ptr<zeno::dop::Graph> parse_graph(rapidjson::Value const &v_g
         }
     }
 
-#if 0
     auto v_links = load_member(v_graph, "links").GetArray();
     for (auto const &_: v_links) {
         auto v_link = _.GetObject();
 
         auto src_node = load_member(v_link, "src_node").GetString();
-        auto src_socket = load_member(v_link, "src_socket").GetInt();
+        auto src_socket = load_member(v_link, "src_socket").GetString();
         auto dst_node = load_member(v_link, "dst_node").GetString();
-        auto dst_socket = load_member(v_link, "dst_socket").GetInt();
+        auto dst_socket = load_member(v_link, "dst_socket").GetString();
 
-        auto s_node = graph->nodes.at(src_node);
-        auto s_sock = f_node->outputs.at(src_socket);
-        auto d_node = graph->nodes.at(dst_node);
-        auto d_sock = t_node->inputs.at(dst_socket);
+        auto s_node = nodeslut.at(src_node).node_ptr;
+        auto d_node = nodeslut.at(dst_node).node_ptr;
+        auto i_input = ZS_ZTD_ASSERT(ranges::find_if(d_node->desc->inputs, [&] (auto const &i) {
+            return i.name == dst_socket;
+        }), != ranges::end(d_node->desc->inputs)) - ranges::begin(d_node->desc->inputs);
 
         graph->add_link(s_sock, d_sock);
     }
-#endif
+
     return graph;
 }
 
