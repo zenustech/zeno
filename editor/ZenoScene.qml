@@ -4,8 +4,8 @@ Rectangle {
     id: thisScene
     color: '#222'
 
-    property point viewOrigin: Qt.point(-100, 0)
-    property real viewScale: 1.2
+    property point viewOrigin: Qt.point(0, 0)
+    property real viewScale: 1.0
 
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
@@ -175,14 +175,18 @@ Rectangle {
         }
 
         MouseArea {
+            id: mouseArea
             width: 100000
             height: 100000
             x: -width / 2
             y: -height / 2
 
-            hoverEnabled: halfLink != null
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton
 
             onClicked: {
+                if (!thisScene.focus)
+                    thisScene.focus = true
                 if (halfLink != null) {
                     thisScene.linkDestroy()
                 } else {
@@ -193,11 +197,19 @@ Rectangle {
             onPositionChanged: {
                 if (!thisScene.focus)
                     thisScene.focus = true
-                var mpos = Qt.point(
-                    (mouse.x + x) ,
-                    (mouse.y + y) )
+                var mpos = Qt.point(mouse.x + x, mouse.y + y)
                 thisScene.mousePosition(mpos)
             }
+        }
+
+        MouseArea {
+            width: mouseArea.width
+            height: mouseArea.height
+            x: mouseArea.x
+            y: mouseArea.y
+
+            acceptedButtons: Qt.MiddleButton
+            drag.target: parent
         }
     }
 
