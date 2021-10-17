@@ -7,14 +7,28 @@ Item {
     id: thisCollection
 
     property var descs: []
+    property var currScene: null
 
-    ZenoScene {
-        id: currScene
-        anchors.fill: parent
-        focus: true
+    Component {
+        id: compZenoScene
+
+        ZenoScene {}
+    }
+
+    function addScene() {
+        if (currScene != null)
+            currScene.visible = false
+        var scene = compZenoScene.createObject(thisCollection, {
+            collection: thisCollection,
+            focus: true,
+            visible: true
+        })
+        currScene = scene
+        return scene
     }
 
     ToolBar {
+        z: 4
         Flow {
             anchors.fill: parent
 
@@ -62,6 +76,7 @@ Item {
             y: 50
             width: 100
             height: 100
+            color: '#444'
 
             property var scene: null
             property var descs: []
@@ -69,6 +84,7 @@ Item {
     }
 
     function onAddNode(scene) {
+        print('add', scene)
         compZenoAddNodeMenu.createObject(scene.sceneRect, {
             scene: scene,
             descs: descs,
@@ -78,5 +94,6 @@ Item {
     Component.onCompleted: {
         var str_descs = rootWindow.appData.get_descriptors()
         thisCollection.descs = JSON.parse(str_descs)
+        addScene()
     }
 }

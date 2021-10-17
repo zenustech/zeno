@@ -3,6 +3,7 @@ import QtQuick 2.15
 Rectangle {
     id: thisScene
     color: '#222'
+    anchors.fill: collection
 
     property var collection: null
     property var selectedChildren: []
@@ -224,6 +225,11 @@ Rectangle {
         }
 
         MouseArea {
+            width: mouseArea.width
+            height: mouseArea.height
+            x: mouseArea.x
+            y: mouseArea.y
+
             acceptedButtons: Qt.RightButton
 
             onClicked: {
