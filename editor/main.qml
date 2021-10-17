@@ -55,4 +55,10 @@ ApplicationWindow {
             }
         }
     }
+
+    Component.onCompleted: {
+        var str_descs = appliactionData.get_descriptors()
+        var r_descs = JSON.parse(str_descs)
+        currScene.setDescriptors(r_descs)
+    }
 }
