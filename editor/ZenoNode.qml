@@ -17,6 +17,8 @@ Rectangle {
     function dumpNode() {
         var r_node = {}
         r_node.title = title
+        r_node.x = x
+        r_node.y = y
         r_node.inputs = []
         r_node.outputs = []
         for (var i in inputs) {

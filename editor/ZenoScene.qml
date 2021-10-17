@@ -41,11 +41,17 @@ Rectangle {
     }
 
     function dumpScene() {
-        var r_scene = []
+        var r_nodes = []
         for (var i in nodes) {
             var r_node = nodes[i].dumpNode()
-            r_scene.push(r_node)
+            r_nodes.push(r_node)
         }
+        var r_scene = {}
+        r_scene.view = {}
+        r_scene.view.x = viewOrigin.x
+        r_scene.view.y = viewOrigin.y
+        r_scene.view.scale = viewScale
+        r_scene.nodes = r_nodes
         return r_scene
     }
 
@@ -160,10 +166,10 @@ Rectangle {
         scale: viewScale
 
         MouseArea {
-            width: thisScene.width / viewScale
-            height: thisScene.height / viewScale
-            x: viewOrigin.x / viewScale
-            y: viewOrigin.y / viewScale
+            width: 100000
+            height: 100000
+            x: -width / 2
+            y: -height / 2
 
             hoverEnabled: halfLink != null
 
@@ -179,8 +185,8 @@ Rectangle {
                 if (!thisScene.focus)
                     thisScene.focus = true
                 var mpos = Qt.point(
-                    (mouse.x + x) * viewScale - viewOrigin.x,
-                    (mouse.y + y) * viewScale - viewOrigin.y)
+                    (mouse.x + x) ,
+                    (mouse.y + y) )
                 thisScene.mousePosition(mpos)
             }
         }
