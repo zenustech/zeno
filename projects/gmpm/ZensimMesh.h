@@ -10,6 +10,7 @@ namespace zeno {
 struct ZenoFEMMesh : zeno::IObject {
 
   using value_type = float;
+  using size_type = std::size_t;
   using spmat_type = zs::YaleSparseMatrix<value_type, int>;
   using allocator_type = zs::ZSPmrAllocator<>;
 
@@ -35,6 +36,7 @@ struct ZenoFEMMesh : zeno::IObject {
   zs::Vector<value_type> _elmVolume;
   zs::Vector<mat_9_12> _elmdFdx;
   zs::Vector<mat4> _elmMinv;
+  zs::Vector<mat3> _elmDmInv;
 
   zs::Vector<value_type> _elmYoungModulus;
   zs::Vector<value_type> _elmPoissonRatio;
@@ -61,10 +63,10 @@ struct ZenoFEMMesh : zeno::IObject {
 
   ZenoFEMMesh(const allocator_type &allocator)
       : _X{allocator, 0}, _tets{allocator, 0}, _tris{allocator, 0},
-        _bouDoFs{allocator, 0}, _freeDoFs{allocator, 0},
-        _DoF2FreeDoF{allocator, 0}, _elmMass{allocator, 0},
-        _elmVolume{allocator, 0}, _elmdFdx{allocator, 0}, _elmMinv{allocator,
-                                                                   0},
+        _bouDoFs{allocator, 0}, _freeDoFs{allocator, 0}, _DoF2FreeDoF{allocator,
+                                                                      0},
+        _elmMass{allocator, 0}, _elmVolume{allocator, 0},
+        _elmdFdx{allocator, 0}, _elmMinv{allocator, 0}, _elmDmInv{allocator, 0},
         _elmYoungModulus{allocator, 0}, _elmPoissonRatio{allocator, 0},
         _elmDensity{allocator, 0}, _elmAct{allocator, 0},
         _elmOrient{allocator, 0}, _elmWeight{allocator, 0} {}
@@ -87,6 +89,7 @@ struct ZenoFEMMesh : zeno::IObject {
     _elmVolume = _elmVolume.clone(newAllocator);
     _elmdFdx = _elmdFdx.clone(newAllocator);
     _elmMinv = _elmMinv.clone(newAllocator);
+    _elmDmInv = _elmDmInv.clone(newAllocator);
     _elmYoungModulus = _elmYoungModulus.clone(newAllocator);
     _elmPoissonRatio = _elmPoissonRatio.clone(newAllocator);
     _elmDensity = _elmDensity.clone(newAllocator);
@@ -124,6 +127,7 @@ struct ZenoFEMMesh : zeno::IObject {
 
       mat3 DmInv = inverse(Dm);
       _elmMinv[elm_id] = inverse(M);
+      _elmDmInv[elm_id] = DmInv;
 
       value_type m = DmInv(0, 0);
       value_type n = DmInv(0, 1);
@@ -351,6 +355,7 @@ struct ZenoFEMMesh : zeno::IObject {
       }
 #endif
   }
+
 };
 
 } // namespace zeno
