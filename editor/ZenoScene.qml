@@ -216,6 +216,7 @@ Rectangle {
 
                 Button {
                     text: modelData.kind
+                    Layout.fillWidth: true
 
                     onClicked: {
                         addNodeByName(text, Qt.point(addNodeMenu.x, addNodeMenu.y))
