@@ -2,8 +2,8 @@ import QtQuick 2.15
 
 ZenoEdge {
     id: thisLink
-    color: selected ? 'orange' : '#6cf'
-    z: 1
+    color: selected ? 'orange' : '#4ac'
+    z: 0
 
     property var scene: null
     property ZenoOutput srcSocket: null
