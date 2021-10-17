@@ -21,8 +21,7 @@ static void dump_descs(rapidjson::Value &v_descs, rapidjson::Document::Allocator
     };
 
     v_descs.SetArray();
-    for (auto const &kind: zeno::dop::desc_names()) {
-        auto const &desc = zeno::dop::desc_of(kind);
+    for (auto const &[kind, desc]: zeno::dop::desc_table()) {
 
         rapidjson::Value v_desc(rapidjson::kObjectType);
 

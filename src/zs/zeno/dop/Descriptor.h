@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <zs/ztd/map.h>
 
 
 namespace zs::zeno::dop {
@@ -34,8 +35,8 @@ struct Descriptor {
 
 
 void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory);
+ztd::map<std::string, Descriptor> &desc_table();
 Descriptor &desc_of(std::string const &kind);
-std::vector<std::string> desc_names();
 
 
 template <class T>
