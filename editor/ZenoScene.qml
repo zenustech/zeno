@@ -8,6 +8,7 @@ Rectangle {
     property ZenoHalfLink halfLink: null
     property var nodes: []
     property var links: []
+    property var descs: []
 
     function doSelect(item, multiselect) {
         if (item == null) {
@@ -148,6 +149,10 @@ Rectangle {
         if (halfLink != null) {
             halfLink.mousePos = mpos
         }
+    }
+
+    function setDescriptors(descs) {
+        thisScene.descs = descs;
     }
 
     Item {
