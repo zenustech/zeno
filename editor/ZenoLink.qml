@@ -19,8 +19,10 @@ ZenoEdge {
 
     function dumpLink() {
         var r_link = {}
-        r_link.src = srcSocket.title
-        r_link.dst = dstSocket.title
+        r_link.src_socket = srcSocket.title
+        r_link.dst_socket = dstSocket.title
+        r_link.src_node = srcSocket.node.title
+        r_link.dst_node = dstSocket.node.title
         return r_link
     }
 
