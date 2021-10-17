@@ -3,7 +3,7 @@ import QtQuick 2.15
 Rectangle {
     id: thisEdge
     antialiasing: true
-    color: '#6cf'
+    color: '#485'
 
     property point src: Qt.point(300, 300)
     property point dst: Qt.point(400, 200)

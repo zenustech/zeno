@@ -6,6 +6,7 @@ Item {
     anchors.topMargin: ypos
     anchors.top: parent.top
     anchors.left: parent.left
+    z: 2
 
     property var node: null
     property alias name: label.text

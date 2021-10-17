@@ -206,9 +206,7 @@ Rectangle {
         ColumnLayout {
             id: addNodeMenu
             visible: false
-            spacing: 2
-            x: 0
-            y: 0
+            spacing: 0
             z: 5
 
             Repeater {
@@ -217,6 +215,19 @@ Rectangle {
                 Button {
                     text: modelData.kind
                     Layout.fillWidth: true
+                    height: 4
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.hovered ? '#cc6' : '#333'
+                    }
+
+                    background: Rectangle {
+                        color: parent.hovered ? '#333' : '#699'
+                        border.color: parent.hovered ? '#699' : '#333'
+                        border.width: 2
+                        radius: 4
+                    }
 
                     onClicked: {
                         addNodeByName(text, Qt.point(addNodeMenu.x, addNodeMenu.y))
