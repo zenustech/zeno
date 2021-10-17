@@ -105,6 +105,7 @@ Rectangle {
     function linkInput(input) {
         if (halfLink == null) {
             halfLink = compZenoHalfLink.createObject(thisScene, {
+                scene: thisScene,
                 srcSocket: null,
                 dstSocket: input,
                 mousePos: input.getPos(),
@@ -123,6 +124,7 @@ Rectangle {
     function linkOutput(output) {
         if (halfLink == null) {
             halfLink = compZenoHalfLink.createObject(thisScene, {
+                scene: thisScene,
                 srcSocket: output,
                 dstSocket: null,
                 mousePos: output.getPos(),
@@ -151,26 +153,26 @@ Rectangle {
         }
     }
 
-    Component {
-        id: compZenoNode
-        ZenoNode {}
-    }
-
-    Component {
-        id: compZenoLink
-        ZenoLink {}
-    }
-
-    Component {
-        id: compZenoHalfLink
-        ZenoHalfLink {}
-    }
-
     Item {
         id: sceneRect
         x: -viewOrigin.x
         y: -viewOrigin.y
         scale: viewScale
+
+        Component {
+            id: compZenoNode
+            ZenoNode {}
+        }
+
+        Component {
+            id: compZenoLink
+            ZenoLink {}
+        }
+
+        Component {
+            id: compZenoHalfLink
+            ZenoHalfLink {}
+        }
 
         MouseArea {
             width: 100000
