@@ -2,7 +2,6 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.2
-import QtQuick.Layouts 1.2
 
 Item {
     id: thisCollection
@@ -66,36 +65,6 @@ Item {
                 }
             }
         }
-    }
-
-    Component {
-        id: compZenoAddNodeMenu
-
-        ColumnLayout {
-            id: thisMenu
-            spacing: 2
-
-            property var scene: null
-            property var descs: []
-
-            Repeater {
-                model: descs
-
-                Button {
-                    text: modelData.name
-                }
-            }
-        }
-    }
-
-    function onAddNode(scene, position) {
-        print(position)
-        compZenoAddNodeMenu.createObject(scene.sceneRect, {
-            scene: scene,
-            descs: descs,
-            x: position.x,
-            y: position.y,
-        })
     }
 
     Component.onCompleted: {

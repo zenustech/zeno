@@ -1,4 +1,6 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.2
 
 Rectangle {
     id: thisScene
@@ -6,7 +8,6 @@ Rectangle {
     anchors.fill: collection
 
     property var collection: null
-    property alias sceneRect: sceneRect
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
     property var nodes: []
@@ -95,6 +96,23 @@ Rectangle {
         nodes.push(node)
     }
 
+    function addNodeByName(kind, position) {
+        var ids = nodes.filter(function(node) {
+            return node.name.startsWith(kind)
+        }).map(function(node) {
+            return node.name.slice(kind.length)
+        })
+        var id
+        for (id = 1; ids.includes(id.toString()); id++);
+        var name = kind + id
+        addNode({
+            kind: kind,
+            name: name,
+            x: position.x,
+            y: position.y,
+        })
+    }
+
     function addLink(args) {
         args.scene = thisScene
         var link = compZenoLink.createObject(sceneRect, args)
@@ -154,6 +172,14 @@ Rectangle {
         }
     }
 
+    function showAddNodeMenu(position) {
+        compZenoAddNodeMenu.createObject(sceneRect, {
+            descs: collection.descs,
+            x: position.x,
+            y: position.y,
+        })
+    }
+
     Item {
         id: sceneRect
         x: 0
@@ -173,6 +199,29 @@ Rectangle {
         Component {
             id: compZenoHalfLink
             ZenoHalfLink {}
+        }
+
+        Component {
+            id: compZenoAddNodeMenu
+
+            ColumnLayout {
+                id: thisMenu
+                spacing: 2
+
+                property var descs: []
+
+                Repeater {
+                    model: descs
+
+                    Button {
+                        text: modelData.kind
+
+                        onClicked: {
+                            addNodeByName(text, Qt.point(thisMenu.x, thisMenu.y))
+                        }
+                    }
+                }
+            }
         }
 
         MouseArea {
@@ -235,7 +284,7 @@ Rectangle {
 
             onClicked: {
                 var mpos = Qt.point(mouse.x + x, mouse.y + y)
-                collection.onAddNode(thisScene, mpos)
+                thisScene.showAddNodeMenu(mpos)
             }
         }
     }
