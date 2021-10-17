@@ -4,9 +4,6 @@ Rectangle {
     id: thisScene
     color: '#222'
 
-    property point viewOrigin: Qt.point(0, 0)
-    property real viewScale: 1.0
-
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
     property var nodes: []
@@ -52,9 +49,9 @@ Rectangle {
             r_links.push(r_link)
         }
         var r_view = {}
-        r_view.x = viewOrigin.x
-        r_view.y = viewOrigin.y
-        r_view.scale = viewScale
+        r_view.x = sceneRect.x
+        r_view.y = sceneRect.y
+        r_view.scale = sceneRect.scale
         var r_scene = {}
         r_scene.view = r_view
         r_scene.nodes = r_nodes
@@ -155,9 +152,9 @@ Rectangle {
 
     Item {
         id: sceneRect
-        x: -viewOrigin.x
-        y: -viewOrigin.y
-        scale: viewScale
+        x: 0
+        y: 0
+        scale: 1
 
         Component {
             id: compZenoNode
@@ -210,6 +207,18 @@ Rectangle {
 
             acceptedButtons: Qt.MiddleButton
             drag.target: parent
+
+            onWheel: {
+                var new_scale = sceneRect.scale
+                if (wheel.angleDelta.y > 0) {
+                    new_scale *= 1.2
+                } else if (wheel.angleDelta.y < 0) {
+                    new_scale /= 1.2
+                }
+                sceneRect.x += (wheel.x + x) * (sceneRect.scale - new_scale)
+                sceneRect.y += (wheel.y + y) * (sceneRect.scale - new_scale)
+                sceneRect.scale = new_scale
+            }
         }
     }
 
