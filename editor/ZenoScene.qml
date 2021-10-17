@@ -4,6 +4,7 @@ Rectangle {
     id: thisScene
     color: '#222'
 
+    property var collection: null
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
     property var nodes: []
@@ -151,10 +152,6 @@ Rectangle {
         }
     }
 
-    function setDescriptors(descs) {
-        thisScene.descs = descs;
-    }
-
     Item {
         id: sceneRect
         x: 0
@@ -223,6 +220,14 @@ Rectangle {
                 sceneRect.x += (wheel.x + x) * (sceneRect.scale - new_scale)
                 sceneRect.y += (wheel.y + y) * (sceneRect.scale - new_scale)
                 sceneRect.scale = new_scale
+            }
+        }
+
+        MouseArea {
+            acceptedButtons: Qt.RightButton
+
+            onClicked: {
+                collection.onAddNode(thisScene, Qt.point(mouse.x, mouse.y))
             }
         }
     }

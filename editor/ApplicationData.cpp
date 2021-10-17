@@ -26,6 +26,10 @@ static void dump_descs(rapidjson::Value &v_descs, rapidjson::Document::Allocator
 
         rapidjson::Value v_desc(rapidjson::kObjectType);
 
+        v_desc.AddMember("kind", dump_string(kind), alloc);
+        v_desc.AddMember("cate", dump_string(desc.cate.category), alloc);
+        v_desc.AddMember("docs", dump_string(desc.cate.documentation), alloc);
+
         rapidjson::Value v_inputs(rapidjson::kArrayType);
         for (auto const &input: desc.inputs) {
             rapidjson::Value v_input(rapidjson::kObjectType);
