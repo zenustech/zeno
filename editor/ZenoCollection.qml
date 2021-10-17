@@ -53,9 +53,24 @@ Item {
         }
     }
 
+    Component {
+        id: compAddNodeMenu
+
+        Rectangle {
+            x: 50
+            y: 50
+            width: 100
+            height: 100
+
+            property var scene: null
+        }
+    }
+
     function onAddNode(scene) {
         for (var i in thisCollection.descs) {
-        scene
+            compAddNodeMenu.createObject(scene.sceneRect, {
+                scene: scene,
+            })
         }
     }
 
