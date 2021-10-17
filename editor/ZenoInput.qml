@@ -37,7 +37,7 @@ Item {
         id: port
         anchors.right: parent.left
         anchors.verticalCenter: parent.verticalCenter
-        color: '#c51'
+        color: '#c25'
         width: 20
         height: 20
         radius: 5
