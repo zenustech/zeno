@@ -13,7 +13,7 @@ Item {
     property var links: []
 
     function getPos() {
-        return Qt.point(parent.x - 10, parent.y + this.ypos)
+        return Qt.point(parent.x - port.width / 2, parent.y + ypos)
     }
 
     function attachLink(link) {
@@ -36,7 +36,7 @@ Item {
     Rectangle {
         id: port
         anchors.right: parent.left
-        y: -8
+        anchors.verticalCenter: parent.verticalCenter
         color: '#aaa'
         width: 20
         height: 20
