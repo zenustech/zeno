@@ -1,5 +1,7 @@
 #include "ApplicationData.h"
+#include <rapidjson/writer.h>
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
 #include <range/v3/view/zip.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/algorithm/find_if.hpp>
@@ -9,6 +11,40 @@
 #include <zs/ztd/error.h>
 
 using namespace zs;
+
+
+static void dump_descs(rapidjson::Value &v_descs, rapidjson::Document::AllocatorType &alloc) {
+    auto dump_string = [] (std::string const &s) {
+        rapidjson::Value v;
+        v.SetString(s.data(), s.size());
+        return v;
+    };
+
+    v_descs.SetArray();
+    for (auto const &kind: zeno::dop::desc_names()) {
+        auto const &desc = zeno::dop::desc_of(kind);
+
+        rapidjson::Value v_desc(rapidjson::kObjectType);
+
+        rapidjson::Value v_inputs(rapidjson::kArrayType);
+        for (auto const &input: desc.inputs) {
+            rapidjson::Value v_input(rapidjson::kObjectType);
+            v_input.AddMember("name", dump_string(input.name), alloc);
+            v_inputs.PushBack(v_input, alloc);
+        }
+        v_desc.AddMember("inputs", v_inputs, alloc);
+
+        rapidjson::Value v_outputs(rapidjson::kArrayType);
+        for (auto const &output: desc.outputs) {
+            rapidjson::Value v_output(rapidjson::kObjectType);
+            v_output.AddMember("name", dump_string(output.name), alloc);
+            v_outputs.PushBack(v_output, alloc);
+        }
+        v_desc.AddMember("outputs", v_outputs, alloc);
+
+        v_descs.PushBack(v_desc, alloc);
+    }
+}
 
 
 static std::unique_ptr<zeno::dop::Graph> parse_graph(rapidjson::Value const &v_graph) {
@@ -94,6 +130,17 @@ void ApplicationData::load_scene(QString str) const {
     rapidjson::Document doc;
     doc.Parse(s.c_str());
     parse_graph(doc);
+}
+
+QString ApplicationData::get_descriptors() const {
+    rapidjson::Document doc;
+    dump_descs(doc, doc.GetAllocator());
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer;
+    doc.Accept(writer);
+    std::string s = buffer.GetString();
+    ztd::print("dump_descs: ", s);
+    return QString::fromStdString(s);
 }
 
 ApplicationData::~ApplicationData() = default;

@@ -10,5 +10,6 @@ class ApplicationData : public QObject {
 public:
     explicit ApplicationData(QObject *parent = nullptr);
     Q_INVOKABLE void load_scene(QString str) const;
+    Q_INVOKABLE QString get_descriptors() const;
     virtual ~ApplicationData();
 };
