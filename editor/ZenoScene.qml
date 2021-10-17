@@ -104,7 +104,7 @@ Rectangle {
 
     function linkInput(input) {
         if (halfLink == null) {
-            halfLink = compZenoHalfLink.createObject(thisScene, {
+            halfLink = compZenoHalfLink.createObject(sceneRect, {
                 scene: thisScene,
                 srcSocket: null,
                 dstSocket: input,
@@ -123,7 +123,7 @@ Rectangle {
 
     function linkOutput(output) {
         if (halfLink == null) {
-            halfLink = compZenoHalfLink.createObject(thisScene, {
+            halfLink = compZenoHalfLink.createObject(sceneRect, {
                 scene: thisScene,
                 srcSocket: output,
                 dstSocket: null,
