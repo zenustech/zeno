@@ -72,19 +72,22 @@ Item {
 
         Rectangle {
             id: thisMenu
-            x: 50
-            y: 50
+            x: 300
+            y: 300
             width: 100
             height: 100
-            color: '#444'
+            color: '#996'
 
             property var scene: null
             property var descs: []
+
+            Component.onCompleted: {
+                print('wq', x, y, parent)
+            }
         }
     }
 
     function onAddNode(scene) {
-        print('add', scene)
         compZenoAddNodeMenu.createObject(scene.sceneRect, {
             scene: scene,
             descs: descs,

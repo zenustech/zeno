@@ -6,6 +6,7 @@ Rectangle {
     anchors.fill: collection
 
     property var collection: null
+    property alias sceneRect: sceneRect
     property var selectedChildren: []
     property ZenoHalfLink halfLink: null
     property var nodes: []
