@@ -3,7 +3,7 @@ add_executable(zs_editor)
 target_sources(zs_editor PRIVATE ${BACKWARD_ENABLE})
 add_backward(zs_editor)
 
-target_link_libraries(zs_editor PRIVATE zs rapidjson)
+target_link_libraries(zs_editor PRIVATE zs rapidjson range-v3)
 
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS *.h *.cpp)
 target_sources(zs_editor PRIVATE ${sources})
