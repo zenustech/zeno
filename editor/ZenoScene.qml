@@ -102,8 +102,9 @@ Rectangle {
         }).map(function(node) {
             return node.name.slice(kind.length)
         })
-        var id
-        for (id = 1; ids.includes(id.toString()); id++);
+        var id = 1
+        while (ids.includes(id.toString()))
+            id++
         var name = kind + id
         addNode({
             kind: kind,
@@ -173,11 +174,13 @@ Rectangle {
     }
 
     function showAddNodeMenu(position) {
-        compZenoAddNodeMenu.createObject(sceneRect, {
-            descs: collection.descs,
-            x: position.x,
-            y: position.y,
-        })
+        if (position != null) {
+            addNodeMenu.x = position.x
+            addNodeMenu.y = position.y
+            addNodeMenu.visible = true
+        } else {
+            addNodeMenu.visible = false
+        }
     }
 
     Item {
@@ -201,26 +204,32 @@ Rectangle {
             ZenoHalfLink {}
         }
 
-        Component {
-            id: compZenoAddNodeMenu
+        ColumnLayout {
+            id: addNodeMenu
+            visible: false
+            spacing: 2
+            x: 0
+            y: 0
+            z: 5
 
-            ColumnLayout {
-                id: thisMenu
-                spacing: 2
+            Repeater {
+                model: thisScene.descs
 
-                property var descs: []
+                Button {
+                    text: modelData.kind
 
-                Repeater {
-                    model: descs
-
-                    Button {
-                        text: modelData.kind
-
-                        onClicked: {
-                            addNodeByName(text, Qt.point(thisMenu.x, thisMenu.y))
-                        }
+                    onClicked: {
+                        addNodeByName(text, Qt.point(addNodeMenu.x, addNodeMenu.y))
                     }
                 }
+            }
+
+            Rectangle {
+                x: 0
+                y: 0
+                width: 100
+                height: 100
+                color: 'red'
             }
         }
 
@@ -237,6 +246,7 @@ Rectangle {
             onClicked: {
                 if (!thisScene.focus)
                     thisScene.focus = true
+                thisScene.showAddNodeMenu(null)
                 if (halfLink != null) {
                     thisScene.linkDestroy()
                 } else {
