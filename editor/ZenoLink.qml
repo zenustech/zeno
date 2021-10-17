@@ -17,6 +17,13 @@ ZenoEdge {
         scene.removeLink(thisLink)
     }
 
+    function dumpLink() {
+        var r_link = {}
+        r_link.src = srcSocket.title
+        r_link.dst = dstSocket.title
+        return r_link
+    }
+
     MouseArea {
         anchors.fill: parent
         onClicked: {

@@ -46,12 +46,19 @@ Rectangle {
             var r_node = nodes[i].dumpNode()
             r_nodes.push(r_node)
         }
+        var r_links = []
+        for (var i in links) {
+            var r_link = links[i].dumpLink()
+            r_links.push(r_link)
+        }
+        var r_view = {}
+        r_view.x = viewOrigin.x
+        r_view.y = viewOrigin.y
+        r_view.scale = viewScale
         var r_scene = {}
-        r_scene.view = {}
-        r_scene.view.x = viewOrigin.x
-        r_scene.view.y = viewOrigin.y
-        r_scene.view.scale = viewScale
+        r_scene.view = r_view
         r_scene.nodes = r_nodes
+        r_scene.links = r_links
         return r_scene
     }
 
