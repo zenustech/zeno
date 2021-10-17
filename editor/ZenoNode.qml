@@ -10,12 +10,14 @@ Rectangle {
 
     property var scene: null
     property alias name: label.text
+    property string kind: '(invalid kind)'
     property bool selected: false
     property var inputs: []
     property var outputs: []
 
     function dumpNode() {
         var r_node = {}
+        r_node.kind = kind
         r_node.name = name
         r_node.x = x
         r_node.y = y

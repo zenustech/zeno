@@ -10,33 +10,14 @@
 using namespace zs;
 
 
-ApplicationData::ApplicationData(QObject *parent)
-    : QObject(parent) {}
+static std::unique_ptr<zeno::dop::Graph> parse_graph(rapidjson::Value const &v_graph) {
+    auto load_member = [] (auto &&doc, const char *name) -> auto const & {
+        auto it = doc.FindMember(name);
+        if (it == doc.MemberEnd())
+            throw ztd::format_error("KeyError: JSON object has no member '{}'", name);
+        return it->value;
+    };
 
-void ApplicationData::load_scene(QString str) const {
-    ztd::print("load_scene: ", str.toStdString());
-}
-
-ApplicationData::~ApplicationData() = default;
-
-
-static rapidjson::Value dump_string(std::string const &s) {
-    rapidjson::Value v;
-    v.SetString(s.data(), s.size());
-    return v;
-}
-
-
-template <class Doc>
-auto const &load_member(Doc &&doc, const char *name) {
-    auto it = doc.FindMember(name);
-    if (it == doc.MemberEnd())
-        throw ztd::format_error("KeyError: no member named '{}'", name);
-    return it->value;
-}
-
-
-void parse_graph(rapidjson::Value const &v_graph) {
     struct NodeLutData {
         zeno::dop::Node *node_ptr{};
         std::vector<std::string> input_exprs;
@@ -57,28 +38,30 @@ void parse_graph(rapidjson::Value const &v_graph) {
         node->xpos = load_member(v_node, "x").GetFloat();
         node->ypos = load_member(v_node, "y").GetFloat();
 
-        auto &lutdata = nodeslut.emplace(node->name).first->second;
+        auto &lutdata = nodeslut[node->name];
+        lutdata.node_ptr = node;
 
         auto v_inputs = load_member(v_node, "inputs").GetArray();
-        ZS_ZTD_ASSERT_EQ(v_inputs.Size(), desc.inputs.size());
+        ZS_ZTD_ASSERT(v_inputs.Size() == desc.inputs.size());
         lutdata.input_exprs.reserve(v_inputs.Size());
         for (auto const &[v_input, desc_input]: ranges::views::zip(
                 v_inputs | ranges::views::transform([&] (auto &&x) { return x.GetObject(); }),
                 desc.inputs)) {
             auto name = load_member(v_input, "name").GetString();
             auto value = load_member(v_input, "value").GetString();
-            ZS_ZTD_ASSERT_EQ(name, desc_input.name);
+            ZS_ZTD_ASSERT(name == desc_input.name);
             lutdata.input_exprs.push_back(value);
         }
 
         auto v_outputs = load_member(v_node, "outputs").GetArray();
-        ZS_ZTD_ASSERT_EQ(v_outputs.Size(), desc.outputs.size());
+        ZS_ZTD_ASSERT(v_outputs.Size() == desc.outputs.size());
         for (auto const &[v_output, desc_output]: ranges::views::zip(v_outputs, desc.outputs)) {
             auto name = load_member(v_output, "name").GetString();
-            ZS_ZTD_ASSERT_EQ(name, desc_output.name);
+            ZS_ZTD_ASSERT(name == desc_output.name);
         }
     }
 
+#if 0
     auto v_links = load_member(v_graph, "links").GetArray();
     for (auto const &_: v_links) {
         auto v_link = _.GetObject();
@@ -95,4 +78,20 @@ void parse_graph(rapidjson::Value const &v_graph) {
 
         graph->add_link(s_sock, d_sock);
     }
+#endif
+    return graph;
 }
+
+
+ApplicationData::ApplicationData(QObject *parent)
+    : QObject(parent) {}
+
+void ApplicationData::load_scene(QString str) const {
+    std::string s = str.toStdString();
+    ztd::print("load_scene: ", s);
+    rapidjson::Document doc;
+    doc.Parse(s.c_str());
+    parse_graph(doc);
+}
+
+ApplicationData::~ApplicationData() = default;

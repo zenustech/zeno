@@ -228,12 +228,14 @@ Rectangle {
 
     Component.onCompleted: {
         thisScene.addNode({
-            title: 'readobj',
+            kind: 'readobj',
+            name: 'readobj1',
             x: 64,
             y: 128,
         })
         thisScene.addNode({
-            title: 'transform',
+            kind: 'transform',
+            name: 'transform1',
             x: 352,
             y: 64,
         })
