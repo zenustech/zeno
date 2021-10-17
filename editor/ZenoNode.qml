@@ -9,26 +9,26 @@ Rectangle {
     color: '#444'
 
     property var scene: null
-    property alias title: label.text
+    property alias name: label.text
     property bool selected: false
     property var inputs: []
     property var outputs: []
 
     function dumpNode() {
         var r_node = {}
-        r_node.title = title
+        r_node.name = name
         r_node.x = x
         r_node.y = y
         r_node.inputs = []
         r_node.outputs = []
         for (var i in inputs) {
             var input = inputs[i]
-            var r_input = {title: input.title}
+            var r_input = {name: input.name}
             r_node.inputs.push(r_input)
         }
         for (var i in outputs) {
             var output = outputs[i]
-            var r_output = {title: output.title}
+            var r_output = {name: output.name}
             r_node.outputs.push(r_output)
         }
         return r_node
@@ -118,13 +118,13 @@ Rectangle {
 
     Component.onCompleted: {
         thisNode.addInput({
-            title: 'path',
+            name: 'path',
         })
         thisNode.addInput({
-            title: 'options',
+            name: 'options',
         })
         thisNode.addOutput({
-            title: 'mesh',
+            name: 'mesh',
         })
     }
 }

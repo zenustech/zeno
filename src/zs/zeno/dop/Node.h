@@ -37,6 +37,7 @@ struct Node {
     ztd::vector<ztd::zany> outputs;
 
     float xpos = 0;
+    float ypos = 0;
     std::string name;
     Descriptor *desc = nullptr;
 

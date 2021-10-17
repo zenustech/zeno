@@ -8,7 +8,7 @@ Item {
     anchors.right: parent.right
 
     property var node: null
-    property alias title: label.text
+    property alias name: label.text
     property real ypos: 0
     property var links: []
 
