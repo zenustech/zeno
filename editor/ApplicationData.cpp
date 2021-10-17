@@ -140,10 +140,10 @@ QString ApplicationData::get_descriptors() const {
     rapidjson::Document doc;
     dump_descs(doc, doc.GetAllocator());
     rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     doc.Accept(writer);
     std::string s = buffer.GetString();
-    ztd::print("dump_descs: ", s);
+    ztd::print("get_descriptors: ", s);
     return QString::fromStdString(s);
 }
 

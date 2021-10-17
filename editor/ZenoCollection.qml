@@ -47,35 +47,36 @@ Item {
                 onClicked: {
                     var r_scene = currScene.dumpScene()
                     var str_scene = JSON.stringify(r_scene)
-                    applicationData.load_scene(str_scene)
+                    rootWindow.appData.load_scene(str_scene)
                 }
             }
         }
     }
 
     Component {
-        id: compAddNodeMenu
+        id: compZenoAddNodeMenu
 
         Rectangle {
+            id: thisMenu
             x: 50
             y: 50
             width: 100
             height: 100
 
             property var scene: null
+            property var descs: []
         }
     }
 
     function onAddNode(scene) {
-        for (var i in thisCollection.descs) {
-            compAddNodeMenu.createObject(scene.sceneRect, {
-                scene: scene,
-            })
-        }
+        compZenoAddNodeMenu.createObject(scene.sceneRect, {
+            scene: scene,
+            descs: descs,
+        })
     }
 
     Component.onCompleted: {
-        var str_descs = appliactionData.get_descriptors()
+        var str_descs = rootWindow.appData.get_descriptors()
         thisCollection.descs = JSON.parse(str_descs)
     }
 }
