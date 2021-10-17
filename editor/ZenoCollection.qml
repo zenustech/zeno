@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.2
+import QtQuick.Layouts 1.2
 
 Item {
     id: thisCollection
@@ -70,27 +71,30 @@ Item {
     Component {
         id: compZenoAddNodeMenu
 
-        Rectangle {
+        ColumnLayout {
             id: thisMenu
-            x: 300
-            y: 300
-            width: 100
-            height: 100
-            color: '#996'
+            spacing: 2
 
             property var scene: null
             property var descs: []
 
-            Component.onCompleted: {
-                print('wq', x, y, parent)
+            Repeater {
+                model: descs
+
+                Button {
+                    text: modelData.name
+                }
             }
         }
     }
 
-    function onAddNode(scene) {
+    function onAddNode(scene, position) {
+        print(position)
         compZenoAddNodeMenu.createObject(scene.sceneRect, {
             scene: scene,
             descs: descs,
+            x: position.x,
+            y: position.y,
         })
     }
 

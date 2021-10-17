@@ -234,7 +234,8 @@ Rectangle {
             acceptedButtons: Qt.RightButton
 
             onClicked: {
-                collection.onAddNode(thisScene, Qt.point(mouse.x, mouse.y))
+                var mpos = Qt.point(mouse.x + x, mouse.y + y)
+                collection.onAddNode(thisScene, mpos)
             }
         }
     }
