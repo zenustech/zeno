@@ -11,7 +11,7 @@
 namespace zeno {
 
 // _elmOrient
-struct AddMuscleFibers : zeno::INode {
+struct ZsAddMuscleFibers : zeno::INode {
   virtual void apply() override {
     auto fibers = get_input<zeno::PrimitiveObject>("fibers");
     auto femmesh = get_input<ZenoFEMMesh>("femmesh");
@@ -102,15 +102,15 @@ struct AddMuscleFibers : zeno::INode {
   }
 };
 
-ZENDEFNODE(AddMuscleFibers, {
-                                {"fibers", "femmesh"},
-                                {"outMesh", "fiberGeo"},
-                                {},
-                                {"FEM"},
-                            });
+ZENDEFNODE(ZsAddMuscleFibers, {
+                                  {"fibers", "femmesh"},
+                                  {"outMesh", "fiberGeo"},
+                                  {},
+                                  {"FEM"},
+                              });
 
 // _elmWeight
-struct SetUniformMuscleAnisotropicWeight : zeno::INode {
+struct ZsSetUniformMuscleAnisotropicWeight : zeno::INode {
   virtual void apply() override {
     auto mesh = get_input<ZenoFEMMesh>("inputMesh");
     auto uni_weight =
@@ -125,15 +125,15 @@ struct SetUniformMuscleAnisotropicWeight : zeno::INode {
   }
 };
 
-ZENDEFNODE(SetUniformMuscleAnisotropicWeight, {
-                                                  {{"inputMesh"}, {"weight"}},
-                                                  {"aniMesh"},
-                                                  {},
-                                                  {"FEM"},
-                                              });
+ZENDEFNODE(ZsSetUniformMuscleAnisotropicWeight, {
+                                                    {{"inputMesh"}, {"weight"}},
+                                                    {"aniMesh"},
+                                                    {},
+                                                    {"FEM"},
+                                                });
 
 // _elmAct
-struct SetUniformActivation : zeno::INode {
+struct ZsSetUniformActivation : zeno::INode {
   virtual void apply() override {
     auto mesh = get_input<ZenoFEMMesh>("inputMesh");
     auto uniform_Act =
@@ -159,11 +159,11 @@ struct SetUniformActivation : zeno::INode {
   }
 };
 
-ZENDEFNODE(SetUniformActivation, {
-                                     {{"inputMesh"}, {"uniform_act"}},
-                                     {"actMesh"},
-                                     {},
-                                     {"FEM"},
-                                 });
+ZENDEFNODE(ZsSetUniformActivation, {
+                                       {{"inputMesh"}, {"uniform_act"}},
+                                       {"actMesh"},
+                                       {},
+                                       {"FEM"},
+                                   });
 
 } // namespace zeno

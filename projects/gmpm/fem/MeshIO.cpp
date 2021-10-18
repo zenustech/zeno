@@ -9,7 +9,7 @@
 
 namespace zeno {
 
-struct MakeFEMMeshFromFile : zeno::INode {
+struct ZsMakeFEMMeshFromFile : zeno::INode {
   virtual void apply() override {
     auto node_file = get_input<zeno::StringObject>("NodeFile")->get();
     auto ele_file = get_input<zeno::StringObject>("EleFile")->get();
@@ -62,16 +62,16 @@ struct MakeFEMMeshFromFile : zeno::INode {
   }
 };
 
-ZENDEFNODE(MakeFEMMeshFromFile, {
-                                    {{"readpath", "NodeFile"},
-                                     {"readpath", "EleFile"},
-                                     {"readpath", "BouFile"},
-                                     {"density"},
-                                     {"YoungModulus"},
-                                     {"PossonRatio"}},
-                                    {"FEMMesh"},
-                                    {},
-                                    {"FEM"},
-                                });
+ZENDEFNODE(ZsMakeFEMMeshFromFile, {
+                                      {{"readpath", "NodeFile"},
+                                       {"readpath", "EleFile"},
+                                       {"readpath", "BouFile"},
+                                       {"density"},
+                                       {"YoungModulus"},
+                                       {"PossonRatio"}},
+                                      {"FEMMesh"},
+                                      {},
+                                      {"FEM"},
+                                  });
 
 } // namespace zeno
