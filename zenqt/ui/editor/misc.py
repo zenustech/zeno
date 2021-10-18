@@ -3,10 +3,6 @@ from . import *
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
-class BackgroundStyle(object):
-    NONE = 0
-    DOT = 1
-
 style = {
     'title_color': '#638e77',
     'socket_connect_color': '#638e77',
@@ -21,7 +17,7 @@ style = {
     'blackboard_title_color': '#393939',
     'blackboard_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
-    'background_color': '#263238',
+    'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
     'button_color': '#1e1e1e',
     'button_text_color': '#ffffff',
@@ -40,8 +36,6 @@ style = {
     'text_height': 23,
     'hori_margin': 9,
     'dummy_socket_offset': 15,
-
-    'background_style': BackgroundStyle.DOT,
 }
 
 TEXT_HEIGHT = style['text_height']
