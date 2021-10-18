@@ -244,17 +244,21 @@ whitelist = set(os.path.basename(x.strip()) for x in '''
 
 
 
-def linkdeps(*filenames):
+def linkdeps(*filenames, full=False):
     np = p = set(filenames)
     while np:
         np = ldd(*np)
-        np = set(x for x in np if os.path.basename(x) not in whitelist)
+        if not full:
+            np = set(x for x in np if os.path.basename(x) not in whitelist)
         np -= p
         p |= np
-    p -= set(filenames)
     return p
 
 
-executable = 'exe'
+executable = sys.argv[1]
+output_dir = os.path.dirname(executable)
 for library in linkdeps(executable):
-    shutil.copyfile(library, os.path.join(os.path.dirname(executable), os.path.dirname(library)))
+    print('=> copying {}'.format(library))
+    dst_library = os.path.join(output_dir, os.path.basename(library))
+    shutil.copyfile(library, dst_library)
+    subprocess.check_call(['patchelf', '--set-rpath', '${ORIGIN}', dst_library])
