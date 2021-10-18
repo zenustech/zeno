@@ -129,6 +129,7 @@ def complete(*filenames):
         np = set(x for x in np if os.path.basename(x) not in whitelist)
         np -= p
         p |= np
+    p -= set(filenames)
     return p
 
 
