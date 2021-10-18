@@ -29,6 +29,10 @@ if __name__ == '__main__':
 
 
 whitelist = set(os.path.basename(x.strip()) for x in '''
+    /usr/lib/libicudata.so.69
+    /usr/lib/libicui18n.so.69
+    /usr/lib/libicuuc.so.69
+    /usr/lib/libxcb.so.1
     /usr/lib/libEGL.so
     /usr/lib/libEGL.so.1
     /usr/lib/libEGL.so.1.1.0
@@ -257,8 +261,12 @@ def linkdeps(*filenames, full=False):
 
 executable = sys.argv[1]
 output_dir = os.path.dirname(executable)
+print('=> executable {}'.format(executable))
+print('=> output directory {}'.format(output_dir))
 for library in linkdeps(executable):
-    print('=> copying {}'.format(library))
     dst_library = os.path.join(output_dir, os.path.basename(library))
-    shutil.copyfile(library, dst_library)
+    if not os.path.isfile(dst_library):
+        print('=> copying {} -> {}'.format(library, dst_library))
+        shutil.copyfile(library, dst_library)
+    print('=> patching {}'.format(dst_library))
     subprocess.check_call(['patchelf', '--set-rpath', '${ORIGIN}', dst_library])
