@@ -4,6 +4,11 @@ project(zeno_FEM)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+find_package(OpenMP)
+if(NOT OpenMP_CXX_FOUND)
+
+endif(NOT OpenMP_CXX_FOUND)
+
 set(FEM_MUSCLE_SOURCE_FILES
     src/math/matrix_helper.hpp
     src/math/differentiable_SVD.h
@@ -18,6 +23,8 @@ set(FEM_MUSCLE_SOURCE_FILES
 
 add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
+target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
+
 target_include_directories(zeno_FEM PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/math
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh
