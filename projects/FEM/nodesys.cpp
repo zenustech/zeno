@@ -1132,54 +1132,6 @@ struct DoTimeStep : zeno::INode {
             FEM_Scaler e0,e1,eg0;
             e0 = EvalObjDerivHessian(mesh,force_model,damping_model,integrator,deriv,_HValueBuffer);
 
-            // {
-            //     std::cout << "check derivative" << std::endl;
-            //     size_t nm_dofs = integrator->_traj[curID].size();
-            //     MatXd H_fd = MatXd(nm_dofs,nm_dofs);
-            //     VecXd deriv_fd = deriv,deriv_tmp = deriv;
-            //     FEM_Scaler e0_tmp;
-            //     VecXd cur_frame_copy = integrator->_traj[curID];
-
-            //     for(size_t i = 0;i < nm_dofs;++i){
-            //         integrator->_traj[curID] = cur_frame_copy;
-            //         FEM_Scaler step = cur_frame_copy[i] * 1e-8;
-            //         step = fabs(step) < 1e-8 ? 1e-8 : step;
-
-            //         integrator->_traj[curID][i] += step;
-            //         e0_tmp = EvalObjDeriv(mesh,force_model,integrator,deriv_tmp);
-
-            //         deriv_fd[i] = (e0_tmp - e0) / step;
-            //         H_fd.col(i) = (deriv_tmp - deriv) / step;
-
-
-            //     }
-            //     integrator->_traj[curID] = cur_frame_copy;
-
-            //     FEM_Scaler deriv_error = (deriv_fd - deriv).norm();
-            //     FEM_Scaler H_error = (mesh->MapHMatrix(_HValueBuffer.data()).toDense() - H_fd).norm();
-
-            //     if(deriv_error > 1e-4){
-            //         std::cout << "D_ERROR : " << deriv_error << std::endl;
-            //         std::cout << "deriv_norm : " << deriv_fd.norm() << "\t" << deriv.norm() << std::endl;
-            //         // for(size_t i = 0;i < deriv_fd.size();++i){
-            //         //     std::cout << "idx : " << i << "\t" << deriv_fd[i] << "\t" << deriv[i] << std::endl;
-            //         // }
-            //         // for(size_t i = 0;i < nm_dofs;++i)
-            //         //     std::cout << "idx : " << i << "\t" << deriv[i] << "\t" << deriv_fd[i] << std::endl;
-            //         // throw std::runtime_error("DERROR");
-            //     }
-
-            //     if(H_error > 1e-3){
-            //         std::cout << "H_error : " << H_error << std::endl;
-            //         // std::cout << std::setprecision(6) << "H_cmp : " << std::endl << mesh->MapHMatrix(_HValueBuffer.data()).toDense() << std::endl;
-            //         // std::cout << std::setprecision(6) << "H_fd : " << std::endl << H_fd << std::endl;
-
-            //         throw std::runtime_error("HERROR");
-            //     }
-            // }
-
-            // throw std::runtime_error("INT_ERROR");
-
             MatHelper::RetrieveDoFs(deriv.data(),ruc.data(),mesh->_freeDoFs.size(),mesh->_freeDoFs.data());
             MatHelper::RetrieveDoFs(_HValueBuffer.data(),_HucValueBuffer.data(),mesh->_SpMatFreeDoFs.size(),mesh->_SpMatFreeDoFs.data());
 
@@ -1380,53 +1332,6 @@ struct DoTimeStep : zeno::INode {
                     damp->_dampForce,
                     elm_traj,
                     &_objBuffer[elm_id],_derivBuffer[elm_id],_HBuffer[elm_id],true);
-
-
-                // {
-                //     FEM_Scaler obj_tmp;
-                //     Vec12d deriv_tmp,deriv_fd;
-                //     Mat12x12d H_fd;
-                //     Vec12d frame_copy = elm_traj[clen - 1];
-
-                //     for(size_t i = 0;i < 12;++i){
-                //         elm_traj[clen - 1] = frame_copy;
-                //         FEM_Scaler step = frame_copy[i] * 1e-8;
-                //         step = fabs(step) < 1e-8 ? 1e-8 : step;
-                //         elm_traj[clen - 1][i] += step;
-
-                //         integrator->_intPtr->EvalElmObjDeriv(attrbs,
-                //             muscle->_forceModel,
-                //             damp->_dampForce,
-                //             elm_traj,&obj_tmp,deriv_tmp);
-                //         deriv_fd[i] = (obj_tmp - _objBuffer[elm_id])  / step;
-                //         H_fd.col(i) = (deriv_tmp - _derivBuffer[elm_id]) / step;
-                //     }
-
-                //     elm_traj[clen - 1] = frame_copy;
-
-                //     FEM_Scaler D_error = (deriv_fd - _derivBuffer[elm_id]).norm() / deriv_fd.norm();
-                //     FEM_Scaler H_error = (H_fd - _HBuffer[elm_id]).norm()/H_fd.norm();
-
-                //     // if(D_error > 1e-3){
-                //     //     std::cout << "ELM_ID : " << elm_id << std::endl;
-                //     //     std::cout << "INT_ELM_D_error : " << D_error << std::endl;
-                //     //     for(size_t i = 0;i < 12;++i)
-                //     //         std::cout << "idx : " << i << "\t" << deriv_fd[i] << "\t" << _derivBuffer[elm_id][i] << std::endl;
-                //     //     throw std::runtime_error("INT_ELM_D_ERROR");
-                //     // }
-
-                //     if(H_error > 1e-3){
-                //         std::cout << "ELM_ID : " << elm_id << std::endl;
-                //         std::cout << "D_Error : " << D_error << std::endl;
-                //         std::cout << "INT_ELM_H_Error : " << H_error << std::endl;
-                //         std::cout << "H_cmp : " << std::endl << _HBuffer[elm_id] << std::endl;
-                //         std::cout << "H_fd : " << std::endl << H_fd << std::endl;
-                //         throw std::runtime_error("INT_ELM_H_ERROR");
-                //     }
-                //     // throw std::runtime_error("INT_ERROR_CHECK");
-                // }
-
-
             }
 
             deriv.setZero();
