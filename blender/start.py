@@ -1,4 +1,4 @@
-#!/usr/local/bin/blender -P
+#!/usr/bin/blender -P
 
 import os, sys
 
