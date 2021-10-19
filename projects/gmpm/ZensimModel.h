@@ -11,4 +11,8 @@ struct ZenoConstitutiveModel : zeno::IObject {
   zs::ConstitutiveModelConfig model;
 };
 
+struct ZenoForceModel : zeno::IObject {};
+
+struct ZenoDampingForceModel : zeno::IObject {};
+
 } // namespace zeno
