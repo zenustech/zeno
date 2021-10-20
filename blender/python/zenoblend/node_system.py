@@ -3,7 +3,7 @@ import bpy
 from .cpp_dll import core
 
 
-our_creations = {}
+our_creations = set()
 
 
 def create_bl_mesh(name):
@@ -12,7 +12,7 @@ def create_bl_mesh(name):
     else:
         mesh = bpy.data.meshes[name]
         mesh.clear_geometry()
-        our_creations.insert(name)
+        our_creations.add(name)
     return mesh
 
 
