@@ -24,7 +24,7 @@ struct ZenoFEMMesh : zeno::IObject {
   std::shared_ptr<zeno::PrimitiveObject> _mesh;
 
   /// counterparts to primitive object
-  zs::Vector<vec3> _X;
+  zs::Vector<vec3> _X, _V;
   zs::Vector<vec4i> _tets;
   zs::Vector<vec3i> _tris;
 
@@ -51,6 +51,9 @@ struct ZenoFEMMesh : zeno::IObject {
   zs::Vector<mat3> _elmOrient;
   zs::Vector<vec3> _elmWeight;
 
+  zs::Vector<std::size_t> _closeBindPoints;
+  zs::Vector<std::size_t> _farBindPoints;
+
   decltype(auto) get_default_allocator(zs::memsrc_e mre,
                                        zs::ProcID devid) const {
     using namespace zs;
@@ -69,7 +72,7 @@ struct ZenoFEMMesh : zeno::IObject {
         _elmdFdx{allocator, 0}, _elmMinv{allocator, 0}, _elmDmInv{allocator, 0},
         _elmYoungModulus{allocator, 0}, _elmPoissonRatio{allocator, 0},
         _elmDensity{allocator, 0}, _elmAct{allocator, 0},
-        _elmOrient{allocator, 0}, _elmWeight{allocator, 0} {}
+        _elmOrient{allocator, 0}, _elmWeight{allocator, 0}, _closeBindPoints{allocator, 0}, _farBindPoints{allocator, 0} {}
 
   ZenoFEMMesh(zs::memsrc_e mre = zs::memsrc_e::host, zs::ProcID devid = -1)
       : ZenoFEMMesh{get_default_allocator(mre, devid)} {}
