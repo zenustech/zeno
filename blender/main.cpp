@@ -18,24 +18,18 @@ struct UpdateId {
 std::vector<UpdateId> updates;
 
 
-static std::vector<std::string> get_updated_names() {
-    std::vector<std::string> bl_names;
-    for (auto const &update: updates) {
-        bl_names.push_back(update.bl_name);
-    }
-    return bl_names;
+static size_t get_updates_count() {
+    return updates.size();
 }
 
 
-static void set_updated_names(std::vector<std::string> bl_names) {
-    updates.clear();
-    for (auto const &bl_name: bl_names) {
-        updates.push_back({.bl_name = bl_name});
-    }
+static std::string get_update_bl_name(int idx) {
+    auto const &update = updates.at(idx);
+    return update.bl_name;
 }
 
 
-static uintptr_t get_updated_mesh(int idx) {
+static uintptr_t get_update_zs_mesh(int idx) {
     auto const &update = updates.at(idx);
     auto *zs_mesh = update.zs_mesh.get();
     return reinterpret_cast<uintptr_t>(zs_mesh);
@@ -57,8 +51,8 @@ static size_t get_mesh_verts(uintptr_t p_zs_mesh, uintptr_t p_bl_verts) {
 
 
 PYBIND11_MODULE(zs_blender, m) {
-    m.def("get_updated_names", get_updated_names);
-    m.def("set_updated_names", set_updated_names);
-    m.def("get_updated_mesh", get_updated_mesh);
+    m.def("get_update_zs_mesh", get_update_zs_mesh);
+    m.def("set_update_bl_name", get_update_bl_name);
+    m.def("get_updates_count", get_updates_count);
     m.def("get_mesh_verts", get_mesh_verts);
 }

@@ -9,12 +9,12 @@ if module_path not in sys.path:
     sys.path.insert(0, module_path)
 
 print('====== restart ======')
-if 'zeno' in sys.modules:
-    sys.modules['zeno'].unregister()
+if 'zenoblend' in sys.modules:
+    sys.modules['zenoblend'].unregister()
 
-    del sys.modules['zeno']
+    del sys.modules['zenoblend']
     for key in list(sys.modules.keys()):
         if key.startswith('zeno'):
             del sys.modules[key]
 
-__import__('zeno').register()
+__import__('zenoblend').register()
