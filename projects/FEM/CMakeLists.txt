@@ -13,7 +13,7 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/math/matrix_helper.hpp
     src/math/differentiable_SVD.h
     src/math/differentiable_SVD.cpp
-    src/force_model/anisotropic_SNH.h
+    src/force_model/anisotropic_NH.h
     src/force_model/base_force_model.h
     src/integrator/base_integrator.h
     src/integrator/backward_euler_integrator.h

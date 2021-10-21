@@ -85,4 +85,41 @@ public:
 
         return M;
     }
+    inline void EvalIsoInvarients(const Mat3x3d& F,Vec3d& Is) const{
+        Mat3x3d U,V;
+        Vec3d sigma;
+        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+
+
+    }
+    inline void EvalIsoInvarientsDeriv(const Mat3x3d& F,
+            Vec3d& Is,
+            std::array<Vec3d,3>& derivs) const {
+        Mat3x3d U,V;
+        Vec3d sigma;
+        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+    }
+
+    inline void EvalIsoInvarientsDerivHessianEigSystem(const Mat3x3d& F,
+            Vec3d& Is,
+            std::array<Vec9d,3>& derivs,
+            Vec9d& eig_vals,
+            std::array<Vec9d,9>& eig_vecs) const {
+        Mat3x3d U,V;
+        Vec3d sigma;
+        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];            
+    }
+// we place all the invarients, their derivs and Hessians computation here
 };
