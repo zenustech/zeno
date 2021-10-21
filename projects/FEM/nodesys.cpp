@@ -414,6 +414,7 @@ struct FiberParticleToFEMFiber : zeno::INode {
 
         float sigma = 2;
 
+#pragma omp parallel for
         for(size_t elm_id = 0;elm_id < tets.size();++elm_id){
             fiber->attr<float>("elmID")[elm_id] = float(elm_id);
 

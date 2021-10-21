@@ -78,11 +78,10 @@ struct ExplicitTimeStepping : zeno::INode {
       }
       auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], force_model, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], damping_model, damping_model->coeff, v_n);
       // atomic add
-      for (int v = 0; v != 4; ++v) {
-        auto vi = tetIndices[v];
-        const auto base = v * 3;
-        for (int d = 0; d != 3; ++d)
-          zs::atomic_add(zs::exec_omp, &integrator->_f[vi][d], eleForce[base + d]);
+      for (int v = 0, base = 0; v != 4; ++v) {
+        auto &f = integrator->_f[tetIndices[v]];
+        for (int d = 0; d != 3; ++d, ++base)
+          zs::atomic_add(zs::exec_omp, &f[d], eleForce[base]);
       }
     });
     // update V
@@ -94,9 +93,9 @@ struct ExplicitTimeStepping : zeno::INode {
       const auto dt = integrator->_dt;
       const auto nodalMass = mesh->_elmMass[ei] * 0.25;
       for (int v = 0, base = 0; v != 4; ++v) {
-        auto vi = tetIndices[v];
-        for (int d = 0; d != 3; ++d)
-          zs::atomic_add(zs::exec_omp, &V[vi][d], (value_type)(f[(base++) + d] * dt / nodalMass));
+        auto &vel = V[tetIndices[v]];
+        for (int d = 0; d != 3; ++d, ++base)
+          zs::atomic_add(zs::exec_omp, &vel[d], (value_type)(f[base] * dt / nodalMass));
       }
     });
     // update X

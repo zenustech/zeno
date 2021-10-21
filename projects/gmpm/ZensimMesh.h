@@ -25,12 +25,15 @@ struct ZenoFEMMesh : zeno::IObject {
 
   /// counterparts to primitive object
   zs::Vector<vec3> _X, _V;
+  zs::Vector<vec3> _x, _v;
   zs::Vector<vec4i> _tets;
   zs::Vector<vec3i> _tris;
 
-  zs::Vector<int> _bouDoFs;
-  zs::Vector<int> _freeDoFs;
-  zs::Vector<int> _DoF2FreeDoF;
+  zs::Vector<std::size_t> _closeBindPoints;
+  zs::Vector<std::size_t> _farBindPoints;
+  zs::Vector<std::size_t> _bouDoFs;
+  zs::Vector<std::size_t> _freeDoFs;
+  zs::Vector<std::size_t> _DoF2FreeDoF;
 
   zs::Vector<value_type> _elmMass;
   zs::Vector<value_type> _elmVolume;
@@ -40,6 +43,7 @@ struct ZenoFEMMesh : zeno::IObject {
 
   zs::Vector<value_type> _elmYoungModulus;
   zs::Vector<value_type> _elmPoissonRatio;
+  zs::Vector<value_type> _elmDamp;
   zs::Vector<value_type> _elmDensity;
 
   // spmat_type _connMatrix;
@@ -51,8 +55,6 @@ struct ZenoFEMMesh : zeno::IObject {
   zs::Vector<mat3> _elmOrient;
   zs::Vector<vec3> _elmWeight;
 
-  zs::Vector<std::size_t> _closeBindPoints;
-  zs::Vector<std::size_t> _farBindPoints;
 
   decltype(auto) get_default_allocator(zs::memsrc_e mre,
                                        zs::ProcID devid) const {
@@ -65,26 +67,32 @@ struct ZenoFEMMesh : zeno::IObject {
   }
 
   ZenoFEMMesh(const allocator_type &allocator)
-      : _X{allocator, 0}, _tets{allocator, 0}, _tris{allocator, 0},
+      : _X{allocator, 0}, _V{allocator, 0}, _x{allocator, 0}, _v{allocator, 0}, 
+        _tets{allocator, 0}, _tris{allocator, 0}, _closeBindPoints{allocator, 0}, _farBindPoints{allocator, 0},
         _bouDoFs{allocator, 0}, _freeDoFs{allocator, 0}, _DoF2FreeDoF{allocator,
                                                                       0},
         _elmMass{allocator, 0}, _elmVolume{allocator, 0},
         _elmdFdx{allocator, 0}, _elmMinv{allocator, 0}, _elmDmInv{allocator, 0},
-        _elmYoungModulus{allocator, 0}, _elmPoissonRatio{allocator, 0},
+        _elmYoungModulus{allocator, 0}, _elmPoissonRatio{allocator, 0}, _elmDamp{allocator, 0},
         _elmDensity{allocator, 0}, _elmAct{allocator, 0},
-        _elmOrient{allocator, 0}, _elmWeight{allocator, 0}, _closeBindPoints{allocator, 0}, _farBindPoints{allocator, 0} {}
+        _elmOrient{allocator, 0}, _elmWeight{allocator, 0} {}
 
   ZenoFEMMesh(zs::memsrc_e mre = zs::memsrc_e::host, zs::ProcID devid = -1)
       : ZenoFEMMesh{get_default_allocator(mre, devid)} {}
 
   void relocate(zs::memsrc_e mre = zs::memsrc_e::host, zs::ProcID devid = -1) {
-    if (_bouDoFs.memspace() == mre && _bouDoFs.devid() == devid)
+    if (_X.memspace() == mre && _X.devid() == devid)
       return;
     auto newAllocator = _bouDoFs.get_default_allocator(mre, devid);
 
     _X = _X.clone(newAllocator);
+    _V = _V.clone(newAllocator);
+    _x = _x.clone(newAllocator);
+    _v = _v.clone(newAllocator);
     _tets = _tets.clone(newAllocator);
     _tris = _tris.clone(newAllocator);
+    _closeBindPoints = _closeBindPoints.clone(newAllocator);
+    _farBindPoints = _farBindPoints.clone(newAllocator);
     _bouDoFs = _bouDoFs.clone(newAllocator);
     _freeDoFs = _freeDoFs.clone(newAllocator);
     _DoF2FreeDoF = _DoF2FreeDoF.clone(newAllocator);
@@ -95,6 +103,7 @@ struct ZenoFEMMesh : zeno::IObject {
     _elmDmInv = _elmDmInv.clone(newAllocator);
     _elmYoungModulus = _elmYoungModulus.clone(newAllocator);
     _elmPoissonRatio = _elmPoissonRatio.clone(newAllocator);
+    _elmDamp = _elmDamp.clone(newAllocator);
     _elmDensity = _elmDensity.clone(newAllocator);
     _elmAct = _elmAct.clone(newAllocator);
     _elmOrient = _elmOrient.clone(newAllocator);
@@ -103,6 +112,7 @@ struct ZenoFEMMesh : zeno::IObject {
 
   void DoPreComputation() {
     auto nm_elms = _mesh->quads.size(); // num tets
+
     for (std::size_t elm_id = 0; elm_id != nm_elms; ++elm_id) {
       auto elm = _mesh->quads[elm_id];
       mat4 M{};
@@ -111,21 +121,17 @@ struct ZenoFEMMesh : zeno::IObject {
         for (std::size_t d = 0; d != 3; ++d)
           M(d, i) = vert[d];
         M(3, i) = 1;
-        // M.block(0, i, 3, 1) << vert[0], vert[1], vert[2];
       }
-      // M.bottomRows(1).setConstant(1.0);
       _elmVolume[elm_id] = gcem::abs(zs::determinant(M)) / 6;
       _elmMass[elm_id] = _elmVolume[elm_id] * _elmDensity[elm_id];
 
       mat3 Dm{};
-      for (size_t i = 1; i < 4; ++i) {
+      for (size_t i = 1; i != 4; ++i) {
         const auto &vert = _mesh->verts[elm[i]];
         const auto &vert0 = _mesh->verts[elm[0]];
 
         for (std::size_t d = 0; d != 3; ++d)
           Dm(d, i - 1) = vert[d] - vert0[d];
-        // Dm.col(i - 1) << vert[0] - vert0[0], vert[1] - vert0[1],
-        //    vert[2] - vert0[2];
       }
 
       mat3 DmInv = inverse(Dm);
@@ -175,6 +181,7 @@ struct ZenoFEMMesh : zeno::IObject {
       }
       node_fin.close();
 
+      ///
       _X.resize(num_vertices);
 #if 0
       for (auto &&[dst, src] : zs::zip(_X, pos))
@@ -211,6 +218,7 @@ struct ZenoFEMMesh : zeno::IObject {
       }
       ele_fin.close();
 
+      ///
       _tets.resize(nm_elms);
 #if 0
       for (auto &&[dst, src] : zs::zip(_tets, quads))
@@ -227,6 +235,7 @@ struct ZenoFEMMesh : zeno::IObject {
         _mesh->tris.emplace_back(tet[0], tet[3], tet[1]);
       }
 
+      ///
       _tris.resize(_mesh->tris.size());
 #if 0
       for (auto &&[dst, src] : zs::zip(_tris, _mesh->tris))
@@ -241,24 +250,36 @@ struct ZenoFEMMesh : zeno::IObject {
     }
   }
 
-  // constrained dof indices -> _bouDoFs
-  void LoadBoundaryIndicesFromFile(const std::string &filename) {
-    size_t nm_cons_dofs, start_idx;
-    std::ifstream bou_fin;
-    try {
-      bou_fin.open(filename.c_str());
-      if (!bou_fin.is_open())
-        std::cerr << "ERROR::BOU::FAILED::" << filename << std::endl;
+  void LoadBindingPoints(const std::string& bindfile) {
+    size_t nm_closed_points,nm_far_points;
+    std::ifstream bind_fin;
+    try{
+        bind_fin.open(bindfile.c_str());
+        if (!bind_fin.is_open()) {
+            std::cerr << "ERROR::NODE::FAILED::" << bindfile << std::endl;
+        }
+        bind_fin >> nm_closed_points >> nm_far_points;
+        _closeBindPoints.resize(nm_closed_points);
+        _farBindPoints.resize(nm_far_points);
 
-      bou_fin >> nm_cons_dofs >> start_idx;
-      _bouDoFs.resize(nm_cons_dofs);
-      for (size_t c_id = 0; c_id < nm_cons_dofs; ++c_id) {
-        bou_fin >> _bouDoFs[c_id];
-        _bouDoFs[c_id] -= start_idx;
-      }
-      bou_fin.close();
-    } catch (std::exception &e) {
-      std::cerr << e.what() << std::endl;
+        for(size_t i = 0;i < nm_closed_points;++i)
+            bind_fin >> _closeBindPoints[i];
+
+        for(size_t i = 0;i < nm_far_points;++i)
+            bind_fin >> _farBindPoints[i];
+        bind_fin.close();
+    } catch(std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    std::cout << "CLOSED : " << std::endl;
+    for(size_t i = 0; i != _closeBindPoints.size(); ++i){
+      std::cout << "C : " << i << "\t" << _closeBindPoints[i] << std::endl;
+    }
+
+    std::cout << "FAR : " << std::endl;
+    for(size_t i = 0; i != _farBindPoints.size(); ++i) {
+        std::cout << "F : " << i << "\t" << _farBindPoints[i] << std::endl;
     }
   }
 
@@ -284,79 +305,6 @@ struct ZenoFEMMesh : zeno::IObject {
     }
     _DoF2FreeDoF.resize(nmDoFs);
     memcpy(_DoF2FreeDoF.data(), DoF2FreeDoF.data(), sizeof(int) * nmDoFs);
-
-#if 0
-    // Initialize connectivity matrices
-    size_t nm_elms = _mesh->quads.size();
-    std::set<Triplet, triplet_cmp> connTriplets;
-    size_t nm_insertions = 0;
-    for (size_t elm_id = 0; elm_id < nm_elms; ++elm_id) {
-      const auto &elm = _mesh->quads[elm_id];
-      for (size_t i = 0; i < 4; ++i)
-        for (size_t j = 0; j < 4; ++j)
-          for (size_t k = 0; k < 3; ++k)
-            for (size_t l = 0; l < 3; ++l) {
-              size_t row = elm[i] * 3 + k;
-              size_t col = elm[j] * 3 + l;
-              if (row > col)
-                continue;
-              if (row == col) {
-                connTriplets.insert(Triplet(row, col, 1.0));
-                ++nm_insertions;
-              } else {
-                connTriplets.insert(Triplet(row, col, 1.0));
-                connTriplets.insert(Triplet(col, row, 1.0));
-                nm_insertions += 2;
-              }
-            }
-    }
-    _connMatrix = SpMat(nmDoFs, nmDoFs);
-    _connMatrix.setFromTriplets(connTriplets.begin(), connTriplets.end());
-    _connMatrix.makeCompressed();
-
-    std::set<Triplet, triplet_cmp> freeConnTriplets;
-    nm_insertions = 0;
-    for (size_t elm_id = 0; elm_id < nm_elms; ++elm_id) {
-      const auto &elm = _mesh->quads[elm_id];
-      for (size_t i = 0; i < 4; ++i)
-        for (size_t j = 0; j < 4; ++j)
-          for (size_t k = 0; k < 3; ++k)
-            for (size_t l = 0; l < 3; ++l) {
-              size_t row = _DoF2FreeDoF[elm[i] * 3 + k];
-              size_t col = _DoF2FreeDoF[elm[j] * 3 + l];
-              if (row == -1 || col == -1 || row > col)
-                continue;
-              if (row == col) {
-                freeConnTriplets.insert(Triplet(row, col, 1.0));
-                nm_insertions++;
-              } else {
-                freeConnTriplets.insert(Triplet(row, col, 1.0));
-                freeConnTriplets.insert(Triplet(col, row, 1.0));
-                nm_insertions += 2;
-              }
-            }
-    }
-    _freeConnMatrix = SpMat(nmFreeDoFs, nmFreeDoFs);
-    _freeConnMatrix.setFromTriplets(freeConnTriplets.begin(),
-                                    freeConnTriplets.end());
-    _freeConnMatrix.makeCompressed();
-
-    _SpMatFreeDoFs.resize(_freeConnMatrix.nonZeros());
-    size_t uc_idx = 0;
-    size_t idx = 0;
-    for (size_t k = 0; k != size_t(_connMatrix.outerSize()); ++k)
-      for (SpMat::InnerIterator it(_connMatrix, k); it; ++it) {
-        size_t row = it.row();
-        size_t col = it.col();
-        if (_DoF2FreeDoF[row] == -1 || _DoF2FreeDoF[col] == -1) {
-          idx++;
-          continue;
-        }
-        _SpMatFreeDoFs[uc_idx] = idx;
-        ++uc_idx;
-        ++idx;
-      }
-#endif
   }
 
 };
