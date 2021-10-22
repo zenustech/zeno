@@ -6,9 +6,9 @@
 #include <zeno/utils/UserData.h>
 #include <zeno/StringObject.h>
 
-#include <anisotropic_NH.h>
+// #include <anisotropic_NH.h>
 #include <diriclet_damping.h>
-#include <isotropic_NH.h>
+#include <stable_isotropic_NH.h>
 
 #include <backward_euler_integrator.h>
 #include <fstream>
@@ -224,15 +224,6 @@ struct FEMMesh : zeno::IObject{
         }catch(std::exception &e){
             std::cerr << e.what() << std::endl;
         }
-        // std::cout << "CLOSED : " << std::endl;
-        // for(size_t i = 0;i < _closeBindPoints.size();++i){
-        //     std::cout << "C : " << i << "\t" << _closeBindPoints[i] << std::endl;
-        // }
-
-        // std::cout << "FAR : " << std::endl;
-        // for(size_t i = 0;i < _farBindPoints.size();++i){
-        //     std::cout << "F : " << i << "\t" << _farBindPoints[i] << std::endl;
-        // }
     }
 
 // load .ele file
@@ -468,10 +459,6 @@ struct SetMaterialFromHandles : zeno::INode {
 
         double sigma = 0.3;
 
-        // for(size_t i = 0;i < handles->materials.size();++i)
-        //     std::cout << "M<" << i << "> : " << handles->materials[i].transpose() << std::endl;
-        // throw std::runtime_error("m check");
-
         #pragma omp parallel for
         for(size_t i = 0;i < materials.size();++i) {
             auto target_vert = femmesh->_mesh->verts[i];
@@ -492,11 +479,6 @@ struct SetMaterialFromHandles : zeno::INode {
             materials[i] /= weight_sum;
         }
 
-
-        // std::cout << "output material vert : " << std::endl;
-        // for(size_t i = 0;i < materials.size();++i)
-        //     std::cout << "V<" << i << "> : \t" << materials[i].transpose() << std::endl;
-        // throw std::runtime_error("m check");
 
         // interpolate the vertex material to element
         size_t nm_elms = femmesh->_mesh->quads.size();
@@ -1095,10 +1077,13 @@ struct MakeMuscleForceModel : zeno::INode {
     virtual void apply() override {
         auto model_type = std::get<std::string>(get_param("ForceModel"));
         auto res = std::make_shared<MuscleForceModel>();
-        if(model_type == "Fiberic")
-            res->_forceModel = std::shared_ptr<BaseForceModel>(new AnisotropicSNHModel());
+        if(model_type == "Fiberic"){
+            // res->_forceModel = std::shared_ptr<BaseForceModel>(new AnisotropicSNHModel());
+            std::cout << "The Anisotropic Model is not stable yet" << std::endl;
+            throw std::runtime_error("The Anisotropic Model is not stable yet");
+        }
         else if(model_type == "HyperElastic")
-            res->_forceModel = std::shared_ptr<BaseForceModel>(new SmithSNHModel());
+            res->_forceModel = std::shared_ptr<BaseForceModel>(new StableIsotropicMuscle());
         else{
             std::cerr << "UNKNOWN MODEL_TYPE" << std::endl;
             throw std::runtime_error("UNKNOWN MODEL_TYPE");

@@ -66,22 +66,7 @@ public:
         phi = mu/2 * (Is[0] - I1_d) + lambda/2 * (Is[2] - 1) * (Is[2] - 1);
         dphi = mu/2 * (Ds[0] - I1_d_deriv) + lambda * (Is[2] - 1) * Ds[2];
 
-        // std::cout << "Is : " << Is.transpose() << std::endl;
-        // std::cout << "Ds[0] : " << std::endl << MatHelper::MAT(Ds[0]) << std::endl;
-        // std::cout << "I1_d_deriv : " << std::endl << MatHelper::MAT(I1_d_deriv) << std::endl;
-
-        // std::cout << "Ds[2] : \n" << Ds[2] << std::endl;
-
         dphi = dFactdF.transpose() * dphi;
-
-        // std::cout << "dFactdF:" << std::endl << dFactdF << std::endl;
-
-        // std::cout << "ComputePhiDeriv : " << std::endl;
-        // std::cout << "Act : " << std::endl << Act << std::endl;
-        // std::cout << "Weight : " << aniso_weight.transpose() << std::endl;
-        // std::cout << "Orient : " << std::endl << fiber_direction << std::endl;
-        // std::cout << "F : " << std::endl << F << std::endl;
-        // std::cout << "dphi : " << std::endl << dphi << std::endl;
 
     }
     void ComputePhiDerivHessian(const Mat3x3d& Act,
@@ -182,9 +167,7 @@ public:
             invarients[1] /= weight_sum;
             derivs[1] /= weight_sum;
 
-            invarients[2] = EvalI3Deriv(F,derivs[2]);  
-
-            // std::cout << "IN DS[0]:" << std::endl << MatHelper::MAT(derivs[0]) << std::endl;         
+            invarients[2] = EvalI3Deriv(F,derivs[2]);      
     }
 
     inline void ComputeAnisotropicInvarientsDerivHessian(const Mat3x3d &_orient,

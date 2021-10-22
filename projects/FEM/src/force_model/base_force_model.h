@@ -67,7 +67,6 @@ public:
     static FEM_Scaler Lame2E(FEM_Scaler lambda,FEM_Scaler mu) {return mu*(2*mu+3*lambda)/(mu+lambda);}
     static FEM_Scaler Lame2Nu(FEM_Scaler lambda,FEM_Scaler mu) {return lambda / (2 * (lambda +mu));}
 
-
     inline Mat9x9d EvaldFactdF(const Mat3x3d& Act_inv) const {
         Mat9x9d M = Mat9x9d::Zero();
         
@@ -93,12 +92,17 @@ public:
         Is[0] = sigma.sum();
         Is[1] = sigma.squaredNorm();
         Is[2] = sigma[0] * sigma[1] * sigma[2];
-
-
     }
+
+    inline void EvalIsoInvarients(const Vec3d& sigma,Vec3d& Is) const{
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+    }
+    
     inline void EvalIsoInvarientsDeriv(const Mat3x3d& F,
             Vec3d& Is,
-            std::array<Vec3d,3>& derivs) const {
+            std::array<Vec9d,3>& gs) const {
         Mat3x3d U,V;
         Vec3d sigma;
         DiffSVD::SVD_Decomposition(F, U, sigma, V);        
@@ -106,20 +110,18 @@ public:
         Is[0] = sigma.sum();
         Is[1] = sigma.squaredNorm();
         Is[2] = sigma[0] * sigma[1] * sigma[2];
-    }
 
-    inline void EvalIsoInvarientsDerivHessianEigSystem(const Mat3x3d& F,
-            Vec3d& Is,
-            std::array<Vec9d,3>& derivs,
-            Vec9d& eig_vals,
-            std::array<Vec9d,9>& eig_vecs) const {
-        Mat3x3d U,V;
-        Vec3d sigma;
-        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+        Mat3x3d R = U * V.transpose();
 
-        Is[0] = sigma.sum();
-        Is[1] = sigma.squaredNorm();
-        Is[2] = sigma[0] * sigma[1] * sigma[2];            
+        gs[0] = MatHelper::VEC(R);
+        gs[1] = 2 * MatHelper::VEC(F);
+
+        Mat3x3d J;
+        J.col(0) = F.col(1).cross(F.col(2));
+        J.col(1) = F.col(2).cross(F.col(0));
+        J.col(2) = F.col(0).cross(F.col(1));       
+
+        gs[2] = MatHelper::VEC(J);
     }
 // we place all the invarients, their derivs and Hessians computation here
 };
