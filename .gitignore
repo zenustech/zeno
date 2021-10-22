@@ -2,6 +2,9 @@
 build
 cmake-build-*
 
+# python files
+__pycache__
+
 # vim files
 .*.swp
 .*.un~
@@ -12,6 +15,7 @@ tags
 .vs
 .vscode
 .cache
+CMakeLists.txt.user
 CMakeSettings.json
 CMakeLists.txt.user
 
