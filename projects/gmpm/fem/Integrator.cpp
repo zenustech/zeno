@@ -27,56 +27,33 @@ struct ExplicitTimeStepping : zeno::INode {
     // set initial guess
     const auto sz = mesh->_mesh->size();
     const auto numEle = mesh->_mesh->quads.size();
-    integrator->_x.resize(sz);
-    integrator->_v.resize(sz);
     integrator->_f.resize(sz);
 
-    auto depa = std::make_shared<zeno::PrimitiveObject>();
-    auto &depa_pos = depa->attr<zeno::vec3f>("pos");
     using value_type = typename ZenoFEMMesh::value_type;
     using vec3 = typename ZenoFEMMesh::vec3;
     using mat3 = typename ZenoFEMMesh::mat3;
     using vec12 = zs::vec<value_type, 12>;
     using vec4 = zs::vec<value_type, 4>;
 
-    for (size_t i = 0; i != mesh->_closeBindPoints.size(); ++i) {
-      size_t idx = mesh->_closeBindPoints[i];
-      vec3 vert{mesh->_mesh->verts[idx][0], mesh->_mesh->verts[idx][1], mesh->_mesh->verts[idx][2]};
-      vert = closed_T->affineMap * vert;
-      integrator->_x[idx] = vert;
-
-      depa_pos.emplace_back(mesh->_mesh->verts[idx]);
-    }
-
-    for (size_t i = 0; i != mesh->_farBindPoints.size(); ++i) {
-      size_t idx = mesh->_farBindPoints[i];
-      vec3 vert{mesh->_mesh->verts[idx][0], mesh->_mesh->verts[idx][1], mesh->_mesh->verts[idx][2]};
-      vert = far_T->affineMap * vert;
-      integrator->_x[idx] = vert;
-
-      depa_pos.emplace_back(mesh->_mesh->verts[idx]);
-    }
-
-    set_output("depa", std::move(depa));
 
     auto ompExec = zs::omp_exec();
     // elm force
     ompExec(integrator->_f, [](vec3 &v) { v = vec3::zeros(); });
     ompExec(zs::range(numEle), [&](std::size_t ei) {
       auto tetIndices = mesh->_tets[ei];
-      const auto &X = mesh->_X;
-      const auto &V = mesh->_V;
+      const auto &xs = mesh->_x;
+      const auto &vs = mesh->_v;
       vec12 u_n{}, v_n{};
       for (int v = 0, base = 0; v != 4; ++v) {
         const auto vi = tetIndices[v];
-        const auto &pos = X[vi];
-        const auto &vel = V[vi];
+        const auto &pos = xs[vi];
+        const auto &vel = vs[vi];
         for (int d = 0; d != 3; ++d, ++base) {
           u_n[base] = pos[d];
           v_n[base] = vel[d];
         }
       }
-      auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], force_model, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], damping_model, damping_model->coeff, v_n);
+      auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], force_model, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], damping_model, mesh->_elmDamp[ei], v_n);
       // atomic add
       for (int v = 0, base = 0; v != 4; ++v) {
         auto &f = integrator->_f[tetIndices[v]];
@@ -84,27 +61,54 @@ struct ExplicitTimeStepping : zeno::INode {
           zs::atomic_add(zs::exec_omp, &f[d], eleForce[base]);
       }
     });
-    // update V
+    // update v
     ompExec(zs::range(numEle), [&](std::size_t ei) {
       auto tetIndices = mesh->_tets[ei];
-      auto &X = mesh->_X;
-      auto &V = mesh->_V;
-      const auto f = integrator->_f[ei];
       const auto dt = integrator->_dt;
       const auto nodalMass = mesh->_elmMass[ei] * 0.25;
-      for (int v = 0, base = 0; v != 4; ++v) {
-        auto &vel = V[tetIndices[v]];
-        for (int d = 0; d != 3; ++d, ++base)
-          zs::atomic_add(zs::exec_omp, &vel[d], (value_type)(f[base] * dt / nodalMass));
+      for (int v = 0; v != 4; ++v) {
+        auto vi = tetIndices[v];
+        auto &vel = mesh->_v[vi];
+        const auto f = integrator->_f[vi];
+        for (int d = 0; d != 3; ++d)
+          zs::atomic_add(zs::exec_omp, &vel[d], (value_type)(f[d] * dt / nodalMass));
       }
     });
-    // update X
+    // apply gravity, update x
     ompExec(zs::range(sz), [&](std::size_t vi) {
-      auto &X = mesh->_X;
-      auto &V = mesh->_V;
-      const auto dt = integrator->_dt;
-      X[vi] += V[vi] * dt;
+      mesh->_v[vi] += integrator->_gravity * integrator->_dt;
+      mesh->_x[vi] += mesh->_v[vi] * integrator->_dt;
     });
+
+    // apply boundary in the end
+    auto depa = std::make_shared<zeno::PrimitiveObject>();
+    auto &depa_pos = depa->attr<zeno::vec3f>("pos");
+    const auto dt = integrator->_dt;
+
+    const auto &meshPos = mesh->_mesh->verts;
+    for (size_t i = 0; i != mesh->_closeBindPoints.size(); ++i) {
+      size_t idx = mesh->_closeBindPoints[i];
+      vec3 vert{meshPos[idx][0], meshPos[idx][1], meshPos[idx][2]};
+      vert = closed_T->affineMap * vert;
+
+      mesh->_v[idx] = (vert - mesh->_x[idx]) / dt;
+      mesh->_x[idx] = vert;
+
+      depa_pos.emplace_back(mesh->_mesh->verts[idx]);
+    }
+
+    for (size_t i = 0; i != mesh->_farBindPoints.size(); ++i) {
+      size_t idx = mesh->_farBindPoints[i];
+      vec3 vert{meshPos[idx][0], meshPos[idx][1], meshPos[idx][2]};
+      vert = far_T->affineMap * vert;
+
+      mesh->_v[idx] = (vert - mesh->_x[idx]) / dt;
+      mesh->_x[idx] = vert;
+
+      depa_pos.emplace_back(mesh->_mesh->verts[idx]);
+    }
+
+    set_output("depa", std::move(depa));
   }
 
 };

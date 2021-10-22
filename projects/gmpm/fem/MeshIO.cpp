@@ -39,17 +39,19 @@ struct MakeFEMMeshFromFile2 : zeno::INode {
     res->LoadElementsFromFile(ele_file);  // _mesh->quads, _mesh->tris, _tets, _tris
 
     res->LoadBindingPoints(bou_file); // _closeBindPoints, _farBindPoints
+    res->_bouDoFs.resize((res->_closeBindPoints.size() + res->_farBindPoints.size()) * 3);
+    size_t base = 0;
     for(size_t i = 0; i != res->_closeBindPoints.size(); ++i) {
         auto vert_idx = res->_closeBindPoints[i];
-        res->_bouDoFs.push_back(vert_idx * 3 + 0);
-        res->_bouDoFs.push_back(vert_idx * 3 + 1);
-        res->_bouDoFs.push_back(vert_idx * 3 + 2);
+        res->_bouDoFs[base++] = vert_idx * 3 + 0;
+        res->_bouDoFs[base++] = vert_idx * 3 + 1;
+        res->_bouDoFs[base++] = vert_idx * 3 + 2;
     }
     for(size_t i = 0; i != res->_farBindPoints.size(); ++i) {
         auto vert_idx = res->_farBindPoints[i];
-        res->_bouDoFs.push_back(vert_idx * 3 + 0);
-        res->_bouDoFs.push_back(vert_idx * 3 + 1);
-        res->_bouDoFs.push_back(vert_idx * 3 + 2);
+        res->_bouDoFs[base++] = vert_idx * 3 + 0;
+        res->_bouDoFs[base++] = vert_idx * 3 + 1;
+        res->_bouDoFs[base++] = vert_idx * 3 + 2;
     }
 
     {

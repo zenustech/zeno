@@ -18,7 +18,6 @@ struct ZenoExplicitTimeIntegrator : zeno::IObject {
 
   value_type _dt;
   vec3 _gravity;
-  zs::Vector<vec3> _x, _v;
   zs::Vector<vec3> _f;
 };
 
