@@ -2,10 +2,6 @@
 build
 cmake-build-*
 
-# output files
-outputs
-zeno_output.txt
-
 # vim files
 .*.swp
 .*.un~
@@ -17,3 +13,8 @@ tags
 .vscode
 .cache
 CMakeSettings.json
+CMakeLists.txt.user
+
+# zeno files
+outputs
+zeno_output.txt
