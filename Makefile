@@ -12,7 +12,7 @@ test: zs_tests
 	test -d ~/.cache/ccache || ln -sf /tmp/zeno-ccache ~/.cache/ccache
 	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -sf /tmp/zeno-build build
-	cmake -B /tmp/zeno-build -G Ninja
+	cmake -B /tmp/zeno-build
 	cmake --build /tmp/zeno-build --parallel
 
 config:

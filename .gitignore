@@ -17,7 +17,6 @@ tags
 .cache
 CMakeLists.txt.user
 CMakeSettings.json
-CMakeLists.txt.user
 
 # zeno files
 outputs
