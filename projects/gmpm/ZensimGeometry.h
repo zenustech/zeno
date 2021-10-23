@@ -9,7 +9,8 @@
 namespace zeno {
 
 struct ZenoAffineMatrix : zeno::IObject {
-  zs::vec<float, 4, 4> affineMap;
+  using mat4 = zs::vec<float, 4, 4>;
+  mat4 affineMap;
 };
 
 struct ZenoParticles : zeno::IObject {

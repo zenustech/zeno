@@ -1,4 +1,5 @@
 #include "../ZensimMesh.h"
+#include "../ZensimGeometry.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
@@ -111,5 +112,17 @@ ZENDEFNODE(MakeFEMMeshFromFile2, {
                                      {},
                                      {"FEM"},
                                  });
+
+struct MakeIdentityMatrix2 : zeno::INode {
+  void apply() override {
+    auto ret = std::make_shared<ZenoAffineMatrix>();
+    ret->affineMap = ZenoAffineMatrix::mat4::identity();
+    set_output("eyeMat4", std::move(ret));
+  }
+};
+
+ZENDEFNODE(MakeIdentityMatrix2, {
+  {}, {"eyeMat4"}, {}, {"FEM"}
+});
 
 } // namespace zeno

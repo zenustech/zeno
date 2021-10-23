@@ -284,8 +284,8 @@
       "z": 0.5
      },
      "uipos": [
-      -802.8182515337425,
-      -756.8858640081802
+      -808.9337114163255,
+      -776.7611086265756
      ],
      "options": []
     },
@@ -308,13 +308,155 @@
       -507.2533231083845
      ],
      "options": []
+    },
+    "82d376e5-MakeExplicitTimeIntegrator2": {
+     "name": "MakeExplicitTimeIntegrator2",
+     "inputs": {
+      "dt": [
+       "fd98ee26-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -129.95352250489236,
+      -964.7137964774951
+     ],
+     "options": []
+    },
+    "fd98ee26-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.001
+     },
+     "uipos": [
+      -403.6203522504892,
+      -1024.3395303326809
+     ],
+     "options": []
+    },
+    "d10300f4-ExplicitTimeStepping": {
+     "name": "ExplicitTimeStepping",
+     "inputs": {
+      "mesh": [
+       "dbdbc819-SetUniformMuscleAnisotropicWeight2",
+       "aniMesh",
+       null
+      ],
+      "muscleForce": [
+       null,
+       null,
+       null
+      ],
+      "dampForce": [
+       null,
+       null,
+       null
+      ],
+      "integrator": [
+       "82d376e5-MakeExplicitTimeIntegrator2",
+       "integrator",
+       null
+      ],
+      "epsilon": [
+       "7aeffdd1-NumericFloat",
+       "value",
+       null
+      ],
+      "CT": [
+       "5244119c-MakeIdentityMatrix2",
+       "eyeMat4",
+       null
+      ],
+      "FT": [
+       "5244119c-MakeIdentityMatrix2",
+       "eyeMat4",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      435.7265166340508,
+      -854.6355185909981
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "7aeffdd1-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      19.8752446183953,
+      -790.423189823875
+     ],
+     "options": []
+    },
+    "d37ee5d0-MakeIdentityMatrix": {
+     "name": "MakeIdentityMatrix",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -21.404109589041127,
+      -480.06360078277896
+     ],
+     "options": []
+    },
+    "5244119c-MakeIdentityMatrix2": {
+     "name": "MakeIdentityMatrix2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      80.61679174484053,
+      -1088.326688555347
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1143.9632971204228,
-    "y": -1017.3409140718983,
-    "width": 781.25,
-    "height": 781.25
+    "x": -411.35081029816484,
+    "y": -1171.4128954163896,
+    "width": 976.5625,
+    "height": 976.5625
    }
   }
  },
@@ -5550,6 +5692,36 @@
     "dict"
    ]
   },
+  "MakeExplicitTimeIntegrator2": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeFEMIntegrator": {
    "inputs": [
     [
@@ -5880,6 +6052,31 @@
     [
      "",
      "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeIdentityMatrix2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "eyeMat4",
      ""
     ],
     [

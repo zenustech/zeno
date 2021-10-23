@@ -17,8 +17,8 @@ namespace zeno {
 struct ExplicitTimeStepping : zeno::INode {
   void apply() override {
     auto mesh = get_input<ZenoFEMMesh>("mesh");
-    auto force_model = get_input<ZenoForceModel>("muscleForce");
-    auto damping_model = get_input<ZenoDampingForceModel>("dampForce");
+    // auto force_model = get_input<ZenoForceModel>("muscleForce");
+    // auto damping_model = get_input<ZenoDampingForceModel>("dampForce");
     auto integrator = get_input<ZenoExplicitTimeIntegrator>("integrator");
     auto epsilon = get_input<zeno::NumericObject>("epsilon")->get<float>();
     auto closed_T = get_input<ZenoAffineMatrix>("CT");
@@ -53,7 +53,7 @@ struct ExplicitTimeStepping : zeno::INode {
           v_n[base] = vel[d];
         }
       }
-      auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], force_model, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], damping_model, mesh->_elmDamp[ei], v_n);
+      auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], nullptr /*force_model*/, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], nullptr/*damping_model*/, mesh->_elmDamp[ei], v_n);
       // atomic add
       for (int v = 0, base = 0; v != 4; ++v) {
         auto &f = integrator->_f[tetIndices[v]];
@@ -115,7 +115,24 @@ struct ExplicitTimeStepping : zeno::INode {
 
 ZENDEFNODE(ExplicitTimeStepping, {
     {{"mesh"},{"muscleForce"},{"dampForce"},{"integrator"},{"epsilon"},{"CT"},{"FT"}},
-    {"curentFrame","depa"},
+    {"depa"},
+    {},
+    {"FEM"},
+});
+
+struct MakeExplicitTimeIntegrator2 : zeno::INode {
+  void apply() override {
+    auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+    auto integrator = std::make_shared<ZenoExplicitTimeIntegrator>();
+    integrator->_dt = dt;
+    integrator->_gravity = typename ZenoExplicitTimeIntegrator::vec3{0.f, -9.8f, 0.f};
+    set_output("integrator", std::move(integrator));
+  }
+};
+
+ZENDEFNODE(MakeExplicitTimeIntegrator2, {
+    {{"dt"}},
+    {"integrator"},
     {},
     {"FEM"},
 });
