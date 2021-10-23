@@ -1,8 +1,8 @@
-#include <zs/zeno/dop/Descriptor.h>
+#include <zeno/dop/Descriptor.h>
 #include <zs/ztd/map.h>
 
 
-namespace zs::zeno::dop {
+namespace zeno::dop {
 
 
 ztd::map<std::string, Descriptor> &desc_table() {

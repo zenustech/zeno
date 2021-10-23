@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace zs::ztd {
+namespace zeno::ztd {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {

@@ -9,7 +9,7 @@
 #include <zs/ztd/map.h>
 
 
-namespace zs::zeno::dop {
+namespace zeno::dop {
 
 
 struct Node;
@@ -47,7 +47,7 @@ int define(std::string const &kind, Descriptor desc) {
 }
 
 
-#define ZS_DOP_DEFINE(T, ...) static int def##T = ::zs::zeno::dop::define<T>(#T, __VA_ARGS__)
+#define ZENO_DOP_DEFINE(T, ...) static int def##T = ::zeno::dop::define<T>(#T, __VA_ARGS__)
 
 
 }

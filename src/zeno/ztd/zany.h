@@ -6,13 +6,13 @@
 #include <cstdint>
 #include <variant>
 #include <optional>
-#include <zs/ztd/type_traits.h>
-#include <zs/ztd/type_info.h>
-#include <zs/ztd/error.h>
-#include <zs/ztd/vec.h>
+#include <zeno/ztd/type_traits.h>
+#include <zeno/ztd/type_info.h>
+#include <zeno/ztd/error.h>
+#include <zeno/ztd/vec.h>
 
 
-namespace zs::ztd {
+namespace zeno::ztd {
 
 namespace zany_details {
 

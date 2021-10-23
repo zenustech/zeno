@@ -1,9 +1,9 @@
 #pragma once
 
 #include <map>
-#include <zs/ztd/error.h>
+#include <zeno/ztd/error.h>
 
-namespace zs::ztd {
+namespace zeno::ztd {
 
 template <class K, class V>
 struct map : std::map<K, V> {

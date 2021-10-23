@@ -1,10 +1,10 @@
-#include <zs/zeno/dop/execute.h>
+#include <zeno/dop/execute.h>
 #include <zs/ztd/functional.h>
 #include <spdlog/spdlog.h>
 #include <map>
 
 
-namespace zs::zeno::dop {
+namespace zeno::dop {
 
 
 ztd::zany resolve(Input const &input) {

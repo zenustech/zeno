@@ -3,9 +3,9 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
-#include <zs/ztd/error.h>
+#include <zeno/ztd/error.h>
 
-namespace zs::ztd {
+namespace zeno::ztd {
 
 static inline auto split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;

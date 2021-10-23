@@ -1,7 +1,7 @@
-#include <zs/zeno/dop/dop.h>
+#include <zeno/dop/dop.h>
 
 
-namespace zs::zeno {
+namespace zeno {
 namespace {
 
 
@@ -18,7 +18,7 @@ struct If : dop::Node {
     void apply() override {}
 };
 
-ZS_DOP_DEFINE(If, {{
+ZENO_DOP_DEFINE(If, {{
     "misc", "only runs one of the two chain by condition",
 }, {
     {"cond"},
@@ -42,7 +42,7 @@ struct ForBegin : dop::Node {
     }
 };
 
-ZS_DOP_DEFINE(ForBegin, {{
+ZENO_DOP_DEFINE(ForBegin, {{
     "misc", "repeat a chain for multiple times (begin block)",
 }, {
     {"times"},
@@ -63,7 +63,7 @@ struct ForEnd : dop::Node {
     void apply() override {}
 };
 
-ZS_DOP_DEFINE(ForEnd, {{
+ZENO_DOP_DEFINE(ForEnd, {{
     "misc", "repeat a chain for multiple times (end block)",
 }, {
     {"FOR"},
@@ -85,7 +85,7 @@ struct ListForeach : dop::Node {
     void apply() override {}
 };
 
-ZS_DOP_DEFINE(ListForeach, {{
+ZENO_DOP_DEFINE(ListForeach, {{
     "misc", "apply for each elements in list",
 }, {
     {"list"},
@@ -102,7 +102,7 @@ struct PrintInt : dop::Node {
     }
 };
 
-ZS_DOP_DEFINE(PrintInt, {{
+ZENO_DOP_DEFINE(PrintInt, {{
     "misc", "prints a integer",
 }, {
     {"value"},
@@ -116,7 +116,7 @@ struct Route : dop::Node {
     }
 };
 
-ZS_DOP_DEFINE(Route, {{
+ZENO_DOP_DEFINE(Route, {{
     "misc", "always return the first input",
 }, {
     {"value"},
@@ -131,7 +131,7 @@ struct ToView : dop::Node {
     }
 };
 
-ZS_DOP_DEFINE(ToView, {{
+ZENO_DOP_DEFINE(ToView, {{
     "misc", "send object to be viewed",
 }, {
     {"object"},

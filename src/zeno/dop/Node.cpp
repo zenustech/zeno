@@ -1,8 +1,8 @@
-#include <zs/zeno/dop/Node.h>
-#include <zs/zeno/dop/execute.h>
+#include <zeno/dop/Node.h>
+#include <zeno/dop/execute.h>
 
 
-namespace zs::zeno::dop {
+namespace zeno::dop {
 
 
 ztd::zany Node::get_input(int idx) const {
