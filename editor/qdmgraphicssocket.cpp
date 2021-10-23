@@ -4,7 +4,7 @@
 
 QDMGraphicsSocket::QDMGraphicsSocket()
 {
-
+    label = new QGraphicsTextItem(this);
 }
 
 void QDMGraphicsSocket::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -46,5 +46,5 @@ void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
 
 void QDMGraphicsSocket::setName(QString name)
 {
-    qDebug() << "socket set name:" << name;  // TODO
+    label->setPlainText(name);
 }
