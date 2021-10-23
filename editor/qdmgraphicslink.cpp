@@ -1,4 +1,5 @@
 #include "qdmgraphicslink.h"
+#include "qdmgraphicsscene.h"
 
 QDMGraphicsLink::QDMGraphicsLink()
 {
@@ -7,7 +8,8 @@ QDMGraphicsLink::QDMGraphicsLink()
 
 QRectF QDMGraphicsLink::boundingRect() const
 {
-    return QRectF();
+    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+    return parentScene->sceneRect();  // TODO: adhoc?
 }
 
 void QDMGraphicsLink::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
@@ -27,7 +29,7 @@ void QDMGraphicsLink::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
     }
 
     QPen pen;
-    pen.setColor(QColor(Qt::red));
+    pen.setColor(Qt::red);
     pen.setWidthF(WIDTH);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
