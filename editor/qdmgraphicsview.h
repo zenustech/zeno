@@ -10,6 +10,7 @@ class QDMGraphicsView : public QGraphicsView
     Q_OBJECT
 
     QPointF m_lastMousePos;
+    bool m_mouseDragging{false};
 
 public:
     explicit QDMGraphicsView(QWidget *parent = nullptr);

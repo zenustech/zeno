@@ -2,6 +2,7 @@
 #include "qdmgraphicsscene.h"
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QScrollBar>
 
 QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
 {
@@ -19,7 +20,10 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
         // https://stackoverflow.com/questions/35865161/qt-graphic-scene-view-moving-around-with-mouse
+        // https://forum.qt.io/topic/67636/scrolling-a-widget-by-hand-mouse/2
         m_lastMousePos = event->pos();
+        m_mouseDragging = true;
+        setCursor(Qt::CursorShape::OpenHandCursor);
         return;
     }
 
@@ -32,9 +36,10 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 
 void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->buttons() & Qt::MiddleButton) {
-        auto displacement = event->pos() - m_lastMousePos;
-        translate(displacement.x(), displacement.y());
+    if (m_mouseDragging) {
+        auto delta = event->pos() - m_lastMousePos;
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
         m_lastMousePos = event->pos();
     }
 
@@ -47,6 +52,8 @@ void QDMGraphicsView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
         setDragMode(QGraphicsView::NoDrag);
+        setCursor(Qt::CursorShape::ArrowCursor);
+        m_mouseDragging = false;
         return;
     }
 
