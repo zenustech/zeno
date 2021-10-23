@@ -1,6 +1,5 @@
 #include "qdmgraphicsview.h"
 #include "qdmgraphicsscene.h"
-#include "qdmmouseeventeater.h"
 #include <QMouseEvent>
 #include <QPushButton>
 
@@ -19,14 +18,8 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
 void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
-        setDragMode(QGraphicsView::ScrollHandDrag);
-
-        installEventFilter(new QDMMouseEventEater);
-        QMouseEvent fakeEvent(event->type(),
-                              event->position(), event->globalPosition(),
-                              Qt::LeftButton, event->buttons() | Qt::LeftButton,
-                              event->modifiers());
-        QGraphicsView::mousePressEvent(&fakeEvent);
+        // https://stackoverflow.com/questions/35865161/qt-graphic-scene-view-moving-around-with-mouse
+        m_lastMousePos = event->pos();
         return;
     }
 
@@ -39,6 +32,12 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 
 void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (event->buttons() & Qt::MiddleButton) {
+        auto displacement = event->pos() - m_lastMousePos;
+        translate(displacement.x(), displacement.y());
+        m_lastMousePos = event->pos();
+    }
+
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     parentScene->cursorMoved();
     QGraphicsView::mouseMoveEvent(event);
@@ -48,6 +47,7 @@ void QDMGraphicsView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
         setDragMode(QGraphicsView::NoDrag);
+        return;
     }
 
     setDragMode(QGraphicsView::NoDrag);
