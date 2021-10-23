@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
 
-namespace zs::tests {
+namespace zeno::tests {
 
 class test_vec : public testing::TestWithParam<ztd::vec3f> {
 protected:

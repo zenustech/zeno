@@ -50,10 +50,10 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     char buf[1025];
     while (in.getline(buf, 1024, '\n')) {
         std::string_view line = buf;
-        if (line.entypes_with("\n")) {
+        if (line.ends_with("\n")) {
             line = line.substr(0, line.size() - 1);
         }
-        if (line.entypes_with("\r")) {
+        if (line.ends_with("\r")) {
             line = line.substr(0, line.size() - 1);
         }
 

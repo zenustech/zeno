@@ -6,21 +6,9 @@ set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
-#file(GLOB_RECURSE sources CONFIGURE_DEPENDS *.h *.cpp *.ui)
-set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.h mainwindow.cpp mainwindow.ui
-        qdmgraphicsscene.h qdmgraphicsscene.cpp
-        qdmgraphicsview.h qdmgraphicsview.cpp
-        qdmgraphicsnode.h qdmgraphicsnode.cpp
-        qdmgraphicssocket.h qdmgraphicssocket.cpp
-        qdmgraphicssocketin.h qdmgraphicssocketin.cpp
-        qdmgraphicssocketout.h qdmgraphicssocketout.cpp
-        qdmgraphicslink.h qdmgraphicslink.cpp
-        qdmgraphicslinkhalf.h qdmgraphicslinkhalf.cpp
-        qdmgraphicslinkfull.h qdmgraphicslinkfull.cpp
-        qdmlistviewnodemenu.h qdmlistviewnodemenu.cpp
-)
+message("- Found Qt version: Qt${QT_VERSION_MAJOR}")
+
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS *.h *.cpp *.ui)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(zs_editor MANUAL_FINALIZATION ${PROJECT_SOURCES})
@@ -33,6 +21,7 @@ else()
 endif()
 
 target_link_libraries(zs_editor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(zs_editor PRIVATE zeno)
 
 set_target_properties(zs_editor PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER zenustech.com
