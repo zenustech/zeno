@@ -17,8 +17,8 @@ public:
     explicit QDMListViewNodeMenu(QWidget *parent = nullptr);
     ~QDMListViewNodeMenu();
 
-private slots:
-    void itemClicked(QModelIndex index);
+signals:
+    void entryClicked(QString name);
 };
 
 #endif // QDMLISTVIEWNODEMENU_H

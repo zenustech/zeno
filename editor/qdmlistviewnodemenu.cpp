@@ -13,7 +13,10 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
         model->appendRow(item);
     }
 
-    connect(this, SIGNAL(clicked(QModelIndex)), this, SLOT(itemClicked(QModelIndex)));
+    QObject::connect(this, &QDMListViewNodeMenu::clicked, [=, this] (QModelIndex index) {
+        auto item = model->item(index.row());
+        entryClicked(item->text());
+    });
 
     setModel(model);
 }
@@ -23,10 +26,4 @@ QDMListViewNodeMenu::~QDMListViewNodeMenu()
     for (auto p: items)
         delete p;
     delete model;
-}
-
-void QDMListViewNodeMenu::itemClicked(QModelIndex index)
-{
-    auto item = model->item(index.row());
-    qInfo() << "itemClicked:" << item->text();
 }
