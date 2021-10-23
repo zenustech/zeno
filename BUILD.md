@@ -93,13 +93,13 @@ cmake --build build --parallel 8
 * Windows (cmd)
 
 ```cmd
-build\editor\zs_editor.exe
+build\editor\zeno_editor.exe
 ```
 
 * Linux (bash)
 
 ```bash
-build/editor/zs_editor
+build/editor/zeno_editor
 ```
 
 ## References

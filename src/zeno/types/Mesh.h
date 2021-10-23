@@ -2,10 +2,10 @@
 
 
 #include <vector>
-#include <zs/ztd/vec.h>
+#include <zeno/ztd/vec.h>
 
 
-namespace zs::zeno::ds {
+namespace zeno::types {
 
 
 struct Mesh {

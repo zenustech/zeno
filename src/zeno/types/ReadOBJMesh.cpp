@@ -1,5 +1,5 @@
-#include <zs/zeno/dop/dop.h>
-#include <zs/zeno/ds/Mesh.h>
+#include <zeno/dop/dop.h>
+#include <zeno/types/Mesh.h>
 #include <string_view>
 #include <sstream>
 #include <fstream>
@@ -7,7 +7,7 @@
 #include <tuple>
 
 
-namespace zs::zeno::ds {
+namespace zeno::types {
 namespace {
 
 
@@ -50,10 +50,10 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     char buf[1025];
     while (in.getline(buf, 1024, '\n')) {
         std::string_view line = buf;
-        if (line.ends_with("\n")) {
+        if (line.entypes_with("\n")) {
             line = line.substr(0, line.size() - 1);
         }
-        if (line.ends_with("\r")) {
+        if (line.entypes_with("\r")) {
             line = line.substr(0, line.size() - 1);
         }
 
