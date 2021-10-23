@@ -20,6 +20,7 @@ public:
     virtual void linkAttached(QDMGraphicsLinkFull *link);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual QRectF boundingRect() const override;
+    void setName(QString name);
 
     static constexpr float SIZE = 20, ROUND = 4;
 };

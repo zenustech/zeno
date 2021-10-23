@@ -18,6 +18,9 @@ public:
     virtual void wheelEvent(QWheelEvent *event) override;
 
     static constexpr float ZOOMFACTOR = 1.25f;
+
+private slots:
+    void addNodeByName(QString name);
 };
 
 #endif // QDMGRAPHICSVIEW_H

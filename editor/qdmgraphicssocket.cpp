@@ -7,7 +7,8 @@ QDMGraphicsSocket::QDMGraphicsSocket()
 
 }
 
-void QDMGraphicsSocket::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+void QDMGraphicsSocket::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
     if (event->buttons() & Qt::LeftButton) {
         auto parentScene = static_cast<QDMGraphicsScene *>(scene());
         parentScene->socketClicked(this);
@@ -20,7 +21,8 @@ QRectF QDMGraphicsSocket::boundingRect() const
 {
     QRectF rect(-SIZE / 2, -SIZE / 2, SIZE, SIZE);
     //auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
-    return rect;//QRectF(0, 0, parentNode->boundingRect().width(), SIZE);
+    //return QRectF(0, 0, parentNode->boundingRect().width(), SIZE);
+    return rect;
 }
 
 void QDMGraphicsSocket::unlinkAll()
@@ -40,4 +42,9 @@ void QDMGraphicsSocket::linkAttached(QDMGraphicsLinkFull *link)
 void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
 {
     links.erase(link);
+}
+
+void QDMGraphicsSocket::setName(QString name)
+{
+    qDebug() << "socket set name:" << name;
 }

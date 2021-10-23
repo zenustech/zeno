@@ -64,3 +64,9 @@ void QDMGraphicsView::wheelEvent(QWheelEvent *event)
 
     scale(zoomFactor, zoomFactor);
 }
+
+void QDMGraphicsView::addNodeByName(QString name)
+{
+    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+    parentScene->addNodeByName(name);
+}

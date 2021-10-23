@@ -38,7 +38,8 @@ void QDMGraphicsScene::cursorMoved()
     }
 }
 
-void QDMGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+void QDMGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
     if (event->buttons() & Qt::RightButton) {
         if (pendingLink) {
             removeItem(pendingLink);
@@ -82,5 +83,12 @@ QDMGraphicsNode *QDMGraphicsScene::addNode()
     auto node = new QDMGraphicsNode;
     nodes.insert(node);
     addItem(node);
+    return node;
+}
+
+QDMGraphicsNode *QDMGraphicsScene::addNodeByName(QString name)
+{
+    auto node = addNode();
+    node->setupByName(name);
     return node;
 }

@@ -13,7 +13,7 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
         model->appendRow(item);
     }
 
-    QObject::connect(this, &QDMListViewNodeMenu::clicked, [=, this] (QModelIndex index) {
+    connect(this, &QListView::clicked, [=, this] (QModelIndex index) {
         auto item = model->item(index.row());
         entryClicked(item->text());
     });

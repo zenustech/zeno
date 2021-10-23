@@ -1,4 +1,5 @@
 #include "qdmgraphicsnode.h"
+#include <zeno/dop/Descriptor.h>
 
 QDMGraphicsNode::QDMGraphicsNode()
 {
@@ -60,4 +61,17 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
     socketOuts.push_back(socketOut);
     return socketOut;
+}
+
+void QDMGraphicsNode::setupByName(QString name)
+{
+    auto const &desc = zeno::dop::desc_of(name.toStdString());
+    for (auto const &sockinfo: desc.inputs) {
+        auto socket = addSocketIn();
+        socket->setName(QString::fromStdString(sockinfo.name));
+    }
+    for (auto const &sockinfo: desc.outputs) {
+        auto socket = addSocketOut();
+        socket->setName(QString::fromStdString(sockinfo.name));
+    }
 }

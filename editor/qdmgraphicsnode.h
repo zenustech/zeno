@@ -25,6 +25,7 @@ public:
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
+    void setupByName(QString name);
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
     static constexpr float SOCKMARGINTOP = 25, SOCKSTRIDE = 30, SOCKMARGINBOT = -5;
