@@ -11,24 +11,24 @@ message("- Found Qt version: Qt${QT_VERSION_MAJOR}")
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS *.h *.cpp *.ui)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(zs_editor MANUAL_FINALIZATION ${PROJECT_SOURCES})
+    qt_add_executable(zeno_editor MANUAL_FINALIZATION ${PROJECT_SOURCES})
 else()
     if(ANDROID)
-        add_library(zs_editor SHARED ${PROJECT_SOURCES})
+        add_library(zeno_editor SHARED ${PROJECT_SOURCES})
     else()
-        add_executable(zs_editor ${PROJECT_SOURCES})
+        add_executable(zeno_editor ${PROJECT_SOURCES})
     endif()
 endif()
 
-target_link_libraries(zs_editor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(zs_editor PRIVATE zeno)
+target_link_libraries(zeno_editor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(zeno_editor PRIVATE zeno)
 
-set_target_properties(zs_editor PROPERTIES
+set_target_properties(zeno_editor PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER zenustech.com
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(zs_editor)
+    qt_finalize_executable(zeno_editor)
 endif()

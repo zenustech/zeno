@@ -1,6 +1,5 @@
 add_library(zeno OBJECT)
 target_include_directories(zeno PUBLIC .)
-target_include_directories(zeno PUBLIC zeno/legacy)
 
 add_subdirectory(zeno/ztd)
 add_subdirectory(zeno/dop)
