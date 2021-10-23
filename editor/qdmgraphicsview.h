@@ -7,6 +7,8 @@
 
 class QDMGraphicsView : public QGraphicsView
 {
+    Q_OBJECT
+
     QPointF m_lastMousePos;
 
 public:
@@ -19,7 +21,7 @@ public:
 
     static constexpr float ZOOMFACTOR = 1.25f;
 
-private slots:
+public slots:
     void addNodeByName(QString name);
 };
 

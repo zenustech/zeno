@@ -46,5 +46,5 @@ void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
 
 void QDMGraphicsSocket::setName(QString name)
 {
-    qDebug() << "socket set name:" << name;
+    qDebug() << "socket set name:" << name;  // TODO
 }
