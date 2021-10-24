@@ -15,6 +15,7 @@ public:
 
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 };
 
 #endif // QDMGRAPHICSLINKFULL_H

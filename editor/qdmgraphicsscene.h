@@ -27,6 +27,8 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
     void socketClicked(QDMGraphicsSocket *socket);
+    // TODO: duplicatePressed as well...
+    void deletePressed();
     void blankClicked();
     void cursorMoved();
     QPointF getCursorPos() const;

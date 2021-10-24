@@ -119,3 +119,24 @@ QPointF QDMGraphicsScene::getCursorPos() const
     auto view = views().at(0);
     return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
 }
+
+void QDMGraphicsScene::deletePressed()
+{
+    std::vector<QDMGraphicsNode *> nodes;
+    std::vector<QDMGraphicsLinkFull *> links;
+
+    foreach (auto item, selectedItems()) {
+        if (auto node = dynamic_cast<QDMGraphicsNode *>(item)) {
+            nodes.push_back(node);
+        } else if (auto link = dynamic_cast<QDMGraphicsLinkFull *>(item)) {
+            links.push_back(link);
+        }
+    }
+
+    for (auto link: links) {
+        removeLink(link);
+    }
+    for (auto node: nodes) {
+        removeNode(node);
+    }
+}
