@@ -11,6 +11,10 @@
 
 class QDMGraphicsLink : public QGraphicsItem
 {
+    mutable QPointF lastSrcPos, lastDstPos;
+    mutable bool hasLastPath{false};
+    mutable QPainterPath lastPath;
+
 public:
     QDMGraphicsLink();
 

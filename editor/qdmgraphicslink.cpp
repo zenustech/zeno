@@ -7,13 +7,15 @@ QDMGraphicsLink::QDMGraphicsLink()
 
 QRectF QDMGraphicsLink::boundingRect() const
 {
-    return scene()->sceneRect();
+    return shape().boundingRect();
 }
 
 QPainterPath QDMGraphicsLink::shape() const
 {
     auto src = getSrcPos();
     auto dst = getDstPos();
+    if (hasLastPath && src == lastSrcPos && dst == lastSrcPos)
+        return lastPath;
 
     QPainterPath path(src);
     if (BEZIER == 0) {
@@ -26,6 +28,10 @@ QPainterPath QDMGraphicsLink::shape() const
                      dst.x(), dst.y());
     }
 
+    hasLastPath = true;
+    lastSrcPos = src;
+    lastDstPos = dst;
+    lastPath = path;
     return path;
 }
 
