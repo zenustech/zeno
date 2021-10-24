@@ -4,7 +4,7 @@
 
 To work with Zeno, you need:
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
 ```
 
 * Windows
@@ -12,6 +12,7 @@ Git >= 2.0 && CMake >= 3.18 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Wi
 1. Download and install Git: https://git-scm.com/download/win
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
 3. Download and install Visual Studio 2019 Community Edition (which is free): https://visualstudio.microsoft.com/zh-hans/downloads/
+4. Download and install Qt 5.12: https://www.qt.io/offline-installers
 
 > Note that we install Visual Studio **only to get the compiler bundled with it**. feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
 
@@ -20,7 +21,8 @@ Git >= 2.0 && CMake >= 3.18 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Wi
 * Linux (Ubuntu)
 
 ```bash
-sudo apt-get install git cmake g++
+sudo apt-get install -y git cmake g++
+sudo apt-get install -y qt5-default
 ```
 
 ## Install required libraries (optional)
