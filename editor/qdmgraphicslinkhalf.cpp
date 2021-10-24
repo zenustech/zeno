@@ -8,6 +8,7 @@
 QDMGraphicsLinkHalf::QDMGraphicsLinkHalf(QDMGraphicsSocket *socket)
     : socket(socket)
 {
+    setZValue(1);
 }
 
 QPointF QDMGraphicsLinkHalf::getSrcPos() const {

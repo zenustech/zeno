@@ -24,6 +24,7 @@ public:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void removeLink(QDMGraphicsLinkFull *link);
     void socketClicked(QDMGraphicsSocket *socket);
+    void blankClicked();
     void cursorMoved();
 
 public slots:

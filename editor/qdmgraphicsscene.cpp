@@ -31,6 +31,15 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
     }
 }
 
+void QDMGraphicsScene::blankClicked()
+{
+    if (pendingLink) {
+        removeItem(pendingLink);
+        delete pendingLink;
+        pendingLink = nullptr;
+   }
+}
+
 void QDMGraphicsScene::cursorMoved()
 {
     if (pendingLink) {
@@ -41,11 +50,7 @@ void QDMGraphicsScene::cursorMoved()
 void QDMGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->buttons() & Qt::RightButton) {
-        if (pendingLink) {
-            removeItem(pendingLink);
-            delete pendingLink;
-            pendingLink = nullptr;
-       }
+        blankClicked();  // todo: use a QDMGraphicsBackground to recv mouse event instead
     }
 
     QGraphicsScene::mousePressEvent(event);
