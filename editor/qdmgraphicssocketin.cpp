@@ -2,7 +2,7 @@
 
 QDMGraphicsSocketIn::QDMGraphicsSocketIn()
 {
-    label->setPos(SIZE / 2, -SIZE * 2 / 3);
+    label->setPos(SIZE / 2, -SIZE * 0.7f);
 }
 
 void QDMGraphicsSocketIn::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
