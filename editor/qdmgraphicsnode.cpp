@@ -1,5 +1,6 @@
 #include "qdmgraphicsnode.h"
 #include "qdmgraphicssocket.h"
+#include "qdmgraphicsscene.h"
 #include <zeno/dop/Descriptor.h>
 
 QDMGraphicsNode::QDMGraphicsNode()
@@ -90,4 +91,26 @@ void QDMGraphicsNode::setupByName(QString name)
 void QDMGraphicsNode::setName(QString name)
 {
     label->setPlainText(name);
+}
+
+// TODO: maybe better using mousePressEvent in graphicsscene, with itemAt locating to the node?
+void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->button() == Qt::RightButton) {
+        auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+        parentScene->removeNode(this);
+        return;
+    }
+
+    QGraphicsItem::mousePressEvent(event);
+}
+
+void QDMGraphicsNode::unlinkAll()
+{
+    for (auto p: socketIns) {
+        p->unlinkAll();
+    }
+    for (auto p: socketOuts) {
+        p->unlinkAll();
+    }
 }

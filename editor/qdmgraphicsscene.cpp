@@ -23,6 +23,14 @@ QDMGraphicsScene::~QDMGraphicsScene()
     delete background;
 }
 
+void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
+{
+    node->unlinkAll();
+    removeItem(node);
+    nodes.erase(node);
+    delete node;
+}
+
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 {
     if (!pendingLink) {

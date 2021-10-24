@@ -22,9 +22,11 @@ public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
 
+    void unlinkAll();
     float getHeight() const;
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();

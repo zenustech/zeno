@@ -24,6 +24,7 @@ public:
 
     QDMGraphicsNode *addNode();
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
+    void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
     void socketClicked(QDMGraphicsSocket *socket);
     void blankClicked();
