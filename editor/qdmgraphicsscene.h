@@ -14,6 +14,7 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<QDMGraphicsNode *> nodes;
     std::set<QDMGraphicsLinkFull *> links;
     QDMGraphicsLinkHalf *pendingLink{nullptr};
+    QDMGraphicsNode *floatingNode{nullptr};
 
 public:
     QDMGraphicsScene();
@@ -26,6 +27,7 @@ public:
     void socketClicked(QDMGraphicsSocket *socket);
     void blankClicked();
     void cursorMoved();
+    QPointF getCursorPos() const;
 
 public slots:
     QDMGraphicsNode *addNodeByName(QString name);

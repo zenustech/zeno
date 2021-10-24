@@ -1,4 +1,5 @@
 #include "qdmgraphicsscene.h"
+#include "qdmgraphicsview.h"
 
 QDMGraphicsScene::QDMGraphicsScene()
 {
@@ -33,6 +34,10 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 
 void QDMGraphicsScene::blankClicked()
 {
+    if (floatingNode) {
+        floatingNode = nullptr;
+    }
+
     if (pendingLink) {
         pendingLink->socket->linkAttached(nullptr);
         removeItem(pendingLink);
@@ -96,5 +101,12 @@ QDMGraphicsNode *QDMGraphicsScene::addNodeByName(QString name)
 {
     auto node = addNode();
     node->setupByName(name);
+    floatingNode = node;
     return node;
+}
+
+QPointF QDMGraphicsScene::getCursorPos() const
+{
+    auto view = views().at(0);
+    return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
 }

@@ -12,16 +12,15 @@ QDMGraphicsLinkHalf::QDMGraphicsLinkHalf(QDMGraphicsSocket *socket)
 }
 
 QPointF QDMGraphicsLinkHalf::getSrcPos() const {
-    return dynamic_cast<QDMGraphicsSocketOut *>(socket) ? socket->getLinkedPos() : getMousePos();
+    if (auto sock = dynamic_cast<QDMGraphicsSocketOut *>(socket))
+        return sock->getLinkedPos();
+    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+    return parentScene->getCursorPos();
 }
 
 QPointF QDMGraphicsLinkHalf::getDstPos() const {
-    return dynamic_cast<QDMGraphicsSocketIn *>(socket) ? socket->getLinkedPos() : getMousePos();
-}
-
-QPointF QDMGraphicsLinkHalf::getMousePos() const {
+    if (auto sock = dynamic_cast<QDMGraphicsSocketIn *>(socket))
+        return sock->getLinkedPos();
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    auto view = parentScene->views().at(0);
-    auto res = view->mapToScene(view->mapFromGlobal(QCursor::pos()));
-    return res;
+    return parentScene->getCursorPos();
 }

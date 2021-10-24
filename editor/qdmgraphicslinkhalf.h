@@ -6,8 +6,6 @@
 
 class QDMGraphicsLinkHalf final : public QDMGraphicsLink
 {
-    QPointF getMousePos() const;
-
 public:
     QDMGraphicsSocket *socket;
 
