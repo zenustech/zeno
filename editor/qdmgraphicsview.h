@@ -19,6 +19,7 @@ public:
     virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
+    virtual QSize sizeHint() const override;
 
     static constexpr float ZOOMFACTOR = 1.25f;
 

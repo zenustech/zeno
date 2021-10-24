@@ -9,6 +9,7 @@ public:
     QDMGraphicsSocketIn();
 
     virtual void linkAttached(QDMGraphicsLinkFull *link) override;
+    virtual QPointF getLinkedPos() const override;
 };
 
 #endif // QDMGRAPHICSSOCKETIN_H

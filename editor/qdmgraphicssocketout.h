@@ -7,6 +7,8 @@ class QDMGraphicsSocketOut final : public QDMGraphicsSocket
 {
 public:
     QDMGraphicsSocketOut();
+
+    virtual QPointF getLinkedPos() const override;
 };
 
 #endif // QDMGRAPHICSSOCKETOUT_H

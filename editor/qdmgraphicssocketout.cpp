@@ -11,3 +11,8 @@ QDMGraphicsSocketOut::QDMGraphicsSocketOut()
     opt.setAlignment(Qt::AlignRight);
     doc->setDefaultTextOption(opt);
 }
+
+QPointF QDMGraphicsSocketOut::getLinkedPos() const
+{
+    return scenePos() + QPointF(SIZE / 2, 0);
+}

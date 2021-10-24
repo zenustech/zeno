@@ -4,6 +4,11 @@
 #include <QPushButton>
 #include <QScrollBar>
 
+QSize QDMGraphicsView::sizeHint() const
+{
+    return QSize(1024, 640);
+}
+
 QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
 {
     setRenderHints(QPainter::Antialiasing

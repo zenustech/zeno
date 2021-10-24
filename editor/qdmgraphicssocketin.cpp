@@ -10,3 +10,8 @@ void QDMGraphicsSocketIn::linkAttached(QDMGraphicsLinkFull *link)
     unlinkAll();
     QDMGraphicsSocket::linkAttached(link);
 }
+
+QPointF QDMGraphicsSocketIn::getLinkedPos() const
+{
+    return scenePos() - QPointF(SIZE / 2, 0);
+}

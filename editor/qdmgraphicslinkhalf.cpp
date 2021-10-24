@@ -11,11 +11,11 @@ QDMGraphicsLinkHalf::QDMGraphicsLinkHalf(QDMGraphicsSocket *socket)
 }
 
 QPointF QDMGraphicsLinkHalf::getSrcPos() const {
-    return dynamic_cast<QDMGraphicsSocketOut *>(socket) ? socket->scenePos() : getMousePos();
+    return dynamic_cast<QDMGraphicsSocketOut *>(socket) ? socket->getLinkedPos() : getMousePos();
 }
 
 QPointF QDMGraphicsLinkHalf::getDstPos() const {
-    return dynamic_cast<QDMGraphicsSocketIn *>(socket) ? socket->scenePos() : getMousePos();
+    return dynamic_cast<QDMGraphicsSocketIn *>(socket) ? socket->getLinkedPos() : getMousePos();
 }
 
 QPointF QDMGraphicsLinkHalf::getMousePos() const {

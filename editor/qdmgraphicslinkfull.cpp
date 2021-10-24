@@ -9,9 +9,9 @@ QDMGraphicsLinkFull::QDMGraphicsLinkFull(QDMGraphicsSocketOut *srcSocket, QDMGra
 }
 
 QPointF QDMGraphicsLinkFull::getSrcPos() const {
-    return srcSocket->scenePos();
+    return srcSocket->getLinkedPos();
 }
 
 QPointF QDMGraphicsLinkFull::getDstPos() const {
-    return dstSocket->scenePos();
+    return dstSocket->getLinkedPos();
 }

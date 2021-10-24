@@ -28,6 +28,7 @@ public:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual QRectF boundingRect() const override;
+    virtual QPointF getLinkedPos() const = 0;
     void setName(QString name);
 
     static constexpr float SIZE = 20, ROUND = 4;
