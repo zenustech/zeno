@@ -25,6 +25,7 @@ std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
     if (zeno::static_for<0, std::tuple_size_v<GridTypes>>([&] (auto i) {
         using GridT = std::tuple_element_t<i, GridTypes>;
         if ((*iter)->isType<GridT>()) {
+          
           auto pGrid = std::make_shared<VDBGridWrapper<GridT>>();
           pGrid->m_grid = openvdb::gridPtrCast<GridT>(*iter);
           grid = pGrid;

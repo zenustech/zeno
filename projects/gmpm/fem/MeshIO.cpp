@@ -48,15 +48,15 @@ struct MakeFEMMeshFromFile : zeno::INode {
     for (auto &&v : res->_elmDensity)
       v = density;
 
-    res->DoPreComputation();
-    res->UpdateDoFsMapping();
-
-    res->relocate(zs::memsrc_e::device, 0);
-
     res->_elmVolume.resize(nm_elms);
     res->_elmdFdx.resize(nm_elms);
     res->_elmMass.resize(nm_elms);
     res->_elmMinv.resize(nm_elms);
+
+    res->DoPreComputation();  // voluem, mass, minv, dfdx
+    res->UpdateDoFsMapping(); // _freeDoFs, _DoF2FreeDoF
+
+    // res->relocate(zs::memsrc_e::device, 0);
 
     set_output("FEMMesh", res);
   }
