@@ -34,6 +34,7 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 void QDMGraphicsScene::blankClicked()
 {
     if (pendingLink) {
+        pendingLink->socket->linkAttached(nullptr);
         removeItem(pendingLink);
         delete pendingLink;
         pendingLink = nullptr;

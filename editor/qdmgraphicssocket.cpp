@@ -46,7 +46,9 @@ void QDMGraphicsSocket::unlinkAll()
 
 void QDMGraphicsSocket::linkAttached(QDMGraphicsLinkFull *link)
 {
-    links.insert(link);
+    if (link) {  // nullptr for blankClicked
+        links.insert(link);
+    }
 }
 
 void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
