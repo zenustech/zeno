@@ -5,11 +5,11 @@
 #include <vector>
 #include "qdmgraphicssocketin.h"
 #include "qdmgraphicssocketout.h"
+#include <QRectF>
 #include <QGraphicsTextItem>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
-#include <QRectF>
 
 class QDMGraphicsNode : public QGraphicsItem
 {
@@ -22,6 +22,7 @@ public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
 
+    float getHeight() const;
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
 

@@ -1,4 +1,5 @@
 #include "qdmgraphicsnode.h"
+#include "qdmgraphicssocket.h"
 #include <zeno/dop/Descriptor.h>
 
 QDMGraphicsNode::QDMGraphicsNode()
@@ -19,18 +20,19 @@ QDMGraphicsNode::~QDMGraphicsNode()
         delete p;
 }
 
-QRectF QDMGraphicsNode::boundingRect() const
+float QDMGraphicsNode::getHeight() const
 {
     size_t count = std::max(socketIns.size(), socketOuts.size());
-    auto node_height = SOCKMARGINTOP + SOCKSTRIDE * count + SOCKMARGINBOT;
-    return QRectF(0, 0, WIDTH, node_height);
+    return SOCKMARGINTOP + SOCKSTRIDE * count + SOCKMARGINBOT;
+}
+
+QRectF QDMGraphicsNode::boundingRect() const
+{
+    return QRectF(-QDMGraphicsSocket::SIZE, 1e-6f, WIDTH + QDMGraphicsSocket::SIZE * 2, getHeight() - 2e-6f);
 }
 
 void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
 {
-    QPainterPath pathContent;
-    QRectF rect = boundingRect();
-    pathContent.addRoundedRect(rect, ROUND, ROUND);
     if (isSelected()) {
         QPen pen;
         pen.setColor(QColor(0xff8800));
@@ -40,7 +42,11 @@ void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
         painter->setPen(Qt::NoPen);
     }
     painter->setBrush(QColor(0x555555));
-    painter->drawPath(pathContent.simplified());
+
+    QPainterPath path;
+    QRectF rect(0, 0, WIDTH, getHeight());
+    path.addRoundedRect(rect, ROUND, ROUND);
+    painter->drawPath(path.simplified());
 }
 
 QDMGraphicsSocketIn *QDMGraphicsNode::addSocketIn()
