@@ -1,10 +1,10 @@
 #pragma once
 
-#include <zs/ztd/random.h>
+#include <zeno/ztd/random.h>
 
 
 namespace zeno {
 
-using namespace zs::ztd::random;
+using namespace zeno::ztd::random;
 
 }

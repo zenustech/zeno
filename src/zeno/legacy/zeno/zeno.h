@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include <zs/zeno/dop/Node.h>
-#include <zs/zeno/dop/Descriptor.h>
+#include <zeno/dop/Node.h>
+#include <zeno/dop/Descriptor.h>
 #include "utils/safe_at.h"
 #include "utils/safe_dynamic_cast.h"
 #include "utils/UserData.h"
@@ -70,7 +70,7 @@ struct IObjectClone : Base {
 };
 
 
-struct INode : zs::zeno::dop::Node {
+struct INode : zeno::dop::Node {
 protected:
     virtual void apply() = 0;
 
@@ -176,7 +176,7 @@ struct Descriptor {
   std::vector<std::string> categories;
 };
 
-void defNodeClass(std::function<std::unique_ptr<zs::zeno::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<zeno::dop::Node>()> func,
         std::string const &name, Descriptor const &desc);
 
 template <class T>

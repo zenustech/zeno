@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vec.h"
-#include <zs/ztd/zany.h>
+#include <zeno/ztd/zany.h>
 #include "type_traits.h"
 
 
@@ -37,9 +37,9 @@ using vector_type_variant = std::variant
         >;
 
 template <class T>
-using any_underlying_type_t = zs::ztd::zany_underlying_t<T>;
+using any_underlying_type_t = zeno::ztd::zany_underlying_t<T>;
 
-using Any = zs::ztd::zany;
+using Any = zeno::ztd::zany;
 
 template <class T>
 std::optional<T> exact_any_cast(Any a) {

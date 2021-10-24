@@ -1,11 +1,11 @@
 #pragma once
 
-#include <zs/ztd/vec.h>
+#include <zeno/ztd/vec.h>
 
 
 namespace zeno {
 
-using namespace zs::ztd::mathvec;
+using namespace zeno::ztd::mathvec;
 
 inline auto alltrue(auto x) {
     return vall(x);
