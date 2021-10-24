@@ -3,7 +3,6 @@
 
 QDMGraphicsLink::QDMGraphicsLink()
 {
-
 }
 
 QRectF QDMGraphicsLink::boundingRect() const
@@ -29,7 +28,7 @@ void QDMGraphicsLink::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
     }
 
     QPen pen;
-    pen.setColor(Qt::red);
+    pen.setColor(QColor(isSelected() ? 0xff8800 : 0x44aacc));
     pen.setWidthF(WIDTH);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
