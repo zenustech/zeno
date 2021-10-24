@@ -5,6 +5,9 @@ QDMGraphicsNode::QDMGraphicsNode()
 {
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
+
+    label = new QGraphicsTextItem(this);
+    label->setPos(0, -SOCKSTRIDE);
 }
 
 QDMGraphicsNode::~QDMGraphicsNode()
@@ -65,6 +68,7 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
 void QDMGraphicsNode::setupByName(QString name)
 {
+    setName(name);
     auto const &desc = zeno::dop::desc_of(name.toStdString());
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
@@ -74,4 +78,9 @@ void QDMGraphicsNode::setupByName(QString name)
         auto socket = addSocketOut();
         socket->setName(QString::fromStdString(sockinfo.name));
     }
+}
+
+void QDMGraphicsNode::setName(QString name)
+{
+    label->setPlainText(name);
 }

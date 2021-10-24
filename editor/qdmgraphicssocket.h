@@ -2,6 +2,7 @@
 #define QDMGRAPHICSSOCKET_H
 
 #include <QGraphicsItem>
+#include <QGraphicsTextItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QRectF>
 #include <set>
