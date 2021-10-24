@@ -3,7 +3,9 @@
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
     <sourceRoots>
+      <file path="$PROJECT_DIR$/editor" />
       <file path="$PROJECT_DIR$/src" />
+      <file path="$PROJECT_DIR$/tests" />
     </sourceRoots>
     <libraryRoots>
       <file path="$PROJECT_DIR$/src/zs/tpls" />
@@ -16,6 +18,7 @@
       <file path="$PROJECT_DIR$/blender" />
       <file path="$PROJECT_DIR$/build" />
       <file path="$PROJECT_DIR$/docs" />
+      <file path="$PROJECT_DIR$/extensions" />
       <file path="$PROJECT_DIR$/models" />
       <file path="$PROJECT_DIR$/projects" />
     </excludeRoots>
