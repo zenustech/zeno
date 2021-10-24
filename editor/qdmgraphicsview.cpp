@@ -50,6 +50,7 @@ void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
 
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     parentScene->cursorMoved();
+
     QGraphicsView::mouseMoveEvent(event);
 }
 

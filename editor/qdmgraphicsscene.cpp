@@ -48,6 +48,10 @@ void QDMGraphicsScene::blankClicked()
 
 void QDMGraphicsScene::cursorMoved()
 {
+    if (floatingNode) {
+        floatingNode->setPos(getCursorPos());
+    }
+
     if (pendingLink) {
         pendingLink->update();
     }
