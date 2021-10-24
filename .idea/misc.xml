@@ -10,8 +10,10 @@
       <file path="$PROJECT_DIR$/tpls" />
     </libraryRoots>
     <excludeRoots>
+      <file path="$PROJECT_DIR$/.cache" />
       <file path="$PROJECT_DIR$/.github" />
       <file path="$PROJECT_DIR$/POC" />
+      <file path="$PROJECT_DIR$/blender" />
       <file path="$PROJECT_DIR$/build" />
       <file path="$PROJECT_DIR$/docs" />
       <file path="$PROJECT_DIR$/models" />
