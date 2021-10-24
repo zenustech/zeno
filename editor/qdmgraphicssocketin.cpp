@@ -1,7 +1,8 @@
 #include "qdmgraphicssocketin.h"
 
-QDMGraphicsSocketIn::QDMGraphicsSocketIn() {
-
+QDMGraphicsSocketIn::QDMGraphicsSocketIn()
+{
+    label->setPos(SIZE / 2, -SIZE * 2 / 3);
 }
 
 void QDMGraphicsSocketIn::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
