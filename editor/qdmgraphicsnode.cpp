@@ -7,6 +7,7 @@ QDMGraphicsNode::QDMGraphicsNode()
     setFlag(QGraphicsItem::ItemIsSelectable);
 
     label = new QGraphicsTextItem(this);
+    label->setDefaultTextColor(QColor(0xcccccc));
     label->setPos(0, -SOCKSTRIDE);
 }
 
@@ -32,13 +33,13 @@ void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
     pathContent.addRoundedRect(rect, ROUND, ROUND);
     if (isSelected()) {
         QPen pen;
-        pen.setColor(Qt::blue);
+        pen.setColor(QColor(0xff8800));
         pen.setWidthF(BORDER);
         painter->setPen(pen);
     } else {
         painter->setPen(Qt::NoPen);
     }
-    painter->setBrush(Qt::red);
+    painter->setBrush(QColor(0x555555));
     painter->drawPath(pathContent.simplified());
 }
 

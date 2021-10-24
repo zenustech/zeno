@@ -4,6 +4,9 @@
 #include <QGraphicsItem>
 #include <QGraphicsTextItem>
 #include <QGraphicsSceneMouseEvent>
+#include <QPainter>
+#include <QStyleOptionGraphicsItem>
+#include <QWidget>
 #include <QRectF>
 #include <set>
 
@@ -23,6 +26,7 @@ public:
     void linkRemoved(QDMGraphicsLinkFull *link);
     virtual void linkAttached(QDMGraphicsLinkFull *link);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual QRectF boundingRect() const override;
     void setName(QString name);
 

@@ -25,6 +25,16 @@ QRectF QDMGraphicsSocket::boundingRect() const
     return rect;
 }
 
+void QDMGraphicsSocket::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
+{
+    QPainterPath pathContent;
+    QRectF rect(-SIZE / 2, -SIZE / 2, SIZE, SIZE);
+    pathContent.addRoundedRect(rect, ROUND, ROUND);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(0xcccccc));
+    painter->drawPath(pathContent.simplified());
+}
+
 void QDMGraphicsSocket::unlinkAll()
 {
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
