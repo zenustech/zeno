@@ -7,6 +7,7 @@
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicslinkhalf.h"
 #include "qdmgraphicslinkfull.h"
+#include "qdmgraphicsbackground.h"
 #include <QString>
 
 class QDMGraphicsScene : public QGraphicsScene
@@ -15,6 +16,7 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<QDMGraphicsLinkFull *> links;
     QDMGraphicsLinkHalf *pendingLink{nullptr};
     QDMGraphicsNode *floatingNode{nullptr};
+    QDMGraphicsBackground *background;
 
 public:
     QDMGraphicsScene();
@@ -22,7 +24,6 @@ public:
 
     QDMGraphicsNode *addNode();
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void removeLink(QDMGraphicsLinkFull *link);
     void socketClicked(QDMGraphicsSocket *socket);
     void blankClicked();

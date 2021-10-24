@@ -6,6 +6,9 @@ QDMGraphicsScene::QDMGraphicsScene()
     float w = 100000, h = 100000;
     QRectF rect(-w / 2, -h / 2, w, h);
     setSceneRect(rect);
+
+    background = new QDMGraphicsBackground;
+    addItem(background);
 }
 
 QDMGraphicsScene::~QDMGraphicsScene()
@@ -17,6 +20,7 @@ QDMGraphicsScene::~QDMGraphicsScene()
         delete p;
     }
     delete pendingLink;
+    delete background;
 }
 
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
@@ -55,15 +59,6 @@ void QDMGraphicsScene::cursorMoved()
     if (pendingLink) {
         pendingLink->update();
     }
-}
-
-void QDMGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    if (event->buttons() & Qt::RightButton) {
-        blankClicked();  // todo: use a QDMGraphicsBackground to recv mouse event instead
-    }
-
-    QGraphicsScene::mousePressEvent(event);
 }
 
 QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket)
@@ -105,6 +100,7 @@ QDMGraphicsNode *QDMGraphicsScene::addNodeByName(QString name)
 {
     auto node = addNode();
     node->setupByName(name);
+    node->setPos(sceneRect().bottomRight());
     floatingNode = node;
     return node;
 }
