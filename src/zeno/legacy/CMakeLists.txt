@@ -1,2 +1,2 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
-target_sources(zs PRIVATE ${source})
+target_sources(zeno PRIVATE ${source})
