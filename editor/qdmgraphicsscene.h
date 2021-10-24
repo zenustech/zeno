@@ -31,7 +31,7 @@ public:
     QPointF getCursorPos() const;
 
 public slots:
-    QDMGraphicsNode *addNodeByName(QString name);
+    void addNodeByName(QString name);
 };
 
 #endif // QDMGRAPHICSSCENE_H

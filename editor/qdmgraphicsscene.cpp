@@ -96,13 +96,14 @@ QDMGraphicsNode *QDMGraphicsScene::addNode()
     return node;
 }
 
-QDMGraphicsNode *QDMGraphicsScene::addNodeByName(QString name)
+void QDMGraphicsScene::addNodeByName(QString name)
 {
+    if (floatingNode)
+        return;
     auto node = addNode();
     node->setupByName(name);
     node->setPos(sceneRect().bottomRight());
     floatingNode = node;
-    return node;
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
