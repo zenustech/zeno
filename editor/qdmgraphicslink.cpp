@@ -22,7 +22,7 @@ QPainterPath QDMGraphicsLink::shape() const
         path.lineTo(dst);
     } else {
         float dist = dst.x() - src.x();
-        dist = std::max(100.f, std::abs(dist)) * BEZIER;
+        dist = std::clamp(std::abs(dist), 40.f, 700.f) * BEZIER;
         path.cubicTo(src.x() + dist, src.y(),
                      dst.x() - dist, dst.y(),
                      dst.x(), dst.y());
