@@ -155,7 +155,8 @@
       ]
      },
      "params": {
-      "ForceModel": "HyperElastic"
+      "ForceModel": "Fiberic",
+      "aniso_strength": 50.0
      },
      "uipos": [
       1149.6645191739594,
@@ -169,8 +170,8 @@
      "name": "MakeFEMIntegrator",
      "inputs": {
       "Mesh": [
-       "61e864a0-SetMaterialFromHandles",
-       "outMesh",
+       "3f03eb87-SetUniformFiberDirection",
+       "FEMMeshOut",
        null
       ],
       "gravity": [
@@ -240,8 +241,8 @@
      "name": "DoTimeStep",
      "inputs": {
       "mesh": [
-       "61e864a0-SetMaterialFromHandles",
-       "outMesh",
+       "3f03eb87-SetUniformFiberDirection",
+       "FEMMeshOut",
        null
       ],
       "muscleForce": [
@@ -285,7 +286,9 @@
       2146.9103179466233,
       833.0905756399778
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "58954daf-NumericFloat": {
      "name": "NumericFloat",
@@ -443,8 +446,8 @@
      },
      "params": {},
      "uipos": [
-      41.30481439795187,
-      426.80709235412246
+      -272.54507761068726,
+      462.2417575809044
      ],
      "options": []
     },
@@ -469,19 +472,65 @@
      },
      "params": {},
      "uipos": [
-      511.12288135593224,
-      313.93449858757066
+      231.02028956327592,
+      290.31138843638274
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "3f03eb87-SetUniformFiberDirection": {
+     "name": "SetUniformFiberDirection",
+     "inputs": {
+      "femmesh": [
+       "61e864a0-SetMaterialFromHandles",
+       "outMesh",
+       null
+      ],
+      "dir": [
+       "a7a22044-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      556.8979481641466,
+      153.34773218142539
+     ],
+     "options": []
+    },
+    "a7a22044-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -0.0242243,
+      "y": -0.04586,
+      "z": 0.009597
+     },
+     "uipos": [
+      198.7041036717061,
+      39.956803455723545
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 910.0805121609856,
-    "y": 177.79351977589977,
-    "width": 1220.7031249999993,
-    "height": 1220.7031249999993
+    "x": 724.2482883767099,
+    "y": -60.0160892579255,
+    "width": 781.2499999999995,
+    "height": 781.2499999999995
    }
   }
  },
@@ -3418,6 +3467,351 @@
     "FLIPSolver"
    ]
   },
+  "FLIPGetEnvironArgs": {
+   "inputs": [
+    [
+     "",
+     "environArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "FLIPMakeAbsorber": {
+   "inputs": [
+    [
+     "",
+     "AbsorbSDF",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
+  "FLIPMakeCollider": {
+   "inputs": [
+    [
+     "",
+     "StaticSDF",
+     ""
+    ],
+    [
+     "",
+     "dynamicPrim",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
+  "FLIPMakeEmitter": {
+   "inputs": [
+    [
+     "",
+     "EmitSDF",
+     ""
+    ],
+    [
+     "",
+     "VelGrid",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "VelInit",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
+  "FLIPMakeEnviron": {
+   "inputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Environ",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
+  "FLIPMakeParticles": {
+   "inputs": [
+    [
+     "",
+     "TankSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
+  "FLIPSimTemplate": {
+   "inputs": [
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "Collision",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVel",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CollisionVel",
+     ""
+    ],
+    [
+     "",
+     "DynEmitter",
+     ""
+    ],
+    [
+     "",
+     "ifEmit",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Gravity",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVelVolume",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVelInit",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "FLIP_P2G": {
    "inputs": [
     [
@@ -5729,6 +6123,36 @@
     "FEM"
    ]
   },
+  "MakeFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
   "MakeFullscreenRect": {
    "inputs": [
     [
@@ -6058,6 +6482,11 @@
      "enum HyperElastic Fiberic",
      "ForceModel",
      "HyperElastic"
+    ],
+    [
+     "float",
+     "aniso_strength",
+     "20"
     ]
    ],
    "categories": [
@@ -10888,6 +11317,461 @@
     "FLIPSolver"
    ]
   },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex decomp sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectListToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mergedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -11431,6 +12315,41 @@
     "FEM"
    ]
   },
+  "SetUniformFiberDirection": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "dir",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMeshOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetUniformMuscleAnisotropicWeight": {
    "inputs": [
     [
@@ -11609,6 +12528,61 @@
     "cgmesh"
    ]
   },
+  "SmoothLiquidSDF": {
+   "inputs": [
+    [
+     "",
+     "inParticles",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "DxScale",
+     ""
+    ],
+    [
+     "",
+     "voxelScale",
+     ""
+    ],
+    [
+     "",
+     "dropletScale",
+     ""
+    ],
+    [
+     "",
+     "influenceScale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ]
+  },
   "SpatialPartitionForParticles": {
    "inputs": [
     [
@@ -11751,6 +12725,76 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "StepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Environ",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "dt_scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
    ]
   },
   "StringEqual": {
@@ -12051,6 +13095,76 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "SubstepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
    ]
   },
   "SubtractPressureGradient": {
@@ -13229,46 +14343,6 @@
     "visualize"
    ]
   },
-  "VDBWrangle": {
-   "inputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "Vec3FieldExtrapolate": {
    "inputs": [
     [
@@ -13685,6 +14759,171 @@
    ],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZsAddMuscleFibers": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsMakeFEMMeshFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "NodeFile",
+     ""
+    ],
+    [
+     "readpath",
+     "EleFile",
+     ""
+    ],
+    [
+     "readpath",
+     "BouFile",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "YoungModulus",
+     ""
+    ],
+    [
+     "",
+     "PossonRatio",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsSetUniformActivation": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "uniform_act",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsSetUniformMuscleAnisotropicWeight": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "aniMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "makeCompressibleSim": {

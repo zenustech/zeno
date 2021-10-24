@@ -99,7 +99,7 @@
       ]
      },
      "params": {
-      "value": 0.3
+      "value": 0.49
      },
      "uipos": [
       -6545.444448542077,
@@ -188,11 +188,12 @@
       ]
      },
      "params": {
-      "ForceModel": "Fiberic"
+      "ForceModel": "HyperElastic",
+      "aniso_strength": 0.0
      },
      "uipos": [
-      2095.74633164547,
-      -1828.9716567089301
+      2020.6512746112494,
+      -1829.9222270511355
      ],
      "options": [
       "ONCE"
@@ -2356,10 +2357,10 @@
     }
    },
    "view_rect": {
-    "x": -2439.9273658409,
-    "y": -5250.76433121397,
-    "width": 4656.612873077393,
-    "height": 4656.612873077393
+    "x": -2950.521134952712,
+    "y": -5848.792035050423,
+    "width": 5820.766091346741,
+    "height": 5820.766091346741
    }
   },
   "prepareFEMMuscle": {
@@ -13475,6 +13476,11 @@
      "enum HyperElastic Fiberic",
      "ForceModel",
      "HyperElastic"
+    ],
+    [
+     "float",
+     "aniso_strength",
+     "20"
     ]
    ],
    "categories": [
@@ -21712,6 +21718,171 @@
    ],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZsAddMuscleFibers": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsMakeFEMMeshFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "NodeFile",
+     ""
+    ],
+    [
+     "readpath",
+     "EleFile",
+     ""
+    ],
+    [
+     "readpath",
+     "BouFile",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "YoungModulus",
+     ""
+    ],
+    [
+     "",
+     "PossonRatio",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsSetUniformActivation": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "uniform_act",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ZsSetUniformMuscleAnisotropicWeight": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "aniMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "makeCompressibleSim": {

@@ -10,12 +10,12 @@
  * @class <IsotropicForceModel>
  * @brief a base class for isotropic force model, including both elasto and visco force model
  */
-class AnisotropicSNHModel : public BaseForceModel{
+class AnisotropicSNHModel : public MuscleForceModel{
 public:
     /**
      * @brief the constructor for isotropic force model
      */
-    AnisotropicSNHModel() : BaseForceModel() {}
+    AnisotropicSNHModel() : MuscleForceModel() {}
     /**
      * @brief the destructor for isotropic force model
      */

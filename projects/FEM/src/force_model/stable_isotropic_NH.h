@@ -9,52 +9,12 @@
  * The current version only support isotropic elasto and damping model. The force model base class is unaware of the TetMesh, the input to all its
  * function is deformation gradient of individual element, instead of its deformaed shape.
  */
-class StableIsotropicMuscle : public BaseForceModel{
+class StableIsotropicMuscle : public MuscleForceModel {
 public:
     /**
      * @brief The constructor of StableIsotropicMuscle class
      */
-    StableIsotropicMuscle() : BaseForceModel() {
-        Qs[0] <<   1, 0, 0,
-                0, 0, 0,
-                0, 0, 0;
-        Qs[1]  <<   0, 0, 0,
-                0, 1, 0,
-                0, 0, 0;
-        Qs[2]  <<   0, 0, 0,
-                0, 0, 0,
-                0, 0, 1;
-
-        Qs[3]  <<   0,-1, 0,
-                1, 0, 0,
-                0, 0, 0;
-        Qs[3]  /= sqrt(2);
-    
-        Qs[4]  <<   0, 0, 0,
-                0, 0, 1,
-                0,-1, 0;
-        Qs[4]  /= sqrt(2);
-
-        Qs[5]  <<   0, 0, 1,
-                0, 0, 0,
-                -1,0, 0;
-        Qs[5]  /= sqrt(2);
-
-        Qs[6]  <<   0, 1, 0,
-                1, 0, 0,
-                0, 0, 0;
-        Qs[6]  /= sqrt(2);
-
-        Qs[7]  <<   0, 0, 0,
-                0, 0, 1,
-                0, 1, 0;
-        Qs[7]  /= sqrt(2);
-
-        Qs[8]  <<   0, 0, 1,
-                0, 0, 0,
-                1, 0, 0;
-        Qs[8]  /= sqrt(2);
-    }
+    StableIsotropicMuscle() : MuscleForceModel() {}
     /**
      * @brief destructor method.
      */
@@ -136,7 +96,8 @@ public:
         Vec3d l_scale, l_twist, l_flip;
 
         Mat3x3d A;
-        ComputeStretchingMatrix(lambda, mu, Is, s, A);
+
+        ComputeIsoStretchingMatrix(lambda, mu, Is, s, A);
 
         Mat3x3d U_proj;
         DiffSVD::SYM_Eigen_Decomposition(A, l_scale, U_proj);
@@ -262,7 +223,7 @@ private :
                     0,0,lambda;
     }
 
-    void ComputeStretchingMatrix(FEM_Scaler lambda,FEM_Scaler mu,const Vec3d& Is,const Vec3d& sigma,Mat3x3d& A) const {
+    void ComputeIsoStretchingMatrix(FEM_Scaler lambda,FEM_Scaler mu,const Vec3d& Is,const Vec3d& sigma,Mat3x3d& A) const {
         A(0,0) = mu + lambda * Is[2] * Is[2] / sigma[0] / sigma[0];
         A(0,1) = sigma[2] * (lambda * (2*Is[2] - 1) - mu);
         A(0,2) = sigma[1] * (lambda * (2*Is[2] - 1) - mu);
@@ -274,6 +235,4 @@ private :
         A(2,0) = A(0,2);
         A(2,1) = A(1,2);
     }
-    
-    Mat3x3d Qs[9];
 };

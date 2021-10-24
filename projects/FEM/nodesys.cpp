@@ -7,6 +7,7 @@
 #include <zeno/StringObject.h>
 
 // #include <anisotropic_NH.h>
+#include <stable_anisotropic_NH.h>
 #include <diriclet_damping.h>
 #include <stable_isotropic_NH.h>
 
@@ -28,7 +29,7 @@ using namespace zeno;
 
 struct MaterialHandles : zeno::IObject {
     std::vector<std::vector<size_t>> handleIDs;
-    std::vector<Vec3d> materials;
+    std::vector<Vec4d> materials;
 };
 
 struct LoadMatertialHandlesFromFile : zeno::INode {
@@ -49,11 +50,12 @@ struct LoadMatertialHandlesFromFile : zeno::INode {
 
             for(size_t i = 0;i < nm_handles;++i){
                 size_t nm_vertices;
-                double E,nu,d;
-                fin >> nm_vertices >> E >> nu >> d;
+                double E,nu,d,phi;
+                fin >> nm_vertices >> E >> nu >> d >> phi;
                 outHandles->materials[i][0] = E;
                 outHandles->materials[i][1] = nu;
                 outHandles->materials[i][2] = d;
+                outHandles->materials[i][3] = phi;
 
                 outHandles->handleIDs[i].resize(nm_vertices);
                 for(size_t j = 0;j < nm_vertices;++j)
@@ -452,10 +454,10 @@ struct SetMaterialFromHandles : zeno::INode {
         auto femmesh = get_input<FEMMesh>("femmesh");
         auto handles = get_input<MaterialHandles>("handles");
 
-        std::vector<Vec3d> materials;
+        std::vector<Vec4d> materials;
         std::vector<double> weight_sum;
 
-        materials.resize(femmesh->_mesh->size(),Vec3d::Zero());
+        materials.resize(femmesh->_mesh->size(),Vec4d::Zero());
 
         double sigma = 0.3;
 
@@ -464,7 +466,7 @@ struct SetMaterialFromHandles : zeno::INode {
             auto target_vert = femmesh->_mesh->verts[i];
             double weight_sum = 0;
             for(size_t j = 0;j < handles->handleIDs.size();++j){
-                Vec3d mat = handles->materials[j];
+                Vec4d mat = handles->materials[j];
                 const auto& group = handles->handleIDs[j];
                 for(size_t k = 0;k < group.size();++k){
                     auto interp_vert = femmesh->_mesh->verts[group[k]];
@@ -485,6 +487,7 @@ struct SetMaterialFromHandles : zeno::INode {
         std::fill(femmesh->_elmYoungModulus.begin(),femmesh->_elmYoungModulus.end(),0);
         std::fill(femmesh->_elmPossonRatio.begin(),femmesh->_elmPossonRatio.end(),0);
         std::fill(femmesh->_elmDamp.begin(),femmesh->_elmDamp.end(),0);
+        std::fill(femmesh->_elmDensity.begin(),femmesh->_elmDensity.end(),0);
 
         #pragma omp parallel for
         for(size_t elm_id = 0;elm_id < femmesh->_mesh->quads.size();++elm_id){
@@ -495,11 +498,13 @@ struct SetMaterialFromHandles : zeno::INode {
                 femmesh->_elmYoungModulus[elm_id] += materials[elm[i]][0];
                 femmesh->_elmPossonRatio[elm_id] += materials[elm[i]][1];
                 femmesh->_elmDamp[elm_id] += materials[elm[i]][2];
+                femmesh->_elmDensity[elm_id] += materials[elm[i]][3];
             }
 
             femmesh->_elmYoungModulus[elm_id] /= 4;
             femmesh->_elmPossonRatio[elm_id] /= 4;
             femmesh->_elmDamp[elm_id] /= 4;
+            femmesh->_elmDensity[elm_id] /= 4;
         }
 
         // std::cout << "output material : " << std::endl;
@@ -724,6 +729,41 @@ ZENDEFNODE(DeformFiberWithFE, {
     {"FEM"},
 });
 
+
+struct SetUniformFiberDirection : zeno::INode {
+    virtual void apply() override {
+        auto femmesh = get_input<FEMMesh>("femmesh");
+        auto dir = get_input<zeno::NumericObject>("dir")->get<zeno::vec3f>();
+
+        auto dir0 = dir / zeno::length(dir);
+        auto tmp_dir = dir0;
+        tmp_dir[0] += 1;
+        auto dir1 = zeno::cross(dir0,tmp_dir);
+        dir1 /= zeno::length(dir1);
+        auto dir2 = zeno::cross(dir0,dir1);
+        dir2 /= zeno::length(dir2);
+
+        Mat3x3d orient;
+        orient.col(0) << dir0[0],dir0[1],dir0[2];
+        orient.col(1) << dir1[0],dir1[1],dir1[2];
+        orient.col(2) << dir2[0],dir2[1],dir2[2];  
+
+
+
+        for(size_t elm_id = 0;elm_id < femmesh->_mesh->quads.size();++elm_id){
+            femmesh->_elmOrient[elm_id] = orient;
+        }
+
+        set_output("FEMMeshOut",femmesh);
+    }
+};
+
+ZENDEFNODE(SetUniformFiberDirection, {
+    {"femmesh","dir"},
+    {"FEMMeshOut"},
+    {},
+    {"FEM"},
+});
 
 
 struct AddMuscleFibers : zeno::INode {
@@ -1063,9 +1103,9 @@ ZENDEFNODE(TransformFEMMesh,{
 });
 
 
-struct MuscleForceModel : zeno::IObject {
-    MuscleForceModel() = default;
-    std::shared_ptr<BaseForceModel> _forceModel;
+struct MuscleModelObject : zeno::IObject {
+    MuscleModelObject() = default;
+    std::shared_ptr<MuscleForceModel> _forceModel;
 };
 
 struct DampingForceModel : zeno::IObject {
@@ -1076,19 +1116,19 @@ struct DampingForceModel : zeno::IObject {
 struct MakeMuscleForceModel : zeno::INode {
     virtual void apply() override {
         auto model_type = std::get<std::string>(get_param("ForceModel"));
-        auto res = std::make_shared<MuscleForceModel>();
+        auto aniso_strength = get_param<float>("aniso_strength");
+        auto res = std::make_shared<MuscleModelObject>();
         if(model_type == "Fiberic"){
-            // res->_forceModel = std::shared_ptr<BaseForceModel>(new AnisotropicSNHModel());
-            std::cout << "The Anisotropic Model is not stable yet" << std::endl;
-            throw std::runtime_error("The Anisotropic Model is not stable yet");
+            res->_forceModel = std::shared_ptr<MuscleForceModel>(new StableAnisotropicMuscle(aniso_strength));
+            // std::cout << "The Anisotropic Model is not stable yet" << std::endl;
+            // throw std::runtime_error("The Anisotropic Model is not stable yet");
         }
         else if(model_type == "HyperElastic")
-            res->_forceModel = std::shared_ptr<BaseForceModel>(new StableIsotropicMuscle());
+            res->_forceModel = std::shared_ptr<MuscleForceModel>(new StableIsotropicMuscle());
         else{
             std::cerr << "UNKNOWN MODEL_TYPE" << std::endl;
             throw std::runtime_error("UNKNOWN MODEL_TYPE");
         }
-        
         set_output("MuscleForceModel",res);
     }
 };
@@ -1096,7 +1136,7 @@ struct MakeMuscleForceModel : zeno::INode {
 ZENDEFNODE(MakeMuscleForceModel, {
     {},
     {"MuscleForceModel"},
-    {{"enum HyperElastic Fiberic", "ForceModel", "HyperElastic"}},
+    {{"enum HyperElastic Fiberic", "ForceModel", "HyperElastic"},{"float","aniso_strength","20"}},
     {"FEM"},
 });
 
@@ -1198,7 +1238,7 @@ struct RetrieveRigidTransform : zeno::INode {
 
         Mat4x4d T = newTet * refTet.inverse();
 
-        std::cout << "T : " << std::endl << T << std::endl; 
+        // std::cout << "T : " << std::endl << T << std::endl; 
 
         auto ret = std::make_shared<TransformMatrix>();
         ret->Mat = T;
@@ -1218,7 +1258,7 @@ ZENDEFNODE(RetrieveRigidTransform,{
 struct DoTimeStep : zeno::INode {
     virtual void apply() override {
         auto mesh = get_input<FEMMesh>("mesh");
-        auto force_model = get_input<MuscleForceModel>("muscleForce");
+        auto force_model = get_input<MuscleModelObject>("muscleForce");
         auto damping_model = get_input<DampingForceModel>("dampForce");
         auto integrator = get_input<FEMIntegrator>("integrator");
         auto epsilon = get_input<zeno::NumericObject>("epsilon")->get<float>();
@@ -1272,7 +1312,7 @@ struct DoTimeStep : zeno::INode {
         _HValueBuffer.resize(mesh->_connMatrix.nonZeros());
         _HucValueBuffer.resize(mesh->_freeConnMatrix.nonZeros());
 
-        const size_t max_iters = 20;
+        const size_t max_iters = 200;
         const size_t max_linesearch = 20;
         _wolfeBuffer.resize(max_linesearch);
 
@@ -1344,6 +1384,12 @@ struct DoTimeStep : zeno::INode {
 
 
             eg0 = -dpuc.dot(ruc);
+
+            if(fabs(eg0) < epsilon * epsilon){
+                std::cout << "[" << iter_idx << "]break with eg0 = " << eg0 << "\t < \t" << epsilon*epsilon \
+                    << "\t with ruc = " << ruc.norm() << std::endl;
+                break;
+            }
 
             if(eg0 > 0){
                 std::cerr << "non-negative descent direction detected " << eg0 << std::endl;
@@ -1429,7 +1475,7 @@ struct DoTimeStep : zeno::INode {
     }
 
     FEM_Scaler EvalObj(const std::shared_ptr<FEMMesh>& mesh,
-        const std::shared_ptr<MuscleForceModel>& muscle,
+        const std::shared_ptr<MuscleModelObject>& muscle,
         const std::shared_ptr<DampingForceModel>& damp,
         const std::shared_ptr<FEMIntegrator>& integrator) {
             FEM_Scaler obj = 0;
@@ -1465,7 +1511,7 @@ struct DoTimeStep : zeno::INode {
     }
 
     FEM_Scaler EvalObjDeriv(const std::shared_ptr<FEMMesh>& mesh,
-        const std::shared_ptr<MuscleForceModel>& muscle,
+        const std::shared_ptr<MuscleModelObject>& muscle,
         const std::shared_ptr<DampingForceModel>& damp,
         const std::shared_ptr<FEMIntegrator>& integrator,
         VecXd& deriv) {
@@ -1505,7 +1551,7 @@ struct DoTimeStep : zeno::INode {
     }
 
     FEM_Scaler EvalObjDerivHessian(const std::shared_ptr<FEMMesh>& mesh,
-        const std::shared_ptr<MuscleForceModel>& muscle,
+        const std::shared_ptr<MuscleModelObject>& muscle,
         const std::shared_ptr<DampingForceModel>& damp,
         const std::shared_ptr<FEMIntegrator>& integrator,
         VecXd& deriv,
