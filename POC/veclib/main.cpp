@@ -7,7 +7,6 @@ using namespace zeno::ztd;
 
 int main() {
     vec<3, float> x;
-    vec<3, float> y;
-    auto z = x + 1;
+    auto [a, b, c] = x;
     return 0;
 }

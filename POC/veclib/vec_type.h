@@ -33,8 +33,13 @@ struct vec {
     constexpr vec &operator=(vec const &) = default;
     constexpr vec(vec &&) = default;
     constexpr vec &operator=(vec &&) = default;
+
     constexpr bool operator==(vec const &) const = default;
     constexpr bool operator<=>(vec const &) const = default;
+    constexpr bool operator<=(vec const &) const = default;
+    constexpr bool operator>=(vec const &) const = default;
+    constexpr bool operator<(vec const &) const = default;
+    constexpr bool operator>(vec const &) const = default;
 
     constexpr vec(std::initializer_list<T> const &ts) {
         auto it = ts.begin();
@@ -58,6 +63,16 @@ struct vec {
     template <class ...Ts>
     constexpr explicit(N != 1) operator T() {
         return data()[0];
+    }
+
+    template <size_t I>
+    constexpr T const &get() const {
+        return data()[I];
+    }
+
+    template <size_t I>
+    constexpr T &get() {
+        return data()[I];
     }
 
     constexpr T const &operator[](size_t i) const {

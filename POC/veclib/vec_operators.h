@@ -2,41 +2,12 @@
 
 
 #include "vec_type.h"
+#include "vec_traits.h"
 #include "concepts.h"
 
 
 namespace zeno::ztd {
 inline namespace math {
-
-
-template <class T>
-struct vec_traits : std::false_type {
-    static constexpr size_t dim = 0;
-    using type = T;
-};
-
-template <size_t N, class T>
-struct vec_traits<vec<N, T>> : std::true_type {
-    static constexpr size_t dim = N;
-    using type = T;
-
-    template <class S>
-    constexpr bool operator==(vec_traits<S> const &that) const {
-        return !value || !that.value || dim == that.dim;
-    }
-};
-
-template <class T>
-using remove_vec_t = typename vec_traits<T>::type;
-
-template <class T>
-static constexpr size_t vec_dimension_v = vec_traits<T>::dim;
-
-template <class T>
-concept is_vec = vec_traits<T>::value;
-
-template <class T>
-concept is_not_vec = !is_vec<T>;
 
 
 template <is_not_vec T1, is_not_vec T2, class Func>
