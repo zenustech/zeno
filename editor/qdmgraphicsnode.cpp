@@ -2,6 +2,9 @@
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicsscene.h"
 #include <zeno/dop/Descriptor.h>
+#include <zeno/ztd/memory.h>
+#include <zeno/ztd/assert.h>
+#include <algorithm>
 
 QDMGraphicsNode::QDMGraphicsNode()
 {
@@ -107,4 +110,32 @@ void QDMGraphicsNode::unlinkAll()
     for (auto const &p: socketOuts) {
         p->unlinkAll();
     }
+}
+
+size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
+{
+    auto it = find(begin(socketIns), end(socketIns), zeno::ztd::stale_ptr(socket));
+    ZENO_ZTD_ASSERT(it != end(socketIns));
+    return it - begin(socketIns);
+}
+
+size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
+{
+    auto it = find(begin(socketOuts), end(socketOuts), zeno::ztd::stale_ptr(socket));
+    ZENO_ZTD_ASSERT(it != end(socketOuts));
+    return it - begin(socketOuts);
+}
+
+void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
+{
+    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Value{.value = {}};
+}
+
+void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket)
+{
+    auto srcNode = static_cast<QDMGraphicsNode *>(srcSocket->parentItem());
+    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Link{
+        .node = srcNode->dopNode.get(),
+        .sockid = (int)srcNode->socketOutIndex(srcSocket),
+    };
 }

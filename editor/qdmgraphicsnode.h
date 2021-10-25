@@ -31,6 +31,11 @@ public:
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
+    size_t socketInIndex(QDMGraphicsSocketIn *socket);
+    size_t socketOutIndex(QDMGraphicsSocketOut *socket);
+    void socketUnlinked(QDMGraphicsSocketIn *socket);
+    void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
     void initByName(QString name);

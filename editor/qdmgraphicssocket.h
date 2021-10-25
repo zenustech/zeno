@@ -22,8 +22,8 @@ protected:
 public:
     QDMGraphicsSocket();
 
-    void unlinkAll();
-    void linkRemoved(QDMGraphicsLinkFull *link);
+    virtual void unlinkAll();
+    virtual void linkRemoved(QDMGraphicsLinkFull *link);
     virtual void linkAttached(QDMGraphicsLinkFull *link);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
