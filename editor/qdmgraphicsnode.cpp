@@ -46,29 +46,26 @@ void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
 
 QDMGraphicsSocketIn *QDMGraphicsNode::addSocketIn()
 {
-    auto socketIn = std::make_unique<QDMGraphicsSocketIn>();
-    auto socketInP = socketIn.get();
+    auto socketIn = new QDMGraphicsSocketIn;
     socketIn->setParentItem(this);
 
     size_t index = socketIns.size();
     socketIn->setPos(-socketIn->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketIns.push_back(move(socketIn));
-    return socketInP;
+    socketIns.emplace_back(socketIn);
+    return socketIn;
 }
 
 QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 {
-    auto socketOut = std::make_unique<QDMGraphicsSocketOut>();
-    auto socketOutP = socketOut.get();
+    auto socketOut = new QDMGraphicsSocketOut;
     socketOut->setParentItem(this);
 
     size_t index = socketOuts.size();
     socketOut->setPos(WIDTH + socketOut->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketOuts.push_back(move(socketOut));
-    return socketOuts.back().get();
-    return socketOutP;
+    socketOuts.emplace_back(socketOut);
+    return socketOut;
 }
 
 void QDMGraphicsNode::initByName(QString name)

@@ -88,11 +88,10 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
 
 QDMGraphicsNode *QDMGraphicsScene::addNode()
 {
-    auto node = std::make_unique<QDMGraphicsNode>();
-    auto nodeP = node.get();
-    addItem(nodeP);
-    nodes.insert(move(node));
-    return nodeP;
+    auto node = new QDMGraphicsNode;
+    addItem(node);
+    nodes.emplace(node);
+    return node;
 }
 
 void QDMGraphicsScene::addNodeByName(QString name)
