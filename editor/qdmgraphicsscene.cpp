@@ -1,5 +1,6 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
+#include <zeno/ztd/memory.h>
 
 QDMGraphicsScene::QDMGraphicsScene()
 {
@@ -7,39 +8,28 @@ QDMGraphicsScene::QDMGraphicsScene()
     QRectF rect(-w / 2, -h / 2, w, h);
     setSceneRect(rect);
 
-    background = new QDMGraphicsBackground;
-    addItem(background);
+    background = std::make_unique<QDMGraphicsBackground>();
+    addItem(background.get());
 }
 
-QDMGraphicsScene::~QDMGraphicsScene()
-{
-    for (auto p: nodes) {
-        delete p;
-    }
-    for (auto p: links) {
-        delete p;
-    }
-    delete pendingLink;
-    delete background;
-}
+QDMGraphicsScene::~QDMGraphicsScene() = default;
 
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
     removeItem(node);
-    nodes.erase(node);
+    nodes.erase(zeno::ztd::stale_unique_ptr(node));
     delete node;
 }
 
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 {
     if (!pendingLink) {
-        pendingLink = new QDMGraphicsLinkHalf(socket);
-        addItem(pendingLink);
+        pendingLink = std::make_unique<QDMGraphicsLinkHalf>(socket);
+        addItem(pendingLink.get());
     } else {
-        removeItem(pendingLink);
+        removeItem(pendingLink.get());
         addLink(socket, pendingLink->socket);
-        delete pendingLink;
         pendingLink = nullptr;
     }
 }
@@ -52,8 +42,7 @@ void QDMGraphicsScene::blankClicked()
 
     if (pendingLink) {
         pendingLink->socket->linkAttached(nullptr);
-        removeItem(pendingLink);
-        delete pendingLink;
+        removeItem(pendingLink.get());
         pendingLink = nullptr;
    }
 }
@@ -75,16 +64,17 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
     auto dstIn = dynamic_cast<QDMGraphicsSocketIn *>(dstSocket);
     auto srcOut = dynamic_cast<QDMGraphicsSocketOut *>(srcSocket);
     auto dstOut = dynamic_cast<QDMGraphicsSocketOut *>(dstSocket);
-    QDMGraphicsLinkFull *link;
+    std::unique_ptr<QDMGraphicsLinkFull> link;
     if (srcOut && dstIn)
-        link = new QDMGraphicsLinkFull(srcOut, dstIn);
+        link = std::make_unique<QDMGraphicsLinkFull>(srcOut, dstIn);
     else if (dstOut && srcIn)
-        link = new QDMGraphicsLinkFull(dstOut, srcIn);
+        link = std::make_unique<QDMGraphicsLinkFull>(dstOut, srcIn);
     else
         return nullptr;
-    links.insert(link);
-    addItem(link);
-    return link;
+    addItem(link.get());
+    auto pLink = link.get();
+    links.insert(move(link));
+    return pLink;
 }
 
 void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
@@ -92,16 +82,17 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
-    links.erase(link);
+    links.erase(zeno::ztd::stale_unique_ptr(link));
     delete link;
 }
 
 QDMGraphicsNode *QDMGraphicsScene::addNode()
 {
-    auto node = new QDMGraphicsNode;
-    nodes.insert(node);
-    addItem(node);
-    return node;
+    auto node = std::make_unique<QDMGraphicsNode>();
+    auto nodeP = node.get();
+    addItem(nodeP);
+    nodes.insert(move(node));
+    return nodeP;
 }
 
 void QDMGraphicsScene::addNodeByName(QString name)
@@ -109,7 +100,7 @@ void QDMGraphicsScene::addNodeByName(QString name)
     if (floatingNode)
         return;
     auto node = addNode();
-    node->setupByName(name);
+    node->initByName(name);
     node->setPos(sceneRect().bottomRight());
     floatingNode = node;
 }

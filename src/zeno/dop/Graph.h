@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include <zeno/ztd/map.h>
+#include <vector>
 
 
 namespace zeno::dop {
@@ -14,10 +14,9 @@ struct Descriptor;
 
 
 struct Graph {
-    ztd::map<std::string, std::unique_ptr<Node>> nodes;
+    std::vector<std::unique_ptr<Node>> nodes;
 
-    Node *get_node(std::string const &name) const;
-    Node *add_node(std::string const &name, Descriptor const &desc);
+    Node *add_node(Descriptor const &desc);
 };
 
 

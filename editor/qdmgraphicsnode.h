@@ -10,13 +10,16 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
+#include <zeno/dop/Node.h>
+#include <memory>
 
 class QDMGraphicsNode : public QGraphicsItem
 {
-    std::vector<QDMGraphicsSocketIn *> socketIns;
-    std::vector<QDMGraphicsSocketOut *> socketOuts;
+    std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
+    std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
+    std::unique_ptr<QGraphicsTextItem> label;
 
-    QGraphicsTextItem *label;
+    std::unique_ptr<zeno::dop::Node> dopNode;
 
 public:
     QDMGraphicsNode();
@@ -30,7 +33,7 @@ public:
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
-    void setupByName(QString name);
+    void initByName(QString name);
     void setName(QString name);
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;

@@ -12,11 +12,11 @@
 
 class QDMGraphicsScene : public QGraphicsScene
 {
-    std::set<QDMGraphicsNode *> nodes;
-    std::set<QDMGraphicsLinkFull *> links;
-    QDMGraphicsLinkHalf *pendingLink{nullptr};
-    QDMGraphicsNode *floatingNode{nullptr};
-    QDMGraphicsBackground *background;
+    std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
+    std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
+    std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
+    std::unique_ptr<QDMGraphicsBackground> background;
+    QDMGraphicsNode *floatingNode{};
 
 public:
     QDMGraphicsScene();

@@ -8,18 +8,12 @@ QDMGraphicsNode::QDMGraphicsNode()
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
-    label = new QGraphicsTextItem(this);
+    label = std::make_unique<QGraphicsTextItem>(this);
     label->setDefaultTextColor(QColor(0xcccccc));
     label->setPos(0, -SOCKSTRIDE);
 }
 
-QDMGraphicsNode::~QDMGraphicsNode()
-{
-    for (auto p: socketIns)
-        delete p;
-    for (auto p: socketOuts)
-        delete p;
-}
+QDMGraphicsNode::~QDMGraphicsNode() = default;
 
 float QDMGraphicsNode::getHeight() const
 {
@@ -52,32 +46,36 @@ void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
 
 QDMGraphicsSocketIn *QDMGraphicsNode::addSocketIn()
 {
-    auto socketIn = new QDMGraphicsSocketIn;
+    auto socketIn = std::make_unique<QDMGraphicsSocketIn>();
+    auto socketInP = socketIn.get();
     socketIn->setParentItem(this);
 
     size_t index = socketIns.size();
     socketIn->setPos(-socketIn->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketIns.push_back(socketIn);
-    return socketIn;
+    socketIns.push_back(move(socketIn));
+    return socketInP;
 }
 
 QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 {
-    auto socketOut = new QDMGraphicsSocketOut;
+    auto socketOut = std::make_unique<QDMGraphicsSocketOut>();
+    auto socketOutP = socketOut.get();
     socketOut->setParentItem(this);
 
     size_t index = socketOuts.size();
     socketOut->setPos(WIDTH + socketOut->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketOuts.push_back(socketOut);
-    return socketOut;
+    socketOuts.push_back(move(socketOut));
+    return socketOuts.back().get();
+    return socketOutP;
 }
 
-void QDMGraphicsNode::setupByName(QString name)
+void QDMGraphicsNode::initByName(QString name)
 {
     setName(name);
     auto const &desc = zeno::dop::desc_of(name.toStdString());
+    dopNode = desc.factory();
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
         socket->setName(QString::fromStdString(sockinfo.name));
@@ -93,7 +91,6 @@ void QDMGraphicsNode::setName(QString name)
     label->setPlainText(name);
 }
 
-// TODO: maybe better using mousePressEvent in graphicsscene, with itemAt locating to the node?
 void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::RightButton) {
@@ -107,10 +104,10 @@ void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void QDMGraphicsNode::unlinkAll()
 {
-    for (auto p: socketIns) {
+    for (auto const &p: socketIns) {
         p->unlinkAll();
     }
-    for (auto p: socketOuts) {
+    for (auto const &p: socketOuts) {
         p->unlinkAll();
     }
 }
