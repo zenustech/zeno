@@ -76,12 +76,15 @@ void QDMGraphicsNode::initByName(QString name)
     setName(name);
     auto const &desc = zeno::dop::desc_of(name.toStdString());
     dopNode = desc.factory();
+    dopNode->desc = &desc;
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
+        dopNode->inputs.push_back(zeno::dop::Input_Value{});
         socket->setName(QString::fromStdString(sockinfo.name));
     }
     for (auto const &sockinfo: desc.outputs) {
         auto socket = addSocketOut();
+        dopNode->outputs.push_back({});
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 }
@@ -126,9 +129,11 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
     return it - begin(socketOuts);
 }
 
+// TODO: add socketValueChanged
+
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
-    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Value{.value = {}};
+    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Value{};
 }
 
 void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket)

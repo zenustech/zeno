@@ -38,8 +38,7 @@ struct Node {
 
     float xpos = 0;
     float ypos = 0;
-    std::string name;
-    Descriptor *desc = nullptr;
+    Descriptor const *desc = nullptr;
 
     ztd::zany get_input(int idx) const;
     void set_output(int idx, ztd::zany val);

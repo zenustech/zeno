@@ -7,7 +7,7 @@ QDMGraphicsSocketIn::QDMGraphicsSocketIn()
     label->setPos(SIZE / 2, -SIZE * 0.7f);
 }
 
-void QDMGraphicsSocket::unlinkAll()
+void QDMGraphicsSocketIn::unlinkAll()
 {
     QDMGraphicsSocket::unlinkAll();
     auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
