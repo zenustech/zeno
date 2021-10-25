@@ -9,7 +9,7 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
         auto item = new QStandardItem();
         item->setText(QString::fromStdString(k));
         item->setEditable(false);
-        items.push_back(item);
+        items.emplace_back(item);
         model->appendRow(item);
     }
 
@@ -18,12 +18,7 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
         entryClicked(item->text());
     });
 
-    setModel(model);
+    setModel(model.get());
 }
 
-QDMListViewNodeMenu::~QDMListViewNodeMenu()
-{
-    for (auto p: items)
-        delete p;
-    delete model;
-}
+QDMListViewNodeMenu::~QDMListViewNodeMenu() = default;

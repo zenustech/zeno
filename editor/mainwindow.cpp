@@ -3,8 +3,8 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(std::make_unique<Ui::MainWindow>())
-    , nodeScene(std::make_unique<QDMGraphicsScene>())
+    , ui(new Ui::MainWindow)
+    , nodeScene(new QDMGraphicsScene)
 {
     ui->setupUi(this);
     ui->nodeView->setScene(nodeScene.get());

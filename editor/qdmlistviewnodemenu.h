@@ -10,8 +10,8 @@ class QDMListViewNodeMenu : public QListView
 {
     Q_OBJECT
 
-    QStandardItemModel *model;
-    std::vector<QStandardItem *> items;
+    std::unique_ptr<QStandardItemModel> model;
+    std::vector<std::unique_ptr<QStandardItem>> items;
 
 public:
     explicit QDMListViewNodeMenu(QWidget *parent = nullptr);
