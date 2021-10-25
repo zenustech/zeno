@@ -3,15 +3,11 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , nodeScene(new QDMGraphicsScene)
+    , ui(std::make_unique<Ui::MainWindow>())
+    , nodeScene(std::make_unique<QDMGraphicsScene>())
 {
     ui->setupUi(this);
-    ui->nodeView->setScene(nodeScene);
+    ui->nodeView->setScene(nodeScene.get());
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
-    delete nodeScene;
-}
+MainWindow::~MainWindow() = default;

@@ -12,13 +12,11 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    QDMGraphicsScene *nodeScene;
+    std::unique_ptr<QDMGraphicsScene> nodeScene;
+    std::unique_ptr<Ui::MainWindow> ui;
 
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
-private:
-    Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
