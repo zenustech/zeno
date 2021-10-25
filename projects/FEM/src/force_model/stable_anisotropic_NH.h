@@ -22,6 +22,16 @@ public:
      * @brief destructor method.
      */
     virtual ~StableAnisotropicMuscle(){}
+
+    FEM_Scaler EvalReflection(const Mat3x3d& F,const Vec3d& a) const {
+        Mat3x3d R,S;
+        DiffSVD::Polar_Decomposition(F,R,S);
+        FEM_Scaler sign = a.transpose() * S * a;
+        if(fabs(sign) < 1e-5)
+                return 0;
+        return sign > 0 ? 1 : -1;
+    }
+
     /**
      * @brief An interface for defining the potential energy of anisotropic force model, all the force models should inherit this method and implement their 
      * own version of element-wise potential energy defination.
@@ -32,20 +42,22 @@ public:
      */
     void ComputePhi(const Mat3x3d& Act,
         const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-        const Mat3x3d& F,FEM_Scaler& energy) const override {
-            FEM_Scaler iso_psi;
+        const Mat3x3d& F,FEM_Scaler& psi) const override {
+            FEM_Scaler iso_psi = 0;
             StableIsotropicMuscle::ComputePhi(Act,aniso_weight,fiber_direction,YoungModulus,PossonRatio,F,iso_psi);
 
             FEM_Scaler Ia;
             Mat3x3d ActInv = Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
-            EvalAnisoInvarients(FAct,fiber_direction.col(0),Ia);    
+            Vec3d a = fiber_direction.col(0);
 
+            EvalAnisoInvarients(FAct,a,Ia);    
+            FEM_Scaler Is = EvalReflection(FAct,a);
             FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-            FEM_Scaler aniso_psi = fiber_strength * mu / 2 * pow(Ia - 1,2);
 
-            energy = iso_psi + aniso_psi;
+            FEM_Scaler aniso_psi = fiber_strength * mu / 2 * pow(sqrt(Ia) - Is,2);
+            psi = iso_psi + aniso_psi;
     }
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -58,42 +70,50 @@ public:
      */
     void ComputePhiDeriv(const Mat3x3d& Act,
         const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-        const Mat3x3d& F,FEM_Scaler &energy,Vec9d &derivative) const override {
-            FEM_Scaler iso_psi;
-            Vec9d iso_gradient,aniso_gradient;
+        const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
+            FEM_Scaler iso_psi,aniso_psi;
+            Vec9d iso_dpsi,aniso_dpsi;
 
-            StableIsotropicMuscle::ComputePhiDeriv(Act,aniso_weight,fiber_direction,YoungModulus,PossonRatio,F,iso_psi,iso_gradient);
+            StableIsotropicMuscle::ComputePhiDeriv(Act,aniso_weight,fiber_direction,YoungModulus,PossonRatio,F,iso_psi,iso_dpsi);
 
             Mat3x3d ActInv = Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
             FEM_Scaler Ia;
             Vec9d ga;
+            Vec3d a = fiber_direction.col(0);
 
-            EvalAnisoInvarientsDeriv(FAct,fiber_direction.col(0),Ia,ga);    
+            EvalAnisoInvarientsDeriv(FAct,a,Ia,ga);   
+            FEM_Scaler Is = EvalReflection(FAct,a);
 
             FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
             FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
 
-            FEM_Scaler aniso_psi = fiber_strength * mu / 2 * pow(Ia - 1,2);
-            aniso_gradient = fiber_strength * mu * (Ia - 1) * ga;
-
-            energy = aniso_psi + iso_psi;
-
             Mat9x9d dFactdF = EvaldFactdF(ActInv); 
-            derivative = iso_gradient + dFactdF.transpose() * aniso_gradient;   
+
+            aniso_psi = fiber_strength * mu / 2 * pow(sqrt(Ia) - Is,2);
+            aniso_dpsi = (fiber_strength * mu * (sqrt(Ia) - Is) / 2 / sqrt(Ia)) * ga;
+            aniso_dpsi = dFactdF.transpose() * aniso_dpsi;
+
+
+            psi = aniso_psi + iso_psi;
+            dpsi = iso_dpsi + dFactdF.transpose() * aniso_dpsi;   
     }
 
     void ComputePhiDerivHessian(const Mat3x3d& Act,
         const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,
         const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-        const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool enforcing_spd = true) const override{
-            FEM_Scaler iso_psi;
+        const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool enforcing_spd) const override{
+            FEM_Scaler iso_psi,aniso_psi;
             Vec9d iso_dpsi,aniso_dpsi;
+            Mat9x9d iso_ddpsi,aniso_ddpsi;
 
-            StableIsotropicMuscle::ComputePhiDeriv(Act,aniso_weight,fiber_direction,YoungModulus,PossonRatio,F,iso_psi,iso_dpsi);
+            Vec3d aniso_eigen_vals;
+            Vec9d aniso_eigen_vecs[3];
 
-            Vec3d a = fiber_direction.col(0);
+            StableIsotropicMuscle::ComputePhiDerivHessian(Act,aniso_weight,
+                fiber_direction,YoungModulus,PossonRatio,
+                F,iso_psi,iso_dpsi,iso_ddpsi,enforcing_spd);
 
             Mat3x3d ActInv = Act.inverse();
             Mat3x3d FAct = F * ActInv;
@@ -101,40 +121,22 @@ public:
             FEM_Scaler Ia;
             Vec9d ga;
 
-            EvalAnisoInvarientsDeriv(FAct,fiber_direction.col(0),Ia,ga);    
+            Vec3d a = fiber_direction.col(0);
+
+            EvalAnisoInvarientsDeriv(FAct,a,Ia,ga);    
+            FEM_Scaler Is = EvalReflection(FAct,a);
 
             FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
             FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
 
-            FEM_Scaler aniso_psi = fiber_strength * mu / 2 * pow(Ia - 1,2);
-            aniso_dpsi = fiber_strength * mu * (Ia - 1) * ga;
+            Mat9x9d dFactdF = EvaldFactdF(ActInv);
 
-            psi = aniso_psi + iso_psi;
+            aniso_psi = fiber_strength * mu / 2 * pow(sqrt(Ia) - Is,2);
+            aniso_dpsi = fiber_strength * mu * (sqrt(Ia) - Is) / 2 / sqrt(Ia) * ga;
+            aniso_dpsi = dFactdF.transpose() * aniso_dpsi;
 
-            Mat9x9d dFactdF = EvaldFactdF(ActInv); 
-            dpsi = iso_dpsi + dFactdF.transpose() * aniso_dpsi;   
-
-
-            Vec9d iso_eigen_vecs[9];
-            Vec9d iso_eigen_vals;                
-            ComputeIsoEigenSystem(YoungModulus,PossonRatio, FAct, iso_eigen_vals, iso_eigen_vecs);  
-
-
-        //     enforcing_spd = false;
-
-            if (enforcing_spd) {
-                for (size_t i = 0; i < 9; ++i)
-                        iso_eigen_vals[i] = iso_eigen_vals[i] > 0 ? iso_eigen_vals[i] : 0;
-                }
-            
-            FEM_Scaler smallest_iso_val = iso_eigen_vals.minCoeff();
-
-            // compute anisotropic eigen system
-            Vec3d aniso_eigen_vals;
-            Vec9d aniso_eigen_vecs[3];
-
-            aniso_eigen_vals[0] = 2 * fiber_strength * mu * ( 3 * Ia - 1 );
-            aniso_eigen_vals[1] = aniso_eigen_vals[2] = 2 * fiber_strength * (Ia - 1);
+            aniso_eigen_vals[0] = fiber_strength * mu;
+            aniso_eigen_vals[1] = aniso_eigen_vals[2] = fiber_strength * mu * (1 - Is / sqrt(Ia));
 
             Mat3x3d A = MatHelper::DYADIC(a,a);
             Mat3x3d Q0 = 1 / sqrt(Ia) * FAct * MatHelper::DYADIC(a,a);
@@ -152,45 +154,22 @@ public:
             aniso_eigen_vecs[1] = MatHelper::VEC(Q1);
             aniso_eigen_vecs[2] = MatHelper::VEC(Q2);
 
+            for(size_t i = 0;i < 3;++i)
+                aniso_eigen_vecs[i] /= aniso_eigen_vecs[i].norm();
+
             if(enforcing_spd){
                 for(size_t i = 0;i < 3;++i)
                     aniso_eigen_vals[i] = aniso_eigen_vals[i] < 0 ? 0 : aniso_eigen_vals[i];
             }
 
-            ddpsi.setZero();
-            for(size_t i = 0;i < 9;++i){
-                ddpsi += iso_eigen_vals[i] * iso_eigen_vecs[i] * iso_eigen_vecs[i].transpose();
-            }
-
+            aniso_ddpsi.setZero();
             for(size_t i = 0;i < 3;++i)
-                ddpsi += aniso_eigen_vals[i] * aniso_eigen_vecs[i] * aniso_eigen_vecs[i].transpose();
+                aniso_ddpsi += aniso_eigen_vals[i] * aniso_eigen_vecs[i] * aniso_eigen_vecs[i].transpose();
+            aniso_ddpsi = dFactdF.transpose() * aniso_ddpsi *dFactdF;
 
-            ddpsi = dFactdF.transpose() * ddpsi *dFactdF;
-
-        //     Mat9x9d ddpsi_fd = Mat9x9d::Zero();
-        //     FEM_Scaler step = 1e-5;
-        //     for(size_t i = 0;i < 9;++i){
-        //         Mat3x3d F_tmp = F;
-        //         Vec9d f_tmp = MatHelper::VEC(F_tmp);
-        //         f_tmp[i] += step;
-        //         F_tmp = MatHelper::MAT(f_tmp);
-
-        //         FEM_Scaler psi_tmp;
-        //         Vec9d dpsi_tmp;
-        //         ComputePhiDeriv(Act,aniso_weight,fiber_direction,YoungModulus,PossonRatio,F_tmp,psi_tmp,dpsi_tmp);
-
-        //         ddpsi_fd.col(i) = (dpsi_tmp - dpsi) / step;
-        //     }
-
-        //     FEM_Scaler ddpsi_error = (ddpsi_fd - ddpsi).norm() / ddpsi_fd.norm();
-        // //     if(ddpsi_error > 1e-3){
-        //         std::cerr << "ddpsi_error : " << ddpsi_error << std::endl;
-        //         std::cout << "ddpsi : " << std::endl << ddpsi << std::endl;
-        //         std::cout << "ddpsi_fd : " << std::endl << ddpsi_fd << std::endl;
-        //         throw std::runtime_error("ddpsi_error");
-        // //     }
-
-        //     throw std::runtime_error("ddpsi check");
+            psi = aniso_psi + iso_psi;
+            dpsi = iso_dpsi + aniso_dpsi;   
+            ddpsi = aniso_ddpsi + iso_ddpsi;
     }        
 
 private:
