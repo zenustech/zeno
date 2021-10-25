@@ -1,4 +1,4 @@
-x=slowfile
+x=vec
 
 x: $x.exe Makefile
 	./$<
