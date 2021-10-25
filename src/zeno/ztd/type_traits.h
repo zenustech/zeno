@@ -88,6 +88,15 @@ struct variant_to_tuple<std::variant<Ts...>> {
 };
 
 template <class T>
+struct tuple_to_variant {
+};
+
+template <class ...Ts>
+struct tuple_to_variant<std::tuple<Ts...>> {
+    using type = std::variant<Ts...>;
+};
+
+template <class T>
 struct is_shared_ptr : std::false_type {
 };
 
