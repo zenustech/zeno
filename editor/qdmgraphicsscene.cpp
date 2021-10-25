@@ -18,7 +18,7 @@ void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
     removeItem(node);
-    nodes.erase(zeno::ztd::stale_unique_ptr(node));
+    nodes.erase(zeno::ztd::stale_ptr(node));
     delete node;
 }
 
@@ -82,7 +82,7 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
-    links.erase(zeno::ztd::stale_unique_ptr(link));
+    links.erase(zeno::ztd::stale_ptr(link));
     delete link;
 }
 

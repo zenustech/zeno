@@ -4,7 +4,7 @@
 
 QDMGraphicsSocket::QDMGraphicsSocket()
 {
-    label = new QGraphicsTextItem(this);
+    label = std::make_unique<QGraphicsTextItem>(this);
 }
 
 void QDMGraphicsSocket::mousePressEvent(QGraphicsSceneMouseEvent *event)

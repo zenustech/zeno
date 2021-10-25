@@ -17,7 +17,7 @@ class QDMGraphicsSocket : public QGraphicsItem
     std::set<QDMGraphicsLinkFull *> links;
 
 protected:
-    QGraphicsTextItem *label;
+    std::unique_ptr<QGraphicsTextItem> label;
 
 public:
     QDMGraphicsSocket();
