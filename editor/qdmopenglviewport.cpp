@@ -23,7 +23,10 @@ void QDMOpenGLViewport::initializeGL()
     initializeOpenGLFunctions();
     m_vao = std::make_unique<QOpenGLVertexArrayObject>(this);
     m_vao->create();
-    m_vao->bind();
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, [this] () {
+        m_vao->destroy();
+        m_vao = nullptr;
+    });
 
     m_program = std::make_unique<QOpenGLShaderProgram>(this);
     m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
@@ -53,6 +56,7 @@ void QDMOpenGLViewport::paintGL()
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    m_vao->bind();
     m_program->bind();
 
     static const GLfloat vertices[] = {
@@ -76,4 +80,5 @@ void QDMOpenGLViewport::paintGL()
     attrPos.destroy();
 
     m_program->release();
+    m_vao->release();
 }

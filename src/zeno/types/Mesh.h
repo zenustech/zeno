@@ -18,8 +18,8 @@ struct Mesh {
 
     // faces
     struct MPoly {
-        int start;
-        int num;
+        int start{};
+        int num{};
     };
     std::vector<MPoly> poly;
 };
