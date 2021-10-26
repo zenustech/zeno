@@ -1,5 +1,5 @@
 #include "qdmopenglviewport.h"
-#include <GL/gl.h>
+#include <QOpenGLBuffer>
 
 QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -61,11 +61,19 @@ void QDMOpenGLViewport::paintGL()
          0.5f, -0.5f, 0.0f,
     };
 
+    QOpenGLBuffer attrPos;
+    attrPos.create();
+    attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
+    attrPos.bind();
+    attrPos.allocate(vertices, sizeof(vertices));
+
     m_program->enableAttributeArray("attrPos");
-    m_program->setAttributeArray("attrPos", vertices, 3);
+    m_program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     m_program->disableAttributeArray("attrPos");
+    attrPos.destroy();
+
     m_program->release();
 }
