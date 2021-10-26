@@ -7,7 +7,9 @@ QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     QSurfaceFormat fmt;
     fmt.setSamples(8);
     fmt.setVersion(4, 1);
-    fmt.setProfile(QSurfaceFormat::CompatibilityProfile);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
     setFormat(fmt);
 }
 
@@ -19,6 +21,9 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
+    m_vao = std::make_unique<QOpenGLVertexArrayObject>(this);
+    m_vao->create();
+    m_vao->bind();
 
     m_program = std::make_unique<QOpenGLShaderProgram>(this);
     m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
@@ -56,15 +61,11 @@ void QDMOpenGLViewport::paintGL()
          0.5f, -0.5f, 0.0f,
     };
 
-    auto attrPos = m_program->attributeLocation("attrPos");
-    qDebug() << attrPos;
-    Q_ASSERT(attrPos != -1);
-    glEnableVertexAttribArray(attrPos);
-    glVertexAttribPointer(attrPos, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    m_program->enableAttributeArray("attrPos");
+    m_program->setAttributeArray("attrPos", vertices, 3);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glDisableVertexAttribArray(attrPos);
-
+    m_program->disableAttributeArray("attrPos");
     m_program->release();
 }

@@ -4,6 +4,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLFunctions>
+#include <QOpenGLVertexArrayObject>
 #include <memory>
 
 class QDMOpenGLViewport : public QOpenGLWidget, protected QOpenGLFunctions
@@ -11,6 +12,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, protected QOpenGLFunctions
     Q_OBJECT
 
     std::unique_ptr<QOpenGLShaderProgram> m_program;
+    std::unique_ptr<QOpenGLVertexArrayObject> m_vao;
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
