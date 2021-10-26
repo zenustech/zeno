@@ -1,5 +1,4 @@
-#ifndef RENDERABLE_H
-#define RENDERABLE_H
+#pragma once
 
 #include "qdmopenglviewport.h"
 
@@ -11,5 +10,3 @@ public:
 
     virtual void render(QDMOpenGLViewport *viewport) = 0;
 };
-
-#endif // RENDERABLE_H

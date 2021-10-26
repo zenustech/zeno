@@ -24,11 +24,12 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
+
+    glEnable(GL_DEPTH_TEST);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
 {
-
 }
 
 void QDMOpenGLViewport::paintGL()

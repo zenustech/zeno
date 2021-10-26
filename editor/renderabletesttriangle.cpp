@@ -5,8 +5,9 @@
 
 namespace {
 
-class RenderableMesh final : public Renderable
+class RenderableTestTriangle final : public Renderable
 {
+
     static std::unique_ptr<QOpenGLShaderProgram> makeShaderProgram() {
         auto program = std::make_unique<QOpenGLShaderProgram>();
         program->addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
@@ -26,9 +27,9 @@ void main() {
     }
 
 public:
-    virtual ~RenderableMesh() = default;
+    virtual ~RenderableTestTriangle() = default;
 
-    RenderableMesh()
+    RenderableTestTriangle()
     {
     }
 
@@ -63,7 +64,7 @@ public:
 
 }
 
-std::unique_ptr<Renderable> makeRenderableMesh()
+std::unique_ptr<Renderable> makeRenderableTestTriangle()
 {
-    return std::make_unique<RenderableMesh>();
+    return std::make_unique<RenderableTestTriangle>();
 }

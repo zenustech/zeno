@@ -7,7 +7,7 @@ To work with Zeno, you need:
 Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
 ```
 
-* Windows
+### Windows
 
 1. Download and install Git: https://git-scm.com/download/win
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
@@ -18,7 +18,7 @@ Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 > It's recommended to install in trivial locations, like `C:/Programs Files (x86)/xxx` or `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
-* Linux (Ubuntu)
+### Ubuntu
 
 ```bash
 sudo apt-get install -y git cmake g++
@@ -36,7 +36,7 @@ cd vcpkg
 
 Now, let's install our dependencies via `vcpkg`:
 
-* Windows (cmd)
+### Windows (cmd)
 
 ```cmd
 bootstrap-vcpkg.bat
@@ -52,7 +52,9 @@ vcpkg install lapack:x64-windows
 
 > Note that the `x64-windows` suffix **must be specified** otherwise VCPKG will install 32-bit packages by default :)
 
-* Linux (bash)
+> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+
+### Linux (bash)
 
 ```bash
 ./bootstrap-vcpkg.sh
@@ -62,8 +64,6 @@ vcpkg install lapack:x64-windows
 ./vcpkg install openblas:x64-linux
 ./vcpkg install lapack:x64-linux
 ```
-
-> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
 
 ## Building Zeno from Source
 
@@ -82,7 +82,7 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg
 
 > Please replace the `[path to vcpkg]` here to the path where we previously cloned vcpkg, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
 
-> CLion users on Windows may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
+> CLion users may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
 
 Starts to build (`8` here means using 8 CPU cores):
 
@@ -92,13 +92,13 @@ cmake --build build --parallel 8
 
 ## Run Zeno
 
-* Windows (cmd)
+### Windows (cmd)
 
 ```cmd
 build\editor\zeno_editor.exe
 ```
 
-* Linux (bash)
+### Linux (bash)
 
 ```bash
 build/editor/zeno_editor
@@ -111,4 +111,5 @@ build/editor/zeno_editor
 - [Git documentation](https://git-scm.com/doc)
 - [C++ references](https://en.cppreference.com/w/)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
+- [Qt 5 documentation](https://doc.qt.io/qt-5/)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)
