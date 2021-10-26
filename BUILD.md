@@ -10,13 +10,18 @@ Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 ### Windows
 
 1. Download and install Git: https://git-scm.com/download/win
+
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
+
 3. Download and install Visual Studio 2019 Community Edition (which is free): https://visualstudio.microsoft.com/zh-hans/downloads/
-4. Download and install Qt 5.12: https://www.qt.io/offline-installers
 
 > Note that we install Visual Studio **only to get the compiler bundled with it**. feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
 
-> It's recommended to install in trivial locations, like `C:/Programs Files (x86)/xxx` or `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
+> It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
+
+4. Download and install Qt 5.12: https://www.qt.io/offline-installers
+
+> If you find installing Qt troublesome (e.g., asking you for registering a Qt account), feel free to skip it for now, and execute `vcpkg install qt5:x64-windows` later (see the `vcpkg` section) instead.
 
 ### Ubuntu
 
