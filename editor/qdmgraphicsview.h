@@ -1,6 +1,7 @@
 #ifndef QDMGRAPHICSVIEW_H
 #define QDMGRAPHICSVIEW_H
 
+#include <zeno/common.h>
 #include <QGraphicsView>
 #include <QWidget>
 #include <QPointF>

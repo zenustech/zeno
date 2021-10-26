@@ -1,6 +1,7 @@
 #ifndef QDMLISTVIEWNODEMENU_H
 #define QDMLISTVIEWNODEMENU_H
 
+#include <zeno/common.h>
 #include <QListView>
 #include <QStandardItemModel>
 #include <QStandardItem>

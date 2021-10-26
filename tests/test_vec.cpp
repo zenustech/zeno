@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
 
-namespace zeno::tests {
+ZENO_NAMESPACE_BEGIN
+namespace tests {
 
 class test_vec : public testing::TestWithParam<ztd::vec3f> {
 protected:
@@ -25,3 +26,4 @@ INSTANTIATE_TEST_SUITE_P(
         ));
 
 }
+ZENO_NAMESPACE_END

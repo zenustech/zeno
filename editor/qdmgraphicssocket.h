@@ -1,6 +1,7 @@
 #ifndef QDMGRAPHICSSOCKET_H
 #define QDMGRAPHICSSOCKET_H
 
+#include <zeno/common.h>
 #include <QGraphicsItem>
 #include <QGraphicsTextItem>
 #include <QGraphicsSceneMouseEvent>

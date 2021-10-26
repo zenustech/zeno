@@ -4,7 +4,8 @@
 #include <zeno/ztd/vec.h>
 #include <zeno/ztd/type_info.h>
 
-namespace zeno::ztd::mathvec {
+ZENO_NAMESPACE_BEGIN
+namespace ztd::mathvec {
 
 template <size_t N, class T, class Stream>
     requires (ztd::tuple_contains<Stream, std::tuple<std::stringstream, std::ostream>>::value)
@@ -21,3 +22,4 @@ Stream &operator<<(Stream &os, ztd::vec<N, T> const &v) {
 #define SHOW_VAR(x, ...) #x " = " << (x)
 
 }
+ZENO_NAMESPACE_END

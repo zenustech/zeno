@@ -1,6 +1,7 @@
 #ifndef QDMOPENGLVIEWPORT_H
 #define QDMOPENGLVIEWPORT_H
 
+#include <zeno/common.h>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <memory>

@@ -1,6 +1,7 @@
 #ifndef QDMGRAPHICSBACKGROUND_H
 #define QDMGRAPHICSBACKGROUND_H
 
+#include <zeno/common.h>
 #include <QGraphicsItem>
 #include <QRectF>
 #include <QPainter>

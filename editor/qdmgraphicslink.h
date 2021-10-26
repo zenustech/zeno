@@ -1,6 +1,7 @@
 #ifndef QDMGRAPHICSLINK_H
 #define QDMGRAPHICSLINK_H
 
+#include <zeno/common.h>
 #include <QGraphicsItem>
 #include <QRectF>
 #include <QPainter>
