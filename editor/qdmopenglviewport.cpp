@@ -1,5 +1,6 @@
 #include "qdmopenglviewport.h"
 #include "renderable.h"
+#include <QOpenGLVertexArrayObject>
 
 QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -23,12 +24,6 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
-    m_vao = std::make_unique<QOpenGLVertexArrayObject>(this);
-    m_vao->create();
-    connect(context(), &QOpenGLContext::aboutToBeDestroyed, [this] () {
-        m_vao->destroy();
-        m_vao = nullptr;
-    });
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
@@ -43,9 +38,10 @@ void QDMOpenGLViewport::paintGL()
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_vao->bind();
+    QOpenGLVertexArrayObject vao(this);
+    vao.bind();
     for (auto const &r: m_renderables) {
         r->render(this);
     }
-    m_vao->release();
+    vao.release();
 }

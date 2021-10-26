@@ -3,7 +3,6 @@
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
-#include <QOpenGLVertexArrayObject>
 #include <memory>
 
 class Renderable;
@@ -12,7 +11,6 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 
-    std::unique_ptr<QOpenGLVertexArrayObject> m_vao;
     std::vector<std::unique_ptr<Renderable>> m_renderables;
 
 public:
