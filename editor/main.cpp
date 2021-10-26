@@ -32,5 +32,5 @@ int zenoMain(int argc, char *argv[])
 ZENO_NAMESPACE_END
 
 int main(int argc, char *argv[]) {
-    return zenoMain(argc, argv);
+    return ZENO_NAMESPACE::zenoMain(argc, argv);
 }

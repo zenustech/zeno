@@ -13,3 +13,5 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow() = default;
+
+ZENO_NAMESPACE_END
