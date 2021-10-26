@@ -1,4 +1,5 @@
 #include <zeno/dop/execute.h>
+#include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/functional.h>
 #include <spdlog/spdlog.h>
 #include <map>
@@ -59,7 +60,7 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
     for (auto node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
-            SPDLOG_INFO("* applying {}", node->name);
+            SPDLOG_INFO("* applying {}@{}", node->desc->name, (void *)node);
             node->apply();
         }
     }

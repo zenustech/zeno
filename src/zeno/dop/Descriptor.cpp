@@ -18,6 +18,7 @@ Descriptor &desc_of(std::string const &kind) {
 
 
 void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory) {
+    desc.name = kind;
     desc.factory = std::move(factory);
     desc.inputs.push_back({"SRC"});
     desc.outputs.push_back({"DST"});

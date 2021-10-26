@@ -31,6 +31,8 @@ struct Descriptor {
 
     using FactoryFunc = std::function<std::unique_ptr<Node>()>;
     FactoryFunc factory;
+
+    std::string name;
 };
 
 
