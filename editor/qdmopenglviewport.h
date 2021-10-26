@@ -17,6 +17,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, protected QOpenGLFunctions
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
+    ~QDMOpenGLViewport();
 
     virtual QSize sizeHint() const override;
     virtual void initializeGL() override;

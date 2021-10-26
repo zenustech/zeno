@@ -13,6 +13,8 @@ QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     setFormat(fmt);
 }
 
+QDMOpenGLViewport::~QDMOpenGLViewport() = default;
+
 QSize QDMOpenGLViewport::sizeHint() const
 {
     return QSize(768, 640);

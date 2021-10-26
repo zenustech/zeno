@@ -1,6 +1,7 @@
 #include "renderable.h"
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
+#include <zeno/ztd/vec.h>
 
 
 std::unique_ptr<QOpenGLShaderProgram> makeMeshShaderProgram() {
@@ -22,8 +23,11 @@ void main() {
 }
 
 
-class RenderableMesh : public Renderable
+class RenderableMesh final : public Renderable
 {
+public:
+    virtual ~RenderableMesh() = default;
+
     RenderableMesh()
     {
     }
@@ -33,22 +37,22 @@ class RenderableMesh : public Renderable
         static auto program = makeMeshShaderProgram();
         program->bind();
 
-        std::vector<float> vertices = {
-             0.0f,  0.707f, 0.0f,
-            -0.5f, -0.5f, 0.0f,
-             0.5f, -0.5f, 0.0f,
+        std::vector<zeno::ztd::vec3f> vertices = {
+            { 0.0f,  0.707f, 0.0f},
+            {-0.5f, -0.5f, 0.0f},
+            { 0.5f, -0.5f, 0.0f},
         };
 
         QOpenGLBuffer attrPos;
         attrPos.create();
         attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
         attrPos.bind();
-        attrPos.allocate(vertices.data(), vertices.size() * sizeof(vertices[0]));
+        attrPos.allocate(vertices.data(), vertices.size() * 3 * sizeof(vertices[0]));
 
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
         program->disableAttributeArray("attrPos");
         attrPos.destroy();
