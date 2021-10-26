@@ -9,7 +9,8 @@
 #include <zeno/ztd/map.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 struct Node;
@@ -49,7 +50,8 @@ int define(std::string const &kind, Descriptor desc) {
 }
 
 
-#define ZENO_DOP_DEFINE(T, ...) static int def##T = ::zeno::dop::define<T>(#T, __VA_ARGS__)
+#define ZENO_DOP_DEFINE(T, ...) static int def##T = ZENO_NAMESPACE::dop::define<T>(#T, __VA_ARGS__)
 
 
 }
+ZENO_NAMESPACE_END

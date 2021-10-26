@@ -6,6 +6,8 @@
 #include <zeno/ztd/assert.h>
 #include <algorithm>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsNode::QDMGraphicsNode()
 {
     setFlag(QGraphicsItem::ItemIsMovable);
@@ -144,3 +146,5 @@ void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocke
         .sockid = (int)srcNode->socketOutIndex(srcSocket),
     };
 }
+
+ZENO_NAMESPACE_END

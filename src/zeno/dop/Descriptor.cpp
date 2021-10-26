@@ -2,7 +2,8 @@
 #include <zeno/ztd/map.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 ztd::map<std::string, Descriptor> &desc_table() {
@@ -27,3 +28,4 @@ void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc fa
 
 
 }
+ZENO_NAMESPACE_END

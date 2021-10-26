@@ -10,7 +10,7 @@
 #include <set>
 
 
-namespace zeno::dop {
+namespace dop {
 
 
 struct Node;
@@ -54,3 +54,4 @@ struct Node {
 
 
 }
+ZENO_NAMESPACE_END

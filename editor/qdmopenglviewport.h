@@ -5,6 +5,8 @@
 #include <QOpenGLFunctions>
 #include <memory>
 
+ZENO_NAMESPACE_BEGIN
+
 class Renderable;
 
 class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
@@ -22,5 +24,7 @@ public:
     virtual void resizeGL(int nx, int ny) override;
     virtual void paintGL() override;
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMOPENGLVIEWPORT_H

@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QPointF>
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsView : public QGraphicsView
 {
     Q_OBJECT
@@ -26,5 +28,7 @@ public:
 public slots:
     void addNodeByName(QString name);
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSVIEW_H

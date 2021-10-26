@@ -2,7 +2,8 @@
 #include <zeno/dop/execute.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 ztd::zany Node::get_input(int idx) const {
@@ -24,3 +25,4 @@ void Node::preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
 
 
 }
+ZENO_NAMESPACE_END

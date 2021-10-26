@@ -2,6 +2,8 @@
 #include "qdmgraphicsnode.h"
 #include "qdmgraphicsscene.h"
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsSocket::QDMGraphicsSocket()
 {
     label = std::make_unique<QGraphicsTextItem>(this);
@@ -60,3 +62,5 @@ void QDMGraphicsSocket::setName(QString name)
 {
     label->setPlainText(name);
 }
+
+ZENO_NAMESPACE_END

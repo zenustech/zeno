@@ -10,6 +10,8 @@
 #include <QRectF>
 #include <set>
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsLinkFull;
 
 class QDMGraphicsSocket : public QGraphicsItem
@@ -33,5 +35,7 @@ public:
 
     static constexpr float SIZE = 20, ROUND = 4;
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSSOCKET_H

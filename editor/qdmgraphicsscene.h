@@ -10,6 +10,8 @@
 #include "qdmgraphicsbackground.h"
 #include <QString>
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsScene : public QGraphicsScene
 {
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
@@ -36,5 +38,7 @@ public:
 public slots:
     void addNodeByName(QString name);
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSSCENE_H

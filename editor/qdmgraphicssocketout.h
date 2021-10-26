@@ -3,6 +3,8 @@
 
 #include "qdmgraphicssocket.h"
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsSocketOut final : public QDMGraphicsSocket
 {
 public:
@@ -10,5 +12,7 @@ public:
 
     virtual QPointF getLinkedPos() const override;
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSSOCKETOUT_H

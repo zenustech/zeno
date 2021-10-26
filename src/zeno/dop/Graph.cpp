@@ -3,7 +3,8 @@
 #include <zeno/dop/Descriptor.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 Node *Graph::add_node(Descriptor const &desc) {
@@ -17,3 +18,4 @@ Node *Graph::add_node(Descriptor const &desc) {
 
 
 }
+ZENO_NAMESPACE_END

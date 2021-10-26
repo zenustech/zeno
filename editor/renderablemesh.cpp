@@ -4,8 +4,9 @@
 #include <zeno/ztd/vec.h>
 #include <zeno/types/Mesh.h>
 
+ZENO_NAMESPACE_BEGIN
+
 namespace {
-using namespace zeno;
 
 class RenderableMesh final : public Renderable
 {
@@ -71,3 +72,5 @@ std::unique_ptr<Renderable> makeRenderableMesh(std::shared_ptr<zeno::types::Mesh
 {
     return std::make_unique<RenderableMesh>(mesh);
 }
+
+ZENO_NAMESPACE_END

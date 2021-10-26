@@ -2,6 +2,8 @@
 #include "qdmgraphicsview.h"
 #include <zeno/ztd/memory.h>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsScene::QDMGraphicsScene()
 {
     float w = 100000, h = 100000;
@@ -127,3 +129,5 @@ void QDMGraphicsScene::deletePressed()
         removeNode(node);
     }
 }
+
+ZENO_NAMESPACE_END

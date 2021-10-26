@@ -9,6 +9,8 @@
 #include <QWidget>
 #include <QPointF>
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsLink : public QGraphicsItem
 {
     mutable QPointF lastSrcPos, lastDstPos;
@@ -27,5 +29,7 @@ public:
 
     static constexpr float BEZIER = 0.5f, WIDTH = 3;
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSLINK_H

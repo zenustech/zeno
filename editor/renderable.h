@@ -2,6 +2,8 @@
 
 #include "qdmopenglviewport.h"
 
+ZENO_NAMESPACE_BEGIN
+
 class Renderable
 {
 public:
@@ -10,3 +12,5 @@ public:
 
     virtual void render(QDMOpenGLViewport *viewport) = 0;
 };
+
+ZENO_NAMESPACE_END

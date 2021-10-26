@@ -8,6 +8,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+ZENO_NAMESPACE_BEGIN
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,4 +21,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 };
+
+ZENO_NAMESPACE_END
+
 #endif // MAINWINDOW_H

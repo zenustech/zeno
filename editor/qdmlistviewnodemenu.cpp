@@ -1,6 +1,8 @@
 #include "qdmlistviewnodemenu.h"
 #include <zeno/dop/Descriptor.h>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
     : QListView(parent)
     , model(new QStandardItemModel(this))
@@ -22,3 +24,5 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
 }
 
 QDMListViewNodeMenu::~QDMListViewNodeMenu() = default;
+
+ZENO_NAMESPACE_END

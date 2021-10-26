@@ -5,6 +5,8 @@
 #include "qdmgraphicssocketin.h"
 #include "qdmgraphicssocketout.h"
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMGraphicsLinkFull final : public QDMGraphicsLink
 {
 public:
@@ -17,5 +19,7 @@ public:
     virtual QPointF getDstPos() const override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMGRAPHICSLINKFULL_H

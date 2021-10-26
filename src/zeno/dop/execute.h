@@ -4,7 +4,8 @@
 #include <zeno/dop/Node.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 ztd::zany getval(Input const &input);
@@ -15,3 +16,4 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
 
 
 }
+ZENO_NAMESPACE_END

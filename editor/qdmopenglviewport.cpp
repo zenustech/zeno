@@ -2,6 +2,8 @@
 #include "renderable.h"
 #include <QOpenGLVertexArrayObject>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     : QOpenGLWidget(parent)
 {
@@ -46,3 +48,5 @@ void QDMOpenGLViewport::paintGL()
     }
     vao.release();
 }
+
+ZENO_NAMESPACE_END

@@ -4,6 +4,8 @@
 #include <QPushButton>
 #include <QScrollBar>
 
+ZENO_NAMESPACE_BEGIN
+
 QSize QDMGraphicsView::sizeHint() const
 {
     return QSize(1024, 640);
@@ -83,3 +85,5 @@ void QDMGraphicsView::addNodeByName(QString name)
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     parentScene->addNodeByName(name);
 }
+
+ZENO_NAMESPACE_END

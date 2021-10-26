@@ -1,7 +1,8 @@
 #include "qdmgraphicsbackground.h"
 #include "qdmgraphicsscene.h"
 #include <QPainterPath>
-#include <QDebug>
+
+ZENO_NAMESPACE_BEGIN
 
 QDMGraphicsBackground::QDMGraphicsBackground()
 {
@@ -24,3 +25,5 @@ void QDMGraphicsBackground::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
     QGraphicsItem::mousePressEvent(event);
 }
+
+ZENO_NAMESPACE_END

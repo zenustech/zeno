@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
+ZENO_NAMESPACE_BEGIN
+
+int zenoMain(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     //a.setStyle("Fusion");
@@ -25,4 +27,10 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
     return a.exec();
+}
+
+ZENO_NAMESPACE_END
+
+int main(int argc, char *argv[]) {
+    return zenoMain(argc, argv);
 }

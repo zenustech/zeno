@@ -1,6 +1,8 @@
 #include "qdmgraphicslinkfull.h"
 #include "qdmgraphicsscene.h"
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsLinkFull::QDMGraphicsLinkFull(QDMGraphicsSocketOut *srcSocket, QDMGraphicsSocketIn *dstSocket)
     : srcSocket(srcSocket), dstSocket(dstSocket)
 {
@@ -30,3 +32,5 @@ void QDMGraphicsLinkFull::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
     QGraphicsItem::mousePressEvent(event);
 }
+
+ZENO_NAMESPACE_END

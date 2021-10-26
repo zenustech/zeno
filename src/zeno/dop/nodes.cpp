@@ -1,7 +1,7 @@
 #include <zeno/dop/dop.h>
 
 
-namespace zeno {
+ZENO_NAMESPACE_BEGIN
 namespace {
 
 
@@ -141,4 +141,4 @@ ZENO_DOP_DEFINE(ToView, {{
 
 
 }
-}
+ZENO_NAMESPACE_END

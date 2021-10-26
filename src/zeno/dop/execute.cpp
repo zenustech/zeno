@@ -5,7 +5,8 @@
 #include <map>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 ztd::zany resolve(Input const &input) {
@@ -97,3 +98,4 @@ ztd::zany getval(Input const &input) {
 
 
 }
+ZENO_NAMESPACE_END

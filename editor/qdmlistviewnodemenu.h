@@ -6,6 +6,8 @@
 #include <QStandardItem>
 #include <vector>
 
+ZENO_NAMESPACE_BEGIN
+
 class QDMListViewNodeMenu : public QListView
 {
     Q_OBJECT
@@ -20,5 +22,7 @@ public:
 signals:
     void entryClicked(QString name);
 };
+
+ZENO_NAMESPACE_END
 
 #endif // QDMLISTVIEWNODEMENU_H

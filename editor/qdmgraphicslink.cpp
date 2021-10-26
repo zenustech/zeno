@@ -1,6 +1,8 @@
 #include "qdmgraphicslink.h"
 #include <QGraphicsScene>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsLink::QDMGraphicsLink()
 {
 }
@@ -44,3 +46,5 @@ void QDMGraphicsLink::paint(QPainter *painter, QStyleOptionGraphicsItem const *s
     painter->setBrush(Qt::NoBrush);
     painter->drawPath(shape());
 }
+
+ZENO_NAMESPACE_END

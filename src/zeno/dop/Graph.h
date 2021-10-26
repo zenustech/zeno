@@ -4,9 +4,11 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <zeno/common.h>
 
 
-namespace zeno::dop {
+ZENO_NAMESPACE_BEGIN
+namespace dop {
 
 
 struct Node;
@@ -21,3 +23,4 @@ struct Graph {
 
 
 }
+ZENO_NAMESPACE_END

@@ -3,6 +3,8 @@
 #include <QOpenGLBuffer>
 #include <zeno/ztd/vec.h>
 
+ZENO_NAMESPACE_BEGIN
+
 namespace {
 
 class RenderableTestTriangle final : public Renderable
@@ -67,3 +69,5 @@ std::unique_ptr<Renderable> makeRenderableTestTriangle()
 {
     return std::make_unique<RenderableTestTriangle>();
 }
+
+ZENO_NAMESPACE_END

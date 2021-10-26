@@ -5,6 +5,8 @@
 #include <QGraphicsView>
 #include <QCursor>
 
+ZENO_NAMESPACE_BEGIN
+
 QDMGraphicsLinkHalf::QDMGraphicsLinkHalf(QDMGraphicsSocket *socket)
     : socket(socket)
 {
@@ -24,3 +26,5 @@ QPointF QDMGraphicsLinkHalf::getDstPos() const {
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     return parentScene->getCursorPos();
 }
+
+ZENO_NAMESPACE_END
