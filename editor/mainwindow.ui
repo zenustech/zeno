@@ -43,28 +43,26 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget">
    <property name="windowTitle">
+    <string>Object Info</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <property name="windowTitle">
     <string>Node Menu</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QGridLayout" name="gridLayout_2">
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QGridLayout" name="gridLayout_3">
      <item row="0" column="0">
       <widget class="QDMListViewNodeMenu" name="nodeMenu"/>
      </item>
     </layout>
-   </widget>
-  </widget>
-  <widget class="QDockWidget" name="dockWidget_2">
-   <property name="windowTitle">
-    <string>Node Param</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>8</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QGridLayout" name="gridLayout_3"/>
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_3">
@@ -81,6 +79,15 @@
      </item>
     </layout>
    </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_4">
+   <property name="windowTitle">
+    <string>Node Param</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
