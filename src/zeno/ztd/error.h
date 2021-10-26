@@ -1,10 +1,12 @@
 #pragma once
 
+#include <zeno/common.h>
 #include <string>
 #include <exception>
 #include <spdlog/spdlog.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 class error : public std::exception {
     std::string msg;
@@ -20,3 +22,4 @@ inline auto format_error(fmt::format_string<Args...> fmt, Args &&...args) {
 }
 
 }
+ZENO_NAMESPACE_END

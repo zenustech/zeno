@@ -3,7 +3,8 @@
 #include <vector>
 #include <zeno/ztd/error.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 template <class T>
 struct vector : std::vector<T> {
@@ -27,3 +28,4 @@ struct vector : std::vector<T> {
 };
 
 }
+ZENO_NAMESPACE_END

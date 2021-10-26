@@ -7,7 +7,8 @@
 #include <tuple>
 
 
-namespace zeno::types {
+ZENO_NAMESPACE_BEGIN
+namespace types {
 namespace {
 
 
@@ -113,3 +114,4 @@ ZENO_DOP_DEFINE(ReadOBJMesh, {{
 
 }
 }
+ZENO_NAMESPACE_END

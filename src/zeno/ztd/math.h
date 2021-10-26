@@ -1,8 +1,10 @@
 #pragma once
 
+#include <zeno/common.h>
 #include <cmath>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 inline namespace math {
 
 static auto pymod(auto x, auto y) {
@@ -28,3 +30,4 @@ static auto &ipymod(auto &x, auto y) {
 
 }
 }
+ZENO_NAMESPACE_END

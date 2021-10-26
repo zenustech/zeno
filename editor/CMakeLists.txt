@@ -16,6 +16,11 @@ else()
     add_executable(zeno_editor ${PROJECT_SOURCES})
 endif()
 
+if (ZENO_WITH_BACKWARD)
+    target_sources(zeno_editor PRIVATE ${BACKWARD_SOURCES})
+    add_backward(zeno_editor)
+endif()
+
 target_link_libraries(zeno_editor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(zeno_editor PRIVATE zeno)
 

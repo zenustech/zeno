@@ -1,13 +1,15 @@
 #pragma once
 
 
+#include <zeno/common.h>
 #include <tuple>
 #include <memory>
 #include <variant>
 #include <functional>
 
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 inline namespace type_traits {
 
 template <class F, class ...Ts>
@@ -184,3 +186,4 @@ inline constexpr bool static_for(Lambda const &f) {
 
 }
 }
+ZENO_NAMESPACE_END

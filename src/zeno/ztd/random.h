@@ -1,8 +1,10 @@
 #pragma once
 
+#include <zeno/common.h>
 #include <cstdlib>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 inline namespace random {
 
 template <class T = unsigned int>
@@ -38,3 +40,4 @@ static inline void srand(unsigned long i) {
 
 }
 }
+ZENO_NAMESPACE_END

@@ -1,19 +1,21 @@
 #pragma once
 
 
+#include <zeno/common.h>
 #include <functional>
 
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 
-template <class T = void, class ...Ts>
+/*template <class T = void, class ...Ts>
 using promise = std::function<T(Ts...)>;
 
 template <class ...Ts, class T>
 promise<T, Ts...> make_promise(T val) {
     return [val = std::move(val)] (Ts...) -> T { return val; };
-}
+}*/
 
 
 struct dtor_function : std::function<void()> {
@@ -40,4 +42,5 @@ struct match : private Fs... {
 };
 
 
-};
+}
+ZENO_NAMESPACE_END

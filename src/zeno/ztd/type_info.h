@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <zeno/common.h>
 #include <typeinfo>
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -8,7 +9,8 @@
 #include <cstdlib>
 #include <cxxabi.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 inline std::string cpp_demangle(const char *name) {
     int status;
@@ -23,10 +25,12 @@ inline std::string cpp_type_name(std::type_info const &type) {
 }
 
 }
+ZENO_NAMESPACE_END
 
 #else
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 inline std::string cpp_type_name(std::type_info const &type) {
     // MSVC is able to return demanged name directly via name()
@@ -34,5 +38,6 @@ inline std::string cpp_type_name(std::type_info const &type) {
 }
 
 }
+ZENO_NAMESPACE_END
 
 #endif

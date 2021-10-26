@@ -3,7 +3,8 @@
 #include <map>
 #include <zeno/ztd/error.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 template <class K, class V>
 struct map : std::map<K, V> {
@@ -27,3 +28,4 @@ struct map : std::map<K, V> {
 };
 
 }
+ZENO_NAMESPACE_END

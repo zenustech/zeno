@@ -2,7 +2,8 @@
 
 #include <zeno/ztd/error.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 #define __ZENO_ZTD_ASSERT_TST(y, ...) y
 #define __ZENO_ZTD_ASSERT_PRE(y, ...) __VA_OPT__(": {}")
@@ -10,7 +11,7 @@ namespace zeno::ztd {
 #define __ZENO_ZTD_ASSERT_EXT(xs, ...) __VA_OPT__(__ZENO_ZTD_ASSERT_PRE(__VA_ARGS__)), xs __VA_OPT__(__ZENO_ZTD_ASSERT_MSG(__VA_ARGS__))
 #define ZENO_ZTD_ASSERT(x, ...) (([&] (auto &&__assert_val) -> decltype(auto) { \
     [[unlikely]] if (!((__assert_val) __ZENO_ZTD_ASSERT_TST(__VA_ARGS__))) \
-        throw zeno::ztd::format_error("AssertionError: {}" __ZENO_ZTD_ASSERT_EXT(#x, __VA_ARGS__)); \
+        throw ZENO_NAMESPACE::ztd::format_error("AssertionError: {}" __ZENO_ZTD_ASSERT_EXT(#x, __VA_ARGS__)); \
     return std::forward<decltype(__assert_val)>(__assert_val); \
 })((x)))
 
@@ -26,3 +27,4 @@ namespace zeno::ztd {
 #define ZENO_ZTD_ASSERT_NOTNULL(x) ZENO_ZTD_ASSERT((x), != nullptr, fmt::format("unsatisfied: {} != nullptr", (void *)(x)))
 
 }
+ZENO_NAMESPACE_END

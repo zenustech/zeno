@@ -5,7 +5,8 @@
 #include <sstream>
 #include <zeno/ztd/error.h>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 static inline auto split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;
@@ -48,3 +49,4 @@ static std::string trim_string(std::string str) {
 }
 
 }
+ZENO_NAMESPACE_END

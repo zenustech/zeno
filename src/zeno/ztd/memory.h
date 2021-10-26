@@ -1,8 +1,10 @@
 #pragma once
 
+#include <zeno/common.h>
 #include <memory>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 
 template <class T>
@@ -55,3 +57,4 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 }
+ZENO_NAMESPACE_END

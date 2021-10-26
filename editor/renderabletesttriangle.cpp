@@ -49,7 +49,6 @@ public:
         attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
         attrPos.bind();
         attrPos.allocate(vertices.data(), vertices.size() * 3 * sizeof(vertices[0]));
-
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 

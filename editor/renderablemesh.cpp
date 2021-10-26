@@ -2,8 +2,10 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <zeno/ztd/vec.h>
+#include <zeno/types/Mesh.h>
 
 namespace {
+using namespace zeno;
 
 class RenderableMesh final : public Renderable
 {
@@ -28,7 +30,10 @@ void main() {
 public:
     virtual ~RenderableMesh() = default;
 
-    RenderableMesh()
+    std::shared_ptr<types::Mesh> mesh;
+
+    RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
+        : mesh(mesh)
     {
     }
 
@@ -48,7 +53,6 @@ public:
         attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
         attrPos.bind();
         attrPos.allocate(vertices.data(), vertices.size() * 3 * sizeof(vertices[0]));
-
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
@@ -63,7 +67,7 @@ public:
 
 }
 
-std::unique_ptr<Renderable> makeRenderableMesh()
+std::unique_ptr<Renderable> makeRenderableMesh(std::shared_ptr<zeno::types::Mesh> const &mesh)
 {
-    return std::make_unique<RenderableMesh>();
+    return std::make_unique<RenderableMesh>(mesh);
 }

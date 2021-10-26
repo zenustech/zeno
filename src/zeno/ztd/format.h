@@ -1,11 +1,13 @@
 #pragma once
 
+#include <zeno/common.h>
 #include <cstdio>
 #include <string>
 #include <sstream>
 #include <iostream>
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {
@@ -31,3 +33,4 @@ void print(Ts const &...ts) {
 }
 
 }
+ZENO_NAMESPACE_END

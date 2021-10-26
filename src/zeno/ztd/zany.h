@@ -12,7 +12,8 @@
 #include <zeno/ztd/vec.h>
 
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 
 namespace zany_details {
 
@@ -152,3 +153,4 @@ T zany_cast(zany const &a) {
 }
 
 }
+ZENO_NAMESPACE_END

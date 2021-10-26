@@ -5,7 +5,8 @@
 #include <zeno/ztd/vec.h>
 
 
-namespace zeno::types {
+ZENO_NAMESPACE_BEGIN
+namespace types {
 
 
 struct Mesh {
@@ -27,3 +28,4 @@ struct Mesh {
 
 
 }
+ZENO_NAMESPACE_END

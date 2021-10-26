@@ -10,7 +10,8 @@
 #include <cmath>
 
 
-namespace zeno::ztd {
+ZENO_NAMESPACE_BEGIN
+namespace ztd {
 inline namespace mathvec {
 
 
@@ -888,3 +889,4 @@ using vec4C = vec<4, uint8_t>;
 
 }
 }
+ZENO_NAMESPACE_END
