@@ -5,6 +5,6 @@
 
 namespace zeno {
 
-using Exception = zeno::ztd::error;
+using Exception = ZENO_NAMESPACE::ztd::error;
 
 }

@@ -5,6 +5,6 @@
 
 namespace zeno {
 
-using namespace zeno::ztd::random;
+using namespace ZENO_NAMESPACE::ztd::random;
 
 }

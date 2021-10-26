@@ -70,7 +70,7 @@ struct IObjectClone : Base {
 };
 
 
-struct INode : zeno::dop::Node {
+struct INode : ZENO_NAMESPACE::dop::Node {
 protected:
     virtual void apply() = 0;
 
@@ -176,7 +176,7 @@ struct Descriptor {
   std::vector<std::string> categories;
 };
 
-void defNodeClass(std::function<std::unique_ptr<zeno::dop::Node>()> func,
+void defNodeClass(std::function<std::unique_ptr<ZENO_NAMESPACE::dop::Node>()> func,
         std::string const &name, Descriptor const &desc);
 
 template <class T>

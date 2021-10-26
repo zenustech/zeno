@@ -37,9 +37,9 @@ using vector_type_variant = std::variant
         >;
 
 template <class T>
-using any_underlying_type_t = zeno::ztd::zany_underlying_t<T>;
+using any_underlying_type_t = ZENO_NAMESPACE::ztd::zany_underlying_t<T>;
 
-using Any = zeno::ztd::zany;
+using Any = ZENO_NAMESPACE::ztd::zany;
 
 template <class T>
 std::optional<T> exact_any_cast(Any a) {

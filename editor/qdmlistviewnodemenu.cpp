@@ -7,7 +7,7 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
     : QListView(parent)
     , model(new QStandardItemModel(this))
 {
-    for (auto const &[k, d]: zeno::dop::desc_table()) {
+    for (auto const &[k, d]: dop::desc_table()) {
         auto item = new QStandardItem();
         item->setText(QString::fromStdString(k));
         item->setEditable(false);

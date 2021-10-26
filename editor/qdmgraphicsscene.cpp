@@ -20,7 +20,7 @@ void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
     removeItem(node);
-    nodes.erase(zeno::ztd::stale_ptr(node));
+    nodes.erase(ztd::stale_ptr(node));
 }
 
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
@@ -82,7 +82,7 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
-    links.erase(zeno::ztd::stale_ptr(link));
+    links.erase(ztd::stale_ptr(link));
 }
 
 QDMGraphicsNode *QDMGraphicsScene::addNode()

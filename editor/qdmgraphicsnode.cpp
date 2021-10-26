@@ -76,12 +76,12 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 void QDMGraphicsNode::initByName(QString name)
 {
     setName(name);
-    auto const &desc = zeno::dop::desc_of(name.toStdString());
+    auto const &desc = dop::desc_of(name.toStdString());
     dopNode = desc.factory();
     dopNode->desc = &desc;
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
-        dopNode->inputs.push_back(zeno::dop::Input_Value{});
+        dopNode->inputs.push_back(dop::Input_Value{});
         socket->setName(QString::fromStdString(sockinfo.name));
     }
     for (auto const &sockinfo: desc.outputs) {
@@ -119,14 +119,14 @@ void QDMGraphicsNode::unlinkAll()
 
 size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
 {
-    auto it = find(begin(socketIns), end(socketIns), zeno::ztd::stale_ptr(socket));
+    auto it = find(begin(socketIns), end(socketIns), ztd::stale_ptr(socket));
     ZENO_ZTD_ASSERT(it != end(socketIns));
     return it - begin(socketIns);
 }
 
 size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 {
-    auto it = find(begin(socketOuts), end(socketOuts), zeno::ztd::stale_ptr(socket));
+    auto it = find(begin(socketOuts), end(socketOuts), ztd::stale_ptr(socket));
     ZENO_ZTD_ASSERT(it != end(socketOuts));
     return it - begin(socketOuts);
 }
@@ -135,13 +135,13 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
-    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Value{};
+    dopNode->inputs.at(socketInIndex(socket)) = dop::Input_Value{};
 }
 
 void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket)
 {
     auto srcNode = static_cast<QDMGraphicsNode *>(srcSocket->parentItem());
-    dopNode->inputs.at(socketInIndex(socket)) = zeno::dop::Input_Link{
+    dopNode->inputs.at(socketInIndex(socket)) = dop::Input_Link{
         .node = srcNode->dopNode.get(),
         .sockid = (int)srcNode->socketOutIndex(srcSocket),
     };

@@ -40,7 +40,7 @@ public:
         static auto program = makeShaderProgram();
         program->bind();
 
-        std::vector<zeno::ztd::vec3f> vertices = {
+        std::vector<ztd::vec3f> vertices = {
             { 0.0f,  0.707f, 0.0f},
             {-0.5f, -0.5f, 0.0f},
             { 0.5f, -0.5f, 0.0f},
