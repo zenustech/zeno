@@ -23,26 +23,29 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ## Gallery
 
-![robot hit water](/images/crag_hit_water.gif)
+Fig.1 - Robot hit water
 
-robot hit water
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crag_hit_water.gif" width="640" position="left">
 
-![SuperSonic Flow](/images/shock.gif)
+Fig.2 - SuperSonic Flow
 
-SuperSonic Flow
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/shock.gif" width="640" position="left">
 
+Fig.3 - Fluid-structure interaction in ZENO
 
- <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water.gif" width="640" position="left">
- fluid-structure interaction in ZENO
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water.gif" width="640" position="left">
 
- <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/mid-autumn-festival.gif" width="640" position="left">
- rigid fracture in ZENO
+Fig.4 - Rigid fracture in ZENO
 
- <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/muscle2.gif" width="640" position="left">
- muscular-skeleton simulation in ZENO
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/mid-autumn-festival.gif" width="640" position="left">
 
- <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
- large scale Fluids in ZENO
+Fig.5 - Muscular-skeleton simulation in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/muscle2.gif" width="640" position="left">
+
+Fig.6 - Large scale Fluids in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
 
 # End-user Installation
 
