@@ -8,7 +8,7 @@
 
 class Renderable;
 
-class QDMOpenGLViewport : public QOpenGLWidget, protected QOpenGLFunctions
+class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 

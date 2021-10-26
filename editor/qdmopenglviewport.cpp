@@ -45,7 +45,7 @@ void QDMOpenGLViewport::paintGL()
 
     m_vao->bind();
     for (auto const &r: m_renderables) {
-        r->render();
+        r->render(this);
     }
     m_vao->release();
 }

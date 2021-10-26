@@ -1,10 +1,7 @@
 #ifndef RENDERABLE_H
 #define RENDERABLE_H
 
-#include <QOpenGLWidget>
-#include <QOpenGLFunctions>
-#include <QOpenGLVertexArrayObject>
-#include <memory>
+#include "qdmopenglviewport.h"
 
 class Renderable
 {
@@ -12,7 +9,7 @@ public:
     Renderable();
     virtual ~Renderable();
 
-    virtual void render() = 0;
+    virtual void render(QDMOpenGLViewport *viewport) = 0;
 };
 
 #endif // RENDERABLE_H

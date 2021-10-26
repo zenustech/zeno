@@ -19,7 +19,6 @@ void QDMGraphicsBackground::paint(QPainter *painter, QStyleOptionGraphicsItem co
 
 void QDMGraphicsBackground::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug() << "background pressed";
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     parentScene->blankClicked();
 

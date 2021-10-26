@@ -32,7 +32,7 @@ public:
     {
     }
 
-    virtual void render() override
+    virtual void render(QDMOpenGLViewport *viewport) override
     {
         static auto program = makeMeshShaderProgram();
         program->bind();
@@ -52,7 +52,7 @@ public:
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
-        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        viewport->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
         program->disableAttributeArray("attrPos");
         attrPos.destroy();
