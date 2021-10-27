@@ -4,6 +4,36 @@
 #include <zeno/zycl/helper.h>
 
 
+#ifdef ZENO_SYCL_IS_EMULATED
+
+ZENO_NAMESPACE_BEGIN
+namespace zycl {
+
+template <class T>
+struct vector : protected std::vector<T> {
+    using std::vector<T>::vector;
+
+    template <access::mode mode>
+    auto get_access(auto &&cgh) {
+        return functor_accessor([=, this] (id<1> idx) -> decltype(auto) {
+            return this->operator[](idx);
+        });
+    }
+
+    auto &as_vector() {
+        return static_cast<std::vector<T> &>(*this);
+    }
+
+    auto const &as_const_vector() const {
+        return static_cast<std::vector<T> const &>(*this);
+    }
+};
+
+}
+ZENO_NAMESPACE_END
+
+#else
+
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
@@ -32,9 +62,14 @@ template <class Vector, class Buf>
 struct _M_as_vector : Vector {
     Buf &_M_buf;
 
-    _M_as_vector(Buf &buf) : _M_buf(buf) {
+    explicit _M_as_vector(Buf &buf) : _M_buf(buf) {
         vector_from_buffer(*this, _M_buf);
     }
+
+    _M_as_vector(_M_as_vector const &) = delete;
+    _M_as_vector &operator=(_M_as_vector const &) = delete;
+    _M_as_vector(_M_as_vector &&) = default;
+    _M_as_vector &operator=(_M_as_vector &&) = default;
 
     ~_M_as_vector() {
         buffer_from_vector(_M_buf, *this);
@@ -76,3 +111,5 @@ struct vector {
 
 }
 ZENO_NAMESPACE_END
+
+#endif

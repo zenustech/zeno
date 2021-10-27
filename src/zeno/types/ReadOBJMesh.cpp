@@ -47,10 +47,10 @@ inline std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
 static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     std::vector<ztd::vec2f> uv_vert;
     std::vector<int> uv_loop;
-    auto vert = mesh.vert.as_vector();
-    auto loop = mesh.loop.as_vector();
-    auto poly = mesh.poly.as_vector();
-    auto loop_uv = mesh.loop_uv.as_vector();
+    decltype(auto) vert = mesh.vert.as_vector();
+    decltype(auto) loop = mesh.loop.as_vector();
+    decltype(auto) poly = mesh.poly.as_vector();
+    decltype(auto) loop_uv = mesh.loop_uv.as_vector();
 
     char buf[1025];
     while (in.getline(buf, 1024, '\n')) {
