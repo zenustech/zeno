@@ -121,7 +121,7 @@ struct zany {
         auto o = cast<T>();
         [[unlikely]] if (!o.has_value())
             throw format_error("TypeError: cannot cast {} -> {}",
-                               cpp_type_name(type()), cpp_type_name(typeid(T)));
+                               cpp_type_name(_M_any.type()), cpp_type_name(typeid(T)));
         return o.value();
     }
 
