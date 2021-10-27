@@ -2,8 +2,26 @@
 #include <cstdio>
 
 
+inline namespace __zenofakesycl {
+namespace sycl {
+
+template <class T, size_t N>
+struct buffer {
+    std::vector<>
+};
+
+}
+}
+
+
+template <class T>
+struct Vector {
+    sycl::buffer<T, 1> buf;
+};
+
+
 int main() {
-    sycl::queue que;
+    sycl::queue que(sycl::default_selector{});
 
     sycl::buffer<sycl::cl_int, 1> buf(32);
 
@@ -15,10 +33,10 @@ int main() {
         });
     });
 
-    auto hbuf = buf.get_access<sycl::access::mode::read_write>();
-
+    auto hbuf = buf.get_access<sycl::access::mode::read>();
     for (int i = 0; i < 32; i++) {
         printf("%d\n", hbuf[i]);
     }
+
     return 0;
 }
