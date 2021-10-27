@@ -21,6 +21,10 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message("-- Build type: ${CMAKE_BUILD_TYPE}")
 
+if (BATE)
+    set(CMAKE_CXX_COMPILER "/opt/sycl/bin/clang++")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
