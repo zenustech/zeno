@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <zeno/ztd/vec.h>
+#include <zeno/zycl/vector.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -11,18 +12,18 @@ namespace types {
 
 struct Mesh {
     // points
-    std::vector<ztd::vec3f> vert;
+    zycl::vector<ztd::vec3f> vert;
 
     // face corners
-    std::vector<int> loop;
-    std::vector<ztd::vec2f> loop_uv;
+    zycl::vector<int> loop;
+    zycl::vector<ztd::vec2f> loop_uv;
 
     // faces
     struct MPoly {
         int start{};
         int num{};
     };
-    std::vector<MPoly> poly;
+    zycl::vector<MPoly> poly;
 };
 
 

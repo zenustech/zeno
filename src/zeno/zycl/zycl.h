@@ -1,12 +1,21 @@
 #pragma once
 
 #include <zeno/common.h>
+
+#if defined(ZENO_WITH_SYCL)
+#include <CL/sycl.hpp>
+
+ZENO_NAMESPACE_BEGIN
+namespace zycl = cl::sycl;
+ZENO_NAMESPACE_END
+#else
+#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, add -DZENO_WITH_SYCL flag to use real sycl instead")
+
 #include <array>
 #include <vector>
 
 ZENO_NAMESPACE_BEGIN
-inline namespace __zeno_fake_sycl {
-namespace sycl {
+namespace zycl {
 
 using cl_int = int;
 using cl_float = float;
@@ -161,6 +170,14 @@ struct buffer {
         : _M_size(size), _M_data(_M_calc_product(size)) {
     }
 
+    auto const &underlying() const {
+        return _M_data;
+    }
+
+    auto &underlying() {
+        return _M_data;
+    }
+
     template <access::mode mode>
     auto get_access() const {
         return accessor<mode, buffer, T, N>(*this);
@@ -181,5 +198,6 @@ struct buffer {
 };
 
 }
-}
 ZENO_NAMESPACE_END
+
+#endif
