@@ -10,7 +10,7 @@ namespace zycl {
 
 struct host_handler {};
 
-template <access::mode mode = access::mode::read_write, class Cgh>
+template <access::mode mode, class Cgh>
 auto make_access(Cgh &&cgh, auto &&buf) {
     if constexpr (std::is_same_v<std::remove_cvref_t<Cgh>, host_handler>)
         return buf.template get_access<mode>();
@@ -18,7 +18,7 @@ auto make_access(Cgh &&cgh, auto &&buf) {
         return buf.template get_access<mode>(cgh);
 }
 
-template <access::mode mode = access::mode::read_write>
+template <access::mode mode>
 auto make_access(auto &&buf) {
     return make_access(host_handler{}, std::forward<decltype(buf)>(buf));
 }

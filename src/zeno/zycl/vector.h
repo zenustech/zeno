@@ -7,14 +7,24 @@
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-template <class Buf>
-void buffer_from_vector(Buf &buf, auto const &range) {
-    auto size = range.size();
-    buf = Buf(size);
-    auto hacc = make_accessor<access::mode::write>(buf);
+void vector_from_buffer(auto &vec, auto const &buf) {
+    size_t size = buf.size();
+    vec.clear();
+    vec.reserve(size);
+    auto hacc = make_access<access::mode::read>(buf);
     size_t i = 0;
-    for (auto &&x: range) {
-        hacc[i++] = x;
+    for (size_t i = 0; i < size; i++) {
+        vec.push_back(hacc[i]);
+    }
+}
+
+void buffer_from_vector(auto &buf, auto const &vec) {
+    size_t size = vec.size();
+    buf = std::remove_cvref_t<decltype(buf)>(size);
+    auto hacc = make_access<access::mode::discard_write>(buf);
+    size_t i = 0;
+    for (size_t i = 0; i < size; i++) {
+        hacc[i] = vec[i];
     }
 }
 
@@ -49,7 +59,7 @@ struct vector {
 
     template <access::mode mode>
     auto get_access(auto &&cgh) {
-        auto a_buf = make_access(cgh, _M_buf);
+        auto a_buf = make_access<mode>(cgh, _M_buf);
         return functor_accessor([=] (id<1> idx) -> decltype(auto) {
             return a_buf[idx];
         });
