@@ -3,6 +3,7 @@
 #include <zeno/zycl/zycl.h>
 #include <type_traits>
 #include <utility>
+#include <optional>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -18,6 +19,11 @@ auto make_accessor(Cgh &&cgh, auto &&buf) {
         return buf.template get_accessor<mode>(cgh);
 }
 
+template <access::mode mode = access::mode::read_write>
+auto make_accessor(auto &&buf) {
+    return make_accessor(host_handler{}, std::forward<decltype(buf)>(buf));
+}
+
 template <class F>
 struct functor_accessor {
     F f;
@@ -25,7 +31,7 @@ struct functor_accessor {
     constexpr functor_accessor(F &&f) : f(std::forward<F>(f)) {
     }
 
-    constexpr decltype(auto) operator[](auto &&ts) {
+    constexpr decltype(auto) operator[](auto &&t) {
         return f(std::forward<decltype(t)>(t));
     }
 };
@@ -33,13 +39,27 @@ struct functor_accessor {
 template <class T>
 struct vector {
     buffer<T, 1> _M_buf;
+    mutable std::optional<std::vector<T>> _M_host;
 
     template <access::mode mode>
-    functor_accessor get_accessor(auto &&cgh) {
+    auto get_accessor(auto &&cgh) {
         auto a_buf = make_accessor(cgh, _M_buf);
-        return [=] (id<1> idx) {
+        return functor_accessor([=] (id<1> idx) -> decltype(auto) {
             return a_buf[idx];
-        };
+        });
+    }
+
+    auto &host_begin() const {
+        if (!_M_host.has_value())
+            _M_host.emplace();
+        return _M_host.value();
+    }
+
+    void host_end() const {
+        if (!_M_host.has_value())
+            return;
+        buffer_from_range(_M_buf, _M_host->begin(), _M_host->end());
+        _M_host = std::nullopt;
     }
 };
 

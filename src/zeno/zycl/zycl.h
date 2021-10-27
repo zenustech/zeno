@@ -9,7 +9,7 @@ ZENO_NAMESPACE_BEGIN
 namespace zycl = cl::sycl;
 ZENO_NAMESPACE_END
 #else
-#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, add -DZENO_WITH_SYCL flag to use real sycl instead")
+//#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, add -DZENO_WITH_SYCL flag to use real sycl instead")
 
 #include <array>
 #include <vector>
@@ -136,7 +136,7 @@ struct accessor {
     explicit accessor(Buf const &buf) : buf(buf) {
     }
 
-    inline decltype(auto) operator[](id<N> idx) const {
+    inline T &operator[](id<N> idx) const {
         return const_cast<Buf &>(buf)._M_at(idx);
     }
 };
@@ -166,6 +166,12 @@ struct buffer {
     std::vector<T> _M_data;
     id<N> _M_size;
 
+    buffer() = default;
+    buffer(buffer const &) = default;
+    buffer &operator=(buffer const &) = default;
+    buffer(buffer &&) = default;
+    buffer &operator=(buffer &&) = default;
+
     explicit buffer(id<N> size)
         : _M_size(size), _M_data(_M_calc_product(size)) {
     }
@@ -184,7 +190,7 @@ struct buffer {
     }
 
     template <access::mode mode>
-    auto get_access(sycl::handler &) const {
+    auto get_access(handler &) const {
         return accessor<mode, buffer, T, N>(*this);
     }
 
