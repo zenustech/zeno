@@ -20,7 +20,7 @@ auto make_access(Cgh &&cgh, auto &&buf) {
 
 template <access::mode mode>
 auto make_access(auto &&buf) {
-    return make_access(host_handler{}, std::forward<decltype(buf)>(buf));
+    return make_access<mode>(host_handler{}, std::forward<decltype(buf)>(buf));
 }
 
 template <class F>
