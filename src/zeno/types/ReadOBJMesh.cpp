@@ -12,7 +12,7 @@ namespace types {
 namespace {
 
 
-inline ztd::vec3f read_vec3f(std::string_view const &exp) {
+static ztd::vec3f read_vec3f(std::string_view const &exp) {
     int i = 0;
     ztd::vec3f tokens(0);
     std::string token;
@@ -23,7 +23,7 @@ inline ztd::vec3f read_vec3f(std::string_view const &exp) {
 }
 
 
-inline ztd::vec2f read_vec2f(std::string_view const &exp) {
+static ztd::vec2f read_vec2f(std::string_view const &exp) {
     int i = 0;
     ztd::vec2f tokens(0);
     std::string token;
@@ -34,7 +34,7 @@ inline ztd::vec2f read_vec2f(std::string_view const &exp) {
 }
 
 
-inline std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
+static std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
     int i = 0, tokens[3] = {0, 0, 0};
     std::string token;
     std::istringstream iss((std::string)exp);

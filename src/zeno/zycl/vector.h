@@ -20,11 +20,11 @@ struct vector : protected std::vector<T> {
         });
     }
 
-    auto &as_vector() {
+    inline auto &as_vector() {
         return static_cast<std::vector<T> &>(*this);
     }
 
-    auto const &as_const_vector() const {
+    inline auto const &as_const_vector() const {
         return static_cast<std::vector<T> const &>(*this);
     }
 };
@@ -100,12 +100,14 @@ struct vector {
         });
     }
 
+    template <class Vector = std::vector<T>>
     auto as_vector() {
-        return _M_make_as_vector<std::vector<T>>(_M_buf);
+        return _M_make_as_vector<Vector>(_M_buf);
     }
 
+    template <class Vector = std::vector<T>>
     auto as_const_vector() {
-        return _M_make_as_const_vector<std::vector<T>>(_M_buf);
+        return _M_make_as_const_vector<Vector>(_M_buf);
     }
 };
 
