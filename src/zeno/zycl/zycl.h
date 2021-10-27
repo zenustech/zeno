@@ -176,14 +176,6 @@ struct buffer {
         : _M_size(size), _M_data(_M_calc_product(size)) {
     }
 
-    auto const &underlying() const {
-        return _M_data;
-    }
-
-    auto &underlying() {
-        return _M_data;
-    }
-
     template <access::mode mode>
     auto get_access() const {
         return accessor<mode, buffer, T, N>(*this);

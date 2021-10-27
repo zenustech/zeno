@@ -47,6 +47,10 @@ inline std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
 static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     std::vector<ztd::vec2f> uv_vert;
     std::vector<int> uv_loop;
+    auto vert = mesh.vert.as_vector();
+    auto loop = mesh.loop.as_vector();
+    auto poly = mesh.poly.as_vector();
+    auto loop_uv = mesh.loop_uv.as_vector();
 
     char buf[1025];
     while (in.getline(buf, 1024, '\n')) {
@@ -59,7 +63,7 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
         }
 
         if (line.starts_with("v ")) {
-            mesh.vert.emplace_back(read_vec3f(line.substr(2)));
+            vert.emplace_back(read_vec3f(line.substr(2)));
 
         } else if (line.starts_with("vt ")) {
             uv_vert.emplace_back(read_vec2f(line.substr(3)));
@@ -67,12 +71,12 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
         } else if (line.starts_with("f ")) {
             line = line.substr(2);
 
-            int start = mesh.loop.size(), num = 0;
+            int start = loop.size(), num = 0;
             while (num++ < 4096) {
                 auto next = line.find(' ');
                 auto [v, vt, vn] = read_tuple3i(line.substr(0, next));
 
-                mesh.loop.push_back(v - 1);
+                loop.push_back(v - 1);
                 if (vt != 0)
                     uv_loop.push_back(vt - 1);
 
@@ -80,13 +84,13 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
                     break;
                 line = line.substr(next + 1);
             }
-            mesh.poly.emplace_back(start, num);
+            poly.emplace_back(start, num);
         }
     }
 
-    mesh.loop_uv.reserve(uv_loop.size());
+    loop_uv.reserve(uv_loop.size());
     for (int i = 0; i < uv_loop.size(); i++) {
-        mesh.loop_uv.push_back(uv_vert.at(uv_loop[i]));
+        loop_uv.push_back(uv_vert.at(uv_loop[i]));
     }
 }
 
