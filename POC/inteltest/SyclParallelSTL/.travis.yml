@@ -1,0 +1,42 @@
+language: cpp
+sudo: required
+dist: trusty
+os:
+  - linux
+
+services:
+  - docker
+
+env:
+  - IMPL=triSYCL CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 TARGET=host
+  - IMPL=triSYCL CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 TARGET=host
+  - IMPL=COMPUTECPP CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 TARGET=host
+  - IMPL=COMPUTECPP CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 TARGET=host
+  - IMPL=COMPUTECPP CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 TARGET=opencl
+  - IMPL=COMPUTECPP CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 TARGET=opencl
+
+matrix:
+  fast_finish: true
+  allow_failures:
+     - env IMPL=triSYCL
+
+
+before_install:
+  - |
+    if [[ ${TRAVIS_PULL_REQUEST} == "false" ]]; then
+       export GIT_SLUG=${TRAVIS_REPO_SLUG}
+       export GIT_BRANCH=${TRAVIS_BRANCH}
+    else
+       export GIT_SLUG=${TRAVIS_PULL_REQUEST_SLUG}
+       export GIT_BRANCH=${TRAVIS_PULL_REQUEST_BRANCH}
+    fi
+  - docker build --build-arg c_compiler=${CC_COMPILER}
+                 --build-arg cxx_compiler=${CXX_COMPILER}
+                 --build-arg git_branch=${GIT_BRANCH}
+                 --build-arg git_slug=${GIT_SLUG}
+                 --build-arg impl=${IMPL}
+                 --build-arg target=${TARGET}
+                 -t parallelstl .
+
+script:
+  - docker run parallelstl

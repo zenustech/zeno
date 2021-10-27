@@ -1,0 +1,177 @@
+/* Copyright (c) 2015-2018 The Khronos Group Inc.
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and/or associated documentation files (the
+  "Materials"), to deal in the Materials without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, sublicense, and/or sell copies of the Materials, and to
+  permit persons to whom the Materials are furnished to do so, subject to
+  the following conditions:
+
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Materials.
+
+  MODIFICATIONS TO THIS FILE MAY MEAN IT NO LONGER ACCURATELY REFLECTS
+  KHRONOS STANDARDS. THE UNMODIFIED, NORMATIVE VERSIONS OF KHRONOS
+  SPECIFICATIONS AND HEADER INFORMATION ARE LOCATED AT
+     https://www.khronos.org/registry/
+
+  THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+  MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+*/
+
+#ifndef __EXPERIMENTAL_PARALLEL_EXECUTION_POLICY__
+#define __EXPERIMENTAL_PARALLEL_EXECUTION_POLICY__
+
+#include <type_traits>
+#include <typeinfo>
+#include <memory>
+#include <algorithm>
+
+#ifdef _MSC_VER
+#define NOEXCEPT
+#else
+#define NOEXCEPT noexcept
+#endif
+
+namespace std {
+namespace experimental {
+namespace parallel {
+// 2.3, execution policy type trait
+template <class T>
+struct is_execution_policy;
+
+// 2.4 sequential execution policy
+class sequential_policy;
+
+// 2.5 parallel execution policy
+class parallel_policy;
+
+// 2.6 vector execution policy
+class parallel_unsequenced_policy;
+
+class unsequenced_policy;
+
+template <class T>
+struct is_execution_policy
+    : integral_constant<bool,
+                        std::is_base_of<sequential_policy,
+                                        typename decay<T>::type>::value ||
+                            std::is_base_of<parallel_policy,
+                                            typename decay<T>::type>::value ||
+                            std::is_base_of<parallel_unsequenced_policy,
+                                            typename decay<T>::type>::value ||
+                            std::is_base_of<unsequenced_policy,
+                                            typename decay<T>::type>::value> {};
+
+/* execution_policy.
+ * Dynamically handle different policies */
+class execution_policy {
+ public:
+  template <class T, typename std::enable_if<
+                         is_execution_policy<T>::value>::type * = nullptr>
+  execution_policy(const T &exec) {
+    static_assert(is_execution_policy<T>::value == true,
+                  "Need an execution policy");
+    m_instance = std::make_shared<T>(exec);
+    m_typeInfo = &typeid(exec);
+  }
+
+  template <class T, typename std::enable_if<
+                         is_execution_policy<T>::value>::type * = nullptr>
+  execution_policy &operator=(const T &exec) {
+    static_assert(is_execution_policy<T>::value == true,
+                  "Need an execution policy");
+    m_instance = std::make_shared<T>(exec);
+    m_typeInfo = &typeid(exec);
+    return *this;
+  }
+
+  const type_info &type() const NOEXCEPT { return *m_typeInfo; }
+
+  template <class T>
+  T *get() NOEXCEPT {
+    if (*m_typeInfo != typeid(T)) return nullptr;
+    return static_cast<T *>(m_instance.get());
+  }
+
+  template <class T>
+  const T *get() const NOEXCEPT {
+    if (*m_typeInfo != typeid(T)) return nullptr;
+    return static_cast<T *>(m_instance.get());
+  }
+
+  /* sort
+   */
+  template <class RandomAccessIterator>
+  inline void sort(RandomAccessIterator b, RandomAccessIterator e) const {
+    std::sort(b, e);
+  }
+
+ private:
+  // Pointer to the instance of the execution policy
+  std::shared_ptr<void> m_instance;
+  // Type Information
+  const type_info *m_typeInfo;
+};
+
+class sequential_policy {
+ public:
+  /* sort
+   */
+  template <class RandomAccessIterator>
+  inline void sort(RandomAccessIterator b, RandomAccessIterator e) const {
+    std::sort(b, e);
+  }
+};
+
+class parallel_policy {
+ public:
+  /* sort
+   */
+  template <class RandomAccessIterator>
+  inline void sort(RandomAccessIterator b, RandomAccessIterator e) const {
+    std::sort(b, e);
+  }
+};
+
+class parallel_unsequenced_policy {
+ public:
+  /* sort
+   */
+  template <class RandomAccessIterator>
+  inline void sort(RandomAccessIterator b, RandomAccessIterator e) const {
+    std::sort(b, e);
+  }
+};
+
+class unsequenced_policy {
+ public:
+  /* sort
+   */
+  template <class RandomAccessIterator>
+  inline void sort(RandomAccessIterator b, RandomAccessIterator e) const {
+    std::sort(b, e);
+  }
+};
+
+constexpr sequential_policy seq{};
+constexpr parallel_policy par{};
+constexpr parallel_unsequenced_policy vec{};
+constexpr unsequenced_policy unseq{};
+
+// 2.9 standard execution policy objects
+extern const sequential_policy seq;
+extern const parallel_policy par;
+extern const parallel_unsequenced_policy vec;
+
+}  // namespace parallel
+}  // namespace experimental
+}  // namepsace std
+
+#endif  // __EXPERIMENTAL_PARALLEL_EXECUTION_POLICY__

@@ -1,0 +1,697 @@
+<h1 id="algorithms">Algorithms</h1>
+<p>This document describes the implementation progress of the algorithms included in the Parallel STL standard. In addition, it includes notes on the iterators that our implementation can recieve/return, along with other notes on the implementations.</p>
+<p>Note: implemented is &quot;as of Dundee&quot; release, not counting in-progress algorithm development.</p>
+<p>If only one iterator specified, the current minimum/maximum iterator is <em>also</em> the ideal one.</p>
+<h3 id="non-modifying-sequence-operations">Non-modifying sequence operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>all_of</code>/<code>any_of</code>/<code>none_of</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>for_each</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>for_each_n</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>count</code>/<code>count_if</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>mismatch</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>equal</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>find</code>/<code>find_if</code>/<code>find_if_not</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>find_end</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>find_first_of</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>adjacent_find</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>search</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>search_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="modifying-sequence-operations">Modifying sequence operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>copy</code>/<code>copy_if</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>copy_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>copy_backward</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>move</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>move_backward</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>fill</code></td>
+<td align="left">yes</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>fill_n</code></td>
+<td align="left">yes</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>transform</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>generate</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>generate_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>swap_ranges</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>remove</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>remove_if</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>replace</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>replace_if</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>reverse</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>rotate</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>unique</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>remove_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>remove_copy_if</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>replace_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>replace_copy_if</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>reverse_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>rotate_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>unique_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="operations-on-uninitialized-storage">Operations on uninitialized storage</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>uninitialized_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>uninitialized_move</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>uninitialized_copy_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>uninitialized_move_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>uninitialized_fill</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>uninitialized_fill_n</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="partitioning-operations">Partitioning operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>is_partitioned</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>partition_point</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>partition</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>partition_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>stable_partition</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sorting-operations">Sorting operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>is_sorted</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>is_sorted_until</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sort</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">Although the algorithm performs random access operations, they are carried out on a sycl buffer, which the iterators are used to copy data into/out of</td>
+</tr>
+<tr class="even">
+<td align="left"><code>stable_sort</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>partial_sort</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>partial_sort_copy</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>nth_element</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="binary-search-operations">Binary search operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>binary_search</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>equal_range</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="set-operations-on-sorted-ranges">Set operations (on sorted ranges)</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>merge</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>inplace_merge</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>set_difference</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>set_intersection</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>set_symmetric_difference</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>set_union</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>includes</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="heap-operations">Heap operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>is_heap</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>is_heap_until</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sort_heap</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="minimummaximum-operations">Minimum/maximum operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>max_element</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>min_element</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>minmax_element</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>lexicographical_compare</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="numeric-operations">Numeric operations</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Algorithm</th>
+<th align="left">Implemented</th>
+<th align="left">Ideal/Current minimum input iterator</th>
+<th align="left">Ideal/Current minimum output iterator</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>inner_product</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>adjacent_difference</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>reduce</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>transform_reduce</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>inclusive_scan</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>exclusive_scan</code></td>
+<td align="left">yes</td>
+<td align="left">Input</td>
+<td align="left">Input</td>
+<td align="left">-</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>transform_inclusive_scan</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+<tr class="even">
+<td align="left"><code>transform_exclusive_scan</code></td>
+<td align="left">no</td>
+<td align="left">-</td>
+<td align="left">-</td>
+<td align="left">-</td>
+</tr>
+</tbody>
+</table>
