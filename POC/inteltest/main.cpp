@@ -7,7 +7,7 @@
 #include <array>
 #include <vector>
 
-inline namespace __zsfakesycl {
+inline namespace fakesycl {
 namespace sycl {
 
 using cl_int = int;
@@ -60,17 +60,36 @@ struct nd_item : nd_range<N> {
     }
 };
 
+template <size_t I, size_t N>
+void _M_nd_range_for(id<N> const &size, id<N> &index, auto &&f) {
+    if constexpr (I == N) {
+        f(index);
+    } else {
+        for (index[I] = 0; index[I] < size[I]; index[I]++) {
+            _M_nd_range_for<I + 1, N>(size, index, f);
+        }
+    }
+}
+
+template <size_t N>
+void _M_nd_range_for(id<N> const &size, auto &&f) {
+    id<N> index;
+    _M_nd_range_for<0>(size, index, f);
+}
+
 struct handler {
-    template <size_t N, class F>
-    void parallel_for(nd_range<N> dim, F &&f) {
-        nd_item<N> item;
-        f(item);
+    template <size_t N>
+    void parallel_for(nd_range<N> range, auto &&f) {
+        _M_nd_range_for(range.global_size, [&] (id<N> global_id) {
+            nd_item<N> item;
+            item.global_id = global_id;
+            f(item);
+        });
     }
 };
 
 struct queue {
-    template <class F>
-    void submit(F &&f) {
+    void submit(auto &&f) {
         handler h;
         f(h);
     }
@@ -97,32 +116,34 @@ struct accessor {
     }
 
     inline decltype(auto) operator[](id<N> idx) const {
-        return buf._M_at(idx);
+        return const_cast<Buf &>(buf)._M_at(idx);
     }
 };
 
+template <size_t N>
+inline size_t _M_calc_product(id<N> const &size) {
+    size_t ret = 1;
+    for (int i = 0; i < N; i++) {
+        ret *= size[i];
+    }
+    return ret;
+}
+
+template <size_t N>
+inline size_t _M_linearize_id(id<N> const &size, id<N> const &idx) {
+    size_t ret = 0;
+    size_t term = 1;
+    for (size_t i = 0; i < N; i++) {
+        ret += term * idx[i];
+        term *= size[i];
+    }
+    return ret;
+}
+
 template <class T, size_t N>
 struct buffer {
-    mutable std::vector<T> _M_data;
+    std::vector<T> _M_data;
     id<N> _M_size;
-
-    static size_t _M_calc_product(id<N> size) {
-        size_t ret = 1;
-        for (int i = 0; i < N; i++) {
-            ret *= size[i];
-        }
-        return ret;
-    }
-
-    size_t _M_linearize_id(id<N> idx) const {
-        size_t ret = 0;
-        size_t term = 1;
-        for (size_t i = 0; i < N; i++) {
-            ret += term * idx[i];
-            term *= _M_size[i];
-        }
-        return ret;
-    }
 
     explicit buffer(id<N> size)
         : _M_size(size), _M_data(_M_calc_product(size)) {
@@ -142,8 +163,8 @@ struct buffer {
         return _M_size;
     }
 
-    T &_M_at(id<N> idx) const {
-        return _M_data.at(_M_linearize_id(idx));
+    T &_M_at(id<N> idx) {
+        return _M_data.at(_M_linearize_id(_M_size, idx));
     }
 };
 
