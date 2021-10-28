@@ -37,7 +37,7 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-void vector_from_buffer(auto &vec, auto const &buf) {
+void vector_from_buffer(auto &vec, auto &buf) {
     size_t size = buf.size();
     vec.clear();
     vec.reserve(size);
