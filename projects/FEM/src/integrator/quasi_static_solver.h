@@ -1,18 +1,10 @@
 #pragma once
+#include <base_integrator.h>
 
-#include "base_integrator.h"
-#include "base_force_model.h"
-#include <memory>
-
-/**
- * @class<BackEulerIntegrator>
- * @brief the Backward Euler Integrator, simulating over position only , with coupling lenght equals 3.
- */
-class BackEulerIntegrator : public BaseIntegrator
-{
+class QuasiStaticSolver : public BaseIntegrator {
 public:
-    BackEulerIntegrator() : BaseIntegrator(3) {}
-    ~BackEulerIntegrator(void) {};
+    QuasiStaticSolver() : BaseIntegrator(1) {}
+    ~QuasiStaticSolver(void) {};
 
     int EvalElmObj(const TetAttributes tet_attribs,
             const std::shared_ptr<MuscleForceModel>& force_model,

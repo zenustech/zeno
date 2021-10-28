@@ -62,7 +62,7 @@ public:
      * @param obj the objective function
      */
     virtual int EvalElmObj(const TetAttributes tet_attribs,
-            const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<MuscleForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj) const = 0;
     /**
@@ -74,7 +74,7 @@ public:
      * @param elm_deriv the derivative of objective function with respect to the element shape.
      */
     virtual int EvalElmObjDeriv(const TetAttributes tet_attribs,
-            const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<MuscleForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv) const = 0;
     /**
@@ -89,7 +89,7 @@ public:
      * @param enforce_spd whether enforcing the SPD of Jacobi matrix
      */
     virtual int EvalElmObjDerivJacobi(const TetAttributes tet_attribs,
-            const std::shared_ptr<BaseForceModel>& force_model,
+            const std::shared_ptr<MuscleForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd) const = 0;
 protected:

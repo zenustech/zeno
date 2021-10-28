@@ -8,22 +8,62 @@
 #include <limits>
 
 /**
- * @class <BaseForceModel>
+ * @class <MuscleForceModel>
  * @brief A force model base class for inheritance, which defines the common interfaces needed for defining all the force model derived classes 
  * 
  * The current version only support isotropic elasto and damping model. The force model base class is unaware of the TetMesh, the input to all its
  * function is deformation gradient of individual element, instead of its deformaed shape.
  */
-class BaseForceModel {
+class MuscleForceModel {
 public:
     /**
-     * @brief The constructor of BaseForceModel class
+     * @brief The constructor of MuscleForceModel class
      */
-    BaseForceModel() {}
+    MuscleForceModel() {
+        Qs[0] <<   1, 0, 0,
+                0, 0, 0,
+                0, 0, 0;
+        Qs[1]  <<   0, 0, 0,
+                0, 1, 0,
+                0, 0, 0;
+        Qs[2]  <<   0, 0, 0,
+                0, 0, 0,
+                0, 0, 1;
+
+        Qs[3]  <<   0,-1, 0,
+                1, 0, 0,
+                0, 0, 0;
+        Qs[3]  /= sqrt(2);
+    
+        Qs[4]  <<   0, 0, 0,
+                0, 0, 1,
+                0,-1, 0;
+        Qs[4]  /= sqrt(2);
+
+        Qs[5]  <<   0, 0, 1,
+                0, 0, 0,
+                -1,0, 0;
+        Qs[5]  /= sqrt(2);
+
+        Qs[6]  <<   0, 1, 0,
+                1, 0, 0,
+                0, 0, 0;
+        Qs[6]  /= sqrt(2);
+
+        Qs[7]  <<   0, 0, 0,
+                0, 0, 1,
+                0, 1, 0;
+        Qs[7]  /= sqrt(2);
+
+        Qs[8]  <<   0, 0, 1,
+                0, 0, 0,
+                1, 0, 0;
+        Qs[8]  /= sqrt(2);
+    }
     /**
      * @brief destructor method.
      */
-    virtual ~BaseForceModel(){}
+    virtual ~MuscleForceModel(){}
     /**
      * @brief An interface for defining the potential energy of anisotropic force model, all the force models should inherit this method and implement their 
      * own version of element-wise potential energy defination.
@@ -67,7 +107,6 @@ public:
     static FEM_Scaler Lame2E(FEM_Scaler lambda,FEM_Scaler mu) {return mu*(2*mu+3*lambda)/(mu+lambda);}
     static FEM_Scaler Lame2Nu(FEM_Scaler lambda,FEM_Scaler mu) {return lambda / (2 * (lambda +mu));}
 
-
     inline Mat9x9d EvaldFactdF(const Mat3x3d& Act_inv) const {
         Mat9x9d M = Mat9x9d::Zero();
         
@@ -85,4 +124,57 @@ public:
 
         return M;
     }
+    inline void EvalIsoInvarients(const Mat3x3d& F,Vec3d& Is) const{
+        Mat3x3d U,V;
+        Vec3d sigma;
+        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+    }
+
+    inline void EvalIsoInvarients(const Vec3d& sigma,Vec3d& Is) const{
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+    }
+    
+    inline void EvalIsoInvarientsDeriv(const Mat3x3d& F,
+            Vec3d& Is,
+            std::array<Vec9d,3>& gs) const {
+        Mat3x3d U,V;
+        Vec3d sigma;
+        DiffSVD::SVD_Decomposition(F, U, sigma, V);        
+
+        Is[0] = sigma.sum();
+        Is[1] = sigma.squaredNorm();
+        Is[2] = sigma[0] * sigma[1] * sigma[2];
+
+        Mat3x3d R = U * V.transpose();
+
+        gs[0] = MatHelper::VEC(R);
+        gs[1] = 2 * MatHelper::VEC(F);
+
+        Mat3x3d J;
+        J.col(0) = F.col(1).cross(F.col(2));
+        J.col(1) = F.col(2).cross(F.col(0));
+        J.col(2) = F.col(0).cross(F.col(1));       
+
+        gs[2] = MatHelper::VEC(J);
+    }
+
+    inline void EvalAnisoInvarients(const Mat3x3d& F,const Vec3d& a,FEM_Scaler& Ia) const {
+        Vec3d fa = F * a;
+        Ia = fa.squaredNorm();
+    }
+
+    inline void EvalAnisoInvarientsDeriv(const Mat3x3d& F,const Vec3d& a,FEM_Scaler& Ia,Vec9d& ga) const {
+        Vec3d fa = F * a;
+        Ia = fa.squaredNorm();
+        ga = 2 * MatHelper::VEC(F * MatHelper::DYADIC(a,a));
+    }
+
+protected:
+    Mat3x3d Qs[9];
 };
