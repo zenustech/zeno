@@ -1,7 +1,7 @@
 #include <zeno/dop/execute.h>
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/functional.h>
-#include <spdlog/spdlog.h>
+#include <zeno/zmt/log.h>
 #include <map>
 
 
@@ -11,9 +11,9 @@ namespace dop {
 
 ztd::zany resolve(Input const &input) {
     std::set<Node *> visited;
-    SPDLOG_INFO("=== start graph ===");
+    ZENO_LOG_INFO("=== start graph ===");
     auto ret = resolve(input, visited);
-    SPDLOG_INFO("==== end graph ====");
+    ZENO_LOG_INFO("==== end graph ====");
     return ret;
 }
 
@@ -61,7 +61,7 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
     for (auto node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
-            SPDLOG_INFO("* applying {}@{}", node->desc->name, (void *)node);
+            ZENO_LOG_INFO("* applying {}@{}", node->desc->name, (void *)node);
             node->apply();
         }
     }

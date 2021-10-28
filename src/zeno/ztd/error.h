@@ -3,7 +3,7 @@
 #include <zeno/common.h>
 #include <string>
 #include <exception>
-#include <spdlog/spdlog.h>
+#include <zeno/zmt/format.h>
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {

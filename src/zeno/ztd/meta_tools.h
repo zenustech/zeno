@@ -1,3 +1,6 @@
+#pragma once
+
+
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
 inline namespace meta_tools {
