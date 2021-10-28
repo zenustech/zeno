@@ -15,16 +15,16 @@ namespace ztd {
     return std::forward<decltype(__assert_val)>(__assert_val); \
 })((x)))
 
-#define ZENO_ZTD_ASSERT_EQ(x, y) ZENO_ZTD_ASSERT((x), == (y), fmt::format("unsatisfied: {} == {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_NE(x, y) ZENO_ZTD_ASSERT((x), != (y), fmt::format("unsatisfied: {} != {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_GE(x, y) ZENO_ZTD_ASSERT((x), >= (y), fmt::format("unsatisfied: {} >= {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_LE(x, y) ZENO_ZTD_ASSERT((x), <= (y), fmt::format("unsatisfied: {} <= {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_GT(x, y) ZENO_ZTD_ASSERT((x), > (y), fmt::format("unsatisfied: {} > {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_LT(x, y) ZENO_ZTD_ASSERT((x), < (y), fmt::format("unsatisfied: {} < {}", (x), (y)))
-#define ZENO_ZTD_ASSERT_FALSE(x) ZENO_ZTD_ASSERT((x), == false, fmt::format("unsatisfied: {} == false", (x)))
-#define ZENO_ZTD_ASSERT_TRUE(x) ZENO_ZTD_ASSERT((x), == true, fmt::format("unsatisfied: {} == true", (x)))
-#define ZENO_ZTD_ASSERT_NULL(x) ZENO_ZTD_ASSERT((x), == nullptr, fmt::format("unsatisfied: {} == nullptr", (void *)(x)))
-#define ZENO_ZTD_ASSERT_NOTNULL(x) ZENO_ZTD_ASSERT((x), != nullptr, fmt::format("unsatisfied: {} != nullptr", (void *)(x)))
+#define ZENO_ZTD_ASSERT_EQ(x, y) ZENO_ZTD_ASSERT((x), == (y), zmt::format("unsatisfied: {} == {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_NE(x, y) ZENO_ZTD_ASSERT((x), != (y), zmt::format("unsatisfied: {} != {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_GE(x, y) ZENO_ZTD_ASSERT((x), >= (y), zmt::format("unsatisfied: {} >= {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_LE(x, y) ZENO_ZTD_ASSERT((x), <= (y), zmt::format("unsatisfied: {} <= {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_GT(x, y) ZENO_ZTD_ASSERT((x), > (y), zmt::format("unsatisfied: {} > {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_LT(x, y) ZENO_ZTD_ASSERT((x), < (y), zmt::format("unsatisfied: {} < {}", (x), (y)))
+#define ZENO_ZTD_ASSERT_FALSE(x) ZENO_ZTD_ASSERT((x), == false, zmt::format("unsatisfied: {} == false", (x)))
+#define ZENO_ZTD_ASSERT_TRUE(x) ZENO_ZTD_ASSERT((x), == true, zmt::format("unsatisfied: {} == true", (x)))
+#define ZENO_ZTD_ASSERT_NULL(x) ZENO_ZTD_ASSERT((x), == nullptr, zmt::format("unsatisfied: {} == nullptr", (void *)(x)))
+#define ZENO_ZTD_ASSERT_NOTNULL(x) ZENO_ZTD_ASSERT((x), != nullptr, zmt::format("unsatisfied: {} != nullptr", (void *)(x)))
 
 }
 ZENO_NAMESPACE_END

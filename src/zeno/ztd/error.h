@@ -17,8 +17,8 @@ public:
 };
 
 template <class ...Args>
-inline auto format_error(fmt::format_string<Args...> fmt, Args &&...args) {
-    return error(fmt::format(fmt, std::forward<Args>(args)...));
+inline auto format_error(zmt::format_string<Args...> fmt, Args &&...args) {
+    return error(zmt::format(fmt, std::forward<Args>(args)...));
 }
 
 }
