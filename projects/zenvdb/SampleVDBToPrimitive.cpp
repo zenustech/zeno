@@ -60,7 +60,8 @@ struct SampleVDBToPrimitive : INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto grid = get_input<VDBGrid>("vdbGrid");
     auto attr = get_input<StringObject>("primAttr")->get();
-    auto &pos = prim->attr<vec3f>("pos");
+    auto sampleby = get_input<StringObject>("sampleBy")->get();
+    auto &pos = prim->attr<vec3f>(sampleby);
 
     if (dynamic_cast<VDBFloatGrid *>(grid.get()))
         prim->add_attr<float>(attr);
@@ -77,7 +78,7 @@ struct SampleVDBToPrimitive : INode {
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", {"string", "primAttr", "sdf"}},
+                                     {"prim", "vdbGrid", {"string", "sampleBy","pos"}, {"string", "primAttr", "sdf"}},
                                      {"prim"},
                                      {},
                                      {"openvdb"},
