@@ -172,18 +172,6 @@ struct function_traits<R (T::*)(Args...) const> {
     using argument_types = std::tuple<Args...>;
 };
 
-template <int First, int Last, typename Lambda>
-inline constexpr bool static_for(Lambda const &f) {
-    if constexpr (First < Last) {
-        if (f(std::integral_constant<int, First>{})) {
-            return true;
-        } else {
-            return static_for<First + 1, Last>(f);
-        }
-    }
-    return false;
-}
-
 }
 }
 ZENO_NAMESPACE_END
