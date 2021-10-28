@@ -4,32 +4,70 @@
 using namespace std;
 
 template <class T>
-void show(T &&) {
-    printf("%s\n", __PRETTY_FUNCTION__);
-}
-
-template <class T>
-void bar(T &&t) {
-    printf("%s\n", __PRETTY_FUNCTION__);
-    show(forward<T>(t));
-    show(t);
-    printf("===\n");
-}
-
-template <class T>
-void foo(type_identity_t<T>) {
+void show() {
     printf("%s\n", __PRETTY_FUNCTION__);
 }
 
 int main() {
-    const int a = 1;
-    foo<const int &>(a);
-    bar(a);
-    int b = 1;
-    foo<int &>(b);
-    bar(b);
-    int c = 1;
-    foo<int &&>(move(c));
-    bar(move(c));
+    {
+        using T = int &;
+        using S = T &;
+        show<S>();
+    }
+    {
+        using T = int &;
+        using S = T &&;
+        show<S>();
+    }
+    {
+        using T = int &&;
+        using S = T &;
+        show<S>();
+    }
+    {
+        using T = int &&;
+        using S = T &&;
+        show<S>();
+    }
+    {
+        using T = int const &;
+        using S = T &;
+        show<S>();
+    }
+    {
+        using T = int const &;
+        using S = T &&;
+        show<S>();
+    }
+    {
+        using T = int const &&;
+        using S = T &;
+        show<S>();
+    }
+    {
+        using T = int const &&;
+        using S = T &&;
+        show<S>();
+    }
+    {
+        using T = int &;
+        using S = T const &;
+        show<S>();
+    }
+    {
+        using T = int &;
+        using S = T const &&;
+        show<S>();
+    }
+    {
+        using T = int &&;
+        using S = T const &;
+        show<S>();
+    }
+    {
+        using T = int &&;
+        using S = T const &&;
+        show<S>();
+    }
     return 0;
 }
