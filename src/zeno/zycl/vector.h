@@ -90,7 +90,13 @@ auto _M_make_as_const_vector(auto &buf) {
 
 template <class T>
 struct vector {
-    buffer<T, 1> _M_buf;
+    ndarray<T, 1> _M_buf;
+
+    vector() = default;
+    vector(vector const &) = default;
+    vector &operator=(vector const &) = default;
+    vector(vector &&) = default;
+    vector &operator=(vector &&) = default;
 
     template <access::mode mode>
     auto get_access(auto &&cgh) {

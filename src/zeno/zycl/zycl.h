@@ -28,7 +28,7 @@ struct id : std::array<size_t, N> {
     using std::array<size_t, N>::array;
 
     constexpr explicit(N != 1) id(size_t i)
-        : std::array<size_t, N>({i}) {
+        : std::array<size_t, N>({i}) {  // TODO: will this fill all?
     }
 
     constexpr explicit(N != 1) operator size_t() const {

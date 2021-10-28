@@ -19,11 +19,7 @@ struct Mesh {
     zycl::vector<ztd::vec2f> loop_uv;
 
     // faces
-    struct MPoly {
-        int start{};
-        int num{};
-    };
-    zycl::vector<MPoly> poly;
+    zycl::vector<ztd::vec2i> poly;
 };
 
 

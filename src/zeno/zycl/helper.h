@@ -2,6 +2,7 @@
 
 #include <zeno/zycl/zycl.h>
 #include <type_traits>
+#include <optional>
 #include <utility>
 
 
@@ -12,10 +13,7 @@ struct host_handler {};
 
 template <access::mode mode, class Cgh>
 auto make_access(Cgh &&cgh, auto &&buf) {
-    if constexpr (std::is_same_v<std::remove_cvref_t<Cgh>, host_handler>)
-        return buf.template get_access<mode>();
-    else
-        return buf.template get_access<mode>(cgh);
+    return buf.template get_access<mode>(cgh);
 }
 
 template <access::mode mode>
@@ -32,6 +30,40 @@ struct functor_accessor {
 
     constexpr decltype(auto) operator[](auto &&t) {
         return f(std::forward<decltype(t)>(t));
+    }
+};
+
+template <class T, size_t N>
+struct ndarray {
+    std::optional<buffer<T, N>> _M_buf;
+
+    ndarray() = default;
+    ndarray(ndarray const &) = default;
+    ndarray &operator=(ndarray const &) = default;
+    ndarray(ndarray &&) = default;
+    ndarray &operator=(ndarray &&) = default;
+
+    buffer<T, N> &get_buffer() {
+        return *_M_buf;
+    }
+
+    buffer<T, N> const &get_buffer() const {
+        return *_M_buf;
+    }
+
+    id<N> size() const {
+        return _M_buf ? _M_buf->size() : id<N>(0);
+    }
+
+    explicit ndarray(id<N> size) {
+    }
+
+    template <access::mode mode>
+    auto get_access(auto &&cgh) {
+        if constexpr (std::is_same_v<std::remove_cvref_t<decltype(cgh)>, host_handler>)
+            return _M_buf->template get_access<mode>();
+        else
+            return _M_buf->template get_access<mode>(cgh);
     }
 };
 

@@ -41,6 +41,8 @@ struct Node {
     float ypos = 0;
     Descriptor const *desc = nullptr;
 
+    virtual ~Node() = default;
+
     ztd::zany get_input(int idx) const;
     void set_output(int idx, ztd::zany val);
     
