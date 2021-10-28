@@ -1,4 +1,4 @@
-x=vec
+x=format
 
 x: $x.exe Makefile
 	./$<
