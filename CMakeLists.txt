@@ -21,10 +21,6 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message("-- Build type: ${CMAKE_BUILD_TYPE}")
 
-if (BATE)
-    set(CMAKE_CXX_COMPILER "/opt/sycl/bin/clang++")
-endif()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -33,6 +29,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if (UNIX)
     find_program(CCACHE_PROGRAM ccache)
