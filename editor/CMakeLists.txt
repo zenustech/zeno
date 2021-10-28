@@ -8,12 +8,12 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 message("-- Found Qt${QT_VERSION_MAJOR} version: ${Qt${QT_VERSION_MAJOR}_VERSION}")
 
-file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS *.h *.cpp *.ui)
+file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(zeno_editor MANUAL_FINALIZATION ${PROJECT_SOURCES})
+    qt_add_executable(zeno_editor MANUAL_FINALIZATION ${source})
 else()
-    add_executable(zeno_editor ${PROJECT_SOURCES})
+    add_executable(zeno_editor ${source})
 endif()
 
 if (ZENO_WITH_BACKWARD)

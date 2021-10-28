@@ -1,12 +1,14 @@
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
 A=-DCMAKE_CXX_COMPILER=/opt/sycl/bin/clang++ -DSYCL_TARGETS=nvptx64-nvidia-cuda
 B=LD_LIBRARY_PATH=/opt/sycl/lib
+#T=zeno_editor
+T=zeno_cliface
 
-run: zeno_editor
-	$B build/editor/zeno_editor
+run: $T
+	$B build/*/$T
 
-debug: zeno_editor
-	$B gdb build/editor/zeno_editor -ex r
+debug: $T
+	$B gdb build/*/$T -ex r
 
 test: zeno_tests
 	$B build/tests/zeno_tests

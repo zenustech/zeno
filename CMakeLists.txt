@@ -43,7 +43,8 @@ endif()
 
 project(zeno VERSION 0.1 LANGUAGES C CXX)
 
-option(ZENO_WITH_EDITOR "Build Zeno Qt5 Editor" ON)
+option(ZENO_WITH_EDITOR "Build Zeno Qt5 Editor" OFF)
+option(ZENO_WITH_CLIFACE "Build Zeno CLI Interface" ON)
 option(ZENO_WITH_TESTS "Build Zeno Google Tests" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
 if (BATE)
@@ -56,6 +57,11 @@ add_subdirectory(src)
 if (ZENO_WITH_EDITOR)
     message("-- Building Zeno Qt5 Editor")
     add_subdirectory(editor)
+endif()
+
+if (ZENO_WITH_CLIFACE)
+    message("-- Building Zeno CLI Interface")
+    add_subdirectory(cliface)
 endif()
 
 if (ZENO_WITH_TESTS)
