@@ -6,7 +6,9 @@
 #include <CL/sycl.hpp>
 
 ZENO_NAMESPACE_BEGIN
-namespace zycl = cl::sycl;
+namespace zycl {
+    using namespace cl::sycl;
+}
 ZENO_NAMESPACE_END
 #else
 #pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, add -DZENO_WITH_SYCL flag to use real sycl instead")

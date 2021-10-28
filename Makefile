@@ -1,5 +1,5 @@
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
-#A=-DCMAKE_CXX_COMPILER=/opt/sycl/bin/clang++ -DSYCL_TARGETS=nvptx64-nvidia-cuda
+A=-DCMAKE_CXX_COMPILER=/opt/sycl/bin/clang++ -DSYCL_TARGETS=nvptx64-nvidia-cuda
 
 run: zeno_editor
 	build/editor/zeno_editor

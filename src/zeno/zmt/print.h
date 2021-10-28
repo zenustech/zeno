@@ -11,12 +11,12 @@ namespace zmt {
 
 template <class ...Args>
 inline void print(std::string_view fmt, Args &&...args) {
-    format(std::cout, fmt, std::forward<Args>(args)...);
+    format_to(std::cout, fmt, std::forward<Args>(args)...);
 }
 
 template <class ...Args>
 inline void eprint(std::string_view fmt, Args &&...args) {
-    format(std::cerr, fmt, std::forward<Args>(args)...);
+    format_to(std::cerr, fmt, std::forward<Args>(args)...);
 }
 
 template <class ...Args>
