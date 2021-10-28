@@ -51,8 +51,8 @@ struct ndarray {
         return *_M_buf;
     }
 
-    id<N> size() const {
-        return _M_buf ? _M_buf->size() : id<N>(0);
+    size_t size() const {
+        return _M_buf ? _M_buf->size() : 0;
     }
 
     explicit ndarray(id<N> size) {

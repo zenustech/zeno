@@ -167,7 +167,7 @@ inline size_t _M_linearize_id(id<N> const &size, id<N> const &idx) {
 template <class T, size_t N>
 struct buffer {
     std::vector<T> _M_data;
-    id<N> _M_size;
+    id<N> _M_shape;
 
     buffer() = default;
     buffer(buffer const &) = default;
@@ -175,8 +175,8 @@ struct buffer {
     buffer(buffer &&) = default;
     buffer &operator=(buffer &&) = default;
 
-    explicit buffer(id<N> size)
-        : _M_size(size), _M_data(_M_calc_product(size)) {
+    explicit buffer(id<N> shape)
+        : _M_shape(shape), _M_data(_M_calc_product(shape)) {
     }
 
     template <access::mode mode>
@@ -189,12 +189,16 @@ struct buffer {
         return accessor<mode, buffer, T, N>(*this);
     }
 
-    id<N> size() const {
-        return _M_size;
+    id<N> shape() const {
+        return _M_shape;
+    }
+
+    id<N> shape() const {
+        return _M_calc_product(_M_shape);
     }
 
     T &_M_at(id<N> idx) {
-        return _M_data.at(_M_linearize_id(_M_size, idx));
+        return _M_data.at(_M_linearize_id(_M_shape, idx));
     }
 };
 
