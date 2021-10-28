@@ -1,4 +1,4 @@
-x=format
+x=decay
 
 x: $x.exe Makefile
 	./$<
