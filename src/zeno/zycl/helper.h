@@ -16,11 +16,6 @@ auto make_access(Cgh &&cgh, auto &&buf) {
     return buf.template get_access<mode>(cgh);
 }
 
-template <access::mode mode>
-auto make_access(auto &buf) {
-    return make_access<mode>(host_handler{}, buf);
-}
-
 template <class F>
 struct functor_accessor {
     F f;

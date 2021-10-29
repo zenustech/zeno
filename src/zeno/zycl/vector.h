@@ -41,8 +41,7 @@ void vector_from_ndarray(auto &vec, auto &buf) {
     size_t size = buf.size();
     vec.clear();
     vec.reserve(size);
-    auto hacc = make_access<access::mode::read>(buf);
-    size_t i = 0;
+    auto hacc = make_access<access::mode::read>(host_handler{}, buf);
     for (size_t i = 0; i < size; i++) {
         vec.push_back(hacc[i]);
     }
@@ -51,8 +50,7 @@ void vector_from_ndarray(auto &vec, auto &buf) {
 void ndarray_from_vector(auto &buf, auto const &vec) {
     size_t size = vec.size();
     buf.reshape(size);
-    auto hacc = make_access<access::mode::discard_write>(buf);
-    size_t i = 0;
+    auto hacc = make_access<access::mode::discard_write>(host_handler{}, buf);
     for (size_t i = 0; i < size; i++) {
         hacc[i] = vec[i];
     }

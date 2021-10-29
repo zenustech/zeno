@@ -9,15 +9,25 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que;
-    zycl::vector<int> buf(32);
+#if 1
+    zycl::vector<int> buf;
 
-    auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
-    for (int i = 0; i < 32; i++) {
-        printf("%d\n", hbuf[i]);
+    {
+        auto vec = buf.as_vector();
+        printf("%zd\n", vec.size());
+        for (auto x: vec) {
+            vec.push_back(4);
+        }
     }
 
-#if 0
+    {
+        auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
+        for (int i = 0; i < 64; i++) {
+            printf("%d\n", hbuf[i]);
+        }
+    }
+
+#else
     auto n1 = dop::desc_of("ReadOBJMesh").create();
     n1->inputs.at(0) = dop::Input_Value{(std::string)"models/cube.obj"};
     n1->apply();
