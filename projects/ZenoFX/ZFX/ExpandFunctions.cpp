@@ -2,7 +2,7 @@
 #include "Stmts.h"
 #include <sstream>
 #include "StmHelper.h"
-
+#include "iostream"
 namespace zfx {
 
 #define ERROR_IF(x) do { \
@@ -38,6 +38,7 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             int dim = name[3] - '0';
             int argdim = 0;
             for (auto const &arg: args) {
+                std::cout<<arg->dim<<std::endl;
                 argdim += arg->dim;
             }
             if (argdim != 1 && argdim != dim) {
@@ -107,7 +108,17 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                 error("`cross` requires two 3-D vectors, got %d-D and %d-D",
                     x->dim, y->dim);
             }
-            return stm_cross(x, y);
+            //return stm_cross(x, y);
+            std::vector<Statement *> retargs;
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_crossx(x,y)));
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_crossy(x,y)));
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_crossz(x,y)));
+            
+
+            return ir->emplace_back<VectorComposeStmt>(3, retargs);
 
         } else if (name == "all") {
             ERROR_IF(args.size() != 1);
