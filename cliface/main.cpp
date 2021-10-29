@@ -1,6 +1,7 @@
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
+#include <zeno/zycl/zycl.h>
 
 USING_ZENO_NAMESPACE
 

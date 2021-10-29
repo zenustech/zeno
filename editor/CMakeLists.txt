@@ -23,6 +23,9 @@ endif()
 
 target_link_libraries(zeno_editor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(zeno_editor PRIVATE zeno)
+if (ZENO_WITH_LEGACY)
+    target_link_libraries(zeno_editor PRIVATE zeno_legacy)
+endif()
 
 if (APPLE)
     set_target_properties(zeno_editor PROPERTIES
