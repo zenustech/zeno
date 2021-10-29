@@ -24,7 +24,7 @@ struct vector : protected std::vector<T> {
         return static_cast<std::vector<T> &>(*this);
     }
 
-    inline auto const &as_const_vector() const {
+    inline auto const &to_vector() const {
         return static_cast<std::vector<T> const &>(*this);
     }
 };
@@ -82,7 +82,7 @@ auto _M_make_as_vector(auto &buf) {
 }
 
 template <class Vector>
-auto _M_make_as_const_vector(auto &buf) {
+auto _M_make_to_vector(auto &buf) {
     Vector vec;
     vector_from_buffer(vec, buf);
     return vec;
@@ -112,8 +112,8 @@ struct vector {
     }
 
     template <class Vector = std::vector<T>>
-    auto as_const_vector() {
-        return _M_make_as_const_vector<Vector>(_M_buf);
+    auto to_vector() {
+        return _M_make_to_vector<Vector>(_M_buf);
     }
 };
 
