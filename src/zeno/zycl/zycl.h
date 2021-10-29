@@ -31,7 +31,7 @@ struct id : std::array<size_t, N> {
         : std::array<size_t, N>({i}) {
         if constexpr (N != 1) {
             for (int j = 1; j < N; j++) {
-                operator[](j) = i;
+                (*this)[j] = i;
             }
         }
     }
