@@ -10,6 +10,14 @@ if (UNIX)
     endif()
 endif()
 
+if (BATE)
+    set(SYCL_TARGETS nvptx64-nvidia-cuda)
+endif()
+if (SYCL_TARGETS)
+    set(CMAKE_CXX_COMPILER "/opt/sycl/bin/clang++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath=/opt/sycl/lib -std=c++17 -fsycl -fsycl-targets=${SYCL_TARGETS}")
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     if (BATE)
         set(CMAKE_BUILD_TYPE Debug)
@@ -61,7 +69,7 @@ if (ZHXX)
     set(ZENO_EXECUTABLE editor)
 endif()
 
-add_subdirectory(tpls)
+#add_subdirectory(tpls)
 
 message("-- Building Zeno Executable: [${ZENO_EXECUTABLE}]")
 if (ZENO_EXECUTABLE STREQUAL "tests")
