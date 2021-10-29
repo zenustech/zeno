@@ -69,7 +69,7 @@ if (ZHXX)
     set(ZENO_EXECUTABLE editor)
 endif()
 
-#add_subdirectory(tpls)
+add_subdirectory(tpls)
 
 message("-- Building Zeno Executable: [${ZENO_EXECUTABLE}]")
 if (ZENO_EXECUTABLE STREQUAL "tests")

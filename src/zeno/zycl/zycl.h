@@ -127,23 +127,13 @@ struct handler {
     }
 };
 
-struct device_selector {
+struct default_selector {
 };
 
-struct default_selector : device_selector {
-};
-
-struct host_selector : device_selector {
-};
-
-struct cpu_selector : device_selector {
-};
-
-struct gpu_selector : device_selector {
-};
+using host_selector = default_selector;
 
 struct queue {
-    explicit queue(device_selector = default_selector{}) {}
+    explicit queue(default_selector = {}) {}
 
     void submit(auto &&f) {
         handler h;
