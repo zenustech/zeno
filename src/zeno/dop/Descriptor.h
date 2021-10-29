@@ -34,6 +34,8 @@ struct Descriptor {
     FactoryFunc factory;
 
     std::string name;
+
+    std::unique_ptr<Node> create() const;
 };
 
 

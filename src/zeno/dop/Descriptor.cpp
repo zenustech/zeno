@@ -1,9 +1,19 @@
 #include <zeno/dop/Descriptor.h>
+#include <zeno/dop/Node.h>
 #include <zeno/ztd/map.h>
 
 
 ZENO_NAMESPACE_BEGIN
 namespace dop {
+
+
+std::unique_ptr<Node> Descriptor::create() const {
+    auto node = factory();
+    node->desc = this;
+    node->inputs.resize(inputs.size());
+    node->outputs.resize(outputs.size());
+    return node;
+}
 
 
 ztd::map<std::string, Descriptor> &desc_table() {

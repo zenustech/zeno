@@ -77,16 +77,13 @@ void QDMGraphicsNode::initByName(QString name)
 {
     setName(name);
     auto const &desc = dop::desc_of(name.toStdString());
-    dopNode = desc.factory();
-    dopNode->desc = &desc;
+    dopNode = desc.create();
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
-        dopNode->inputs.push_back(dop::Input_Value{});
         socket->setName(QString::fromStdString(sockinfo.name));
     }
     for (auto const &sockinfo: desc.outputs) {
         auto socket = addSocketOut();
-        dopNode->outputs.push_back({});
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 }

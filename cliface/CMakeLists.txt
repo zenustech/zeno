@@ -8,4 +8,3 @@ if (ZENO_WITH_BACKWARD)
 endif()
 
 target_link_libraries(zeno_cliface PRIVATE zeno)
-
