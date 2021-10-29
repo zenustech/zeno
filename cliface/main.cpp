@@ -14,7 +14,6 @@ int main()
 
     {
         auto vec = buf.as_vector();
-        printf("%zd\n", vec.size());
         for (int i = 0; i < 32; i++) {
             vec.push_back(i + 1);
         }

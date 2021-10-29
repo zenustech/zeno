@@ -37,8 +37,7 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-void vector_from_buffer(auto &vec, auto &buf) {
-    size_t size = buf.size();
+void vector_from_buffer(auto &vec, auto &buf, size_t size) {
     vec.clear();
     vec.reserve(size);
     auto hacc = buf.template get_access<access::mode::read>();
@@ -49,7 +48,7 @@ void vector_from_buffer(auto &vec, auto &buf) {
 
 void buffer_from_vector(auto &buf, auto const &vec) {
     size_t size = vec.size();
-    buf = std::remove_cvref_t<decltype(buf)>(size);
+    buf = std::remove_cvref_t<decltype(buf)>(std::max(size, 1));
     auto hacc = buf.template get_access<access::mode::discard_write>();
     for (size_t i = 0; i < size; i++) {
         hacc[i] = vec[i];
@@ -60,8 +59,8 @@ template <class Vector, class Buf>
 struct _M_as_vector : Vector {
     Buf &_M_buf;
 
-    explicit _M_as_vector(Buf &buf) : _M_buf(buf) {
-        vector_from_buffer(*this, _M_buf);
+    explicit _M_as_vector(Buf &buf, size_t size) : _M_buf(buf) {
+        vector_from_buffer(*this, _M_buf, size);
     }
 
     _M_as_vector(_M_as_vector const &) = delete;
