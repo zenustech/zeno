@@ -37,53 +37,26 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-void _M_vector_from_buffer(auto &vec, auto &buf, size_t size) {
-    vec.clear();
-    vec.reserve(size);
-    auto hacc = buf.template get_access<access::mode::read>();
-    for (size_t i = 0; i < size; i++) {
-        vec.push_back(hacc[i]);
-    }
-}
-
-void _M_buffer_from_vector(auto &buf, auto const &vec) {
-    size_t size = vec.size();
-    buf = decltype(buf)(std::max(size, (size_t)1));
-    auto hacc = buf.template get_access<access::mode::discard_write>();
-    for (size_t i = 0; i < size; i++) {
-        hacc[i] = vec[i];
-    }
-}
-
-template <class Vector, class Buf>
+template <class Vector, class Parent>
 struct _M_as_vector : Vector {
-    Buf &_M_buf;
+    Parent *_M_parent;
 
-    explicit _M_as_vector(Buf &buf, size_t size) : _M_buf(buf) {
-        _M_vector_from_buffer(*this, _M_buf, size);
-    }
-
+    explicit _M_as_vector(Parent *parent) : _M_parent(parent) {}
     _M_as_vector(_M_as_vector const &) = delete;
     _M_as_vector &operator=(_M_as_vector const &) = delete;
     _M_as_vector(_M_as_vector &&) = default;
     _M_as_vector &operator=(_M_as_vector &&) = default;
 
     ~_M_as_vector() {
-        _M_buffer_from_vector(_M_buf, *this);
+        size_t size = Vector::size();
+        _M_parent->_M_size = size;
+        _M_parent->_M_buf = decltype(_M_parent->_M_buf)(std::max(size, (size_t)1));
+        auto hacc = _M_parent->_M_buf.template get_access<access::mode::discard_write>();
+        for (size_t i = 0; i < size; i++) {
+            hacc[i] = (*this)[i];
+        }
     }
 };
-
-template <class Vector>
-auto _M_make_as_vector(auto &buf, size_t size) {
-    return _M_as_vector<Vector, decltype(buf)>(buf, size);
-}
-
-template <class Vector>
-auto _M_make_to_vector(auto &buf, size_t size) {
-    Vector vec;
-    _M_vector_from_buffer(vec, buf, size);
-    return vec;
-}
 
 template <class T>
 struct vector {
@@ -122,14 +95,28 @@ struct vector {
             return _M_buf.template get_access<mode>(cgh);
     }
 
+    template <class Vector>
+    void _M_copy_to_vector(Vector &vec) {
+        size_t size = _M_size;
+        vec.reserve(size);
+        auto hacc = _M_buf.template get_access<access::mode::read>();
+        for (size_t i = 0; i < size; i++) {
+            vec.push_back(hacc[i]);
+        }
+    }
+
     template <class Vector = std::vector<T>>
     auto as_vector() {
-        return _M_make_as_vector<Vector>(_M_buf, _M_size);
+        _M_as_vector<Vector, vector> vec(this);
+        _M_copy_to_vector(vec);
+        return vec;
     }
 
     template <class Vector = std::vector<T>>
     auto to_vector() {
-        return _M_make_to_vector<Vector>(_M_buf, _M_size);
+        Vector vec;
+        _M_copy_to_vector<Vector>(vec);
+        return vec;
     }
 };
 
