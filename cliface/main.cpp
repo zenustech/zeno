@@ -7,7 +7,7 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que{zycl::gpu_selector{}};
+    zycl::queue que;
 
 #if 1
     zycl::vector<int> buf;
