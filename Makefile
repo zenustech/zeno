@@ -13,7 +13,7 @@ all:
 	test -d ~/.cache/ccache || ln -sf /tmp/zeno-ccache ~/.cache/ccache
 	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -sf /tmp/zeno-build build
-	cmake -Wno-dev -B /tmp/zeno-build
+	cmake -Wno-dev -B /tmp/zeno-build $A
 	cmake --build /tmp/zeno-build --parallel $<
 
 config:
