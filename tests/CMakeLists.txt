@@ -1,10 +1,9 @@
-add_executable(zeno_tests)
+add_executable(zeno)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
-target_sources(zeno_tests PRIVATE ${source})
+target_sources(zeno PRIVATE ${source})
 
-target_link_libraries(zeno_tests PRIVATE zeno)
-target_link_libraries(zeno_tests PRIVATE gtest_main)
+target_link_libraries(zeno PRIVATE gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(zeno_tests)
+gtest_discover_tests(zeno)

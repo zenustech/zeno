@@ -1,10 +1,8 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 
-add_executable(zeno_cliface ${source})
+add_executable(zeno ${source})
 
 if (ZENO_WITH_BACKWARD)
-    target_sources(zeno_cliface PRIVATE ${BACKWARD_SOURCES})
-    add_backward(zeno_cliface)
+    target_sources(zeno PRIVATE ${BACKWARD_SOURCES})
+    add_backward(zeno)
 endif()
-
-target_link_libraries(zeno_cliface PRIVATE zeno)
