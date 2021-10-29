@@ -1,12 +1,5 @@
 #include <cstdio>
-
-#if 0
 #include <CL/sycl.hpp>
-#else
-
-#include "fakesycl.h"
-
-#endif
 
 
 int main() {

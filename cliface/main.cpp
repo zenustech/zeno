@@ -7,12 +7,7 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que;
-
-#ifndef ZENO_SYCL_IS_EMULATED
-    decltype(auto) dev = zycl::queue().get_device();
-    std::cout << "SYCL backend: " << dev.get_info<zycl::info::device::name>() << std::endl;
-#endif
+    zycl::queue que{zycl::gpu_selector{}};
 
 #if 1
     zycl::vector<int> buf;
