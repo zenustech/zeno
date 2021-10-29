@@ -28,12 +28,22 @@ struct id : std::array<size_t, N> {
     using std::array<size_t, N>::array;
 
     constexpr explicit(N != 1) id(size_t i)
-        : std::array<size_t, N>({i}) {  // TODO: will this fill all?
+        : std::array<size_t, N>({i}) {
+        if constexpr (N != 1) {
+            for (int j = 1; j < N; j++) {
+                operator[](j) = i;
+            }
+        }
     }
 
     constexpr explicit(N != 1) operator size_t() const {
         return std::get<0>(*this);
     }
+};
+
+template <size_t N>
+struct range : id<N> {
+    using id<N>::id;
 };
 
 template <size_t N>
@@ -145,7 +155,7 @@ struct accessor {
 };
 
 template <size_t N>
-inline size_t _M_calc_product(id<N> const &size) {
+inline size_t _M_calc_product(range<N> const &size) {
     size_t ret = 1;
     for (int i = 0; i < N; i++) {
         ret *= size[i];
@@ -154,7 +164,7 @@ inline size_t _M_calc_product(id<N> const &size) {
 }
 
 template <size_t N>
-inline size_t _M_linearize_id(id<N> const &size, id<N> const &idx) {
+inline size_t _M_linearize_id(range<N> const &size, id<N> const &idx) {
     size_t ret = 0;
     size_t term = 1;
     for (size_t i = 0; i < N; i++) {
@@ -167,7 +177,7 @@ inline size_t _M_linearize_id(id<N> const &size, id<N> const &idx) {
 template <class T, size_t N>
 struct buffer {
     std::vector<T> _M_data;
-    id<N> _M_shape;
+    range<N> _M_shape;
 
     buffer() = default;
     buffer(buffer const &) = default;
@@ -175,7 +185,7 @@ struct buffer {
     buffer(buffer &&) = default;
     buffer &operator=(buffer &&) = default;
 
-    explicit buffer(id<N> shape)
+    explicit buffer(range<N> shape)
         : _M_shape(shape), _M_data(_M_calc_product(shape)) {
     }
 
@@ -189,11 +199,11 @@ struct buffer {
         return accessor<mode, buffer, T, N>(*this);
     }
 
-    id<N> shape() const {
+    range<N> shape() const {
         return _M_shape;
     }
 
-    id<N> shape() const {
+    size_t size() const {
         return _M_calc_product(_M_shape);
     }
 

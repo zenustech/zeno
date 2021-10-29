@@ -37,7 +37,7 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-void vector_from_buffer(auto &vec, auto &buf) {
+void vector_from_ndarray(auto &vec, auto &buf) {
     size_t size = buf.size();
     vec.clear();
     vec.reserve(size);
@@ -48,7 +48,7 @@ void vector_from_buffer(auto &vec, auto &buf) {
     }
 }
 
-void buffer_from_vector(auto &buf, auto const &vec) {
+void ndarray_from_vector(auto &buf, auto const &vec) {
     size_t size = vec.size();
     buf = std::remove_cvref_t<decltype(buf)>(size);
     auto hacc = make_access<access::mode::discard_write>(buf);
@@ -63,7 +63,7 @@ struct _M_as_vector : Vector {
     Buf &_M_buf;
 
     explicit _M_as_vector(Buf &buf) : _M_buf(buf) {
-        vector_from_buffer(*this, _M_buf);
+        vector_from_ndarray(*this, _M_buf);
     }
 
     _M_as_vector(_M_as_vector const &) = delete;
@@ -72,7 +72,7 @@ struct _M_as_vector : Vector {
     _M_as_vector &operator=(_M_as_vector &&) = default;
 
     ~_M_as_vector() {
-        buffer_from_vector(_M_buf, *this);
+        ndarray_from_vector(_M_buf, *this);
     }
 };
 
@@ -84,7 +84,7 @@ auto _M_make_as_vector(auto &buf) {
 template <class Vector>
 auto _M_make_to_vector(auto &buf) {
     Vector vec;
-    vector_from_buffer(vec, buf);
+    vector_from_ndarray(vec, buf);
     return vec;
 }
 

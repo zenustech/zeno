@@ -55,7 +55,8 @@ struct ndarray {
         return _M_buf ? _M_buf->size() : 0;
     }
 
-    explicit ndarray(id<N> size) {
+    explicit ndarray(range<N> size, T *base = nullptr) {
+        _M_buf = buffer<T, N>(base, size);
     }
 
     template <access::mode mode>
