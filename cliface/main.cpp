@@ -15,14 +15,14 @@ int main()
     {
         auto vec = buf.as_vector();
         printf("%zd\n", vec.size());
-        for (auto x: vec) {
-            vec.push_back(4);
+        for (int i = 0; i < 32; i++) {
+            vec.push_back(i + 1);
         }
     }
 
     {
         auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 32; i++) {
             printf("%d\n", hbuf[i]);
         }
     }

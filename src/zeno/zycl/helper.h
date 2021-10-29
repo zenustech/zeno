@@ -28,46 +28,5 @@ struct functor_accessor {
     }
 };
 
-template <class T, size_t N>
-struct ndarray {
-    std::optional<buffer<T, N>> _M_buf;
-
-    ndarray() = default;
-    ndarray(ndarray const &) = default;
-    ndarray &operator=(ndarray const &) = default;
-    ndarray(ndarray &&) = default;
-    ndarray &operator=(ndarray &&) = default;
-
-    range<N> shape() const {
-        return _M_buf ? _M_buf->shape() : range<N>(0);
-    }
-
-    size_t size() const {
-        return _M_buf ? _M_buf->size() : 0;
-    }
-
-    explicit ndarray(range<N> size, T *base = nullptr) {
-        reshape(size, base);
-    }
-
-    void reshape(range<N> size, T *base = nullptr) {
-        for (int i = 0; i < N; i++) {
-            if (!size[i]) {
-                _M_buf = std::nullopt;
-                return;
-            }
-        }
-        _M_buf = buffer<T, N>(base, size);
-    }
-
-    template <access::mode mode>
-    auto get_access(auto &&cgh) {
-        if constexpr (std::is_same_v<std::remove_cvref_t<decltype(cgh)>, host_handler>)
-            return _M_buf->template get_access<mode>();
-        else
-            return _M_buf->template get_access<mode>(cgh);
-    }
-};
-
 }
 ZENO_NAMESPACE_END
