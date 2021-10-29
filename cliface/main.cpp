@@ -5,31 +5,38 @@
 
 USING_ZENO_NAMESPACE
 
-
-
 int main()
 {
+    zycl::queue que;
+
 #ifndef ZENO_SYCL_IS_EMULATED
     decltype(auto) dev = zycl::queue().get_device();
-    std::cout << "Zeno SYCL running on: " << dev.get_info<zycl::info::device::name>() << std::endl;
+    std::cout << "SYCL backend: " << dev.get_info<zycl::info::device::name>() << std::endl;
 #endif
 
 #if 1
     zycl::vector<int> buf;
 
     {
-        auto vec = buf.as_vector();
+        decltype(auto) vec = buf.as_vector();
         for (int i = 0; i < 32; i++) {
             vec.push_back(i + 1);
         }
     }
 
-    buf.resize(8);
+    {
+        que.submit([&] (zycl::handler &cgh) {
+            auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
+            cgh.parallel_for(zycl::range<1>(buf.size()), [=] (zycl::item<1> idx) {
+                axr_buf[idx] += 1;
+            });
+        });
+    }
 
     {
-        auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
+        auto axr_buf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
         for (int i = 0; i < buf.size(); i++) {
-            printf("%d\n", hbuf[i]);
+            printf("%d\n", axr_buf[i]);
         }
     }
 

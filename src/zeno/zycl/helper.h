@@ -23,7 +23,7 @@ struct functor_accessor {
     constexpr functor_accessor(F &&f) : f(std::forward<F>(f)) {
     }
 
-    constexpr decltype(auto) operator[](auto &&t) {
+    constexpr decltype(auto) operator[](auto &&t) const {
         return f(std::forward<decltype(t)>(t));
     }
 };

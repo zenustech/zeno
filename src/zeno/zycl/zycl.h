@@ -11,7 +11,7 @@ namespace zycl {
 }
 ZENO_NAMESPACE_END
 #else
-#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, which is CPU-only and slow. Add the CMake flag `-DSYCL_TARGETS=nvptx64-nvidia-cuda` to enable real sycl (with cuda backend). See https://intel.github.io/llvm-docs/UsersManual.html for more choices for this flag.")
+#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, which is CPU-only and slow.")
 #define ZENO_SYCL_IS_EMULATED 1
 
 #include <array>
@@ -48,7 +48,7 @@ struct range : id<N> {
 
 template <size_t N>
 struct item : range<N> {
-    using id<N>::id;
+    using range<N>::range;
 };
 
 
@@ -87,7 +87,7 @@ struct nd_item : nd_range<N> {
 };
 
 template <size_t I, size_t N>
-void _M_nd_range_for(id<N> const &size, id<N> &index, auto &&f) {
+void _M_nd_range_for(range<N> const &size, id<N> &index, auto &&f) {
     if constexpr (I == N) {
         f(index);
     } else {
@@ -98,7 +98,7 @@ void _M_nd_range_for(id<N> const &size, id<N> &index, auto &&f) {
 }
 
 template <size_t N>
-void _M_nd_range_for(id<N> const &size, auto &&f) {
+void _M_nd_range_for(range<N> const &size, auto &&f) {
     id<N> index;
     _M_nd_range_for<0>(size, index, f);
 }
@@ -110,8 +110,16 @@ struct handler {
     }
 
     template <class = void, size_t N>
-    void parallel_for(nd_range<N> range, auto &&f) {
-        _M_nd_range_for(range.global_size, [&] (id<N> global_id) {
+    void parallel_for(range<N> dim, auto &&f) {
+        _M_nd_range_for(dim, [&] (id<N> idx) {
+            item<N> itm(idx);
+            f(itm);
+        });
+    }
+
+    template <class = void, size_t N>
+    void parallel_for(nd_range<N> dim, auto &&f) {
+        _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
             nd_item<N> item;
             item.global_id = global_id;
             f(item);
@@ -132,7 +140,7 @@ struct gpu_selector : selector {
 };
 
 struct queue {
-    explicit queue(selector) {}
+    explicit queue(selector = default_selector{}) {}
 
     void submit(auto &&f) {
         handler h;

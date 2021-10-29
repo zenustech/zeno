@@ -10,13 +10,13 @@ ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
 template <class T>
-struct vector : protected std::vector<T> {
+struct vector : std::vector<T> {
     using std::vector<T>::vector;
 
     template <access::mode mode>
     auto get_access(auto &&cgh) {
-        return functor_accessor([=, this] (id<1> idx) -> decltype(auto) {
-            return this->operator[](idx);
+        return functor_accessor([this] (id<1> idx) -> decltype(auto) {
+            return (*this)[idx];
         });
     }
 
@@ -58,8 +58,26 @@ struct _M_as_vector : Vector {
     }
 };
 
+template <class T, class DstAcc, class SrcAcc>
+struct _M_transfer_kernel {
+    DstAcc dst_acc;
+    SrcAcc src_acc;
+
+    void operator()(item<1> idx) const {
+        dst_acc[idx] = src_acc[idx];
+    }
+};
+
 template <class T>
-class _M_vector_transfer_kernel;
+static void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
+    queue().submit([&] (handler &cgh) {
+        auto dst_acc = buf_dst.template get_access<access::mode::discard_write>();
+        auto src_acc = buf_src.template get_access<access::mode::read>();
+        using Kernel = _M_transfer_kernel<T, decltype(dst_acc), decltype(src_acc)>;
+        Kernel kernel{dst_acc, src_acc};
+        cgh.parallel_for<Kernel>(range<1>(size), kernel);
+    });
+}
 
 template <class T>
 struct vector {
@@ -78,7 +96,7 @@ struct vector {
     void resize(size_t size) {
         if (_M_size) {
             auto old_buf = std::exchange(_M_buf, buffer<T, 1>(std::max(size, (size_t)1)));
-            _M_transfer(old_buf, _M_buf, std::min(size, _M_size));
+            _M_transfer<T>(old_buf, _M_buf, std::min(size, _M_size));
             _M_size = size;
         } else {
             _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
@@ -99,16 +117,6 @@ struct vector {
     }
 
     explicit vector(size_t size) : _M_buf(std::max(size, (size_t)1)), _M_size(size) {
-    }
-
-    static void _M_transfer(auto &buf_src, auto &buf_dst, size_t size) {
-        queue().submit([&] (handler &cgh) {
-            auto dst_acc = buf_dst.template get_access<access::mode::discard_write>();
-            auto src_acc = buf_src.template get_access<access::mode::read>();
-            cgh.parallel_for<_M_vector_transfer_kernel<T>>(range<1>(size), [=] (item<1> idx) {
-                dst_acc[idx] = src_acc[idx];
-            });
-        });
     }
 
     template <access::mode mode>
