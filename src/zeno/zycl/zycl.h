@@ -10,7 +10,9 @@ namespace zycl {
     using namespace cl::sycl;
 }
 ZENO_NAMESPACE_END
+
 #else
+
 #pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, which is CPU-only and slow.")
 #define ZENO_SYCL_IS_EMULATED 1
 

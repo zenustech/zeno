@@ -1,10 +1,10 @@
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
 
 run: all
-	$B build/*/zeno
+	$B build/zeno
 
 debug: all
-	$B gdb build/*/zeno -ex r
+	$B gdb build/zeno -ex r
 
 all:
 	test -d /tmp/zeno-ccache || mkdir /tmp/zeno-ccache

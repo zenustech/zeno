@@ -7,7 +7,8 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que;
+    zycl::queue que = zycl::cpu_selector{};
+    std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
 
 #if 1
     zycl::vector<int> buf;
