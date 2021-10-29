@@ -43,12 +43,8 @@ struct ndarray {
     ndarray(ndarray &&) = default;
     ndarray &operator=(ndarray &&) = default;
 
-    buffer<T, N> &get_buffer() {
-        return *_M_buf;
-    }
-
-    buffer<T, N> const &get_buffer() const {
-        return *_M_buf;
+    range<N> shape() const {
+        return _M_buf ? _M_buf->shape() : range<N>(0);
     }
 
     size_t size() const {
@@ -56,8 +52,15 @@ struct ndarray {
     }
 
     explicit ndarray(range<N> size, T *base = nullptr) {
+        reshape(size, base);
+    }
+
+    void reshape(range<N> size, T *base = nullptr) {
         for (int i = 0; i < N; i++) {
-            if (!size[i]) return;
+            if (!size[i]) {
+                _M_buf = std::nullopt;
+                return;
+            }
         }
         _M_buf = buffer<T, N>(base, size);
     }

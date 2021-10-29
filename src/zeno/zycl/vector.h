@@ -50,7 +50,7 @@ void vector_from_ndarray(auto &vec, auto &buf) {
 
 void ndarray_from_vector(auto &buf, auto const &vec) {
     size_t size = vec.size();
-    buf = std::remove_cvref_t<decltype(buf)>(size);
+    buf.reshape(size);
     auto hacc = make_access<access::mode::discard_write>(buf);
     size_t i = 0;
     for (size_t i = 0; i < size; i++) {
