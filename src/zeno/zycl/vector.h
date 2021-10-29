@@ -59,7 +59,7 @@ struct _M_as_vector : Vector {
 };
 
 template <class T>
-class _M_vector_init_kernel;
+class _M_vector_transfer_kernel;
 
 template <class T>
 struct vector {
@@ -75,28 +75,23 @@ struct vector {
         return _M_buf.size();
     }
 
-    size_t _M_recapacity(size_t size) {
-        _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
-        _M_size = size;
+    void resize(size_t size) {
+        if (_M_size) {
+            auto old_buf = std::exchange(_M_buf, buffer<T, 1>(std::max(size, (size_t)1)));
+            _M_transfer(old_buf, _M_buf, std::min(size, _M_size));
+            _M_size = size;
+        } else {
+            _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
+            _M_size = size;
+        }
     }
 
     size_t size() const {
         return _M_size;
     }
 
-    void resize(size_t size) {
-        if (size > capacity()) {
-            _M_recapacity(size);
-        }
-        _M_size = size;
-    }
-
-    void shrink_to_fit() {
-        if (_M_size < capacity())
-            _M_recapacity(_M_size);
-    }
-
-    size_t clear() {
+    void clear() {
+        _M_buf = buffer<T, 1>(1);
         _M_size = 0;
     }
 
@@ -104,14 +99,14 @@ struct vector {
     }
 
     explicit vector(size_t size) : _M_buf(std::max(size, (size_t)1)), _M_size(size) {
-        _M_initialize(0, _M_size);
     }
 
-    void _M_initialize(size_t beg, size_t end) {
+    static void _M_transfer(auto &buf_src, auto &buf_dst, size_t size) {
         queue().submit([&] (handler &cgh) {
-            auto dacc = _M_buf.template get_access<access::mode::discard_write>();
-            cgh.parallel_for<_M_vector_init_kernel<T>>(range<1>(_M_size), [=] (item<1> idx) {
-                ::new (static_cast<void *>(&dacc[idx])) T{};
+            auto dst_acc = buf_dst.template get_access<access::mode::discard_write>();
+            auto src_acc = buf_src.template get_access<access::mode::read>();
+            cgh.parallel_for<_M_vector_transfer_kernel<T>>(range<1>(size), [=] (item<1> idx) {
+                dst_acc[idx] = src_acc[idx];
             });
         });
     }

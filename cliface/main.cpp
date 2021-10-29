@@ -15,14 +15,16 @@ int main()
 #endif
 
 #if 1
-    zycl::vector<int> buf(32);
+    zycl::vector<int> buf;
 
-    /*{
+    {
         auto vec = buf.as_vector();
         for (int i = 0; i < 32; i++) {
             vec.push_back(i + 1);
         }
-    }*/
+    }
+
+    buf.resize(8);
 
     {
         auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
