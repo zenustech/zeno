@@ -11,7 +11,7 @@ namespace zycl {
 }
 ZENO_NAMESPACE_END
 #else
-#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, add -DZENO_WITH_SYCL flag to use real sycl instead")
+#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, which is CPU-only and slow. Add the CMake flag `-DSYCL_TARGETS=nvptx64-nvidia-cuda` to enable real sycl (with cuda backend). See https://intel.github.io/llvm-docs/UsersManual.html for more choices for this flag.")
 #define ZENO_SYCL_IS_EMULATED 1
 
 #include <array>
