@@ -9,19 +9,24 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-#if 1
-    zycl::vector<int> buf;
+#ifndef ZENO_SYCL_IS_EMULATED
+    decltype(auto) dev = zycl::queue().get_device();
+    std::cout << "Zeno SYCL running on: " << dev.get_info<zycl::info::device::name>() << std::endl;
+#endif
 
-    {
+#if 1
+    zycl::vector<int> buf(32);
+
+    /*{
         auto vec = buf.as_vector();
         for (int i = 0; i < 32; i++) {
             vec.push_back(i + 1);
         }
-    }
+    }*/
 
     {
         auto hbuf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < buf.size(); i++) {
             printf("%d\n", hbuf[i]);
         }
     }

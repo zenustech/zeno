@@ -13,7 +13,7 @@ struct host_handler {};
 
 template <access::mode mode, class Cgh>
 auto make_access(Cgh &&cgh, auto &&buf) {
-    return buf.template get_access<mode>(cgh);
+    return buf.template get_access<mode>(std::forward<Cgh>(cgh));
 }
 
 template <class F>

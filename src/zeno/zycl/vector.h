@@ -59,8 +59,11 @@ struct _M_as_vector : Vector {
 };
 
 template <class T>
+class _M_vector_init_kernel;
+
+template <class T>
 struct vector {
-    buffer<T, 1> _M_buf;
+    mutable buffer<T, 1> _M_buf;
     size_t _M_size;
 
     vector(vector const &) = default;
@@ -72,19 +75,51 @@ struct vector {
         return _M_buf.size();
     }
 
+    size_t _M_recapacity(size_t size) {
+        _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
+        _M_size = size;
+    }
+
     size_t size() const {
         return _M_size;
     }
 
     void resize(size_t size) {
-        _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
+        if (size > capacity()) {
+            _M_recapacity(size);
+        }
         _M_size = size;
+    }
+
+    void shrink_to_fit() {
+        if (_M_size < capacity())
+            _M_recapacity(_M_size);
+    }
+
+    size_t clear() {
+        _M_size = 0;
     }
 
     vector() : _M_buf(1), _M_size(0) {
     }
 
     explicit vector(size_t size) : _M_buf(std::max(size, (size_t)1)), _M_size(size) {
+        _M_initialize(0, _M_size);
+    }
+
+    void _M_initialize(size_t beg, size_t end) {
+        queue().submit([&] (handler &cgh) {
+            auto dacc = _M_buf.template get_access<access::mode::discard_write>();
+            cgh.parallel_for<_M_vector_init_kernel<T>>(range<1>(_M_size), [=] (item<1> idx) {
+                ::new (static_cast<void *>(&dacc[idx])) T{};
+            });
+        });
+    }
+
+    template <access::mode mode>
+        requires (mode == access::mode::read)
+    auto get_access(auto &&cgh) const {
+        static_cast<vector *>(this)->get_access<mode>(cgh);
     }
 
     template <access::mode mode>
@@ -96,7 +131,7 @@ struct vector {
     }
 
     template <class Vector>
-    void _M_copy_to_vector(Vector &vec) {
+    void _M_copy_to_vector(Vector &vec) const {
         size_t size = _M_size;
         vec.reserve(size);
         auto hacc = _M_buf.template get_access<access::mode::read>();
@@ -113,7 +148,7 @@ struct vector {
     }
 
     template <class Vector = std::vector<T>>
-    auto to_vector() {
+    auto to_vector() const {
         Vector vec;
         _M_copy_to_vector<Vector>(vec);
         return vec;

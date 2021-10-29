@@ -47,13 +47,19 @@ struct range : id<N> {
 };
 
 template <size_t N>
+struct item : range<N> {
+    using id<N>::id;
+};
+
+
+template <size_t N>
 struct nd_range {
     id<N> global_size{};
     id<N> local_size{};
 
     nd_range() = default;
 
-    constexpr explicit nd_range(id<N> global_size, id<N> local_size)
+    explicit nd_range(id<N> global_size, id<N> local_size)
         : global_size(global_size), local_size(local_size)
     {}
 
@@ -98,7 +104,12 @@ void _M_nd_range_for(id<N> const &size, auto &&f) {
 }
 
 struct handler {
-    template <size_t N>
+    template <class = void>
+    void single_task(auto &&f) {
+        f();
+    }
+
+    template <class = void, size_t N>
     void parallel_for(nd_range<N> range, auto &&f) {
         _M_nd_range_for(range.global_size, [&] (id<N> global_id) {
             nd_item<N> item;
