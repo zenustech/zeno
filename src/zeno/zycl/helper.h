@@ -56,6 +56,9 @@ struct ndarray {
     }
 
     explicit ndarray(range<N> size, T *base = nullptr) {
+        for (int i = 0; i < N; i++) {
+            if (!size[i]) return;
+        }
         _M_buf = buffer<T, N>(base, size);
     }
 

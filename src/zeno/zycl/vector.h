@@ -98,6 +98,9 @@ struct vector {
     vector(vector &&) = default;
     vector &operator=(vector &&) = default;
 
+    explicit vector(size_t size) : _M_buf(size) {
+    }
+
     template <access::mode mode>
     auto get_access(auto &&cgh) {
         auto a_buf = make_access<mode>(cgh, _M_buf);
