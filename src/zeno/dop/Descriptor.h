@@ -39,20 +39,19 @@ struct Descriptor {
 };
 
 
-void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory);
-ztd::map<std::string, Descriptor> &desc_table();
-Descriptor &desc_of(std::string const &kind);
+Descriptor make_desc(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory);
+/*ztd::map<std::string, Descriptor> &desc_table();
+Descriptor &desc_of(std::string const &kind);*/
 
 
 template <class T>
-int define(std::string const &kind, Descriptor desc) {
+Descriptor make_desc(std::string const &kind, Descriptor desc) {
     static_assert(std::is_base_of_v<Node, T>);
-    define(kind, std::move(desc), std::make_unique<T>);
-    return 1;
+    return make_desc(kind, std::move(desc), std::make_unique<T>);
 }
 
 
-#define ZENO_DOP_DEFINE(T, ...) static int def##T = ZENO_NAMESPACE::dop::define<T>(#T, __VA_ARGS__)
+#define ZENO_DOP_DEFINE(T, ...) static Descriptor desc##T = ZENO_NAMESPACE::dop::make_desc<T>(#T, __VA_ARGS__)
 
 
 }
