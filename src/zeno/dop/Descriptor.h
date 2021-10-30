@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <functional>
+#include <typeindex>
 #include <string>
 #include <memory>
 #include <vector>
@@ -38,16 +39,17 @@ struct Descriptor {
 
 using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
 
+using Signature = std::vector<std::type_index>;
 
 struct Overloading {
-    ztd::map<std::string, FactoryFunctor> factories;
+    ztd::map<Signature, FactoryFunctor> factories;
 
     std::unique_ptr<Node> create(std::string const &sig) const;
 };
 
 
 void add_descriptor(std::string const &kind, Descriptor desc);
-void add_overloading(std::string const &kind, std::string const &sig, FactoryFunctor const &fac);
+void add_overloading(std::string const &kind, Signature const &sig, FactoryFunctor const &fac);
 ztd::map<std::string, Descriptor> &descriptor_table();
 ztd::map<std::string, Overloading> &overloading_table();
 
@@ -58,7 +60,7 @@ ztd::map<std::string, Overloading> &overloading_table();
     static int _zeno_dop_overload_##name = (ZENO_NAMESPACE::dop::add_overloading(#name, sig, std::make_unique<Class>), 1);
 #define ZENO_DOP_DEFINE(name, ...) \
     ZENO_DOP_DESCRIPTOR(name, __VA_ARGS__) \
-    ZENO_DOP_OVERLOADING(name, "", name)
+    ZENO_DOP_OVERLOADING(name, {}, name)
 
 
 }

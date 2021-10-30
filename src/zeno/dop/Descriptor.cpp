@@ -19,12 +19,12 @@ ztd::map<std::string, Overloading> &overloading_table() {
 }
 
 
-std::unique_ptr<Node> Overloading::create(std::string const &sig) const {
+std::unique_ptr<Node> Overloading::create(Signature const &sig) const {
     return factories.at(sig)();
 }
 
 
-std::unique_ptr<Node> Descriptor::create(std::string const &sig) const {
+std::unique_ptr<Node> Descriptor::create(Signature const &sig) const {
     auto const &overload = overloading_table().at(this->name);
     auto node = overload.create(sig);
     node->desc = const_cast<Descriptor *>(this);
@@ -44,7 +44,7 @@ void add_descriptor(std::string const &kind, Descriptor desc) {
 }
 
 
-void add_overloading(std::string const &kind, std::string const &sig, FactoryFunctor const &fac)
+void add_overloading(std::string const &kind, Signature const &sig, FactoryFunctor const &fac)
 {
     bool success = overloading_table()[kind].factories.emplace(sig, fac).second;
     [[unlikely]] if (!success)
