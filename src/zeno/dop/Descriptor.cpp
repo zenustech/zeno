@@ -1,5 +1,4 @@
 #include <zeno/dop/Descriptor.h>
-#include <zeno/ztd/error.h>
 #include <zeno/dop/Node.h>
 
 
@@ -31,7 +30,7 @@ std::unique_ptr<Node> Overloading::create(Signature const &sig) const {
         }
     }
     if (matches.empty())
-        throw ztd::make_error("no suitable overloading found");
+        throw ztd::error("no suitable overloading found");
     auto const &factory = matches.begin()->second.get();
     return factory();
 }
