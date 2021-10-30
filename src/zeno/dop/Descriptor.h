@@ -51,7 +51,8 @@ Descriptor make_desc(std::string const &kind, Descriptor desc) {
 }
 
 
-#define ZENO_DOP_DEFINE(T, ...) static Descriptor desc##T = ZENO_NAMESPACE::dop::make_desc<T>(#T, __VA_ARGS__)
+#define ZENO_DOP_DEFINE(T, ...) ZENO_NAMESPACE::dop::Descriptor desc##T = ZENO_NAMESPACE::dop::make_desc<T>(#T, __VA_ARGS__)
+#define ZENO_DOP_EXTERN(T, ...) extern ZENO_NAMESPACE::dop::Descriptor desc##T
 
 
 }
