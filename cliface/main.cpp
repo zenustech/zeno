@@ -10,7 +10,7 @@ int main()
     zycl::queue que = zycl::cpu_selector{};
     std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
 
-#if 1
+#if 0
     zycl::vector<int> buf;
 
     {
