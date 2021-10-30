@@ -48,7 +48,7 @@ void add_overloading(std::string const &kind, Signature const &sig, FactoryFunct
 {
     bool success = overloading_table()[kind].factories.emplace(sig, fac).second;
     [[unlikely]] if (!success)
-        printf("[zeno] dop::define: redefined overload: kind=[%s], sig=[%s]\n", kind.c_str(), sig.c_str());
+        printf("[zeno] dop::define: redefined overload: kind=[%s]\n", kind.c_str());
 }
 
 

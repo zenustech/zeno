@@ -17,6 +17,12 @@ namespace dop {
 struct Node;
 
 
+using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
+
+
+using Signature = std::vector<std::type_index>;
+
+
 struct Descriptor {
     struct SocketInfo {
         std::string name;
@@ -33,18 +39,14 @@ struct Descriptor {
 
     std::string name;
 
-    std::unique_ptr<Node> create(std::string const &sig) const;
+    std::unique_ptr<Node> create(Signature const &sig) const;
 };
 
 
-using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
-
-using Signature = std::vector<std::type_index>;
-
 struct Overloading {
-    ztd::map<Signature, FactoryFunctor> factories;
+    std::map<Signature, FactoryFunctor> factories;
 
-    std::unique_ptr<Node> create(std::string const &sig) const;
+    std::unique_ptr<Node> create(Signature const &sig) const;
 };
 
 
