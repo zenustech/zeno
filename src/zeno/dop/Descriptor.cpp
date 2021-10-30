@@ -7,6 +7,14 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 
+Descriptor::Descriptor() = default;
+Descriptor::~Descriptor() = default;
+Descriptor::Descriptor(Descriptor const &) = default;
+Descriptor::Descriptor(Descriptor &&) = default;
+Descriptor &Descriptor::operator=(Descriptor const &) = default;
+Descriptor &Descriptor::operator=(Descriptor &&) = default;
+
+
 std::unique_ptr<Node> Descriptor::create() const {
     auto node = factory();
     node->desc = this;

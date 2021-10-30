@@ -1,12 +1,13 @@
 #pragma once
 
 
+#include <zeno/common.h>
 #include <type_traits>
 #include <functional>
 #include <string>
 #include <memory>
 #include <vector>
-#include <zeno/ztd/map.h>
+#include <map>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -14,6 +15,13 @@ namespace dop {
 
 
 struct Node;
+
+
+using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
+
+
+struct CallSignature {
+};
 
 
 struct Descriptor {
@@ -26,20 +34,26 @@ struct Descriptor {
         std::string documentation;
     };
 
+    std::string name;
+
     CategoryInfo cate;
     std::vector<SocketInfo> inputs;
     std::vector<SocketInfo> outputs;
 
-    using FactoryFunc = std::function<std::unique_ptr<Node>()>;
-    FactoryFunc factory;
+    std::map<CallSignature, FactoryFunctor> factories;
 
-    std::string name;
+    Descriptor();
+    ~Descriptor();
+    Descriptor(Descriptor const &);
+    Descriptor(Descriptor &&);
+    Descriptor &operator=(Descriptor const &);
+    Descriptor &operator=(Descriptor &&);
 
     std::unique_ptr<Node> create() const;
 };
 
 
-void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory);
+void define(std::string const &kind, Descriptor desc, FactoryFunctor factory);
 ztd::map<std::string, Descriptor> &desc_table();
 Descriptor &desc_of(std::string const &kind);
 
