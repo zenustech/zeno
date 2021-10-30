@@ -19,19 +19,32 @@ ztd::map<std::string, Overloading> &overloading_table() {
 
 
 static int match_signature(Signature const &lhs, Signature const &rhs) {
+    int score = 0;
+    for (int i = 0; i < std::min(lhs.size(), rhs.size()); i++) {
+        if (rhs[i] == std::type_index(typeid(void))) {
+            continue;
+        }
+        if (lhs[i] == rhs[i]) {
+            score += 1;
+        }
+    }
+    return score;
 }
 
 
 std::unique_ptr<Node> Overloading::create(Signature const &sig) const {
-    std::map<int, std::reference_wrapper<FactoryFunctor const>> matches;
+    std::vector<std::reference_wrapper<FactoryFunctor const>> matches;
     for (auto const &[key, factory]: factories) {
-        if (int prio = match_signature(sig, key)) {
-            matches.emplace(prio, std::cref(factory));
+        if (int prio = match_signature(sig, key); prio != -1) {
+            if (matches.size() < prio + 1) {
+                matches.resize(prio + 1);
+            }
+            matches[prio] = std::cref(factory);
         }
     }
     if (matches.empty())
         throw ztd::error("no suitable overloading found");
-    auto const &factory = matches.begin()->second.get();
+    auto const &factory = matches[0].get();
     return factory();
 }
 
