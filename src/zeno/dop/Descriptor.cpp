@@ -16,7 +16,6 @@ std::unique_ptr<Node> Descriptor::create() const {
 }
 
 
-/*
 ztd::map<std::string, Descriptor> &desc_table() {
     static ztd::map<std::string, Descriptor> impl;
     return impl;
@@ -26,16 +25,14 @@ ztd::map<std::string, Descriptor> &desc_table() {
 Descriptor &desc_of(std::string const &kind) {
     return desc_table().at(kind);
 }
-*/
 
 
-Descriptor make_desc(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory) {
+void define(std::string const &kind, Descriptor desc, Descriptor::FactoryFunc factory) {
     desc.name = kind;
     desc.factory = std::move(factory);
     desc.inputs.push_back({"SRC"});
     desc.outputs.push_back({"DST"});
-    //desc_table().emplace(kind, std::move(desc));
-    return desc;
+    desc_table().emplace(kind, std::move(desc));
 }
 
 
