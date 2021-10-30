@@ -13,16 +13,20 @@ ztd::map<std::string, Descriptor> &descriptor_table() {
 }
 
 
-ztd::map<std::string, OverloadDesc> &overloads_table() {
-    static ztd::map<std::string, OverloadDesc> impl;
+ztd::map<std::string, Overloading> &overloading_table() {
+    static ztd::map<std::string, Overloading> impl;
     return impl;
 }
 
 
+std::unique_ptr<Node> Overloading::create(std::string const &sig) const {
+    return factories.at(sig)();
+}
+
+
 std::unique_ptr<Node> Descriptor::create(std::string const &sig) const {
-    auto const &overload = overloads_table().at(this->name);
-    auto const &factory = overload.factories.at(sig);
-    auto node = factory();
+    auto const &overload = overloading_table().at(this->name);
+    auto node = overload.create(sig);
     node->desc = const_cast<Descriptor *>(this);
     node->inputs.resize(this->inputs.size());
     node->outputs.resize(this->outputs.size());
@@ -30,21 +34,21 @@ std::unique_ptr<Node> Descriptor::create(std::string const &sig) const {
 }
 
 
-void define(std::string const &kind, Descriptor desc) {
+void add_descriptor(std::string const &kind, Descriptor desc) {
     desc.name = kind;
     desc.inputs.push_back({"SRC"});
     desc.outputs.push_back({"DST"});
     bool success = descriptor_table().emplace(kind, std::move(desc)).second;
     [[unlikely]] if (!success)
-        printf("dop::define: redefined descriptor: kind=[%s]\n", kind.c_str());
+        printf("[zeno] dop::define: redefined descriptor: kind=[%s]\n", kind.c_str());
 }
 
 
-void overload(std::string const &kind, std::string const &sig, FactoryFunctor const &fac)
+void add_overloading(std::string const &kind, std::string const &sig, FactoryFunctor const &fac)
 {
-    bool success = overloads_table()[kind].factories.emplace(sig, fac).second;
+    bool success = overloading_table()[kind].factories.emplace(sig, fac).second;
     [[unlikely]] if (!success)
-        printf("dop::define: redefined overload: kind=[%s], sig=[%s]\n", kind.c_str(), sig.c_str());
+        printf("[zeno] dop::define: redefined overload: kind=[%s], sig=[%s]\n", kind.c_str(), sig.c_str());
 }
 
 

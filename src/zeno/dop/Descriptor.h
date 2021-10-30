@@ -39,21 +39,26 @@ struct Descriptor {
 using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
 
 
-struct OverloadDesc {
+struct Overloading {
     ztd::map<std::string, FactoryFunctor> factories;
+
+    std::unique_ptr<Node> create(std::string const &sig) const;
 };
 
 
-void define(std::string const &kind, Descriptor desc);
-void overload(std::string const &kind, std::string const &sig, FactoryFunctor const &fac);
+void add_descriptor(std::string const &kind, Descriptor desc);
+void add_overloading(std::string const &kind, std::string const &sig, FactoryFunctor const &fac);
 ztd::map<std::string, Descriptor> &descriptor_table();
-ztd::map<std::string, OverloadDesc> &overloads_table();
+ztd::map<std::string, Overloading> &overloading_table();
 
 
+#define ZENO_DOP_DESCRIPTOR(name, ...) \
+    static int _zeno_dop_define_##name = (ZENO_NAMESPACE::dop::add_descriptor(#name, __VA_ARGS__), 1);
+#define ZENO_DOP_OVERLOADING(name, sig, Class) \
+    static int _zeno_dop_overload_##name = (ZENO_NAMESPACE::dop::add_overloading(#name, sig, std::make_unique<Class>), 1);
 #define ZENO_DOP_DEFINE(name, ...) \
-    static int _zeno_dop_define_##name = (ZENO_NAMESPACE::dop::define(#name, __VA_ARGS__), 1)
-#define ZENO_DOP_OVERLOAD(name, Class) \
-    static int _zeno_dop_overload_##name = (ZENO_NAMESPACE::dop::overload(#Class, desc), 1)
+    ZENO_DOP_DESCRIPTOR(name, __VA_ARGS__) \
+    ZENO_DOP_OVERLOADING(name, "", name)
 
 
 }
