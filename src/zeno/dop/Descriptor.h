@@ -1,13 +1,12 @@
 #pragma once
 
 
-#include <zeno/common.h>
 #include <type_traits>
 #include <functional>
 #include <string>
 #include <memory>
 #include <vector>
-#include <map>
+#include <zeno/ztd/map.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -15,13 +14,6 @@ namespace dop {
 
 
 struct Node;
-
-
-using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
-
-
-struct CallSignature {
-};
 
 
 struct Descriptor {
@@ -34,39 +26,34 @@ struct Descriptor {
         std::string documentation;
     };
 
-    std::string name;
-
     CategoryInfo cate;
     std::vector<SocketInfo> inputs;
     std::vector<SocketInfo> outputs;
 
-    std::map<CallSignature, FactoryFunctor> factories;
+    std::string name;
 
-    Descriptor();
-    ~Descriptor();
-    Descriptor(Descriptor const &);
-    Descriptor(Descriptor &&);
-    Descriptor &operator=(Descriptor const &);
-    Descriptor &operator=(Descriptor &&);
-
-    std::unique_ptr<Node> create() const;
+    std::unique_ptr<Node> create(std::string const &) const;
 };
 
 
-void define(std::string const &kind, Descriptor desc, FactoryFunctor factory);
-ztd::map<std::string, Descriptor> &desc_table();
-Descriptor &desc_of(std::string const &kind);
+using FactoryFunctor = std::function<std::unique_ptr<Node>()>;
 
 
-template <class T>
-int define(std::string const &kind, Descriptor desc) {
-    static_assert(std::is_base_of_v<Node, T>);
-    define(kind, std::move(desc), std::make_unique<T>);
-    return 1;
-}
+struct OverloadDesc {
+    ztd::map<std::string, FactoryFunctor> factories;
+};
 
 
-#define ZENO_DOP_DEFINE(T, ...) static int def##T = ZENO_NAMESPACE::dop::define<T>(#T, __VA_ARGS__)
+void define(std::string const &kind, Descriptor desc);
+void overload(std::string const &kind, std::string const &sig, FactoryFunctor const &fac);
+ztd::map<std::string, Descriptor> &descriptor_table();
+ztd::map<std::string, OverloadDesc> &overloads_table();
+
+
+#define ZENO_DOP_DEFINE(name, ...) \
+    static int _zeno_dop_define_##name = (ZENO_NAMESPACE::dop::define(#name, __VA_ARGS__), 1)
+#define ZENO_DOP_OVERLOAD(name, Class) \
+    static int _zeno_dop_overload_##name = (ZENO_NAMESPACE::dop::overload(#Class, desc), 1)
 
 
 }
