@@ -1,6 +1,6 @@
 #include <zeno/dop/Descriptor.h>
+#include <zeno/ztd/error.h>
 #include <zeno/dop/Node.h>
-#include <zeno/ztd/map.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -19,8 +19,21 @@ ztd::map<std::string, Overloading> &overloading_table() {
 }
 
 
+static int match_signature(Signature const &lhs, Signature const &rhs) {
+}
+
+
 std::unique_ptr<Node> Overloading::create(Signature const &sig) const {
-    return factories.at(sig)();
+    std::map<int, std::reference_wrapper<FactoryFunctor const>> matches;
+    for (auto const &[key, factory]: factories) {
+        if (int prio = match_signature(sig, key)) {
+            matches.emplace(prio, std::cref(factory));
+        }
+    }
+    if (matches.empty())
+        throw ztd::make_error("no suitable overloading found");
+    auto const &factory = matches.begin()->second.get();
+    return factory();
 }
 
 
