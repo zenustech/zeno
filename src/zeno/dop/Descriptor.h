@@ -32,7 +32,7 @@ struct Descriptor {
 
     std::string name;
 
-    std::unique_ptr<Node> create(std::string const &) const;
+    std::unique_ptr<Node> create(std::string const &sig) const;
 };
 
 

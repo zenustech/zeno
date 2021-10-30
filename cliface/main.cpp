@@ -7,8 +7,10 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que = zycl::cpu_selector{};
+    zycl::queue que;
+#ifndef ZENO_SYCL_IS_EMULATED
     std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
+#endif
 
 #if 0
     zycl::vector<int> buf;
@@ -37,7 +39,7 @@ int main()
     }
 
 #else
-    auto n1 = dop::desc_of("ReadOBJMesh").create();
+    auto n1 = dop::descriptor_table().at("ReadOBJMesh").create("");
     n1->inputs.at(0) = dop::Input_Value{(std::string)"models/cube.obj"};
     n1->apply();
     auto mesh = zany_cast<std::shared_ptr<types::Mesh>>(n1->outputs.at(0));
