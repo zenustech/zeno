@@ -32,7 +32,7 @@ Functor const &FuncOverloads::overload(FuncSignature const &sig) const {
             matches.emplace(prio, &func);
         }
     }
-    if (matches.empty())
+    [[unlikely]] if (matches.empty())
         throw ztd::error("no suitable overloading found");
     return *matches.begin()->second;
 }
