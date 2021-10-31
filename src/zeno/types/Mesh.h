@@ -2,7 +2,7 @@
 
 
 #include <vector>
-#include <zeno/ztd/vec.h>
+#include <zeno/math/vec.h>
 #include <zeno/zycl/vector.h>
 
 
@@ -12,14 +12,14 @@ namespace types {
 
 struct Mesh {
     // points
-    zycl::vector<ztd::vec3f> vert;
+    zycl::vector<math::vec3f> vert;
 
     // face corners
     zycl::vector<int> loop;
-    zycl::vector<ztd::vec2f> loop_uv;
+    zycl::vector<math::vec2f> loop_uv;
 
     // faces
-    zycl::vector<ztd::vec2i> poly;
+    zycl::vector<math::vec2i> poly;
 };
 
 

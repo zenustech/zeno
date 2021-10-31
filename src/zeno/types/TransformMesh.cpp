@@ -12,9 +12,9 @@ namespace {
 
 static void TransformMesh(dop::FuncContext *ctx) {
     auto mesh = (std::shared_ptr<Mesh>)ctx->inputs.at(0);
-    auto translate = ctx->inputs.at(1).cast<ztd::vec3f>().value_or(ztd::vec3f(0));
-    auto scaling = ctx->inputs.at(2).cast<ztd::vec3f>().value_or(ztd::vec3f(1));
-    auto rotation = ctx->inputs.at(3).cast<ztd::vec4f>().value_or(ztd::vec4f(0, 0, 0, 1));
+    auto translate = ctx->inputs.at(1).cast<math::vec3f>().value_or(math::vec3f(0));
+    auto scaling = ctx->inputs.at(2).cast<math::vec3f>().value_or(math::vec3f(1));
+    auto rotation = ctx->inputs.at(3).cast<math::vec4f>().value_or(math::vec4f(0, 0, 0, 1));
     auto rotmat = math::quaternion_matrix(rotation);
 
     zycl::queue().submit([&] (zycl::handler &cgh) {
@@ -33,9 +33,9 @@ static void TransformMesh(dop::FuncContext *ctx) {
                 axr_vert[idx] = vert;
             });
         }
-        , ztd::make_monovariant(vany(translate != ztd::vec3f(0)), translate)
-        , ztd::make_monovariant(vany(scaling != ztd::vec3f(1)), scaling)
-        , ztd::make_monovariant(vany(rotation != ztd::vec4f(0, 0, 0, 1)), rotmat)
+        , ztd::make_monovariant(vany(translate != math::vec3f(0)), translate)
+        , ztd::make_monovariant(vany(scaling != math::vec3f(1)), scaling)
+        , ztd::make_monovariant(vany(rotation != math::vec4f(0, 0, 0, 1)), rotmat)
         );
     });
 

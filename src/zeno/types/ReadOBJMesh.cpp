@@ -12,9 +12,9 @@ namespace types {
 namespace {
 
 
-static ztd::vec3f read_vec3f(std::string_view const &exp) {
+static math::vec3f read_vec3f(std::string_view const &exp) {
     int i = 0;
-    ztd::vec3f tokens(0);
+    math::vec3f tokens(0);
     std::string token;
     std::istringstream iss((std::string)exp);
     for (int i = 0; i < 3 && std::getline(iss, token, ' '); i++)
@@ -23,9 +23,9 @@ static ztd::vec3f read_vec3f(std::string_view const &exp) {
 }
 
 
-static ztd::vec2f read_vec2f(std::string_view const &exp) {
+static math::vec2f read_vec2f(std::string_view const &exp) {
     int i = 0;
-    ztd::vec2f tokens(0);
+    math::vec2f tokens(0);
     std::string token;
     std::istringstream iss((std::string)exp);
     for (int i = 0; i < 2 && std::getline(iss, token, ' '); i++)
@@ -45,7 +45,7 @@ static std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
 
 
 static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
-    std::vector<ztd::vec2f> uv_vert;
+    std::vector<math::vec2f> uv_vert;
     std::vector<int> uv_loop;
     decltype(auto) vert = mesh.vert.as_vector();
     decltype(auto) loop = mesh.loop.as_vector();

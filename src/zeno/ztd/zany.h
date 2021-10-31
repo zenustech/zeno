@@ -9,7 +9,7 @@
 #include <zeno/ztd/type_traits.h>
 #include <zeno/ztd/type_info.h>
 #include <zeno/ztd/error.h>
-#include <zeno/ztd/vec.h>
+#include <zeno/math/vec.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -19,7 +19,7 @@ namespace zany_details {
 
 template <size_t N, class T>
 using auto_vec = std::conditional_t<N == 0,
-      T, vec<std::max(N, (size_t)1), T>>;
+      T, math::vec<std::max(N, (size_t)1), T>>;
 
 template <size_t N>
 using scalar_variant = std::variant
@@ -47,7 +47,7 @@ struct vector_dimension<T> : std::integral_constant<size_t, 0> {
 
 template <size_t N, class T>
     requires (variant_contains_v<T, scalar_variant<0>>)
-struct vector_dimension<vec<N, T>> : std::integral_constant<size_t, N> {
+struct vector_dimension<math::vec<N, T>> : std::integral_constant<size_t, N> {
 };
 
 }
