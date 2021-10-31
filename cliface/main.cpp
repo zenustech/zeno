@@ -45,7 +45,7 @@ int main()
     n1->apply();
     auto n2 = dop::descriptor_table().at("Transform").create();
     n2->inputs.at(0) = dop::Input_Value{n1->outputs.at(0)};
-    n2->inputs.at(1) = dop::Input_Value{ztd::vec3f(0.3f, 0.5f, 0.1f)};
+    n2->inputs.at(1) = dop::Input_Value{math::vec3f(0.3f, 0.5f, 0.1f)};
     n2->apply();
     auto mesh = (std::shared_ptr<types::Mesh>)n2->outputs.at(0);
 

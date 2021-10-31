@@ -12,7 +12,7 @@ namespace math {
 template <class T1, class T2, class T3, \
           class T0 = decltype(std::declval<remove_vec_t<T1>>() \
                             + std::declval<remove_vec_t<T2>>() \
-                            + std::declval<remove_vec_t<T3>>()> \
+                            + std::declval<remove_vec_t<T3>>())> \
     requires (requires (T0 t0) { std::fname(t0, t0, t0); }) \
 constexpr decltype(auto) fname(T1 const &t1, T2 const &t2, T3 const &t3) { \
     return vec_wise(t1, t2, t3, [] (auto &&t1, auto &&t2, auto &&t3) { \

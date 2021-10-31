@@ -5,3 +5,4 @@
 #include "vec_functions.h"
 #include "vec_operators.h"
 #include "vec_typedefs.h"
+#include "vec_algebra.h"
