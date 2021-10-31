@@ -22,17 +22,12 @@ static void TransformMesh(dop::FuncContext *ctx) {
 
         std::visit(
         [&] (auto translate, auto scaling, auto rotation) {
-            if constexpr (ztd::not_monostate<decltype(scaling)>
-                       && ztd::not_monostate<decltype(rotation)>) {
-                rotation *= scaling;
-            }
             cgh.parallel_for(zycl::range<1>(mesh->vert.size()), [=] (zycl::item<1> idx) {
                 auto vert = axr_vert[idx];
-                if constexpr (ztd::not_monostate<decltype(scaling)>
-                          && !ztd::not_monostate<decltype(rotation)>)
+                if constexpr (ztd::not_monostate<decltype(scaling)>)
                     vert *= scaling;
                 if constexpr (ztd::not_monostate<decltype(rotation)>)
-                    vert = rotation % vert;
+                    vert = rotation * vert;
                 if constexpr (ztd::not_monostate<decltype(translate)>)
                     vert += translate;
                 axr_vert[idx] = vert;

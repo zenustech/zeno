@@ -26,15 +26,7 @@ struct quaternion_matrix {
         m33 = 1 - s * (qi*qi + qj*qj);
     }
 
-    constexpr auto &operator*=(ztd::vec3f const &v) {
-        auto [vi, vj, vk] = std::make_tuple(v[0], v[1], v[2]);
-        m11 *= vi; m21 *= vi; m31 *= vi;
-        m12 *= vj; m22 *= vj; m32 *= vj;
-        m13 *= vk; m23 *= vk; m33 *= vk;
-        return *this;
-    }
-
-    constexpr ztd::vec3f operator%(ztd::vec3f const &v) const {
+    constexpr ztd::vec3f operator*(ztd::vec3f const &v) const {
         auto [vi, vj, vk] = std::make_tuple(v[0], v[1], v[2]);
         return {
             m11 * vi + m12 * vj + m13 * vk,
