@@ -32,7 +32,11 @@ struct FuncOverloads {
 
 
 ztd::map<std::string, FuncOverloads> &overloading_table();
-void add_overloading(std::string const &kind, FuncSignature const &sig, Functor func);
+void add_overloading(const char *kind, Functor func, FuncSignature const &sig);
+
+
+#define ZENO_DOP_OVERLOAD(Class, func, ...) \
+    static int _zeno_dop_overload_##Class##_funct_##func = (ZENO_NAMESPACE::dop::add_overloading(#Class, func, __VA_ARGS__), 1);
 
 
 }

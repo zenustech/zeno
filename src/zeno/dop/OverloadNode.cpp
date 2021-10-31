@@ -14,7 +14,7 @@ void OverloadNode::apply() {
     ctx.inputs.reserve(inputs.size());
     for (int i = 0; i < inputs.size(); i++) {
         ctx.inputs.push_back(get_input(i));
-        sig.push_back(std::type_index(ctx.inputs.back().type()));
+        sig.emplace_back(ctx.inputs.back().type());
     }
 
     auto func = overloading_table().at(desc->name).overload(sig);

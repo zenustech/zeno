@@ -38,10 +38,10 @@ Functor const &FuncOverloads::overload(FuncSignature const &sig) const {
 }
 
 
-void add_overloading(std::string const &kind, FuncSignature const &sig, Functor func) {
+void add_overloading(const char *kind, Functor func, FuncSignature const &sig) {
     bool success = overloading_table()[kind].functors.emplace(sig, func).second;
     [[unlikely]] if (!success)
-        printf("[zeno] dop::define: redefined overload: kind=[%s]\n", kind.c_str());
+        printf("[zeno-init] dop::define: redefined overload: kind=[%s]\n", kind);
 }
 
 

@@ -21,14 +21,14 @@ std::unique_ptr<Node> Descriptor::create() const {
 }
 
 
-void add_descriptor(std::string const &kind, NodeFactory fac, Descriptor desc) {
+void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc) {
     desc.name = kind;
     desc.factory = std::move(fac);
     desc.inputs.push_back({"SRC"});
     desc.outputs.push_back({"DST"});
     bool success = descriptor_table().emplace(kind, std::move(desc)).second;
     [[unlikely]] if (!success)
-        printf("[zeno] dop::define: redefined descriptor: kind=[%s]\n", kind.c_str());
+        printf("[zeno-init] dop::define: redefined descriptor: kind=[%s]\n", kind);
 }
 
 

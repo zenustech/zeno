@@ -40,7 +40,7 @@ struct Descriptor {
 };
 
 
-void add_descriptor(std::string const &kind, NodeFactory fac, Descriptor desc);
+void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc);
 ztd::map<std::string, Descriptor> &descriptor_table();
 
 
