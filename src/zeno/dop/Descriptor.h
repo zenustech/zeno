@@ -44,9 +44,5 @@ void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc);
 ztd::map<std::string, Descriptor> &descriptor_table();
 
 
-#define ZENO_DOP_DEFINE(Class, ...) \
-    static int _zeno_dop_define_##Class = (ZENO_NAMESPACE::dop::add_descriptor(#Class, std::make_unique<Class>, __VA_ARGS__), 1);
-
-
 }
 ZENO_NAMESPACE_END

@@ -95,19 +95,18 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 }
 
 
-struct ReadOBJMesh : dop::Node {
-    void apply() override {
-        auto path = get_input<std::string>(0);
-        auto mesh = std::make_shared<Mesh>();
-        std::ifstream fin(path);
-        [[unlikely]] if (!fin)
-            throw ztd::format_error("OSError: cannot open file for read: {}", path);
-        readMeshFromOBJ(fin, *mesh);
-        set_output(0, mesh);
-    }
-};
+static void ReadOBJMesh(dop::FuncContext *ctx) {
+    auto path = (std::string)ctx->inputs.at(0);
+    auto mesh = std::make_shared<Mesh>();
+    std::ifstream fin(path);
+    [[unlikely]] if (!fin)
+        throw ztd::format_error("OSError: cannot open file for read: {}", path);
+    readMeshFromOBJ(fin, *mesh);
+    ctx->outputs.at(0) = mesh;
+}
 
-ZENO_DOP_DEFINE(ReadOBJMesh, {{
+
+ZENO_DOP_DEFUN(ReadOBJMesh, {typeid(std::string)}, {{
     "mesh", "load mesh from .obj file",
 }, {
     {"path"},

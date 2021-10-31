@@ -18,7 +18,7 @@ struct If : dop::Node {
     void apply() override {}
 };
 
-ZENO_DOP_DEFINE(If, {{
+ZENO_DOP_DEFCLASS(If, {{
     "misc", "only runs one of the two chain by condition",
 }, {
     {"cond"},
@@ -42,7 +42,7 @@ struct ForBegin : dop::Node {
     }
 };
 
-ZENO_DOP_DEFINE(ForBegin, {{
+ZENO_DOP_DEFCLASS(ForBegin, {{
     "misc", "repeat a chain for multiple times (begin block)",
 }, {
     {"times"},
@@ -63,7 +63,7 @@ struct ForEnd : dop::Node {
     void apply() override {}
 };
 
-ZENO_DOP_DEFINE(ForEnd, {{
+ZENO_DOP_DEFCLASS(ForEnd, {{
     "misc", "repeat a chain for multiple times (end block)",
 }, {
     {"FOR"},
@@ -85,7 +85,7 @@ struct ListForeach : dop::Node {
     void apply() override {}
 };
 
-ZENO_DOP_DEFINE(ListForeach, {{
+ZENO_DOP_DEFCLASS(ListForeach, {{
     "misc", "apply for each elements in list",
 }, {
     {"list"},
@@ -102,7 +102,7 @@ struct PrintInt : dop::Node {
     }
 };
 
-ZENO_DOP_DEFINE(PrintInt, {{
+ZENO_DOP_DEFCLASS(PrintInt, {{
     "misc", "prints a integer",
 }, {
     {"value"},
@@ -116,7 +116,7 @@ struct Route : dop::Node {
     }
 };
 
-ZENO_DOP_DEFINE(Route, {{
+ZENO_DOP_DEFCLASS(Route, {{
     "misc", "always return the first input",
 }, {
     {"value"},
@@ -131,7 +131,7 @@ struct ToView : dop::Node {
     }
 };
 
-ZENO_DOP_DEFINE(ToView, {{
+ZENO_DOP_DEFCLASS(ToView, {{
     "misc", "send object to be viewed",
 }, {
     {"object"},
