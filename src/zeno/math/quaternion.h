@@ -14,7 +14,7 @@ struct quaternion_matrix {
     constexpr quaternion_matrix(math::vec4f const &q) {
         // https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
         auto s = 2 / dot(q, q);
-        auto [qi, qj, qk, qr] = std::make_tuple(q[0], q[1], q[2], q[3]);
+        auto [qi, qj, qk, qr] = q;
         m11 = 1 - s * (qj*qj + qk*qk);
         m12 = s * (qi*qj - qk*qr);
         m13 = s * (qi*qk + qj*qr);
@@ -27,7 +27,7 @@ struct quaternion_matrix {
     }
 
     constexpr math::vec3f operator*(math::vec3f const &v) const {
-        auto [vi, vj, vk] = std::make_tuple(v[0], v[1], v[2]);
+        auto [vi, vj, vk] = v;
         return {
             m11 * vi + m12 * vj + m13 * vk,
             m21 * vi + m22 * vj + m23 * vk,

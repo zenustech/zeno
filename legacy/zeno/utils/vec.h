@@ -5,7 +5,7 @@
 
 namespace zeno {
 
-using namespace ZENO_NAMESPACE::ztd::mathvec;
+using namespace ZENO_NAMESPACE::math;
 
 inline auto alltrue(auto x) {
     return vall(x);
