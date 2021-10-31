@@ -9,28 +9,46 @@ ZENO_NAMESPACE_BEGIN
 namespace math {
 
 
-template <class T1, class T2,
-          class T0 = decltype(std::declval<remove_vec_t<T1>>() + std::declval<remove_vec_t<T2>>())>
-    requires (requires (T0 t0) { std::min(t0, t0); })
-constexpr decltype(auto) min(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return (T0)std::min((T0)t1, (T0)t2); });
+#define _OP2(fname) \
+template <class T1, class T2, \
+          class T0 = decltype(std::declval<remove_vec_t<T1>>() + std::declval<remove_vec_t<T2>>())> \
+    requires (requires (T0 t0) { std::fname(t0, t0); }) \
+constexpr decltype(auto) fname(T1 const &t1, T2 const &t2) { \
+    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return (T0)std::fname((T0)t1, (T0)t2); }); \
 }
 
+_OP3(fma)
+_OP3(lerp)
+_OP3(clamp)
 
-template <class T1, class T2,
-          class T0 = decltype(std::declval<remove_vec_t<T1>>() + std::declval<remove_vec_t<T2>>())>
-    requires (requires (T0 t0) { std::max(t0, t0); })
-constexpr decltype(auto) max(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return (T0)std::max((T0)t1, (T0)t2); });
-}
+_OP2(max)
+_OP2(min)
+_OP2(fmax)
+_OP2(fmin)
+_OP2(fmod)
+_OP2(atan2)
+_OP2(pow)
 
+_OP1(sqrt)
+_OP1(log)
+_OP1(exp)
+_OP1(abs)
+_OP1(fabs)
+_OP1(floor)
+_OP1(ceil)
 
-template <class T1, class T2,
-          class T0 = decltype(std::declval<remove_vec_t<T1>>() + std::declval<remove_vec_t<T2>>())>
-    requires (requires (T0 t0) { std::pow(t0, t0); })
-constexpr decltype(auto) max(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return (T0)std::pow((T0)t1, (T0)t2); });
-}
+_OP1(sin)
+_OP1(cos)
+_OP1(tan)
+_OP1(asin)
+_OP1(acos)
+_OP1(atan)
+_OP1(sinh)
+_OP1(cosh)
+_OP1(tanh)
+_OP1(asinh)
+_OP1(acosh)
+_OP1(atanh)
 
 
 }
