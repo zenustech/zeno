@@ -11,6 +11,7 @@ ZENO_DOP_INTERFACE(Transform, {{
     {"object"},
     {"translate"},
     {"scaling"},
+    {"rotation"},
 }, {
     {"object"},
 }});
