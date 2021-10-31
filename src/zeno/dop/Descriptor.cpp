@@ -33,18 +33,15 @@ static int match_signature(Signature const &lhs, Signature const &rhs) {
 
 
 std::unique_ptr<Node> Overloading::create(Signature const &sig) const {
-    std::vector<std::reference_wrapper<FactoryFunctor const>> matches;
+    std::map<int, FactoryFunctor const *> matches;
     for (auto const &[key, factory]: factories) {
         if (int prio = match_signature(sig, key); prio != -1) {
-            if (matches.size() < prio + 1) {
-                matches.resize(prio + 1);
-            }
-            matches[prio] = std::cref(factory);
+            matches.emplace(prio, &factory);
         }
     }
     if (matches.empty())
         throw ztd::error("no suitable overloading found");
-    auto const &factory = matches[0].get();
+    auto const &factory = *matches.begin()->second;
     return factory();
 }
 
