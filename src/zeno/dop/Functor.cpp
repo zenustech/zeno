@@ -25,7 +25,12 @@ static int match_signature(FuncSignature const &lhs, FuncSignature const &rhs) {
 }
 
 
-Functor const &FuncOverloads::overload(FuncSignature const &sig) const {
+void FuncOverloads::invoke(FuncContext *ctx) const {
+    FuncSignature sig;
+    for (auto const &val: ctx->inputs) {
+        sig.push_back(val.type());
+    }
+
     std::map<int, Functor const *> matches;
     for (auto const &[key, func]: functors) {
         if (int prio = match_signature(sig, key); prio != -1) {
@@ -34,7 +39,8 @@ Functor const &FuncOverloads::overload(FuncSignature const &sig) const {
     }
     [[unlikely]] if (matches.empty())
         throw ztd::error("no suitable overloading found");
-    return *matches.begin()->second;
+    auto const &func = *matches.begin()->second;
+    func(ctx);
 }
 
 

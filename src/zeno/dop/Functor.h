@@ -27,7 +27,7 @@ using FuncSignature = std::vector<std::type_index>;
 struct FuncOverloads {
     std::map<FuncSignature, Functor> functors;
 
-    Functor const &overload(FuncSignature const &sig) const;
+    void invoke(FuncContext *ctx) const;
 };
 
 

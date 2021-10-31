@@ -39,13 +39,17 @@ int main()
     }
 
 #else
+
     auto n1 = dop::descriptor_table().at("ReadOBJMesh").create();
     n1->inputs.at(0) = dop::Input_Value{(std::string)"models/cube.obj"};
     n1->apply();
+    auto n2 = dop::descriptor_table();
+
     auto mesh = zany_cast<std::shared_ptr<types::Mesh>>(n1->outputs.at(0));
     for (auto x: mesh->vert.to_vector()) {
         printf("%f %f %f\n", x[0], x[1], x[2]);
     }
+
 #endif
 
     return 0;

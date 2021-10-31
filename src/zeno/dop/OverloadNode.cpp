@@ -14,12 +14,10 @@ void OverloadNode::apply() {
     ctx.inputs.reserve(inputs.size());
     for (int i = 0; i < inputs.size(); i++) {
         ctx.inputs.push_back(get_input(i));
-        sig.emplace_back(ctx.inputs.back().type());
     }
 
     ctx.outputs.resize(outputs.size());
-    auto func = overloading_table().at(desc->name).overload(sig);
-    func(&ctx);
+    overloading_table().at(desc->name).invoke(&ctx);
 
     for (int i = 0; i < ctx.outputs.size(); i++) {
         set_output(i, std::move(ctx.outputs[i]));
