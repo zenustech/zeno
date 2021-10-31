@@ -17,6 +17,7 @@ void OverloadNode::apply() {
         sig.emplace_back(ctx.inputs.back().type());
     }
 
+    ctx.outputs.resize(outputs.size());
     auto func = overloading_table().at(desc->name).overload(sig);
     func(&ctx);
 
