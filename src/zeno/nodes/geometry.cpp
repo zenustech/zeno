@@ -5,7 +5,7 @@ ZENO_NAMESPACE_BEGIN
 namespace {
 
 
-struct Transform : dop::OverloadingNode {
+struct Transform : dop::OverloadNode {
 };
 
 ZENO_DOP_DEFINE(Transform, {{

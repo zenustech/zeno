@@ -20,7 +20,7 @@ struct FuncContext {
 };
 
 
-using Functor = std::function<FuncContext *()>;
+using Functor = std::function<void(FuncContext *)>;
 using FuncSignature = std::vector<std::type_index>;
 
 

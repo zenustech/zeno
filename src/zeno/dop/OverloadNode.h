@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <zeno/dop/Functor.h>
 #include <zeno/dop/Node.h>
 
 
