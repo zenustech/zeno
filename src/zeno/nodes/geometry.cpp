@@ -9,7 +9,8 @@ ZENO_DOP_INTERFACE(Transform, {{
     "misc", "transform an object (by translation, scaling, and rotation)",
 }, {
     {"object"},
-    {"translation"},
+    {"translate"},
+    {"scaling"},
 }, {
     {"object"},
 }});
