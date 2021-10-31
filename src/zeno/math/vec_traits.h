@@ -6,7 +6,7 @@
 
 
 ZENO_NAMESPACE_BEGIN
-namespace zeno::math {
+namespace math {
 
 
 template <class T>

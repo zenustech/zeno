@@ -6,7 +6,7 @@
 
 
 ZENO_NAMESPACE_BEGIN
-namespace zeno::math {
+namespace math {
 
 
 template <is_not_vec T1, is_not_vec T2, class Func>
