@@ -39,7 +39,7 @@ int main()
     }
 
 #else
-    auto n1 = dop::descriptor_table().at("ReadOBJMesh").create({std::type_index(typeid(std::string))});
+    auto n1 = dop::descriptor_table().at("ReadOBJMesh").create();
     n1->inputs.at(0) = dop::Input_Value{(std::string)"models/cube.obj"};
     n1->apply();
     auto mesh = zany_cast<std::shared_ptr<types::Mesh>>(n1->outputs.at(0));
