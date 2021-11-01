@@ -56,13 +56,6 @@ struct vec {
         : vec(std::initializer_list<T>{t1, t2, (T)ts...})
     {}
 
-    constexpr explicit(N != 1) vec &operator=(T const &t) {
-        for (int i = 0; i < N; i++) {
-            data()[i] = t;
-        }
-        return *this;
-    }
-
     constexpr explicit(N != 1) vec(T const &t) {
         for (int i = 0; i < N; i++) {
             data()[i] = t;

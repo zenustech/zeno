@@ -1,6 +1,7 @@
 target_include_directories(zeno PUBLIC .)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
+#set(source dummy.cpp)
 target_sources(zeno PRIVATE ${source})
 
 if (ZENO_WITH_SYCL)

@@ -12,7 +12,7 @@ int main()
     std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
 #endif
 
-#if 1
+#if 0
     zycl::vector<int> buf;
 
     {
