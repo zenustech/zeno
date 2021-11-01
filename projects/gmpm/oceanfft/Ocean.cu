@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/PrimitiveObject.h>
 //-------attached some cuda library for FFT-----------------
 
 
@@ -119,7 +120,7 @@ namespace zeno {
         
         
         // update height map values based on output of FFT
-        __global__ void updateHeightmapKernel(float  *heightMap,
+        __global__ void updateHeightmapKernel(float2  *heightMap,
                                               float2 *ht,
                                               unsigned int width)
         {
@@ -130,7 +131,7 @@ namespace zeno {
             // cos(pi * (m1 + m2))
             float sign_correction = ((x + y) & 0x01) ? -1.0f : 1.0f;
         
-            heightMap[i] = ht[i].x * sign_correction;
+            heightMap[i].x = ht[i].x * sign_correction;
         }
 
 
@@ -144,14 +145,14 @@ struct OceanFFT : zeno::IObject{
     ~OceanFFT() {
         if (d_h0 != nullptr) {
             cudaFree(d_h0);
-            cudaFree(h_h0);
             cudaFree(d_ht);
-            cudaFree(d_slope);
             cudaFree(Dx);
             cudaFree(Dz);
-            cudaFree(g_hDx);
-            cudaFree(g_hDz);
+            free(h_h0);
             free(g_hhptr);
+            free(g_hDx);
+            free(g_hDz);
+
         }
     }
 
@@ -160,15 +161,11 @@ struct OceanFFT : zeno::IObject{
     float2 *d_h0{nullptr};   // heightfield at time 0
     float2 *h_h0{nullptr};
     float2 *d_ht{nullptr};   // heightfield at time t
-    float2 *d_slope{nullptr};
     float2 *Dx{nullptr};
     float2 *Dz{nullptr};
     float2 *g_hDx{nullptr};
     float2 *g_hDz{nullptr};
-    // pointers to device object
-    float *g_hptr{nullptr};
-    float *g_hhptr{nullptr};
-    float2 *g_sptr{nullptr};
+    float2 *g_hhptr{nullptr};
 
 
     // simulation parameters
@@ -238,7 +235,7 @@ void UpdateDxKernel(float2  *Dx,float2 *Dz, unsigned int width, unsigned int hei
     
     
 
-void UpdateHeightmapKernel(float  *d_heightMap,
+void UpdateHeightmapKernel(float2  *d_heightMap,
     float2 *d_ht,
     unsigned int width,
     unsigned int height)
@@ -381,7 +378,7 @@ struct UpdateHeightmap : zeno::INode {
 
         auto real_ocean = get_input<OceanFFT>("real_ocean");
 
-        UpdateHeightmapKernel(real_ocean->d_heightMap, real_ocean->d_ht, real_ocean->width, real_ocean->height);
+        UpdateHeightmapKernel(real_ocean->d_ht, real_ocean->d_ht, real_ocean->width, real_ocean->height);
     }
 };
 
@@ -402,48 +399,51 @@ struct MakeCuOcean : zeno::INode {
 
         cuOceanObj->meshSize = get_input<zeno::NumericObject>("meshSize")->get<int>();
         // create FFT plan
-        //checkCudaErrors(cufftPlan2d(&cuOceanObj->fftPlan, cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C));
         cufftPlan2d(&cuOceanObj->fftPlan, cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
 
-        //phillip spectrum
-        phillips(cuOceanObj->Kx, cuOceanObj->Ky, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
+        
 
         //other parameters
         cuOceanObj->WaveExponent = get_input<zeno::NumericObject>("WaveExponent")->get<int>();
         cuOceanObj->choppyness   = get_input<zeno::NumericObject>("choppyness")->get<float>();
-        cuOceanObj->spectrumW    = get_input<zeno::NumericObject>("spectrumW")->get<int>();        
-        cuOceanObj->spectrumH    = get_input<zeno::NumericObject>("spectrumH")->get<int>();
-        cuOceanObj->frameCompare = get_input<zeno::NumericObject>("frameCompare")->get<int>();
-        cuOceanObj->animationRate= get_input<zeno::NumericObject>("animationRate")->get<float>();
-        cuOceanObj->prevTime = get_input<zeno::NumericObject>("prevTime")->get<float>();
-        cuOceanObj->animTime = get_input<zeno::NumericObject>("animTime")->get<float>();        
+        //meshSize = 2^waveExponent
+        //spectrumH/W = meshSize
+        //gravity=?
+        //dir = 
+        //timeScale
+        //timeshift
+        //patchSize = ?
+        //speed = ?
+        //Kx,Ky = ?
+
+        //phillip spectrum
+        phillips(cuOceanObj->Kx, cuOceanObj->Ky, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
 
         cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->meshSize);
         cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize);
-        cudaMalloc((void**)&(cuOceanObj->d_slope),sizeof(float2)*cuOceanObj->meshSize);
-        cudaMalloc((void**)&(cuOceanObj->g_hptr), sizeof(float)*cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cuOceanObj->g_hhptr = (float*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cudaMalloc((void**)&(cuOceanObj->g_sptr), sizeof(float2)*cuOceanObj->meshSize*cuOceanObj->meshSize);
+
+        cuOceanObj->g_hhptr = (float2*)malloc(sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
+
         cudaMalloc((void**)&(cuOceanObj->Dx), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
         cudaMalloc((void**)&(cuOceanObj->Dz), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
       
 
         cuOceanObj->g_hDz = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
         cuOceanObj->g_hDx = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        // cudaMalloc((void**)&(cuOceanObj->g_hDz), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        // cudaMalloc((void**)&(cuOceanObj->g_hDx), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
         cuOceanObj->h_h0 = (float2*)malloc(sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
 
         generate_h0(cuOceanObj);
         //cpu to gpu
-        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->h_h0, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(cuOceanObj->g_hhptr, cuOceanObj->d_ht, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->Dx, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->Dz, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
  
         set_output("gpuOcean", cuOceanObj);
     }
 };
 
 ZENDEFNODE(MakeCuOcean,
-        { /* inputs:  */ { "WaveExponent", "choppyness", "spectrumW", "spectrumH", "frameCompare", "animationRate","prevTime", "animTime", "meshSize" }, 
+        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float", "flowDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "5.0"}}, 
           /* outputs: */ { "gpuOcean", }, 
           /* params: */  {  }, 
           /* category: */ {"Ocean",}});
@@ -469,37 +469,51 @@ struct OceanCompute : zeno::INode {
     auto t = get_input<zeno::NumericObject>("time")->get<float>();
 
     auto CalOcean = get_input<OceanFFT>("ocean_FFT");
-    //  size_t num_bytes;
 
-    // checkCudaErrors(cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht, CalOcean->d_ht, CUFFT_INVERSE));
-    // checkCudaErrors(cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx, CalOcean->Dx, CUFFT_INVERSE));    
-    // checkCudaErrors(cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz, CalOcean->Dz, CUFFT_INVERSE));
     
     //--------------------------------------------------------------------------------------------------
-    GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht, CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->animTime, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht, CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, t, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht, CalOcean->d_ht, CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx, CalOcean->Dx, CUFFT_INVERSE);    
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz, CalOcean->Dz, CUFFT_INVERSE);
    
 
-    UpdateHeightmapKernel(CalOcean->g_hptr, CalOcean->d_ht, CalOcean->meshSize, CalOcean->meshSize);
-    GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht,CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, t, CalOcean->patchSize);
-    cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht, CalOcean->d_ht, CUFFT_INVERSE);
-
-    //generate vertex positions
+    UpdateHeightmapKernel(CalOcean->d_ht, CalOcean->d_ht, CalOcean->meshSize, CalOcean->meshSize);
+    //choppy
     UpdateDxKernel(CalOcean->Dx, CalOcean->Dz, CalOcean->meshSize, CalOcean->meshSize);
 
 
-    cudaMemcpy(CalOcean->d_h0, CalOcean->h_h0, CalOcean->spectrumSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(CalOcean->g_hhptr, CalOcean->d_ht, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(CalOcean->g_hDx, CalOcean->Dx, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(CalOcean->g_hDz, CalOcean->Dz, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
 
-    set_output("OceanMesh", CalOcean);
+
+    auto grid = std::make_shared<zeno::PrimitiveObject>();
+    //here goes the zeno part
+    auto &pos = grid->add_attr<vec3f>("pos");
+    auto &vel = grid->add_attr<vec3f>("vel");
+    grid->resize(CalOcean->meshSize * CalOcean->meshSize);
+    int k = 0;
+    float h = (float)CalOcean->patchSize / (float)(CalOcean->meshSize - 1);
+    for(int j=0; j<CalOcean->meshSize;j++)
+    {
+        for(int i=0;i<CalOcean->meshSize;i++)
+        {
+            pos.push_back(zeno::vec3f(i, 0, j));
+            vel.push_back(zeno::vec3f(CalOcean->g_hDx[k].x, CalOcean->g_hhptr[k].x, CalOcean->g_hDz[k].x));
+        }
+    }
+    
+    grid->userData.set("h", h);
+    grid->userData.set("transform", 0.5f * zeno::vec3f(CalOcean->patchSize, 0, CalOcean->patchSize));
+    set_output("OceanData", grid);
     }
 };
 
 
 ZENDEFNODE(OceanCompute,
-        { /* inputs:  */ {"time","ocean_FFT", "Grid",}, 
-          /* outputs: */ { "OceanMesh", }, 
+        { /* inputs:  */ {"time","ocean_FFT", }, 
+          /* outputs: */ { "OceanData", }, 
           /* params: */  {  }, 
           /* category: */ {"Ocean",}});
 
