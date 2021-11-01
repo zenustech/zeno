@@ -111,10 +111,13 @@ build/editor/zeno_editor
 
 ## References
 
-- [vcpkg user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
+- [VCPKG user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
 - [CMake documentation](https://cmake.org/cmake/help/latest/)
 - [Git documentation](https://git-scm.com/doc)
 - [C++ references](https://en.cppreference.com/w/)
+- [Qt5 documentation](https://doc.qt.io/qt-5/)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
-- [Qt 5 documentation](https://doc.qt.io/qt-5/)
+- [DPC++ documentation](https://intel.github.io/llvm-docs/)
+- [OneAPI references](https://docs.oneapi.io/versions/latest/dpcpp/iface/)
+- [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020-provisional.pdf)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)

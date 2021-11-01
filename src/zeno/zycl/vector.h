@@ -58,24 +58,12 @@ struct _M_as_vector : Vector {
     }
 };
 
-template <class T, class DstAcc, class SrcAcc>
-struct _M_transfer_kernel {
-    DstAcc dst_acc;
-    SrcAcc src_acc;
-
-    void operator()(item<1> idx) const {
-        dst_acc[idx] = src_acc[idx];
-    }
-};
-
 template <class T>
-static void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
-    queue().submit([&] (handler &cgh) {
-        auto dst_acc = buf_dst.template get_access<access::mode::discard_write>();
-        auto src_acc = buf_src.template get_access<access::mode::read>();
-        using Kernel = _M_transfer_kernel<T, decltype(dst_acc), decltype(src_acc)>;
-        Kernel kernel{dst_acc, src_acc};
-        cgh.parallel_for<Kernel>(range<1>(size), kernel);
+static void _M_transfer(queue &q, buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
+    q.submit([&] (handler &cgh) {
+        auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh), range<1>(size));
+        auto src_acc = buf_src.template get_access<access::mode::read>(cgh, range<1>(size));
+        cgh.copy(dst_acc, src_acc);
     });
 }
 
@@ -96,7 +84,7 @@ struct vector {
     void resize(size_t size) {
         if (_M_size) {
             auto old_buf = std::exchange(_M_buf, buffer<T, 1>(std::max(size, (size_t)1)));
-            _M_transfer<T>(old_buf, _M_buf, std::min(size, _M_size));
+            _M_transfer<T>(queue(), old_buf, _M_buf, std::min(size, _M_size));
             _M_size = size;
         } else {
             _M_buf = buffer<T, 1>(std::max(size, (size_t)1));

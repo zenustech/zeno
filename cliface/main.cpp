@@ -12,7 +12,7 @@ int main()
     std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
 #endif
 
-#if 0
+#if 1
     zycl::vector<int> buf;
 
     {
@@ -22,6 +22,8 @@ int main()
         }
     }
 
+    buf.resize(40);
+
     {
         que.submit([&] (zycl::handler &cgh) {
             auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
@@ -30,6 +32,8 @@ int main()
             });
         });
     }
+
+    buf.resize(48);
 
     {
         auto axr_buf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
