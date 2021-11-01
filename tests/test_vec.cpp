@@ -11,9 +11,7 @@ protected:
 TEST_P(test_vec, test_clamp) {
     math::vec3f x = GetParam();
     x = clamp(x, -0.5f, 1);
-    EXPECT_TRUE(
-            vall(x == min(max(x, math::vec3f(-0.5f)), math::vec3f(1.0f)))
-            ) << SHOW_VAR(x);
+    EXPECT_EQ(x, min(max(x, math::vec3f(-0.5f)), math::vec3f(1.0f)));
 }
 
 INSTANTIATE_TEST_SUITE_P(
