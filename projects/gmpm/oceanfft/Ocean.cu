@@ -194,7 +194,7 @@ struct OceanFFT : zeno::IObject{
     bool autoTest;
 
     float timeScale;
-    float timeshift;
+    float timeShift;
     float speed;
 
     float choppyness;
@@ -317,7 +317,7 @@ void generate_h0(std::shared_ptr<OceanFFT> OceanObj)
             float kx = (-(int)OceanObj->meshSize / 2.0f + x) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
             float ky = (-(int)OceanObj->meshSize / 2.0f + y) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
 
-            float P = sqrtf(phillips(OceanObj->ocdir, OceanObj->windDir, OceanObj->windSpeed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
+            float P = sqrtf(phillips(OceanObj->ocdir, OceanObj->windDir, OceanObj->speed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
 
             if (kx == 0.0f && ky == 0.0f)
             {
@@ -401,7 +401,6 @@ struct MakeCuOcean : zeno::INode {
         auto cuOceanObj = std::make_shared<OceanFFT>();
         auto o2 = std::make_shared<OceanFFT>();
 
-        cuOceanObj->meshSize = get_input<zeno::NumericObject>("meshSize")->get<int>();
         // create FFT plan
         cufftPlan2d(&cuOceanObj->fftPlan, cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
 
@@ -409,11 +408,15 @@ struct MakeCuOcean : zeno::INode {
 
         //other parameters
         cuOceanObj->WaveExponent = get_input<zeno::NumericObject>("WaveExponent")->get<int>();
-        cuOceanObj->choppyness   = get_input<zeno::NumericObject>("choppyness")->get<float>();
+        cuOceanObj->choppyness   = get_input<zeno::NumericObject>("chop")->get<float>();
+
         //meshSize = 2^waveExponent
-        cuOceanObj->meshSize   = get_input<zeno::NumericObject>("meshSize")->get<float>();
+        cuOceanObj->meshSize  = 1<<cuOceanObj->WaveExponent;
+
         //spectrumH/W = meshSize
-        cuOceanObj->spectrumH   = get_input<zeno::NumericObject>("spectrumH")->get<float>();
+        cuOceanObj->spectrumH   = cuOceanObj->meshSize + 1;
+        cuOceanObj->spectrumW   = cuOceanObj->meshSize + 4;
+        cuOceanObj->spectrumSize = cuOceanObj->spectrumH * cuOceanObj->spectrumW;
         //gravity=
         cuOceanObj->g   = get_input<zeno::NumericObject>("gravity")->get<float>();
         //patchSize = 
@@ -423,11 +426,11 @@ struct MakeCuOcean : zeno::INode {
         //timeScale
         //timeshift
         cuOceanObj->timeScale  = get_input<zeno::NumericObject>("timeScale")->get<float>();
-        cuOceanObj->timeshift  = get_input<zeno::NumericObject>("timeshift")->get<float>();
+        cuOceanObj->timeShift  = get_input<zeno::NumericObject>("timeshift")->get<float>();
         //speed = 
         cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>();
         //Kx,Ky = 
-        cuOceanObj-> ocdir = get_input<zeno::NumericObject>("ocdir")->get<float>()/(360.0*2*CUDART_PI_F);
+        cuOceanObj-> ocdir = get_input<zeno::NumericObject>("flowDir")->get<float>()/(360.0*2*CUDART_PI_F);
 
 
 
@@ -435,8 +438,8 @@ struct MakeCuOcean : zeno::INode {
         //phillip spectrum
         phillips(cuOceanObj->ocdir, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
 
-        cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->meshSize);
-        cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize);
+        cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->spectrumSize);
+        cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize*cuOceanObj->meshSize);
 
         cuOceanObj->g_hhptr = (float2*)malloc(sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
 
@@ -446,20 +449,18 @@ struct MakeCuOcean : zeno::INode {
 
         cuOceanObj->g_hDz = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
         cuOceanObj->g_hDx = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cuOceanObj->h_h0 = (float2*)malloc(sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
+        cuOceanObj->h_h0 = (float2*)malloc(sizeof(float2) *cuOceanObj->spectrumSize);
 
         generate_h0(cuOceanObj);
         //cpu to gpu
-        cudaMemcpy(cuOceanObj->g_hhptr, cuOceanObj->d_ht, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
-        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->Dx, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
-        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->Dz, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(cuOceanObj->h_h0, cuOceanObj->d_h0, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
  
         set_output("gpuOcean", cuOceanObj);
     }
 };
 
 ZENDEFNODE(MakeCuOcean,
-        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float", "flowDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "5.0"}}, 
+        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float", "flowDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "5.0"}, {"float", "timeshift", "0.0"}}, 
           /* outputs: */ { "gpuOcean", }, 
           /* params: */  {  }, 
           /* category: */ {"Ocean",}});
@@ -488,7 +489,7 @@ struct OceanCompute : zeno::INode {
 
     
     //--------------------------------------------------------------------------------------------------
-    GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht, CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, t, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht, CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht, CalOcean->d_ht, CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx, CalOcean->Dx, CUFFT_INVERSE);    
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz, CalOcean->Dz, CUFFT_INVERSE);
