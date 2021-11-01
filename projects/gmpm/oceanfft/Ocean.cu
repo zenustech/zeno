@@ -169,11 +169,11 @@ struct OceanFFT : zeno::IObject{
 
 
     // simulation parameters
-    float g{9.81f};              // gravitational constant
+    float g;              // gravitational constant
     float A{1e-7f};              // wave scale factor
-    float patchSize{100};        // patch size
+    float patchSize;        // patch size
     float windSpeed{100.0f};
-    float windDir{CUDART_PI_F/3.0f};
+    float windDir;
     float dir_depend{0.07f};
     float Kx;
     float Ky;
@@ -183,7 +183,7 @@ struct OceanFFT : zeno::IObject{
     float in_width;
     float out_width;
     float out_height;
-
+    float ocdir;
     float animTime{0.0f};
     float prevTime{0.0f};
     float animationRate{-0.001f};
@@ -192,6 +192,10 @@ struct OceanFFT : zeno::IObject{
     unsigned int width;
     unsigned int height;
     bool autoTest;
+
+    float timeScale;
+    float timeshift;
+    float speed;
 
     float choppyness;
     int WaveExponent = 8;
@@ -272,10 +276,10 @@ float gauss()
 }
 
 //free function
-float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depend, float g)
+float phillips(float ocdir, float Vdir, float V, float A, float dir_depend, float g)
 //float phillips(std::shared_ptr<OceanFFT> cuOceanObj)
 {
-            float k_squared = Kx * Kx + Ky * Ky;
+            float k_squared = cosf(ocdir) * cosf(ocdir) + sinf(ocdir) * sinf(ocdir);
 
             if (k_squared == 0.0f)
             {
@@ -285,9 +289,9 @@ float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depen
             // largest possible wave from constant wind of velocity v
             float L = V * V / g;
 
-            float k_x = Kx / sqrtf(k_squared);
-            float k_y = Ky / sqrtf(k_squared);
-            float w_dot_k = k_x * cosf(Vdir) + k_y * sinf(Vdir);
+            // float k_x = Kx / sqrtf(k_squared);
+            // float k_y = Ky / sqrtf(k_squared);
+            float w_dot_k = cosf(ocdir) * cosf(Vdir) + sinf(ocdir) * sinf(Vdir);
 
             float phil= A * expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
 
@@ -313,7 +317,7 @@ void generate_h0(std::shared_ptr<OceanFFT> OceanObj)
             float kx = (-(int)OceanObj->meshSize / 2.0f + x) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
             float ky = (-(int)OceanObj->meshSize / 2.0f + y) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
 
-            float P = sqrtf(phillips(kx, ky, OceanObj->windDir, OceanObj->windSpeed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
+            float P = sqrtf(phillips(OceanObj->ocdir, OceanObj->windDir, OceanObj->windSpeed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
 
             if (kx == 0.0f && ky == 0.0f)
             {
@@ -407,17 +411,29 @@ struct MakeCuOcean : zeno::INode {
         cuOceanObj->WaveExponent = get_input<zeno::NumericObject>("WaveExponent")->get<int>();
         cuOceanObj->choppyness   = get_input<zeno::NumericObject>("choppyness")->get<float>();
         //meshSize = 2^waveExponent
+        cuOceanObj->meshSize   = get_input<zeno::NumericObject>("meshSize")->get<float>();
         //spectrumH/W = meshSize
-        //gravity=?
+        cuOceanObj->spectrumH   = get_input<zeno::NumericObject>("spectrumH")->get<float>();
+        //gravity=
+        cuOceanObj->g   = get_input<zeno::NumericObject>("gravity")->get<float>();
+        //patchSize = 
+        cuOceanObj->patchSize  = get_input<zeno::NumericObject>("patchSize")->get<float>();
         //dir = 
+        cuOceanObj->windDir  = get_input<zeno::NumericObject>("windDir")->get<float>()/(360.0*2*CUDART_PI_F);
         //timeScale
         //timeshift
-        //patchSize = ?
-        //speed = ?
-        //Kx,Ky = ?
+        cuOceanObj->timeScale  = get_input<zeno::NumericObject>("timeScale")->get<float>();
+        cuOceanObj->timeshift  = get_input<zeno::NumericObject>("timeshift")->get<float>();
+        //speed = 
+        cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>();
+        //Kx,Ky = 
+        cuOceanObj-> ocdir = get_input<zeno::NumericObject>("ocdir")->get<float>()/(360.0*2*CUDART_PI_F);
+
+
+
 
         //phillip spectrum
-        phillips(cuOceanObj->Kx, cuOceanObj->Ky, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
+        phillips(cuOceanObj->ocdir, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
 
         cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->meshSize);
         cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize);
@@ -523,7 +539,6 @@ ZENDEFNODE(OceanCompute,
 
 
 }
-
 
 
 
