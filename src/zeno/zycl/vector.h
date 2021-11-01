@@ -59,8 +59,8 @@ struct _M_as_vector : Vector {
 };
 
 template <class T>
-static void _M_transfer(queue &q, buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
-    q.submit([&] (handler &cgh) {
+static void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
+    queue().submit([&] (handler &cgh) {
         auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh, range<1>(size));
         auto src_acc = buf_src.template get_access<access::mode::read>(cgh, range<1>(size));
         cgh.copy(dst_acc, src_acc);
@@ -84,7 +84,7 @@ struct vector {
     void resize(size_t size) {
         if (_M_size) {
             auto old_buf = std::exchange(_M_buf, buffer<T, 1>(std::max(size, (size_t)1)));
-            _M_transfer<T>(queue(), old_buf, _M_buf, std::min(size, _M_size));
+            _M_transfer<T>(old_buf, _M_buf, std::min(size, _M_size));
             _M_size = size;
         } else {
             _M_buf = buffer<T, 1>(std::max(size, (size_t)1));
