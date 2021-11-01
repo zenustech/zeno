@@ -36,11 +36,12 @@ struct vec {
     constexpr vec &operator=(vec &&) = default;
 
     constexpr bool operator==(vec const &) const = default;
-    constexpr bool operator<=>(vec const &) const = default;
+    constexpr bool operator!=(vec const &) const = default;
     constexpr bool operator<=(vec const &) const = default;
     constexpr bool operator>=(vec const &) const = default;
     constexpr bool operator<(vec const &) const = default;
     constexpr bool operator>(vec const &) const = default;
+    constexpr int operator<=>(vec const &) const = default;
 
     constexpr vec(std::initializer_list<T> const &ts) {
         auto it = ts.begin();
