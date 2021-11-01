@@ -1,11 +1,11 @@
 #pragma once
 
 
-#include "vec_operators.h"
+#include "vec_elmwise.h"
 
 
 ZENO_NAMESPACE_BEGIN
-namespace math::bvec {
+namespace math {
 
 
 template <size_t N, class T1>
