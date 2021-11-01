@@ -40,14 +40,16 @@ struct UserData {
         return *safe_any_cast<std::shared_ptr<T>>(it->second);
     }
 
+#if 0
     template <class T = Any>
     inline void set(std::string const &name, T const &value) {
         m_data[name] = std::make_shared<T>(value);
     }
+#endif
 
     template <class T = Any>
     inline void set(std::string const &name, T &&value) {
-        m_data[name] = std::make_shared<T>(std::move(value));
+        m_data[name] = std::make_shared<std::remove_cv_t<std::remove_reference_t<T>>>(std::forward<T>(value));
     }
 
     inline void del(std::string const &name) {
