@@ -33,9 +33,9 @@ static void TransformMesh(dop::FuncContext *ctx) {
                 axr_vert[idx] = vert;
             });
         }
-        , ztd::make_monovariant(vany(translate != math::vec3f(0)), translate)
-        , ztd::make_monovariant(vany(scaling != math::vec3f(1)), scaling)
-        , ztd::make_monovariant(vany(rotation != math::vec4f(0, 0, 0, 1)), rotmat)
+        , ztd::make_monovariant(translate != math::vec3f(0), translate)
+        , ztd::make_monovariant(scaling != math::vec3f(1), scaling)
+        , ztd::make_monovariant(rotation != math::vec4f(0, 0, 0, 1), rotmat)
         );
     });
 

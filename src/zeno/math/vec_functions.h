@@ -71,5 +71,10 @@ _OP1(acosh)
 _OP1(atanh)
 
 
+#undef _OP3
+#undef _OP2
+#undef _OP1
+
+
 }
 ZENO_NAMESPACE_END
