@@ -61,7 +61,7 @@ struct _M_as_vector : Vector {
 template <class T>
 static void _M_transfer(queue &q, buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
     q.submit([&] (handler &cgh) {
-        auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh), range<1>(size));
+        auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh, range<1>(size));
         auto src_acc = buf_src.template get_access<access::mode::read>(cgh, range<1>(size));
         cgh.copy(dst_acc, src_acc);
     });
