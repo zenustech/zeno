@@ -5,8 +5,8 @@
 
 namespace zeno {
 
-using namespace ZENO_NAMESPACE::ztd::random;
-using namespace ZENO_NAMESPACE::ztd::randseed;
-using namespace ZENO_NAMESPACE::ztd::randint;
+using ZENO_NAMESPACE::ztd::random;
+using ZENO_NAMESPACE::ztd::randseed;
+using ZENO_NAMESPACE::ztd::randint;
 
 }

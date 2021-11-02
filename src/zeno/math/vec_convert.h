@@ -12,8 +12,14 @@ namespace math {
 
 template <is_not_vec T0, size_t N, is_not_vec T1>
     requires (requires (T1 t1) { (T0)t1; })
-constexpr auto vcast(vec<N, T1> const &t1) {
+constexpr vec<N, T0> vcast(vec<N, T1> const &t1) {
     return (vec<N, T0>)t1;
+}
+
+template <is_not_vec T0, is_not_vec T1>
+    requires (requires (T1 t1) { (T0)t1; })
+constexpr T0 vcast(T1 const &t1) {
+    return (T0)t1;
 }
 
 
