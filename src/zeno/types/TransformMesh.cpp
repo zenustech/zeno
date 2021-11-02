@@ -11,10 +11,10 @@ namespace {
 
 
 static void TransformMesh(dop::FuncContext *ctx) {
-    auto mesh = ctx->inputs.at(0).get<Mesh>();
-    auto translate = ctx->inputs.at(1).cast<math::vec3f>().value_or(math::vec3f(0));
-    auto scaling = ctx->inputs.at(2).cast<math::vec3f>().value_or(math::vec3f(1));
-    auto rotation = ctx->inputs.at(3).cast<math::vec4f>().value_or(math::vec4f(0, 0, 0, 1));
+    auto mesh = ztd::cast<Mesh>(ctx->inputs.at(0));
+    auto translate = *ztd::cast<math::vec3f>(ctx->inputs.at(1));
+    auto scaling = *ztd::cast<math::vec3f>(ctx->inputs.at(2));
+    auto rotation = *ztd::cast<math::vec4f>(ctx->inputs.at(3));
     auto rotmat = math::quaternion_matrix(rotation);
 
     zycl::queue().submit([&] (zycl::handler &cgh) {
@@ -43,7 +43,7 @@ static void TransformMesh(dop::FuncContext *ctx) {
 }
 
 
-ZENO_DOP_IMPLEMENT(Transform, TransformMesh, {typeid(std::shared_ptr<Mesh>)});
+ZENO_DOP_IMPLEMENT(Transform, TransformMesh, {typeid(Mesh)});
 
 
 }

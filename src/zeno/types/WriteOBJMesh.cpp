@@ -43,7 +43,7 @@ static void WriteOBJMesh(dop::FuncContext *ctx) {
 }
 
 
-ZENO_DOP_DEFUN(WriteOBJMesh, ({typeid(Mesh), typeid(std::string)}), {{
+ZENO_DOP_DEFUN(WriteOBJMesh, {}, {{
     "mesh", "save mesh to .obj file",
 }, {
     {"mesh"},
