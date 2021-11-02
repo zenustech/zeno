@@ -97,12 +97,13 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 static void ReadOBJMesh(dop::FuncContext *ctx) {
     auto path = value_cast<std::string>(ctx->inputs.at(0));
-    auto mesh = std::make_unique<Mesh>();
+    auto mesh = std::make_shared<Mesh>();
     std::ifstream fin(path);
     [[unlikely]] if (!fin)
         throw ztd::format_error("OSError: cannot open file for read: {}", path);
     readMeshFromOBJ(fin, *mesh);
     ctx->outputs.at(0) = std::move(mesh);
+    printf("%s!!!!\n", ctx->outputs.at(0).type().name());
 }
 
 
