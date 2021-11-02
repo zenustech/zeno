@@ -8,7 +8,7 @@ namespace ztd {
 inline namespace _random_h {
 
 template <class T = unsigned int>
-static inline T irand(unsigned int i) {
+static inline constexpr T randint(unsigned int i) {
 	unsigned int value = (i ^ 61) ^ (i >> 16);
 	value *= 9;
 	value ^= value << 4;
@@ -18,12 +18,12 @@ static inline T irand(unsigned int i) {
 }
 
 template <class T = float>
-static inline T frand(unsigned int i) {
-    return (T)irand(i) / (T)4294967296;
+static inline constexpr T random(unsigned int i) {
+    return (T)randint(i) / (T)4294967296;
 }
 
 template <class T = float>
-static inline T frand() {
+static inline T random() {
 #ifdef _WIN32
     return (T)rand() / (T)RAND_MAX;
 #else
@@ -31,7 +31,7 @@ static inline T frand() {
 #endif
 }
 
-static inline void srand(unsigned long i) {
+static inline void randseed(unsigned long i) {
     srand(i);
 #ifndef _WIN32
     srand48(i);

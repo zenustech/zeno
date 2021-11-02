@@ -109,13 +109,13 @@ struct NumericRandom : INode {
             scale *= 2.0f;
         }
         if (dim == 1) {
-            value->set(offs + scale * float(frand()));
+            value->set(offs + scale * float(random()));
         } else if (dim == 2) {
-            value->set(offs + scale * zeno::vec2f(frand(), frand()));
+            value->set(offs + scale * zeno::vec2f(random(), random()));
         } else if (dim == 3) {
-            value->set(offs + scale * zeno::vec3f(frand(), frand(), frand()));
+            value->set(offs + scale * zeno::vec3f(random(), random(), random()));
         } else if (dim == 4) {
-            value->set(offs + scale * zeno::vec4f(frand(), frand(), frand(), frand()));
+            value->set(offs + scale * zeno::vec4f(random(), random(), random(), random()));
         } else {
             char buf[1024];
             sprintf(buf, "invalid dim for NumericRandom: %d\n", dim);
@@ -136,7 +136,7 @@ ZENDEFNODE(NumericRandom, {
 struct SetRandomSeed : INode {
     virtual void apply() override {
         auto seed = get_input<NumericObject>("seed")->get<int>();
-        zeno::srand(seed);
+        ztd::randseed(seed);
         if (has_input2("routeIn")) {
             set_output2("routeOut", get_input2("routeIn"));
         } else {

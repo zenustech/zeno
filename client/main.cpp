@@ -73,9 +73,8 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    ztd::any_ptr p;
-    std::cout << sizeof(p) << std::endl;
-    std::cout << p.type().name() << std::endl;
+    math::vec3i v;
+    math::clamp(1, v, 4);
 
     return 0;
 }
