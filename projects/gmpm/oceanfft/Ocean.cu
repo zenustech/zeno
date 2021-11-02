@@ -170,7 +170,7 @@ struct OceanFFT : zeno::IObject{
 
     // simulation parameters
     float g;              // gravitational constant
-    float A{1e-7f};              // wave scale factor
+    float A{1e-5f};              // wave scale factor
     float patchSize;        // patch size
     float windSpeed{100.0f};
     float windDir;
@@ -276,10 +276,10 @@ float gauss()
 }
 
 //free function
-float phillips(float ocdir, float Vdir, float V, float A, float dir_depend, float g)
+float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depend, float g)
 //float phillips(std::shared_ptr<OceanFFT> cuOceanObj)
 {
-            float k_squared = cosf(ocdir) * cosf(ocdir) + sinf(ocdir) * sinf(ocdir);
+            float k_squared = Kx*Kx + Ky*Ky;
 
             if (k_squared == 0.0f)
             {
@@ -289,9 +289,9 @@ float phillips(float ocdir, float Vdir, float V, float A, float dir_depend, floa
             // largest possible wave from constant wind of velocity v
             float L = V * V / g;
 
-            // float k_x = Kx / sqrtf(k_squared);
-            // float k_y = Ky / sqrtf(k_squared);
-            float w_dot_k = cosf(ocdir) * cosf(Vdir) + sinf(ocdir) * sinf(Vdir);
+            float k_x = Kx / sqrtf(k_squared);
+            float k_y = Ky / sqrtf(k_squared);
+            float w_dot_k = k_x * cosf(Vdir) + k_y * sinf(Vdir);
 
             float phil= A * expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
 
@@ -302,8 +302,8 @@ float phillips(float ocdir, float Vdir, float V, float A, float dir_depend, floa
             }
 
             // damp out waves with very small length w << l
-            float w = L / 10000;
-            phil *= expf(-k_squared * w * w);
+            //float w = L / 10000;
+            //phil *= expf(-k_squared * w * w);
 
             return phil;
 }
@@ -317,8 +317,7 @@ void generate_h0(std::shared_ptr<OceanFFT> OceanObj)
             float kx = (-(int)OceanObj->meshSize / 2.0f + x) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
             float ky = (-(int)OceanObj->meshSize / 2.0f + y) * (2.0f * CUDART_PI_F / OceanObj->patchSize);
 
-            float P = sqrtf(phillips(OceanObj->ocdir, OceanObj->windDir, OceanObj->speed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
-
+            float P = sqrtf(phillips(kx, ky, OceanObj->windDir, OceanObj->speed, OceanObj->A, OceanObj->dir_depend,OceanObj->g));
             if (kx == 0.0f && ky == 0.0f)
             {
                 P = 0.0f;
@@ -399,10 +398,8 @@ struct MakeCuOcean : zeno::INode {
     {
 
         auto cuOceanObj = std::make_shared<OceanFFT>();
-        auto o2 = std::make_shared<OceanFFT>();
 
-        // create FFT plan
-        cufftPlan2d(&cuOceanObj->fftPlan, cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
+        
 
         
 
@@ -422,21 +419,20 @@ struct MakeCuOcean : zeno::INode {
         //patchSize = 
         cuOceanObj->patchSize  = get_input<zeno::NumericObject>("patchSize")->get<float>();
         //dir = 
-        cuOceanObj->windDir  = get_input<zeno::NumericObject>("windDir")->get<float>()/(360.0*2*CUDART_PI_F);
+        cuOceanObj->windDir  = get_input<zeno::NumericObject>("windDir")->get<float>()/360.0*2.0*CUDART_PI_F;
         //timeScale
         //timeshift
         cuOceanObj->timeScale  = get_input<zeno::NumericObject>("timeScale")->get<float>();
         cuOceanObj->timeShift  = get_input<zeno::NumericObject>("timeshift")->get<float>();
         //speed = 
         cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>();
-        //Kx,Ky = 
-        cuOceanObj-> ocdir = get_input<zeno::NumericObject>("flowDir")->get<float>()/(360.0*2*CUDART_PI_F);
 
 
 
 
-        //phillip spectrum
-        phillips(cuOceanObj->ocdir, cuOceanObj->Vdir, cuOceanObj->V, cuOceanObj->A, cuOceanObj->dir_depend, cuOceanObj->g);
+        // create FFT plan
+        cufftPlan2d(&(cuOceanObj->fftPlan), cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
+        
 
         cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->spectrumSize);
         cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize*cuOceanObj->meshSize);
@@ -447,20 +443,20 @@ struct MakeCuOcean : zeno::INode {
         cudaMalloc((void**)&(cuOceanObj->Dz), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
       
 
-        cuOceanObj->g_hDz = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cuOceanObj->g_hDx = (float2*)malloc(sizeof(float) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cuOceanObj->h_h0 = (float2*)malloc(sizeof(float2) *cuOceanObj->spectrumSize);
+        cuOceanObj->g_hDz = (float2*)malloc(sizeof(float2) * cuOceanObj->meshSize*cuOceanObj->meshSize);
+        cuOceanObj->g_hDx = (float2*)malloc(sizeof(float2) * cuOceanObj->meshSize*cuOceanObj->meshSize);
+        cuOceanObj->h_h0 = (float2*)malloc(sizeof(float2)  * cuOceanObj->spectrumSize);
 
         generate_h0(cuOceanObj);
         //cpu to gpu
-        cudaMemcpy(cuOceanObj->h_h0, cuOceanObj->d_h0, cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(cuOceanObj->d_h0, cuOceanObj->h_h0, sizeof(float2)*cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
  
         set_output("gpuOcean", cuOceanObj);
     }
 };
 
 ZENDEFNODE(MakeCuOcean,
-        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float", "flowDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "5.0"}, {"float", "timeshift", "0.0"}}, 
+        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "100.0"}, {"float", "timeshift", "0.0"}}, 
           /* outputs: */ { "gpuOcean", }, 
           /* params: */  {  }, 
           /* category: */ {"Ocean",}});
@@ -491,7 +487,7 @@ struct OceanCompute : zeno::INode {
     //--------------------------------------------------------------------------------------------------
     GenerateSpectrumKernel(CalOcean->d_h0, CalOcean->d_ht, CalOcean->Dx, CalOcean->Dz, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht, CalOcean->d_ht, CUFFT_INVERSE);
-    cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx, CalOcean->Dx, CUFFT_INVERSE);    
+    cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx, CalOcean->Dx, CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz, CalOcean->Dz, CUFFT_INVERSE);
    
 
@@ -500,15 +496,17 @@ struct OceanCompute : zeno::INode {
     UpdateDxKernel(CalOcean->Dx, CalOcean->Dz, CalOcean->meshSize, CalOcean->meshSize);
 
 
-    cudaMemcpy(CalOcean->g_hhptr, CalOcean->d_ht, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(CalOcean->g_hDx, CalOcean->Dx, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(CalOcean->g_hDz, CalOcean->Dz, CalOcean->spectrumSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(CalOcean->g_hhptr, CalOcean->d_ht, sizeof(float2)*CalOcean->meshSize * CalOcean->meshSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(CalOcean->g_hDx, CalOcean->Dx, sizeof(float2)*CalOcean->meshSize * CalOcean->meshSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(CalOcean->g_hDz, CalOcean->Dz, sizeof(float2)*CalOcean->meshSize * CalOcean->meshSize, cudaMemcpyDeviceToHost);
 
 
     auto grid = std::make_shared<zeno::PrimitiveObject>();
     //here goes the zeno part
     auto &pos = grid->add_attr<vec3f>("pos");
     auto &vel = grid->add_attr<vec3f>("vel");
+    auto &index = grid->add_attr<vec3i>("index");
+    auto &uvpos = grid->add_attr<vec3f>("uvpos");
     grid->resize(CalOcean->meshSize * CalOcean->meshSize);
     int k = 0;
     float h = (float)CalOcean->patchSize / (float)(CalOcean->meshSize - 1);
@@ -516,8 +514,11 @@ struct OceanCompute : zeno::INode {
     {
         for(int i=0;i<CalOcean->meshSize;i++)
         {
-            pos.push_back(zeno::vec3f(i, 0, j));
+            pos.push_back(zeno::vec3f(i, 0, j)*h);
             vel.push_back(zeno::vec3f(CalOcean->g_hDx[k].x, CalOcean->g_hhptr[k].x, CalOcean->g_hDz[k].x));
+            index.push_back(zeno::vec3i(i,0,j));
+            uvpos.push_back(zeno::vec3i(i,0,j)*h);
+            k++;
         }
     }
     
