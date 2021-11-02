@@ -8,6 +8,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _format_h {
 
 template <class ...Ts>
 std::string format(const char *fmt, Ts &&...ts) {
@@ -32,5 +33,6 @@ void print(Ts const &...ts) {
     (std::cout << ... << ts) << std::endl;
 }
 
+}
 }
 ZENO_NAMESPACE_END

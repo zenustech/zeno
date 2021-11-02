@@ -10,7 +10,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
-inline namespace type_traits {
+inline namespace _type_traits_h {
 
 template <class F, class ...Ts>
 using nocvref_invoke_result_t = std::remove_cvref_t<decltype(std::declval<F>()(

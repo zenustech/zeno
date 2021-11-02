@@ -7,6 +7,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _string_h {
 
 static inline auto split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;
@@ -48,5 +49,6 @@ static std::string trim_string(std::string str) {
 	return str;
 }
 
+}
 }
 ZENO_NAMESPACE_END

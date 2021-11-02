@@ -7,7 +7,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
-inline namespace meta_tools {
+inline namespace _meta_tools_h {
 
 constexpr auto tuple_push_front(auto const &t, auto const &tuple) {
     return std::tuple_cat(std::make_tuple(t), tuple);

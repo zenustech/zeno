@@ -21,7 +21,7 @@ template <size_t N, class T>
 using auto_vec = std::conditional_t<N == 0,
       T, math::vec<std::max(N, (size_t)1), T>>;
 
-template <size_t N>
+template <size_t N = 0>
 using scalar_variant = std::variant
     < auto_vec<N, bool>
     , auto_vec<N, int8_t>

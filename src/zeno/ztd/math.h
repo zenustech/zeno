@@ -5,7 +5,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
-inline namespace math {
+inline namespace _math_h {
 
 static auto pymod(auto x, auto y) {
     auto z = x / y;

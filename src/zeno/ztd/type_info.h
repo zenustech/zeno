@@ -11,6 +11,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _type_info_h {
 
 inline std::string cpp_demangle(const char *name) {
     int status;
@@ -25,18 +26,21 @@ inline std::string cpp_type_name(std::type_info const &type) {
 }
 
 }
+}
 ZENO_NAMESPACE_END
 
 #else
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _type_info_h {
 
 inline std::string cpp_type_name(std::type_info const &type) {
     // MSVC is able to return demanged name directly via name()
     return type.name();
 }
 
+}
 }
 ZENO_NAMESPACE_END
 

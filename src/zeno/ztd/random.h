@@ -5,7 +5,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
-inline namespace random {
+inline namespace _random_h {
 
 template <class T = unsigned int>
 static inline T irand(unsigned int i) {

@@ -5,6 +5,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _memory_h {
 
 
 template <class T>
@@ -56,5 +57,6 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 
+}
 }
 ZENO_NAMESPACE_END
