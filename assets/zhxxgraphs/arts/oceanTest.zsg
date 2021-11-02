@@ -143,7 +143,7 @@
       ]
      },
      "params": {
-      "value": "@pos += @uvpos + vec3(-5, 5, -5)*@vel\n@clr = vec3(1,1,1)\n@rad = 10\n@speed = length(@vel)"
+      "value": "@pos += @uvpos + 5*@vel\n@clr = vec3(1,1,1)\n@rad = 10\n@speed = length(@vel)"
      },
      "uipos": [
       -11184.109962544528,
@@ -294,10 +294,10 @@
     }
    },
    "view_rect": {
-    "x": -10526.67030540323,
-    "y": -5087.010741458033,
-    "width": 625.0,
-    "height": 625.0
+    "x": -11223.187007880388,
+    "y": -5439.939337046479,
+    "width": 400.0,
+    "height": 400.0
    }
   }
  },
