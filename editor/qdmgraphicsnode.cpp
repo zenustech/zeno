@@ -76,7 +76,7 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 void QDMGraphicsNode::initByName(QString name)
 {
     setName(name);
-    auto const &desc = dop::desc_of(name.toStdString());
+    auto const &desc = dop::descriptor_table().at(name.toStdString());
     dopNode = desc.create();
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
