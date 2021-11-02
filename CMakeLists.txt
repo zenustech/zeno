@@ -72,7 +72,7 @@ option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 
 if (BATE)
     set(ZENO_WITH_BACKWARD ON)
-    set(ZENO_WITH_LEGACY ON)
+    set(ZENO_WITH_LEGACY OFF)
     if (BATE_SYCL)
         set(ZENO_WITH_SYCL ON)
     else()
