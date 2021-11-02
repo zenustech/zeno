@@ -96,7 +96,7 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 
 static void ReadOBJMesh(dop::FuncContext *ctx) {
-    auto path = *ztd::cast<std::string>(ctx->inputs.at(0));
+    auto path = value_cast<std::string>(ctx->inputs.at(0));
     auto mesh = std::make_unique<Mesh>();
     std::ifstream fin(path);
     [[unlikely]] if (!fin)

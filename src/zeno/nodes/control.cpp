@@ -7,7 +7,7 @@ namespace {
 
 struct If : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
+        auto cond = value_cast<bool>(resolve(inputs.at(0), visited));
         if (cond) {
             touch(inputs.at(1), tolink, visited);
         } else {
@@ -36,9 +36,9 @@ struct ForData {
 struct ForBegin : dop::Node {
     void apply() override {
         ForData fordata = {
-            .times = get_input<int>(0),
+            .times = value_cast<int>(get_input(0)),
         };
-        set_output(0, fordata);
+        set_output(0, ztd::make_any(fordata));
     }
 };
 
@@ -53,7 +53,7 @@ ZENO_DOP_DEFCLASS(ForBegin, {{
 
 struct ForEnd : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto fordata = ztd::zany_cast<ForData>(resolve(inputs.at(0), visited));
+        auto fordata = value_cast<ForData>(resolve(inputs.at(0), visited));
         for (int i = 0; i < fordata.times; i++) {
             auto tmp_visited = visited;
             resolve(inputs.at(1), tmp_visited);
@@ -97,7 +97,7 @@ ZENO_DOP_DEFCLASS(ListForeach, {{
 
 struct PrintInt : dop::Node {
     void apply() override {
-        auto val = get_input<int>(0);
+        auto val = value_cast<int>(get_input(0));
         printf("Print %d\n", val);
     }
 };

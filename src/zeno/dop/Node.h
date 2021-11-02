@@ -45,11 +45,6 @@ struct Node {
 
     ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
-    
-    template <class T>
-    std::shared_ptr<T> get_input(int idx) const {
-        return ztd::cast<T>(get_input(idx));
-    }
 
     virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
     virtual void apply() = 0;

@@ -11,10 +11,10 @@ namespace {
 
 
 static void TransformMesh(dop::FuncContext *ctx) {
-    auto mesh = ztd::cast<Mesh>(ctx->inputs.at(0));
-    auto translate = *ztd::cast<math::vec3f>(ctx->inputs.at(1));
-    auto scaling = *ztd::cast<math::vec3f>(ctx->inputs.at(2));
-    auto rotation = *ztd::cast<math::vec4f>(ctx->inputs.at(3));
+    auto mesh = pointer_cast<Mesh>(ctx->inputs.at(0));
+    auto translate = value_cast<math::vec3f>(ctx->inputs.at(1));
+    auto scaling = value_cast<math::vec3f>(ctx->inputs.at(2));
+    auto rotation = value_cast<math::vec4f>(ctx->inputs.at(3));
     auto rotmat = math::quaternion_matrix(rotation);
 
     zycl::queue().submit([&] (zycl::handler &cgh) {

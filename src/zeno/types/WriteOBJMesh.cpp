@@ -34,8 +34,8 @@ static void writeMeshToOBJ(std::ostream &out, Mesh &mesh) {
 
 
 static void WriteOBJMesh(dop::FuncContext *ctx) {
-    auto mesh = ztd::cast<Mesh>(ctx->inputs.at(0));
-    auto path = *ztd::cast<std::string>(ctx->inputs.at(1));
+    auto mesh = pointer_cast<Mesh>(ctx->inputs.at(0));
+    auto path = value_cast<std::string>(ctx->inputs.at(1));
     std::ofstream fin(path);
     [[unlikely]] if (!fin)
         throw ztd::format_error("OSError: cannot open file for write: {}", path);

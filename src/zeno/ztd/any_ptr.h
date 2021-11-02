@@ -6,6 +6,8 @@
 #include <variant>
 #include <optional>
 #include <zeno/ztd/type_traits.h>
+#include <zeno/ztd/type_info.h>
+#include <zeno/ztd/error.h>
 #include <zeno/math/vec.h>
 
 
@@ -16,55 +18,24 @@ inline namespace _any_ptr_h {
 namespace details {
 
 template <size_t N, class T>
-using auto_vec = std::conditional_t<N == 0,
+using numeric_auto_vec = std::conditional_t<N == 0,
       T, math::vec<std::max(N, (size_t)1), T>>;
 
 template <size_t N = 0>
 using numeric_variant = std::variant
-    < auto_vec<N, bool>
-    , auto_vec<N, int32_t>
-    , auto_vec<N, float>
+    < numeric_auto_vec<N, bool>
+    , numeric_auto_vec<N, int32_t>
+    , numeric_auto_vec<N, float>
     >;
 
-struct any_ptr_base {
-    std::type_info const &_M_type;
-
-    any_ptr_base(std::type_info const &type) : _M_type(type) {}
-
-    virtual std::shared_ptr<any_ptr_base> clone() const = 0;
-    virtual ~any_ptr_base() = default;
-
-    std::type_info const &type() const {
-        return _M_type;
-    }
-};
-
-template <class T>
-struct any_ptr_impl : any_ptr_base {
-    std::unique_ptr<T> _M_ptr;
-
-    any_ptr_impl(std::type_info const &type, std::unique_ptr<T> &&ptr)
-        : any_ptr_base(type), _M_ptr(std::move(ptr)) {}
-
-    virtual std::shared_ptr<any_ptr_base> clone() const override {
-        if constexpr (std::is_copy_constructible_v<T>) {
-            return std::make_shared<any_ptr_impl>(
-                _M_type, static_cast<T const &>(*_M_ptr));
-        } else {
-            return nullptr;
-        }
-    }
-
-    virtual ~any_ptr_impl() = default;
-};
 }
 
 template <class T>
 struct any_underlying {
     using type = T;
 
-    static T *pointer_cast(type &t) {
-        return &t;
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
+        return std::static_pointer_cast<T>(std::move(t));
     }
 
     static std::optional<T> value_cast(type const &t) {
@@ -77,8 +48,8 @@ template <class T>
 struct any_underlying<T> {
     using type = details::numeric_variant<math::vec_dimension_v<T>>;
 
-    static T *pointer_cast(type &t) {
-        return std::holds_alternative<T>(t) ? &std::get<T>(t) : nullptr;
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
+        return nullptr;
     }
 
     static std::optional<T> value_cast(type const &t) {
@@ -93,8 +64,8 @@ template <class T>
 struct any_underlying<T> {
     using type = typename T::polymorphic_base_type;
 
-    static T *pointer_cast(type &t) {
-        return dynamic_cast<T *>(&t);
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
+        return std::dynamic_pointer_cast<T>(std::static_pointer_cast<type>(std::move(t)));
     }
 
     static std::optional<T> value_cast(type &t) {
@@ -109,60 +80,76 @@ struct any_underlying<T> {
 template <class T>
 using any_underlying_t = typename any_underlying<T>::type;
 
-struct any_ptr {
+class any_ptr : public std::shared_ptr<void> {
 private:
-    std::shared_ptr<details::any_ptr_base> _M_base;
-
-    explicit any_ptr(std::shared_ptr<details::any_ptr_base> &&base)
-        : _M_base(std::move(base)) {}
+    std::type_info const *_M_type;
+    std::type_info const *_M_utype;
 
 public:
-    any_ptr() = default;
-    any_ptr(any_ptr const &) = default;
-    any_ptr &operator=(any_ptr const &) = default;
-    any_ptr(any_ptr &&) = default;
-    any_ptr &operator=(any_ptr &&) = default;
+    using std::shared_ptr<void>::shared_ptr;
 
     template <class T>
-    explicit any_ptr(std::type_identity<T>, std::unique_ptr<any_underlying_t<T>> &&ptr)
-        : _M_base(std::make_shared<details::any_ptr_impl<any_underlying_t<T>>>(
-                typeid(T), std::move(ptr)))
+    any_ptr(std::in_place_t, T const &val)
+        : _M_type(&typeid(T))
+        , _M_utype(&typeid(any_underlying_t<T>))
+        , std::shared_ptr<void>(std::make_shared<any_underlying_t<T>>(val))
     {}
 
     template <class T>
-    any_ptr(std::unique_ptr<T> &&ptr)
-        : any_ptr(std::type_identity<T>{}, std::move(ptr))
+    any_ptr(std::shared_ptr<T> &&ptr)
+        : _M_type(&typeid(*ptr))
+        , _M_utype(&typeid(any_underlying_t<T>))
+        , std::shared_ptr<void>(std::move(ptr))
     {}
 
     std::type_info const &type() const {
-        return _M_base->type();
+        return *_M_type;
     }
 
-    any_ptr clone() const {
-        return any_ptr(_M_base->clone());
-    }
-
-    template <class T>
-    T *get() const {
-        using U = any_underlying_t<T>;
-        auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
-        if (!p) return nullptr;
-        return any_underlying<T>::pointer_cast(p->_M_val);
+    std::type_info const &utype() const {
+        return *_M_utype;
     }
 
     template <class T>
-    std::optional<T> cast() const {
+    std::shared_ptr<T> pointer_cast() const {
         using U = any_underlying_t<T>;
-        auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
-        if (!p) return std::nullopt;
-        return any_underlying<T>::value_cast(p->_M_val);
+        if (typeid(U) != *_M_utype) return nullptr;
+        auto p = std::static_pointer_cast<U>(*this);
+        return any_underlying<T>::pointer_cast(std::move(p));
+    }
+
+    template <class T>
+    std::optional<T> value_cast() const {
+        using U = any_underlying_t<T>;
+        if (typeid(U) != *_M_utype) return std::nullopt;
+        auto p = static_cast<U *>(this->get());
+        return any_underlying<T>::value_cast(*p);
     }
 };
 
 template <class T>
-inline any_ptr make_any(auto &&...args) {
-    return any_ptr(std::type_identity<T>{},
-                   std::make_unique<T>(std::forward<decltype(args)>(args)...));
+any_ptr make_any(T const &t) {
+    return any_ptr(std::in_place, t);
+}
+
+template <class T>
+inline std::shared_ptr<T> pointer_cast(any_ptr p) {
+    [[likely]] if (auto q = p.pointer_cast<T>()) {
+        return q;
+    } else {
+        throw ztd::format_error("TypeError: pointer_cast failed: {} -> {}",
+                    cpp_type_name(p.type()), cpp_type_name(typeid(T)));
+    }
+}
+
+template <class T>
+inline T value_cast(any_ptr p) {
+    [[likely]] if (auto q = p.value_cast<T>()) {
+        return *q;
+    } else {
+        throw ztd::format_error("TypeError: value_cast failed: {} -> {}",
+                    cpp_type_name(p.type()), cpp_type_name(typeid(T)));
+    }
 }
 
 }
