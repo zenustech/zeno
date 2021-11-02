@@ -142,7 +142,7 @@ public:
     }
 
     template <class T>
-    T *cast() const {
+    T *as() const {
         using U = any_underlying_t<T>;
         auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
         if (!p) return nullptr;
@@ -150,7 +150,7 @@ public:
     }
 
     template <class T>
-    std::optional<T> as() const {
+    std::optional<T> cast() const {
         using U = any_underlying_t<T>;
         auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
         if (!p) return std::nullopt;
