@@ -53,19 +53,6 @@ template <class T>
 copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
-using generic_ptr = std::shared_ptr<void>;
-
-template <class T>
-inline generic_ptr make_generic(auto &&...args) {
-    return std::make_shared<T>(std::forward<decltype(args)>(args)...);
-}
-
-template <class T>
-inline std::shared_ptr<T> cast(generic_ptr p) {
-    return std::dynamic_pointer_cast<T>(p);
-}
-
-
 }
 }
 ZENO_NAMESPACE_END

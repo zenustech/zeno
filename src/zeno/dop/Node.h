@@ -2,7 +2,7 @@
 
 
 #include <zeno/ztd/vector.h>
-#include <zeno/ztd/memory.h>
+#include <zeno/ztd/any_ptr.h>
 #include <variant>
 #include <string>
 #include <memory>
@@ -19,7 +19,7 @@ struct Descriptor;
 
 
 struct Input_Value {
-    ztd::generic_ptr value;
+    ztd::any_ptr value;
 };
 
 struct Input_Link {
@@ -35,7 +35,7 @@ using Input = std::variant
 
 struct Node {
     ztd::vector<Input> inputs;
-    ztd::vector<ztd::generic_ptr> outputs;
+    ztd::vector<ztd::any_ptr> outputs;
 
     float xpos = 0;
     float ypos = 0;
@@ -43,8 +43,8 @@ struct Node {
 
     virtual ~Node() = default;
 
-    ztd::generic_ptr get_input(int idx) const;
-    void set_output(int idx, ztd::generic_ptr val);
+    ztd::any_ptr get_input(int idx) const;
+    void set_output(int idx, ztd::any_ptr val);
     
     template <class T>
     std::shared_ptr<T> get_input(int idx) const {

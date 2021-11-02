@@ -1,6 +1,7 @@
 #include <zeno/dop/execute.h>
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/functional.h>
+#include <zeno/ztd/any_ptr.h>
 #include <zeno/zmt/log.h>
 #include <map>
 
@@ -9,7 +10,7 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 
-ztd::zany resolve(Input const &input) {
+ztd::any_ptr resolve(Input const &input) {
     std::set<Node *> visited;
     ZENO_LOG_INFO("=== start graph ===");
     auto ret = resolve(input, visited);
@@ -76,7 +77,7 @@ void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &vi
 }
 
 
-ztd::zany resolve(Input const &input, std::set<Node *> &visited) {
+ztd::any_ptr resolve(Input const &input, std::set<Node *> &visited) {
     return std::visit(ztd::match([&] (Input_Link const &input) {
         std::vector<Node *> tolink;
         touch(input, tolink, visited);
@@ -88,7 +89,7 @@ ztd::zany resolve(Input const &input, std::set<Node *> &visited) {
 }
 
 
-ztd::zany getval(Input const &input) {
+ztd::any_ptr getval(Input const &input) {
     return std::visit(ztd::match([&] (Input_Link const &input) {
         return input.node->outputs.at(input.sockid);
     }, [&] (Input_Value const &val) {

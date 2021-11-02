@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno/ztd/memory.h>
+#include <zeno/ztd/any_ptr.h>
 #include <zeno/ztd/map.h>
 #include <functional>
 #include <typeindex>
@@ -15,8 +15,8 @@ namespace dop {
 
 
 struct FuncContext {
-    std::vector<ztd::generic_ptr> inputs;
-    std::vector<ztd::generic_ptr> outputs;
+    std::vector<ztd::any_ptr> inputs;
+    std::vector<ztd::any_ptr> outputs;
 };
 
 
