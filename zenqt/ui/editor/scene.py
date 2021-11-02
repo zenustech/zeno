@@ -195,6 +195,10 @@ class QDMGraphicsScene(QGraphicsScene):
     def cates(self):
         return self.editor.cates
 
+    @property
+    def descs_comment(self):
+        return self.editor.descs_comment
+
     def setContentChanged(self, flag):
         self.contentChanged = flag
 
@@ -404,6 +408,13 @@ class QDMGraphicsView(QGraphicsView):
         if scene._scene_rect:
             self._update_scene_rect()
 
+    def safeSetToolTip(self, key, action):
+        comments = self.scene().descs_comment
+        if key in comments:
+            action.setToolTip(comments[key])
+        else:
+            action.setToolTip(key)
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -413,7 +424,8 @@ class QDMGraphicsView(QGraphicsView):
             keys = self.scene().descs.keys()
             matched = fuzzy_search(pattern, keys)
             for key in matched:
-                edit.menu.addAction(key)
+                keyAction = edit.menu.addAction(key)
+                self.safeSetToolTip(key, keyAction)
 
     def getCategoryActions(self):
         cates = self.scene().cates
@@ -427,15 +439,19 @@ class QDMGraphicsView(QGraphicsView):
             act = QAction()
             act.setText(cate_name)
             childMenu = QMenu()
+            childMenu.setToolTipsVisible(True)
             childActs = []
             for type_name in type_names:
-                childMenu.addAction(type_name)
+                # add action and its tooltip if exits
+                childMenuAction = childMenu.addAction(type_name)
+                self.safeSetToolTip(type_name, childMenuAction)
             act.setMenu(childMenu)
             acts.append(act)
         return acts
 
     def contextMenu(self, pos):
         menu = QMenu(self)
+        menu.setToolTipsVisible(True)
 
         edit = QDMSearchLineEdit(menu, self)
         edit.textChanged.connect(lambda: self.updateSearch(edit))

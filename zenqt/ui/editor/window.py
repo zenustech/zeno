@@ -80,10 +80,12 @@ class NodeEditor(QWidget):
         self.scenes = {}
         self.descs = {}
         self.cates = {}
+        self.descs_comment = {}
 
         self.initExecute()
         self.initShortcuts()
         self.initDescriptors()
+        self.initDescriptorsComment()
 
         self.newProgram()
 
@@ -223,6 +225,10 @@ class NodeEditor(QWidget):
             },
         })
         self.setDescriptors(descs)
+
+    def initDescriptorsComment(self):
+        with open(asset_path('descs_comment.json'), 'r') as f:
+            self.descs_comment = json.load(f)
 
     def on_add(self):
         pos = QPointF(0, 0)
