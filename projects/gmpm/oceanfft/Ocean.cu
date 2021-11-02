@@ -174,6 +174,7 @@ struct OceanFFT : zeno::IObject{
 
 
     // simulation parameters
+    float L_scale = 1.0;
     float g;              // gravitational constant
     float A{1e-4f};              // wave scale factor
     float patchSize;        // patch size
@@ -308,7 +309,7 @@ float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depen
             float k_y = Ky / sqrtf(k_squared);
             float w_dot_k = k_x * cosf(Vdir) + k_y * sinf(Vdir);
 
-            float phil= A*expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
+            float phil= A * expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
 
             // filter out waves moving opposite to wind
             if (w_dot_k < 0.0f)
@@ -317,10 +318,10 @@ float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depen
             }
 
             // damp out waves with very small length w << l
-            float w = L / 10000;
-            phil *= expf(-k_squared * w * w);
-            float dOmegadk = frequencyDerivative(sqrtf(k_squared), g, depth);
-            phil *= abs(dOmegadk);
+            //float w = L/10000;
+            //phil *= expf(-k_squared * w * w);
+            //float dOmegadk = frequencyDerivative(sqrtf(k_squared), g, depth);
+            //phil *= abs(dOmegadk);
             return phil;
 }
 
@@ -346,8 +347,8 @@ void generate_h0(std::shared_ptr<OceanFFT> OceanObj)
             float Ei = zeno::gauss();
 
             float theta = urand() * 2.0 * 3.1415926;
-            float h0_re = Er * P * cosf(theta);
-            float h0_im = Ei * P * sinf(theta);
+            float h0_re = Er * P * cosf(theta) * CUDART_SQRT_HALF_F;
+            float h0_im = Er * P * sinf(theta) * CUDART_SQRT_HALF_F;
 
             int i = y*OceanObj->spectrumW+x;
             OceanObj->h_h0[i].x = h0_re;
@@ -431,11 +432,13 @@ struct MakeCuOcean : zeno::INode {
         //spectrumH/W = meshSize
         cuOceanObj->spectrumH   = cuOceanObj->meshSize + 1;
         cuOceanObj->spectrumW   = cuOceanObj->meshSize + 4;
+        
         cuOceanObj->spectrumSize = cuOceanObj->spectrumH * cuOceanObj->spectrumW;
+        cuOceanObj->L_scale = get_input<zeno::NumericObject>("patchSize")->get<float>()/100.0;
         //gravity=
-        cuOceanObj->g   = get_input<zeno::NumericObject>("gravity")->get<float>();
+        cuOceanObj->g   = get_input<zeno::NumericObject>("gravity")->get<float>() / cuOceanObj->L_scale;
         //patchSize = 
-        cuOceanObj->patchSize  = get_input<zeno::NumericObject>("patchSize")->get<float>();
+        cuOceanObj->patchSize  = 100;
         //dir = 
         cuOceanObj->windDir  = get_input<zeno::NumericObject>("windDir")->get<float>()/360.0*2.0*CUDART_PI_F;
         //timeScale
@@ -443,7 +446,7 @@ struct MakeCuOcean : zeno::INode {
         cuOceanObj->timeScale  = get_input<zeno::NumericObject>("timeScale")->get<float>();
         cuOceanObj->timeShift  = get_input<zeno::NumericObject>("timeshift")->get<float>();
         //speed = 
-        cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>();
+        cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>() / cuOceanObj->L_scale;
         cuOceanObj->depth = get_input<zeno::NumericObject>("depth")->get<float>();
 
 
@@ -533,16 +536,16 @@ struct OceanCompute : zeno::INode {
     {
         for(int i=0;i<CalOcean->meshSize;i++)
         {
-            pos.push_back(zeno::vec3f(i, 0, j)*h);
-            vel.push_back(zeno::vec3f(-CalOcean->choppyness*CalOcean->g_hDx[k].x, CalOcean->g_hhptr[k].x, -CalOcean->choppyness*CalOcean->g_hDz[k].x));
+            pos.push_back(CalOcean->L_scale * zeno::vec3f(i, 0, j)*h);
+            vel.push_back(CalOcean->L_scale * zeno::vec3f(-CalOcean->choppyness*CalOcean->g_hDx[k].x, CalOcean->g_hhptr[k].x, -CalOcean->choppyness*CalOcean->g_hDz[k].x));
             index.push_back(zeno::vec3i(i,0,j));
-            uvpos.push_back(zeno::vec3i(i,0,j)*h);
+            uvpos.push_back(CalOcean->L_scale * zeno::vec3i(i,0,j)*h);
             k++;
         }
     }
     
-    grid->userData.set("h", h);
-    grid->userData.set("transform", 0.5f * zeno::vec3f(CalOcean->patchSize, 0, CalOcean->patchSize));
+    grid->userData.set("h", CalOcean->L_scale * h);
+    grid->userData.set("transform", 0.5f * zeno::vec3f(CalOcean->L_scale * CalOcean->patchSize, 0, CalOcean->L_scale * CalOcean->patchSize));
     set_output("OceanData", grid);
     }
 };

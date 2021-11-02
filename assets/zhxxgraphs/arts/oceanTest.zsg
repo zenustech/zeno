@@ -10,15 +10,20 @@
        null,
        9
       ],
+      "depth": [
+       null,
+       null,
+       5000.0
+      ],
       "chop": [
        null,
        null,
-       0.5
+       0.8
       ],
       "gravity": [
        null,
        null,
-       9.81
+       1.0
       ],
       "windDir": [
        null,
@@ -38,7 +43,7 @@
       "speed": [
        null,
        null,
-       100.0
+       5.0
       ],
       "timeshift": [
        null,
@@ -53,8 +58,8 @@
      },
      "params": {},
      "uipos": [
-      -11731.689734717416,
-      -5093.569780853519
+      -11843.937812068485,
+      -5074.641023960422
      ],
      "options": [
       "ONCE"
@@ -143,7 +148,7 @@
       ]
      },
      "params": {
-      "value": "@pos += @uvpos + 5*@vel\n@clr = vec3(1,1,1)\n@rad = 10\n@speed = length(@vel)"
+      "value": "@pos += @uvpos + @vel\n@clr = vec3(1,1,1)\n@rad = 0\n@speed = length(@vel)"
      },
      "uipos": [
       -11184.109962544528,
@@ -294,10 +299,10 @@
     }
    },
    "view_rect": {
-    "x": -11223.187007880388,
-    "y": -5439.939337046479,
-    "width": 400.0,
-    "height": 400.0
+    "x": -11699.856794785796,
+    "y": -5110.266728786438,
+    "width": 255.99999999999986,
+    "height": 255.99999999999986
    }
   }
  },
@@ -5856,6 +5861,11 @@
      "int",
      "WaveExponent",
      "8"
+    ],
+    [
+     "float",
+     "depth",
+     "5000"
     ],
     [
      "float",
