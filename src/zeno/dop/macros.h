@@ -22,5 +22,5 @@ static int _zeno_dop_implement_##Class##_func_##func = ( \
 #define ZENO_DOP_DEFUN(Class, sig, ...) \
 static int _zeno_dop_defun_##Class = ( \
     ZENO_NAMESPACE::dop::add_descriptor(#Class, std::make_unique<ZENO_NAMESPACE::dop::OverloadNode>, __VA_ARGS__), \
-    ZENO_NAMESPACE::dop::add_overloading(#Class, Class, sig), \
+    ZENO_NAMESPACE::dop::add_overloading(#Class, Class, std::vector<std::type_index> sig), \
     1);

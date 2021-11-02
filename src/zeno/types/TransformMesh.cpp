@@ -11,7 +11,7 @@ namespace {
 
 
 static void TransformMesh(dop::FuncContext *ctx) {
-    auto mesh = (std::shared_ptr<Mesh>)ctx->inputs.at(0);
+    auto mesh = ctx->inputs.at(0).get<Mesh>();
     auto translate = ctx->inputs.at(1).cast<math::vec3f>().value_or(math::vec3f(0));
     auto scaling = ctx->inputs.at(2).cast<math::vec3f>().value_or(math::vec3f(1));
     auto rotation = ctx->inputs.at(3).cast<math::vec4f>().value_or(math::vec4f(0, 0, 0, 1));

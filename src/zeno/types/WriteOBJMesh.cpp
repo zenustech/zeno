@@ -34,22 +34,21 @@ static void writeMeshToOBJ(std::ostream &out, Mesh &mesh) {
 
 
 static void WriteOBJMesh(dop::FuncContext *ctx) {
-    auto path = (std::string)ctx->inputs.at(0);
-    auto mesh = std::make_shared<Mesh>();
+    auto mesh = ztd::cast<Mesh>(ctx->inputs.at(0));
+    auto path = *ztd::cast<std::string>(ctx->inputs.at(1));
     std::ofstream fin(path);
     [[unlikely]] if (!fin)
         throw ztd::format_error("OSError: cannot open file for write: {}", path);
     writeMeshToOBJ(fin, *mesh);
-    ctx->outputs.at(0) = std::move(mesh);
 }
 
 
-ZENO_DOP_DEFUN(WriteOBJMesh, {typeid(std::string)}, {{
+ZENO_DOP_DEFUN(WriteOBJMesh, ({typeid(Mesh), typeid(std::string)}), {{
     "mesh", "save mesh to .obj file",
 }, {
+    {"mesh"},
     {"path"},
 }, {
-    {"mesh"},
 }});
 
 

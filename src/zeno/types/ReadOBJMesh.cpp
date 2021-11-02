@@ -96,8 +96,8 @@ static void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 
 static void ReadOBJMesh(dop::FuncContext *ctx) {
-    auto path = (std::string)ctx->inputs.at(0);
-    auto mesh = std::make_shared<Mesh>();
+    auto path = *ztd::cast<std::string>(ctx->inputs.at(0));
+    auto mesh = std::make_unique<Mesh>();
     std::ifstream fin(path);
     [[unlikely]] if (!fin)
         throw ztd::format_error("OSError: cannot open file for read: {}", path);
@@ -106,7 +106,7 @@ static void ReadOBJMesh(dop::FuncContext *ctx) {
 }
 
 
-ZENO_DOP_DEFUN(ReadOBJMesh, {typeid(std::string)}, {{
+ZENO_DOP_DEFUN(ReadOBJMesh, ({typeid(std::string)}), {{
     "mesh", "load mesh from .obj file",
 }, {
     {"path"},
