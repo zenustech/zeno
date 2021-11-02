@@ -9,7 +9,7 @@ ZENO_NAMESPACE_BEGIN
 namespace math {
 
 
-template <size_t N, is_not_vec T1, class Func>
+template <is_not_vec T1, class Func>
 constexpr auto vec_wise(T1 const &t1, Func &&func) {
     return func(t1);
 }
