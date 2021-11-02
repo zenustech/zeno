@@ -49,7 +49,8 @@ struct any_underlying<T> {
     using type = details::numeric_variant<math::vec_dimension_v<T>>;
 
     static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
-        return nullptr;
+        auto &v = *std::static_pointer_cast<type>(std::move(t));
+        return std::holds_alternative<T>(v) ? stale_shared(&std::get<T>(v)) : nullptr;
     }
 
     static std::optional<T> value_cast(type const &t) {
@@ -140,7 +141,7 @@ inline std::shared_ptr<T> pointer_cast(any_ptr p) {
     [[likely]] if (auto q = p.pointer_cast<T>()) {
         return q;
     } else {
-        throw ztd::format_error("TypeError: pointer_cast failed: {} -> {}",
+        throw ztd::format_error("TypeError: pointer_cast failed from {} to {}",
                     cpp_type_name(p.type()), cpp_type_name(typeid(T)));
     }
 }
@@ -150,7 +151,7 @@ inline T value_cast(any_ptr p) {
     [[likely]] if (auto q = p.value_cast<T>()) {
         return *q;
     } else {
-        throw ztd::format_error("TypeError: value_cast failed: {} -> {}",
+        throw ztd::format_error("TypeError: value_cast failed from {} to {}",
                     cpp_type_name(p.type()), cpp_type_name(typeid(T)));
     }
 }

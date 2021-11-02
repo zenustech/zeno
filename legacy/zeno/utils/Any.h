@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vec.h"
-#include <zeno/ztd/zany.h>
+#include <zeno/ztd/any_ptr.h>
 #include "type_traits.h"
 
 
@@ -37,67 +37,38 @@ using vector_type_variant = std::variant
         >;
 
 template <class T>
-using any_underlying_type_t = ZENO_NAMESPACE::ztd::zany_underlying_t<T>;
+using any_underlying_type_t = ZENO_NAMESPACE::ztd::any_underlying_t<T>;
 
-using Any = ZENO_NAMESPACE::ztd::zany;
+using Any = ZENO_NAMESPACE::ztd::any_ptr;
 
 template <class T>
 std::optional<T> exact_any_cast(Any a) {
-    if constexpr (std::is_same_v<std::decay_t<T>, Any>) {
-        return std::make_optional(a);
-    } else {
-        using V = any_underlying_type_t<T>;
-        if (typeid(V) != a.type()) return std::nullopt;
-        decltype(auto) v = std::any_cast<V const &>(a);
-        if constexpr (is_shared_ptr<T>::value) {
-            using U = typename remove_shared_ptr<T>::type;
-            decltype(auto) ptr = std::static_pointer_cast<U>(std::move(v));
-            if (!ptr) return std::nullopt;
-            return std::make_optional(std::move(ptr));
-        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
-            if (!std::holds_alternative<T>(v)) return std::nullopt;
-            return std::make_optional(std::get<T>(v));
+    if constexpr (is_shared_ptr<T>::value) {
+        if (auto p = a.pointer_cast<typename remove_shaded_ptr<T>::type>()) {
+            return std::make_optional(p);
         } else {
-            return v;
+            return std::nullopt;
+        }
+    } else {
+        if (auto p = a.pointer_cast<T>()) {
+            return std::make_optional(*p);
+        } else {
+            return std::nullopt;
         }
     }
+
 }
 
 template <class T>
 std::optional<T> silent_any_cast(Any const &a) {
-    if constexpr (std::is_same_v<T, Any>) {
-        return std::make_optional(a);
-
-    } else if constexpr (is_variant<T>::value) {
-    using TupleT = typename variant_to_tuple<T>::type;
-    T v;
-    if (static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
-        using Ti = std::tuple_element_t<i.value, TupleT>;
-        auto o = exact_any_cast<Ti>(std::move(a));
-        if (o.has_value()) {
-            v = o.value();
-            return true;
-        }
-        return false;
-    })) return std::make_optional(v);
-    else return std::nullopt;
-
-    } else {
-        using V = any_underlying_type_t<T>;
-        if (typeid(V) != a.type()) return std::nullopt;
-        decltype(auto) v = std::any_cast<V const &>(a);
-        if constexpr (is_shared_ptr<T>::value) {
-            using U = typename remove_shared_ptr<T>::type;
-            auto ptr = std::dynamic_pointer_cast<U>(v);
-            if (!ptr) return std::nullopt;
-            return std::make_optional(ptr);
-        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
-            return std::make_optional(std::visit([] (auto const &x) {
-                return (T)x;
-            }, v));
+    if constexpr (is_shared_ptr<T>::value) {
+        if (auto p = a.pointer_cast<typename remove_shaded_ptr<T>::type>()) {
+            return std::make_optional(p);
         } else {
-            return std::make_optional(v);
+            return std::nullopt;
         }
+    } else {
+        return a.value_cast<T>();
     }
 }
 

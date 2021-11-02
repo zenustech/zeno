@@ -22,6 +22,12 @@ stale_ptr(T *) -> stale_ptr<T>;
 
 
 template <class T>
+std::shared_ptr<T> stale_shared(T *p) {
+    return std::shared_ptr<T>(p, [] (T *) {});
+}
+
+
+template <class T>
 struct copiable_ptr : std::unique_ptr<T> {
     using std::unique_ptr<T>::unique_ptr;
     using std::unique_ptr<T>::operator=;
