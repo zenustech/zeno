@@ -6,12 +6,12 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 
-ztd::zany Node::get_input(int idx) const {
+ztd::any_ptr Node::get_input(int idx) const {
     return getval(inputs.at(idx));
 }
 
 
-void Node::set_output(int idx, ztd::zany val) {
+void Node::set_output(int idx, ztd::any_ptr val) {
     outputs.at(idx) = std::move(val);
 }
 
