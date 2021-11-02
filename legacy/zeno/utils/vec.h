@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/ztd/vec.h>
+#include <zeno/math/vec.h>
 
 
 namespace zeno {

@@ -28,6 +28,11 @@ using numeric_variant = std::variant
     , numeric_auto_vec<N, float>
     >;
 
+template <class T>
+struct no_deleter {
+    constexpr void operator ()(T *) const {}
+};
+
 }
 
 template <class T>
@@ -50,7 +55,8 @@ struct any_underlying<T> {
 
     static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
         auto &v = *std::static_pointer_cast<type>(std::move(t));
-        return std::holds_alternative<T>(v) ? stale_shared(&std::get<T>(v)) : nullptr;
+        return std::holds_alternative<T>(v) ?
+            std::shared_ptr<T>(&std::get<T>(v), details::no_deleter<T>{}) : nullptr;
     }
 
     static std::optional<T> value_cast(type const &t) {

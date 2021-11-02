@@ -39,12 +39,18 @@ using vector_type_variant = std::variant
 template <class T>
 using any_underlying_type_t = ZENO_NAMESPACE::ztd::any_underlying_t<T>;
 
-using Any = ZENO_NAMESPACE::ztd::any_ptr;
+struct Any : ZENO_NAMESPACE::ztd::any_ptr {
+    using ZENO_NAMESPACE::ztd::any_ptr::any_ptr;
+
+    template <class T>
+        requires (!is_shared_ptr<T>)
+    Any(T const &t) : any_ptr(std::in_place, t) {}
+};
 
 template <class T>
 std::optional<T> exact_any_cast(Any a) {
     if constexpr (is_shared_ptr<T>::value) {
-        if (auto p = a.pointer_cast<typename remove_shaded_ptr<T>::type>()) {
+        if (auto p = a.pointer_cast<typename remove_shared_ptr<T>::type>()) {
             return std::make_optional(p);
         } else {
             return std::nullopt;
@@ -62,7 +68,7 @@ std::optional<T> exact_any_cast(Any a) {
 template <class T>
 std::optional<T> silent_any_cast(Any const &a) {
     if constexpr (is_shared_ptr<T>::value) {
-        if (auto p = a.pointer_cast<typename remove_shaded_ptr<T>::type>()) {
+        if (auto p = a.pointer_cast<typename remove_shared_ptr<T>::type>()) {
             return std::make_optional(p);
         } else {
             return std::nullopt;
