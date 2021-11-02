@@ -30,11 +30,11 @@ constexpr decltype(auto) fname(T1 const &t1, T2 const &t2) { \
 }
 
 #define _OP1(fname) \
-template <class T1> \
-    requires (requires (T1 t1) { std::fname(t1); }) \
+template <class T1, class T0 = remove_vec_t<T1>> \
+    requires (requires (T0 t0) { std::fname(t0); }) \
 constexpr decltype(auto) fname(T1 const &t1) { \
     return vec_wise(t1, [] (auto &&t1) { \
-        return (T1)std::fname(t1); }); \
+        return (T0)std::fname((T0)t1); }); \
 }
 
 _OP3(fma)
