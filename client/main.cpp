@@ -1,4 +1,4 @@
-#if 1
+#if 0
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
@@ -74,10 +74,8 @@ USING_ZENO_NAMESPACE
 int main()
 {
     ztd::any_ptr p;
-    p = ztd::make_any(42);
+    std::cout << sizeof(p) << std::endl;
     std::cout << p.type().name() << std::endl;
-    std::cout << p.utype().name() << std::endl;
-    std::cout << value_cast<float>(p) << std::endl;
 
     return 0;
 }

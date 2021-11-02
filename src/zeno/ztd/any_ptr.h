@@ -86,7 +86,11 @@ private:
     std::type_info const *_M_utype{&typeid(void)};
 
 public:
-    using std::shared_ptr<void>::shared_ptr;
+    any_ptr() = default;
+    any_ptr(any_ptr const &) = default;
+    any_ptr &operator=(any_ptr const &) = default;
+    any_ptr(any_ptr &&) = default;
+    any_ptr &operator=(any_ptr &&) = default;
 
     template <class T>
     any_ptr(std::in_place_t, T const &val)
@@ -127,8 +131,7 @@ public:
     }
 };
 
-template <class T>
-any_ptr make_any(T const &t) {
+inline any_ptr make_any(auto const &t) {
     return any_ptr(std::in_place, t);
 }
 
