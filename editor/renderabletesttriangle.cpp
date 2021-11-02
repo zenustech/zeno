@@ -1,7 +1,7 @@
 #include "renderable.h"
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
-#include <zeno/ztd/vec.h>
+#include <zeno/math/vec.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -40,7 +40,7 @@ public:
         static auto program = makeShaderProgram();
         program->bind();
 
-        std::vector<ztd::vec3f> vertices = {
+        std::vector<math::vec3f> vertices = {
             { 0.0f,  0.707f, 0.0f},
             {-0.5f, -0.5f, 0.0f},
             { 0.5f, -0.5f, 0.0f},
