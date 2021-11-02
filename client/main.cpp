@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
@@ -61,3 +62,14 @@ int main()
 
     return 0;
 }
+#else
+#include <zeno/ztd/any_ptr.h>
+
+USING_ZENO_NAMESPACE
+
+int main()
+{
+    ztd::any_ptr p;
+    p = ztd::make_any<int>(42);
+}
+#endif
