@@ -82,24 +82,24 @@ using any_underlying_t = typename any_underlying<T>::type;
 
 class any_ptr : public std::shared_ptr<void> {
 private:
-    std::type_info const *_M_type;
-    std::type_info const *_M_utype;
+    std::type_info const *_M_type{typeid(void)};
+    std::type_info const *_M_utype{typeid(void)};
 
 public:
     using std::shared_ptr<void>::shared_ptr;
 
     template <class T>
     any_ptr(std::in_place_t, T const &val)
-        : _M_type(&typeid(T))
+        : std::shared_ptr<void>(std::make_shared<any_underlying_t<T>>(val))
+        , _M_type(&typeid(T))
         , _M_utype(&typeid(any_underlying_t<T>))
-        , std::shared_ptr<void>(std::make_shared<any_underlying_t<T>>(val))
     {}
 
     template <class T>
     any_ptr(std::shared_ptr<T> &&ptr)
-        : _M_type(&typeid(*ptr))
+        : std::shared_ptr<void>(std::move(ptr))
+        , _M_type(&typeid(*ptr))
         , _M_utype(&typeid(any_underlying_t<T>))
-        , std::shared_ptr<void>(std::move(ptr))
     {}
 
     std::type_info const &type() const {
