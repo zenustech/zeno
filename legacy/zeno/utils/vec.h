@@ -7,6 +7,17 @@ namespace zeno {
 
 using namespace ZENO_NAMESPACE::math;
 
+template <size_t N, class T>
+struct vec : ZENO_NAMESPACE::math::vec<N, T> {
+    using ZENO_NAMESPACE::math::vec<N, T>::vec;
+};
+
+template <class T1, class T2>
+    requires (is_vec<T1> || is_vec<T2>)
+auto operator==(T1 const &t1, T2 const &t2) const {
+    return vcmpeq(t1, t2);
+}
+
 inline auto alltrue(auto x) {
     return vall(x);
 }
@@ -36,6 +47,36 @@ static constexpr auto is_vec_n = std::max((size_t)1, vec_traits<T>::dim);
 
 template <class T>
 static constexpr auto is_vec_v = vec_traits<T>::value;
+
+template <class T1, class T2>
+    requires (is_vec_v<T1> || is_vec_v<T2>)
+auto operator!=(T1 const &t1, T2 const &t2) {
+    return vcmpne(t1, t2);
+}
+
+template <class T1, class T2>
+    requires (is_vec_v<T1> || is_vec_v<T2>)
+auto operator>=(T1 const &t1, T2 const &t2) {
+    return vcmpge(t1, t2);
+}
+
+template <class T1, class T2>
+    requires (is_vec_v<T1> || is_vec_v<T2>)
+auto operator>(T1 const &t1, T2 const &t2) {
+    return vcmpgt(t1, t2);
+}
+
+template <class T1, class T2>
+    requires (is_vec_v<T1> || is_vec_v<T2>)
+auto operator<=(T1 const &t1, T2 const &t2) {
+    return vcmple(t1, t2);
+}
+
+template <class T1, class T2>
+    requires (is_vec_v<T1> || is_vec_v<T2>)
+auto operator<(T1 const &t1, T2 const &t2) {
+    return vcmplt(t1, t2);
+}
 
 template <class T>
 using decay_vec_t = typename vec_traits<T>::type;

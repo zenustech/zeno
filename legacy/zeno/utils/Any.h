@@ -43,8 +43,8 @@ struct Any : ZENO_NAMESPACE::ztd::any_ptr {
     using ZENO_NAMESPACE::ztd::any_ptr::any_ptr;
 
     template <class T>
-        requires (!is_shared_ptr<T>)
-    Any(T const &t) : any_ptr(std::in_place, t) {}
+        requires (!is_shared_ptr<T>::value)
+    Any(T const &t) : ZENO_NAMESPACE::ztd::any_ptr(std::in_place, t) {}
 };
 
 template <class T>
