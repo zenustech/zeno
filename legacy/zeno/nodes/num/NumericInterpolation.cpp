@@ -62,7 +62,7 @@ struct NumericInterpolation : zeno::INode {
         std::visit([&fac, isClamped] (auto src, auto srcMin, auto srcMax) {
             auto f = uninterp_f(src, srcMin, srcMax);
             if (isClamped)
-                f = zeno::clamp(f, 0, 1);
+                f = zeno::max(0, zeno::min(f, 1));
             fac = f;
         }, src, srcMin, srcMax);
 

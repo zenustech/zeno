@@ -44,31 +44,31 @@ static constexpr auto is_vec_v = vec_traits<T>::value;
 
 template <class T1, class T2>
     requires (is_vec_v<T1> || is_vec_v<T2>)
-auto operator!=(T1 const &t1, T2 const &t2) {
+constexpr auto operator!=(T1 const &t1, T2 const &t2) {
     return vcmpne(t1, t2);
 }
 
 template <class T1, class T2>
     requires (is_vec_v<T1> || is_vec_v<T2>)
-auto operator>=(T1 const &t1, T2 const &t2) {
+constexpr auto operator>=(T1 const &t1, T2 const &t2) {
     return vcmpge(t1, t2);
 }
 
 template <class T1, class T2>
     requires (is_vec_v<T1> || is_vec_v<T2>)
-auto operator>(T1 const &t1, T2 const &t2) {
+constexpr auto operator>(T1 const &t1, T2 const &t2) {
     return vcmpgt(t1, t2);
 }
 
 template <class T1, class T2>
     requires (is_vec_v<T1> || is_vec_v<T2>)
-auto operator<=(T1 const &t1, T2 const &t2) {
+constexpr auto operator<=(T1 const &t1, T2 const &t2) {
     return vcmple(t1, t2);
 }
 
 template <class T1, class T2>
     requires (is_vec_v<T1> || is_vec_v<T2>)
-auto operator<(T1 const &t1, T2 const &t2) {
+constexpr auto operator<(T1 const &t1, T2 const &t2) {
     return vcmplt(t1, t2);
 }
 
