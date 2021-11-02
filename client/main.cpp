@@ -72,9 +72,10 @@ USING_ZENO_NAMESPACE
 int main()
 {
     ztd::any_ptr p;
-    p = ztd::make_any<int>(42);
+    p = ztd::make_any<int32_t>(42);
     std::cout << p.type().name() << std::endl;
-    std::cout << *p.cast<int>() << std::endl;
+    std::cout << typeid(ztd::any_underlying_t<int32_t>).name() << std::endl;
+    std::cout << *p.cast<float>() << std::endl;
 
     return 0;
 }

@@ -66,20 +66,28 @@ template <class T>
 struct any_underlying {
     using type = T;
 
-    static T *cast(type &t) {
+    static T *pointer_cast(type &t) {
         return &t;
+    }
+
+    static std::optional<T> value_cast(type const &t) {
+        return std::make_optional(t);
     }
 };
 
 template <class T>
-    requires (variant_contains_v<details::numeric_variant<math::vec_dimension_v<T>>, T>)
+    requires (variant_contains_v<T, details::numeric_variant<math::vec_dimension_v<T>>>)
 struct any_underlying<T> {
     using type = details::numeric_variant<math::vec_dimension_v<T>>;
 
-    static T *cast(type &t) {
-        return std::visit([&] (auto &v) {
+    static T *pointer_cast(type &t) {
+        return std::holds_alternative<T>(t) ? &std::get<T>(t) : nullptr;
+    }
+
+    static std::optional<T> value_cast(type const &t) {
+        return std::make_optional(std::visit([&] (auto const &v) {
             return (T)v;
-        }, t);
+        }, t));
     }
 };
 
@@ -88,8 +96,16 @@ template <class T>
 struct any_underlying<T> {
     using type = typename T::polymorphic_base_type;
 
-    static T *cast(type &t) {
+    static T *pointer_cast(type &t) {
         return dynamic_cast<T *>(&t);
+    }
+
+    static std::optional<T> value_cast(type &t) {
+        if (auto p = dynamic_cast<T *>(&t)) {
+            return std::make_optional(*p);
+        } else {
+            return std::nullopt;
+        }
     }
 };
 
@@ -130,7 +146,15 @@ public:
         using U = any_underlying_t<T>;
         auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
         if (!p) return nullptr;
-        return any_underlying<T>::cast(p->_M_val);
+        return any_underlying<T>::pointer_cast(p->_M_val);
+    }
+
+    template <class T>
+    std::optional<T> get() const {
+        using U = any_underlying_t<T>;
+        auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
+        if (!p) return std::nullopt;
+        return any_underlying<T>::value_cast(p->_M_val);
     }
 };
 
