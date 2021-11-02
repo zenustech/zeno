@@ -97,6 +97,10 @@ public:
     {
     }
 
+    any_ptr clone() const {
+        return any_ptr(_M_base->clone());
+    }
+
     template <class T>
     T *cast() const {
         using U = any_underlying_t<T>;
