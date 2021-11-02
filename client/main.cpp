@@ -75,7 +75,7 @@ int main()
     p = ztd::make_any<int32_t>(42);
     std::cout << p.type().name() << std::endl;
     std::cout << typeid(ztd::any_underlying_t<int32_t>).name() << std::endl;
-    std::cout << *p.cast<float>() << std::endl;
+    std::cout << p.as<float>().value() << std::endl;
 
     return 0;
 }
