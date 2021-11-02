@@ -30,21 +30,29 @@ using numeric_variant = std::variant
     >;
 
 struct any_ptr_base {
+    std::type_info const &_M_type;
+
+    any_ptr_base(std::type_info const &type) : _M_type(type) {}
+
     virtual std::shared_ptr<any_ptr_base> clone() const = 0;
     virtual ~any_ptr_base() = default;
+
+    std::type_info const &type() const {
+        return _M_type;
+    }
 };
 
 template <class T>
 struct any_ptr_impl : any_ptr_base {
-    T _M_t;
+    T _M_val;
 
-    any_ptr_impl(std::in_place_t, auto &&...args)
-        : _M_t(std::forward<decltype(args)>(args)...) {}
+    any_ptr_impl(std::type_info const &type, auto &&...args)
+        : any_ptr_base(type), _M_val(std::forward<decltype(args)>(args)...) {}
 
     virtual std::shared_ptr<any_ptr_base> clone() const override {
         if constexpr (std::is_copy_constructible_v<T>) {
             return std::make_shared<any_ptr_impl>(
-                std::in_place, static_cast<T const &>(_M_t));
+                _M_type, static_cast<T const &>(_M_val));
         } else {
             return nullptr;
         }
@@ -69,7 +77,19 @@ struct any_underlying<T> {
     using type = details::numeric_variant<math::vec_dimension_v<T>>;
 
     static T *cast(type &t) {
-        return std::holds_alternative<T>(t) ? &std::get<T>(t) : nullptr;
+        return std::visit([&] (auto &v) {
+            return (T)v;
+        }, t);
+    }
+};
+
+template <class T>
+    requires (true_v<typename T::polymorphic_base_type>)
+struct any_underlying<T> {
+    using type = typename T::polymorphic_base_type;
+
+    static T *cast(type &t) {
+        return dynamic_cast<T *>(&t);
     }
 };
 
@@ -93,8 +113,12 @@ public:
     template <class T>
     explicit any_ptr(std::type_identity<T>, auto &&...args)
         : _M_base(std::make_shared<details::any_ptr_impl<any_underlying_t<T>>>(
-                std::in_place, std::forward<decltype(args)>(args)...))
+                typeid(T), std::forward<decltype(args)>(args)...))
     {
+    }
+
+    std::type_info const &type() const {
+        return _M_base->type();
     }
 
     any_ptr clone() const {
@@ -106,13 +130,7 @@ public:
         using U = any_underlying_t<T>;
         auto p = dynamic_cast<details::any_ptr_impl<U> *>(_M_base.get());
         if (!p) return nullptr;
-        return any_underlying<T>::cast(p->_M_t);
-    }
-
-    template <class T>
-    std::optional<T> get() const {
-        auto p = cast<T>();
-        return p ? std::make_optional(p) : std::nullopt;
+        return any_underlying<T>::cast(p->_M_val);
     }
 };
 

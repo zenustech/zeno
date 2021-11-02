@@ -63,7 +63,9 @@ int main()
     return 0;
 }
 #else
+
 #include <zeno/ztd/any_ptr.h>
+#include <iostream>
 
 USING_ZENO_NAMESPACE
 
@@ -71,5 +73,10 @@ int main()
 {
     ztd::any_ptr p;
     p = ztd::make_any<int>(42);
+    std::cout << p.type().name() << std::endl;
+    std::cout << *p.cast<int>() << std::endl;
+
+    return 0;
 }
+
 #endif
