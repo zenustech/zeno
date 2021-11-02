@@ -12,12 +12,6 @@ struct vec : ZENO_NAMESPACE::math::vec<N, T> {
     using ZENO_NAMESPACE::math::vec<N, T>::vec;
 };
 
-template <class T1, class T2>
-    requires (is_vec<T1> || is_vec<T2>)
-auto operator==(T1 const &t1, T2 const &t2) const {
-    return vcmpeq(t1, t2);
-}
-
 inline auto alltrue(auto x) {
     return vall(x);
 }

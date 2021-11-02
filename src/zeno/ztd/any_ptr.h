@@ -28,9 +28,8 @@ using numeric_variant = std::variant
     , numeric_auto_vec<N, float>
     >;
 
-template <class T>
 struct no_deleter {
-    constexpr void operator ()(T *) const {}
+    constexpr void operator ()(auto *) const {}
 };
 
 }
@@ -39,8 +38,8 @@ template <class T>
 struct any_underlying {
     using type = T;
 
-    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
-        return std::static_pointer_cast<T>(std::move(t));
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<type> &&t) {
+        return t;
     }
 
     static std::optional<T> value_cast(type const &t) {
@@ -53,14 +52,13 @@ template <class T>
 struct any_underlying<T> {
     using type = details::numeric_variant<math::vec_dimension_v<T>>;
 
-    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
-        auto &v = *std::static_pointer_cast<type>(std::move(t));
-        return std::holds_alternative<T>(v) ?
-            std::shared_ptr<T>(&std::get<T>(v), details::no_deleter<T>{}) : nullptr;
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<type> &&t) {
+        return std::holds_alternative<T>(*t) ?
+            std::shared_ptr<T>(&std::get<T>(*t), details::no_deleter{}) : nullptr;
     }
 
     static std::optional<T> value_cast(type const &t) {
-        return std::make_optional(std::visit([&] (auto const &v) {
+        return std::make_optional(std::visit([] (auto const &v) {
             return (T)v;
         }, t));
     }
@@ -71,8 +69,8 @@ template <class T>
 struct any_underlying<T> {
     using type = typename T::polymorphic_base_type;
 
-    static std::shared_ptr<T> pointer_cast(std::shared_ptr<void> &&t) {
-        return std::dynamic_pointer_cast<T>(std::static_pointer_cast<type>(std::move(t)));
+    static std::shared_ptr<T> pointer_cast(std::shared_ptr<type> &&t) {
+        return std::dynamic_pointer_cast<T>(std::move(t));
     }
 
     static std::optional<T> value_cast(type &t) {

@@ -13,7 +13,7 @@ template <class T1, class T2, class T3, \
           class T0 = decltype(std::declval<remove_vec_t<T1>>() \
                             + std::declval<remove_vec_t<T2>>() \
                             + std::declval<remove_vec_t<T3>>())> \
-    requires (requires (T0 t0) { std::fname(t0, t0, t0); }) \
+    requires (vec_promotable<T1, T2, T3> && requires (T0 t0) { std::fname(t0, t0, t0); }) \
 constexpr decltype(auto) fname(T1 const &t1, T2 const &t2, T3 const &t3) { \
     return vec_wise(t1, t2, t3, [] (auto &&t1, auto &&t2, auto &&t3) { \
         return (T0)std::fname((T0)t1, (T0)t2, (T0)t3); }); \
@@ -23,7 +23,7 @@ constexpr decltype(auto) fname(T1 const &t1, T2 const &t2, T3 const &t3) { \
 template <class T1, class T2, \
           class T0 = decltype(std::declval<remove_vec_t<T1>>() \
                             + std::declval<remove_vec_t<T2>>())> \
-    requires (requires (T0 t0) { std::fname(t0, t0); }) \
+    requires (vec_promotable<T1, T2> && requires (T0 t0) { std::fname(t0, t0); }) \
 constexpr decltype(auto) fname(T1 const &t1, T2 const &t2) { \
     return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { \
         return (T0)std::fname((T0)t1, (T0)t2); }); \

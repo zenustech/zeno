@@ -14,7 +14,7 @@ all:
 	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -sf /tmp/zeno-build build
 	cmake -Wno-dev -B /tmp/zeno-build $A
-	cmake --build /tmp/zeno-build --parallel
+	cmake --build /tmp/zeno-build
 
 config:
 	ccmake -B /tmp/zeno-build

@@ -19,11 +19,6 @@ template <size_t N, class T>
 struct vec_traits<vec<N, T>> : std::true_type {
     static constexpr size_t dim = N;
     using type = T;
-
-    template <class S>
-    constexpr bool operator==(vec_traits<S> const &that) const {
-        return !value || !that.value || dim == that.dim;
-    }
 };
 
 template <class T>
@@ -37,6 +32,12 @@ concept is_vec = vec_traits<T>::value;
 
 template <class T>
 concept is_not_vec = !is_vec<T>;
+
+template <class ...Ts>
+concept vec_promotable = ((!vec_dimension_v<Ts> || vec_dimension_v<Ts> == std::max({vec_dimension_v<Ts>...})) && ...);
+
+template <class ...Ts>
+concept vec_promotable_and_any_vec = vec_promotable<Ts...> && (is_vec<Ts> || ...);
 
 
 }
