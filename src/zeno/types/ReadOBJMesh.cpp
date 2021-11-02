@@ -103,7 +103,6 @@ static void ReadOBJMesh(dop::FuncContext *ctx) {
         throw ztd::format_error("OSError: cannot open file for read: {}", path);
     readMeshFromOBJ(fin, *mesh);
     ctx->outputs.at(0) = std::move(mesh);
-    printf("%s!!!!\n", ctx->outputs.at(0).type().name());
 }
 
 

@@ -48,13 +48,13 @@ int main()
     auto n1 = dop::descriptor_table().at("ReadOBJMesh").create();
     n1->inputs.at(0) = dop::Input_Value{ztd::make_any<std::string>("models/cube.obj")};
     n1->apply();
-    /*auto n2 = dop::descriptor_table().at("Transform").create();
+    auto n2 = dop::descriptor_table().at("Transform").create();
     n2->inputs.at(0) = dop::Input_Value{n1->outputs.at(0)};
     n2->inputs.at(1) = dop::Input_Value{ztd::make_any<math::vec3f>({0.3f, 0.5f, 0.1f})};
     n2->inputs.at(2) = dop::Input_Value{ztd::make_any<math::vec3f>({1, 1, 1})};
     n2->inputs.at(3) = dop::Input_Value{ztd::make_any<math::vec4f>({0, 0, 0, 1})};
-    n2->apply();*/
-    auto mesh = pointer_cast<types::Mesh>(n1->outputs.at(0));
+    n2->apply();
+    auto mesh = pointer_cast<types::Mesh>(n2->outputs.at(0));
 
     for (auto x: mesh->vert.to_vector()) {
         printf("%f %f %f\n", x[0], x[1], x[2]);

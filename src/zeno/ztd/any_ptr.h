@@ -82,8 +82,8 @@ using any_underlying_t = typename any_underlying<T>::type;
 
 class any_ptr : public std::shared_ptr<void> {
 private:
-    std::type_info const *_M_type{typeid(void)};
-    std::type_info const *_M_utype{typeid(void)};
+    std::type_info const *_M_type{&typeid(void)};
+    std::type_info const *_M_utype{&typeid(void)};
 
 public:
     using std::shared_ptr<void>::shared_ptr;

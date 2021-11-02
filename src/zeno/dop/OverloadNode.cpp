@@ -20,7 +20,6 @@ void OverloadNode::apply() {
     overloading_table().at(desc->name).invoke(&ctx);
 
     for (int i = 0; i < ctx.outputs.size(); i++) {
-        printf("!!!%s\n", ctx.outputs[i].type().name());
         set_output(i, std::move(ctx.outputs[i]));
     }
 }
