@@ -8,6 +8,83 @@ ZENO_NAMESPACE_BEGIN
 namespace math {
 
 
+template <class T>
+struct vbool {
+    T t;
+
+    constexpr operator T const &() const {
+        return t;
+    }
+
+    constexpr operator T &() {
+        return t;
+    }
+
+    constexpr vbool(T const &t) : t(t) {
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1) { !t1; })
+    constexpr vbool operator!() const {
+        return vec_wise(t, [] (auto &&t1) { return !t1; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 && t2; })
+    constexpr vbool operator&&(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 && t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 || t2; })
+    constexpr vbool operator||(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 || t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 <=> t2; })
+    constexpr vbool operator<=>(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <=> t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 == t2; })
+    constexpr vbool operator==(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 == t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 != t2; })
+    constexpr vbool operator!=(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 != t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 >= t2; })
+    constexpr vbool operator>=(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 >= t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 > t2; })
+    constexpr vbool operator>(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 > t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 <= t2; })
+    constexpr vbool operator<=(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <= t2; });
+    }
+
+    template <class T2>
+        requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 < t2; })
+    constexpr vbool operator<(T2 &&t2) const {
+        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 < t2; });
+    }
+};
+
+
 template <size_t N, class T1>
     requires (requires (T1 t1) { (bool)t1; })
 constexpr bool vany(vec<N, T1> const &t1) {
@@ -27,55 +104,6 @@ constexpr bool vall(vec<N, T1> const &t1) {
         ret = ret && (bool)t1[i];
     }
     return ret;
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 <=> t2; })
-constexpr decltype(auto) vcmp(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 <=> t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 == t2; })
-constexpr decltype(auto) vcmpeq(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 == t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 != t2; })
-constexpr decltype(auto) vcmpne(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 != t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 >= t2; })
-constexpr decltype(auto) vcmpge(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 >= t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 > t2; })
-constexpr decltype(auto) vcmpgt(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 > t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 <= t2; })
-constexpr decltype(auto) vcmple(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 <= t2; });
-}
-
-
-template <class T1, class T2>
-    requires (vec_promotable<T1, T2> && requires (remove_vec_t<T1> t1, remove_vec_t<T2> t2) { t1 < t2; })
-constexpr decltype(auto) vcmplt(T1 const &t1, T2 const &t2) {
-    return vec_wise(t1, t2, [] (auto &&t1, auto &&t2) { return t1 < t2; });
 }
 
 
