@@ -47,11 +47,11 @@ struct AABBCollideDetect : INode {
         auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
 
         // https://www.cnblogs.com/liez/p/11965027.html
-        bool overlap = +(vbool(zeno::abs(bminA + bmaxA - bminB - bmaxB)) <= bmaxA - bminA + bmaxB - bminB);
+        bool overlap = -(vbool(zeno::abs(bminA + bmaxA - bminB - bmaxB)) <= bmaxA - bminA + bmaxB - bminB);
         set_output2("overlap", overlap);
-        bool AinsideB = +(vbool(bminA) >= bminB && vbool(bmaxA) <= bmaxB);
+        bool AinsideB = -(vbool(vbool(bminA) >= bminB) && vbool(bmaxA) <= bmaxB);
         set_output2("AinsideB", AinsideB);
-        bool BinsideA = +(vbool(bminA) <= bminB && vbool(bmaxA) >= bmaxB);
+        bool BinsideA = -(vbool(vbool(bminA) <= bminB) && vbool(bmaxA) >= bmaxB);
         set_output2("BinsideA", BinsideA);
     }
 };

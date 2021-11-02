@@ -7,10 +7,30 @@
 ZENO_NAMESPACE_BEGIN
 namespace math {
 
+template <class T>
+struct vbool_t;
+
+template <class T>
+struct remove_vbool {
+    using type = T;
+};
+
+template <class T>
+struct remove_vbool<vbool_t<T>> {
+    using type = T;
+};
+
+template <class T>
+using remove_vbool_t = typename remove_vbool<T>::type;
 
 template <class T>
 struct vbool_t {
     T t;
+
+    vbool_t(vbool_t const &) = default;
+    vbool_t(vbool_t &&) = default;
+    vbool_t &operator=(vbool_t const &) = default;
+    vbool_t &operator=(vbool_t &&) = default;
 
     constexpr vbool_t(T const &t) : t(t) {
     }
@@ -26,61 +46,61 @@ struct vbool_t {
     template <class T2>
         requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1) { !t1; })
     constexpr auto operator!() const {
-        return vec_wise(t, [] (auto &&t1) { return !t1; });
+        return (vbool_t)vec_wise(t, [] (auto &&t1) { return !t1; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 && t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 && t2; })
     constexpr auto operator&&(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 && t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 && t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 || t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 || t2; })
     constexpr auto operator||(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 || t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 || t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 <=> t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 <=> t2; })
     constexpr auto operator<=>(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <=> t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <=> t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 == t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 == t2; })
     constexpr auto operator==(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 == t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 == t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 != t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 != t2; })
     constexpr auto operator!=(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 != t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 != t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 >= t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 >= t2; })
     constexpr auto operator>=(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 >= t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 >= t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 > t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 > t2; })
     constexpr auto operator>(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 > t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 > t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 <= t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 <= t2; })
     constexpr auto operator<=(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <= t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 <= t2; });
     }
 
     template <class T2>
-        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vec_t<T2> t2) { t1 < t2; })
+        requires (vec_promotable<T, T2> && requires (remove_vec_t<T> t1, remove_vbool_t<T2> t2) { t1 < t2; })
     constexpr auto operator<(T2 const &t2) const {
-        return vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 < t2; });
+        return (vbool_t)vec_wise(t, t2, [] (auto &&t1, auto &&t2) { return t1 < t2; });
     }
 
     template <size_t = 0>
@@ -117,7 +137,7 @@ struct vbool_t {
 };
 
 template <class T>
-constexpr vbool_t<T> vbool(T const &t) {
+inline constexpr vbool_t<T> vbool(T const &t) {
     return vbool_t<T>(t);
 }
 

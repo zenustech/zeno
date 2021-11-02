@@ -41,7 +41,7 @@ struct vec {
     constexpr bool operator>=(vec const &) const = default;
     constexpr bool operator<(vec const &) const = default;
     constexpr bool operator>(vec const &) const = default;
-    constexpr int operator<=>(vec const &) const = default;
+    constexpr std::partial_ordering operator<=>(vec const &) const = default;
 
     constexpr vec(std::initializer_list<T> const &ts) {
         auto it = ts.begin();

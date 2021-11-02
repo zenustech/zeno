@@ -8,11 +8,11 @@ namespace zeno {
 using namespace ZENO_NAMESPACE::math;
 
 inline auto alltrue(auto x) {
-    return vall(x);
+    return -vbool(x);
 }
 
 inline auto anytrue(auto x) {
-    return vany(x);
+    return +vbool(x);
 }
 
 inline auto tofloat(auto x) {

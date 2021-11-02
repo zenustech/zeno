@@ -71,15 +71,14 @@ int main()
 
 USING_ZENO_NAMESPACE
 
-template <class T1, class T2>
-concept myconcept = requires (T1 t1, T2 t2) {
-    math::clamp(t1, t2, 4);
+template <class T>
+concept mama = requires (T t) {
+    math::sqrt(t);
 };
 
 int main()
 {
-    std::cout << myconcept<math::vec3i, math::vec4f> << std::endl;
-    std::cout << myconcept<math::vec3i, math::vec3f> << std::endl;
+    std::cout << mama<float> << std::endl;
     return 0;
 }
 
