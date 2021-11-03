@@ -1,0 +1,10 @@
+^E:\KDDOCKWIDGETS\DEBUG\CMAKEFILES\5D32645706DEABEF96D931C7C72A5C4D\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/KDDockWidgets -BE:/KDDockWidgets/Debug --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/KDDockWidgets/Debug/KDDockWidgets.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

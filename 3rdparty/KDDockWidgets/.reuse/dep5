@@ -1,0 +1,18 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: KDDockWidgets
+Upstream-Contact:  <info@kdab.com>
+Source: https://www.github.com/KDAB/KDDockWidgets
+
+Files: *.qrc *.json *.xml *.html src/fwd_headers/*
+Copyright: 2019-2021 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+License: GPL-2.0-only OR GPL-3.0-only
+
+#artwork
+Files: screencap.gif images/* src/img/* docs/api/*.png examples/dockwidgets/assets/*.png src/img/classic_indicators/*.png
+Copyright: 2019-2021 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+License: GPL-2.0-only OR GPL-3.0-only
+
+#3rdparty
+Files: cmake/ECM/modules/*
+Copyright:
+License: BSD-3-Clause

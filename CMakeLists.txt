@@ -94,6 +94,7 @@ if (ZENO_EXECUTABLE STREQUAL "tests")
     message("-- Enabling CMake Testing")
     enable_testing()
 endif()
+add_subdirectory(3rdparty)
 add_subdirectory(${ZENO_EXECUTABLE})
 
 message("-- Building Zeno Core Library")

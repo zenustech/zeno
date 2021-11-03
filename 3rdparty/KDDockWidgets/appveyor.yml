@@ -1,0 +1,80 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+version: 1.0.{build}-{branch}
+
+# branches to build
+branches:
+  except:
+    - gh-pages
+
+# Do not build on tags (GitHub and BitBucket)
+skip_tags: false
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image
+image:
+  - Visual Studio 2019
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform:
+  - x64
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration:
+  - Release
+
+install:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - set QTDIR=C:\Qt\5.15\msvc2019_64
+  - set PATH=%QTDIR%\bin;%PATH%
+build_script:
+  - mkdir build
+  - cd build
+  - cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DKDDockWidgets_TESTS=True -DKDDockWidgets_EXAMPLES=True  -DKDDockWidgets_DEVELOPER_MODE=True ..
+  - nmake
+
+# to disable automatic builds
+#build: off
+
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+test_script:
+  - nmake test
+
+# to disable automatic tests
+#test: off
+
+
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+
+deploy: off
+
+#---------------------------------#
+#         notifications           #
+#---------------------------------#
+notifications:
+  # Email
+  - provider: Email
+    to:
+      - allen.winter@kdab.com
+      - sergio.martins@kdab.com
+    on_build_success: false
+    on_build_failure: true

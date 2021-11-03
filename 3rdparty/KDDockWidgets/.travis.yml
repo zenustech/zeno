@@ -1,0 +1,66 @@
+env:
+  global:
+    - secure: "NlWO/NTPlOU6cowOMuPOvjAprXVwIjmpHHf9CoMR71E2c/eBFFKIHj10kXuyFwz2KihHAIExmo9OlGtGniNWobvIrVrabO3dsOSb6UGbPAQkzQiyQLKsDNQAZx3nMuWEKBtMsVRee6rd7/2uGTY4WB5Ot3VhrUYcN1FoRgQQ9gk="
+
+branches:
+  only:
+    - master
+
+matrix:
+  include:
+    - os: linux
+      dist: bionic
+    - os: osx
+      osx_image: xcode11.5
+      env:
+        - QT_SELECT=qt5
+        - CMAKE_PREFIX_PATH=/usr/local/opt/qt
+
+language: cpp
+compiler:
+  - gcc
+  - clang
+
+script:
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release -DKDDockWidgets_TESTS=True -KDDockWidgets_EXAMPLES=True  -DKDDockWidgets_DEVELOPER_MODE=True ..
+  - make
+  - make test
+
+notifications:
+  email:
+    recipients:
+    - allen.winter@kdab.com
+    - sergio.martins@kdab.com
+    on_success:  never
+    on_failure: always
+
+dist: bionic
+addons:
+  apt:
+    update: true
+    packages:
+    - qt5-default
+    - qtbase5-dev
+    - qtbase5-dev-tools
+    - qtbase5-private-dev
+    - qttools5-dev
+    - qttools5-dev-tools
+    - qtdeclarative5-dev
+    - qtdeclarative5-dev-tools
+    - libqt5xmlpatterns5-dev
+    - libqt5xmlpatterns5
+    - qtxmlpatterns5-dev-tools
+    - libqt5x11extras5-dev
+  homebrew:
+    update: true
+    packages:
+    - qt5
+  coverity_scan:
+    project:
+      name: KDAB/KDDockWidgets
+    notification_email: allen.winter@kdab.com
+    build_command_prepend: cd build && cmake ..
+    build_command: make
+    branch_pattern: coverity_scan

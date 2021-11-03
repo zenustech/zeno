@@ -1,0 +1,4 @@
+[codespell]
+skip = ./build-*,.git,*.svg,rc_assets.py
+interactive = 3
+ignore-words-list = overlay,overlayed
