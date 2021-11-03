@@ -33,6 +33,9 @@ struct boundbox {
         min = std::min(min, that.min);
         max = std::max(max, that.max);
     }
+
+    constexpr void divide(float count) {
+    }
 };
 
 struct centroid {
@@ -44,6 +47,10 @@ struct centroid {
 
     constexpr void combine(centroid const &that) {
         pos += that.pos;
+    }
+
+    constexpr void divide(float count) {
+        pos *= 1.f / count;
     }
 };
 
@@ -76,7 +83,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
         auto lxr_temp = zycl::local_access<zycl::access::mode::read_write, Reducer, 1>(cgh, zycl::range<1>(BlkSize));
 
         cgh.parallel_for(
-            zycl::nd_range<1>(axr_vert.size(), BlkSize),
+            zycl::nd_range<1>(psumsize * BlkSize, BlkSize),
             [=] (zycl::nd_item<1> it) {
                 auto gid = it.get_group(0);
                 auto lid = it.get_local_id(0);
@@ -88,7 +95,10 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
                         lxr_temp[lid].combine(lxr_temp[lid + stride]);
                     it.barrier(sycl::access::fence_space::local_space);
                 }
-                axr_psum[gid] = lxr_temp[0];
+                if (lid == 0) {
+                    lxr_temp[0].divide(BlkSize);
+                    axr_psum[gid] = lxr_temp[0];
+                }
             }
         );
     }
@@ -98,6 +108,29 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
     for (size_t i = 0; i < psumsize; i++) {
         sum.combine(axr_psum[i]);
     }
+
+    if (psumsize * BlkSize < axr_vert.size()) {
+        zycl::vector<Reducer> prest(1);
+        {
+            auto axr_prest = zycl::make_access<zycl::access::mode::discard_write>(cgh, prest);
+            cgh.single_task([=] {
+                axr_prest[0].init(axr_vert[psumsize * BlkSize]);
+                for (size_t i = psumsize * BlkSize + 1; i < axr_vert.size(); i++) {
+                    axr_prest[0].combine(axr_vert[i]);
+                }
+                axr_prest[0].divide(axr_vert.size());
+            });
+        }
+        auto axr_prest = zycl::host_access<zycl::access::mode::read>(prest);
+        Reducer rest = axr_prest[0];
+        rest.divide(BlkSize);
+        sum.combine(rest);
+        sum.divide((float)axr_vert.size() / BlkSize);
+
+    } else {
+        sum.divide(psumsize);
+    }
+
     return sum;
 }
 
