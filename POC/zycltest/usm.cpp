@@ -52,16 +52,18 @@ span(has_span auto &&t) -> span<decltype(t.data()), decltype(t.size())>;
 
 
 int main() {
-    std::vector<int, allocator<int>> v(32);
-    default_queue().submit([&] (sycl::handler &cgh) {
-        span v_p{v};
-        cgh.parallel_for(sycl::range<1>(v.size()), [=] (sycl::item<1> it) {
-            v_p[it.get_id(0)] = it.get_id(0);
-        });
-    }).wait();
-    v.resize(42);
-    for (auto const &x: v) {
-        printf("%d\n", x);
-    }
+    std::vector<int, allocator<int>> arr(32);
+    std::vector<int, allocator<int>> sum(1);
+
+    span v_arr = arr;
+    default_queue().parallel_for(
+        sycl::nd_range<1>(arr.size(), 4),
+        sycl::reduction(sum.data(), 0, std::plus{}),
+        [=] (sycl::nd_item<1> it, auto &sum) {
+            sum += v_arr[it.get_global_id(0)];
+        }
+    ).wait();
+
+    printf("%d\n", sum[0]);
     return 0;
 }
