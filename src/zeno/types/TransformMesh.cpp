@@ -17,7 +17,7 @@ static void TransformMesh(dop::FuncContext *ctx) {
     auto rotation = value_cast<math::vec4f>(ctx->inputs.at(3));
     auto rotmat = math::quaternion_matrix(rotation);
 
-    zycl::queue().submit([&] (zycl::handler &cgh) {
+    zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_vert = make_access<zycl::access::mode::discard_read_write>(cgh, mesh->vert);
 
         std::visit(

@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
@@ -8,10 +8,7 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que;
-#ifndef ZENO_SYCL_IS_EMULATED
-    std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << ", backend: " << que.get_backend() << std::endl;
-#endif
+    zycl::queue que(sycl::gpu_selector{});
 
 #if 0
     zycl::vector<int> buf;
