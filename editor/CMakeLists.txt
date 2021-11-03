@@ -8,7 +8,7 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 message("-- Found Qt${QT_VERSION_MAJOR} version: ${Qt${QT_VERSION_MAJOR}_VERSION}")
 
-file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
+file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
 #if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     #qt_add_executable(zeno MANUAL_FINALIZATION ${source})

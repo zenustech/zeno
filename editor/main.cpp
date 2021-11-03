@@ -3,6 +3,8 @@
 #include <kddockwidgets/DockWidget.h>
 #include <kddockwidgets/MainWindow.h>
 #include <kddockwidgets/Config.h>
+#include "tmpwidgets/zmainwindow.h"
+#include "style/zenostyle.h"
 
 #define USE_KKDOCK
 
@@ -11,24 +13,9 @@ ZENO_NAMESPACE_BEGIN
 int zenoMainWithKDDoc(int argc, char* argv[])
 {
     QApplication a(argc, argv);
-
-    KDDockWidgets::Config::self().setAbsoluteWidgetMinSize(QSize(54, 54));
-    KDDockWidgets::MainWindow mainWindow(QStringLiteral("MyMainWindow"));
-	mainWindow.setWindowTitle("Main Window");
-	mainWindow.resize(1200, 1200);
-	mainWindow.show();
-
-	auto dock1 = new KDDockWidgets::DockWidget(QStringLiteral("MyDock1"));
-	auto widget1 = new QWidget();
-	dock1->setWidget(widget1);
-
-	auto dock2 = new KDDockWidgets::DockWidget(QStringLiteral("MyDock2"));
-	auto widget2 = new QWidget();
-	dock2->setWidget(widget2);
-
-	mainWindow.addDockWidget(dock1, KDDockWidgets::Location_OnLeft);
-	mainWindow.addDockWidget(dock2, KDDockWidgets::Location_OnTop);
-
+    a.setStyle(new ZenoStyle);
+    ZMainWindow mainWindow;
+    mainWindow.showMaximized();
     return a.exec();
 }
 
