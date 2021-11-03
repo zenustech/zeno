@@ -93,7 +93,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
         );
     }
 
-    auto axr_psum = zycl::make_access<zycl::access::mode::read>(zycl::host_handler{}, psum);
+    auto axr_psum = zycl::host_access<zycl::access::mode::read>(psum);
     Reducer sum = axr_psum[0];
     for (size_t i = 0; i < psumsize; i++) {
         sum.combine(axr_psum[i]);

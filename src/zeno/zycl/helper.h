@@ -57,5 +57,10 @@ auto local_access(auto &&cgh, range<N> const &size) {
     return span{accessor<T, N, mode, access::target::local>(size, std::forward<decltype(cgh)>(cgh)), size};
 }
 
+template <access::mode mode>
+auto host_access(auto &&buf) {
+    return make_access<mode>(host_handler{}, buf);
+}
+
 }
 ZENO_NAMESPACE_END
