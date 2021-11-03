@@ -117,7 +117,8 @@ static void ReductionMesh(dop::FuncContext *ctx) {
         }, reducer);
     }).wait();
 
-    ctx->outputs.at(0) = std::move(mesh);
+    ctx->outputs.at(0) = ztd::make_any(out1);
+    ctx->outputs.at(1) = ztd::make_any(out2);
 }
 
 

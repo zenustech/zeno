@@ -23,7 +23,8 @@ ZENO_DOP_INTERFACE(Reduction, {{
     {"object"},
     {"type"},
 }, {
-    {"object"},
+    {"res1"},
+    {"res2"},
 }});
 
 
