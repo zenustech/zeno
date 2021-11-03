@@ -116,7 +116,9 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
             cgh.single_task([=] {
                 axr_prest[0].init(axr_vert[psumsize * BlkSize]);
                 for (size_t i = psumsize * BlkSize + 1; i < axr_vert.size(); i++) {
-                    axr_prest[0].combine(axr_vert[i]);
+                    Reducer tmp;
+                    tmp.init(axr_vert[i]);
+                    axr_prest[0].combine(tmp);
                 }
                 axr_prest[0].divide(axr_vert.size());
             });
@@ -148,7 +150,7 @@ static void ReductionMesh(dop::FuncContext *ctx) {
             auto axr_vert = zycl::make_access<zycl::access::mode::read>(cgh, mesh->vert);
             auto res = reduction(cgh, reducer, axr_vert);
         }, reducer);
-    }).wait();
+    });
 
     ctx->outputs.at(0) = ztd::make_any(out1);
     ctx->outputs.at(1) = ztd::make_any(out2);
