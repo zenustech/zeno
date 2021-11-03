@@ -81,7 +81,7 @@
       ]
      },
      "params": {
-      "value": 20000000.0
+      "value": 10000000.0
      },
      "uipos": [
       -6558.964656970938,
@@ -99,7 +99,7 @@
       ]
      },
      "params": {
-      "value": 0.49
+      "value": 0.499
      },
      "uipos": [
       -6545.444448542077,
@@ -122,8 +122,8 @@
       "z": 0.0
      },
      "uipos": [
-      156.8957424856556,
-      -1363.3380592604444
+      399.93165877524825,
+      -1316.387939068137
      ],
      "options": []
     },
@@ -137,7 +137,7 @@
       ]
      },
      "params": {
-      "value": 0.001
+      "value": 0.01
      },
      "uipos": [
       213.39187826298576,
@@ -169,7 +169,9 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "integType": "BackwardEuler"
+     },
      "uipos": [
       1059.3236381867284,
       -1393.459377336301
@@ -189,11 +191,11 @@
      },
      "params": {
       "ForceModel": "Fiberic",
-      "aniso_strength": 50.0
+      "aniso_strength": 10.0
      },
      "uipos": [
-      2020.6512746112494,
-      -1829.9222270511355
+      1866.4206995662526,
+      -1825.5032484733633
      ],
      "options": [
       "ONCE"
@@ -209,11 +211,11 @@
       ]
      },
      "params": {
-      "value": 1e-06
+      "value": 0.0001
      },
      "uipos": [
-      1740.53252269505,
-      -1361.3664940352446
+      1817.7116994504977,
+      -1299.3204891926298
      ],
      "options": []
     },
@@ -389,7 +391,7 @@
      "params": {},
      "uipos": [
       -960.3225178861039,
-      -1652.4774822253705
+      -1721.9897435100925
      ],
      "options": []
     },
@@ -598,8 +600,8 @@
      },
      "params": {},
      "uipos": [
-      -132.4854185226685,
-      -1761.3212648626395
+      -154.52589161294628,
+      -1798.620527015417
      ],
      "options": [
       "ONCE"
@@ -703,7 +705,7 @@
      "params": {},
      "uipos": [
       2334.166181386918,
-      -1460.320774185396
+      -1461.834091376679
      ],
      "options": []
     },
@@ -1354,7 +1356,9 @@
       -1380.8012475871883,
       -3506.155777562451
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "ee194005-ReadObjPrimitive": {
      "name": "ReadObjPrimitive",
@@ -1722,8 +1726,8 @@
      },
      "params": {},
      "uipos": [
-      792.7777777777778,
-      -1737.4999999999998
+      821.1246032868276,
+      -1816.4866727941182
      ],
      "options": []
     },
@@ -1740,8 +1744,8 @@
       "name": "Len_0"
      },
      "uipos": [
-      206.66666666666657,
-      -1983.3333333333335
+      262.00448982360285,
+      -2159.1517662118777
      ],
      "options": []
     },
@@ -1758,8 +1762,8 @@
       "name": "Len_t"
      },
      "uipos": [
-      196.94444444444463,
-      -1836.3888888888885
+      197.45638262731626,
+      -2070.131779953616
      ],
      "options": []
     },
@@ -1791,8 +1795,8 @@
       "_KEYS": "len0\nlent\nobj2"
      },
      "uipos": [
-      508.888888888889,
-      -1898.6111111111113
+      575.7253825154204,
+      -2057.556600364505
      ],
      "options": [],
      "socket_keys": [
@@ -1811,11 +1815,11 @@
       ]
      },
      "params": {
-      "value": "a = $lent/$len0+0.00001\na = (a<0.6)?0.6:a\nratio = 0.6\nb = (a>1)?pow(sqrt(1.0/a),ratio):pow(sqrt(1.0/a),1.0/ratio)\n@ret=vec3(a, b, b)"
+      "value": "a = $lent/$len0+0.00001\na = (a<0.6)?0.6:a\nratio = 0.5\nb = (a>1)?pow(sqrt(1.0/a),ratio):pow(sqrt(1.0/a),1.0/ratio)\n@ret=vec3(a, b, b)"
      },
      "uipos": [
-      435.36864535768655,
-      -1878.9639269406389
+      370.98908078512125,
+      -1862.9148295660918
      ],
      "options": []
     },
@@ -1837,8 +1841,8 @@
       "_KEYS": "ret\nobj1"
      },
      "uipos": [
-      1077.7777777777783,
-      -1673.3333333333333
+      1141.4089994972353,
+      -1794.9396681749618
      ],
      "options": [],
      "socket_keys": [
@@ -1899,7 +1903,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/bone1_squ_v04/bone1_squ_v04.{frame+1:04d}.obj"
+      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -2843.515731521004,
@@ -2008,7 +2012,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/bone2_squ_v04/bone2_squ_v04.{frame+1:04d}.obj"
+      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3044.5618136093394,
@@ -2182,8 +2186,8 @@
      },
      "params": {},
      "uipos": [
-      3300.642456237559,
-      -1383.4542828705703
+      3509.480228634653,
+      -1328.9748639843717
      ],
      "options": []
     },
@@ -2200,8 +2204,8 @@
       "value": "@rad = 2\n@clr = vec3(0,1,0)"
      },
      "uipos": [
-      2766.4796992155493,
-      -1599.823719626438
+      2865.9034831522004,
+      -1539.0647405540396
      ],
      "options": []
     },
@@ -2216,8 +2220,8 @@
      },
      "params": {},
      "uipos": [
-      1722.084999670327,
-      -1482.7954873480433
+      1420.9348786049518,
+      -1426.8027512705617
      ],
      "options": []
     },
@@ -2275,7 +2279,7 @@
       ]
      },
      "params": {
-      "value": 5
+      "value": 1
      },
      "uipos": [
       1627.4961129753917,
@@ -2293,7 +2297,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/bone2_squ_v04/bone2_squ_v04.{frame+1:04d}.obj"
+      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3168.673741793745,
@@ -2311,7 +2315,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/bone1_squ_v04/bone1_squ_v04.{frame+1:04d}.obj"
+      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3202.9704243450497,
@@ -2330,8 +2334,8 @@
      },
      "params": {},
      "uipos": [
-      2415.845218120805,
-      -1829.9077181208052
+      1890.0038719669587,
+      -1474.1915133696743
      ],
      "options": []
     },
@@ -2345,20 +2349,36 @@
       ]
      },
      "params": {
-      "value": 0.0
+      "value": 10000.0
      },
      "uipos": [
       -6073.825503355704,
       -1588.366890380313
      ],
      "options": []
+    },
+    "5443a629-x": {
+     "name": "MakeIdentityMatrix",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1617.9333736428064,
+      -1571.019898751546
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1960.6512746112496,
-    "y": -1989.9222270511355,
-    "width": 319.99999999999983,
-    "height": 319.99999999999983
+    "x": 691.9455894062403,
+    "y": -1512.544743189962,
+    "width": 399.9999999999998,
+    "height": 399.9999999999998
    }
   },
   "prepareFEMMuscle": {
@@ -13050,7 +13070,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum BackwardEuler QuasiStatic",
+     "integType",
+     "BackwardEuler"
+    ]
+   ],
    "categories": [
     "FEM"
    ]

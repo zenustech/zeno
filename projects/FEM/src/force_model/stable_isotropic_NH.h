@@ -42,7 +42,7 @@ public:
             EvalIsoInvarients(FAct,Is);
     
             eval_phi(lambda,mu,Is,energy);
-        }
+    }
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
      * own version of element-wise potential energy defination and element-wise energy gradient.
@@ -98,6 +98,9 @@ public:
         Mat3x3d A;
 
         ComputeIsoStretchingMatrix(lambda, mu, Is, s, A);
+
+        // std::cout << "SNH Stretching Matrix : " << std::endl << A << std::endl;
+
 
         Mat3x3d U_proj;
         DiffSVD::SYM_Eigen_Decomposition(A, l_scale, U_proj);
@@ -159,7 +162,6 @@ public:
         Vec3d dphi;
         eval_dphi(lambda,mu,Is,dphi);
 
-
         Mat9x9d dFactdF = EvaldFactdF(ActInv); 
 
         derivative = dphi[0] * gs[0] + dphi[1] * gs[1] + dphi[2] * gs[2];     
@@ -169,15 +171,32 @@ public:
         Vec9d eigen_vals;
             
         // compute the eigen system of Hessian
+        // FAct = Mat3x3d::Random();
+        // FAct = FAct.transpose() * FAct;
+
         ComputeIsoEigenSystem(YoungModulus,PossonRatio, FAct, eigen_vals, eigen_vecs);  
+
+        // std::cout << "SNH IsoEigenSystem : " << std::endl;
+        
+        // for(size_t i = 0;i < 9;++i)
+        //     std::cout << "L[" << i << "] : " << eigen_vals[i] << std::endl;
+        // for(size_t i = 0;i < 9;++i)
+        //     std::cout << "V[" << i << "] : " << eigen_vecs[i].transpose() << std::endl;
+
+        // throw std::runtime_error("ISO_EIGEN_SYSTEM_CHECK");
+
         if (enforcing_spd) {
             for (size_t i = 0; i < 9; ++i)
-                eigen_vals[i] = eigen_vals[i] > 0 ? eigen_vals[i] : 0;
+                eigen_vals[i] = eigen_vals[i] > 1e-12 ? eigen_vals[i] : 1e-12;
         }
         Hessian.setZero();
         for(size_t i = 0;i < 9;++i){
             Hessian += eigen_vals[i] * eigen_vecs[i] * eigen_vecs[i].transpose();
+            // std::cout << "UPDATE<" << i << "> : " << std::endl;
+            // std::cout << eigen_vals[i] * eigen_vecs[i] * eigen_vecs[i].transpose() << std::endl;
         }
+
+        // std::cout << "OUTPUT DDPSI : " << std::endl << Hessian << std::endl;
 
         Hessian = dFactdF.transpose() * Hessian * dFactdF; 
     }
@@ -187,24 +206,6 @@ public:
     static FEM_Scaler Lame2E(FEM_Scaler lambda,FEM_Scaler mu) {return mu*(2*mu+3*lambda)/(mu+lambda);}
     static FEM_Scaler Lame2Nu(FEM_Scaler lambda,FEM_Scaler mu) {return lambda / (2 * (lambda +mu));}
 
-
-    inline Mat9x9d EvaldFactdF(const Mat3x3d& Act_inv) const {
-        Mat9x9d M = Mat9x9d::Zero();
-        
-        M(0,0) = M(1,1) = M(2,2) = Act_inv(0,0);
-        M(3,0) = M(4,1) = M(5,2) = Act_inv(0,1);
-        M(6,0) = M(7,1) = M(8,2) = Act_inv(0,2);
-
-        M(0,3) = M(1,4) = M(2,5) = Act_inv(1,0);
-        M(3,3) = M(4,4) = M(5,5) = Act_inv(1,1);
-        M(6,3) = M(7,4) = M(8,5) = Act_inv(1,2);
-
-        M(0,6) = M(1,7) = M(2,8) = Act_inv(2,0);
-        M(3,6) = M(4,7) = M(5,8) = Act_inv(2,1);
-        M(6,6) = M(7,7) = M(8,8) = Act_inv(2,2);
-
-        return M;
-    }
 
 private :
     void eval_phi(FEM_Scaler lambda,FEM_Scaler mu,const Vec3d& Is,FEM_Scaler& phi) const {

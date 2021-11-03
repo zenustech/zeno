@@ -10,6 +10,7 @@
 #include <stable_anisotropic_NH.h>
 #include <diriclet_damping.h>
 #include <stable_isotropic_NH.h>
+#include <bspline_isotropic_model.h>
 
 #include <quasi_static_solver.h>
 #include <backward_euler_integrator.h>
@@ -23,6 +24,8 @@
 #include <cmath>
 
 #include "matrixObject.h"
+
+#include <cubicBspline.h>
 
 namespace{
 
@@ -1126,7 +1129,11 @@ struct MakeMuscleForceModel : zeno::INode {
         }
         else if(model_type == "HyperElastic")
             res->_forceModel = std::shared_ptr<MuscleForceModel>(new StableIsotropicMuscle());
-        else{
+        else if(model_type == "BSplineModel"){
+            FEM_Scaler default_E = 1e7;
+            FEM_Scaler default_nu = 0.499;
+            res->_forceModel = std::shared_ptr<MuscleForceModel>(new BSplineIsotropicMuscle(default_E,default_nu));
+        }else{
             std::cerr << "UNKNOWN MODEL_TYPE" << std::endl;
             throw std::runtime_error("UNKNOWN MODEL_TYPE");
         }
@@ -1137,7 +1144,7 @@ struct MakeMuscleForceModel : zeno::INode {
 ZENDEFNODE(MakeMuscleForceModel, {
     {},
     {"MuscleForceModel"},
-    {{"enum HyperElastic Fiberic", "ForceModel", "HyperElastic"},{"float","aniso_strength","20"}},
+    {{"enum HyperElastic Fiberic BSplineModel", "ForceModel", "HyperElastic"},{"float","aniso_strength","20"}},
     {"FEM"},
 });
 
@@ -1701,6 +1708,20 @@ struct DoTimeStep : zeno::INode {
 ZENDEFNODE(DoTimeStep,{
     {{"mesh"},{"muscleForce"},{"dampForce"},{"integrator"},{"epsilon"},{"CT"},{"FT"}},
     {"curentFrame","depa"},
+    {},
+    {"FEM"},
+});
+
+
+struct DebugBSplineImp : zeno::INode {
+    virtual void apply() override {
+        UniformCubicBasisSpline::DebugCode();
+    }
+};
+
+ZENDEFNODE(DebugBSplineImp,{
+    {},
+    {},
     {},
     {"FEM"},
 });

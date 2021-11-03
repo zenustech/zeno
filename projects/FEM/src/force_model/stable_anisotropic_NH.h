@@ -159,7 +159,7 @@ public:
 
             if(enforcing_spd){
                 for(size_t i = 0;i < 3;++i)
-                    aniso_eigen_vals[i] = aniso_eigen_vals[i] < 0 ? 0 : aniso_eigen_vals[i];
+                    aniso_eigen_vals[i] = aniso_eigen_vals[i] < 1e-12 ? 1e-12 : aniso_eigen_vals[i];
             }
 
             aniso_ddpsi.setZero();
