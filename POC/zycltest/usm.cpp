@@ -53,15 +53,15 @@ struct span {
         : _M_data(data), _M_size(size)
     {}
 
-    constexpr decltype(auto) operator[](size_type index) const {
+    constexpr decltype(auto) operator[](size_type index) const noexcept {
         return _M_data[index];
     }
 
-    constexpr pointer_type data() const {
+    constexpr pointer_type data() const noexcept {
         return _M_data;
     }
 
-    constexpr size_type size() const {
+    constexpr size_type size() const noexcept {
         return _M_size;
     }
 };
@@ -69,21 +69,20 @@ struct span {
 span(has_span auto &&t) -> span<decltype(t.data()), decltype(t.size())>;
 
 
-auto parallel_for(auto &&...args) {
-    return default_queue().parallel_for(std::forward<decltype(args)>(args)...);
-}
+using sycl::reduction;
 
-auto single_task(auto &&...args) {
-    return default_queue().single_task(std::forward<decltype(args)>(args)...);
-}
 
-auto submit(auto &&...args) {
-    return default_queue().submit(std::forward<decltype(args)>(args)...);
-}
+using sycl::nd_range;
+using sycl::nd_item;
 
-auto copy(auto &&...args) {
-    return default_queue().copy(std::forward<decltype(args)>(args)...);
-}
+
+#if !defined(__CLANGD__)
+using sycl::ONEAPI::maximum;
+using sycl::ONEAPI::minimum;
+#else
+using sycl::maximum;
+using sycl::minimum;
+#endif
 
 
 template <class T>
@@ -94,22 +93,31 @@ using vector = std::vector<T, allocator<T>>;
 
 
 int main() {
-    zpc::vector<float> arr(4096);
-    zpc::vector<float> sum(1);
+    zpc::vector<float> arr(128);
 
     for (auto &a: arr) {
         a = drand48();
     }
 
-    zpc::span v_arr = arr;
-    zpc::parallel_for(
-        sycl::nd_range<1>(arr.size(), 256),
-        sycl::reduction(sum.data(), 0.0f, std::plus{}),
-        [=] (sycl::nd_item<1> it, auto &sum) {
-            sum += v_arr[it.get_global_id(0)];
-        }
-    ).wait();
+    zpc::vector<float> max(1);
+    zpc::vector<float> min(1);
+    max[0] = arr[0];
+    min[0] = arr[0];
+    zpc::span varr = arr;
+    zpc::default_queue().submit([&] (sycl::handler &cgh) {
+        cgh.parallel_for
+            ( zpc::nd_range<1>(arr.size(), std::min(arr.size(), (std::size_t)256))
+            , zpc::reduction(max.data(), zpc::maximum<>{})
+            , zpc::reduction(min.data(), zpc::minimum<>{})
+            , [=] (zpc::nd_item<1> it, auto &max, auto &min) {
+                auto x = varr[it.get_global_id(0)];
+                max.combine(x);
+                min.combine(x);
+            }
+        );
+    }).wait();
 
-    printf("%f\n", sum[0]);
+    printf("%f\n", max[0]);
+    printf("%f\n", min[0]);
     return 0;
 }

@@ -33,33 +33,11 @@ int main() {
 
                 l_tmp[lid] = a_buf[gid];
                 it.barrier(sycl::access::fence_space::local_space);
-
-                if (lid < 128) l_tmp[lid] += l_tmp[lid + 128];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 64) l_tmp[lid] += l_tmp[lid + 64];
-                it.barrier(sycl::access::fence_space::local_space);
-
-                if (lid < 32) {
-                    l_tmp[lid] += l_tmp[lid + 32];
-                    l_tmp[lid] += l_tmp[lid + 16];
-                    l_tmp[lid] += l_tmp[lid + 8];
-                    l_tmp[lid] += l_tmp[lid + 4];
-                    l_tmp[lid] += l_tmp[lid + 2];
-                    l_tmp[lid] += l_tmp[lid + 1];
+                for (int stride = 256 >> 1; stride; stride >>= 1) {
+                    if (lid < stride)
+                        l_tmp[lid] += l_tmp[lid + stride];
+                    it.barrier(sycl::access::fence_space::local_space);
                 }
-                /*if (lid < 32) l_tmp[lid] += l_tmp[lid + 32];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 16) l_tmp[lid] += l_tmp[lid + 16];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 8) l_tmp[lid] += l_tmp[lid + 8];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 4) l_tmp[lid] += l_tmp[lid + 4];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 2) l_tmp[lid] += l_tmp[lid + 2];
-                it.barrier(sycl::access::fence_space::local_space);
-                if (lid < 1) l_tmp[lid] += l_tmp[lid + 1];*/
-
-                it.barrier(sycl::access::fence_space::local_space);
                 a_out[gid] = l_tmp[0];
             }
         );
