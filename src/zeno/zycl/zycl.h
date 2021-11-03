@@ -132,8 +132,6 @@ struct handler {
 struct default_selector {
 };
 
-using host_selector = default_selector;
-
 struct queue {
     explicit queue(default_selector = {}) {}
 
