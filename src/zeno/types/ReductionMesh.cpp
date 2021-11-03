@@ -10,17 +10,8 @@ namespace types {
 namespace {
 
 
-struct maximum {
-    constexpr auto operator()(auto &&x, auto &&y) const { return std::max(x, y); }
-};
-
-struct average {
-    constexpr auto operator()(auto &&x, auto &&y) const { return x + y; }
-};
-
-
 template <class Variant, std::size_t I = 0>
-inline Variant variant_from_index(std::size_t index) {
+Variant variant_from_index(std::size_t index) {
     if constexpr (I >= std::variant_size_v<Variant>)
         throw std::bad_variant_access{};
     else
@@ -29,16 +20,43 @@ inline Variant variant_from_index(std::size_t index) {
 }
 
 
-static auto operator_variant(std::string const &name) {
+struct boundbox {
+    math::vec3f min;
+    math::vec3f max;
+
+    constexpr void operator=(math::vec3f const &vert) {
+        min = max = vert;
+    }
+
+    constexpr void operator+=(boundbox const &that) {
+        min = std::min(min, that.min);
+        max = std::max(max, that.max);
+    }
+};
+
+struct centroid {
+    math::vec3f pos;
+
+    constexpr void operator=(math::vec3f const &vert) {
+        pos = vert;
+    }
+
+    constexpr void operator+=(centroid const &that) {
+        pos += that.pos;
+    }
+};
+
+
+auto operator_variant(std::string const &name) {
     static const std::array table = 
-        { "average"
-        , "maximum"
+        { "centroid"
+        , "boundbox"
         };
     using Variant = std::variant
-        < average
-        , maximum
+        < centroid
+        , boundbox
         >;
-    auto it = std::find(begin(table), end(table), 1);
+    auto it = std::find(begin(table), end(table), name);
     [[unlikely]] if (it == end(table))
         throw ztd::format_error("invalid reduction operator name: {}", name);
     return variant_from_index<Variant>(it - begin(table));
@@ -50,15 +68,16 @@ static void ReductionMesh(dop::FuncContext *ctx) {
     auto opname = value_cast<std::string>(ctx->inputs.at(1));
     constexpr size_t blksize = 256;
 
-    auto binop = operator_variant(opname);
+    auto reducer = operator_variant(opname);
 
     zycl::default_queue().submit([=] (zycl::handler &cgh) {
-        std::visit([&] (auto &&binop) {
-            zycl::vector<math::vec3f> psum(math::divup(mesh->vert.size(), blksize));
+        std::visit([&] <class Reducer> (Reducer reducer) {
+
+            zycl::vector<Reducer> psum(math::divup(mesh->vert.size(), blksize));
             {
                 auto axr_psum = zycl::make_access<zycl::access::mode::discard_write>(cgh, psum);
                 auto axr_vert = zycl::make_access<zycl::access::mode::read>(cgh, mesh->vert);
-                auto lxr_temp = zycl::local_access<zycl::access::mode::read_write, math::vec3f, 1>(cgh, zycl::range<1>(blksize));
+                auto lxr_temp = zycl::local_access<zycl::access::mode::read_write, Reducer, 1>(cgh, zycl::range<1>(blksize));
 
                 cgh.parallel_for(
                     zycl::nd_range<1>(mesh->vert.size(), blksize),
@@ -70,14 +89,14 @@ static void ReductionMesh(dop::FuncContext *ctx) {
                         it.barrier(sycl::access::fence_space::local_space);
                         for (int stride = blksize >> 1; stride; stride >>= 1) {
                             if (lid < stride)
-                                lxr_temp[lid] = binop(lxr_temp[lid], lxr_temp[lid + stride]);
+                                lxr_temp[lid] += lxr_temp[lid + stride];
                             it.barrier(sycl::access::fence_space::local_space);
                         }
                         axr_psum[gid] = lxr_temp[0];
                     }
                 );
             }
-        }, binop);
+        }, reducer);
     });
 
     ctx->outputs.at(0) = std::move(mesh);
