@@ -2,10 +2,25 @@
 #include <kddockwidgets/Config.h>
 #include "ztoolbar.h"
 #include "../timeline/ztimeline.h"
+#include <kddockwidgets/Config.h>
+
+
+class fakeViewportWidget : public QWidget
+{
+public:
+	fakeViewportWidget(QWidget* parent = nullptr) : QWidget(parent) {}
+
+protected:
+	void paintEvent(QPaintEvent* e) {
+		QPainter painter(this);
+		painter.setPen(QColor(255,255,255));
+		painter.drawText(0, 0, tr("The central widget can be a viewport"));
+	}
+};
 
 
 ZMainWindow::ZMainWindow(QWidget* parent)
-	: KDDockWidgets::MainWindow(QStringLiteral("Zeno"), KDDockWidgets::MainWindowOption_None, parent)
+	: KDDockWidgets::MainWindow(QStringLiteral("Zeno"), KDDockWidgets::MainWindowOption_HasCentralWidgetAndMenubar, parent)
 	, m_viewportDockWidget(nullptr)
 	, m_nodesDockWidget(nullptr)
 	, m_properDockWidget(nullptr)
@@ -19,9 +34,12 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 	setWindowTitle("Zeno");
 	initMenu();
 
+	addToCentralFrame(new fakeViewportWidget);
+
 	auto toolbarDock = new KDDockWidgets::DockWidget(QStringLiteral("toolbar"),
 		KDDockWidgets::DockWidgetBase::Options(),
-		KDDockWidgets::DockWidgetBase::LayoutSaverOptions());
+		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical);
 	auto tabWidget = new QTabWidget;
 	tabWidget->addTab(new ZShapeBar, "Create");
 	tabWidget->addTab(new ZTextureBar, "Texture");
@@ -37,7 +55,8 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 
 	auto timelineDock = new KDDockWidgets::DockWidget(QStringLiteral("timeline"),
 		KDDockWidgets::DockWidgetBase::Options(),
-		KDDockWidgets::DockWidgetBase::LayoutSaverOptions());
+		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical);
 	m_timeline = new ZTimeline;
 	m_timeline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	timelineDock->setWidget(m_timeline);
@@ -47,7 +66,8 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 
 	auto minitoolbar = new KDDockWidgets::DockWidget(QStringLiteral("minitoolbar"),
 		KDDockWidgets::DockWidgetBase::Options(),
-		KDDockWidgets::DockWidgetBase::LayoutSaverOptions());
+		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarHorizontal);
 	auto toolbar = new ZToolbar;
 	toolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	minitoolbar->setWidget(toolbar);
@@ -62,4 +82,66 @@ ZMainWindow::~ZMainWindow()
 
 void ZMainWindow::initMenu()
 {
+	QMenuBar* pMenu = this->MenuBar();
+	if (!pMenu)
+		return;
+
+	pMenu->setMaximumHeight(26); //todo: sizehint
+
+	QMenu* pFile = new QMenu(tr("File"));
+	{
+		QAction* pAction = new QAction(tr("New"), pFile);
+		pAction->setCheckable(false);
+		pFile->addAction(pAction);
+
+		pAction = new QAction(tr("Open"), pFile);
+		pAction->setCheckable(false);
+		pFile->addAction(pAction);
+
+		pAction = new QAction(tr("Save"), pFile);
+		pAction->setCheckable(false);
+		pFile->addAction(pAction);
+
+		pAction = new QAction(tr("Quit"), pFile);
+		pAction->setCheckable(false);
+		pFile->addAction(pAction);
+	}
+
+	QMenu* pEdit = new QMenu(tr("Edit"));
+	{
+		QAction* pAction = new QAction(tr("Undo"), pEdit);
+		pAction->setCheckable(false);
+		pEdit->addAction(pAction);
+
+		pAction = new QAction(tr("Redo"), pEdit);
+		pAction->setCheckable(false);
+		pEdit->addAction(pAction);
+
+		pAction = new QAction(tr("Cut"), pEdit);
+		pAction->setCheckable(false);
+		pEdit->addAction(pAction);
+
+		pAction = new QAction(tr("Copy"), pEdit);
+		pAction->setCheckable(false);
+		pEdit->addAction(pAction);
+
+		pAction = new QAction(tr("Paste"), pEdit);
+		pAction->setCheckable(false);
+		pEdit->addAction(pAction);
+	}
+
+	QMenu* pRender = new QMenu(tr("Render"));
+
+	QMenu* pView = new QMenu(tr("View"));
+
+	QMenu* pWindow = new QMenu(tr("Window"));
+
+	QMenu* pHelp = new QMenu(tr("Help"));
+
+	pMenu->addMenu(pFile);
+	pMenu->addMenu(pEdit);
+	pMenu->addMenu(pRender);
+	pMenu->addMenu(pView);
+	pMenu->addMenu(pWindow);
+	pMenu->addMenu(pHelp);
 }

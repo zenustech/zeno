@@ -6,7 +6,7 @@
 #include "tmpwidgets/zmainwindow.h"
 #include "style/zenostyle.h"
 
-#define USE_KKDOCK
+//#define USE_KKDOCK
 
 ZENO_NAMESPACE_BEGIN
 
