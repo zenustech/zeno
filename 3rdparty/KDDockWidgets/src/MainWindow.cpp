@@ -31,6 +31,8 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <QWindow>
+#include <QMenuBar>
+#include <QString>
 
 // clazy:excludeall=ctor-missing-parent-argument,missing-qobject-macro
 
@@ -53,17 +55,34 @@ public:
 class MainWindow::Private
 {
 public:
-    explicit Private(MainWindowOptions, MainWindow *mainWindow)
+    explicit Private(MainWindowOptions options, MainWindow *mainWindow)
         : q(mainWindow)
         , m_supportsAutoHide(Config::self().flags() & Config::Flag_AutoHideSupport)
         , m_centralWidget(new MyCentralWidget(mainWindow))
         , m_layout(new QHBoxLayout(m_centralWidget)) // 1 level of indirection so we can add some margins
+        , m_menubar(nullptr)
     {
         if (m_supportsAutoHide) {
             for (auto location : { SideBarLocation::North, SideBarLocation::East,
                                    SideBarLocation::West, SideBarLocation::South }) {
                 m_sideBars.insert(location, Config::self().frameworkWidgetFactory()->createSideBar(location, mainWindow));
             }
+        }
+
+        if (options == MainWindowOption_HasCentralWidgetAndMenubar) {
+            m_vLayout = new QVBoxLayout;
+            m_vLayout->setMargin(0);
+            m_vLayout->setSpacing(0);
+            m_layout->setMargin(0);
+            m_menubar = new QMenuBar;
+            m_menubar->setMaximumHeight(26);
+            //QMenu *pFile = new QMenu(tr("File"), m_menubar);
+            //m_menubar->addMenu(pFile);
+            m_vLayout->addWidget(m_menubar);
+            m_vLayout->addLayout(m_layout);
+            m_centralWidget->setLayout(m_vLayout);
+        } else {
+            m_centralWidget->setLayout(m_layout);
         }
 
         m_layout->setSpacing(0);
@@ -80,6 +99,8 @@ public:
     QHash<SideBarLocation, SideBar *> m_sideBars;
     MyCentralWidget *const m_centralWidget;
     QHBoxLayout *const m_layout;
+    QVBoxLayout *m_vLayout;
+    QMenuBar *m_menubar;
 };
 
 MyCentralWidget::~MyCentralWidget()
@@ -121,6 +142,16 @@ MainWindow::~MainWindow()
     delete d;
 }
 
+void MainWindow::SetMenuBar(QMenuBar *menubar)
+{
+    d->m_menubar = menubar;
+}
+
+QMenuBar *MainWindow::MenuBar()
+{
+    return d->m_menubar;
+}
+
 void MainWindow::setCentralWidget(QWidget *w)
 {
     QMainWindow::setCentralWidget(w);
@@ -131,6 +162,12 @@ SideBar *MainWindow::sideBar(SideBarLocation location) const
     return d->m_sideBars.value(location);
 }
 
+void MainWindow::addToCentralFrame(QWidget *pWidget)
+{
+    if (dropArea())
+        dropArea()->addToCentralFrame(pWidget);
+}
+
 void MainWindow::resizeEvent(QResizeEvent *ev)
 {
     MainWindowBase::resizeEvent(ev);
@@ -139,7 +176,7 @@ void MainWindow::resizeEvent(QResizeEvent *ev)
 
 QMargins MainWindow::centerWidgetMargins() const
 {
-    const QMargins margins = { 1, 5, 1, 1 };
+    const QMargins margins = { 1, 1, 1, 1 };
     return margins * logicalDpiFactor(this);
 }
 

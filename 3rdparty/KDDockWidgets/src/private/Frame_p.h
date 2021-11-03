@@ -353,7 +353,7 @@ protected:
     bool m_inDtor = false;
 
     TabWidget *const m_tabWidget;
-    TitleBar *const m_titleBar;
+    TitleBar * m_titleBar;
 
 private:
     Q_DISABLE_COPY(Frame)

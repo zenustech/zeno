@@ -116,6 +116,13 @@ void DropArea::addDockWidget(DockWidgetBase *dw, Location location,
 
     const bool hadSingleFloatingFrame = hasSingleFloatingFrame();
 
+    FrameOptions frameOpts = FrameOption_None;
+    if (dw->titleBarStyle() == DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarHorizontal) {
+        frameOpts = FrameOption_ToolBarHorizontalHandle;
+    } else if (dw->titleBarStyle() == DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical) {
+        frameOpts = FrameOption_ToolBarVerticalHandle;
+    }
+
     // Check if the dock widget already exists in the layout
     if (containsDockWidget(dw)) {
         Frame *oldFrame = dw->d->frame();
@@ -124,11 +131,11 @@ void DropArea::addDockWidget(DockWidgetBase *dw, Location location,
             // The frame only has this dock widget, and the frame is already in the layout. So move the frame instead
             frame = oldFrame;
         } else {
-            frame = Config::self().frameworkWidgetFactory()->createFrame();
+            frame = Config::self().frameworkWidgetFactory()->createFrame(nullptr, frameOpts);
             frame->addWidget(dw);
         }
     } else {
-        frame = Config::self().frameworkWidgetFactory()->createFrame();
+        frame = Config::self().frameworkWidgetFactory()->createFrame(nullptr, frameOpts);
         frame->addWidget(dw);
     }
 

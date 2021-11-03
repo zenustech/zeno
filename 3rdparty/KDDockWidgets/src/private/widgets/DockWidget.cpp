@@ -39,8 +39,8 @@ public:
     QVBoxLayout *const layout;
 };
 
-DockWidget::DockWidget(const QString &name, Options options, LayoutSaverOptions layoutSaverOptions)
-    : DockWidgetBase(name, options, layoutSaverOptions)
+DockWidget::DockWidget(const QString &name, Options options, LayoutSaverOptions layoutSaverOptions, TitleBarStyle titlebarStyle)
+    : DockWidgetBase(name, options, layoutSaverOptions, titlebarStyle)
     , d(new Private(this))
 {
     connect(this, &DockWidgetBase::widgetChanged, this, [this](QWidget *w) {

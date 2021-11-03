@@ -56,12 +56,14 @@ Frame::Frame(QWidgetOrQuick *parent, FrameOptions options, int userType)
     : LayoutGuestWidget(parent)
     , FocusScope(this)
     , m_tabWidget(Config::self().frameworkWidgetFactory()->createTabWidget(this))
-    , m_titleBar(Config::self().frameworkWidgetFactory()->createTitleBar(this))
     , m_options(actualOptions(options))
+    , m_titleBar(nullptr)
     , m_userType(userType)
 {
     s_dbg_numFrames++;
     DockRegistry::self()->registerFrame(this);
+
+    m_titleBar = Config::self().frameworkWidgetFactory()->createTitleBar(this);
 
     connect(this, &Frame::currentDockWidgetChanged, this, &Frame::updateTitleAndIcon);
 

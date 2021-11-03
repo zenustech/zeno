@@ -12,6 +12,7 @@
 #include "DropAreaWithCentralFrame_p.h"
 #include "Config.h"
 #include "FrameworkWidgetFactory.h"
+#include "../DockWidget.h"
 
 using namespace KDDockWidgets;
 
@@ -45,4 +46,11 @@ Frame *DropAreaWithCentralFrame::createCentralFrame(MainWindowOptions options)
     }
 
     return frame;
+}
+
+void DropAreaWithCentralFrame::addToCentralFrame(QWidget *pWidget)
+{
+    if (m_centralFrame) {
+        m_centralFrame->dockWidgetAt(0)->setWidget(pWidget);
+    }
 }

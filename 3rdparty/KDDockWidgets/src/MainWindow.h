@@ -49,6 +49,9 @@ public:
 
     ///@brief returns the sidebar for the specified location
     SideBar *sideBar(SideBarLocation) const override;
+    void addToCentralFrame(QWidget *pWidget);
+    void SetMenuBar(QMenuBar *menubar);
+    QMenuBar *MenuBar();
 
 protected:
     void resizeEvent(QResizeEvent *) override;

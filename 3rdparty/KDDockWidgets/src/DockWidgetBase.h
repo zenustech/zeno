@@ -99,6 +99,15 @@ public:
     Q_ENUM(IconPlace)
     Q_DECLARE_FLAGS(IconPlaces, IconPlace)
 
+    enum class TitleBarStyle
+    {
+        TitleStyle_Normal,
+        TitleStyle_TopWindowTab,
+        TitleStyle_HideBar,
+        TitleStyle_ToolBarHorizontal,
+        TitleStyle_ToolBarVertical,
+    };
+
     /**
      * @brief constructs a new DockWidget
      * @param uniqueName the name of the dockwidget, should be unique. Use title for user visible text.
@@ -110,7 +119,8 @@ public:
      */
     explicit DockWidgetBase(const QString &uniqueName,
                             Options options = KDDockWidgets::DockWidgetBase::Options(),
-                            LayoutSaverOptions layoutSaverOptions = KDDockWidgets::DockWidgetBase::LayoutSaverOptions());
+                            LayoutSaverOptions layoutSaverOptions = KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+                            TitleBarStyle titlebarStyle = TitleBarStyle::TitleStyle_Normal);
 
     ///@brief destructor
     ~DockWidgetBase() override;
@@ -226,6 +236,9 @@ public:
      * @sa setOptions(), optionsChanged()
      */
     Options options() const;
+
+    //titlebar style
+    TitleBarStyle titleBarStyle() const;
 
     /// @brief returns the per-dockwidget options which will affect LayoutSaver
     /// These are the options which were passed to the constructor

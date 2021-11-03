@@ -41,9 +41,10 @@
 using namespace KDDockWidgets;
 
 DockWidgetBase::DockWidgetBase(const QString &name, Options options,
-                               LayoutSaverOptions layoutSaverOptions)
+                               LayoutSaverOptions layoutSaverOptions,
+                               TitleBarStyle titlebarStyle)
     : QWidgetAdapter(nullptr, Qt::Tool)
-    , d(new Private(name, options, layoutSaverOptions, this))
+    , d(new Private(name, options, layoutSaverOptions, titlebarStyle, this))
 {
     d->init();
     DockRegistry::self()->registerDockWidget(this);
@@ -281,6 +282,11 @@ void DockWidgetBase::setOptions(Options options)
         if (auto tb = titleBar())
             tb->updateButtons();
     }
+}
+
+DockWidgetBase::TitleBarStyle DockWidgetBase::titleBarStyle() const
+{
+    return d->m_titlebarStyle;
 }
 
 bool DockWidgetBase::isTabbed() const
@@ -869,7 +875,7 @@ void DockWidgetBase::Private::forceClose()
 }
 
 DockWidgetBase::Private::Private(const QString &dockName, DockWidgetBase::Options options_,
-                                 LayoutSaverOptions layoutSaverOptions_, DockWidgetBase *qq)
+                                 LayoutSaverOptions layoutSaverOptions_, TitleBarStyle barstyle, DockWidgetBase *qq)
 
     : name(dockName)
     , title(dockName)
@@ -878,6 +884,7 @@ DockWidgetBase::Private::Private(const QString &dockName, DockWidgetBase::Option
     , layoutSaverOptions(layoutSaverOptions_)
     , toggleAction(new QAction(q))
     , floatAction(new QAction(q))
+    , m_titlebarStyle(barstyle)
 {
     q->connect(toggleAction, &QAction::toggled, q, [this](bool enabled) {
         if (!m_updatingToggleAction) { // guard against recursiveness

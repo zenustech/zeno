@@ -32,7 +32,7 @@ class DOCKS_EXPORT_FOR_UNIT_TESTS DockWidgetBase::Private : public QObject /// c
 {
 public:
     Private(const QString &dockName, DockWidgetBase::Options options_,
-            LayoutSaverOptions layoutSaverOptions_, DockWidgetBase *qq);
+            LayoutSaverOptions layoutSaverOptions_, TitleBarStyle barstyle, DockWidgetBase *qq);
 
     void init()
     {
@@ -144,6 +144,7 @@ public:
     QWidgetOrQuick *widget = nullptr;
     DockWidgetBase *const q;
     DockWidgetBase::Options options;
+    TitleBarStyle m_titlebarStyle;
     const LayoutSaverOptions layoutSaverOptions;
     QAction *const toggleAction;
     QAction *const floatAction;

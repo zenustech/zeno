@@ -35,7 +35,7 @@
 using namespace Layouting;
 using namespace KDDockWidgets;
 
-int Layouting::Item::separatorThickness = 5;
+int Layouting::Item::separatorThickness = 1;
 
 // There are the defaults. They can be changed by the user via Config.h API.
 QSize Layouting::Item::hardcodedMinimumSize = QSize(80, 90);

@@ -57,6 +57,7 @@ enum MainWindowOption
     MainWindowOption_HasCentralFrame = 1, ///> Makes the MainWindow always have a central frame, for tabbing documents
     MainWindowOption_MDI = 2, ///> The layout will be MDI. DockWidgets can have arbitrary positions, not restricted by any layout
     MainWindowOption_HasCentralWidget = 4 | MainWindowOption_HasCentralFrame, ///> Similar to MainWindowOption_HasCentralFrame but
+    MainWindowOption_HasCentralWidgetAndMenubar = 8 | MainWindowOption_HasCentralWidget,
     ///> you'll have a central widget which can't be detached (Similar to regular QMainWindow).
 };
 Q_DECLARE_FLAGS(MainWindowOptions, MainWindowOption)
@@ -261,7 +262,9 @@ enum FrameOption
     FrameOption_AlwaysShowsTabs = 1,
     FrameOption_IsCentralFrame = 2,
     FrameOption_IsOverlayed = 4,
-    FrameOption_NonDockable = 8 ///> You can't DND and tab things into this Frame
+    FrameOption_NonDockable = 8, ///> You can't DND and tab things into this Frame
+    FrameOption_ToolBarHorizontalHandle = 16,
+    FrameOption_ToolBarVerticalHandle = 32
 };
 Q_DECLARE_FLAGS(FrameOptions, FrameOption)
 Q_ENUM_NS(FrameOptions)

@@ -311,3 +311,64 @@ bool TitleBarWidget::isFloatButtonEnabled() const
 }
 
 #endif
+
+
+NoTitleBarWidget::NoTitleBarWidget(bool bHorizontal, Frame *parent)
+    : TitleBar(parent)
+    , m_bHorizontal(bHorizontal)
+{
+    if (m_bHorizontal) {
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    } else {
+        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    }
+}
+
+NoTitleBarWidget::NoTitleBarWidget(bool bHorizontal, FloatingWindow *parent)
+    : TitleBar(parent)
+    , m_bHorizontal(bHorizontal)
+{
+    if (m_bHorizontal) {
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    } else {
+        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    }
+}
+
+void NoTitleBarWidget::init()
+{
+}
+
+NoTitleBarWidget::~NoTitleBarWidget()
+{
+}
+
+void NoTitleBarWidget::paintEvent(QPaintEvent *)
+{
+    static const int margin = 4;
+    QPainter painter(this);
+    painter.fillRect(rect(), QColor(58, 58, 58));
+    QPen pen(QColor(132, 132, 132), 1, Qt::DotLine);
+    painter.setPen(pen);
+    if (m_bHorizontal) {
+        for (int x = rect().left() + margin; x <= rect().right() - margin; x += 3) {
+            painter.drawPoint(x, rect().top() + margin);
+            painter.drawPoint(x, rect().bottom() - margin);
+        }
+    } else {
+        for (int y = rect().top() + margin; y <= rect().bottom() - margin; y += 3) {
+            painter.drawPoint(rect().left() + margin, y);
+            painter.drawPoint(rect().right() - margin, y);
+        }
+    }
+}
+
+QSize NoTitleBarWidget::sizeHint() const
+{
+    static const int margin = 4;
+    if (m_bHorizontal) {
+        return QSize(width(), 4 + 2 * margin);
+    } else {
+        return QSize(4 + 2 * margin, height());
+    }
+}

@@ -93,6 +93,24 @@ public:
     void paintEvent(QPaintEvent *) override;
 };
 
+class NoTitleBarWidget : public TitleBar
+{
+    Q_OBJECT
+public:
+    explicit NoTitleBarWidget(bool bHorizontal, Frame *parent);
+    explicit NoTitleBarWidget(bool bHorizontal, FloatingWindow *parent);
+    ~NoTitleBarWidget() override;
+
+protected:
+    void paintEvent(QPaintEvent *) override;
+    QSize sizeHint() const override;
+
+private:
+    void init();
+
+    bool m_bHorizontal;
+};
+
 }
 
 #endif

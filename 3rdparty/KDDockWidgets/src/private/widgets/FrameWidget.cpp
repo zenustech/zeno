@@ -29,35 +29,40 @@
 
 using namespace KDDockWidgets;
 
-///@brief a QVBoxLayout that emits layoutInvalidated so that Item can detect minSize changes
-class VBoxLayout : public QVBoxLayout //clazy:exclude=missing-qobject-macro
+///@brief a QBoxLayout that emits layoutInvalidated so that Item can detect minSize changes
+class BoxLayout : public QBoxLayout //clazy:exclude=missing-qobject-macro
 {
 public:
-    explicit VBoxLayout(FrameWidget *parent)
-        : QVBoxLayout(parent)
+    explicit BoxLayout(QBoxLayout::Direction dir, FrameWidget *parent)
+        : QBoxLayout(dir, parent)
         , m_frameWidget(parent)
     {
     }
-    ~VBoxLayout() override;
+    ~BoxLayout() override;
 
     void invalidate() override
     {
-        QVBoxLayout::invalidate();
+        QBoxLayout::invalidate();
         Q_EMIT m_frameWidget->layoutInvalidated();
     }
 
     FrameWidget *const m_frameWidget;
 };
 
-VBoxLayout::~VBoxLayout() = default;
+BoxLayout::~BoxLayout() = default;
 
 FrameWidget::FrameWidget(QWidget *parent, FrameOptions options, int userType)
     : Frame(parent, options, userType)
 {
-    auto vlayout = new VBoxLayout(this);
+    QBoxLayout::Direction dir = QBoxLayout::TopToBottom;
+    if (options & FrameOption_ToolBarVerticalHandle)
+        dir = QBoxLayout::LeftToRight;
+
+    auto vlayout = new BoxLayout(dir, this);
     vlayout->setContentsMargins(0, 0, 0, 0);
     vlayout->setSpacing(0);
-    vlayout->addWidget(titleBar());
+    if (titleBar())
+        vlayout->addWidget(titleBar());
     vlayout->addWidget(m_tabWidget->asWidget());
 
     m_tabWidget->setTabBarAutoHide(!alwaysShowsTabs());

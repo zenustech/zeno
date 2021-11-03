@@ -62,6 +62,11 @@ Frame *DefaultWidgetFactory::createFrame(QWidgetOrQuick *parent, FrameOptions op
 
 TitleBar *DefaultWidgetFactory::createTitleBar(Frame *frame) const
 {
+    if (frame->options() & FrameOption_ToolBarHorizontalHandle) {
+        return new NoTitleBarWidget(true, frame);
+    } else if (frame->options() & FrameOption_ToolBarVerticalHandle) {
+        return new NoTitleBarWidget(false, frame);
+    }
     return new TitleBarWidget(frame);
 }
 

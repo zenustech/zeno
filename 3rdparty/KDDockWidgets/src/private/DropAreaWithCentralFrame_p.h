@@ -25,6 +25,7 @@ public:
     ~DropAreaWithCentralFrame();
 
     static Frame *createCentralFrame(MainWindowOptions options);
+    void addToCentralFrame(QWidget *pWidget);
 
 private:
     friend class MainWindowBase;

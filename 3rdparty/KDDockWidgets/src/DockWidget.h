@@ -50,7 +50,8 @@ public:
      * to different main windows.
      */
     explicit DockWidget(const QString &uniqueName, Options options = KDDockWidgets::DockWidgetBase::Options(),
-                        LayoutSaverOptions layoutSaverOptions = KDDockWidgets::DockWidgetBase::LayoutSaverOptions());
+                        LayoutSaverOptions layoutSaverOptions = KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+                        TitleBarStyle titlebarStyle = TitleBarStyle::TitleStyle_Normal);
 
     ///@brief destructor
     ~DockWidget() override;
