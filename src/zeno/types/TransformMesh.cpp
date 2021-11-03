@@ -1,13 +1,18 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
 #include <zeno/math/quaternion.h>
-#include <zeno/ztd/variant.h>
 #include <variant>
 
 
 ZENO_NAMESPACE_BEGIN
 namespace types {
 namespace {
+
+
+std::variant<std::true_type, std::false_type> boolean_variant(bool cond) {
+    if (cond) return std::true_type{};
+    else return std::false_type{};
+}
 
 
 static void TransformMesh(dop::FuncContext *ctx) {
@@ -17,25 +22,24 @@ static void TransformMesh(dop::FuncContext *ctx) {
     auto rotation = value_cast<math::vec4f>(ctx->inputs.at(3));
     auto rotmat = math::quaternion_matrix(rotation);
 
-    zycl::default_queue().submit([&] (zycl::handler &cgh) {
+    zycl::default_queue().submit([=] (zycl::handler &cgh) {
         auto axr_vert = make_access<zycl::access::mode::discard_read_write>(cgh, mesh->vert);
 
-        std::visit(
-        [&] (auto translate, auto scaling, auto rotation) {
+        std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
             cgh.parallel_for(zycl::range<1>(mesh->vert.size()), [=] (zycl::item<1> idx) {
                 auto vert = axr_vert[idx];
-                if constexpr (ztd::not_monostate<decltype(scaling)>)
+                if constexpr (has_scaling)
                     vert *= scaling;
-                if constexpr (ztd::not_monostate<decltype(rotation)>)
-                    vert = rotation * vert;
-                if constexpr (ztd::not_monostate<decltype(translate)>)
+                if constexpr (has_rotation)
+                    vert = rotmat * vert;
+                if constexpr (has_translate)
                     vert += translate;
                 axr_vert[idx] = vert;
             });
         }
-        , ztd::make_monovariant(translate != math::vec3f(0), translate)
-        , ztd::make_monovariant(scaling != math::vec3f(1), scaling)
-        , ztd::make_monovariant(rotation != math::vec4f(0, 0, 0, 1), rotmat)
+        , boolean_variant(translate != math::vec3f(0))
+        , boolean_variant(scaling != math::vec3f(1))
+        , boolean_variant(rotation != math::vec4f(0, 0, 0, 1))
         );
     });
 
