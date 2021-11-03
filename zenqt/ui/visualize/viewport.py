@@ -33,6 +33,12 @@ class CameraControl:
 
         self.update_perspective()
 
+    def reset(self):
+        self.center = (0.0, 0.0, 0.0)
+        self.radius = 5.0
+
+        self.update_perspective()
+
     def mousePressEvent(self, event):
         if not (event.buttons() & Qt.MiddleButton):
             return
@@ -199,6 +205,12 @@ class QDMDisplayMenu(QMenu):
             action.setChecked(lang == 'en')
         self.addAction(action)
 
+        self.addSeparator()
+
+        action = QAction('Reset Camera', self)
+        action.setShortcut(QKeySequence('Shift+C'))
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -285,6 +297,8 @@ class DisplayWidget(QWidget):
                 f.write('en' if checked else 'zh-cn')
             QMessageBox.information(None, 'Zeno', 'Language switched! Please reboot zeno!')
 
+        elif name == 'Reset Camera':
+            self.view.camera.reset()
 
     def get_output_path(self, extname):
         dir_path = 'outputs'
