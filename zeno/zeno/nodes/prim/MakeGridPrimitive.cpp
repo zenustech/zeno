@@ -63,6 +63,8 @@ struct Make2DGridPrimitive : INode {
           prim->tris[index * 2 + 1][2] = y * nx + x;
         }
     }
+    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);
+    prim->userData.get("ny") = std::make_shared<NumericObject>((int)ny);
     set_output("prim", std::move(prim));
   }
 };
