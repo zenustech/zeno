@@ -75,22 +75,33 @@ using vector = std::vector<T, allocator<T>>;
 
 template <usize N>
 struct range {
-    sycl::range<N> _M_base;
+    std::array<usize, N> _M_base{};
 
     range() = default;
 
-    range(usize i) requires (N == 1)
+    constexpr range(usize i) requires (N == 1)
         : _M_base({i})
     {
     }
 
-    constexpr range(sycl::range<N> const &base)
-        : _M_base(base)
+    constexpr range(std::array<usize, N> const &arr)
+        : _M_base(arr)
     {
     }
 
-    constexpr operator auto const &() const {
-        return _M_base;
+    constexpr range(sycl::range<N> const &base)
+        : _M_base([] <std::size_t ...Is>
+        (auto &x, std::index_sequence<Is...>) {
+            return std::array<usize, N>(x[Is]...);
+        }(_M_base, std::make_index_sequence<N>{}))
+    {
+    }
+
+    constexpr operator sycl::range<N>() const {
+        return [] <std::size_t ...Is>
+        (auto &x, std::index_sequence<Is...>) {
+            return sycl::range<N>(std::get<Is>(x)...);
+        }(_M_base, std::make_index_sequence<N>{});
     }
 
     constexpr usize const &operator[](usize i) const {
@@ -105,31 +116,33 @@ struct range {
 
 template <usize N>
 struct nd_range {
-    sycl::nd_range<N> _M_base;
+    range<N> _M_global;
+    range<N> _M_local;
 
     nd_range() = default;
 
-    nd_range(range<N> const &global, range<N> const &local)
-        : nd_range(sycl::nd_range<N>((sycl::range<N>)global,
-                                     (sycl::range<N>)local))
+    constexpr nd_range(range<N> const &global, range<N> const &local)
+        : _M_global(global)
+        , _M_local(local)
     {
     }
 
     constexpr nd_range(sycl::nd_range<N> const &base)
-        : _M_base(base)
     {
     }
 
-    constexpr operator auto const &() const {
-        return _M_base;
+    constexpr operator sycl::nd_range<N>() const {
+        return { (sycl::range<N>)_M_global
+               , (sycl::range<N>)_M_local
+               };
     }
 
     constexpr usize const &operator[](usize i) const {
-        return _M_base[i];
+        return _M_global[i];
     }
 
     constexpr usize &operator[](usize i) {
-        return _M_base[i];
+        return _M_global[i];
     }
 };
 
@@ -240,34 +253,69 @@ struct nd_item {
 };
 
 
-template <usize N>
-void parallel_for(range<N> shape, auto &&body) {
-    default_queue().submit([&] (sycl::handler &cgh) {
-        cgh.parallel_for
-            ( (sycl::range<N>)shape
-            , [=] (sycl::item<N> it_) {
-                item<N> const it(it_);
-                body(it);
-            });
-    });
-}
-
 inline void synchronize() {
     default_queue().wait();
 }
 
 
-template <class T, usize N>
-void parallel_reduce(nd_range<N> shape, T *out, T ident, auto &&binop, auto &&body) {
-    auto e = default_queue().submit([&] (sycl::handler &cgh) {
+template <usize N>
+void parallel_nd_for
+    ( nd_range<N> shape
+    , auto &&body
+    , auto &&...args
+    ) {
+    default_queue().submit
+    ( [&] (sycl::handler &cgh) {
         cgh.parallel_for
             ( (sycl::nd_range<N>)shape
-            , sycl::reduction(out, ident, binop, sycl::property::reduction::initialize_to_identity{})
-            , [=] (sycl::nd_item<N> it_, auto &reducer) {
+            , std::forward<decltype(args)>(args)...
+            , [=] (sycl::nd_item<N> it_, auto &...args) {
                 nd_item<N> const it(it_);
-                body(it, reducer);
+                body(it, args...);
             });
     });
+}
+
+
+template <usize N>
+void parallel_for
+    ( range<N> shape
+    , range<N> block_dim
+    , auto &&body
+    , auto &&...args
+    ) {
+    range<N> grid_dim;
+    for (usize i = 0; i < N; i++) {
+        grid_dim[i] = (shape[i] + block_dim[i] - 1) / block_dim[i] * block_dim[i];
+    }
+    nd_range<N> nd_shape
+        ( grid_dim
+        , block_dim
+        );
+    parallel_nd_for
+    ( nd_shape
+    , [=]
+    ( nd_item<N> const &it
+    , auto &...args) {
+        for (usize i = 0; i < N; i++) {
+            [[unlikely]] if (it[i] > shape[i])
+                return;
+        }
+        body(it, args...);
+    }
+    , std::forward<decltype(args)>(args)...
+    );
+}
+
+
+template <class T>
+auto reduction
+        ( T *out
+        , T ident
+        , auto &&binop
+        ) {
+    sycl::property::reduction::initialize_to_identity props;
+    return sycl::reduction(out, ident, binop, props);
 }
 
 
@@ -275,7 +323,7 @@ void parallel_reduce(nd_range<N> shape, T *out, T ident, auto &&binop, auto &&bo
 
 
 int main() {
-    zpc::vector<float> arr(128);
+    zpc::vector<float> arr(100);
     for (auto &a: arr) {
         a = drand48();
     }
@@ -283,19 +331,20 @@ int main() {
 
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
-    , [=] (zpc::item<1> it) {
+    , zpc::range<1>(8)
+    , [=] (zpc::nd_item<1> it) {
         varr[it[0]] = it[0];
     });
 
     zpc::vector<float> out(1);
-    zpc::parallel_reduce
-    ( zpc::nd_range<1>(arr.size(), 8)
-    , out.data()
-    , 0.f
-    , [] (auto x, auto y) { return x + y; }
+    zpc::parallel_for
+    ( zpc::range<1>(arr.size())
+    , zpc::range<1>(8)
     , [=] (zpc::nd_item<1> it, auto &reducer) {
         reducer.combine(varr[it[0]]);
-    });
+    }
+    , zpc::reduction(out.data(), 0.f, [] (auto x, auto y) { return x + y; })
+    );
 
     zpc::synchronize();
     std::cout << out[0] << std::endl;
