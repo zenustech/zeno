@@ -6,7 +6,7 @@
 #include "tmpwidgets/zmainwindow.h"
 #include "style/zenostyle.h"
 
-//#define USE_KKDOCK
+#define USE_KKDOCK
 
 ZENO_NAMESPACE_BEGIN
 
@@ -14,6 +14,9 @@ int zenoMainWithKDDoc(int argc, char* argv[])
 {
     QApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+    KDDockWidgets::Config::self().setAbsoluteWidgetMinSize(QSize(54, 54));
+
     ZMainWindow mainWindow;
     mainWindow.showMaximized();
     return a.exec();

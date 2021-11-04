@@ -59,7 +59,7 @@ public:
         : q(mainWindow)
         , m_supportsAutoHide(Config::self().flags() & Config::Flag_AutoHideSupport)
         , m_centralWidget(new MyCentralWidget(mainWindow))
-        , m_layout(new QHBoxLayout(m_centralWidget)) // 1 level of indirection so we can add some margins
+        , m_layout(new QHBoxLayout) // 1 level of indirection so we can add some margins
         , m_menubar(nullptr)
     {
         if (m_supportsAutoHide) {

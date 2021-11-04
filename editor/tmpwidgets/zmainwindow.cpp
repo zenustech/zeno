@@ -2,19 +2,39 @@
 #include <kddockwidgets/Config.h>
 #include "ztoolbar.h"
 #include "../timeline/ztimeline.h"
+#include "dmmenu.h"
 #include <kddockwidgets/Config.h>
 
 
 class fakeViewportWidget : public QWidget
 {
 public:
-	fakeViewportWidget(QWidget* parent = nullptr) : QWidget(parent) {}
+	fakeViewportWidget(QWidget* parent = nullptr) : QWidget(parent) {
+		QVBoxLayout* pLayout = new QVBoxLayout;
+		pLayout->setContentsMargins(0, 0, 0, 0);
 
-protected:
-	void paintEvent(QPaintEvent* e) {
-		QPainter painter(this);
-		painter.setPen(QColor(255,255,255));
-		painter.drawText(0, 0, tr("The central widget can be a viewport"));
+		QMenuBar* menuBar = new QMenuBar;
+		menuBar->setMaximumHeight(26);
+
+		QDMDisplayMenu* menuDisplay = new QDMDisplayMenu;
+		menuBar->addMenu(menuDisplay);
+		QDMRecordMenu* recordDisplay = new QDMRecordMenu;
+		menuBar->addMenu(recordDisplay);
+
+		pLayout->addWidget(menuBar);
+
+		QHBoxLayout* pHBoxLayout = new QHBoxLayout;
+		pHBoxLayout->addStretch();
+		QLabel* pTipLabel = new QLabel("The central widget can be a viewport");
+		QPalette palette = pTipLabel->palette();
+		palette.setColor(pTipLabel->foregroundRole(), Qt::white);
+		pTipLabel->setPalette(palette);
+		pHBoxLayout->addWidget(pTipLabel);
+		pHBoxLayout->addStretch();
+
+		pLayout->addLayout(pHBoxLayout);
+
+		setLayout(pLayout);
 	}
 };
 
