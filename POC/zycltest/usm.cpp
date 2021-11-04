@@ -149,48 +149,11 @@ struct nd_range {
 
 template <usize N>
 struct item {
-    sycl::item<N> const &_M_that;
+    sycl::nd_item<N> const &_M_that;
 
     item() = default;
 
-    constexpr item(sycl::item<N> const &that)
-        : _M_that(that)
-    {
-    }
-
-    constexpr operator auto const &() const {
-        return _M_that;
-    }
-
-    constexpr usize operator[](usize i) const {
-        return this->get_id(i);
-    }
-
-    constexpr range<N> get_range() const {
-        return range<N>(_M_that.get_range());
-    }
-
-    constexpr range<N> get_id() const {
-        return range<N>(_M_that.get_range());
-    }
-
-    constexpr usize get_range(usize i) const {
-        return _M_that.get_range(i);
-    }
-
-    constexpr usize get_id(usize i) const {
-        return _M_that.get_id(i);
-    }
-};
-
-
-template <usize N>
-struct nd_item {
-    sycl::nd_item<N> const &_M_that;
-
-    nd_item() = default;
-
-    constexpr nd_item(sycl::nd_item<N> const &that)
+    constexpr item(sycl::nd_item<N> const &that)
         : _M_that(that)
     {
     }
@@ -258,9 +221,9 @@ inline void synchronize() {
 }
 
 
-template <usize N>
-void parallel_nd_for
-    ( nd_range<N> shape
+/*template <class Kern = void, usize N>
+void sycl_parallel_for
+    ( sycl::nd_range<N> shape
     , auto &&body
     , auto &&...args
     ) {
@@ -270,14 +233,14 @@ void parallel_nd_for
             ( (sycl::nd_range<N>)shape
             , std::forward<decltype(args)>(args)...
             , [=] (sycl::nd_item<N> it_, auto &...args) {
-                nd_item<N> const it(it_);
+                item<N> const it(it_);
                 body(it, args...);
             });
     });
-}
+}*/
 
 
-template <usize N>
+template <class Kern = void, usize N>
 void parallel_for
     ( range<N> shape
     , range<N> local_dim
@@ -289,23 +252,27 @@ void parallel_for
         global_dim[i] = std::max((usize)1, (shape[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
         local_dim[i] = std::clamp(local_dim[i], (usize)1, shape[i]);
     }
-    nd_range<N> nd_shape
-        ( global_dim
-        , local_dim
+    sycl::nd_range<N> nd_shape
+        ( (sycl::range<N>)global_dim
+        , (sycl::range<N>)local_dim
         );
-    parallel_nd_for
+    using Key = std::conditional_t<
+        std::is_void_v<Kern>,
+        std::remove_cvref_t<decltype(body)>,
+        Kern>;
+    default_queue().parallel_for<Key>
     ( nd_shape
+    , std::forward<decltype(args)>(args)...
     , [=]
-    ( nd_item<N> const &it
+    ( sycl::nd_item<N> const &it_
     , auto &...args) {
+        item<N> it(it_);
         for (usize i = 0; i < N; i++) {
             [[unlikely]] if (it[i] > shape[i])
                 return;
         }
         body(it, args...);
-    }
-    , std::forward<decltype(args)>(args)...
-    );
+    });
 }
 
 
@@ -333,7 +300,7 @@ int main() {
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
-    , [=] (zpc::nd_item<1> it) {
+    , [=] (zpc::item<1> it) {
         varr[it[0]] = it[0];
     });
 
@@ -341,7 +308,7 @@ int main() {
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
-    , [=] (zpc::nd_item<1> it, auto &reducer) {
+    , [=] (zpc::item<1> it, auto &reducer) {
         reducer.combine(varr[it[0]]);
     }
     , zpc::reduction(out.data(), 0.f, [] (auto x, auto y) { return x + y; })
