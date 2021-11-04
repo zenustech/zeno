@@ -11,12 +11,14 @@ namespace zeno {
 
 struct MakeVisualAABBPrimitive : INode {
     virtual void apply() override {
+        auto dx = get_input<NumericObject>("dx")->get<float>();
         auto a = has_input("boundMin")
             ? get_input<NumericObject>("boundMin")->get<vec3f>()
-            : vec3f(-1, -1, -1);
+            : vec3f(-0.5, -0.5, -0.5) * dx;
         auto b = has_input("boundMax")
             ? get_input<NumericObject>("boundMax")->get<vec3f>()
-            : vec3f(+1, +1, +1);
+            : vec3f(+0.5, +0.5, +0.5) * dx;
+        
         auto connType = get_param<std::string>("type");
 
         auto prim = std::make_shared<PrimitiveObject>();
@@ -78,7 +80,7 @@ struct MakeVisualAABBPrimitive : INode {
 
 ZENDEFNODE(MakeVisualAABBPrimitive,
         { /* inputs: */ {
-        {"vec3f","boundMin","-1,-1,-1"}, {"vec3f","boundMax","1,1,1"},
+        {"float", "dx", "1"}, {"vec3f","boundMin","-0.5,-0.5,-0.5"}, {"vec3f","boundMax","0.5,0.5,0.5"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {

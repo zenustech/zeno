@@ -94,7 +94,6 @@ inline Stm operator+(Stm const &src) {
 inline Stm operator-(Stm const &src) {
     return {src.ir, src.ir->emplace_back<UnaryOpStmt>("-", src.stmt)};
 }
-
 inline Stm stm_sqrlength(Stm const &src) {
     Stm ret = src[0] * src[0];
     for (int i = 1; i < src->dim; i++) {
