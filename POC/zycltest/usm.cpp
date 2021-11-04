@@ -240,15 +240,9 @@ struct nd_item {
 };
 
 
-template <class T = void>
-struct promise : std::function<T()> {
-    using std::function<T()>::function;
-};
-
-
 template <usize N>
-promise<void> parallel_for(range<N> shape, auto &&body) {
-    auto e = default_queue().submit([&] (sycl::handler &cgh) {
+void parallel_for(range<N> shape, auto &&body) {
+    default_queue().submit([&] (sycl::handler &cgh) {
         cgh.parallel_for
             ( (sycl::range<N>)shape
             , [=] (sycl::item<N> it_) {
@@ -256,9 +250,6 @@ promise<void> parallel_for(range<N> shape, auto &&body) {
                 body(it);
             });
     });
-    return [e = std::move(e)] () {
-        e.wait();
-    };
 }
 
 inline void synchronize() {
@@ -267,24 +258,16 @@ inline void synchronize() {
 
 
 template <class T, usize N>
-promise<T> parallel_reduce(nd_range<N> shape, T ident, auto &&binop, auto &&body) {
-    sycl::buffer<T, 1> buf(sycl::range<1>(1));
-
+void parallel_reduce(nd_range<N> shape, T *out, T ident, auto &&binop, auto &&body) {
     auto e = default_queue().submit([&] (sycl::handler &cgh) {
         cgh.parallel_for
             ( (sycl::nd_range<N>)shape
-            , sycl::reduction(buf, cgh, ident, binop, sycl::property::reduction::initialize_to_identity{})
+            , sycl::reduction(out, ident, binop, sycl::property::reduction::initialize_to_identity{})
             , [=] (sycl::nd_item<N> it_, auto &reducer) {
                 nd_item<N> const it(it_);
                 body(it, reducer);
             });
     });
-    return [buf = std::move(buf), e = std::move(e)] () -> T {
-        e.wait();
-        auto acc = buf.template get_access<sycl::access::mode::read>();
-        T result = acc[0];
-        return result;
-    };
 }
 
 
@@ -293,23 +276,22 @@ promise<T> parallel_reduce(nd_range<N> shape, T ident, auto &&binop, auto &&body
 
 int main() {
     zpc::vector<float> arr(128);
-
     for (auto &a: arr) {
         a = drand48();
     }
-
     zpc::span varr = arr;
-    
+
     zpc::parallel_for(zpc::range<1>(arr.size()), [=] (zpc::item<1> it) {
         varr[it[0]] = it[0];
     });
-    zpc::parallel_reduce(zpc::nd_range<1>(arr.size(), 8), 0.f, std::plus{}, [=] (zpc::nd_item<1> it, auto &reducer) {
+
+    zpc::vector<float> out(1);
+    zpc::parallel_reduce(zpc::nd_range<1>(arr.size(), 8), out.data(), 0.f, std::plus{}, [=] (zpc::nd_item<1> it, auto &reducer) {
         reducer += varr[it[0]];
     });
 
-    for (auto &a: arr) {
-        std::cout << a << std::endl;
-    }
+    zpc::synchronize();
+    std::cout << out[0] << std::endl;
 
     return 0;
 }
