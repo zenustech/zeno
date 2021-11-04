@@ -10,6 +10,6 @@ set(CMAKE_CXX_COMPILER dpcpp)
 
 project(main LANGUAGES CXX)
 
-set(PROJECT_SOURCES reduce.cpp)
+set(PROJECT_SOURCES usm.cpp)
 add_executable(main ${PROJECT_SOURCES})
 target_include_directories(main PRIVATE .)

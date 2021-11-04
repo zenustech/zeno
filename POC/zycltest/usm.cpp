@@ -69,24 +69,223 @@ struct span {
 span(has_span auto &&t) -> span<decltype(t.data()), decltype(t.size())>;
 
 
-using sycl::reduction;
-
-
-using sycl::nd_range;
-using sycl::nd_item;
-
-
-#if !defined(__CLANGD__)
-using sycl::ONEAPI::maximum;
-using sycl::ONEAPI::minimum;
-#else
-using sycl::maximum;
-using sycl::minimum;
-#endif
-
-
 template <class T>
 using vector = std::vector<T, allocator<T>>;
+
+
+template <usize N>
+struct range {
+    sycl::range<N> _M_base;
+
+    range() = default;
+
+    range(usize i) requires (N == 1)
+        : _M_base({i})
+    {
+    }
+
+    constexpr range(sycl::range<N> const &base)
+        : _M_base(base)
+    {
+    }
+
+    constexpr operator auto const &() const {
+        return _M_base;
+    }
+
+    constexpr usize const &operator[](usize i) const {
+        return _M_base[i];
+    }
+
+    constexpr usize &operator[](usize i) {
+        return _M_base[i];
+    }
+};
+
+
+template <usize N>
+struct nd_range {
+    sycl::nd_range<N> _M_base;
+
+    nd_range() = default;
+
+    nd_range(range<N> const &global, range<N> const &local)
+        : nd_range(sycl::nd_range<N>((sycl::range<N>)global,
+                                     (sycl::range<N>)local))
+    {
+    }
+
+    constexpr nd_range(sycl::nd_range<N> const &base)
+        : _M_base(base)
+    {
+    }
+
+    constexpr operator auto const &() const {
+        return _M_base;
+    }
+
+    constexpr usize const &operator[](usize i) const {
+        return _M_base[i];
+    }
+
+    constexpr usize &operator[](usize i) {
+        return _M_base[i];
+    }
+};
+
+
+template <usize N>
+struct item {
+    sycl::item<N> const &_M_that;
+
+    item() = default;
+
+    constexpr item(sycl::item<N> const &that)
+        : _M_that(that)
+    {
+    }
+
+    constexpr operator auto const &() const {
+        return _M_that;
+    }
+
+    constexpr usize operator[](usize i) const {
+        return this->get_id(i);
+    }
+
+    constexpr range<N> get_range() const {
+        return range<N>(_M_that.get_range());
+    }
+
+    constexpr range<N> get_id() const {
+        return range<N>(_M_that.get_range());
+    }
+
+    constexpr usize get_range(usize i) const {
+        return _M_that.get_range(i);
+    }
+
+    constexpr usize get_id(usize i) const {
+        return _M_that.get_id(i);
+    }
+};
+
+
+template <usize N>
+struct nd_item {
+    sycl::nd_item<N> const &_M_that;
+
+    nd_item() = default;
+
+    constexpr nd_item(sycl::nd_item<N> const &that)
+        : _M_that(that)
+    {
+    }
+
+    constexpr operator auto const &() const {
+        return _M_that;
+    }
+
+    constexpr usize operator[](usize i) const {
+        return this->get_global_id(i);
+    }
+
+    constexpr range<N> get_global_range() const {
+        return range<N>(_M_that.get_global_range());
+    }
+
+    constexpr range<N> get_block_range() const {
+        return range<N>(_M_that.get_group_range());
+    }
+
+    constexpr range<N> get_local_range() const {
+        return range<N>(_M_that.get_local_range());
+    }
+
+    constexpr range<N> get_global_id() const {
+        return range<N>(_M_that.get_global_id());
+    }
+
+    constexpr range<N> get_block_id() const {
+        return range<N>(_M_that.get_group());
+    }
+
+    constexpr range<N> get_local_id() const {
+        return range<N>(_M_that.get_local_id());
+    }
+
+    constexpr usize get_global_range(usize i) const {
+        return _M_that.get_global_range(i);
+    }
+
+    constexpr usize get_block_range(usize i) const {
+        return _M_that.get_group_range(i);
+    }
+
+    constexpr usize get_local_range(usize i) const {
+        return _M_that.get_local_range(i);
+    }
+
+    constexpr usize get_global_id(usize i) const {
+        return _M_that.get_global_id(i);
+    }
+
+    constexpr usize get_block_id(usize i) const {
+        return _M_that.get_group(i);
+    }
+
+    constexpr usize get_local_id(usize i) const {
+        return _M_that.get_local_id(i);
+    }
+};
+
+
+template <class T = void>
+struct promise : std::function<T()> {
+    using std::function<T()>::function;
+};
+
+
+template <usize N>
+promise<void> parallel_for(range<N> shape, auto &&body) {
+    auto e = default_queue().submit([&] (sycl::handler &cgh) {
+        cgh.parallel_for
+            ( (sycl::range<N>)shape
+            , [=] (sycl::item<N> it_) {
+                item<N> const it(it_);
+                body(it);
+            });
+    });
+    return [e = std::move(e)] () {
+        e.wait();
+    };
+}
+
+inline void synchronize() {
+    default_queue().wait();
+}
+
+
+template <class T, usize N>
+promise<T> parallel_reduce(nd_range<N> shape, T ident, auto &&binop, auto &&body) {
+    sycl::buffer<T, 1> buf(sycl::range<1>(1));
+
+    auto e = default_queue().submit([&] (sycl::handler &cgh) {
+        cgh.parallel_for
+            ( (sycl::nd_range<N>)shape
+            , sycl::reduction(buf, cgh, ident, binop, sycl::property::reduction::initialize_to_identity{})
+            , [=] (sycl::nd_item<N> it_, auto &reducer) {
+                nd_item<N> const it(it_);
+                body(it, reducer);
+            });
+    });
+    return [buf = std::move(buf), e = std::move(e)] () -> T {
+        e.wait();
+        auto acc = buf.template get_access<sycl::access::mode::read>();
+        T result = acc[0];
+        return result;
+    };
+}
 
 
 }
@@ -99,25 +298,18 @@ int main() {
         a = drand48();
     }
 
-    zpc::vector<float> max(1);
-    zpc::vector<float> min(1);
-    max[0] = arr[0];
-    min[0] = arr[0];
     zpc::span varr = arr;
-    zpc::default_queue().submit([&] (sycl::handler &cgh) {
-        cgh.parallel_for
-            ( zpc::nd_range<1>(arr.size(), std::min(arr.size(), (std::size_t)256))
-            , zpc::reduction(max.data(), zpc::maximum<>{})
-            , zpc::reduction(min.data(), zpc::minimum<>{})
-            , [=] (zpc::nd_item<1> it, auto &max, auto &min) {
-                auto x = varr[it.get_global_id(0)];
-                max.combine(x);
-                min.combine(x);
-            }
-        );
-    }).wait();
+    
+    zpc::parallel_for(zpc::range<1>(arr.size()), [=] (zpc::item<1> it) {
+        varr[it[0]] = it[0];
+    });
+    zpc::parallel_reduce(zpc::nd_range<1>(arr.size(), 8), 0.f, std::plus{}, [=] (zpc::nd_item<1> it, auto &reducer) {
+        reducer += varr[it[0]];
+    });
 
-    printf("%f\n", max[0]);
-    printf("%f\n", min[0]);
+    for (auto &a: arr) {
+        std::cout << a << std::endl;
+    }
+
     return 0;
 }
