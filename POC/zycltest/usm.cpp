@@ -18,20 +18,6 @@ using i64 = std::int64_t;
 using u64 = std::uint64_t;
 
 
-auto &default_queue() {
-    static sycl::queue q;
-    return q;
-}
-
-
-template <class T, sycl::usm::alloc alloc = sycl::usm::alloc::shared, size_t align = alignof(T)>
-struct allocator : sycl::usm_allocator<T, alloc, align> {
-    using sycl::usm_allocator<T, alloc, align>::usm_allocator;
-
-    allocator() : allocator(default_queue()) {}
-};
-
-
 template <class T>
 concept has_span = requires (T t) {
     *t.data();
@@ -67,6 +53,20 @@ struct span {
 };
 
 span(has_span auto &&t) -> span<decltype(t.data()), decltype(t.size())>;
+
+
+auto &default_queue() {
+    static sycl::queue q;
+    return q;
+}
+
+
+template <class T, sycl::usm::alloc alloc = sycl::usm::alloc::shared, size_t align = alignof(T)>
+struct allocator : sycl::usm_allocator<T, alloc, align> {
+    using sycl::usm_allocator<T, alloc, align>::usm_allocator;
+
+    allocator() : allocator(default_queue()) {}
+};
 
 
 template <class T>
@@ -221,26 +221,10 @@ inline void synchronize() {
 }
 
 
-/*template <class Kern = void, usize N>
-void sycl_parallel_for
-    ( sycl::nd_range<N> shape
-    , auto &&body
-    , auto &&...args
-    ) {
-    default_queue().submit
-    ( [&] (sycl::handler &cgh) {
-        cgh.parallel_for
-            ( (sycl::nd_range<N>)shape
-            , std::forward<decltype(args)>(args)...
-            , [=] (sycl::nd_item<N> it_, auto &...args) {
-                item<N> const it(it_);
-                body(it, args...);
-            });
-    });
-}*/
-
-
-template <class Kern = void, usize N>
+template 
+< class Kern = void
+, bool IsClamped = true
+, usize N>
 void parallel_for
     ( range<N> shape
     , range<N> local_dim
@@ -266,11 +250,13 @@ void parallel_for
     , [=]
     ( sycl::nd_item<N> const &it_
     , auto &...args) {
-        item<N> it(it_);
-        for (usize i = 0; i < N; i++) {
-            [[unlikely]] if (it[i] > shape[i])
-                return;
+        if constexpr (IsClamped) {
+            for (usize i = 0; i < N; i++) {
+                [[unlikely]] if (it_.get_global_id(i) > shape[i])
+                    return;
+            }
         }
+        item<N> const it(it_);
         body(it, args...);
     });
 }
