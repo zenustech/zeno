@@ -280,17 +280,18 @@ void parallel_nd_for
 template <usize N>
 void parallel_for
     ( range<N> shape
-    , range<N> block_dim
+    , range<N> local_dim
     , auto &&body
     , auto &&...args
     ) {
-    range<N> grid_dim;
+    range<N> global_dim;
     for (usize i = 0; i < N; i++) {
-        grid_dim[i] = (shape[i] + block_dim[i] - 1) / block_dim[i] * block_dim[i];
+        global_dim[i] = std::max((usize)1, (shape[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
+        local_dim[i] = std::clamp(local_dim[i], (usize)1, shape[i]);
     }
     nd_range<N> nd_shape
-        ( grid_dim
-        , block_dim
+        ( global_dim
+        , local_dim
         );
     parallel_nd_for
     ( nd_shape
