@@ -8,9 +8,9 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-    zycl::queue que(sycl::gpu_selector{});
-
 #if 0
+    zycl::queue que;
+
     zycl::vector<int> buf;
 
     {
