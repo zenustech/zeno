@@ -281,13 +281,20 @@ int main() {
     }
     zpc::span varr = arr;
 
-    zpc::parallel_for(zpc::range<1>(arr.size()), [=] (zpc::item<1> it) {
+    zpc::parallel_for
+    ( zpc::range<1>(arr.size())
+    , [=] (zpc::item<1> it) {
         varr[it[0]] = it[0];
     });
 
     zpc::vector<float> out(1);
-    zpc::parallel_reduce(zpc::nd_range<1>(arr.size(), 8), out.data(), 0.f, std::plus{}, [=] (zpc::nd_item<1> it, auto &reducer) {
-        reducer += varr[it[0]];
+    zpc::parallel_reduce
+    ( zpc::nd_range<1>(arr.size(), 8)
+    , out.data()
+    , 0.f
+    , [] (auto x, auto y) { return x + y; }
+    , [=] (zpc::nd_item<1> it, auto &reducer) {
+        reducer.combine(varr[it[0]]);
     });
 
     zpc::synchronize();
