@@ -1,4 +1,4 @@
-x=decay
+x=testadl
 
 x: $x.exe Makefile
 	./$<
