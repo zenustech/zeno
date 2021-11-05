@@ -89,9 +89,33 @@ struct nd_item : nd_range<N> {
     }
 };
 
+
 struct _M_dummy_event {
     void wait() const {}
 };
+
+
+template <class Acc, class T, class BinOp>
+struct _M_reduction {
+    Acc _M_acc;
+    BinOp _M_binop;
+
+    inline _M_reduction(Acc &&acc, T const &ident, BinOp &&binop)
+        : _M_acc(std::move(acc))
+        , _M_binop(std::move(binop))
+    {
+        _M_acc[0] = ident;
+    }
+
+    inline void combine(T const &t) {
+        _M_acc[0] = _M_binop(_M_acc[0], t);
+    }
+};
+
+auto reduction(auto &&acc, auto const &ident, auto &&binop) {
+    return _M_reduction(std::move(acc), ident, std::move(binop));
+}
+
 
 template <int I, int N>
 void _M_nd_range_for(range<N> const &size, id<N> &index, auto &&f) {
@@ -114,6 +138,7 @@ struct handler {
     template <class = void>
     _M_dummy_event single_task(auto &&f) {
         f();
+        return {};
     }
 
     template <class = void, int N>
@@ -121,7 +146,8 @@ struct handler {
         _M_nd_range_for(dim, [&] (id<N> idx) {
             item<N> it(idx);
             f(it);
-        });
+        });;
+        return {};
     }
 
     template <class = void, int N>
@@ -130,7 +156,27 @@ struct handler {
             nd_item<N> it;
             it.global_id = global_id;
             f(it);
+        })
+        return {};
+    }
+
+    template <class = void, int N>
+    _M_dummy_event parallel_for(range<N> dim, auto &&red, auto &&f) {
+        _M_nd_range_for(dim, [&] (id<N> idx) {
+            item<N> it(idx);
+            f(it);
         });
+        return {};
+    }
+
+    template <class = void, int N>
+    _M_dummy_event parallel_for(nd_range<N> dim, auto &&red, auto &&f) {
+        _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
+            nd_item<N> it;
+            it.global_id = global_id;
+            f(it);
+        });
+        return {};
     }
 };
 
