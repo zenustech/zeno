@@ -8,7 +8,7 @@
       "WaveExponent": [
        null,
        null,
-       9
+       10
       ],
       "depth": [
        null,
@@ -18,12 +18,12 @@
       "chop": [
        null,
        null,
-       0.8
+       0.9
       ],
       "gravity": [
        null,
        null,
-       1.0
+       9.8
       ],
       "windDir": [
        null,
@@ -33,22 +33,27 @@
       "timeScale": [
        null,
        null,
-       1.0
+       3.0
       ],
       "patchSize": [
        null,
        null,
-       100.0
+       1000.0
       ],
       "speed": [
        null,
        null,
-       5.0
+       100.0
       ],
       "timeshift": [
        null,
        null,
        0.0
+      ],
+      "amp": [
+       null,
+       null,
+       1.0
       ],
       "SRC": [
        null,
@@ -58,8 +63,8 @@
      },
      "params": {},
      "uipos": [
-      -11843.937812068485,
-      -5074.641023960422
+      -11928.753855494298,
+      -5036.9450046600605
      ],
      "options": [
       "ONCE"
@@ -68,6 +73,11 @@
     "41979b0e-OceanCompute": {
      "name": "OceanCompute",
      "inputs": {
+      "grid": [
+       "8f7c26e6-Make2DGridPrimitive",
+       "prim",
+       null
+      ],
       "time": [
        "69844817-GetTime",
        "time",
@@ -86,8 +96,8 @@
      },
      "params": {},
      "uipos": [
-      -11277.245373852864,
-      -4950.870066696753
+      -11042.776133804613,
+      -5072.062768747418
      ],
      "options": []
     },
@@ -102,23 +112,134 @@
      },
      "params": {},
      "uipos": [
-      -11614.186851211074,
-      -5260.092272202998
+      -11510.89975832808,
+      -5276.678520695156
      ],
      "options": []
     },
-    "e7097a2d-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "a32f6668-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "dd211958-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "e1557c4b-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "min": [
+       "0eaf6242-PrimitiveReduction",
+       "result",
+       0.0
+      ],
+      "max": [
+       "51d15323-x",
+       "result",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      -9783.138972326693,
+      -5021.560819850065
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "8f7c26e6-Make2DGridPrimitive": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       null,
+       null,
+       1024
+      ],
+      "ny": [
+       null,
+       null,
+       1024
+      ],
+      "sizeX": [
+       null,
+       null,
+       null
+      ],
+      "sizeY": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       2000.0
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "Direction": "XZ",
+      "isCentered": true,
+      "hasFaces": true
+     },
+     "uipos": [
+      -11915.711700844384,
+      -5430.677020506632
+     ],
+     "options": []
+    },
+    "7c2b7f2f-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
      "inputs": {
       "prim": [
        "41979b0e-OceanCompute",
        "OceanData",
        null
       ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10798.016012746046,
+      -5103.1073286291
+     ],
+     "options": []
+    },
+    "dd211958-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "7c2b7f2f-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
       "zfxCode": [
-       "2f56b581-MakeMultilineString",
+       "0ffa055c-MakeMultilineString",
        "value",
-       ""
+       "@speed = @pos.x"
       ],
       "params": [
        null,
@@ -133,12 +254,12 @@
      },
      "params": {},
      "uipos": [
-      -10747.996026049772,
-      -5106.752221181306
+      -10479.407514450864,
+      -5147.182080924857
      ],
      "options": []
     },
-    "2f56b581-MakeMultilineString": {
+    "0ffa055c-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": [
@@ -148,15 +269,15 @@
       ]
      },
      "params": {
-      "value": "@pos += @uvpos + @vel\n@clr = vec3(1,1,1)\n@rad = 0\n@speed = length(@vel)"
+      "value": "@speed = @pos.y"
      },
      "uipos": [
-      -11184.109962544528,
-      -5429.492598142688
+      -10857.803468208085,
+      -5254.0462427745615
      ],
      "options": []
     },
-    "654167ba-MakeHeatmap": {
+    "e1557c4b-MakeHeatmap": {
      "name": "MakeHeatmap",
      "inputs": {
       "SRC": [
@@ -167,11 +288,11 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "4\n0 0 0 0.6038357566741859\n0.4720076139290061 0 0.7158053009581415 1\n0.7510405169793728 0 1 0.7000815778108438\n0.8900299118639761 1 1 1"
+      "_RAMPS": "4\n0 0 0 0.35571365051134135\n0.5 0 0 1\n0.7824874547417894 0 1 0.49545829892650844\n1 1 1 1"
      },
      "uipos": [
-      -10570.505822416306,
-      -4820.141921397379
+      -10504.046242774555,
+      -4848.5549132947945
      ],
      "options": [],
      "color_ramps": [
@@ -180,27 +301,27 @@
        [
         0,
         0,
-        0.6038357566741859
+        0.35571365051134135
        ]
       ],
       [
-       0.4720076139290061,
+       0.5,
        [
         0,
-        0.7158053009581415,
+        0,
         1
        ]
       ],
       [
-       0.7510405169793728,
+       0.7824874547417894,
        [
         0,
         1,
-        0.7000815778108438
+        0.49545829892650844
        ]
       ],
       [
-       0.8900299118639761,
+       1,
        [
         1,
         1,
@@ -209,75 +330,11 @@
       ]
      ]
     },
-    "a32f6668-PrimitiveColorByHeatmap": {
-     "name": "PrimitiveColorByHeatmap",
-     "inputs": {
-      "prim": [
-       "e7097a2d-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "heatmap": [
-       "654167ba-MakeHeatmap",
-       "heatmap",
-       null
-      ],
-      "min": [
-       "4a14f730-x",
-       "result",
-       0.0
-      ],
-      "max": [
-       "e565f05f-PrimitiveReduction",
-       "result",
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "attrName": "speed"
-     },
-     "uipos": [
-      -9846.433770014559,
-      -5024.017467248908
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "e565f05f-PrimitiveReduction": {
+    "0eaf6242-PrimitiveReduction": {
      "name": "PrimitiveReduction",
      "inputs": {
       "prim": [
-       "e7097a2d-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "attr": "speed",
-      "op": "max"
-     },
-     "uipos": [
-      -10250.363901018924,
-      -4878.639010189229
-     ],
-     "options": []
-    },
-    "4a14f730-x": {
-     "name": "PrimitiveReduction",
-     "inputs": {
-      "prim": [
-       "e7097a2d-ParticlesWrangle",
+       "dd211958-ParticlesWrangle",
        "prim",
        null
       ],
@@ -292,17 +349,41 @@
       "op": "min"
      },
      "uipos": [
-      -10252.365356623002,
-      -5182.496360989813
+      -10129.3352601156,
+      -5215.3179190751425
+     ],
+     "options": []
+    },
+    "51d15323-x": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "dd211958-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attr": "speed",
+      "op": "max"
+     },
+     "uipos": [
+      -10093.208092485544,
+      -5001.445086705198
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -11699.856794785796,
-    "y": -5110.266728786438,
-    "width": 255.99999999999986,
-    "height": 255.99999999999986
+    "x": -10674.317048881474,
+    "y": -5335.919633506094,
+    "width": 499.9999999999997,
+    "height": 499.9999999999997
    }
   }
  },
@@ -5618,6 +5699,11 @@
    ],
    "params": [
     [
+     "enum XZ XY YZ",
+     "Direction",
+     "XZ"
+    ],
+    [
      "bool",
      "isCentered",
      "0"
@@ -5901,6 +5987,11 @@
      "float",
      "timeshift",
      "0.0"
+    ],
+    [
+     "float",
+     "amp",
+     "1.0"
     ],
     [
      "",
@@ -6984,14 +7075,19 @@
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
      "vec3f",
      "boundMin",
-     "-1,-1,-1"
+     "-0.5,-0.5,-0.5"
     ],
     [
      "vec3f",
      "boundMax",
-     "1,1,1"
+     "0.5,0.5,0.5"
     ],
     [
      "",
@@ -7917,6 +8013,11 @@
   },
   "OceanCompute": {
    "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
     [
      "",
      "time",
@@ -12156,7 +12257,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum Clamp Periodic",
+     "SampleType",
+     "Clamp"
+    ]
+   ],
    "categories": [
     "openvdb"
    ]

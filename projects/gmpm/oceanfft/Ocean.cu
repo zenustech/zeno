@@ -176,6 +176,7 @@ struct OceanFFT : zeno::IObject{
     // simulation parameters
     float L_scale = 1.0;
     float g;              // gravitational constant
+    float amplitude;
     float A{1e-4f};              // wave scale factor
     float patchSize;        // patch size
     float windSpeed{100.0f};
@@ -301,24 +302,27 @@ float phillips(float Kx, float Ky, float Vdir, float V, float A, float dir_depen
             {
                 return 0.0f;
             }
-
-            // largest possible wave from constant wind of velocity v
+            float phil = 0;
             float L = V * V / g;
+            if(1.0/sqrt(k_squared) <= 15){
+                // largest possible wave from constant wind of velocity v
+                
 
-            float k_x = Kx / sqrtf(k_squared);
-            float k_y = Ky / sqrtf(k_squared);
-            float w_dot_k = k_x * cosf(Vdir) + k_y * sinf(Vdir);
+                float k_x = Kx / sqrtf(k_squared);
+                float k_y = Ky / sqrtf(k_squared);
+                float w_dot_k = k_x * cosf(Vdir) + k_y * sinf(Vdir);
 
-            float phil= A * expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
+                phil= A * expf(-1.0f / (k_squared * L * L)) / (k_squared * k_squared) * w_dot_k * w_dot_k;
 
-            // filter out waves moving opposite to wind
-            if (w_dot_k < 0.0f)
-            {
-                phil *= dir_depend;
+                // filter out waves moving opposite to wind
+                if (w_dot_k < 0.0f)
+                {
+                    phil *= dir_depend;
+                }
             }
 
-            // damp out waves with very small length w << l
-            //float w = L/10000;
+            //damp out waves with very small length w << l
+            //float w = L/100000;
             //phil *= expf(-k_squared * w * w);
             //float dOmegadk = frequencyDerivative(sqrtf(k_squared), g, depth);
             //phil *= abs(dOmegadk);
@@ -348,7 +352,7 @@ void generate_h0(std::shared_ptr<OceanFFT> OceanObj)
 
             float theta = urand() * 2.0 * 3.1415926;
             float h0_re = Er * P * cosf(theta) * CUDART_SQRT_HALF_F;
-            float h0_im = Er * P * sinf(theta) * CUDART_SQRT_HALF_F;
+            float h0_im = Ei * P * sinf(theta) * CUDART_SQRT_HALF_F;
 
             int i = y*OceanObj->spectrumW+x;
             OceanObj->h_h0[i].x = h0_re;
@@ -423,6 +427,7 @@ struct MakeCuOcean : zeno::INode {
         
 
         //other parameters
+        cuOceanObj->amplitude = get_input<zeno::NumericObject>("amp")->get<float>();
         cuOceanObj->WaveExponent = get_input<zeno::NumericObject>("WaveExponent")->get<int>();
         cuOceanObj->choppyness   = get_input<zeno::NumericObject>("chop")->get<float>();
 
@@ -448,7 +453,7 @@ struct MakeCuOcean : zeno::INode {
         //speed = 
         cuOceanObj->speed  = get_input<zeno::NumericObject>("speed")->get<float>() / cuOceanObj->L_scale;
         cuOceanObj->depth = get_input<zeno::NumericObject>("depth")->get<float>();
-
+        cuOceanObj->A *= cuOceanObj->amplitude;
 
 
 
@@ -478,7 +483,7 @@ struct MakeCuOcean : zeno::INode {
 };
 
 ZENDEFNODE(MakeCuOcean,
-        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float", "depth", "5000"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "100.0"}, {"float", "timeshift", "0.0"}}, 
+        { /* inputs:  */ { {"int", "WaveExponent", "8"}, {"float", "depth", "5000"}, {"float","chop", "0.5"}, {"float", "gravity", "9.81"}, {"float", "windDir", "0"}, {"float","timeScale","1.0"}, {"float", "patchSize", "100.0"}, {"float", "speed", "100.0"}, {"float", "timeshift", "0.0"}, {"float", "amp", "1.0"}}, 
           /* outputs: */ { "gpuOcean", }, 
           /* params: */  {  }, 
           /* category: */ {"Ocean",}});
@@ -533,12 +538,12 @@ struct OceanCompute : zeno::INode {
     auto &pos = grid->attr<vec3f>("pos");
     auto &vel = grid->add_attr<vec3f>("vel");
     grid->resize(ingrid->size());
-    float h = CalOcean->L_scale * (float)CalOcean->patchSize / (float)(CalOcean->meshSize - 1);
+    float h = CalOcean->L_scale * (float)CalOcean->patchSize / (float)(CalOcean->meshSize);
     float L = CalOcean->L_scale * (float)CalOcean->patchSize;
 #pragma omp parallel for
     for(size_t i = 0; i<pos.size(); i++)
     {
-        float u = pos[i][0], v = pos[i][2];
+        float u = pos[i][0]+0.5*L, v = pos[i][2]+0.5*L;
         float uu = std::fmod(std::fmod(u, L) + L, L);
         float vv = std::fmod(std::fmod(v, L) + L, L);
         uu = uu/h;
@@ -549,8 +554,8 @@ struct OceanCompute : zeno::INode {
         float cy = vv - tv;
         int i00 = tv * CalOcean->meshSize + tu;
         int i01 = tv * CalOcean->meshSize + (tu + 1)%CalOcean->meshSize;
-        int i10 = ((tv + 1)%(CalOcean->meshSize-1)) * CalOcean->meshSize + tu;
-        int i11 = ((tv + 1)%(CalOcean->meshSize-1)) * CalOcean->meshSize + (tu + 1)%(CalOcean->meshSize-1);
+        int i10 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + tu;
+        int i11 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + (tu + 1)%(CalOcean->meshSize);
         float h00 = CalOcean->g_hhptr[i00].x;
         float h01 = CalOcean->g_hhptr[i01].x;
         float h10 = CalOcean->g_hhptr[i10].x;

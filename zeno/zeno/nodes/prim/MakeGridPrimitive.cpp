@@ -29,7 +29,16 @@ struct Make2DGridPrimitive : INode {
             ax *= scale;
             ay *= scale;
         }
-
+    auto dir = get_param<std::string>("Direction");
+    if(dir == "YZ")
+    {
+        ax = zeno::vec3f(0,ax[0],0);
+        ay = zeno::vec3f(0, 0, ay[1]);
+    }
+    if(dir == "XZ")
+    {
+        ay = zeno::vec3f(0,0,ay[1]);
+    }
 
     if (get_param<bool>("isCentered"))
       o -= (ax + ay) / 2;
@@ -80,6 +89,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         }, /* outputs: */ {
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
+        {"enum XZ XY YZ", "Direction", "XZ"},
         {"bool", "isCentered", "0"},
         {"bool", "hasFaces", "1"},
         }, /* category: */ {
