@@ -2,7 +2,7 @@
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
-#include <zeno/zycl/zycl.h>
+#include <zeno/zycl/parallel.h>
 
 USING_ZENO_NAMESPACE
 
@@ -20,9 +20,12 @@ int main()
 
     buf.resize(40);
 
-    que.submit([&] (zycl::handler &cgh) {
+    zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
-        cgh.parallel_for(zycl::range<1>(buf.size()), [=] (zycl::item<1> idx) {
+        zycl::parallel_for
+        ( cgh
+        , zycl::range<1>(buf.size())
+        , [=] (zycl::item<1> idx) {
             axr_buf[idx] += 1;
         });
     });
@@ -30,11 +33,25 @@ int main()
     buf.resize(48);
 
     {
-        auto axr_buf = buf.get_access<zycl::access::mode::read>(zycl::host_handler{});
+        auto axr_buf = zycl::host_access<zycl::access::mode::read>(buf);
         for (int i = 0; i < buf.size(); i++) {
             printf("%d\n", axr_buf[i]);
         }
     }
+
+    zycl::default_queue().submit([&] (zycl::handler &cgh) {
+        auto axr_buf = zycl::make_access<zycl::access::mode::read>(cgh, buf);
+        zycl::parallel_reduce
+        ( cgh
+        , zycl::range<1>(buf.size())
+        , zycl::range<1>(8)
+        , buf
+        , 0.0f
+        , [] (auto x, auto y) { return x + y; }
+        , [=] (zycl::item<1> idx, auto &reducer) {
+            reducer.combine(axr_buf[idx]);
+        });
+    });
 
 #else
 

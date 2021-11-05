@@ -61,7 +61,7 @@ struct nd_range {
 
     nd_range() = default;
 
-    explicit nd_range(id<N> global_size, id<N> local_size)
+    constexpr explicit nd_range(id<N> global_size, id<N> local_size)
         : global_size(global_size), local_size(local_size)
     {}
 
@@ -78,6 +78,10 @@ template <size_t N>
 struct nd_item : nd_range<N> {
     id<N> global_id{};
     id<N> local_id{};
+
+    constexpr operator item<N>() const {
+        return {global_id};
+    }
 
     constexpr size_t get_global_id(size_t i) const {
         return global_id[i];
