@@ -166,7 +166,7 @@ struct handler {
             it._M_range = dim;
             it._M_id = idx;
             f(it);
-        });;
+        });
         return {};
     }
 
@@ -178,7 +178,7 @@ struct handler {
             it._M_local_range = dim._M_local_range;
             it._M_global_id = global_id;
             f(it);
-        })
+        });
         return {};
     }
 
