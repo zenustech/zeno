@@ -37,18 +37,11 @@ int main()
     }
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_sum = zycl::make_access<zycl::wd>(cgh, sum);
-
-        cgh.fill(axr_sum, 1024);
-    });
-
-    zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::ro>(cgh, buf);
-        auto axr_sum = zycl::make_access<zycl::rwd>(cgh, sum);
-
+        auto axr_sum = zycl::make_access<zycl::wd>(cgh, sum);
         cgh.parallel_for
         ( zycl::range<1>(buf.size())
-        , zycl::reduction(axr_sum, 1, [] (auto x, auto y) { return std::min(x, y); })
+        , zycl::reduction(axr_sum, INT_MIN, [] (auto x, auto y) { return std::max(x, y); })
         , [=] (zycl::item<1> idx, auto &sum) {
             sum.combine(axr_buf[idx]);
         });
