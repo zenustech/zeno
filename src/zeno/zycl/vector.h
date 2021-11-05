@@ -5,7 +5,7 @@
 #include <zeno/zycl/helper.h>
 
 
-#ifdef ZENO_SYCL_IS_EMULATED
+#ifndef SYCL_LANGUAGE_VERSION
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {

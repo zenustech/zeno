@@ -5,7 +5,7 @@ namespace zycl {
 
 queue default_queue() {
     static queue que;
-#ifndef ZENO_SYCL_IS_EMULATED
+#ifdef SYCL_LANGUAGE_VERSION
     static std::once_flag flg;
     std::call_once(flg, [&] {
         std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << std::endl;
