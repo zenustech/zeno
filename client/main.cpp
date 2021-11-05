@@ -8,7 +8,7 @@ USING_ZENO_NAMESPACE
 
 int main()
 {
-#if 0
+#if 1
     zycl::queue que;
 
     zycl::vector<int> buf;
