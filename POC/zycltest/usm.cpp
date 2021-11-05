@@ -218,11 +218,6 @@ struct item {
 };
 
 
-inline void synchronize() {
-    default_queue().wait();
-}
-
-
 namespace details {
 
 template <usize N>
@@ -297,7 +292,7 @@ template
 < class Kern = void
 , bool IsClamped = true
 , usize N>
-void parallel_for
+auto parallel_for
     ( range<N> dim
     , range<N> local_dim
     , auto &&body
@@ -313,8 +308,8 @@ void parallel_for
           >...>;
 
     auto our_args = details::select_our_elements<true>(args...);
-    std::apply([&] (auto &...sycl_args) {
-        default_queue().submit([&] (sycl::handler &cgh) {
+    return std::apply([&] (auto &...sycl_args) {
+        return default_queue().submit([&] (sycl::handler &cgh) {
 
             auto our_data = std::apply([&] (auto &...our_args) {
                 return std::tuple(our_args(cgh)...);
@@ -373,16 +368,31 @@ auto local_buffer(range<N> shape) {
 }
 
 
+template <class T>
+auto local_buffer() {
+    return [=] (sycl::handler &cgh) {
+        sycl::accessor
+        < T
+        , 1
+        , sycl::access::mode::read_write
+        , sycl::access::target::local
+        > acc
+        ( sycl::range<1>(1)
+        , cgh
+        );
+        return [acc = std::move(acc)] (auto &it) -> auto & {
+            return *acc.get_pointer();
+        };
+    };
+}
+
+
 }
 
 
 int main() {
-    sycl::buffer<float, 1> buf(0);
+    zpc::vector<float> arr(128);
 
-    zpc::vector<float> arr(100);
-    for (auto &a: arr) {
-        a = drand48();
-    }
     zpc::span varr = arr;
 
     zpc::parallel_for
@@ -390,21 +400,19 @@ int main() {
     , zpc::range<1>(8)
     , [=] (zpc::item<1> it) {
         varr[it[0]] = it[0] + 1;
-    });
+    }).wait();
 
     zpc::vector<float> out(1);
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
-    , [=] (zpc::item<1> it, auto tmpbuf, auto &reducer) {
-        tmpbuf[0];
+    , [=] (zpc::item<1> it, auto bufptr, auto &reducer) {
         reducer.combine(varr[it[0]]);
     }
     , zpc::local_buffer<float>(zpc::range<1>(1))
     , zpc::reduction(out.data(), 0.f, [] (auto x, auto y) { return x + y; })
-    );
+    ).wait();
 
-    zpc::synchronize();
     std::cout << out[0] << std::endl;
 
     return 0;
