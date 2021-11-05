@@ -18,7 +18,7 @@ auto parallel_for
     , range<N> const &dim
     , auto &&body
     ) {
-    return cgh.parallel_for<_M_void_or<Key, decltype(body)>>(dim, body);
+    return cgh.template parallel_for<_M_void_or<Key, decltype(body)>>(dim, body);
 }
 
 #ifndef ZENO_SYCL_IS_EMULATED
@@ -31,7 +31,7 @@ auto parallel_for
     , auto &&body
     , auto &&...args
     ) {
-    return cgh.parallel_for<_M_void_or<Key, decltype(body)>>
+    return cgh.template parallel_for<_M_void_or<Key, decltype(body)>>
     ( _M_calc_nd_range(dim, blkdim)
     , std::forward<decltype(args)>(args)...
     [dim, body = std::move(body)] (nd_item<N> const &it, auto &...args) {
@@ -79,14 +79,16 @@ auto parallel_reduce
 
 #else
 
-template <class BinOp>
+template <class T, class BinOp>
 struct _M_parallel_reducer {
-    BinOp binop;
+    T _M_had;
+    BinOp _M_binop;
 
-    _M_parallel_reducer(BinOp &&binop)
-        : binop(std::move(binop)) {}
+    _M_parallel_reducer(T const &ident, BinOp &&binop)
+        : _M_had(ident), _M_binop(std::move(binop)) {}
 
     constexpr void combine(T const &t) const {
+        _M_binop(_M_had, t);
     }
 };
 
@@ -100,13 +102,16 @@ auto parallel_reduce
     , auto &&binop
     , auto &&body
     ) {
-    return parallel_for<_M_void_or<Key, decltype(body)>>
+    auto current = ident;
+    auto e = parallel_for<_M_void_or<Key, decltype(body)>>
     ( cgh
     , dim
-    , [binop = std::move(binop), body = std::move(body)] (nd_item<1> const &it) {
-        _M_parallel_reducer reducer(binop);
+    , [&current, binop = std::move(binop), body = std::move(body)] (nd_item<1> const &it) {
+        _M_parallel_reducer reducer(current, std::move(binop));
         body(it, reducer);
     });
+    buf[0] = current;
+    return e;
 }
 
 #endif

@@ -92,6 +92,10 @@ struct nd_item : nd_range<N> {
     }
 };
 
+struct _M_dummy_event {
+    void wait() const {}
+};
+
 template <size_t I, size_t N>
 void _M_nd_range_for(range<N> const &size, id<N> &index, auto &&f) {
     if constexpr (I == N) {
@@ -111,24 +115,24 @@ void _M_nd_range_for(range<N> const &size, auto &&f) {
 
 struct handler {
     template <class = void>
-    void single_task(auto &&f) {
+    _M_dummy_event single_task(auto &&f) {
         f();
     }
 
     template <class = void, size_t N>
-    void parallel_for(range<N> dim, auto &&f) {
+    _M_dummy_event parallel_for(range<N> dim, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
-            item<N> itm(idx);
-            f(itm);
+            item<N> it(idx);
+            f(it);
         });
     }
 
     template <class = void, size_t N>
-    void parallel_for(nd_range<N> dim, auto &&f) {
+    _M_dummy_event parallel_for(nd_range<N> dim, auto &&f) {
         _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
-            nd_item<N> item;
-            item.global_id = global_id;
-            f(item);
+            nd_item<N> it;
+            it.global_id = global_id;
+            f(it);
         });
     }
 };
