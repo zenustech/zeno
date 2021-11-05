@@ -129,6 +129,8 @@ class CurveEditor(QDialog):
         qp.end()
 
     def drawPoints(self, qp, points, sel=None):
+        if type(sel) == tuple:
+            sel = sel[0]
         for i in range(len(points)):
             p = points[i]
             x = int(self.length * p[0]) - radius + bound
@@ -164,11 +166,15 @@ class CurveEditor(QDialog):
         self.drawPolyline(qp, ps)
     
     def drawHandlers(self, qp, sel):
+        h = None
+        if type(sel) == tuple:
+            h = sel[1]
+            sel = sel[0]
         if sel and sel != len(self.points) - 1:
             handlers = self.handersToPoints(self.handlers)
-            h = handlers[sel]
-            self.drawPoints(qp, h)
-            self.drawPolyline(qp, [h[0], self.points[sel], h[1]])
+            hs = handlers[sel]
+            self.drawPoints(qp, hs, h)
+            self.drawPolyline(qp, [hs[0], self.points[sel], hs[1]])
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete and self.idx and len(self.points) >= 3:
@@ -184,18 +190,23 @@ class CurveEditor(QDialog):
             if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
                 x = (x - bound) / self.length
                 y = 1 - (y - bound) / self.length
-                sel_point = self.near_point(x, y)
-                if sel_point == None:
-                    sel_point = len(list(filter(lambda p: p[0] < x, self.points)))
-                    self.points.insert(sel_point, (x, y))
-                    v = psub(self.points[sel_point + 1], self.points[sel_point - 1])
-                    self.handlers.insert(sel_point, [
-                            pmul(v, - 1 / 6),
-                            pmul(v, 1 / 6),
-                        ]
-                    )
-                self.idx = sel_point
-                print(self.points[self.idx])
+                sel_handler = self.near_handler(x, y)
+                if sel_handler != None:
+                    self.idx = sel_handler
+                    print(self.idx)
+                else:
+                    sel_point = self.near_point(x, y)
+                    if sel_point == None:
+                        sel_point = len(list(filter(lambda p: p[0] < x, self.points)))
+                        self.points.insert(sel_point, (x, y))
+                        v = psub(self.points[sel_point + 1], self.points[sel_point - 1])
+                        self.handlers.insert(sel_point, [
+                                pmul(v, - 1 / 6),
+                                pmul(v, 1 / 6),
+                            ]
+                        )
+                    self.idx = sel_point
+                    print(self.points[self.idx])
                 self.update()
         elif event.button() == Qt.MiddleButton:
             if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
@@ -228,6 +239,18 @@ class CurveEditor(QDialog):
             if dist < min_dist:
                 idx = i
                 min_dist = dist
+        return idx if min_dist < distance_threshold else None
+
+    def near_handler(self, x, y):
+        idx = None
+        min_dist = 1
+        for i in range(1, len(self.points)-1):
+            for j in range(2):
+                h = padd(self.points[i], self.handlers[i][j])
+                dist = pdist((x, y), h)
+                if dist < min_dist:
+                    idx = (i, j)
+                    min_dist = dist
         return idx if min_dist < distance_threshold else None
 
     # correctness modify: make bezier to be function
