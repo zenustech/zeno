@@ -234,7 +234,7 @@ void parallel_for
     range<N> global_dim;
     for (usize i = 0; i < N; i++) {
         global_dim[i] = std::max((usize)1, (shape[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
-        local_dim[i] = std::clamp(local_dim[i], (usize)1, shape[i]);
+        local_dim[i] = std::max((usize)1, std::min(local_dim[i], shape[i]));
     }
     sycl::nd_range<N> nd_shape
         ( (sycl::range<N>)global_dim
