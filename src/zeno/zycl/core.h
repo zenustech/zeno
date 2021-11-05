@@ -2,7 +2,8 @@
 
 #include <zeno/common.h>
 
-#if defined(SYCL_LANGUAGE_VERSION)
+#if defined(ZENO_WITH_SYCL)
+
 #include <CL/sycl.hpp>
 
 ZENO_NAMESPACE_BEGIN
@@ -13,7 +14,7 @@ ZENO_NAMESPACE_END
 
 #else
 
-#pragma message("<zeno/zycl/core.h> is using host emulated sycl, which is CPU-only and slow.")
+#pragma message("WARNING: <zeno/zycl/core.h> is using host emulated sycl, which is CPU-only and slow.")
 
 #include <array>
 #include <vector>

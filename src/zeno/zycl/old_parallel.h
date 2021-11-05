@@ -23,7 +23,7 @@ auto parallel_for
     return cgh.parallel_for(dim, body);
 }
 
-#ifdef SYCL_LANGUAGE_VERSION
+#ifdef ZENO_WITH_SYCL
 
 template <int N>
 auto parallel_for
@@ -62,7 +62,7 @@ auto parallel_for
 
 #endif
 
-#ifdef SYCL_LANGUAGE_VERSION
+#ifdef ZENO_WITH_SYCL
 
 template <int N>
 auto parallel_reduce

@@ -37,7 +37,7 @@ auto make_access(auto &&cgh, auto &&buf) {
     return buf.template get_access<mode>(std::forward<decltype(cgh)>(cgh));
 }
 
-#ifdef SYCL_LANGUAGE_VERSION
+#ifdef ZENO_WITH_SYCL
 template <access::mode mode, class T, int N>
 auto local_access(auto &&cgh, range<N> const &size) {
     return accessor<T, N, mode, access::target::local>(size, std::forward<decltype(cgh)>(cgh));

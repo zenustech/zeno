@@ -41,7 +41,7 @@ int main()
         auto axr_sum = zycl::make_access<zycl::wd>(cgh, sum);
         cgh.parallel_for
         ( zycl::range<1>(buf.size())
-        , zycl::reduction(axr_sum, INT_MIN, [] (auto x, auto y) { return std::max(x, y); })
+        , zycl::reduction(axr_sum, 0, [] (auto x, auto y) { return x + y; })
         , [=] (zycl::item<1> idx, auto &sum) {
             sum.combine(axr_buf[idx]);
         });
