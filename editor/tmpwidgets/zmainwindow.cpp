@@ -4,6 +4,8 @@
 #include "../timeline/ztimeline.h"
 #include "dmmenu.h"
 #include <kddockwidgets/Config.h>
+#include "../nodesview/znodeswebview.h"
+#include "../nodesview/znodeseditwidget.h"
 
 
 class fakeViewportWidget : public QWidget
@@ -35,6 +37,12 @@ public:
 		pLayout->addLayout(pHBoxLayout);
 
 		setLayout(pLayout);
+		
+		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+	}
+
+	QSize sizeHint() const override {
+		return QSize(width(), 200);
 	}
 };
 
@@ -73,15 +81,6 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 	propertiesWidget->addTab(new QWidget, "Shapes");
 	m_properDockWidget->setWidget(propertiesWidget);
 
-	auto timelineDock = new KDDockWidgets::DockWidget(QStringLiteral("timeline"),
-		KDDockWidgets::DockWidgetBase::Options(),
-		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
-		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical);
-	m_timeline = new ZTimeline;
-	m_timeline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-	timelineDock->setWidget(m_timeline);
-	addDockWidget(timelineDock, KDDockWidgets::Location_OnBottom);
-
 	addDockWidget(m_properDockWidget, KDDockWidgets::Location_OnRight);
 
 	auto minitoolbar = new KDDockWidgets::DockWidget(QStringLiteral("minitoolbar"),
@@ -92,6 +91,23 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 	toolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	minitoolbar->setWidget(toolbar);
 	addDockWidget(minitoolbar, KDDockWidgets::Location_OnLeft);
+
+	auto timelineDock = new KDDockWidgets::DockWidget(QStringLiteral("timeline"),
+		KDDockWidgets::DockWidgetBase::Options(),
+		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
+		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical);
+	m_timeline = new ZTimeline;
+	m_timeline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	timelineDock->setWidget(m_timeline);
+	addDockWidget(timelineDock, KDDockWidgets::Location_OnBottom);
+
+	m_nodesDockWidget = new KDDockWidgets::DockWidget(QStringLiteral("nodes"),
+		KDDockWidgets::DockWidgetBase::Options(),
+		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),		
+		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarHorizontal);
+	auto nodesView = new ZNodesEditWidget;
+	m_nodesDockWidget->setWidget(nodesView);
+	addDockWidget(m_nodesDockWidget, KDDockWidgets::Location_OnBottom);
 
 	setWindowIcon(QIcon(":/icons/zenus.png"));
 }

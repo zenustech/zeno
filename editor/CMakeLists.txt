@@ -3,8 +3,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
 message("-- Found Qt${QT_VERSION_MAJOR} version: ${Qt${QT_VERSION_MAJOR}_VERSION}")
 
@@ -21,7 +21,7 @@ if (ZENO_WITH_BACKWARD)
     add_backward(zeno)
 endif()
 
-target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets kddockwidgets)
+target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::WebEngineWidgets kddockwidgets)
 
 if (APPLE)
     set_target_properties(zeno PROPERTIES

@@ -3,9 +3,11 @@
 #include <kddockwidgets/DockWidget.h>
 #include <kddockwidgets/MainWindow.h>
 #include <kddockwidgets/Config.h>
+#include <QWebEngineView>
 #include "tmpwidgets/zmainwindow.h"
 #include "style/zenostyle.h"
 
+//#define TEST_WEBENGINE
 #define USE_KKDOCK
 
 ZENO_NAMESPACE_BEGIN
@@ -51,7 +53,13 @@ int zenoMain(int argc, char *argv[])
 ZENO_NAMESPACE_END
 
 int main(int argc, char *argv[]) {
-#ifdef USE_KKDOCK
+#ifdef TEST_WEBENGINE
+    QApplication app(argc, argv);
+    QWebEngineView view;
+    view.load(QUrl("https://zenustech.com/"));
+    view.show();
+    return app.exec();
+#elif defined(USE_KKDOCK)
     return ZENO_NAMESPACE::zenoMainWithKDDoc(argc, argv);
 #else
     return ZENO_NAMESPACE::zenoMain(argc, argv);
