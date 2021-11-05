@@ -162,8 +162,9 @@ struct handler {
     template <class = void, int N>
     _M_dummy_event parallel_for(range<N> dim, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
-            item<N> it(dim);
-            it.index = idx;
+            item<N> it;
+            it._M_range = dim;
+            it._M_id = idx;
             f(it);
         });;
         return {};
@@ -171,9 +172,11 @@ struct handler {
 
     template <class = void, int N>
     _M_dummy_event parallel_for(nd_range<N> dim, auto &&f) {
-        _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
-            nd_item<N> it(dim);
-            it.global_id = global_id;
+        _M_nd_range_for(dim._M_global_range, [&] (id<N> global_id) {
+            nd_item<N> it;
+            it._M_global_range = dim._M_global_range;
+            it._M_local_range = dim._M_local_range;
+            it._M_global_id = global_id;
             f(it);
         })
         return {};
@@ -182,7 +185,9 @@ struct handler {
     template <class = void, int N>
     _M_dummy_event parallel_for(range<N> dim, auto red, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
-            item<N> it(idx);
+            item<N> it;
+            it._M_range = dim;
+            it._M_id = idx;
             f(it, red);
         });
         return {};
@@ -190,9 +195,11 @@ struct handler {
 
     template <class = void, int N>
     _M_dummy_event parallel_for(nd_range<N> dim, auto red, auto &&f) {
-        _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
+        _M_nd_range_for(dim._M_global_range, [&] (id<N> global_id) {
             nd_item<N> it;
-            it.global_id = global_id;
+            it._M_global_range = dim._M_global_range;
+            it._M_local_range = dim._M_local_range;
+            it._M_global_id = global_id;
             f(it, red);
         });
         return {};
