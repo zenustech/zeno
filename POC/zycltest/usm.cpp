@@ -70,7 +70,9 @@ struct allocator : sycl::usm_allocator<T, alloc, align> {
 
 
 template <class T>
-using vector = std::vector<T, allocator<T>>;
+struct vector : std::vector<T, allocator<T>> {
+    using std::vector<T, allocator<T>>::vector;
+};
 
 
 template <usize N>
@@ -235,7 +237,69 @@ sycl::nd_range<N> _calc_nd_range(range<N> dim, range<N> local_dim) {
 }
 
 
-template 
+namespace details {
+
+template <class T>
+concept is_our_element = requires (T t) {
+    t(std::declval<sycl::handler &>());
+};
+
+inline constexpr std::tuple<> select_sycl_elements() {
+    return {};
+}
+
+inline constexpr auto select_sycl_elements(auto &&head, auto &&...args) {
+    if constexpr (is_our_element<std::remove_cvref_t<decltype(head)>>) {
+        return select_sycl_elements(args...);
+    } else {
+        return std::apply([&] (auto &...args) {
+            return std::forward_as_tuple(head, args...);
+        }, select_sycl_elements(args...));
+    }
+}
+
+inline constexpr std::tuple<> select_our_elements() {
+    return {};
+}
+
+inline constexpr auto select_our_elements(auto &&head, auto &&...args) {
+    if constexpr (is_our_element<std::remove_cvref_t<decltype(head)>>) {
+        return std::apply([&] (auto &...args) {
+            return std::forward_as_tuple(head, args...);
+        }, select_our_elements(args...));
+    } else {
+        return select_our_elements(args...);
+    }
+}
+
+template <std::size_t I, class ArgTypes>
+inline constexpr auto count_trues_before() {
+    return [&] <std::size_t ...Js> (std::index_sequence<Js...>) {
+        return ((std::size_t)std::tuple_element_t<Js, ArgTypes>::value + ... + 0);
+    }(std::make_index_sequence<I>{});
+}
+
+template <std::size_t I, class ArgTypes>
+inline constexpr decltype(auto) get_shuffled_at(auto &&it, auto &&our_args, auto &&sycl_args) {
+    constexpr auto O = count_trues_before<I, ArgTypes>();
+    if constexpr (std::tuple_element_t<I, ArgTypes>::value) {
+        return std::get<O>(our_args)(it);
+    } else {
+        return std::get<I - O>(sycl_args);
+    }
+}
+
+template <class ArgTypes>
+inline constexpr auto shuffle_element_indices(auto &&it, auto &&our_args, auto &&sycl_args) {
+    return [&] <std::size_t ...Is> (std::index_sequence<Is...>) {
+        return std::forward_as_tuple(get_shuffled_at<Is, ArgTypes>(it, our_args, sycl_args)...);
+    }(std::make_index_sequence<std::tuple_size_v<ArgTypes>>{});
+}
+
+}
+
+
+template
 < class Kern = void
 , bool IsClamped = true
 , usize N>
@@ -249,28 +313,39 @@ void parallel_for
         std::is_void_v<Kern>,
         std::remove_cvref_t<decltype(body)>,
         Kern>;
-
     auto nd_dim = _calc_nd_range(dim, local_dim);
-    constexpr std::size_t NArgs = sizeof...(args);
+    using ArgTypes = std::tuple<std::bool_constant<
+          details::is_our_element<std::remove_cvref_t<decltype(args)>>
+          >...>;
 
-    default_queue().submit([&] (sycl::handler &cgh) {
-        cgh.parallel_for<Key>
-        ( nd_dim
-        , args...
-        , [=]
-        ( sycl::nd_item<N> const &it_
-        , auto &...args) {
-            auto arts = std::forward_as_tuple(args...);
-            if constexpr (IsClamped) {
-                for (usize i = 0; i < N; i++) {
-                    [[unlikely]] if (it_.get_global_id(i) > dim[i])
-                        return;
+    auto our_args = details::select_our_elements(args...);
+    std::apply([&] (auto &...sycl_args) {
+        default_queue().submit([&] (sycl::handler &cgh) {
+
+            auto our_data = std::apply([&] (auto &...our_args) {
+                return std::tuple(our_args(cgh)...);
+            }, our_args);
+
+            cgh.parallel_for<Key>
+            ( nd_dim
+            , sycl_args...
+            , [=]
+            ( sycl::nd_item<N> const &it_
+            , auto &...sycl_args) {
+                if constexpr (IsClamped) {
+                    for (usize i = 0; i < N; i++) {
+                        [[unlikely]] if (it_.get_global_id(i) > dim[i])
+                            return;
+                    }
                 }
-            }
-            item<N> const it(it_);
-            body(it, args...);
+                item<N> const it(it_);
+                std::apply([&] (auto &...args) {
+                    body(it, args...);
+                }, details::shuffle_element_indices<ArgTypes>(
+                    it, our_data, std::forward_as_tuple(sycl_args...)));
+            });
         });
-    });
+    }, details::select_sycl_elements(args...));
 }
 
 
@@ -289,6 +364,8 @@ auto reduction
 
 
 int main() {
+    sycl::buffer<float, 1> buf(0);
+
     zpc::vector<float> arr(100);
     for (auto &a: arr) {
         a = drand48();
