@@ -1,0 +1,273 @@
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+import sys, random, math
+
+radius = 5
+bound = 20
+distance_threshold = 0.05
+segment = 10
+epsilon = 0.00001
+
+def lerp(start, end, t):
+    return start + t * (end - start)
+
+def plerp(p1, p2, t):
+    return (
+        lerp(p1[0], p2[0], t),
+        lerp(p1[1], p2[1], t),
+    )
+
+def padd(p1, p2):
+    return (
+        p1[0] + p2[0],
+        p1[1] + p2[1],
+    )
+
+def psub(p1, p2):
+    return (
+        p1[0] - p2[0],
+        p1[1] - p2[1],
+    )
+
+def pdist(p1, p2):
+    x = abs(p1[0] - p2[0])
+    y = abs(p1[1] - p2[1])
+    return math.sqrt(x * x + y * y)
+
+def pmul(p, f):
+    return (
+        p[0] * f,
+        p[1] * f,
+    )
+
+def bezier(p1, p2, h1, h2, t):
+    a = plerp(p1, h1, t)
+    b = plerp(h1, h2, t)
+    c = plerp(h2, p2, t)
+    d = plerp(a, b, t)
+    e = plerp(b, c, t)
+    f = plerp(d, e, t)
+    return f
+
+def eval_value(points, handlers, x):
+    if x < 0:
+        return 0
+    if x > 1:
+        return 1
+    i = len(list(filter(lambda p: p[0] < x, points))) - 1
+    p1 = points[i]
+    p2 = points[i + 1]
+    h1 = handlers[i][1]
+    h2 = handlers[i+1][0]
+    return eval_bezier_value(p1, p2, h1, h2, x)
+
+def eval_bezier_value(p1, p2, h1, h2, x):
+    lower = 0
+    upper = 1
+    left_calc_count = 100
+    t = (lower + upper) / 2
+    np = bezier(p1, p2, h1, h2, t)
+
+    while abs(np[0] - x) >  epsilon and left_calc_count > 0:
+        assert lower < t and t < upper
+        if x < np[0]:
+            upper = t
+        else:
+            lower = t
+        t = (lower + upper) / 2
+        np = bezier(p1, p2, h1, h2, t)
+        left_calc_count -= 1
+    assert left_calc_count > 0
+    return np[1]
+
+def clamp(_input, _min, _max):
+    if _input < _min:
+        return _min
+    elif _input > _max:
+        return _max
+    else:
+        return _input
+
+class CurveEditor(QDialog):
+    def __init__(self, node):
+        super().__init__()
+        self.points = [
+            (0, 0),
+            (0.3, 0.7),
+            (0.6, 0.4),
+            (1, 1),
+        ]
+
+        self.initUI()
+        
+    def initUI(self):
+        self.idx = None
+        self.pressed = False
+        self.w = 300
+        self.h = 200
+        self.length = min(self.w, self.h)
+        self.setGeometry(300, 300, self.w, self.h)
+        self.setWindowTitle('CurveEditor')
+        self.show()
+
+    def paintEvent(self, e):
+        points = self.points
+
+        self.length = min(self.width(), self.height()) - bound * 2
+        qp = QPainter()
+        qp.begin(self)
+        qp.setPen(Qt.gray)
+        self.drawLines(qp, points)
+        qp.setPen(Qt.magenta)
+        self.drawHandlers(qp, self.idx)
+        qp.setPen(Qt.blue)
+        self.drawPoints(qp, points, self.idx)
+        qp.end()
+
+    def drawPoints(self, qp, points, sel=None):
+        for i in range(len(points)):
+            p = points[i]
+            x = int(self.length * p[0]) - radius + bound
+            y = int(self.length * (1 - p[1])) - radius + bound
+            if i == sel:
+                qp.fillRect(x, y, 10, 10, qp.pen().color())
+            else:
+                qp.drawRect(x, y, 10, 10)
+
+    
+    def drawPolyline(self, qp, points):
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            x1 = int(self.length * p1[0]) + bound
+            y1 = int(self.length * (1 - p1[1])) + bound
+            p2 = points[i + 1]
+            x2 = int(self.length * p2[0]) + bound
+            y2 = int(self.length * (1 - p2[1])) + bound
+            qp.drawLine(x1, y1, x2, y2)
+
+    def drawLines(self, qp, points):
+        handlers = self.gen_handlers()
+        handlers = self.handersToPoints(handlers)
+
+        ps = []
+
+        for i in range(len(points) - 1):
+            p1 = self.points[i]
+            p2 = self.points[i + 1]
+            h1 = handlers[i][1]
+            h2 = handlers[i+1][0]
+            for t in range(segment + 1):
+                t = t / segment
+                ps.append(bezier(p1, p2, h1, h2, t))
+        self.drawPolyline(qp, ps)
+    
+    def drawHandlers(self, qp, sel):
+        if sel and sel != len(self.points) - 1:
+            handlers = self.gen_handlers()
+            handlers = self.handersToPoints(handlers)
+            h = handlers[sel]
+            self.drawPoints(qp, h)
+            self.drawPolyline(qp, [h[0], self.points[sel], h[1]])
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete and self.idx and len(self.points) >= 3:
+            self.points.pop(self.idx)
+            self.idx = None
+            self.update()
+
+    def mousePressEvent(self, event):
+        x = event.x()
+        y = event.y()
+        if event.button() == Qt.LeftButton:
+            self.pressed = True
+            if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
+                x = (x - bound) / self.length
+                y = 1 - (y - bound) / self.length
+                sel_point = self.near_point(x, y)
+                if sel_point == None:
+                    sel_point = len(list(filter(lambda p: p[0] < x, self.points)))
+                    self.points.insert(sel_point, (x, y))
+                    self.update()
+                self.idx = sel_point
+                print(self.points[self.idx])
+                self.update()
+        elif event.button() == Qt.MiddleButton:
+            if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
+                x = (x - bound) / self.length
+                x = clamp(x, 0, 1)
+                handlers = self.gen_handlers()
+                handlers = self.handersToPoints(handlers)
+                print(eval_value(self.points, handlers, x))
+
+    def mouseReleaseEvent(self, event):
+        self.pressed = False
+
+    def mouseMoveEvent(self, event):
+        if self.idx == 0 or self.idx == len(self.points) - 1:
+            return
+
+        if self.idx != None and self.pressed:
+            x = (event.x() - bound) / self.length
+            y = (event.y() - bound) / self.length
+            x = clamp(x, self.points[self.idx - 1][0], self.points[self.idx + 1][0])
+            y = 1 - clamp(y, 0, 1)
+            self.points[self.idx] = (x, y)
+            self.update()
+
+    def near_point(self, x, y):
+        idx = None
+        min_dist = 1
+        for i in range(len(self.points)):
+            p = self.points[i]
+            dist = pdist((x, y), p)
+            if dist < min_dist:
+                idx = i
+                min_dist = dist
+        return idx if min_dist < distance_threshold else None
+
+    def gen_handlers(self):
+        handlers = [
+            [(0, 0), (0, 0)]
+        ]
+        for i in range(1, len(self.points) - 1):
+            v = psub(self.points[i + 1], self.points[i - 1])
+            handlers.append(
+                [
+                    pmul(v, - 1 / 6),
+                    pmul(v, 1 / 6),
+                ]
+            )
+        handlers.append(
+            [(0, 0), (0, 0)]
+        )
+        # correctness modify: make bezier to be function
+        for i in range(1, len(self.points)-1):
+            cur_p = self.points[i]
+            hp = handlers[i][0]
+            prev_p = self.points[i-1]
+            if abs(hp[0]) > abs(cur_p[0] - prev_p[0]):
+                s = abs(cur_p[0] - prev_p[0]) / abs(hp[0])
+                handlers[i][0] = pmul(hp, s)
+
+            hn = handlers[i][1]
+            next_p = self.points[i+1]
+            if abs(hn[0]) > abs(cur_p[0] - next_p[0]):
+                s = abs(cur_p[0] - next_p[0]) / abs(hn[0])
+                handlers[i][1] = pmul(hn, s)
+
+        return handlers
+
+    def handersToPoints(self, handlers):
+        ps = []
+        for i in range(len(self.points)):
+            ps.append([
+                padd(self.points[i], handlers[i][0]),
+                padd(self.points[i], handlers[i][1]),
+            ])
+        return ps
+        
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Example()
+    sys.exit(app.exec_())
