@@ -21,7 +21,7 @@ int main()
     buf.resize(40);
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
+        auto axr_buf = zycl::make_access<zycl::rwd>(cgh, buf);
         cgh.parallel_for
         ( zycl::range<1>(buf.size())
         , [=] (zycl::item<1> idx) {
@@ -32,15 +32,15 @@ int main()
     buf.resize(48);
 
     {
-        auto axr_buf = zycl::host_access<zycl::access::mode::read>(buf);
+        auto axr_buf = zycl::host_access<zycl::ro>(buf);
         for (int i = 0; i < buf.size(); i++) {
             printf("buf[%d] = %d\n", i, axr_buf[i]);
         }
     }
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_buf = zycl::make_access<zycl::access::mode::read>(cgh, buf);
-        auto axr_sum = zycl::make_access<zycl::access::mode::discard_write>(cgh, sum);
+        auto axr_buf = zycl::make_access<zycl::ro>(cgh, buf);
+        auto axr_sum = zycl::make_access<zycl::wd>(cgh, sum);
 
         cgh.parallel_for
         ( zycl::range<1>(buf.size())
@@ -51,7 +51,7 @@ int main()
     });
 
     {
-        auto axr_sum = zycl::host_access<zycl::access::mode::read>(sum);
+        auto axr_sum = zycl::host_access<zycl::ro>(sum);
         printf("sum = %d\n", axr_sum[0]);
     }
 

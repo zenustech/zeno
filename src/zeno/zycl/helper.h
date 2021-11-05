@@ -12,6 +12,13 @@ namespace zycl {
 struct host_handler {};
 
 
+inline constexpr auto ro = access::mode::read;
+inline constexpr auto wo = access::mode::write;
+inline constexpr auto wd = access::mode::discard_write;
+inline constexpr auto rw = access::mode::read_write;
+inline constexpr auto rwd = access::mode::discard_read_write;
+
+
 template <class F>
 struct functor_accessor {
     F _M_f;

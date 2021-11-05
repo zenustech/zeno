@@ -161,20 +161,20 @@ struct handler {
     }
 
     template <class = void, int N>
-    _M_dummy_event parallel_for(range<N> dim, auto &&red, auto &&f) {
+    _M_dummy_event parallel_for(range<N> dim, auto red, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
             item<N> it(idx);
-            f(it);
+            f(it, red);
         });
         return {};
     }
 
     template <class = void, int N>
-    _M_dummy_event parallel_for(nd_range<N> dim, auto &&red, auto &&f) {
+    _M_dummy_event parallel_for(nd_range<N> dim, auto red, auto &&f) {
         _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
             nd_item<N> it;
             it.global_id = global_id;
-            f(it);
+            f(it, red);
         });
         return {};
     }
@@ -190,6 +190,8 @@ struct queue {
         handler h;
         f(h);
     }
+
+    void wait() {}
 };
 
 namespace access {
