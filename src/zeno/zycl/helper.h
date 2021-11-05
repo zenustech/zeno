@@ -25,20 +25,31 @@ struct functor_accessor {
 };
 
 
-#ifndef ZENO_SYCL_IS_EMULATED
+#ifdef ZENO_SYCL_IS_EMULATED
 
 template <size_t N>
-using shape = range<N>;
+struct shape : range<N> {
+    using range<N>::range;
+};
+
 template <size_t N>
-using nd_shape = nd_range<N>;
+struct nd_shape : nd_range<N> {
+    using nd_range<N>::nd_range;
+};
 
 #else
 
 // hipsycl says: mismatched types ‘long unsigned int’ and ‘int’; let's fuck him up
+
 template <size_t N>
-using shape = range<(int)N>;
+struct shape : range<(int)N> {
+    using range<(int)N>::range;
+};
+
 template <size_t N>
-using nd_shape = nd_range<(int)N>;
+struct nd_shape : nd_range<(int)N> {
+    using nd_range<(int)N>::nd_range;
+};
 
 #endif
 
