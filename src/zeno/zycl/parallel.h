@@ -12,10 +12,10 @@ namespace zycl {
 template <class T, class Alt>
 using _M_void_or = std::conditional_t<std::is_void_v<T>, std::remove_cvref_t<Alt>, T>;
 
-template <size_t N>
+template <int N>
 auto parallel_for
     ( auto &&cgh
-    , shape<N> const &dim
+    , range<N> const &dim
     , auto &&body
     ) {
     return cgh.parallel_for(dim, body);
@@ -23,11 +23,11 @@ auto parallel_for
 
 #ifndef ZENO_SYCL_IS_EMULATED
 
-template <size_t N>
+template <int N>
 auto parallel_for
     ( auto &&cgh
-    , shape<N> const &dim
-    , shape<N> const &blkdim
+    , range<N> const &dim
+    , range<N> const &blkdim
     , auto &&body
     , auto &&...args
     ) {
@@ -45,11 +45,11 @@ auto parallel_for
 
 #else
 
-template <size_t N>
+template <int N>
 auto parallel_for
     ( auto &&cgh
-    , shape<N> const &dim
-    , shape<N> const &blkdim
+    , range<N> const &dim
+    , range<N> const &blkdim
     , auto &&body
     , auto &&...args
     ) {
@@ -62,11 +62,11 @@ auto parallel_for
 
 #ifndef ZENO_SYCL_IS_EMULATED
 
-template <size_t N>
+template <int N>
 auto parallel_reduce
     ( auto &&cgh
-    , shape<N> const &dim
-    , shape<N> const &blkdim
+    , range<N> const &dim
+    , range<N> const &blkdim
     , auto &&buf
     , auto ident
     , auto &&binop
@@ -92,11 +92,11 @@ struct _M_parallel_reducer {
     }
 };
 
-template <size_t N>
+template <int N>
 auto parallel_reduce
     ( auto &&cgh
-    , shape<N> const &dim
-    , shape<N> const &blkdim
+    , range<N> const &dim
+    , range<N> const &blkdim
     , auto &&buf
     , auto ident
     , auto &&binop

@@ -83,7 +83,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
         auto lxr_temp = zycl::local_access<zycl::access::mode::read_write, Reducer, 1>(cgh, zycl::range<1>(BlkSize));
 
         cgh.parallel_for(
-            zycl::nd_shape<1>(psumsize * BlkSize, BlkSize),
+            zycl::nd_range<1>(psumsize * BlkSize, BlkSize),
             [=] (zycl::nd_item<1> it) {
                 auto gid = it.get_group(0);
                 auto lid = it.get_local_id(0);

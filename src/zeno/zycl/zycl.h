@@ -22,7 +22,7 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-template <size_t N>
+template <int N>
 struct id : std::array<size_t, N> {
     using std::array<size_t, N>::array;
 
@@ -40,18 +40,18 @@ struct id : std::array<size_t, N> {
     }
 };
 
-template <size_t N>
+template <int N>
 struct range : id<N> {
     using id<N>::id;
 };
 
-template <size_t N>
+template <int N>
 struct item : range<N> {
     using range<N>::range;
 };
 
 
-template <size_t N>
+template <int N>
 struct nd_range {
     id<N> global_size{};
     id<N> local_size{};
@@ -71,7 +71,7 @@ struct nd_range {
     }
 };
 
-template <size_t N>
+template <int N>
 struct nd_item : nd_range<N> {
     id<N> global_id{};
     id<N> local_id{};
@@ -93,7 +93,7 @@ struct _M_dummy_event {
     void wait() const {}
 };
 
-template <size_t I, size_t N>
+template <int I, int N>
 void _M_nd_range_for(range<N> const &size, id<N> &index, auto &&f) {
     if constexpr (I == N) {
         f(index);
@@ -104,7 +104,7 @@ void _M_nd_range_for(range<N> const &size, id<N> &index, auto &&f) {
     }
 }
 
-template <size_t N>
+template <int N>
 void _M_nd_range_for(range<N> const &size, auto &&f) {
     id<N> index;
     _M_nd_range_for<0>(size, index, f);
@@ -116,7 +116,7 @@ struct handler {
         f();
     }
 
-    template <class = void, size_t N>
+    template <class = void, int N>
     _M_dummy_event parallel_for(range<N> dim, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
             item<N> it(idx);
@@ -124,7 +124,7 @@ struct handler {
         });
     }
 
-    template <class = void, size_t N>
+    template <class = void, int N>
     _M_dummy_event parallel_for(nd_range<N> dim, auto &&f) {
         _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
             nd_item<N> it;
@@ -159,7 +159,7 @@ enum class mode {
 
 };
 
-template <access::mode mode, class Buf, class T, size_t N>
+template <access::mode mode, class Buf, class T, int N>
 struct accessor {
     Buf const &buf;
 
@@ -171,7 +171,7 @@ struct accessor {
     }
 };
 
-template <size_t N>
+template <int N>
 inline size_t _M_calc_product(range<N> const &size) {
     size_t ret = 1;
     for (int i = 0; i < N; i++) {
@@ -180,7 +180,7 @@ inline size_t _M_calc_product(range<N> const &size) {
     return ret;
 }
 
-template <size_t N>
+template <int N>
 inline size_t _M_linearize_id(range<N> const &size, id<N> const &idx) {
     size_t ret = 0;
     size_t term = 1;
@@ -191,7 +191,7 @@ inline size_t _M_linearize_id(range<N> const &size, id<N> const &idx) {
     return ret;
 }
 
-template <class T, size_t N>
+template <class T, int N>
 struct buffer {
     std::vector<T> _M_data;
     range<N> _M_shape;

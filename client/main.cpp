@@ -24,7 +24,7 @@ int main()
         auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
         zycl::parallel_for
         ( cgh
-        , zycl::shape<1>(buf.size())
+        , zycl::range<1>(buf.size())
         , [=] (zycl::item<1> idx) {
             axr_buf[idx] += 1;
         });
