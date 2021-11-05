@@ -221,43 +221,55 @@ inline void synchronize() {
 }
 
 
+template <usize N>
+sycl::nd_range<N> _calc_nd_range(range<N> dim, range<N> local_dim) {
+    range<N> global_dim;
+    for (usize i = 0; i < N; i++) {
+        global_dim[i] = std::max((usize)1, (dim[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
+        local_dim[i] = std::max((usize)1, std::min(local_dim[i], dim[i]));
+    }
+    return
+        { (sycl::range<N>)global_dim
+        , (sycl::range<N>)local_dim
+        };
+}
+
+
 template 
 < class Kern = void
 , bool IsClamped = true
 , usize N>
 void parallel_for
-    ( range<N> shape
+    ( range<N> dim
     , range<N> local_dim
     , auto &&body
     , auto &&...args
     ) {
-    range<N> global_dim;
-    for (usize i = 0; i < N; i++) {
-        global_dim[i] = std::max((usize)1, (shape[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
-        local_dim[i] = std::max((usize)1, std::min(local_dim[i], shape[i]));
-    }
-    sycl::nd_range<N> nd_shape
-        ( (sycl::range<N>)global_dim
-        , (sycl::range<N>)local_dim
-        );
     using Key = std::conditional_t<
         std::is_void_v<Kern>,
         std::remove_cvref_t<decltype(body)>,
         Kern>;
-    default_queue().parallel_for<Key>
-    ( nd_shape
-    , std::forward<decltype(args)>(args)...
-    , [=]
-    ( sycl::nd_item<N> const &it_
-    , auto &...args) {
-        if constexpr (IsClamped) {
-            for (usize i = 0; i < N; i++) {
-                [[unlikely]] if (it_.get_global_id(i) > shape[i])
-                    return;
+
+    auto nd_dim = _calc_nd_range(dim, local_dim);
+    constexpr std::size_t NArgs = sizeof...(args);
+
+    default_queue().submit([&] (sycl::handler &cgh) {
+        cgh.parallel_for<Key>
+        ( nd_dim
+        , args...
+        , [=]
+        ( sycl::nd_item<N> const &it_
+        , auto &...args) {
+            auto arts = std::forward_as_tuple(args...);
+            if constexpr (IsClamped) {
+                for (usize i = 0; i < N; i++) {
+                    [[unlikely]] if (it_.get_global_id(i) > dim[i])
+                        return;
+                }
             }
-        }
-        item<N> const it(it_);
-        body(it, args...);
+            item<N> const it(it_);
+            body(it, args...);
+        });
     });
 }
 
