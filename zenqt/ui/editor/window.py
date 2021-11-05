@@ -239,6 +239,9 @@ class NodeEditor(QWidget):
                 'categories': ['layout'],
             },
         })
+        from .curve_editor import CurveEditor
+        self.curve_editor = CurveEditor(self)
+        self.curve_editor.open()
         self.setDescriptors(descs)
 
     def initDescriptorsComment(self):

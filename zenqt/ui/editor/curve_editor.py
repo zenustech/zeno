@@ -2,6 +2,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 import sys, random, math
+from copy import deepcopy
 
 radius = 5
 bound = 20
@@ -94,9 +95,11 @@ class CurveEditor(QDialog):
         super().__init__()
         self.points = [
             (0, 0),
-            (0.3, 0.7),
-            (0.6, 0.4),
             (1, 1),
+        ]
+        self.handlers = [
+            [(0, 0), (0, 0)],
+            [(0, 0), (0, 0)],
         ]
 
         self.initUI()
@@ -147,11 +150,9 @@ class CurveEditor(QDialog):
             qp.drawLine(x1, y1, x2, y2)
 
     def drawLines(self, qp, points):
-        handlers = self.gen_handlers()
-        handlers = self.handersToPoints(handlers)
+        handlers = self.handersToPoints(self.correct_handlers())
 
         ps = []
-
         for i in range(len(points) - 1):
             p1 = self.points[i]
             p2 = self.points[i + 1]
@@ -164,8 +165,7 @@ class CurveEditor(QDialog):
     
     def drawHandlers(self, qp, sel):
         if sel and sel != len(self.points) - 1:
-            handlers = self.gen_handlers()
-            handlers = self.handersToPoints(handlers)
+            handlers = self.handersToPoints(self.handlers)
             h = handlers[sel]
             self.drawPoints(qp, h)
             self.drawPolyline(qp, [h[0], self.points[sel], h[1]])
@@ -188,7 +188,12 @@ class CurveEditor(QDialog):
                 if sel_point == None:
                     sel_point = len(list(filter(lambda p: p[0] < x, self.points)))
                     self.points.insert(sel_point, (x, y))
-                    self.update()
+                    v = psub(self.points[sel_point + 1], self.points[sel_point - 1])
+                    self.handlers.insert(sel_point, [
+                            pmul(v, - 1 / 6),
+                            pmul(v, 1 / 6),
+                        ]
+                    )
                 self.idx = sel_point
                 print(self.points[self.idx])
                 self.update()
@@ -196,8 +201,7 @@ class CurveEditor(QDialog):
             if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
                 x = (x - bound) / self.length
                 x = clamp(x, 0, 1)
-                handlers = self.gen_handlers()
-                handlers = self.handersToPoints(handlers)
+                handlers = self.handersToPoints(self.correct_handlers())
                 print(eval_value(self.points, handlers, x))
 
     def mouseReleaseEvent(self, event):
@@ -226,22 +230,9 @@ class CurveEditor(QDialog):
                 min_dist = dist
         return idx if min_dist < distance_threshold else None
 
-    def gen_handlers(self):
-        handlers = [
-            [(0, 0), (0, 0)]
-        ]
-        for i in range(1, len(self.points) - 1):
-            v = psub(self.points[i + 1], self.points[i - 1])
-            handlers.append(
-                [
-                    pmul(v, - 1 / 6),
-                    pmul(v, 1 / 6),
-                ]
-            )
-        handlers.append(
-            [(0, 0), (0, 0)]
-        )
-        # correctness modify: make bezier to be function
+    # correctness modify: make bezier to be function
+    def correct_handlers(self):
+        handlers = deepcopy(self.handlers)
         for i in range(1, len(self.points)-1):
             cur_p = self.points[i]
             hp = handlers[i][0]
