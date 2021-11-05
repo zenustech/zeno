@@ -223,8 +223,10 @@ inline void synchronize() {
 }
 
 
+namespace details {
+
 template <usize N>
-sycl::nd_range<N> _calc_nd_range(range<N> dim, range<N> local_dim) {
+sycl::nd_range<N> calc_nd_range(range<N> const &dim, range<N> local_dim) {
     range<N> global_dim;
     for (usize i = 0; i < N; i++) {
         global_dim[i] = std::max((usize)1, (dim[i] + local_dim[i] - 1) / local_dim[i] * local_dim[i]);
@@ -235,9 +237,6 @@ sycl::nd_range<N> _calc_nd_range(range<N> dim, range<N> local_dim) {
         , (sycl::range<N>)local_dim
         };
 }
-
-
-namespace details {
 
 template <class T>
 concept is_our_element = requires (T t) {
@@ -284,6 +283,13 @@ inline constexpr auto shuffle_element_indices(auto &&it, auto &&our_args, auto &
     }(std::make_index_sequence<std::tuple_size_v<ArgTypes>>{});
 }
 
+template <usize N>
+inline bool is_inside_range(sycl::nd_item<N> const &it, range<N> const &dim) {
+    return [&] <std::size_t ...Is> (std::index_sequence<Is...>) {
+        return ((it.get_global_id(Is) < dim[Is]) && ...);
+    }(std::make_index_sequence<N>{});
+}
+
 }
 
 
@@ -301,7 +307,7 @@ void parallel_for
         std::is_void_v<Kern>,
         std::remove_cvref_t<decltype(body)>,
         Kern>;
-    auto nd_dim = _calc_nd_range(dim, local_dim);
+    auto nd_dim = details::calc_nd_range<N>(dim, local_dim);
     using ArgTypes = std::tuple<std::bool_constant<
           details::is_our_element<std::remove_cvref_t<decltype(args)>>
           >...>;
@@ -321,15 +327,13 @@ void parallel_for
             ( sycl::nd_item<N> const &it_
             , auto &...sycl_args) {
                 if constexpr (IsClamped) {
-                    for (usize i = 0; i < N; i++) {
-                        [[unlikely]] if (it_.get_global_id(i) > dim[i])
-                            return;
-                    }
+                    [[unlikely]] if (!details::is_inside_range<N>(it_, dim))
+                        return;
                 }
                 item<N> const it(it_);
 
-                std::apply([&] (auto &...args) {
-                    body(it, args...);
+                std::apply([&] (auto &&...args) {
+                    body(it, std::forward<decltype(args)>(args)...);
                 }, details::shuffle_element_indices<ArgTypes>(
                     it, our_data, std::forward_as_tuple(sycl_args...)));
             });
@@ -362,8 +366,8 @@ auto local_buffer(range<N> shape) {
         ( (sycl::range<N>)shape
         , cgh
         );
-        return [acc = std::move(acc)] (auto &it) -> auto & {
-            return *acc.get_pointer();
+        return [acc = std::move(acc)] (auto &it) {
+            return acc.get_pointer();
         };
     };
 }
@@ -385,14 +389,15 @@ int main() {
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
     , [=] (zpc::item<1> it) {
-        varr[it[0]] = it[0];
+        varr[it[0]] = it[0] + 1;
     });
 
     zpc::vector<float> out(1);
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
-    , [=] (zpc::item<1> it, auto &tmpbuf, auto &reducer) {
+    , [=] (zpc::item<1> it, auto tmpbuf, auto &reducer) {
+        tmpbuf[0];
         reducer.combine(varr[it[0]]);
     }
     , zpc::local_buffer<float>(zpc::range<1>(1))
