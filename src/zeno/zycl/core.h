@@ -46,45 +46,64 @@ struct range : id<N> {
 
 template <int N>
 struct item : range<N> {
-    using range<N>::range;
+    range<N> _M_range{};
+    id<N> _M_id{};
+
+    constexpr size_t get_range(size_t i) const {
+        return _M_range[i];
+    }
+
+    constexpr size_t get_id(size_t i) const {
+        return _M_id[i];
+    }
 };
 
 
 template <int N>
 struct nd_range {
-    id<N> global_size{};
-    id<N> local_size{};
+    range<N> _M_global_range{};
+    range<N> _M_local_range{};
 
     nd_range() = default;
 
-    constexpr explicit nd_range(id<N> global_size, id<N> local_size)
-        : global_size(global_size), local_size(local_size)
+    constexpr explicit nd_range(id<N> global_range, id<N> local_range)
+        : _M_global_range(global_range), _M_local_range(local_range)
     {}
 
-    constexpr size_t get_global_size(size_t i) const {
-        return global_size[i];
+    constexpr size_t get_global_range(size_t i) const {
+        return _M_global_range[i];
     }
 
-    constexpr size_t get_local_size(size_t i) const {
-        return local_size[i];
+    constexpr size_t get_local_range(size_t i) const {
+        return _M_local_range[i];
     }
 };
 
 template <int N>
-struct nd_item : nd_range<N> {
-    id<N> global_id{};
-    id<N> local_id{};
+struct nd_item {
+    range<N> _M_global_range{};
+    range<N> _M_local_range{};
+    id<N> _M_global_id{};
+    id<N> _M_local_id{};
 
     constexpr operator item<N>() const {
-        return {global_id};
+        return {_M_global_range, _M_global_id};
+    }
+
+    constexpr size_t get_global_range(size_t i) const {
+        return _M_global_range[i];
+    }
+
+    constexpr size_t get_local_range(size_t i) const {
+        return _M_local_range[i];
     }
 
     constexpr size_t get_global_id(size_t i) const {
-        return global_id[i];
+        return _M_global_id[i];
     }
 
     constexpr size_t get_local_id(size_t i) const {
-        return local_id[i];
+        return _M_local_id[i];
     }
 };
 
@@ -143,7 +162,8 @@ struct handler {
     template <class = void, int N>
     _M_dummy_event parallel_for(range<N> dim, auto &&f) {
         _M_nd_range_for(dim, [&] (id<N> idx) {
-            item<N> it(idx);
+            item<N> it(dim);
+            it.index = idx;
             f(it);
         });;
         return {};
@@ -152,7 +172,7 @@ struct handler {
     template <class = void, int N>
     _M_dummy_event parallel_for(nd_range<N> dim, auto &&f) {
         _M_nd_range_for(dim.global_size, [&] (id<N> global_id) {
-            nd_item<N> it;
+            nd_item<N> it(dim);
             it.global_id = global_id;
             f(it);
         })
