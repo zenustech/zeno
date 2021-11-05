@@ -2,7 +2,6 @@
 #include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
-#include <zeno/zycl/parallel.h>
 
 USING_ZENO_NAMESPACE
 
@@ -10,6 +9,7 @@ int main()
 {
 #if 1
     zycl::vector<int> buf;
+    zycl::vector<int> sum(1);
 
     {
         decltype(auto) vec = buf.as_vector();
@@ -22,9 +22,8 @@ int main()
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
-        zycl::parallel_for
-        ( cgh
-        , zycl::range<1>(buf.size())
+        cgh.parallel_for
+        ( zycl::range<1>(buf.size())
         , [=] (zycl::item<1> idx) {
             axr_buf[idx] += 1;
         });
@@ -35,23 +34,26 @@ int main()
     {
         auto axr_buf = zycl::host_access<zycl::access::mode::read>(buf);
         for (int i = 0; i < buf.size(); i++) {
-            printf("%d\n", axr_buf[i]);
+            printf("buf[%d] = %d\n", i, axr_buf[i]);
         }
     }
 
-    /*zycl::default_queue().submit([&] (zycl::handler &cgh) {
+    zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::access::mode::read>(cgh, buf);
-        zycl::parallel_reduce
-        ( cgh
-        , zycl::shape<1>(buf.size())
-        , zycl::shape<1>(8)
-        , buf
-        , 0.0f
-        , [] (auto x, auto y) { return x + y; }
-        , [=] (zycl::item<1> idx, auto &reducer) {
-            reducer.combine(axr_buf[idx]);
+        auto axr_sum = zycl::make_access<zycl::access::mode::discard_write>(cgh, sum);
+
+        cgh.parallel_for
+        ( zycl::range<1>(buf.size())
+        , zycl::reduction(axr_sum, 0.0f, std::plus{})
+        , [=] (zycl::item<1> idx, auto &sum) {
+            sum.combine(axr_buf[idx]);
         });
-    });*/
+    });
+
+    {
+        auto axr_sum = zycl::host_access<zycl::access::mode::read>(sum);
+        printf("sum = %d\n", axr_sum[0]);
+    }
 
 #else
 

@@ -119,5 +119,6 @@ build/editor/zeno_editor
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
 - [DPC++ documentation](https://intel.github.io/llvm-docs/)
 - [OneAPI references](https://docs.oneapi.io/versions/latest/dpcpp/iface/)
-- [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020-provisional.pdf)
+- [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020/html/sycl-2020.html)
+- [SYCL specification PDF](https://www.khronos.org/registry/SYCL/specs/sycl-2020-provisional.pdf)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)
