@@ -106,7 +106,7 @@ auto parallel_reduce
     auto e = parallel_for<_M_void_or<Key, decltype(body)>>
     ( cgh
     , dim
-    , [&current, binop = std::move(binop), body = std::move(body)] (nd_item<1> const &it) {
+    , [&current, binop = std::move(binop), body = std::move(body)] (item<1> const &it) {
         _M_parallel_reducer reducer(current, std::move(binop));
         body(it, reducer);
     });
