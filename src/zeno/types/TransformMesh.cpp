@@ -26,7 +26,7 @@ static void TransformMesh(dop::FuncContext *ctx) {
         auto axr_vert = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, mesh->vert);
 
         std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
-            cgh.parallel_for(zycl::range<1>(mesh->vert.size()), [=] (zycl::item<1> it) {
+            cgh.parallel_for(zycl::shape<1>(mesh->vert.size()), [=] (zycl::item<1> it) {
                 auto vert = axr_vert[it];
                 if constexpr (has_scaling)
                     vert *= scaling;

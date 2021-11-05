@@ -8,8 +8,7 @@ queue default_queue() {
 #ifndef ZENO_SYCL_IS_EMULATED
     std::once_flag flg;
     std::call_once(flg, [&] {
-        std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>()
-            << ", backend: " << que.get_backend() << std::endl;
+        std::cout << "SYCL device: " << que.get_device().get_info<zycl::info::device::name>() << std::endl;
     });
 #endif
     return que;

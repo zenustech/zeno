@@ -22,9 +22,6 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
-using cl_int = int;
-using cl_float = float;
-
 template <size_t N>
 struct id : std::array<size_t, N> {
     using std::array<size_t, N>::array;
@@ -219,7 +216,7 @@ struct buffer {
         return accessor<mode, buffer, T, N>(*this);
     }
 
-    range<N> shape() const {
+    range<N> get_shape() const {
         return _M_shape;
     }
 

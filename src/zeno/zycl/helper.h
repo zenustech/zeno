@@ -24,6 +24,25 @@ struct functor_accessor {
     }
 };
 
+
+#ifndef ZENO_SYCL_IS_EMULATED
+
+template <size_t N>
+using shape = range<N>;
+template <size_t N>
+using nd_shape = nd_range<N>;
+
+#else
+
+// hipsycl says: mismatched types ‘long unsigned int’ and ‘int’; let's fuck him up
+template <size_t N>
+using shape = range<(int)N>;
+template <size_t N>
+using nd_shape = nd_range<(int)N>;
+
+#endif
+
+
 template <class Base, class Range>
 struct span {
     Base _M_base;
@@ -54,7 +73,7 @@ auto make_access(auto &&cgh, auto &&buf) {
 
 #ifndef ZENO_SYCL_IS_EMULATED
 template <access::mode mode, class T, size_t N>
-auto local_access(auto &&cgh, range<N> const &size) {
+auto local_access(auto &&cgh, shape<N> const &size) {
     return span{accessor<T, N, mode, access::target::local>(size, std::forward<decltype(cgh)>(cgh)), size};
 }
 #endif
@@ -66,8 +85,7 @@ auto host_access(auto &&buf) {
 
 #ifndef ZENO_SYCL_IS_EMULATED
 auto make_reduction(auto &&buf, auto ident, auto &&binop) {
-    sycl::reduction::property::initialize_to_identity props;
-    return reduction(buf, ident, binop, props);
+    return reduction(buf, ident, binop, {});
 }
 #endif
 

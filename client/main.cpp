@@ -39,7 +39,7 @@ int main()
         }
     }
 
-    zycl::default_queue().submit([&] (zycl::handler &cgh) {
+    /*zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::access::mode::read>(cgh, buf);
         zycl::parallel_reduce
         ( cgh
@@ -51,7 +51,7 @@ int main()
         , [=] (zycl::item<1> idx, auto &reducer) {
             reducer.combine(axr_buf[idx]);
         });
-    });
+    });*/
 
 #else
 

@@ -12,29 +12,29 @@ namespace zycl {
 template <class T, class Alt>
 using _M_void_or = std::conditional_t<std::is_void_v<T>, std::remove_cvref_t<Alt>, T>;
 
-template <class Key = void, size_t N>
+template <size_t N>
 auto parallel_for
     ( auto &&cgh
-    , range<N> const &dim
+    , shape<N> const &dim
     , auto &&body
     ) {
-    return cgh.template parallel_for<_M_void_or<Key, decltype(body)>>(dim, body);
+    return cgh.parallel_for(dim, body);
 }
 
 #ifndef ZENO_SYCL_IS_EMULATED
 
-template <class Key = void, size_t N>
+template <size_t N>
 auto parallel_for
     ( auto &&cgh
-    , range<N> const &dim
-    , range<N> const &blkdim
+    , shape<N> const &dim
+    , shape<N> const &blkdim
     , auto &&body
     , auto &&...args
     ) {
-    return cgh.template parallel_for<_M_void_or<Key, decltype(body)>>
+    return cgh.parallel_for
     ( _M_calc_nd_range(dim, blkdim)
     , std::forward<decltype(args)>(args)...
-    [dim, body = std::move(body)] (nd_item<N> const &it, auto &...args) {
+    , [dim, body = std::move(body)] (nd_item<N> const &it, auto &...args) {
         for (int i = 0; i < N; i++) {
             [[unlikely]] if (it.get_global_id(i) >= dim[i])
                 return;
@@ -45,15 +45,15 @@ auto parallel_for
 
 #else
 
-template <class Key = void, size_t N>
+template <size_t N>
 auto parallel_for
     ( auto &&cgh
-    , range<N> const &dim
-    , range<N> const &blkdim
+    , shape<N> const &dim
+    , shape<N> const &blkdim
     , auto &&body
     , auto &&...args
     ) {
-    return parallel_for<_M_void_or<Key, decltype(body)>>(
+    return parallel_for(
         cgh, dim, std::move(body),
         std::forward<decltype(args)>(args)...);
 }
@@ -62,17 +62,17 @@ auto parallel_for
 
 #ifndef ZENO_SYCL_IS_EMULATED
 
-template <class Key = void, size_t N>
+template <size_t N>
 auto parallel_reduce
     ( auto &&cgh
-    , range<N> const &dim
-    , range<N> const &blkdim
+    , shape<N> const &dim
+    , shape<N> const &blkdim
     , auto &&buf
     , auto ident
     , auto &&binop
     , auto &&body
     ) {
-    return parallel_for<_M_void_or<Key, decltype(body)>>(
+    return parallel_for(
                  cgh, dim, blkdim, std::move(body),
                  make_reduction(buf, ident, binop));
 }
@@ -92,18 +92,18 @@ struct _M_parallel_reducer {
     }
 };
 
-template <class Key = void, size_t N>
+template <size_t N>
 auto parallel_reduce
     ( auto &&cgh
-    , range<N> const &dim
-    , range<N> const &blkdim
+    , shape<N> const &dim
+    , shape<N> const &blkdim
     , auto &&buf
     , auto ident
     , auto &&binop
     , auto &&body
     ) {
     auto current = ident;
-    auto e = parallel_for<_M_void_or<Key, decltype(body)>>
+    auto e = parallel_for
     ( cgh
     , dim
     , [&current, binop = std::move(binop), body = std::move(body)] (item<1> const &it) {
