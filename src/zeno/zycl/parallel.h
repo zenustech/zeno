@@ -14,7 +14,7 @@ using _M_void_or = std::conditional_t<std::is_void_v<T>, std::remove_cvref_t<Alt
 
 template <int N>
 auto parallel_for
-    ( auto &&cgh
+    ( handler &cgh
     , range<N> const &dim
     , auto &&body
     ) {
@@ -25,7 +25,7 @@ auto parallel_for
 
 template <int N>
 auto parallel_for
-    ( auto &&cgh
+    ( handler &cgh
     , range<N> const &dim
     , range<N> const &blkdim
     , auto &&body
@@ -47,7 +47,7 @@ auto parallel_for
 
 template <int N>
 auto parallel_for
-    ( auto &&cgh
+    ( handler &cgh
     , range<N> const &dim
     , range<N> const &blkdim
     , auto &&body
@@ -64,7 +64,7 @@ auto parallel_for
 
 template <int N>
 auto parallel_reduce
-    ( auto &&cgh
+    ( handler &cgh
     , range<N> const &dim
     , range<N> const &blkdim
     , auto &&buf
@@ -94,7 +94,7 @@ struct _M_parallel_reducer {
 
 template <int N>
 auto parallel_reduce
-    ( auto &&cgh
+    ( handler &cgh
     , range<N> const &dim
     , range<N> const &blkdim
     , auto &&buf
