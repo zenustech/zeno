@@ -29,8 +29,6 @@ int main()
         });
     });
 
-    buf.resize(48);
-
     {
         auto axr_buf = zycl::host_access<zycl::ro>(buf);
         for (int i = 0; i < buf.size(); i++) {
@@ -39,12 +37,18 @@ int main()
     }
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_buf = zycl::make_access<zycl::ro>(cgh, buf);
         auto axr_sum = zycl::make_access<zycl::wd>(cgh, sum);
+
+        cgh.fill(axr_sum, 1024);
+    });
+
+    zycl::default_queue().submit([&] (zycl::handler &cgh) {
+        auto axr_buf = zycl::make_access<zycl::ro>(cgh, buf);
+        auto axr_sum = zycl::make_access<zycl::rwd>(cgh, sum);
 
         cgh.parallel_for
         ( zycl::range<1>(buf.size())
-        , zycl::reduction(axr_sum, 0.0f, std::plus{})
+        , zycl::reduction(axr_sum, 1, [] (auto x, auto y) { return std::min(x, y); })
         , [=] (zycl::item<1> idx, auto &sum) {
             sum.combine(axr_buf[idx]);
         });
