@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/zycl/zycl.h>
+#include <zeno/zycl/core.h>
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {

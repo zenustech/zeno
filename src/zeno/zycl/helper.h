@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/zycl/zycl.h>
+#include <zeno/zycl/core.h>
 #include <type_traits>
 #include <optional>
 #include <utility>

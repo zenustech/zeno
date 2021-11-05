@@ -1,9 +1,11 @@
 #pragma once
 
-#include <zeno/zycl/zycl.h>
+#include <zeno/zycl/core.h>
 #include <type_traits>
 #include <optional>
 #include <utility>
+
+// TODO: deprecate parallel_reduce
 
 
 ZENO_NAMESPACE_BEGIN

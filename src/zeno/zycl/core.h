@@ -13,7 +13,7 @@ ZENO_NAMESPACE_END
 
 #else
 
-#pragma message("<zeno/zycl/zycl.h> is using host emulated sycl, which is CPU-only and slow.")
+#pragma message("<zeno/zycl/core.h> is using host emulated sycl, which is CPU-only and slow.")
 #define ZENO_SYCL_IS_EMULATED 1
 
 #include <array>
