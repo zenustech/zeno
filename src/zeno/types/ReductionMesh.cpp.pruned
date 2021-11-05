@@ -79,8 +79,8 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
     zycl::vector<Reducer> psum(psumsize);
 
     {
-        auto axr_psum = zycl::make_access<zycl::access::mode::discard_write>(cgh, psum);
-        auto lxr_temp = zycl::local_access<zycl::access::mode::read_write, Reducer, 1>(cgh, zycl::range<1>(BlkSize));
+        auto axr_psum = zycl::make_access<zycl::discard_write>(cgh, psum);
+        auto lxr_temp = zycl::local_access<zycl::read_write, Reducer, 1>(cgh, zycl::range<1>(BlkSize));
 
         cgh.parallel_for(
             zycl::nd_range<1>(psumsize * BlkSize, BlkSize),
@@ -103,7 +103,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
         );
     }
 
-    auto axr_psum = zycl::host_access<zycl::access::mode::read>(psum);
+    auto axr_psum = zycl::host_access<zycl::read>(psum);
     Reducer sum = axr_psum[0];
     for (size_t i = 0; i < psumsize; i++) {
         sum.combine(axr_psum[i]);
@@ -112,7 +112,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
     if (psumsize * BlkSize < axr_vert.size()) {
         zycl::vector<Reducer> prest(1);
         {
-            auto axr_prest = zycl::make_access<zycl::access::mode::discard_write>(cgh, prest);
+            auto axr_prest = zycl::make_access<zycl::discard_write>(cgh, prest);
             cgh.single_task([=] {
                 axr_prest[0].init(axr_vert[psumsize * BlkSize]);
                 for (size_t i = psumsize * BlkSize + 1; i < axr_vert.size(); i++) {
@@ -123,7 +123,7 @@ Reducer reduction(auto &&cgh, Reducer reducer, auto axr_vert) {
                 axr_prest[0].divide(axr_vert.size());
             });
         }
-        auto axr_prest = zycl::host_access<zycl::access::mode::read>(prest);
+        auto axr_prest = zycl::host_access<zycl::read>(prest);
         Reducer rest = axr_prest[0];
         rest.divide(BlkSize);
         sum.combine(rest);
@@ -147,7 +147,7 @@ static void ReductionMesh(dop::FuncContext *ctx) {
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
         std::visit([&] (auto reducer) {
-            auto axr_vert = zycl::make_access<zycl::access::mode::read>(cgh, mesh->vert);
+            auto axr_vert = zycl::make_access<zycl::read>(cgh, mesh->vert);
             auto res = reduction(cgh, reducer, axr_vert);
         }, reducer);
     });

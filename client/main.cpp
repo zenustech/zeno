@@ -21,7 +21,7 @@ int main()
     buf.resize(40);
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
+        auto axr_buf = zycl::make_access<zycl::discard_read_write>(cgh, buf);
         zycl::parallel_for
         ( cgh
         , zycl::range<1>(buf.size())
@@ -33,14 +33,14 @@ int main()
     buf.resize(48);
 
     {
-        auto axr_buf = zycl::host_access<zycl::access::mode::read>(buf);
+        auto axr_buf = zycl::host_access<zycl::read>(buf);
         for (int i = 0; i < buf.size(); i++) {
             printf("%d\n", axr_buf[i]);
         }
     }
 
     /*zycl::default_queue().submit([&] (zycl::handler &cgh) {
-        auto axr_buf = zycl::make_access<zycl::access::mode::read>(cgh, buf);
+        auto axr_buf = zycl::make_access<zycl::read>(cgh, buf);
         zycl::parallel_reduce
         ( cgh
         , zycl::shape<1>(buf.size())

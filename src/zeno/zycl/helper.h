@@ -12,6 +12,9 @@ namespace zycl {
 struct host_handler {};
 
 
+using enum access::mode;
+
+
 template <class F>
 struct functor_accessor {
     F _M_f;
