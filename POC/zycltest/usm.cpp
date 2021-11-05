@@ -244,31 +244,19 @@ concept is_our_element = requires (T t) {
     t(std::declval<sycl::handler &>());
 };
 
-inline constexpr std::tuple<> select_sycl_elements() {
-    return {};
-}
-
-inline constexpr auto select_sycl_elements(auto &&head, auto &&...args) {
-    if constexpr (is_our_element<std::remove_cvref_t<decltype(head)>>) {
-        return select_sycl_elements(args...);
-    } else {
-        return std::apply([&] (auto &...args) {
-            return std::forward_as_tuple(head, args...);
-        }, select_sycl_elements(args...));
-    }
-}
-
+template <bool is_ours>
 inline constexpr std::tuple<> select_our_elements() {
     return {};
 }
 
+template <bool is_ours>
 inline constexpr auto select_our_elements(auto &&head, auto &&...args) {
-    if constexpr (is_our_element<std::remove_cvref_t<decltype(head)>>) {
+    if constexpr (is_our_element<std::remove_cvref_t<decltype(head)>> == is_ours) {
         return std::apply([&] (auto &...args) {
             return std::forward_as_tuple(head, args...);
-        }, select_our_elements(args...));
+        }, select_our_elements<is_ours>(args...));
     } else {
-        return select_our_elements(args...);
+        return select_our_elements<is_ours>(args...);
     }
 }
 
@@ -318,7 +306,7 @@ void parallel_for
           details::is_our_element<std::remove_cvref_t<decltype(args)>>
           >...>;
 
-    auto our_args = details::select_our_elements(args...);
+    auto our_args = details::select_our_elements<true>(args...);
     std::apply([&] (auto &...sycl_args) {
         default_queue().submit([&] (sycl::handler &cgh) {
 
@@ -339,13 +327,15 @@ void parallel_for
                     }
                 }
                 item<N> const it(it_);
+
                 std::apply([&] (auto &...args) {
                     body(it, args...);
                 }, details::shuffle_element_indices<ArgTypes>(
                     it, our_data, std::forward_as_tuple(sycl_args...)));
             });
+
         });
-    }, details::select_sycl_elements(args...));
+    }, details::select_our_elements<false>(args...));
 }
 
 
@@ -357,6 +347,25 @@ auto reduction
         ) {
     sycl::property::reduction::initialize_to_identity props;
     return sycl::reduction(out, ident, binop, props);
+}
+
+
+template <class T, usize N>
+auto local_buffer(range<N> shape) {
+    return [=] (sycl::handler &cgh) {
+        sycl::accessor
+        < T
+        , N
+        , sycl::access::mode::read_write
+        , sycl::access::target::local
+        > acc
+        ( (sycl::range<N>)shape
+        , cgh
+        );
+        return [acc = std::move(acc)] (auto &it) -> auto & {
+            return *acc.get_pointer();
+        };
+    };
 }
 
 
@@ -383,9 +392,10 @@ int main() {
     zpc::parallel_for
     ( zpc::range<1>(arr.size())
     , zpc::range<1>(8)
-    , [=] (zpc::item<1> it, auto &reducer) {
+    , [=] (zpc::item<1> it, auto &tmpbuf, auto &reducer) {
         reducer.combine(varr[it[0]]);
     }
+    , zpc::local_buffer<float>(zpc::range<1>(1))
     , zpc::reduction(out.data(), 0.f, [] (auto x, auto y) { return x + y; })
     );
 
