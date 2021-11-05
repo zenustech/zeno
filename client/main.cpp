@@ -9,8 +9,6 @@ USING_ZENO_NAMESPACE
 int main()
 {
 #if 1
-    zycl::queue que;
-
     zycl::vector<int> buf;
 
     {
@@ -22,14 +20,12 @@ int main()
 
     buf.resize(40);
 
-    {
-        que.submit([&] (zycl::handler &cgh) {
-            auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
-            cgh.parallel_for(zycl::range<1>(buf.size()), [=] (zycl::item<1> idx) {
-                axr_buf[idx] += 1;
-            });
+    que.submit([&] (zycl::handler &cgh) {
+        auto axr_buf = zycl::make_access<zycl::access::mode::discard_read_write>(cgh, buf);
+        cgh.parallel_for(zycl::range<1>(buf.size()), [=] (zycl::item<1> idx) {
+            axr_buf[idx] += 1;
         });
-    }
+    });
 
     buf.resize(48);
 

@@ -1,6 +1,6 @@
 ### THIS FILE IS ONLY USED BY ARCHIBATE AND ZHXX! ###
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
-A=-DBATE_SYCL:BOOL=ON
+#A=-DBATE_SYCL:BOOL=ON
 
 run: all
 	$B build/zeno
@@ -14,7 +14,7 @@ all:
 	test -d /tmp/zeno-build || mkdir /tmp/zeno-build
 	test -d build || ln -sf /tmp/zeno-build build
 	cmake -Wno-dev -B /tmp/zeno-build $A
-	cmake --build /tmp/zeno-build --parallel 12
+	cmake --build /tmp/zeno-build --parallel 8
 
 config:
 	ccmake -B /tmp/zeno-build

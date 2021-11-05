@@ -109,17 +109,15 @@ struct vector {
     }
 
     template <access::mode mode>
-        requires (mode == access::mode::read)
     auto get_access(auto &&cgh) const {
-        static_cast<vector *>(this)->get_access<mode>(cgh);
-    }
-
-    template <access::mode mode>
-    auto get_access(auto &&cgh) {
         if constexpr (std::is_same_v<std::remove_cvref_t<decltype(cgh)>, host_handler>)
             return _M_buf.template get_access<mode>();
         else
             return _M_buf.template get_access<mode>(cgh);
+    }
+
+    buffer<T, 1> &get_buffer() const {
+        return _M_buf;
     }
 
     template <class Vector>
