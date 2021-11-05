@@ -84,7 +84,7 @@ if (ZHXX)
 endif()
 
 if (ZENO_WITH_SYCL)
-    message("-- Building Zeno with SYCL")
+    message("-- Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
     find_package(hipSYCL CONFIG REQUIRED)
     macro(target_sycl_sources target visibility)
         target_sources(${target} ${visibility} ${ARGN})
