@@ -80,6 +80,15 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_5">
+   <property name="windowTitle">
+    <string>timeline</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="ZTimeline" name="dockWidgetContents_5"/>
+  </widget>
   <widget class="QDockWidget" name="dockWidget_4">
    <property name="windowTitle">
     <string>Node Param</string>
@@ -88,6 +97,24 @@
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_6">
+   <property name="windowTitle">
+    <string>minitoolbar</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="ZToolbar" name="dockWidgetContents_6"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_7">
+   <property name="windowTitle">
+    <string>shapes</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="ZShapeBar" name="dockWidgetContents_7"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -126,6 +153,26 @@
    <class>QDMOpenGLViewport</class>
    <extends>QOpenGLWidget</extends>
    <header>qdmopenglviewport.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZTimeline</class>
+   <extends>QWidget</extends>
+   <header>timeline/ztimeline.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZShapeBar</class>
+   <extends>QWidget</extends>
+   <header>tmpwidgets/ztoolbar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZTextureBar</class>
+   <extends>QWidget</extends>
+   <header>tmpwidgets/ztoolbar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZToolbar</class>
+   <extends>QWidget</extends>
+   <header>tmpwidgets/ztoolbar.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
