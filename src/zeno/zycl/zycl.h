@@ -169,6 +169,10 @@ struct accessor {
     inline T &operator[](id<N> idx) const {
         return const_cast<Buf &>(buf)._M_at(idx);
     }
+
+    inline range<N> get_range() const {
+        return buf.get_range();
+    }
 };
 
 template <int N>

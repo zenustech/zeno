@@ -74,7 +74,7 @@ auto parallel_reduce
     ) {
     return parallel_for(
                  cgh, dim, blkdim, std::move(body),
-                 make_reduction(buf, ident, binop));
+                 reduction(buf, ident, binop));
 }
 
 #else

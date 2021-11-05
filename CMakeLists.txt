@@ -73,6 +73,7 @@ if (BATE)
     set(ZENO_WITH_LEGACY OFF)
     set(ZENO_WITH_SYCL ON)
     set(ZENO_EXECUTABLE client)
+    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     set(HIPSYCL_TARGETS "omp")
 endif()
 if (ZHXX)
