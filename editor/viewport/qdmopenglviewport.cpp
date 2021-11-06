@@ -43,10 +43,22 @@ void QDMOpenGLViewport::paintGL()
 
     QOpenGLVertexArrayObject vao(this);
     vao.bind();
-    for (auto const &r: m_renderables) {
+    for (auto const &[_, r]: m_renderables) {
         r->render(this);
     }
     vao.release();
+}
+
+void QDMOpenGLViewport::addNodeView(QDMGraphicsNode *node) {
+    m_renderables.emplace(node, make_renderable_of_node(node));
+}
+
+void QDMOpenGLViewport::updateNodeView(QDMGraphicsNode *node) {
+    m_renderables.at(node) = make_renderable_of_node(node);
+}
+
+void QDMOpenGLViewport::removeNodeView(QDMGraphicsNode *node) {
+    m_renderables.erase(node);
 }
 
 ZENO_NAMESPACE_END

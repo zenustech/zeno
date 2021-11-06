@@ -4,7 +4,9 @@
 #include <zeno/common.h>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include "qdmgraphicsnode.h"
 #include <memory>
+#include <map>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -14,7 +16,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 
-    std::vector<std::unique_ptr<Renderable>> m_renderables;
+    std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
@@ -24,6 +26,11 @@ public:
     virtual void initializeGL() override;
     virtual void resizeGL(int nx, int ny) override;
     virtual void paintGL() override;
+
+public slots:
+    void addNodeView(QDMGraphicsNode *node);
+    void updateNodeView(QDMGraphicsNode *node);
+    void removeNodeView(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END

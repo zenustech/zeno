@@ -26,7 +26,7 @@
      <x>0</x>
      <y>0</y>
      <width>1856</width>
-     <height>24</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHello">
@@ -138,6 +138,9 @@
    <extends>QGraphicsView</extends>
    <header>nodesys/qdmgraphicsview.h</header>
    <slots>
+    <signal>nodeAdded(QDMGraphicsNode*)</signal>
+    <signal>nodeUpdated(QDMGraphicsNode*)</signal>
+    <signal>nodeRemoved(QDMGraphicsNode*)</signal>
     <slot>addNodeByName(QString)</slot>
    </slots>
   </customwidget>
@@ -153,6 +156,11 @@
    <class>QDMOpenGLViewport</class>
    <extends>QOpenGLWidget</extends>
    <header>viewport/qdmopenglviewport.h</header>
+   <slots>
+    <slot>addNodeView(QDMGraphicsNode*)</slot>
+    <slot>updateNodeView(QDMGraphicsNode*)</slot>
+    <slot>removeNodeView(QDMGraphicsNode*)</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>ZTimeline</class>
@@ -161,11 +169,6 @@
   </customwidget>
   <customwidget>
    <class>ZShapeBar</class>
-   <extends>QWidget</extends>
-   <header>tmpwidgets/ztoolbar.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ZTextureBar</class>
    <extends>QWidget</extends>
    <header>tmpwidgets/ztoolbar.h</header>
   </customwidget>
@@ -184,12 +187,60 @@
    <slot>addNodeByName(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>171</x>
-     <y>467</y>
+     <x>417</x>
+     <y>979</y>
     </hint>
     <hint type="destinationlabel">
-     <x>160</x>
-     <y>257</y>
+     <x>800</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>nodeAdded(QDMGraphicsNode*)</signal>
+   <receiver>viewport</receiver>
+   <slot>addNodeView(QDMGraphicsNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>834</x>
+     <y>531</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>482</x>
+     <y>439</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>nodeRemoved(QDMGraphicsNode*)</signal>
+   <receiver>viewport</receiver>
+   <slot>removeNodeView(QDMGraphicsNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>666</x>
+     <y>556</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>578</x>
+     <y>483</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>nodeUpdated(QDMGraphicsNode*)</signal>
+   <receiver>viewport</receiver>
+   <slot>updateNodeView(QDMGraphicsNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>640</x>
+     <y>530</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>585</x>
+     <y>527</y>
     </hint>
    </hints>
   </connection>

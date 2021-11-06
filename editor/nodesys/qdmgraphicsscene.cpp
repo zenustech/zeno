@@ -19,6 +19,7 @@ QDMGraphicsScene::~QDMGraphicsScene() = default;
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
+    nodeRemoved(node);
     removeItem(node);
     nodes.erase(ztd::stale_ptr(node));
 }
@@ -102,6 +103,7 @@ void QDMGraphicsScene::addNodeByName(QString name)
     node->initByName(name);
     node->hide();
     floatingNode = node;
+    nodeAdded(node);
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
