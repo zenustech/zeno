@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zeno/types/Mesh.h>
 #include <istream>
 #include <ostream>
 

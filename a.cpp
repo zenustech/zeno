@@ -1,15 +1,3 @@
-#include <zeno/dop/dop.h>
-#include <zeno/types/Mesh.h>
-#include <zeno/types/OBJMeshIO.h>
-#include <sstream>
-
-
-ZENO_NAMESPACE_BEGIN
-namespace types {
-namespace {
-
-
-static const char example_obj[] = R"(
 v 0.437500 0.164062 0.765625
 v -0.437500 0.164062 0.765625
 v 0.500000 0.093750 0.687500
@@ -1017,25 +1005,3 @@ f 314/554/496 506/547/496 504/530/496 322/555/496
 f 505/532/497 507/549/497 315/553/497 323/556/497
 f 320/458/498 322/555/498 504/530/498 390/437/498
 f 505/532/499 323/556/499 321/460/499 391/439/499
-)";
-
-
-static void MakeExampleMesh(dop::FuncContext *ctx) {
-    auto mesh = std::make_shared<Mesh>();
-    std::istringstream iss(example_obj);
-    readMeshFromOBJ(iss, *mesh);
-    ctx->outputs.at(0) = std::move(mesh);
-}
-
-
-ZENO_DOP_DEFUN(MakeExampleMesh, {}, {{
-    "mesh", "make an example mesh for demo",
-}, {
-}, {
-    {"mesh"},
-}});
-
-
-}
-}
-ZENO_NAMESPACE_END
