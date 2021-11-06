@@ -84,7 +84,7 @@ QMatrix4x4 CameraData::getView() const
 
 QMatrix4x4 CameraData::getProjection() const
 {
-    return impl->view;
+    return impl->proj;
 }
 
 float CameraData::getPointScale() const

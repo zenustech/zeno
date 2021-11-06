@@ -125,12 +125,12 @@ public:
 
         auto view = viewport->getCamera()->getView();
         auto proj = viewport->getCamera()->getProjection();
-        view.setToIdentity();
-        proj.setToIdentity();
+        auto mv = view;
+        auto mvp = mv * proj;
         qDebug() << view << proj;
-        program->setUniformValue("uMVP", view * proj);
-        program->setUniformValue("uInvMVP", (view * proj).inverted());
-        program->setUniformValue("uInvMV", view.inverted());
+        program->setUniformValue("uMVP", mvp);
+        program->setUniformValue("uInvMVP", mvp.inverted());
+        program->setUniformValue("uInvMV", mv.inverted());
 
         QOpenGLBuffer attrPos;
         attrPos.create();
