@@ -101,7 +101,9 @@ public:
         decltype(auto) loop = mesh->loop.to_vector();
         decltype(auto) poly = mesh->poly.to_vector();
 
-        for (auto const &[p_num, p_start]: poly) {
+        vertices.clear();
+        vertices.reserve(poly.size() * 3);
+        for (auto const &[p_start, p_num]: poly) {
             if (p_num <= 2) continue;
             int first = loop[p_start];
             int last = loop[p_start + 1];
@@ -113,12 +115,22 @@ public:
                 last = now;
             }
         }
+        qDebug() << vertices.size();
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override
     {
         static auto program = makeShaderProgram();
         program->bind();
+
+        auto view = viewport->getCamera()->getView();
+        auto proj = viewport->getCamera()->getProjection();
+        view.setToIdentity();
+        proj.setToIdentity();
+        qDebug() << view << proj;
+        program->setUniformValue("uMVP", view * proj);
+        program->setUniformValue("uInvMVP", (view * proj).inverted());
+        program->setUniformValue("uInvMV", view.inverted());
 
         QOpenGLBuffer attrPos;
         attrPos.create();

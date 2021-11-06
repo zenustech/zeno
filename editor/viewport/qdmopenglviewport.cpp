@@ -33,6 +33,11 @@ void QDMOpenGLViewport::resizeGL(int nx, int ny)
 {
 }
 
+CameraData *QDMOpenGLViewport::getCamera() const
+{
+    return m_camera.get();
+}
+
 void QDMOpenGLViewport::paintGL()
 {
     glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());

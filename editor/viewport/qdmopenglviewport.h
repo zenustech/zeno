@@ -5,6 +5,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include "../nodesys/qdmgraphicsnode.h"
+#include "cameradata.h"
 #include <memory>
 #include <map>
 
@@ -17,11 +18,13 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
     Q_OBJECT
 
     std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
+    std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
     ~QDMOpenGLViewport();
 
+    CameraData *getCamera() const;
     virtual QSize sizeHint() const override;
     virtual void initializeGL() override;
     virtual void resizeGL(int nx, int ny) override;
