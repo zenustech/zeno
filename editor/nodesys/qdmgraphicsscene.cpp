@@ -112,6 +112,7 @@ void QDMGraphicsScene::forceUpdate()
     std::set<dop::Node *> visited;
     for (auto const &node: nodes) {
         dop::resolve(dop::Input_Link{.node = node->getDopNode(), .sockid = 0}, visited);
+        emit nodeUpdated(node.get(), 0);
     }
 }
 

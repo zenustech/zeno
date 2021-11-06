@@ -24,10 +24,9 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
+    qInfo() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
 
     glDisable(GL_DEPTH_TEST);
-
-    qInfo() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
@@ -36,8 +35,6 @@ void QDMOpenGLViewport::resizeGL(int nx, int ny)
 
 void QDMOpenGLViewport::paintGL()
 {
-    qDebug() << "paintGL called" << width() << height() << devicePixelRatio();
-
     glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
 
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
