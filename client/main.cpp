@@ -17,7 +17,7 @@ int main()
             vec.push_back(i + 1);
         }
     }
-#if 0
+#if 1
 
     buf.resize(40);
 
