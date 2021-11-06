@@ -28,9 +28,7 @@ public:
     virtual void paintGL() override;
 
 public slots:
-    void addNodeView(QDMGraphicsNode *node);
-    void updateNodeView(QDMGraphicsNode *node);
-    void removeNodeView(QDMGraphicsNode *node);
+    void updateNode(QDMGraphicsNode *node, int type);
 };
 
 ZENO_NAMESPACE_END
