@@ -38,6 +38,10 @@ ZENO_NAMESPACE_END
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 
+inline constexpr size_t _M_nozerosize(size_t size) {
+    return std::max((size_t)1, size);
+}
+
 template <class Vector, class Parent>
 struct _M_as_vector : Vector {
     Parent *_M_parent;
@@ -112,7 +116,7 @@ struct vector {
         _M_size = 0;
     }
 
-    vector() : _M_buf(1), _M_size(0) {
+    vector() : _M_buf(_M_nozerosize(0)), _M_size(0) {
     }
 
     explicit vector(size_t size, T const &val = {})
