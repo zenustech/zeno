@@ -7,7 +7,7 @@ from copy import deepcopy
 radius = 5
 bound = 20
 distance_threshold = 0.05
-segment = 10
+segment = 20
 epsilon = 0.00001
 
 def lerp(start, end, t):
@@ -35,6 +35,18 @@ def pdist(p1, p2):
     x = abs(p1[0] - p2[0])
     y = abs(p1[1] - p2[1])
     return math.sqrt(x * x + y * y)
+
+def plen(p):
+    x = abs(p[0])
+    y = abs(p[1])
+    return math.sqrt(x * x + y * y)
+
+def pnorm(p):
+    length = plen(p)
+    return (
+        p[0] / length,
+        p[1] / length,
+    )
 
 def pmul(p, f):
     return (
@@ -107,6 +119,7 @@ class CurveEditor(QDialog):
     def initUI(self):
         self.idx = None
         self.pressed = False
+        self.alt_pressed = False
         self.w = 300
         self.h = 200
         self.length = min(self.w, self.h)
@@ -177,10 +190,21 @@ class CurveEditor(QDialog):
             self.drawPolyline(qp, [hs[0], self.points[sel], hs[1]])
 
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Alt:
+            self.alt_pressed = True
         if event.key() == Qt.Key_Delete and self.idx and len(self.points) >= 3:
-            self.points.pop(self.idx)
-            self.idx = None
+            if type(self.idx) == int:
+                self.points.pop(self.idx)
+                self.idx = None
+            else:
+                i = self.idx
+                self.handlers[i[0]][i[1]] = (0, 0)
+                self.idx = i[0]
             self.update()
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Alt:
+            self.alt_pressed = False
 
     def mousePressEvent(self, event):
         x = event.x()
@@ -225,9 +249,27 @@ class CurveEditor(QDialog):
         if self.idx != None and self.pressed:
             x = (event.x() - bound) / self.length
             y = (event.y() - bound) / self.length
-            x = clamp(x, self.points[self.idx - 1][0], self.points[self.idx + 1][0])
-            y = 1 - clamp(y, 0, 1)
-            self.points[self.idx] = (x, y)
+            if type(self.idx) == int:
+                x = clamp(x, self.points[self.idx - 1][0], self.points[self.idx + 1][0])
+                y = 1 - clamp(y, 0, 1)
+                self.points[self.idx] = (x, y)
+            elif type(self.idx) == tuple:
+                i = self.idx
+                x, y = psub((x, 1 - y), self.points[self.idx[0]])
+                if i[1] == 0:
+                    x = x if x < 0 else 0
+                else:
+                    x = x if x > 0 else 0
+                self.handlers[i[0]][i[1]] = (x, y)
+                if not self.alt_pressed:
+                    v = pnorm((x, y))
+                    self.handlers[i[0]][1-i[1]] = pmul(
+                        v,
+                        plen(self.handlers[i[0]][1-i[1]]) * -1,
+                    )
+
+                print('handler move')
+            
             self.update()
 
     def near_point(self, x, y):
