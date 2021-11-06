@@ -231,17 +231,12 @@ class NodeEditor(QWidget):
                 'params': [
                     ('float', 'input_min', '0'),
                     ('float', 'input_max', '1'),
-                    ('enum linear log10 10^x', 'input_type', 'linear'),
                     ('float', 'output_min', '0'),
                     ('float', 'output_max', '1'),
-                    ('enum linear log10 10^x', 'output_type', 'linear'),
                 ],
                 'categories': ['layout'],
             },
         })
-        from .curve_editor import CurveEditor
-        self.curve_editor = CurveEditor(self)
-        self.curve_editor.open()
         self.setDescriptors(descs)
 
     def initDescriptorsComment(self):

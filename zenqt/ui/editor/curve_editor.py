@@ -105,14 +105,10 @@ def clamp(_input, _min, _max):
 class CurveEditor(QDialog):
     def __init__(self, node):
         super().__init__()
-        self.points = [
-            (0, 0),
-            (1, 1),
-        ]
-        self.handlers = [
-            [(0, 0), (1/6, 1/6)],
-            [(-1/6, -1/6), (0, 0)],
-        ]
+        self.node = node
+        self.points = node.points
+        self.handlers = node.handlers
+        self.params = node.params
 
         self.initUI()
         
@@ -143,6 +139,11 @@ class CurveEditor(QDialog):
             p = self.points[self.idx]
             info = 'x={}, y={}'.format(p[0], p[1])
             qp.drawText(self.length + 2 * bound, bound, info)
+            info2 = 'input={}, output={}'.format(
+                lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), p[0]),
+                lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), p[1]),
+            )
+            qp.drawText(self.length + 2 * bound, bound * 2, info2)
         qp.end()
 
     def drawPoints(self, qp, points, sel=None):

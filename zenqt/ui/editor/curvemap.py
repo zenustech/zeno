@@ -49,10 +49,9 @@ class QDMOneClickButton(QGraphicsItem):
         self.label.setTextWidth(width)
 
     def on_click(self):
-        print('Fuck')
         self.setChecked(not self.checked)
         from .curve_editor import CurveEditor
-        self.curve_editor = CurveEditor(self)
+        self.curve_editor = CurveEditor(self.node)
         self.curve_editor.open()
 
     def mousePressEvent(self, event):
@@ -70,11 +69,15 @@ class QDMOneClickButton(QGraphicsItem):
 
 class QDMGraphicsNode_CurveMap(QDMGraphicsNode):
     def __init__(self, parent=None):
-        self.points = [
-            (0.0, 0.0),
-            (1.0, 1.0),
-        ]
         super().__init__(parent)
+        self.points = [
+            (0, 0),
+            (1, 1),
+        ]
+        self.handlers = [
+            [(0, 0), (1/6, 1/6)],
+            [(-1/6, -1/6), (0, 0)],
+        ]
 
     def initSockets(self):
         super().initSockets()
