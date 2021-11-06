@@ -52,6 +52,7 @@ void QDMGraphicsScene::cursorMoved()
 {
     if (floatingNode) {
         floatingNode->setPos(getCursorPos());
+        floatingNode->show();
     }
 
     if (pendingLink) {
@@ -99,7 +100,7 @@ void QDMGraphicsScene::addNodeByName(QString name)
         return;
     auto node = addNode();
     node->initByName(name);
-    node->setPos(sceneRect().bottomRight());
+    node->hide();
     floatingNode = node;
 }
 

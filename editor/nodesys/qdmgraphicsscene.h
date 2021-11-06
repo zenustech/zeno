@@ -29,7 +29,7 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
     void socketClicked(QDMGraphicsSocket *socket);
-    // TODO: duplicatePressed as well...
+    // TODO: duplicatePressed as well... (Ctrl-D)
     void deletePressed();
     void blankClicked();
     void cursorMoved();
@@ -37,6 +37,9 @@ public:
 
 public slots:
     void addNodeByName(QString name);
+
+signals:
+    void nodeAdded(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END
