@@ -110,8 +110,8 @@ class CurveEditor(QDialog):
             (1, 1),
         ]
         self.handlers = [
-            [(0, 0), (0, 0)],
-            [(0, 0), (0, 0)],
+            [(0, 0), (1/6, 1/6)],
+            [(-1/6, -1/6), (0, 0)],
         ]
 
         self.initUI()
@@ -183,11 +183,19 @@ class CurveEditor(QDialog):
         if type(sel) == tuple:
             h = sel[1]
             sel = sel[0]
-        if sel and sel != len(self.points) - 1:
-            handlers = self.handersToPoints(self.handlers)
-            hs = handlers[sel]
+        if sel == None:
+            return
+        handlers = self.handersToPoints(self.handlers)
+        hs = handlers[sel]
+        if sel != 0 and sel != len(self.points) - 1:
             self.drawPoints(qp, hs, h)
             self.drawPolyline(qp, [hs[0], self.points[sel], hs[1]])
+        elif sel == 0:
+            self.drawPoints(qp, hs[1:], 0 if h != None else None)
+            self.drawPolyline(qp, [self.points[sel], hs[1]])
+        elif sel == len(self.points) - 1:
+            self.drawPoints(qp, hs[:1], 0 if h != None else None)
+            self.drawPolyline(qp, [hs[0], self.points[sel]])
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Alt:
@@ -286,8 +294,13 @@ class CurveEditor(QDialog):
     def near_handler(self, x, y):
         idx = None
         min_dist = 1
-        for i in range(1, len(self.points)-1):
+        for i in range(len(self.points)):
             for j in range(2):
+                if i == 0 and j == 0:
+                    continue
+                if i == len(self.points) - 1 and j == 1:
+                    continue
+                
                 h = padd(self.points[i], self.handlers[i][j])
                 dist = pdist((x, y), h)
                 if dist < min_dist:
@@ -298,19 +311,21 @@ class CurveEditor(QDialog):
     # correctness modify: make bezier to be function
     def correct_handlers(self):
         handlers = deepcopy(self.handlers)
-        for i in range(1, len(self.points)-1):
+        for i in range(len(self.points)):
             cur_p = self.points[i]
-            hp = handlers[i][0]
-            prev_p = self.points[i-1]
-            if abs(hp[0]) > abs(cur_p[0] - prev_p[0]):
-                s = abs(cur_p[0] - prev_p[0]) / abs(hp[0])
-                handlers[i][0] = pmul(hp, s)
+            if i != 0:
+                hp = handlers[i][0]
+                prev_p = self.points[i-1]
+                if abs(hp[0]) > abs(cur_p[0] - prev_p[0]):
+                    s = abs(cur_p[0] - prev_p[0]) / abs(hp[0])
+                    handlers[i][0] = pmul(hp, s)
 
-            hn = handlers[i][1]
-            next_p = self.points[i+1]
-            if abs(hn[0]) > abs(cur_p[0] - next_p[0]):
-                s = abs(cur_p[0] - next_p[0]) / abs(hn[0])
-                handlers[i][1] = pmul(hn, s)
+            if i != len(self.points) - 1:
+                hn = handlers[i][1]
+                next_p = self.points[i+1]
+                if abs(hn[0]) > abs(cur_p[0] - next_p[0]):
+                    s = abs(cur_p[0] - next_p[0]) / abs(hn[0])
+                    handlers[i][1] = pmul(hn, s)
 
         return handlers
 
