@@ -255,14 +255,16 @@ class CurveEditor(QDialog):
         self.pressed = False
 
     def mouseMoveEvent(self, event):
-        if self.idx == 0 or self.idx == len(self.points) - 1:
-            return
-
         if self.idx != None and self.pressed:
             x = (event.x() - bound) / self.length
             y = (event.y() - bound) / self.length
             if type(self.idx) == int:
-                x = clamp(x, self.points[self.idx - 1][0], self.points[self.idx + 1][0])
+                if self.idx == 0:
+                    x = 0
+                elif self.idx == len(self.points) - 1:
+                    x = 1
+                else:
+                    x = clamp(x, self.points[self.idx - 1][0], self.points[self.idx + 1][0])
                 y = 1 - clamp(y, 0, 1)
                 self.points[self.idx] = (x, y)
             elif type(self.idx) == tuple:
