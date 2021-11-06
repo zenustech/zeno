@@ -41,9 +41,9 @@ public:
         program->bind();
 
         std::vector<math::vec3f> vertices = {
-            { 0.0f,  0.707f, 0.0f},
-            {-0.5f, -0.5f, 0.0f},
-            { 0.5f, -0.5f, 0.0f},
+            { 0.0f,  0.707f, 0.1f},
+            {-0.5f, -0.5f, 0.1f},
+            { 0.5f, -0.5f, 0.1f},
         };
 
         QOpenGLBuffer attrPos;
@@ -54,7 +54,7 @@ public:
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
-        viewport->glDrawArrays(GL_POINTS, 0, vertices.size());
+        viewport->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
         program->disableAttributeArray("attrPos");
         attrPos.destroy();

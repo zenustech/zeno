@@ -9,11 +9,8 @@ QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     : QOpenGLWidget(parent)
 {
     QSurfaceFormat fmt;
-    fmt.setSamples(8);
-    fmt.setVersion(4, 1);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
-    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+    //fmt.setSamples(8);
+    //fmt.setVersion(3, 1);
     setFormat(fmt);
 }
 
@@ -29,6 +26,8 @@ void QDMOpenGLViewport::initializeGL()
     initializeOpenGLFunctions();
 
     glDisable(GL_DEPTH_TEST);
+
+    qInfo() << "OpenGL version:" << (const char *)glGetString(GL_VERSION);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
@@ -37,7 +36,7 @@ void QDMOpenGLViewport::resizeGL(int nx, int ny)
 
 void QDMOpenGLViewport::paintGL()
 {
-    qWarning() << "paintGL called" << width() << height() << devicePixelRatio();
+    qDebug() << "paintGL called" << width() << height() << devicePixelRatio();
 
     glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
 

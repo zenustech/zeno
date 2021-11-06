@@ -43,9 +43,9 @@ public:
         static auto program = makeShaderProgram();
         program->bind();
 
-        std::vector<math::vec3f> vertices = {
-            { 0.0f,  0.707f, 0.0f},
-            {-0.5f, -0.5f, 0.0f},
+        std::vector<math::vec3f> vertices = { // TODO: really from mesh->vert...
+            { 0.0f,  0.707f, 0.5f},
+            {-0.5f, -0.5f, 0.5f},
             { 0.5f, -0.5f, 0.0f},
         };
 
