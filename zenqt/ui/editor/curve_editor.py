@@ -139,6 +139,10 @@ class CurveEditor(QDialog):
         self.drawHandlers(qp, self.idx)
         qp.setPen(Qt.blue)
         self.drawPoints(qp, points, self.idx)
+        if type(self.idx) == int:
+            p = self.points[self.idx]
+            info = 'x={}, y={}'.format(p[0], p[1])
+            qp.drawText(self.length + 2 * bound, bound, info)
         qp.end()
 
     def drawPoints(self, qp, points, sel=None):
@@ -225,7 +229,6 @@ class CurveEditor(QDialog):
                 sel_handler = self.near_handler(x, y)
                 if sel_handler != None:
                     self.idx = sel_handler
-                    print(self.idx)
                 else:
                     sel_point = self.near_point(x, y)
                     if sel_point == None:
@@ -238,8 +241,9 @@ class CurveEditor(QDialog):
                             ]
                         )
                     self.idx = sel_point
-                    print(self.points[self.idx])
-                self.update()
+            else:
+                self.idx = None
+            self.update()
         elif event.button() == Qt.MiddleButton:
             if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
                 x = (x - bound) / self.length
@@ -276,8 +280,6 @@ class CurveEditor(QDialog):
                         plen(self.handlers[i[0]][1-i[1]]) * -1,
                     )
 
-                print('handler move')
-            
             self.update()
 
     def near_point(self, x, y):
