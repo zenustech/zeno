@@ -1,6 +1,7 @@
 #include "qdmopenglviewport.h"
 #include "renderable.h"
 #include <QOpenGLVertexArrayObject>
+#include <QDebug>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -27,7 +28,7 @@ void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
 
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
@@ -36,12 +37,14 @@ void QDMOpenGLViewport::resizeGL(int nx, int ny)
 
 void QDMOpenGLViewport::paintGL()
 {
+    qWarning() << "paintGL called" << width() << height() << devicePixelRatio();
+
     glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
 
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    QOpenGLVertexArrayObject vao(this);
+    QOpenGLVertexArrayObject vao;
     vao.bind();
     for (auto const &[_, r]: m_renderables) {
         r->render(this);
@@ -61,6 +64,7 @@ void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
     } else {
         m_renderables.erase(node);
     }
+    repaint();
 }
 
 ZENO_NAMESPACE_END

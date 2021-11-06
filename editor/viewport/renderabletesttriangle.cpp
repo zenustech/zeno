@@ -54,7 +54,7 @@ public:
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
 
-        viewport->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        viewport->glDrawArrays(GL_POINTS, 0, vertices.size());
 
         program->disableAttributeArray("attrPos");
         attrPos.destroy();
