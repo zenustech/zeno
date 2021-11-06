@@ -224,7 +224,7 @@ class CurveEditor(QDialog):
         y = event.y()
         if event.button() == Qt.LeftButton:
             self.pressed = True
-            if bound < x and x < self.length + bound and bound < y and y < self.length + bound:
+            if x < self.length + 2 * bound and y < self.length + 2 * bound:
                 x = (x - bound) / self.length
                 y = 1 - (y - bound) / self.length
                 sel_handler = self.near_handler(x, y)
