@@ -44,7 +44,7 @@ void QDMOpenGLViewport::paintGL()
     QOpenGLVertexArrayObject vao(this);
     vao.bind();
     for (auto const &[_, r]: m_renderables) {
-        if (r) r->render(this);
+        r->render(this);
     }
     vao.release();
 }
