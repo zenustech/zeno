@@ -17,12 +17,14 @@ struct ndarray {
 };
 
 }
+}
 ZENO_NAMESPACE_END
 
 #else
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_ndarray {
 
 template <int N>
 inline constexpr range<N> _M_nozerosize(range<N> const &shape) {

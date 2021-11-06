@@ -2,6 +2,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_instance {
 
 queue default_queue() {
     static queue que;
@@ -14,5 +15,6 @@ queue default_queue() {
     return que;
 }
 
+}
 }
 ZENO_NAMESPACE_END

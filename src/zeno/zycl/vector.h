@@ -32,12 +32,14 @@ struct vector : std::vector<T> {
 };
 
 }
+}
 ZENO_NAMESPACE_END
 
 #else
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_vector {
 
 inline constexpr size_t _M_nozerosize(size_t size) {
     return std::max((size_t)1, size);
