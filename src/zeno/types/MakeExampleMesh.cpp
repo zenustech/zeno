@@ -1,7 +1,10 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
-#include <zeno/types/OBJMeshIO.h>
+#include <string_view>
+#include <sstream>
 #include <fstream>
+#include <cstring>
+#include <tuple>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -9,7 +12,7 @@ namespace types {
 namespace {
 
 
-static void ReadOBJMesh(dop::FuncContext *ctx) {
+static void MakeExampleMesh(dop::FuncContext *ctx) {
     auto path = value_cast<std::string>(ctx->inputs.at(0));
     auto mesh = std::make_shared<Mesh>();
     std::ifstream fin(path);
@@ -20,8 +23,8 @@ static void ReadOBJMesh(dop::FuncContext *ctx) {
 }
 
 
-ZENO_DOP_DEFUN(ReadOBJMesh, {}, {{
-    "mesh", "load mesh from .obj file",
+ZENO_DOP_DEFUN(MakeExampleMesh, {}, {{
+    "mesh", "make an example mesh for demo",
 }, {
     {"path"},
 }, {
