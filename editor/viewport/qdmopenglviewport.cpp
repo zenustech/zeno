@@ -53,7 +53,7 @@ static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node
     return makeRenderableFromAny(node->getDopNode()->outputs[0]);
 }
 
-void QDMOpenGLViewport::addNodeView(QDMGraphicsNode *node, int type) {
+void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
     if (type > 0) {
         m_renderables.emplace(node, make_renderable_of_node(node));
     } else if (type == 0) {
