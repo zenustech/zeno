@@ -3,6 +3,7 @@
 
 #include <zeno/common.h>
 #include <QGraphicsView>
+#include "qdmgraphicsnode.h"
 #include <QWidget>
 #include <QPointF>
 
@@ -28,6 +29,9 @@ public:
 
 public slots:
     void addNodeByName(QString name);
+
+signals:
+    void nodeUpdated(QDMGraphicsNode *node, int type);
 };
 
 ZENO_NAMESPACE_END

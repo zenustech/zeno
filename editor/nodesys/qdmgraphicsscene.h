@@ -25,6 +25,7 @@ public:
     ~QDMGraphicsScene();
 
     QDMGraphicsNode *addNode();
+    void addNodeByName(QString name);
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
@@ -36,13 +37,8 @@ public:
     void blankClicked();
     void cursorMoved();
 
-public slots:
-    void addNodeByName(QString name);
-
 signals:
-    void nodeAdded(QDMGraphicsNode *node);
-    void nodeUpdated(QDMGraphicsNode *node);
-    void nodeRemoved(QDMGraphicsNode *node);
+    void nodeUpdated(QDMGraphicsNode *node, int type);
 };
 
 ZENO_NAMESPACE_END

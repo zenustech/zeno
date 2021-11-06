@@ -82,8 +82,8 @@ void QDMGraphicsView::wheelEvent(QWheelEvent *event)
 
 void QDMGraphicsView::addNodeByName(QString name)
 {
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    parentScene->addNodeByName(name);
+    auto grScene = static_cast<QDMGraphicsScene *>(scene());
+    grScene->addNodeByName(name);
 }
 
 ZENO_NAMESPACE_END

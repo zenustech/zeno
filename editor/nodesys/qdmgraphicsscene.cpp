@@ -19,7 +19,7 @@ QDMGraphicsScene::~QDMGraphicsScene() = default;
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
-    nodeRemoved(node);
+    nodeUpdated(node, -1);
     removeItem(node);
     nodes.erase(ztd::stale_ptr(node));
 }
@@ -103,12 +103,18 @@ void QDMGraphicsScene::addNodeByName(QString name)
     node->initByName(name);
     node->hide();
     floatingNode = node;
-    nodeAdded(node);
+    nodeUpdated(node, 1);
+}
+
+void QDMGraphicsScene::nodeUpdated(QDMGraphicsNode *node, int type)
+{
+    auto view = static_cast<QDMGraphicsView *>(const_cast<QGraphicsView *>(views().at(0)));
+    view->nodeUpdated(node, type);
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
 {
-    auto view = views().at(0);
+    auto view = static_cast<QDMGraphicsView const *>(views().at(0));
     return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
 }
 

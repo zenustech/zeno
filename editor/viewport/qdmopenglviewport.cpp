@@ -50,8 +50,7 @@ void QDMOpenGLViewport::paintGL()
 }
 
 static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
-    auto *dopNode = node->dopNode.get();
-    return makeRenderableFromAny(dopNode->outputs[0]);
+    return makeRenderableFromAny(node->getDopNode()->outputs[0]);
 }
 
 void QDMOpenGLViewport::addNodeView(QDMGraphicsNode *node) {

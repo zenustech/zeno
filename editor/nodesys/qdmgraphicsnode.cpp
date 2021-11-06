@@ -20,6 +20,11 @@ QDMGraphicsNode::QDMGraphicsNode()
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
 
+dop::Node *QDMGraphicsNode::getDopNode() const
+{
+    return dopNode.get();
+}
+
 float QDMGraphicsNode::getHeight() const
 {
     size_t count = std::max(socketIns.size(), socketOuts.size());
