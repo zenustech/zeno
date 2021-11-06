@@ -64,7 +64,7 @@ struct _M_as_vector : Vector {
 };
 
 template <class T>
-static void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
+inline void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t size) {
     default_queue().submit([&] (handler &cgh) {
         auto src_acc = buf_src.template get_access<access::mode::read>(cgh, range<1>(size));
         auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh, range<1>(size));
@@ -73,7 +73,7 @@ static void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t siz
 }
 
 template <class T>
-static void _M_fillwith(buffer<T, 1> &buf_dst, size_t beg, size_t end, T const &val) {
+inline void _M_fillwith(buffer<T, 1> &buf_dst, size_t beg, size_t end, T const &val) {
     default_queue().submit([&] (handler &cgh) {
         auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(
             cgh, range<1>(end - beg), range<1>(beg));
@@ -82,6 +82,7 @@ static void _M_fillwith(buffer<T, 1> &buf_dst, size_t beg, size_t end, T const &
 }
 
 template <class T>
+    requires (std::is_trivially_copy_constructible_v<T> && std::is_trivially_destructible_v<T>)
 struct vector {
     mutable buffer<T, 1> _M_buf;
     size_t _M_size;
@@ -107,12 +108,16 @@ struct vector {
         }
     }
 
+    bool empty() const {
+        return !_M_size;
+    }
+
     size_t size() const {
         return _M_size;
     }
 
     void clear() {
-        _M_buf = buffer<T, 1>(1);
+        _M_buf = buffer<T, 1>(_M_nozerosize(0));
         _M_size = 0;
     }
 
