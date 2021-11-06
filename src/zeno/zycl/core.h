@@ -29,6 +29,8 @@ template <int N>
 struct id : std::array<size_t, N> {
     using std::array<size_t, N>::array;
 
+    constexpr id() : std::array<size_t, N>{} {}
+
     constexpr explicit(N != 1) id(size_t i)
         : std::array<size_t, N>({i}) {
         if constexpr (N != 1) {

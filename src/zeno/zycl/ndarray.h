@@ -12,23 +12,8 @@ namespace zycl {
 inline namespace ns_ndarray {
 
 template <class T>
-struct ndarray : std::vector<T> {
-    using std::vector<T>::vector;
-
-    template <access::mode mode>
-    auto get_access(auto &&cgh) {
-        return functor_accessor([this] (id<1> idx) -> decltype(auto) {
-            return (*this)[idx];
-        });
-    }
-
-    inline auto &as_vector() {
-        return static_cast<std::vector<T> &>(*this);
-    }
-
-    inline auto const &to_vector() const {
-        return static_cast<std::vector<T> const &>(*this);
-    }
+struct ndarray {
+    static_assert(!std::is_void_v<std::void_t<T>>, "ndarray not implemented on host emulated sycl");
 };
 
 }
