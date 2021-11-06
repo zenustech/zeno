@@ -17,6 +17,7 @@ int main()
             vec.push_back(i + 1);
         }
     }
+#if 0
 
     buf.resize(40);
 
@@ -52,6 +53,7 @@ int main()
         printf("sum = %d\n", axr_sum[0]);
     }
 
+#endif
 #else
 
     auto n1 = dop::descriptor_table().at("ReadOBJMesh").create();
