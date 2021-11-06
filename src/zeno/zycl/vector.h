@@ -9,6 +9,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_vector {
 
 template <class T>
 struct vector : std::vector<T> {
@@ -170,6 +171,7 @@ struct vector {
     }
 };
 
+}
 }
 ZENO_NAMESPACE_END
 

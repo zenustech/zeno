@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-// TODO: deprecate parallel_reduce
+// TODO: this header has been deprecated
 
 
 ZENO_NAMESPACE_BEGIN

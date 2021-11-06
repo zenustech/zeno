@@ -9,6 +9,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_ndarray {
 
 template <class T>
 struct ndarray : std::vector<T> {
@@ -123,6 +124,7 @@ struct ndarray {
     }
 };
 
+}
 }
 ZENO_NAMESPACE_END
 

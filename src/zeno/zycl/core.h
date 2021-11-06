@@ -8,19 +8,22 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
-    using namespace cl::sycl;
+inline namespace ns_core {
+using namespace cl::sycl;
+}
 }
 ZENO_NAMESPACE_END
 
 #else
 
-#pragma message("WARNING: <zeno/zycl/core.h> is using host emulated sycl, which is CPU-only and slow.")
+//#pragma message("WARNING: <zeno/zycl/core.h> is using host emulated sycl, which is CPU-only and slow.")
 
 #include <array>
 #include <vector>
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_core {
 
 template <int N>
 struct id : std::array<size_t, N> {
@@ -308,6 +311,7 @@ struct buffer {
     }
 };
 
+}
 }
 ZENO_NAMESPACE_END
 

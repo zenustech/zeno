@@ -8,6 +8,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
+inline namespace ns_helper {
 
 struct host_handler {};
 
@@ -49,5 +50,6 @@ auto host_access(auto &&buf) {
     return make_access<mode>(host_handler{}, buf);
 }
 
+}
 }
 ZENO_NAMESPACE_END
