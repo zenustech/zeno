@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "qdmgraphicsscene.h"
+#include "nodesys/qdmgraphicsscene.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

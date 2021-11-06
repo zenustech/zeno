@@ -136,7 +136,7 @@
   <customwidget>
    <class>QDMGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>qdmgraphicsview.h</header>
+   <header>nodesys/qdmgraphicsview.h</header>
    <slots>
     <slot>addNodeByName(QString)</slot>
    </slots>
@@ -144,7 +144,7 @@
   <customwidget>
    <class>QDMListViewNodeMenu</class>
    <extends>QListView</extends>
-   <header>qdmlistviewnodemenu.h</header>
+   <header>nodesys/qdmlistviewnodemenu.h</header>
    <slots>
     <signal>entryClicked(QString)</signal>
    </slots>
@@ -152,7 +152,7 @@
   <customwidget>
    <class>QDMOpenGLViewport</class>
    <extends>QOpenGLWidget</extends>
-   <header>qdmopenglviewport.h</header>
+   <header>viewport/qdmopenglviewport.h</header>
   </customwidget>
   <customwidget>
    <class>ZTimeline</class>
