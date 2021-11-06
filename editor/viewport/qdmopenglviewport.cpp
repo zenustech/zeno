@@ -27,7 +27,7 @@ void QDMOpenGLViewport::initializeGL()
 
     glDisable(GL_DEPTH_TEST);
 
-    qInfo() << "OpenGL version:" << (const char *)glGetString(GL_VERSION);
+    qInfo() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)

@@ -23,6 +23,27 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
+void QDMGraphicsView::switchScene(QDMGraphicsScene *scene)
+{
+    connect(scene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)), this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+    setScene(scene);
+}
+
+QDMGraphicsScene *QDMGraphicsView::getScene() const
+{
+    return static_cast<QDMGraphicsScene *>(scene());
+}
+
+void QDMGraphicsView::addNodeByName(QString name)
+{
+    getScene()->addNodeByName(name);
+}
+
+void QDMGraphicsView::forceUpdate()
+{
+    getScene()->forceUpdate();
+}
+
 void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
@@ -78,12 +99,6 @@ void QDMGraphicsView::wheelEvent(QWheelEvent *event)
         zoomFactor /= ZOOMFACTOR;
 
     scale(zoomFactor, zoomFactor);
-}
-
-void QDMGraphicsView::addNodeByName(QString name)
-{
-    auto grScene = static_cast<QDMGraphicsScene *>(scene());
-    grScene->addNodeByName(name);
 }
 
 ZENO_NAMESPACE_END

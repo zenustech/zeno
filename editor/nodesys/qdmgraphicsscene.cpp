@@ -1,6 +1,7 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
 #include <zeno/ztd/memory.h>
+#include <zeno/dop/execute.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -103,13 +104,15 @@ void QDMGraphicsScene::addNodeByName(QString name)
     node->initByName(name);
     node->hide();
     floatingNode = node;
-    nodeUpdated(node, 1);
+    emit nodeUpdated(node, 1);
 }
 
-void QDMGraphicsScene::nodeUpdated(QDMGraphicsNode *node, int type)
+void QDMGraphicsScene::forceUpdate()
 {
-    auto view = static_cast<QDMGraphicsView *>(const_cast<QGraphicsView *>(views().at(0)));
-    view->nodeUpdated(node, type);
+    std::set<dop::Node *> visited;
+    for (auto const &node: nodes) {
+        dop::resolve(dop::Input_Link{.node = node->getDopNode(), .sockid = 0}, visited);
+    }
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const

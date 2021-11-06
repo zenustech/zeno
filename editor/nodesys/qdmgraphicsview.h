@@ -9,6 +9,8 @@
 
 ZENO_NAMESPACE_BEGIN
 
+class QDMGraphicsScene;
+
 class QDMGraphicsView : public QGraphicsView
 {
     Q_OBJECT
@@ -24,11 +26,14 @@ public:
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
     virtual QSize sizeHint() const override;
+    void switchScene(QDMGraphicsScene *scene);
+    QDMGraphicsScene *getScene() const;
 
     static constexpr float ZOOMFACTOR = 1.25f;
 
 public slots:
     void addNodeByName(QString name);
+    void forceUpdate();
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);
