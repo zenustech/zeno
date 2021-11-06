@@ -1,4 +1,4 @@
-#include "renderable.h"
+#include "renderablemesh.h"
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <zeno/math/vec.h>

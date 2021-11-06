@@ -44,9 +44,14 @@ void QDMOpenGLViewport::paintGL()
     QOpenGLVertexArrayObject vao(this);
     vao.bind();
     for (auto const &[_, r]: m_renderables) {
-        r->render(this);
+        if (r) r->render(this);
     }
     vao.release();
+}
+
+static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
+    auto *dopNode = node->dopNode.get();
+    return makeRenderableFromAny(dopNode->outputs[0]);
 }
 
 void QDMOpenGLViewport::addNodeView(QDMGraphicsNode *node) {

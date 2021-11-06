@@ -4,7 +4,7 @@
 #include <zeno/common.h>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
-#include "qdmgraphicsnode.h"
+#include "../nodesys/qdmgraphicsnode.h"
 #include <memory>
 #include <map>
 
