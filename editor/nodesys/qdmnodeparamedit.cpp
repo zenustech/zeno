@@ -1,5 +1,6 @@
 #include "qdmnodeparamedit.h"
 #include <zeno/ztd/functional.h>
+#include <zeno/ztd/algorithm.h>
 #include <zeno/dop/Descriptor.h>
 #include <QFormLayout>
 #include <QLineEdit>
@@ -15,12 +16,12 @@ QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
 
 static QWidget *make_edit_for_type(std::string const &type)
 {
-    const std::array tab = {
+    static const std::array tab = {
         "string",
         "int",
         "float",
     };
-    switch (std::find(begin(tab), end(tab), type) - begin(tab)) {
+    switch (ztd::try_find_index(tab, type)) {
     case 0: {
         auto edit = new QLineEdit;
         return edit;
