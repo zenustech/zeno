@@ -1,21 +1,16 @@
 #include "qdmnodeparamedit.h"
-#include <zeno/dop/Descriptor.h>
+#include <QFormLayout>
+#include <QLineEdit>
 
 ZENO_NAMESPACE_BEGIN
 
 QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
-    : QListView(parent)
-    , model(new QStandardItemModel(this))
+    : QWidget(parent)
 {
-    for (auto const &[k, d]: dop::descriptor_table()) {
-        auto item = new QStandardItem();
-        item->setText(QString::fromStdString(k));
-        item->setEditable(false);
-        items.emplace_back(item);
-        model->appendRow(item);
-    }
-
-    setModel(model.get());
+    auto layout = new QFormLayout;
+    layout->addRow("hello:", new QLineEdit);
+    layout->addRow("this is my name:", new QLineEdit);
+    setLayout(layout);
 }
 
 QDMNodeParamEdit::~QDMNodeParamEdit() = default;

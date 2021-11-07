@@ -2,19 +2,14 @@
 #define QDMNODEPARAMEDIT_H
 
 #include <zeno/common.h>
-#include <QListView>
-#include <QStandardItemModel>
-#include <QStandardItem>
+#include <QWidget>
 #include <vector>
 
 ZENO_NAMESPACE_BEGIN
 
-class QDMNodeParamEdit : public QListView
+class QDMNodeParamEdit : public QWidget
 {
     Q_OBJECT
-
-    std::unique_ptr<QStandardItemModel> model;
-    std::vector<std::unique_ptr<QStandardItem>> items;
 
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
