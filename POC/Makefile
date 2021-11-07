@@ -1,4 +1,4 @@
-x=testadl
+x=memleak
 
 x: $x.exe Makefile
 	./$<
