@@ -11,7 +11,7 @@ QDMOpenGLViewport::QDMOpenGLViewport(QWidget *parent)
     : QOpenGLWidget(parent)
 {
     QSurfaceFormat fmt;
-    //fmt.setSamples(8);
+    fmt.setSamples(8);
     //fmt.setVersion(3, 1);
     setFormat(fmt);
 }
@@ -58,9 +58,22 @@ void QDMOpenGLViewport::paintGL()
     vao.release();
 }
 
-void QDMOpenGLViewport::dragMoveEvent(QDragMoveEvent *event)
+void QDMOpenGLViewport::mousePressEvent(QMouseEvent *event)
 {
-// todo
+    m_lastPos = event->pos();
+
+    QOpenGLWidget::mousePressEvent(event);
+}
+
+void QDMOpenGLViewport::mouseMoveEvent(QMouseEvent *event)
+{
+    auto delta = event->pos() - m_lastPos;
+    m_camera->move((float)delta.x() / width(), -(float)delta.y() / height(),
+                   event->modifiers() & Qt::ShiftModifier);
+    m_lastPos = event->pos();
+    repaint();
+
+    QOpenGLWidget::mousePressEvent(event);
 }
 
 void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)

@@ -115,7 +115,6 @@ public:
                 last = now;
             }
         }
-        qDebug() << vertices.size();
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override
@@ -127,7 +126,6 @@ public:
         auto proj = viewport->getCamera()->getProjection();
         auto mv = view;
         auto mvp = proj * mv;
-        qDebug() << view << proj;
         program->setUniformValue("uMVP", mvp);
         program->setUniformValue("uInvMVP", mvp.inverted());
         program->setUniformValue("uInvMV", mv.inverted());

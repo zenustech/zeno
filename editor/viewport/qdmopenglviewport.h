@@ -19,7 +19,6 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 
     std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
     std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
-    bool m_hasLastPos = false;
     QPoint m_lastPos;
 
 public:
@@ -32,7 +31,8 @@ public:
     virtual void resizeGL(int nx, int ny) override;
     virtual void paintGL() override;
 
-    virtual void dragMoveEvent(QDragMoveEvent *event) override;
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
 
 public slots:
