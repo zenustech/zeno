@@ -243,26 +243,26 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxMoveOp(simdkind, dst, src);
-
-            } else if (cmd == "round") {
-                ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto src = from_string<int>(linesep[2]);
-                builder->addAvxRoundOp(simdkind, dst, src, 0 + 8);
-
-            } else if (cmd == "floor") {
-                ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto src = from_string<int>(linesep[2]);
-                builder->addAvxRoundOp(simdkind, dst, src, 1 + 8);
-
-            } else if (cmd == "ceil") {
-                ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto src = from_string<int>(linesep[2]);
-                builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
-
             } else if (cmd == "blend") {
+            // } else if (cmd == "round") {
+            //     ERROR_IF(linesep.size() < 2);
+            //     auto dst = from_string<int>(linesep[1]);
+            //     auto src = from_string<int>(linesep[2]);
+            //     builder->addAvxRoundOp(simdkind, dst, src, 0 + 8);
+
+            // } else if (cmd == "floor") {
+            //     ERROR_IF(linesep.size() < 2);
+            //     auto dst = from_string<int>(linesep[1]);
+            //     auto src = from_string<int>(linesep[2]);
+            //     builder->addAvxRoundOp(simdkind, dst, src, 1 + 8);
+
+            // } else if (cmd == "ceil") {
+            //     ERROR_IF(linesep.size() < 2);
+            //     auto dst = from_string<int>(linesep[1]);
+            //     auto src = from_string<int>(linesep[2]);
+            //     builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
+
+            // } else if (cmd == "blend") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
                 auto cond = from_string<int>(linesep[2]);
