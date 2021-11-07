@@ -76,9 +76,6 @@ To build ZENO, you need:
 [Click me for detailed build instructions](BUILD.md)
 
 
-After finishing building, use `run.py` to run ZENO for development! You may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
-
-
 # Miscellaneous
 
 ## Write your own extension!

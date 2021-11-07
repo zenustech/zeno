@@ -17,7 +17,7 @@ Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 > Note that we install Visual Studio **only to get the compiler bundled with it**. feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
 
-> It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
+> It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
 4. Download and install Qt 5.12: https://www.qt.io/offline-installers
 
@@ -34,12 +34,14 @@ sudo apt-get install -y qt5-default
 
 Zeno depends on many C++ libraries, we recommend to use the cross-platform package manager `vcpkg` to install these requirements. (feel free to follow your own favor as long as the requirements below can be installed :)
 
+First of all, download `vcpkg`:
+
 ```bash
 git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 ```
 
-Now, let's install our dependencies via `vcpkg`:
+Next, let's install Zeno dependencies via `vcpkg`:
 
 ### Windows (cmd)
 
@@ -85,7 +87,7 @@ Configure CMake:
 cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
 
-> Please replace the `[path to vcpkg]` here to the path where we previously cloned vcpkg, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
+> Please **replace the `[path to vcpkg]` by the path where we previously cloned vcpkg**, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
 
 > CLion users may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
 
@@ -100,13 +102,13 @@ cmake --build build --parallel 8
 ### Windows (cmd)
 
 ```cmd
-build\editor\zeno_editor.exe
+build\editor\zeno.exe
 ```
 
 ### Linux (bash)
 
 ```bash
-build/editor/zeno_editor
+build/editor/zeno
 ```
 
 ## References
