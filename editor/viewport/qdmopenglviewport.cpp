@@ -60,18 +60,31 @@ void QDMOpenGLViewport::paintGL()
 
 void QDMOpenGLViewport::mousePressEvent(QMouseEvent *event)
 {
-    m_lastPos = event->pos();
+    if (event->button() == Qt::MiddleButton) {
+        m_mmbPos = event->pos();
+    }
 
     QOpenGLWidget::mousePressEvent(event);
 }
 
 void QDMOpenGLViewport::mouseMoveEvent(QMouseEvent *event)
 {
-    auto delta = event->pos() - m_lastPos;
-    m_camera->move((float)delta.x() / width(), -(float)delta.y() / height(),
-                   event->modifiers() & Qt::ShiftModifier);
-    m_lastPos = event->pos();
-    repaint();
+    if (m_mmbPos) {
+        auto delta = event->pos() - *m_mmbPos;
+        m_camera->move((float)delta.x() / width(), -(float)delta.y() / height(),
+                       event->modifiers() & Qt::ShiftModifier);
+        m_mmbPos = event->pos();
+        repaint();
+    }
+
+    QOpenGLWidget::mousePressEvent(event);
+}
+
+void QDMOpenGLViewport::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::MiddleButton) {
+        m_mmbPos = std::nullopt;
+    }
 
     QOpenGLWidget::mousePressEvent(event);
 }

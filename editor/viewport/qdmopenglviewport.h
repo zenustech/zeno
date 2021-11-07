@@ -6,6 +6,7 @@
 #include <QOpenGLFunctions>
 #include "../nodesys/qdmgraphicsnode.h"
 #include "cameradata.h"
+#include <optional>
 #include <memory>
 #include <map>
 
@@ -19,7 +20,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 
     std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
     std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
-    QPoint m_lastPos;
+    std::optional<QPoint> m_mmbPos;
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
@@ -32,6 +33,7 @@ public:
     virtual void paintGL() override;
 
     virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
 
