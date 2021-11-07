@@ -3,6 +3,7 @@
 
 #include <zeno/common.h>
 #include "qdmgraphicsnode.h"
+#include <QFormLayout>
 #include <QWidget>
 
 ZENO_NAMESPACE_BEGIN
@@ -11,6 +12,7 @@ class QDMNodeParamEdit : public QWidget
 {
     Q_OBJECT
 
+    QFormLayout *layout;
     QDMGraphicsNode *currNode{};
 
 public:

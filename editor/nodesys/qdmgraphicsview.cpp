@@ -26,7 +26,25 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
 void QDMGraphicsView::switchScene(QDMGraphicsScene *scene)
 {
     connect(scene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)), this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+    connect(scene, &QGraphicsScene::selectionChanged, this, [this] () {
+        auto items = this->scene()->selectedItems();
+        if (!items.size()) {
+            setCurrentNode(nullptr);
+            return;
+        }
+        if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
+            setCurrentNode(node);
+        } else {
+            setCurrentNode(nullptr);
+        }
+    });
     setScene(scene);
+}
+
+void QDMGraphicsView::setCurrentNode(QDMGraphicsNode *node)
+{
+    m_currNode = node;
+    emit currentNodeChanged(node);
 }
 
 QDMGraphicsScene *QDMGraphicsView::getScene() const

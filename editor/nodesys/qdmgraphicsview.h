@@ -17,6 +17,9 @@ class QDMGraphicsView : public QGraphicsView
 
     QPointF m_lastMousePos;
     bool m_mouseDragging{false};
+    QDMGraphicsNode *m_currNode{};
+
+    void setCurrentNode(QDMGraphicsNode *node);
 
 public:
     explicit QDMGraphicsView(QWidget *parent = nullptr);
@@ -37,6 +40,7 @@ public slots:
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);
+    void currentNodeChanged(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END

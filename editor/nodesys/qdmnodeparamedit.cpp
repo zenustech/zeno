@@ -2,7 +2,6 @@
 #include <zeno/ztd/functional.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/dop/Descriptor.h>
-#include <QFormLayout>
 #include <QLineEdit>
 #include <QIntValidator>
 #include <QDoubleValidator>
@@ -11,6 +10,7 @@ ZENO_NAMESPACE_BEGIN
 
 QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
     : QWidget(parent)
+    , layout(new QFormLayout)
 {
 }
 
@@ -45,9 +45,13 @@ static QWidget *make_edit_for_type(std::string const &type)
 
 void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
 {
-    currNode = node;
+    while (layout->rowCount())
+        layout->removeRow(0);
 
-    auto layout = new QFormLayout;
+    currNode = node;
+    if (!node)
+        return;
+
     for (auto const &input: node->getDopNode()->desc->inputs) {
         layout->addRow(QString::fromStdString(input.name),
                        make_edit_for_type(input.type));

@@ -152,6 +152,7 @@
    <header>nodesys/qdmgraphicsview.h</header>
    <slots>
     <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
+    <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
     <slot>addNodeByName(QString)</slot>
     <slot>forceUpdate()</slot>
    </slots>
@@ -192,6 +193,9 @@
    <extends>QWidget</extends>
    <header>nodesys/qdmnodeparamedit.h</header>
    <container>1</container>
+   <slots>
+    <slot>setCurrentNode(QDMGraphicsNode*)</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -223,8 +227,8 @@
      <y>556</y>
     </hint>
     <hint type="destinationlabel">
-     <x>583</x>
-     <y>563</y>
+     <x>50</x>
+     <y>625</y>
     </hint>
    </hints>
   </connection>
@@ -241,6 +245,22 @@
     <hint type="destinationlabel">
      <x>1156</x>
      <y>667</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
+   <receiver>widget</receiver>
+   <slot>setCurrentNode(QDMGraphicsNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1657</x>
+     <y>665</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1695</x>
+     <y>855</y>
     </hint>
    </hints>
   </connection>
