@@ -16,7 +16,7 @@ struct CameraData::Impl
     float point_scale = 1.f;
 
     int nx = 512, ny = 512;
-    QVector3D center;
+    QVector3D center{0.f, 0.f, 0.f};
     float theta = 0.f;
     float phi = 0.f;
     float radius = 4.f;

@@ -1,6 +1,8 @@
 #include "qdmopenglviewport.h"
 #include "renderable.h"
 #include <QOpenGLVertexArrayObject>
+#include <QDragMoveEvent>
+#include <QWheelEvent>
 #include <QDebug>
 
 ZENO_NAMESPACE_BEGIN
@@ -26,7 +28,7 @@ void QDMOpenGLViewport::initializeGL()
     initializeOpenGLFunctions();
     qInfo() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
 
-    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void QDMOpenGLViewport::resizeGL(int nx, int ny)
@@ -54,6 +56,20 @@ void QDMOpenGLViewport::paintGL()
         r->render(this);
     }
     vao.release();
+}
+
+void QDMOpenGLViewport::dragMoveEvent(QDragMoveEvent *event)
+{
+// todo
+}
+
+void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
+{
+    float dy = event->angleDelta().y();
+    if (dy > 0) dy = 1.f;
+    if (dy < 0) dy = -1.f;
+    m_camera->zoom(dy, event->modifiers() & Qt::ShiftModifier);
+    repaint();
 }
 
 static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
