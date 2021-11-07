@@ -6,7 +6,6 @@
 #include "qdmgraphicssocketin.h"
 #include "qdmgraphicssocketout.h"
 #include <QRectF>
-#include <QGraphicsTextItem>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
@@ -19,7 +18,6 @@ class QDMGraphicsNode : public QGraphicsItem
 {
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
-    std::unique_ptr<QGraphicsTextItem> label;
 
     std::unique_ptr<dop::Node> dopNode;
 

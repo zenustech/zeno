@@ -4,6 +4,7 @@
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/assert.h>
+#include <QGraphicsTextItem>
 #include <algorithm>
 
 ZENO_NAMESPACE_BEGIN
@@ -13,7 +14,7 @@ QDMGraphicsNode::QDMGraphicsNode()
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
-    label = std::make_unique<QGraphicsTextItem>(this);
+    auto label = new QGraphicsTextItem(this);
     label->setDefaultTextColor(QColor(0xcccccc));
     label->setPos(0, -SOCKSTRIDE);
 }
