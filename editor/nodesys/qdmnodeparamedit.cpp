@@ -7,9 +7,16 @@ ZENO_NAMESPACE_BEGIN
 QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
     : QWidget(parent)
 {
+}
+
+void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
+{
+    currNode = node;
+
     auto layout = new QFormLayout;
-    layout->addRow("hello:", new QLineEdit);
-    layout->addRow("this is my name:", new QLineEdit);
+    for (auto const &[name, edit]: node->enumerateSockets()) {
+        layout->addRow(name, edit);
+    }
     setLayout(layout);
 }
 

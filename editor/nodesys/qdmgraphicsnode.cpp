@@ -20,6 +20,10 @@ QDMGraphicsNode::QDMGraphicsNode()
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
 
+std::map<QString, QWidget *> QDMGraphicsNode::enumerateSockets() const
+{
+}
+
 dop::Node *QDMGraphicsNode::getDopNode() const
 {
     return dopNode.get();

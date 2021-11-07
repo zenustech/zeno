@@ -2,8 +2,8 @@
 #define QDMNODEPARAMEDIT_H
 
 #include <zeno/common.h>
+#include "qdmgraphicsnode.h"
 #include <QWidget>
-#include <vector>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -11,9 +11,14 @@ class QDMNodeParamEdit : public QWidget
 {
     Q_OBJECT
 
+    QDMGraphicsNode *currNode{};
+
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
     ~QDMNodeParamEdit();
+
+public slots:
+    void setCurrentNode(QDMGraphicsNode *node);
 
 signals:
     void entryModified(QString name);

@@ -29,6 +29,7 @@ public:
 
     float getHeight() const;
     dop::Node *getDopNode() const;
+    std::map<QString, QWidget *> enumerateSockets() const;
 
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
