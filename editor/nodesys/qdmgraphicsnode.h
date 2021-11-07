@@ -8,6 +8,7 @@
 #include <QRectF>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QGraphicsTextItem>
 #include <QWidget>
 #include <zeno/dop/Node.h>
 #include <memory>
@@ -18,6 +19,7 @@ class QDMGraphicsNode : public QGraphicsItem
 {
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
+    std::unique_ptr<QGraphicsTextItem> label;
 
     std::unique_ptr<dop::Node> dopNode;
 
@@ -27,7 +29,7 @@ public:
 
     float getHeight() const;
     dop::Node *getDopNode() const;
-    std::map<QString, QWidget *> enumerateSockets() const;
+    std::map<QString, dop::Input *> enumerateSockets() const;
 
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;

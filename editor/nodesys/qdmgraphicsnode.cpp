@@ -4,7 +4,7 @@
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/assert.h>
-#include <QGraphicsTextItem>
+#include <QLineEdit>
 #include <algorithm>
 
 ZENO_NAMESPACE_BEGIN
@@ -14,24 +14,20 @@ QDMGraphicsNode::QDMGraphicsNode()
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
-    auto label = new QGraphicsTextItem(this);
+    label = std::make_unique<QGraphicsTextItem>(this);
     label->setDefaultTextColor(QColor(0xcccccc));
     label->setPos(0, -SOCKSTRIDE);
 }
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
 
-static QWidget *make_line_edit_for_input(dop::Input const &input) {
-    return nullptr;
-}
-
-std::map<QString, QWidget *> QDMGraphicsNode::enumerateSockets() const
+std::map<QString, dop::Input *> QDMGraphicsNode::enumerateSockets() const
 {
-    std::map<QString, QWidget *> res;
+    std::map<QString, dop::Input *> res;
     for (size_t i = 0; i < dopNode->desc->inputs.size(); i++) {
         auto name = QString::fromStdString(dopNode->desc->inputs.at(i).name);
-        auto *edit = make_line_edit_for_input(dopNode->inputs.at(0));
-        res.emplace(name, edit);
+        auto input = &dopNode->inputs.at(0);
+        res.emplace(name, input);
     }
     return res;
 }
