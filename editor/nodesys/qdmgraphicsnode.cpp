@@ -21,17 +21,6 @@ QDMGraphicsNode::QDMGraphicsNode()
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
 
-std::map<QString, dop::Input *> QDMGraphicsNode::enumerateSockets() const
-{
-    std::map<QString, dop::Input *> res;
-    for (size_t i = 0; i < dopNode->desc->inputs.size(); i++) {
-        auto name = QString::fromStdString(dopNode->desc->inputs.at(i).name);
-        auto input = &dopNode->inputs.at(0);
-        res.emplace(name, input);
-    }
-    return res;
-}
-
 dop::Node *QDMGraphicsNode::getDopNode() const
 {
     return dopNode.get();

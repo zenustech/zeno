@@ -22,6 +22,8 @@ using NodeFactory = std::function<std::unique_ptr<Node>()>;
 struct Descriptor {
     struct SocketInfo {
         std::string name;
+        std::string type;
+        std::string defl;
     };
 
     struct CategoryInfo {

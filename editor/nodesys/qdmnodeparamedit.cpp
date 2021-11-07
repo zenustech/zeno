@@ -1,5 +1,6 @@
 #include "qdmnodeparamedit.h"
 #include <zeno/ztd/functional.h>
+#include <zeno/dop/Descriptor.h>
 #include <QFormLayout>
 #include <QLineEdit>
 
@@ -10,16 +11,8 @@ QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
 {
 }
 
-static QWidget *make_edit_for_input(dop::Input const &input)
+static QWidget *make_edit_for_type(std::string const &type)
 {
-    return std::visit(ztd::match
-    ( [&] (dop::Input_Value const &v) -> QWidget * {
-        return new QLineEdit;
-    }
-    , [&] (dop::Input_Link const &v) -> QWidget * {
-        return new QLineEdit;
-    }
-    ), input);
 }
 
 void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
@@ -27,8 +20,9 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     currNode = node;
 
     auto layout = new QFormLayout;
-    for (auto const &[name, input]: node->enumerateSockets()) {
-        layout->addRow(name, make_edit_for_input(*input));
+    for (auto const &input: node->getDopNode()->desc->inputs) {
+        layout->addRow(QString::fromStdString(input.name),
+                       make_edit_for_type(input.type));
     }
     setLayout(layout);
 }
