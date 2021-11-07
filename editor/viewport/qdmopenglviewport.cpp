@@ -26,7 +26,7 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
-    qInfo() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
+    qCritical() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
 
     glEnable(GL_DEPTH_TEST);
 }
