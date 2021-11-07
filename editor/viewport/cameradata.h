@@ -17,6 +17,7 @@ public:
 
     void zoom(float dy, bool fov_mode);
     void move(float dx, double dy, bool pan_mode);
+    void resize(int nx, int ny);
 
     QMatrix4x4 getView() const;
     QMatrix4x4 getProjection() const;

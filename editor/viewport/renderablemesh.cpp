@@ -126,7 +126,7 @@ public:
         auto view = viewport->getCamera()->getView();
         auto proj = viewport->getCamera()->getProjection();
         auto mv = view;
-        auto mvp = mv * proj;
+        auto mvp = proj * mv;
         qDebug() << view << proj;
         program->setUniformValue("uMVP", mvp);
         program->setUniformValue("uInvMVP", mvp.inverted());

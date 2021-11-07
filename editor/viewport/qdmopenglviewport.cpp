@@ -40,7 +40,10 @@ CameraData *QDMOpenGLViewport::getCamera() const
 
 void QDMOpenGLViewport::paintGL()
 {
-    glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
+    int nx = width() * devicePixelRatio();
+    int ny = height() * devicePixelRatio();
+    m_camera->resize(nx, ny);
+    glViewport(0, 0, nx, ny);
 
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

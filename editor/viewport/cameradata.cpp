@@ -26,8 +26,7 @@ struct CameraData::Impl
     Impl() { updateMatrices(); }
 
     void updateMatrices() {
-        float fov_rad = fov * M_PI / 180.f;
-        point_scale = ny / (50.f * std::tan(fov_rad * 0.5f));
+        point_scale = ny / (50.f * std::tan(fov * M_PI / 180.f * 0.5f));
         float cos_t = std::cos(theta);
         float sin_t = std::sin(theta);
         float cos_p = std::cos(phi);
@@ -43,10 +42,17 @@ struct CameraData::Impl
             proj.ortho(-radius * aspect, radius * aspect, -radius, radius, -100.0f, 100.0f);
         } else {
             view.lookAt(center - back * radius, center, up);
-            proj.perspective(fov_rad, aspect, 0.05f, 20000.f);
+            proj.perspective(fov, aspect, 0.05f, 20000.f);
         }
     }
 };
+
+void CameraData::resize(int nx, int ny)
+{
+    impl->nx = nx;
+    impl->ny = ny;
+    impl->updateMatrices();
+}
 
 void CameraData::zoom(float dy, bool fov_mode)
 {
