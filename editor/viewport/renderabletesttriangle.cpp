@@ -40,7 +40,7 @@ public:
         static auto program = makeShaderProgram();
         program->bind();
 
-        std::vector<math::vec3f> vertices = {
+        static const std::vector<math::vec3f> vertices = {
             { 0.0f,  0.707f, 0.1f},
             {-0.5f, -0.5f, 0.1f},
             { 0.5f, -0.5f, 0.1f},

@@ -10,7 +10,7 @@ ZENO_NAMESPACE_BEGIN
 
 QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
     : QWidget(parent)
-    , layout(new QFormLayout)
+    , layout(new QFormLayout(this))
 {
 }
 
@@ -56,7 +56,6 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
         layout->addRow(QString::fromStdString(input.name),
                        make_edit_for_type(input.type));
     }
-    setLayout(layout);
 }
 
 QDMNodeParamEdit::~QDMNodeParamEdit() = default;
