@@ -21,8 +21,19 @@ QDMGraphicsNode::QDMGraphicsNode()
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
 
+static QWidget *make_line_edit_for_input(dop::Input const &input) {
+    return nullptr;
+}
+
 std::map<QString, QWidget *> QDMGraphicsNode::enumerateSockets() const
 {
+    std::map<QString, QWidget *> res;
+    for (size_t i = 0; i < dopNode->desc->inputs.size(); i++) {
+        auto name = QString::fromStdString(dopNode->desc->inputs.at(i).name);
+        auto *edit = make_line_edit_for_input(dopNode->inputs.at(0));
+        res.emplace(name, edit);
+    }
+    return res;
 }
 
 dop::Node *QDMGraphicsNode::getDopNode() const
