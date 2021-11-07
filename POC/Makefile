@@ -1,7 +1,7 @@
 x=memleak
 
 x: $x.exe Makefile
-	./$<
+	valgrind --tool=memcheck --leak-check=full ./$<
 	
 d: $x.exe Makefile
 	gdb ./$< -ex r

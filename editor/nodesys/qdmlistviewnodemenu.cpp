@@ -8,11 +8,12 @@ ZENO_NAMESPACE_BEGIN
 QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
     : QListView(parent)
 {
-    auto model = new QStandardItemModel;
+    auto model = new QStandardItemModel(this);
     for (auto const &[k, d]: dop::descriptor_table()) {
         auto item = new QStandardItem;
         item->setText(QString::fromStdString(k));
         item->setEditable(false);
+        items.emplace_back(item);
         model->appendRow(item);
     }
 

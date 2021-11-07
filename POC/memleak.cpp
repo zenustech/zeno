@@ -2,7 +2,7 @@
 #include <memory>
 
 int main() {
-    auto x = std::make_unique<int>(42);
+    auto x = new int(42);
     std::cout << *x << std::endl;
     return 0;
 }
