@@ -96,6 +96,8 @@ void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
     if (dy < 0) dy = -1.f;
     m_camera->zoom(dy, event->modifiers() & Qt::ShiftModifier);
     repaint();
+
+    QOpenGLWidget::wheelEvent(event);
 }
 
 static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {

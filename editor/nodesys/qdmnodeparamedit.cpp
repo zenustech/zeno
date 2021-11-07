@@ -1,9 +1,9 @@
-#include "qdmlistviewnodemenu.h"
+#include "qdmnodeparamedit.h"
 #include <zeno/dop/Descriptor.h>
 
 ZENO_NAMESPACE_BEGIN
 
-QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
+QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
     : QListView(parent)
     , model(new QStandardItemModel(this))
 {
@@ -15,14 +15,9 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
         model->appendRow(item);
     }
 
-    connect(this, &QListView::clicked, [=, this] (QModelIndex index) {
-        auto item = model->item(index.row());
-        emit entryClicked(item->text());
-    });
-
     setModel(model.get());
 }
 
-QDMListViewNodeMenu::~QDMListViewNodeMenu() = default;
+QDMNodeParamEdit::~QDMNodeParamEdit() = default;
 
 ZENO_NAMESPACE_END
