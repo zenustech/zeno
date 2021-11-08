@@ -81,6 +81,9 @@ inline void _M_transfer(buffer<T, 1> &buf_src, buffer<T, 1> &buf_dst, size_t siz
         auto src_acc = buf_src.template get_access<access::mode::read>(cgh, range<1>(size));
         auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(cgh, range<1>(size));
         cgh.copy(src_acc, dst_acc);
+        /*cgh.parallel_for(range<1>(size), [=] (item<1> it) {
+            dst_acc[it[0]] = src_acc[it[0]];
+        });*/
     });
 }
 
@@ -88,8 +91,11 @@ template <class T>
 inline void _M_fillwith(buffer<T, 1> &buf_dst, size_t beg, size_t end, T const &val) {
     default_queue().submit([&] (handler &cgh) {
         auto dst_acc = buf_dst.template get_access<access::mode::discard_write>(
-            cgh, range<1>(end - beg), range<1>(beg));
+            cgh, range<1>(end - beg), id<1>(beg));
         cgh.fill(dst_acc, val);
+        /*cgh.parallel_for(range<1>(end - beg), [=] (item<1> it) {
+            dst_acc[it[0]] = val;
+        });*/
     });
 }
 
@@ -110,7 +116,7 @@ struct vector {
             auto n_trans = std::min(size, _M_size);
             _M_transfer<T>(old_buf, _M_buf, n_trans);
             if (size > _M_size)
-                _M_fillwith(_M_buf, size, _M_size, val);
+                _M_fillwith(_M_buf, _M_size, size, val);
             _M_size = size;
         } else {
             _M_buf = buffer<T, 1>(_M_nozerosize(size));

@@ -2,7 +2,7 @@
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
 #A=-DBATE_SYCL:BOOL=ON
 
-x: debug
+x: run
 
 run: all
 	$B build/zeno

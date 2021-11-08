@@ -19,7 +19,7 @@ int main()
     }
 #if 1
 
-    buf.resize(40);
+    buf.resize(40, 8);
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_buf = zycl::make_access<zycl::rwd>(cgh, buf);
