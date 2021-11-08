@@ -104,6 +104,8 @@ public:
 
     virtual void render(QDMOpenGLViewport *viewport) override
     {
+        if (!vertices.size()) return;
+
         static auto program = makeShaderProgram();
         program->bind();
 
