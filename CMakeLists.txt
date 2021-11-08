@@ -47,8 +47,6 @@ if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
 if (UNIX)
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
