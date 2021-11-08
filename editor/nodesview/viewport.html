@@ -28,10 +28,28 @@
       <!-- one node -->
       <g>
         <rect x="600" y="200" width="190" height="108" rx = "10", ry = "10",
-        style="fill:rgb(40,40,40); stroke:rgb(176,176,176); stroke-width:2;" />
+            fill="rgb(40,40,40)" stroke="rgb(176,176,176)" stroke-width="4"/>
 
-        <path d="M600 200 L610 200 Z" stroke="red" stroke-width="3"/>
-
+        <!-- title -->
+        <g>
+          <path d="
+          M600 230
+          L600 210 
+          A 10 10, 0,0,1, 610 200
+          L 780 200
+          A 10 10, 0,0,1, 790,210
+          L 790 230
+          " fill="rgb(99,142,119)" stroke="rgb(176,176,176)" stroke-width="4"/>
+          
+          <!-- svg 图片的制作需要统一，否则x,y不好设定 -->
+          <image href="unfold.svg" x="608" y="208" height="18" width="18"/>
+          <text x="630" y="221"
+            font-family="Calibri"
+            font-size="12"
+            fill="rgb(246,248,247)">
+            NumericInt
+          </text>
+        </g>
       </g>
     </svg>
 </body>

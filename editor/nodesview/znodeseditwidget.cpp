@@ -1,5 +1,6 @@
 #include "znodeseditwidget.h"
 #include "znodeswebview.h"
+#include "znodesgraphicsview.h"
 #include <QMenuBar>
 
 
@@ -22,7 +23,12 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     pLayout->addLayout(pHLayout);
 
     ZNodesWebEngineView* pView = new ZNodesWebEngineView;
-    pLayout->addWidget(pView);
+	QTabWidget* pTab = new QTabWidget;
+	pTab->addTab(pView, "webview");
+
+	ZNodesGraphicsView* pGraphicsView = new ZNodesGraphicsView;
+	pTab->addTab(pGraphicsView, "native");
+    pLayout->addWidget(pTab);
 
     setLayout(pLayout);
 
