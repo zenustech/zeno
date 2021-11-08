@@ -1,6 +1,7 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
 #include <zeno/ztd/memory.h>
+#include <zeno/dop/execute.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -19,6 +20,7 @@ QDMGraphicsScene::~QDMGraphicsScene() = default;
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
+    nodeUpdated(node, -1);
     removeItem(node);
     nodes.erase(ztd::stale_ptr(node));
 }
@@ -52,6 +54,7 @@ void QDMGraphicsScene::cursorMoved()
 {
     if (floatingNode) {
         floatingNode->setPos(getCursorPos());
+        floatingNode->show();
     }
 
     if (pendingLink) {
@@ -99,13 +102,23 @@ void QDMGraphicsScene::addNodeByName(QString name)
         return;
     auto node = addNode();
     node->initByName(name);
-    node->setPos(sceneRect().bottomRight());
+    node->hide();
     floatingNode = node;
+    emit nodeUpdated(node, 1);
+}
+
+void QDMGraphicsScene::forceUpdate()
+{
+    std::set<dop::Node *> visited;
+    for (auto const &node: nodes) {
+        dop::resolve(dop::Input_Link{.node = node->getDopNode(), .sockid = 0}, visited);
+        emit nodeUpdated(node.get(), 0);
+    }
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
 {
-    auto view = views().at(0);
+    auto view = static_cast<QDMGraphicsView const *>(views().at(0));
     return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
 }
 

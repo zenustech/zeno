@@ -1,6 +1,6 @@
 ### THIS FILE IS ONLY USED BY ARCHIBATE AND ZHXX! ###
 #A=-DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
-#A=-DBATE_SYCL:BOOL=ON
+A=-DBATE_SYCL:BOOL=ON
 
 run: all
 	$B build/zeno

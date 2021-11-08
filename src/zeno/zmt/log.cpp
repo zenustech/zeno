@@ -12,7 +12,7 @@ void set_log_level(log_level lev) {
 
 void output_log(log_level lev, std::string_view msg) {
     if (lev > loglev) {
-        zmt::print("({}) {}", "TDIWCEF"[(int)lev], msg);
+        zmt::println("({}) {}", "TDIWCEF"[(int)lev], msg);
     }
 }
 

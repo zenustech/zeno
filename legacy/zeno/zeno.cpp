@@ -13,13 +13,13 @@ void defNodeClass(std::function<std::unique_ptr<ZENO_NAMESPACE::dop::Node>()> fu
     nd.cate.category = desc.categories.size() ? desc.categories[0] : "uncategorized";
     nd.cate.documentation = "A legacy node class defined via ZDK version 1";
     for (auto i: desc.inputs) {
-        nd.inputs.push_back({i.name});
+        nd.inputs.push_back({i.name, i.type, i.defl});
     }
     for (auto p: desc.params) {
-        nd.inputs.push_back({p.name + ':'});
+        nd.inputs.push_back({p.name + ':', p.type, p.defl});
     }
     for (auto o: desc.outputs) {
-        nd.outputs.push_back({o.name});
+        nd.outputs.push_back({o.name, o.type, o.defl});
     }
     ZENO_NAMESPACE::dop::define(name, std::move(nd), std::move(func));
 }

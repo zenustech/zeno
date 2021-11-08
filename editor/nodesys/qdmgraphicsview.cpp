@@ -23,6 +23,45 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
+void QDMGraphicsView::switchScene(QDMGraphicsScene *scene)
+{
+    connect(scene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)), this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+    connect(scene, &QGraphicsScene::selectionChanged, this, [this] () {
+        auto items = this->scene()->selectedItems();
+        if (!items.size()) {
+            setCurrentNode(nullptr);
+            return;
+        }
+        if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
+            setCurrentNode(node);
+        } else {
+            setCurrentNode(nullptr);
+        }
+    });
+    setScene(scene);
+}
+
+void QDMGraphicsView::setCurrentNode(QDMGraphicsNode *node)
+{
+    m_currNode = node;
+    emit currentNodeChanged(node);
+}
+
+QDMGraphicsScene *QDMGraphicsView::getScene() const
+{
+    return static_cast<QDMGraphicsScene *>(scene());
+}
+
+void QDMGraphicsView::addNodeByName(QString name)
+{
+    getScene()->addNodeByName(name);
+}
+
+void QDMGraphicsView::forceUpdate()
+{
+    getScene()->forceUpdate();
+}
+
 void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {
@@ -78,12 +117,6 @@ void QDMGraphicsView::wheelEvent(QWheelEvent *event)
         zoomFactor /= ZOOMFACTOR;
 
     scale(zoomFactor, zoomFactor);
-}
-
-void QDMGraphicsView::addNodeByName(QString name)
-{
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    parentScene->addNodeByName(name);
 }
 
 ZENO_NAMESPACE_END

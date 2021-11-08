@@ -1,7 +1,6 @@
 #include "ztoolbar.h"
 #include "comctrl/ztoolbutton.h"
 #include "zobjectbutton.h"
-#include <kddockwidgets/DockWidget.h>
 
 
 ZShapeBar::ZShapeBar(QWidget* parent)

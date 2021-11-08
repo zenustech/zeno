@@ -6,9 +6,9 @@
 #include "qdmgraphicssocketin.h"
 #include "qdmgraphicssocketout.h"
 #include <QRectF>
-#include <QGraphicsTextItem>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QGraphicsTextItem>
 #include <QWidget>
 #include <zeno/dop/Node.h>
 #include <memory>
@@ -27,8 +27,9 @@ public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
 
-    void unlinkAll();
     float getHeight() const;
+    dop::Node *getDopNode() const;
+
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -37,6 +38,7 @@ public:
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
     void socketUnlinked(QDMGraphicsSocketIn *socket);
     void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+    void unlinkAll();
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();

@@ -1,19 +1,5 @@
 #include "zslider.h"
 
-
-_QSlider::_QSlider(QWidget* parent)
-    : QSlider(Qt::Horizontal, parent)
-{
-    setTickPosition(QSlider::TicksRight);
-
-}
-
-void _QSlider::paintEvent(QPaintEvent* e)
-{
-    QSlider::paintEvent(e);
-}
-
-
 ZSlider::ZSlider(QWidget* parent)
     : QWidget(parent)
     , m_left(0.)
@@ -30,9 +16,7 @@ QSize ZSlider::sizeHint() const
 
 void ZSlider::mousePressEvent(QMouseEvent* event)
 {
-    //todo: QSlider先判断是否有越界，如是,ignore消息
     QWidget::mousePressEvent(event);
-
     QPoint pt = event->pos();
     setSliderValue(_posToFrame(pt.x()));
 }

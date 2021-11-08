@@ -15,8 +15,15 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+    <item row="0" column="1">
      <widget class="QDMGraphicsView" name="nodeView"/>
+    </item>
+    <item row="1" column="1">
+     <widget class="QPushButton" name="updateButton">
+      <property name="text">
+       <string>Force Update</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -59,7 +66,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="0">
+     <item row="1" column="0">
       <widget class="QDMListViewNodeMenu" name="nodeMenu"/>
      </item>
     </layout>
@@ -80,6 +87,15 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_5">
+   <property name="windowTitle">
+    <string>timeline</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="ZTimeline" name="dockWidgetContents_5"/>
+  </widget>
   <widget class="QDockWidget" name="dockWidget_4">
    <property name="windowTitle">
     <string>Node Param</string>
@@ -87,7 +103,31 @@
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_4"/>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
+      <widget class="QDMNodeParamEdit" name="widget" native="true"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_6">
+   <property name="windowTitle">
+    <string>minitoolbar</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="ZToolbar" name="dockWidgetContents_6"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_7">
+   <property name="windowTitle">
+    <string>shapes</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="ZShapeBar" name="dockWidgetContents_7"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -109,15 +149,18 @@
   <customwidget>
    <class>QDMGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>qdmgraphicsview.h</header>
+   <header>nodesys/qdmgraphicsview.h</header>
    <slots>
+    <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
+    <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
     <slot>addNodeByName(QString)</slot>
+    <slot>forceUpdate()</slot>
    </slots>
   </customwidget>
   <customwidget>
    <class>QDMListViewNodeMenu</class>
    <extends>QListView</extends>
-   <header>qdmlistviewnodemenu.h</header>
+   <header>nodesys/qdmlistviewnodemenu.h</header>
    <slots>
     <signal>entryClicked(QString)</signal>
    </slots>
@@ -125,7 +168,34 @@
   <customwidget>
    <class>QDMOpenGLViewport</class>
    <extends>QOpenGLWidget</extends>
-   <header>qdmopenglviewport.h</header>
+   <header>viewport/qdmopenglviewport.h</header>
+   <slots>
+    <slot>updateNode(QDMGraphicsNode*,int)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>ZTimeline</class>
+   <extends>QWidget</extends>
+   <header>timeline/ztimeline.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZShapeBar</class>
+   <extends>QWidget</extends>
+   <header>tmpwidgets/ztoolbar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ZToolbar</class>
+   <extends>QWidget</extends>
+   <header>tmpwidgets/ztoolbar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QDMNodeParamEdit</class>
+   <extends>QWidget</extends>
+   <header>nodesys/qdmnodeparamedit.h</header>
+   <container>1</container>
+   <slots>
+    <slot>setCurrentNode(QDMGraphicsNode*)</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -137,12 +207,60 @@
    <slot>addNodeByName(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>171</x>
-     <y>467</y>
+     <x>417</x>
+     <y>979</y>
     </hint>
     <hint type="destinationlabel">
-     <x>160</x>
-     <y>257</y>
+     <x>800</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
+   <receiver>viewport</receiver>
+   <slot>updateNode(QDMGraphicsNode*,int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>684</x>
+     <y>556</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>50</x>
+     <y>625</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>updateButton</sender>
+   <signal>clicked()</signal>
+   <receiver>nodeView</receiver>
+   <slot>forceUpdate()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1135</x>
+     <y>724</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1156</x>
+     <y>667</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
+   <receiver>widget</receiver>
+   <slot>setCurrentNode(QDMGraphicsNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1657</x>
+     <y>665</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1695</x>
+     <y>855</y>
     </hint>
    </hints>
   </connection>

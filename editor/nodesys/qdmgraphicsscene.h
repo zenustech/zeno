@@ -14,6 +14,8 @@ ZENO_NAMESPACE_BEGIN
 
 class QDMGraphicsScene : public QGraphicsScene
 {
+    Q_OBJECT
+
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
@@ -28,15 +30,20 @@ public:
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
+    QPointF getCursorPos() const;
+
     void socketClicked(QDMGraphicsSocket *socket);
-    // TODO: duplicatePressed as well...
+    // TODO: duplicatePressed as well... (Ctrl-D)
     void deletePressed();
     void blankClicked();
     void cursorMoved();
-    QPointF getCursorPos() const;
 
 public slots:
     void addNodeByName(QString name);
+    void forceUpdate();
+
+signals:
+    void nodeUpdated(QDMGraphicsNode *node, int type);
 };
 
 ZENO_NAMESPACE_END

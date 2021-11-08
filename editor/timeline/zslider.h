@@ -3,15 +3,6 @@
 
 #include <QtWidgets>
 
-class _QSlider : public QSlider
-{
-public:
-    _QSlider(QWidget* parent = nullptr);
-
-protected:
-    void paintEvent(QPaintEvent* e);
-};
-
 class ZSlider : public QWidget
 {
     Q_OBJECT

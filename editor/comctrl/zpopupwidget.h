@@ -5,24 +5,24 @@
 
 class ZPopupWidget : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	ZPopupWidget(QWidget* parent = nullptr);
-	~ZPopupWidget();
+    ZPopupWidget(QWidget* parent = nullptr);
+    ~ZPopupWidget();
 
-	void setContentWidget(QWidget* contentWidget);
-	void exec(int top, int left, int width, int height);
+    void setContentWidget(QWidget* contentWidget);
+    void exec(int top, int left, int width, int height);
 
 protected:
-	void hideEvent(QHideEvent* event) override;
-	void closeEvent(QCloseEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 signals:
-	void aboutToHide();
+    void aboutToHide();
 
 private:
-	QWidget* m_pContentWidget;
-	QVBoxLayout* m_layout;
+    QWidget* m_pContentWidget;
+    QVBoxLayout* m_layout;
 };
 
 #endif

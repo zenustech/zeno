@@ -1,14 +1,16 @@
 #include "qdmlistviewnodemenu.h"
 #include <zeno/dop/Descriptor.h>
+#include <QStandardItemModel>
+#include <QStandardItem>
 
 ZENO_NAMESPACE_BEGIN
 
 QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
     : QListView(parent)
-    , model(new QStandardItemModel(this))
 {
+    auto model = new QStandardItemModel(this);
     for (auto const &[k, d]: dop::descriptor_table()) {
-        auto item = new QStandardItem();
+        auto item = new QStandardItem;
         item->setText(QString::fromStdString(k));
         item->setEditable(false);
         items.emplace_back(item);
@@ -17,10 +19,10 @@ QDMListViewNodeMenu::QDMListViewNodeMenu(QWidget *parent)
 
     connect(this, &QListView::clicked, [=, this] (QModelIndex index) {
         auto item = model->item(index.row());
-        entryClicked(item->text());
+        emit entryClicked(item->text());
     });
 
-    setModel(model.get());
+    setModel(model);
 }
 
 QDMListViewNodeMenu::~QDMListViewNodeMenu() = default;

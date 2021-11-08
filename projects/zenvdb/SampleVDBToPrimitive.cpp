@@ -60,7 +60,10 @@ struct SampleVDBToPrimitive : INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto grid = get_input<VDBGrid>("vdbGrid");
     auto attr = get_input<StringObject>("primAttr")->get();
-    auto &pos = prim->attr<vec3f>("pos");
+    auto sampleby = get_input<StringObject>("sampleBy")->get();
+    auto &pos = prim->attr<vec3f>(sampleby);
+    auto type = std::get<std::string>(get_param("SampleType"));
+
 
     if (dynamic_cast<VDBFloatGrid *>(grid.get()))
         prim->add_attr<float>(attr);
@@ -69,17 +72,31 @@ struct SampleVDBToPrimitive : INode {
     else
         printf("unknown vdb grid type\n");
 
+    if(type == "Periodic")
+    {
+      //TODO: if the sample VDB is considered periodic, 
+      //fill the boundary values
+      //warp the sample coordinates
+    }
+
     std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
                prim->attr(attr));
+
+
+    if(type == "Periodic")
+    {
+      //TODO: if the sample VDB is considered periodic, 
+      //set back boundary values to be zero
+    }
 
     set_output("prim", std::move(prim));
   }
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", {"string", "primAttr", "sdf"}},
+                                     {"prim", "vdbGrid", {"string", "sampleBy","pos"}, {"string", "primAttr", "sdf"}},
                                      {"prim"},
-                                     {},
+                                     {{"enum Clamp Periodic", "SampleType", "Clamp"}},
                                      {"openvdb"},
                                  });
 

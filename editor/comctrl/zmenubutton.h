@@ -7,27 +7,23 @@
 
 class ZMenuButton : public ZToolButton
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	ZMenuButton(ButtonOption option, const QIcon& icon = QIcon(), const QSize& iconSize = QSize(), const QString& text = QString(), QWidget* parent = nullptr);
-	~ZMenuButton();
-	void setCreateContentCallback(std::function<QWidget* ()> func);
+    ZMenuButton(ButtonOption option, const QIcon& icon = QIcon(), const QSize& iconSize = QSize(), const QString& text = QString(), QWidget* parent = nullptr);
+    ~ZMenuButton();
 
 signals:
-	void trigger();
-	void popup();
-	void popout();
+    void trigger();
+    void popup();
+    void popout();
 
 protected slots:
-	virtual void popupChildWidget();
+    virtual void popupChildWidget();
 
 protected:
-	virtual bool event(QEvent* e);
-	void initStyleOption(ZStyleOptionToolButton* option) const;
-	void paintEvent(QPaintEvent* event) override;
-
-protected:
-	std::function<QWidget* ()> func_createContentWid;
+    virtual bool event(QEvent* e);
+    void initStyleOption(ZStyleOptionToolButton* option) const;
+    void paintEvent(QPaintEvent* event) override;
 };
 
 #endif

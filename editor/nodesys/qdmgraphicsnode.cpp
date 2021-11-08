@@ -4,6 +4,7 @@
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/assert.h>
+#include <QLineEdit>
 #include <algorithm>
 
 ZENO_NAMESPACE_BEGIN
@@ -19,6 +20,11 @@ QDMGraphicsNode::QDMGraphicsNode()
 }
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
+
+dop::Node *QDMGraphicsNode::getDopNode() const
+{
+    return dopNode.get();
+}
 
 float QDMGraphicsNode::getHeight() const
 {

@@ -23,7 +23,7 @@ public:
     ZTextureBar(QWidget* parent = nullptr);
 
 protected:
-	void paintEvent(QPaintEvent* e);
+    void paintEvent(QPaintEvent* e);
 };
 
 class ZToolbar : public QWidget

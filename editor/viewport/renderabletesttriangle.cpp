@@ -1,15 +1,15 @@
-#include "renderable.h"
+#include "renderabletesttriangle.h"
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <zeno/math/vec.h>
-#include <zeno/types/Mesh.h>
 
 ZENO_NAMESPACE_BEGIN
 
 namespace {
 
-class RenderableMesh final : public Renderable
+class RenderableTestTriangle final : public Renderable
 {
+
     static std::unique_ptr<QOpenGLShaderProgram> makeShaderProgram() {
         auto program = std::make_unique<QOpenGLShaderProgram>();
         program->addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
@@ -29,12 +29,9 @@ void main() {
     }
 
 public:
-    virtual ~RenderableMesh() = default;
+    virtual ~RenderableTestTriangle() = default;
 
-    std::shared_ptr<types::Mesh> mesh;
-
-    RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
-        : mesh(mesh)
+    RenderableTestTriangle()
     {
     }
 
@@ -43,10 +40,10 @@ public:
         static auto program = makeShaderProgram();
         program->bind();
 
-        std::vector<math::vec3f> vertices = {
-            { 0.0f,  0.707f, 0.0f},
-            {-0.5f, -0.5f, 0.0f},
-            { 0.5f, -0.5f, 0.0f},
+        static const std::vector<math::vec3f> vertices = {
+            { 0.0f,  0.707f, 0.1f},
+            {-0.5f, -0.5f, 0.1f},
+            { 0.5f, -0.5f, 0.1f},
         };
 
         QOpenGLBuffer attrPos;
@@ -68,9 +65,9 @@ public:
 
 }
 
-std::unique_ptr<Renderable> makeRenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
+std::unique_ptr<Renderable> makeRenderableTestTriangle()
 {
-    return std::make_unique<RenderableMesh>(mesh);
+    return std::make_unique<RenderableTestTriangle>();
 }
 
 ZENO_NAMESPACE_END

@@ -31,7 +31,7 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
     std::map<Node *, OrderInfo> order;
     std::vector<Node *> nodes;
 
-    auto touch = [&] (auto touch, Node *node) -> OrderInfo & {
+    auto dfs = [&] (auto &&dfs, Node *node) -> OrderInfo & {
         OrderInfo ord{node->xpos, 0};
         if (order.contains(node)) {
             return order.at(node);
@@ -40,7 +40,7 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
             nodes.push_back(node);
             for (auto const &input: node->inputs) {
                 std::visit(ztd::match([&] (Input_Link const &input) {
-                    auto &depord = touch(touch, input.node);
+                    auto &depord = dfs(dfs, input.node);
                     if (depord.new_order >= ord.new_order) {
                         depord.new_order = ord.new_order;
                         depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
@@ -53,7 +53,7 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
         }
     };
 
-    touch(touch, root);
+    dfs(dfs, root);
 
     std::sort(nodes.begin(), nodes.end(), [&] (Node *p, Node *q) {
         return order.at(p) < order.at(q);

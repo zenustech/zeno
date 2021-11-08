@@ -54,6 +54,15 @@ inline constexpr bool static_for(Lambda const &f) {
     return false;
 }
 
+template <class Variant, size_t I = 0>
+inline Variant variant_from_index(size_t index) {
+    if constexpr (I >= std::variant_size_v<Variant>)
+        throw std::bad_variant_access{};
+    else
+        return index == 0 ? Variant{std::in_place_index<I>}
+            : variant_from_index<Variant, I + 1>(index - 1);
+}
+
 }
 }
 ZENO_NAMESPACE_END

@@ -18,6 +18,7 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
 {
     switch (pe)
     {
+        /*
         case PE_FrameTabWidget:
         {
             if (const QStyleOptionTabWidgetFrame* tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option))
@@ -25,16 +26,10 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
                 QStyleOptionTabWidgetFrame frameOpt = *tab;
                 frameOpt.rect = w->rect();
                 painter->fillRect(frameOpt.rect, QColor(58, 58, 58));
-                //p->fillRect(frameOpt.rect, QColor(255, 0, 0));
-                QRect contentsRect = subElementRect(SE_TabWidgetTabContents, &frameOpt, w);
-                QRegion reg = option->rect;
-                //reg -= contentsRect;
-                //p->setClipRegion(reg);
-                //p->fillRect(contentsRect, QColor(69, 69, 69));// QColor(58, 58, 58));
-                //p->setClipRect(contentsRect);
                 return;
             }
         }
+        */
         case PE_FrameMenu:
         {
             painter->fillRect(option->rect, QColor(51, 51, 51));
@@ -48,7 +43,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
 void ZenoStyle::drawItemText(QPainter* painter, const QRect& rect, int flags, const QPalette& pal, bool enabled,
     const QString& text, QPalette::ColorRole textRole) const
 {
-    //painter->setFont(QFont("Calibre", 9));
     return base::drawItemText(painter, rect, flags, pal, enabled, text, textRole);
 }
 
@@ -89,8 +83,10 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
         }
         return;
     }
+    /*
     else if (CE_TabBarTabShape == element)
     {
+        //base QProxyStyle
         if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(opt))
         {
             QRect rect(opt->rect);
@@ -111,7 +107,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
 
             if (isDisabled)
             {
-
+                //todo
             }
             else if (selected)
             {
@@ -223,10 +219,10 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
         if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(opt)) {
             QStyleOptionTab _tab(*tab);
             _tab.palette.setBrush(QPalette::WindowText, QColor(188,188,188));
-            p->setFont(QFont("Microsoft YaHei", 9));
             return base::drawControl(element, &_tab, p, w);
         }
     }
+    */
     else if (CE_MenuItem == element)
     {
         return drawMenuItem(element, opt, p, w);
@@ -344,6 +340,7 @@ void ZenoStyle::drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* option
 {
     QColor clrBorder, clrBackground, clrForeground;
 
+    //todo
     //clrBorder = DrawerFunc::getColorFromWidget(widget, option->state, "border");
     //clrBackground = DrawerFunc::getColorFromWidget(widget, option->state, "background");
     //clrForeground = DrawerFunc::getColorFromWidget(widget, option->state, "foreground");
@@ -355,16 +352,17 @@ void ZenoStyle::drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* option
 
 void ZenoStyle::drawDropdownArrow(QPainter* painter, QRect downArrowRect) const
 {
-
+    //todo
 }
 
 void ZenoStyle::drawNewItemMenu(const QStyleOptionMenuItem* menuitem, QPainter* p, const QWidget* w) const
 {
-
+    //todo
 }
 
 void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
+    //base QProxyStyle::drawControl
     if (const QStyleOptionMenuItem* menuitem = qstyleoption_cast<const QStyleOptionMenuItem*>(option)) {
         // windows always has a check column, regardless whether we have an icon or not
         const qreal factor = 1;// QWindowsXPStylePrivate::nativeMetricScaleFactor(widget);
@@ -460,9 +458,11 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
         else
             painter->setPen(textColor);
 
-        int xm = /*windowsItemFrame*/2 + checkcol + /*windowsItemHMargin*/3 + (gutterWidth - menuitem->rect.x()) - 1;
+        const int windowsItemFrame = 2, windowsItemHMargin = 3, windowsItemVMargin = 4, windowsRightBorder = 15, windowsArrowHMargin = 6;
+
+        int xm = windowsItemFrame + checkcol + windowsItemHMargin + (gutterWidth - menuitem->rect.x()) - 1;
         int xpos = menuitem->rect.x() + xm;
-        QRect textRect(xpos, y + /*windowsItemVMargin*/4, w - xm - /*windowsRightBorder*/15 - tab + 1, h - 2 * 4/*windowsItemVMargin*/);
+        QRect textRect(xpos, y + windowsItemVMargin, w - xm - windowsRightBorder - tab + 1, h - 2 * windowsItemVMargin);
         QRect vTextRect = visualRect(option->direction, menuitem->rect, textRect);
         QString s = menuitem->text;
         if (!s.isEmpty()) {    // draw text
@@ -486,10 +486,10 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
             painter->restore();
         }
         if (menuitem->menuItemType == QStyleOptionMenuItem::SubMenu) {// draw sub menu arrow
-            int dim = (h - 2 * /*windowsItemFrame*/2) / 2;
+            int dim = (h - 2 * windowsItemFrame) / 2;
             PrimitiveElement arrow;
             arrow = (option->direction == Qt::RightToLeft) ? PE_IndicatorArrowLeft : PE_IndicatorArrowRight;
-            xpos = x + w - 6/*windowsArrowHMargin*/ - /*windowsItemFrame*/2 - dim;
+            xpos = x + w - windowsArrowHMargin - windowsItemFrame - dim;
             QRect  vSubMenuRect = visualRect(option->direction, menuitem->rect, QRect(xpos, y + h / 2 - dim / 2, dim, dim));
             QStyleOptionMenuItem newMI = *menuitem;
             newMI.rect = vSubMenuRect;
@@ -512,12 +512,7 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
         QRect rect = option->rect.adjusted(0, 0, -1, -1);
         //todo: round corner
         QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
-
         painter->fillRect(rect, bgBrush);
-
-        //seems no need to draw a border.
-        //painter->setPen(option->borderColor);   //todo: borderColor colorRole£¿
-        //painter->drawRect(rect);
     }
 
     //draw icon 

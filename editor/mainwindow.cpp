@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , nodeScene(new QDMGraphicsScene)
 {
     ui->setupUi(this);
-    ui->nodeView->setScene(nodeScene.get());
+    ui->nodeView->switchScene(nodeScene.get());
 }
 
 MainWindow::~MainWindow() = default;

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <limits>
 
+#include <matrix_helper.hpp>
+
 /**
  * @class <DiricletDampingModel>
  * @brief A force model base class for inheritance, which defines the common interfaces needed for defining all the force model derived classes 

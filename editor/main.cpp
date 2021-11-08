@@ -28,6 +28,7 @@ int zenoMain(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     //a.setStyle("Fusion");
+    a.setStyle(new ZenoStyle);
 
     QPalette palette;
     palette.setColor(QPalette::Window, QColor(53, 53, 53));

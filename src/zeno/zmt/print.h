@@ -21,13 +21,13 @@ inline void eprint(std::string_view fmt, Args &&...args) {
 
 template <class ...Args>
 inline void println(std::string_view fmt, Args &&...args) {
-    print(std::forward<Args>(args)...);
+    print(std::move(fmt), std::forward<Args>(args)...);
     std::cout << std::endl;
 }
 
 template <class ...Args>
 inline void eprintln(std::string_view fmt, Args &&...args) {
-    eprint(std::forward<Args>(args)...);
+    eprint(std::move(fmt), std::forward<Args>(args)...);
     std::cerr << std::endl;
 }
 
