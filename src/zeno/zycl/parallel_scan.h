@@ -63,7 +63,7 @@ auto _M_make_scanner(handler &cgh) {
 }
 
 template <size_t blksize, class T>
-void parallel_scan(vector<T> &buf, size_t bufsize) {
+void _M_parallel_scan(vector<T> &buf, size_t bufsize) {
     if (!bufsize)
         return;
 
@@ -88,7 +88,7 @@ void parallel_scan(vector<T> &buf, size_t bufsize) {
     });
 
     if (bufsize > blksize) {
-        parallel_scan<blksize, T>(part, partsize);
+        _M_parallel_scan<blksize, T>(part, partsize);
 
         default_queue().submit([&] (handler &cgh) {
             auto axr_buf = make_access<access::mode::discard_read_write>(cgh, buf, range<1>(bufsize));
@@ -102,6 +102,34 @@ void parallel_scan(vector<T> &buf, size_t bufsize) {
             });
         });
     }
+}
+
+
+template <size_t blksize, class T>
+vector<T> parallel_scan(vector<T> &buf, size_t bufsize) {
+    vector<T> sum(1);
+
+    default_queue().submit([&] (handler &cgh) {
+        auto axr_buf = make_access<access::mode::read>(cgh, buf);
+        auto axr_sum = make_access<access::mode::discard_write>(cgh, buf);
+
+        cgh.single_task([=] {
+            axr_sum[0] = axr_buf[bufsize - 1];
+        });
+    });
+
+    _M_parallel_scan<blksize, T>(buf, bufsize);
+
+    default_queue().submit([&] (handler &cgh) {
+        auto axr_buf = make_access<access::mode::read>(cgh, buf);
+        auto axr_sum = make_access<access::mode::discard_read_write>(cgh, buf);
+
+        cgh.single_task([=] {
+            axr_sum[0] += axr_buf[bufsize - 1];
+        });
+    });
+
+    return sum;
 }
 
 
