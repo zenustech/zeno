@@ -18,7 +18,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
 {
     switch (pe)
     {
-        /*
         case PE_FrameTabWidget:
         {
             if (const QStyleOptionTabWidgetFrame* tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option))
@@ -29,7 +28,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
                 return;
             }
         }
-        */
         case PE_FrameMenu:
         {
             painter->fillRect(option->rect, QColor(51, 51, 51));
@@ -83,7 +81,6 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
         }
         return;
     }
-    /*
     else if (CE_TabBarTabShape == element)
     {
         //base QProxyStyle
@@ -222,7 +219,6 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
             return base::drawControl(element, &_tab, p, w);
         }
     }
-    */
     else if (CE_MenuItem == element)
     {
         return drawMenuItem(element, opt, p, w);
