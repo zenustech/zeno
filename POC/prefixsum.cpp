@@ -42,11 +42,53 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
     };
 }
 
+template <class T>
+void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t blksize) {
+    sycl::buffer<T, 1> part((bufsize + blksize - 1) / blksize);
+
+    q.submit([&] (sycl::handler &cgh) {
+        auto axr_buf = buf.get_access<sycl::access::mode::discard_read_write>(cgh);
+        auto axr_part = part.get_access<sycl::access::mode::discard_write>(cgh);
+        auto scanner = make_scanner<float>(cgh, blksize);
+
+        cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
+            size_t id = it.get_global_linear_id();
+            size_t gid = it.get_group_linear_id();
+            T val{};
+            [[likely]] if (id < bufsize)
+                val = axr_buf[id];
+            scanner(it, val, axr_part[gid]);
+            [[likely]] if (id < bufsize)
+                axr_buf[id] = val;
+        });
+    });
+
+    if (bufsize > blksize) {
+        prefix_scan<T>(q, part, bufsize, blksize);
+
+        q.submit([&] (sycl::handler &cgh) {
+            auto axr_buf = buf.get_access<sycl::access::mode::read_write>(cgh);
+            auto axr_part = part.get_access<sycl::access::mode::read>(cgh);
+
+            cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
+                size_t id = it.get_global_linear_id();
+                size_t gid = it.get_group_linear_id();
+                T val{};
+                [[likely]] if (id < bufsize)
+                    val = axr_buf[id];
+                val += axr_part[gid];
+                [[likely]] if (id < bufsize)
+                    axr_buf[id] = val;
+            });
+        });
+    }
+}
+
 int main() {
     sycl::queue q;
 
-    constexpr size_t bufsize = 64;
-    constexpr size_t blksize = 64;
+    constexpr size_t bufsize = 128;
+    constexpr size_t blksize = 16;
 
     sycl::buffer<float, 1> buf(bufsize);
 
@@ -57,16 +99,7 @@ int main() {
         });
     });
 
-    q.submit([&] (sycl::handler &cgh) {
-        auto axr_buf = buf.get_access<sycl::access::mode::discard_read_write>(cgh);
-        auto scanner = make_scanner<float>(cgh, blksize);
-
-        cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
-            size_t id = it.get_global_linear_id();
-            float _;
-            scanner(it, axr_buf[id], _);
-        });
-    });
+    prefix_scan(q, buf, bufsize, blksize);
 
     auto axr_buf = buf.get_access<sycl::access::mode::discard_write>();
     for (size_t i = 0; i < bufsize; i++) {
