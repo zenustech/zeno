@@ -23,7 +23,7 @@ inline namespace ns_parallel_scan {
 
 template <size_t blksize, class T>
 auto _M_make_scanner(handler &cgh) {
-    auto lxr_blk = local_access<T, 1>(cgh, range<1>(blksize));
+    auto lxr_blk = local_access<access::mode::read_write, T>(cgh, range<1>(blksize));
 
     return [=] (nd_item<1> const &it, T &value, T &partial) {
         size_t tid = it.get_local_linear_id();
@@ -91,8 +91,8 @@ void parallel_scan(vector<T> &buf, size_t bufsize) {
         parallel_scan<blksize, T>(part, partsize);
 
         default_queue().submit([&] (handler &cgh) {
-            auto axr_buf = buf.template get_access<access::mode::discard_read_write>(cgh), range<1>(bufsize);
-            auto axr_part = part.template get_access<access::mode::read>(cgh);
+            auto axr_buf = make_access<access::mode::discard_read_write>(cgh, buf, range<1>(bufsize));
+            auto axr_part = make_access<access::mode::read>(cgh, part);
 
             cgh.parallel_for(nd_range<1>(partsize * blksize, blksize), [=] (nd_item<1> it) {
                 size_t id = it.get_global_linear_id();

@@ -291,12 +291,12 @@ struct buffer {
     }
 
     template <access::mode mode>
-    auto get_access() const {
+    auto get_access(auto &&...) const {
         return accessor<mode, buffer, T, N>(*this);
     }
 
     template <access::mode mode>
-    auto get_access(handler &) const {
+    auto get_access(handler &, auto &&...) const {
         return accessor<mode, buffer, T, N>(*this);
     }
 

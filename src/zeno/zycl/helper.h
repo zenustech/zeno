@@ -46,8 +46,8 @@ auto local_access(auto &&cgh, range<N> const &size) {
 #endif
 
 template <access::mode mode>
-auto host_access(auto &&buf) {
-    return make_access<mode>(host_handler{}, buf);
+auto host_access(auto &&buf, auto &&...args) {
+    return make_access<mode>(host_handler{}, buf, std::forward<decltype(args)>(args)...);
 }
 
 }

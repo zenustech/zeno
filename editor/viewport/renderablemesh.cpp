@@ -3,6 +3,7 @@
 #include <QOpenGLBuffer>
 #include <zeno/math/vec.h>
 #include <zeno/types/Mesh.h>
+#include <zeno/types/MeshTriangulate.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -97,6 +98,7 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
+        types::meshToTriangleVerticesCPU(*mesh, vertices);
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override

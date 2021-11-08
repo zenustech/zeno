@@ -7,8 +7,9 @@
 ZENO_NAMESPACE_BEGIN
 namespace types {
 
-void meshToTrianglesCPU(Mesh const &mesh, std::vector<math::vec3f> &vertices);
-void meshToTriangles(Mesh const &mesh, zycl::vector<std::array<math::vec3f, 3>> &tris);
+void meshToTriangleVerticesCPU(Mesh const &mesh, std::vector<math::vec3f> &vertices);
+void meshToTriangleVertices(Mesh const &mesh, zycl::vector<math::vec3f> &tris);
+void meshToTriangleIndices(Mesh const &mesh, zycl::vector<math::vec3i> &tris);
 
 }
 ZENO_NAMESPACE_END

@@ -16,7 +16,7 @@ struct vector : std::vector<T> {
     using std::vector<T>::vector;
 
     template <access::mode mode>
-    auto get_access(auto &&cgh) {
+    auto get_access(auto &&cgh, auto &&...) {
         return functor_accessor([this] (id<1> idx) -> decltype(auto) {
             return (*this)[idx];
         });
@@ -140,11 +140,11 @@ struct vector {
     }
 
     template <access::mode mode>
-    auto get_access(auto &&cgh) const {
+    auto get_access(auto &&cgh, auto &&...args) const {
         if constexpr (std::is_same_v<std::remove_cvref_t<decltype(cgh)>, host_handler>)
-            return _M_buf.template get_access<mode>();
+            return _M_buf.template get_access<mode>(std::forward<decltype(args)>(args)...);
         else
-            return _M_buf.template get_access<mode>(cgh);
+            return _M_buf.template get_access<mode>(cgh, std::forward<decltype(args)>(args)...);
     }
 
     buffer<T, 1> &get_buffer() const {
