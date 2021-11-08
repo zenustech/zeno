@@ -67,13 +67,14 @@ endif()
 option(ZENO_WITH_LEGACY "Build Zeno Legacy Library" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+set(HIPSYCL_TARGETS "omp;cuda:sm_52;cuda:sm_61;cuda:sm_70;cuda:sm_75;cuda:sm_86")
 
 if (BATE)
     set(ZENO_WITH_BACKWARD ON)
     set(ZENO_WITH_LEGACY OFF)
     set(ZENO_WITH_SYCL ON)
-    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-    set(HIPSYCL_TARGETS "omp;cuda:sm_75")
+    set(HIPSYCL_TARGETS "omp")
     set(ZENO_EXECUTABLE editor)
 endif()
 if (ZHXX)
