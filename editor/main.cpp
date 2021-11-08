@@ -3,7 +3,6 @@
 #include <kddockwidgets/DockWidget.h>
 #include <kddockwidgets/MainWindow.h>
 #include <kddockwidgets/Config.h>
-#include <QWebEngineView>
 #include "tmpwidgets/zmainwindow.h"
 #include "style/zenostyle.h"
 
@@ -55,6 +54,8 @@ ZENO_NAMESPACE_END
 
 int main(int argc, char *argv[]) {
 #ifdef TEST_WEBENGINE
+    #include <QWebEngineView>
+
     QApplication app(argc, argv);
     QWebEngineView view;
     view.load(QUrl("https://zenustech.com/"));

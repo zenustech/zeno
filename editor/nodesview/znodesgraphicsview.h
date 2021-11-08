@@ -2,8 +2,8 @@
 #define __ZNODES_GRAPHICSVIEW_H__
 
 #include <QtWidgets>
-#include "../qdmgraphicsview.h"
-#include "../qdmgraphicsscene.h"
+#include "../nodesys/qdmgraphicsview.h"
+#include "../nodesys/qdmgraphicsscene.h"
 
 class ZNodesGraphicsView : public QWidget
 {

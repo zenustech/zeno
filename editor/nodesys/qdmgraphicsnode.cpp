@@ -123,14 +123,14 @@ void QDMGraphicsNode::unlinkAll()
 size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
 {
     auto it = find(begin(socketIns), end(socketIns), ztd::stale_ptr(socket));
-    ZENO_ZTD_ASSERT(it != end(socketIns));
+    //ZENO_ZTD_ASSERT(it != end(socketIns));
     return it - begin(socketIns);
 }
 
 size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 {
     auto it = find(begin(socketOuts), end(socketOuts), ztd::stale_ptr(socket));
-    ZENO_ZTD_ASSERT(it != end(socketOuts));
+    //ZENO_ZTD_ASSERT(it != end(socketOuts));
     return it - begin(socketOuts);
 }
 
