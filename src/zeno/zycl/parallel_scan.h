@@ -6,23 +6,32 @@
 
 
 #ifndef ZENO_WITH_SYCL
+ZENO_NAMESPACE_BEGIN
+namespace zycl {
+inline namespace ns_parallel_scan {
+
+#error "TODO: implement parallel_scan for no-sycl"
+
+}
+}
+ZENO_NAMESPACE_END
+#else
 
 ZENO_NAMESPACE_BEGIN
 namespace zycl {
 inline namespace ns_parallel_scan {
 
 template <size_t blksize, class T>
-auto make_scanner(sycl::handler &cgh) {
-    sycl::accessor<T, 1, sycl::access::mode::read_write, sycl::access::target::local>
-        lxr_blk(sycl::range<1>(blksize), cgh);
+auto _M_make_scanner(handler &cgh) {
+    auto lxr_blk = local_access<T, 1>(cgh, range<1>(blksize));
 
-    return [=] (sycl::nd_item<1> const &it, T &value, T &partial) {
+    return [=] (nd_item<1> const &it, T &value, T &partial) {
         size_t tid = it.get_local_linear_id();
 
         lxr_blk[tid] = value;
 
         for (size_t offset = 1, stride = blksize >> 1; stride > 0; offset <<= 1, stride >>= 1) {
-            it.barrier(sycl::access::fence_space::local_space);
+            it.barrier(access::fence_space::local_space);
             if (tid < stride) {
                 size_t si = offset * (2 * tid + 1) - 1;
                 size_t di = si + offset;
@@ -37,7 +46,7 @@ auto make_scanner(sycl::handler &cgh) {
         }
 
         for (size_t offset = blksize >> 1, stride = 1; stride < blksize; offset >>= 1, stride <<= 1) {
-            it.barrier(sycl::access::fence_space::local_space);
+            it.barrier(access::fence_space::local_space);
             if (tid < stride) {
                 size_t si = offset * (2 * tid + 1) - 1;
                 size_t di = si + offset;
@@ -47,26 +56,26 @@ auto make_scanner(sycl::handler &cgh) {
             }
         }
 
-        it.barrier(sycl::access::fence_space::local_space);
+        it.barrier(access::fence_space::local_space);
 
         value = lxr_blk[tid];
     };
 }
 
 template <size_t blksize, class T>
-void parallel_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize) {
+void parallel_scan(vector<T> &buf, size_t bufsize) {
     if (!bufsize)
         return;
 
     size_t partsize = (bufsize + blksize - 1) / blksize;
-    sycl::buffer<T, 1> part(partsize);
+    vector<T> part(partsize);
 
-    q.submit([&] (sycl::handler &cgh) {
-        auto axr_buf = buf.template get_access<sycl::access::mode::discard_read_write>(cgh, range<1>(bufsize));
-        auto axr_part = part.template get_access<sycl::access::mode::discard_write>(cgh);
-        auto scanner = make_scanner<blksize, float>(cgh, blksize);
+    default_queue().submit([&] (handler &cgh) {
+        auto axr_buf = make_access<access::mode::discard_read_write>(cgh, buf, range<1>(bufsize));
+        auto axr_part = make_access<access::mode::discard_write>(cgh, part);
+        auto scanner = _M_make_scanner<blksize, T>(cgh);
 
-        cgh.parallel_for(sycl::nd_range<1>(partsize * blksize, blksize), [=] (sycl::nd_item<1> it) {
+        cgh.parallel_for(nd_range<1>(partsize * blksize, blksize), [=] (nd_item<1> it) {
             size_t id = it.get_global_linear_id();
             size_t gid = it.get_group_linear_id();
             T val = T{};
@@ -79,13 +88,13 @@ void parallel_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize) {
     });
 
     if (bufsize > blksize) {
-        parallel_scan<blksize, T>(q, part, partsize);
+        parallel_scan<blksize, T>(part, partsize);
 
-        q.submit([&] (sycl::handler &cgh) {
-            auto axr_buf = buf.template get_access<sycl::access::mode::discard_read_write>(cgh), range<1>(bufsize);
-            auto axr_part = part.template get_access<sycl::access::mode::read>(cgh);
+        default_queue().submit([&] (handler &cgh) {
+            auto axr_buf = buf.template get_access<access::mode::discard_read_write>(cgh), range<1>(bufsize);
+            auto axr_part = part.template get_access<access::mode::read>(cgh);
 
-            cgh.parallel_for(sycl::nd_range<1>(partsize * blksize, blksize), [=] (sycl::nd_item<1> it) {
+            cgh.parallel_for(nd_range<1>(partsize * blksize, blksize), [=] (nd_item<1> it) {
                 size_t id = it.get_global_linear_id();
                 size_t gid = it.get_group_linear_id();
                 [[likely]] if (id < bufsize)
@@ -99,3 +108,4 @@ void parallel_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize) {
 }
 }
 ZENO_NAMESPACE_END
+#endif

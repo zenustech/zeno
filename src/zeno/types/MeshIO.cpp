@@ -1,4 +1,4 @@
-#include <zeno/types/OBJMeshIO.h>
+#include <zeno/types/MeshIO.h>
 #include <zeno/types/Mesh.h>
 #include <string_view>
 #include <sstream>

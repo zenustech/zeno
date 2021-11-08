@@ -97,24 +97,6 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
-        decltype(auto) vert = mesh->vert.to_vector();
-        decltype(auto) loop = mesh->loop.to_vector();
-        decltype(auto) poly = mesh->poly.to_vector();
-
-        vertices.clear();
-        vertices.reserve(poly.size() * 3);
-        for (auto const &[p_start, p_num]: poly) {
-            if (p_num <= 2) continue;
-            int first = loop[p_start];
-            int last = loop[p_start + 1];
-            for (int l = p_start + 2; l < p_start + p_num; l++) {
-                int now = loop[l];
-                vertices.push_back(vert[first]);
-                vertices.push_back(vert[last]);
-                vertices.push_back(vert[now]);
-                last = now;
-            }
-        }
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override

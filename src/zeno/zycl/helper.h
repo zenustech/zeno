@@ -34,8 +34,8 @@ struct functor_accessor {
 
 
 template <access::mode mode>
-auto make_access(auto &&cgh, auto &&buf) {
-    return buf.template get_access<mode>(std::forward<decltype(cgh)>(cgh));
+auto make_access(auto &&cgh, auto &&buf, auto &&...args) {
+    return buf.template get_access<mode>(std::forward<decltype(cgh)>(cgh), std::forward<decltype(args)>(args)...);
 }
 
 #ifdef ZENO_WITH_SYCL

@@ -1,6 +1,6 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
-#include <zeno/types/OBJMeshIO.h>
+#include <zeno/types/MeshIO.h>
 #include <fstream>
 
 

@@ -42,7 +42,12 @@ namespace zycl {
 inline namespace ns_vector {
 
 inline constexpr size_t _M_nozerosize(size_t size) {
+#ifdef __HIPSYCL__
+    return size;
+#else
+    // DPC++ doesn't allow zero-sized buffer...
     return std::max((size_t)1, size);
+#endif
 }
 
 template <class Vector, class Parent>
