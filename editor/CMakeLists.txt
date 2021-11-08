@@ -3,8 +3,16 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets WebEngineWidgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets WebEngineWidgets REQUIRED)
+if (WIN32)
+    set(WEB_ENGINE "")
+    set(WEB_ENGINE_LINK "")
+else()
+    set(WEB_ENGINE WebEngineWidgets)
+    set(WEB_ENGINE_LINK Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
+endif()
+
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets ${WEB_ENGINE} REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets ${WEB_ENGINE} REQUIRED)
 
 message("-- Found Qt${QT_VERSION_MAJOR} version: ${Qt${QT_VERSION_MAJOR}_VERSION}")
 
@@ -21,7 +29,7 @@ if (ZENO_WITH_BACKWARD)
     add_backward(zeno)
 endif()
 
-target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::WebEngineWidgets kddockwidgets)
+target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${WEB_ENGINE_LINK} kddockwidgets)
 
 if (APPLE)
     set_target_properties(zeno PROPERTIES

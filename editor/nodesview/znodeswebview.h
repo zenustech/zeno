@@ -1,17 +1,32 @@
 #ifndef __ZNODES_WEBVIEW_H__
 #define __ZNODES_WEBVIEW_H__
 
-#include <QWebEngineView>
+#include <QtWidgets>
 
-class ZNodesWebEngineView : public QWebEngineView
-{
-    Q_OBJECT
-public:
-    ZNodesWebEngineView(QWidget* parent = nullptr);
+#ifdef Q_OS_LINUX
 
-public slots:
-    void reload();
-};
+    #include <QWebEngineView>
+    class ZNodesWebEngineView : public QWebEngineView
+    {
+        Q_OBJECT
+    public:
+        ZNodesWebEngineView(QWidget* parent = nullptr);
 
+    public slots:
+        void reload();
+    };
+
+#else
+
+    class ZNodesWebEngineView : public QWidget
+    {
+        Q_OBJECT
+    public:
+        ZNodesWebEngineView(QWidget* parent = nullptr);
+    public slots:
+        void reload();
+    };
+
+#endif
 
 #endif
