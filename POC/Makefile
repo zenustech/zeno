@@ -1,4 +1,4 @@
-x=memleak
+x=cowptr
 
 x: $x.exe Makefile
 	valgrind --tool=memcheck --leak-check=full ./$<
