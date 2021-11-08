@@ -10,7 +10,7 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
 
         lxr_tmp[tid] = value;
 
-        for (size_t offset = 1, stride = blksize >> 1; stride > 1; offset <<= 1, stride >>= 1) {
+        for (size_t offset = 1, stride = blksize >> 1; stride > 0; offset <<= 1, stride >>= 1) {
             it.barrier(sycl::access::fence_space::local_space);
             if (tid < stride) {
                 size_t si = offset * (2 * tid + 1) - 1;
@@ -87,15 +87,15 @@ void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t
 int main() {
     sycl::queue q;
 
-    constexpr size_t bufsize = 8;
-    constexpr size_t blksize = 4;
+    constexpr size_t bufsize = 126;
+    constexpr size_t blksize = 16;
 
     sycl::buffer<float, 1> buf(bufsize);
 
     q.submit([&] (sycl::handler &cgh) {
         auto axr_buf = buf.get_access<sycl::access::mode::discard_write>(cgh);
         cgh.parallel_for(sycl::range<1>(bufsize), [=] (sycl::item<1> it) {
-            axr_buf[it] = 1;
+            axr_buf[it] = it[0] + 1;
         });
     });
 
