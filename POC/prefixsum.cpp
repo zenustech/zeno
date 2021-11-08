@@ -44,7 +44,8 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
 
 template <class T>
 void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t blksize) {
-    sycl::buffer<T, 1> part((bufsize + blksize - 1) / blksize);
+    size_t partsize = (bufsize + blksize - 1) / blksize;
+    sycl::buffer<T, 1> part(partsize);
 
     q.submit([&] (sycl::handler &cgh) {
         auto axr_buf = buf.get_access<sycl::access::mode::discard_read_write>(cgh);
@@ -64,7 +65,7 @@ void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t
     });
 
     if (bufsize > blksize) {
-        prefix_scan<T>(q, part, bufsize, blksize);
+        prefix_scan<T>(q, part, partsize, blksize);
 
         q.submit([&] (sycl::handler &cgh) {
             auto axr_buf = buf.get_access<sycl::access::mode::read_write>(cgh);
@@ -73,12 +74,8 @@ void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t
             cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
                 size_t id = it.get_global_linear_id();
                 size_t gid = it.get_group_linear_id();
-                T val{};
                 [[likely]] if (id < bufsize)
-                    val = axr_buf[id];
-                val += axr_part[gid];
-                [[likely]] if (id < bufsize)
-                    axr_buf[id] = val;
+                    axr_buf[id] += axr_part[gid];
             });
         });
     }
