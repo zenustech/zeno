@@ -1,12 +1,53 @@
 #include <CL/sycl.hpp>
 
+template <class T>
+auto make_scanner(sycl::handler &cgh, size_t blksize) {
+    sycl::accessor<T, 1, sycl::access::mode::read_write, sycl::access::target::local>
+        lxr_tmp(sycl::range<1>(blksize), cgh);
+
+    return [=] (sycl::nd_item<1> const &it, T const &inval) -> T {
+        size_t tid = it.get_local_linear_id();
+
+        lxr_tmp[tid] = inval;
+
+        for (size_t offset = 1, stride = blksize >> 1; stride > 1; offset <<= 1, stride >>= 1) {
+            it.barrier(sycl::access::fence_space::local_space);
+            if (tid < stride) {
+                size_t si = offset * (2 * tid + 1) - 1;
+                size_t di = si + offset;
+                lxr_tmp[di] += lxr_tmp[si];
+            }
+        }
+
+        if (tid == 0) {
+            size_t di = blksize - 1;
+            lxr_tmp[di] = 0;
+        }
+
+        for (size_t offset = blksize >> 1, stride = 1; stride < blksize; offset >>= 1, stride <<= 1) {
+            it.barrier(sycl::access::fence_space::local_space);
+            if (tid < stride) {
+                size_t si = offset * (2 * tid + 1) - 1;
+                size_t di = si + offset;
+                auto tmp = lxr_tmp[si];
+                lxr_tmp[si] = lxr_tmp[di];
+                lxr_tmp[di] += tmp;
+            }
+        }
+
+        it.barrier(sycl::access::fence_space::local_space);
+
+        return lxr_tmp[tid];
+    };
+}
+
 int main() {
     sycl::queue q;
-    sycl::buffer<float, 1> buf(64);
-    sycl::buffer<float, 1> out(64);
 
     constexpr size_t bufsize = 64;
     constexpr size_t blksize = 64;
+
+    sycl::buffer<float, 1> buf(bufsize);
 
     q.submit([&] (sycl::handler &cgh) {
         auto axr_buf = buf.get_access<sycl::access::mode::discard_write>(cgh);
@@ -16,58 +57,12 @@ int main() {
     });
 
     q.submit([&] (sycl::handler &cgh) {
-        auto axr_buf = buf.get_access<sycl::access::mode::read>(cgh);
-        auto axr_out = buf.get_access<sycl::access::mode::discard_write>(cgh);
-        sycl::accessor<float, 1, sycl::access::mode::read_write, sycl::access::target::local>
-            lxr_tmp(sycl::range<1>(blksize + (blksize >> 3)), cgh);
+        auto axr_buf = buf.get_access<sycl::access::mode::discard_read_write>(cgh);
+        auto scanner = make_scanner<float>(cgh, blksize);
 
         cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
-            size_t tid = it.get_local_linear_id();
             size_t id = it.get_global_linear_id();
-
-            {
-                size_t di = tid;
-                di += di >> 4;
-                lxr_tmp[di] = axr_buf[id];
-            }
-
-            for (size_t offset = 1, stride = blksize >> 1; stride > 1; offset <<= 1, stride >>= 1) {
-                it.barrier(sycl::access::fence_space::local_space);
-                if (tid < stride) {
-                    size_t si = offset * (2 * tid + 1) - 1;
-                    size_t di = si + offset;
-                    si += si >> 4;
-                    di += di >> 4;
-                    lxr_tmp[di] += lxr_tmp[si];
-                }
-            }
-
-            if (tid == 0) {
-                size_t di = blksize - 1;
-                di += di >> 4;
-                lxr_tmp[di] = 0;
-            }
-
-            for (size_t offset = blksize >> 1, stride = 1; stride < blksize; offset >>= 1, stride <<= 1) {
-                it.barrier(sycl::access::fence_space::local_space);
-                if (tid < stride) {
-                    size_t si = offset * (2 * tid + 1) - 1;
-                    size_t di = si + offset;
-                    si += si >> 4;
-                    di += di >> 4;
-                    auto tmp = lxr_tmp[si];
-                    lxr_tmp[si] = lxr_tmp[di];
-                    lxr_tmp[di] += tmp;
-                }
-            }
-
-            it.barrier(sycl::access::fence_space::local_space);
-
-            {
-                size_t si = tid;
-                si += si >> 4;
-                axr_out[id] = lxr_tmp[si];
-            }
+            axr_buf[id] = scanner(it, axr_buf[id]);
         });
     });
 
