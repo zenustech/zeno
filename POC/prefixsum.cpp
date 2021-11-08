@@ -5,10 +5,10 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
     sycl::accessor<T, 1, sycl::access::mode::read_write, sycl::access::target::local>
         lxr_tmp(sycl::range<1>(blksize), cgh);
 
-    return [=] (sycl::nd_item<1> const &it, T const &inval) -> T {
+    return [=] (sycl::nd_item<1> const &it, T &value, T &partial) {
         size_t tid = it.get_local_linear_id();
 
-        lxr_tmp[tid] = inval;
+        lxr_tmp[tid] = value;
 
         for (size_t offset = 1, stride = blksize >> 1; stride > 1; offset <<= 1, stride >>= 1) {
             it.barrier(sycl::access::fence_space::local_space);
@@ -21,6 +21,7 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
 
         if (tid == 0) {
             size_t di = blksize - 1;
+            partial = lxr_tmp[di];
             lxr_tmp[di] = 0;
         }
 
@@ -37,7 +38,7 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
 
         it.barrier(sycl::access::fence_space::local_space);
 
-        return lxr_tmp[tid];
+        value = lxr_tmp[tid];
     };
 }
 
@@ -62,7 +63,8 @@ int main() {
 
         cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
             size_t id = it.get_global_linear_id();
-            axr_buf[id] = scanner(it, axr_buf[id]);
+            float _;
+            scanner(it, axr_buf[id], _);
         });
     });
 
