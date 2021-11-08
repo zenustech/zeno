@@ -29,6 +29,10 @@ struct vector : std::vector<T> {
     inline auto const &to_vector() const {
         return static_cast<std::vector<T> const &>(*this);
     }
+
+    inline auto &&move_vector() {
+        return std::move(static_cast<std::vector<T> &>(*this));
+    }
 };
 
 }
@@ -175,6 +179,10 @@ struct vector {
         Vector vec;
         _M_copy_to_vector<Vector>(vec);
         return vec;
+    }
+
+    inline auto move_vector() {
+        return to_vector();
     }
 };
 

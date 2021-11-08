@@ -6,6 +6,7 @@ ZENO_NAMESPACE_BEGIN
 namespace types {
 
 
+#if 0
 void meshToTriangleVerticesCPU(Mesh const &mesh, std::vector<math::vec3f> &vertices) {
     decltype(auto) vert = mesh.vert.to_vector();
     decltype(auto) loop = mesh.loop.to_vector();
@@ -26,9 +27,10 @@ void meshToTriangleVerticesCPU(Mesh const &mesh, std::vector<math::vec3f> &verti
         }
     }
 }
+#endif
 
 
-void meshToTriangleVertices(Mesh const &mesh, zycl::vector<math::vec3f> &tris) {
+zycl::vector<math::vec3f> meshToTriangleVertices(Mesh const &mesh) {
     zycl::vector<int> indices(mesh.poly.size());
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
@@ -45,6 +47,7 @@ void meshToTriangleVertices(Mesh const &mesh, zycl::vector<math::vec3f> &tris) {
 
     zycl::parallel_scan<256>(indices, indices.size());
 
+    zycl::vector<math::vec3f> tris;
     {
         auto axr_indices = zycl::host_access<zycl::ro>(indices, 0, indices.size() - 1);
         tris.resize(axr_indices[0] * 3);
@@ -75,9 +78,11 @@ void meshToTriangleVertices(Mesh const &mesh, zycl::vector<math::vec3f> &tris) {
             }
         });
     });
+
+    return tris;
 }
 
-void meshToTriangleIndices(Mesh const &mesh, zycl::vector<math::vec3i> &tris) {
+zycl::vector<math::vec3i> meshToTriangleIndices(Mesh const &mesh) {
     zycl::vector<int> indices(mesh.poly.size());
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
@@ -94,6 +99,7 @@ void meshToTriangleIndices(Mesh const &mesh, zycl::vector<math::vec3i> &tris) {
 
     zycl::parallel_scan<256>(indices, indices.size());
 
+    zycl::vector<math::vec3i> tris;
     {
         auto axr_indices = zycl::host_access<zycl::ro>(indices, 0, indices.size() - 1);
         tris.resize(axr_indices[0]);
@@ -121,6 +127,8 @@ void meshToTriangleIndices(Mesh const &mesh, zycl::vector<math::vec3i> &tris) {
             }
         });
     });
+
+    return tris;
 }
 
 

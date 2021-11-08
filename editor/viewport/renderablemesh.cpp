@@ -98,7 +98,8 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
-        types::meshToTriangleVerticesCPU(*mesh, vertices);
+        auto tris = types::meshToTriangleVertices(*mesh);
+        vertices = tris.move_vector();
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override
