@@ -44,15 +44,18 @@ auto make_scanner(sycl::handler &cgh, size_t blksize) {
 
 template <class T>
 void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t blksize) {
+    if (!bufsize)
+        return;
+
     size_t partsize = (bufsize + blksize - 1) / blksize;
     sycl::buffer<T, 1> part(partsize);
 
     q.submit([&] (sycl::handler &cgh) {
-        auto axr_buf = buf.get_access<sycl::access::mode::discard_read_write>(cgh);
-        auto axr_part = part.get_access<sycl::access::mode::discard_write>(cgh);
+        auto axr_buf = buf.template get_access<sycl::access::mode::discard_read_write>(cgh);
+        auto axr_part = part.template get_access<sycl::access::mode::discard_write>(cgh);
         auto scanner = make_scanner<float>(cgh, blksize);
 
-        cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
+        cgh.parallel_for(sycl::nd_range<1>(partsize * blksize, blksize), [=] (sycl::nd_item<1> it) {
             size_t id = it.get_global_linear_id();
             size_t gid = it.get_group_linear_id();
             T val{};
@@ -68,10 +71,10 @@ void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t
         prefix_scan<T>(q, part, partsize, blksize);
 
         q.submit([&] (sycl::handler &cgh) {
-            auto axr_buf = buf.get_access<sycl::access::mode::read_write>(cgh);
-            auto axr_part = part.get_access<sycl::access::mode::read>(cgh);
+            auto axr_buf = buf.template get_access<sycl::access::mode::discard_read_write>(cgh);
+            auto axr_part = part.template get_access<sycl::access::mode::read>(cgh);
 
-            cgh.parallel_for(sycl::nd_range<1>(bufsize, blksize), [=] (sycl::nd_item<1> it) {
+            cgh.parallel_for(sycl::nd_range<1>(partsize * blksize, blksize), [=] (sycl::nd_item<1> it) {
                 size_t id = it.get_global_linear_id();
                 size_t gid = it.get_group_linear_id();
                 [[likely]] if (id < bufsize)
@@ -84,15 +87,15 @@ void prefix_scan(sycl::queue &q, sycl::buffer<T, 1> &buf, size_t bufsize, size_t
 int main() {
     sycl::queue q;
 
-    constexpr size_t bufsize = 128;
-    constexpr size_t blksize = 16;
+    constexpr size_t bufsize = 8;
+    constexpr size_t blksize = 4;
 
     sycl::buffer<float, 1> buf(bufsize);
 
     q.submit([&] (sycl::handler &cgh) {
         auto axr_buf = buf.get_access<sycl::access::mode::discard_write>(cgh);
         cgh.parallel_for(sycl::range<1>(bufsize), [=] (sycl::item<1> it) {
-            axr_buf[it] = it[0] + 1;
+            axr_buf[it] = 1;
         });
     });
 
