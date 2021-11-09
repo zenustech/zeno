@@ -1,4 +1,4 @@
-macro(glob_recurse var base)
+macro(zeno_glob_recurse var base)
     set(list)
     foreach (x ${ARGN})
         set(list ${list} ${base}/${x})

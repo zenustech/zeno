@@ -3,11 +3,10 @@ cmake_minimum_required(VERSION 3.18)
 include(cmake/ZenoHelpers.cmake)
 include(cmake/ZenoOptions.cmake)
 
-project(zeno VERSION 0.1 LANGUAGES C CXX)
+project(zeno VERSION 0.1 LANGUAGES CXX)
 
 add_subdirectory(tpls)
 
 message("-- Zeno Target: [${ZENO_TARGET}]")
-include(cmake/ZenoBuild${ZENO_TARGET}.cmake)
-
+include(cmake/ZenoTarget${ZENO_TARGET}.cmake)
 include(cmake/ZenoSource.cmake)

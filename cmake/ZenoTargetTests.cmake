@@ -1,5 +1,4 @@
-glob_recurse(source tests *.h *.cpp)
-
+zeno_glob_recurse(source tests *.h *.cpp)
 add_executable(zeno ${source})
 
 target_link_libraries(zeno PRIVATE gtest_main)
