@@ -1,5 +1,6 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
+#include <zeno/ztd/variant.h>
 #include <zeno/math/quaternion.h>
 #include <variant>
 
@@ -7,12 +8,6 @@
 ZENO_NAMESPACE_BEGIN
 namespace types {
 namespace {
-
-
-std::variant<std::true_type, std::false_type> boolean_variant(bool cond) {
-    if (cond) return std::true_type{};
-    else return std::false_type{};
-}
 
 
 static void TransformMesh(dop::FuncContext *ctx) {
@@ -37,9 +32,9 @@ static void TransformMesh(dop::FuncContext *ctx) {
                 axr_vert[it] = vert;
             });
         }
-        , boolean_variant(translate != math::vec3f(0))
-        , boolean_variant(scaling != math::vec3f(1))
-        , boolean_variant(rotation != math::vec4f(0, 0, 0, 1))
+        , ztd::make_bool_variant(translate != math::vec3f(0))
+        , ztd::make_bool_variant(scaling != math::vec3f(1))
+        , ztd::make_bool_variant(rotation != math::vec4f(0, 0, 0, 1))
         );
     });
 

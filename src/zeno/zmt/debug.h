@@ -21,9 +21,10 @@ struct Debug {
 
         inline _M_had(Os &os) : os(os) {}
 
-        inline _M_had &operator<<(auto &&t) const {
+        inline _M_had &operator<<(auto &&t) {
             os << ' ';
             os << std::forward<decltype(t)>(t);
+            return *this;
         }
 
         inline ~_M_had() {

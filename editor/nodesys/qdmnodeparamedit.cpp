@@ -39,7 +39,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto const &value = expr;
             *input = dop::Input_Value{.value = ztd::make_any(value)};
-            emit nodeParamModified(node);
+            emit nodeParamUpdated(node);
         });
         return edit;
     } break;
@@ -59,7 +59,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
             *input = dop::Input_Value{.value = ztd::make_any(value)};
-            emit nodeParamModified(node);
+            emit nodeParamUpdated(node);
         });
         return edit;
     } break;
@@ -79,7 +79,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
             *input = dop::Input_Value{.value = ztd::make_any(value)};
-            emit nodeParamModified(node);
+            emit nodeParamUpdated(node);
         });
         return edit;
     } break;

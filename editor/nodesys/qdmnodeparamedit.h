@@ -28,7 +28,7 @@ public slots:
     void setCurrentNode(QDMGraphicsNode *node);
 
 signals:
-    void nodeParamModified(QDMGraphicsNode *node);
+    void nodeParamUpdated(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END

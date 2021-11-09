@@ -46,10 +46,10 @@ void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
     auto oldScene = getScene();
 
-    disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
+    /*disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
                this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
     disconnect(oldScene, SIGNAL(selectionChanged()),
-               this, SLOT(updateSceneSelection()));
+               this, SLOT(updateSceneSelection()));*/
 
     connect(newScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
             this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
