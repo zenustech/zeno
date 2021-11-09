@@ -23,7 +23,13 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
-void QDMGraphicsView::onSelectionChanged() {
+void QDMGraphicsView::invalidateNode(QDMGraphicsNode *node)
+{
+    emit nodeUpdated(node, 0);
+}
+
+void QDMGraphicsView::updateSceneSelection()
+{
     auto items = this->scene()->selectedItems();
     if (!items.size()) {
         setCurrentNode(nullptr);
@@ -43,12 +49,12 @@ void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
     disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
                this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
     disconnect(oldScene, SIGNAL(selectionChanged()),
-               this, SLOT(onSelectionChanged()));
+               this, SLOT(updateSceneSelection()));
 
     connect(newScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
             this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
     connect(newScene, SIGNAL(selectionChanged()),
-            this, SLOT(onSelectionChanged()));
+            this, SLOT(updateSceneSelection()));
 
     setScene(newScene);
 }

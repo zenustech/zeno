@@ -37,7 +37,8 @@ public:
 public slots:
     void addNodeByName(QString name);
     void forceUpdate();
-    void onSelectionChanged();
+    void invalidateNode(QDMGraphicsNode *node);
+    void updateSceneSelection();
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);
