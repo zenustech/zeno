@@ -94,17 +94,26 @@ void main() {
 public:
     virtual ~RenderableMesh() = default;
 
-    std::vector<math::vec3f> vertices;
+    QOpenGLBuffer attrPos;
+    size_t mCount{};
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
         auto tris = types::meshToTriangles(*mesh);
-        vertices = tris.move_vector();
+        decltype(auto) vertices = tris.to_vector();
+        mCount = vertices.size();
+
+        if (!mCount) return;
+        attrPos.create();
+        attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
+        attrPos.bind();
+        attrPos.allocate(vertices.data(), vertices.size() * sizeof(vertices[0]));
+        attrPos.release();
     }
 
     virtual void render(QDMOpenGLViewport *viewport) override
     {
-        if (!vertices.size()) return;
+        if (!mCount) return;
 
         static auto program = makeShaderProgram();
         program->bind();
@@ -117,18 +126,14 @@ public:
         program->setUniformValue("uInvMVP", mvp.inverted());
         program->setUniformValue("uInvMV", mv.inverted());
 
-        QOpenGLBuffer attrPos;
-        attrPos.create();
-        attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
         attrPos.bind();
-        attrPos.allocate(vertices.data(), vertices.size() * 3 * sizeof(vertices[0]));
         program->enableAttributeArray("attrPos");
         program->setAttributeBuffer("attrPos", GL_FLOAT, 0, 3);
+        attrPos.release();
 
-        viewport->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        viewport->glDrawArrays(GL_TRIANGLES, 0, mCount);
 
         program->disableAttributeArray("attrPos");
-        attrPos.destroy();
 
         program->release();
     }
