@@ -27,9 +27,11 @@ void QDMGraphicsSocketIn::linkAttached(QDMGraphicsLinkFull *link)
 {
     QDMGraphicsSocket::unlinkAll();
     QDMGraphicsSocket::linkAttached(link);
-    auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
-    auto srcSocket = link->srcSocket;
-    parentNode->socketLinked(this, srcSocket);
+    if (link) {
+        auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
+        auto srcSocket = link->srcSocket;
+        parentNode->socketLinked(this, srcSocket);
+    }
 }
 
 QPointF QDMGraphicsSocketIn::getLinkedPos() const

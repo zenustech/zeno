@@ -76,15 +76,22 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
         return nullptr;
     addItem(link);
     links.emplace(link);
+
+    auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
+    emit nodeUpdated(dstNode, 0);
     return link;
 }
 
 void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
 {
+    auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
+
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
     links.erase(ztd::stale_ptr(link));
+
+    emit nodeUpdated(dstNode, 0);
 }
 
 QDMGraphicsNode *QDMGraphicsScene::addNode()
