@@ -22,8 +22,8 @@ static void WriteOBJMesh(dop::FuncContext *ctx) {
 ZENO_DOP_DEFUN(WriteOBJMesh, {}, {{
     "mesh", "save mesh to .obj file",
 }, {
-    {"mesh"},
-    {"path"},
+    {"mesh", "Mesh"},
+    {"path", "string"},
 }, {
 }});
 

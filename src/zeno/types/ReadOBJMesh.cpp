@@ -23,9 +23,9 @@ static void ReadOBJMesh(dop::FuncContext *ctx) {
 ZENO_DOP_DEFUN(ReadOBJMesh, {}, {{
     "mesh", "load mesh from .obj file",
 }, {
-    {"path"},
+    {"path", "string"},
 }, {
-    {"mesh"},
+    {"mesh", "Mesh"},
 }});
 
 

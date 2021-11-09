@@ -21,9 +21,9 @@ struct If : dop::Node {
 ZENO_DOP_DEFCLASS(If, {{
     "misc", "only runs one of the two chain by condition",
 }, {
-    {"cond"},
-    {"then"},
-    {"else"},
+    {"cond", "bool"},
+    {"then", "any"},
+    {"else", "any"},
 }, {
 }});
 
@@ -45,9 +45,9 @@ struct ForBegin : dop::Node {
 ZENO_DOP_DEFCLASS(ForBegin, {{
     "misc", "repeat a chain for multiple times (begin block)",
 }, {
-    {"times"},
+    {"times", "int"},
 }, {
-    {"FOR"},
+    {"FOR", "ForData"},
 }});
 
 
@@ -66,8 +66,8 @@ struct ForEnd : dop::Node {
 ZENO_DOP_DEFCLASS(ForEnd, {{
     "misc", "repeat a chain for multiple times (end block)",
 }, {
-    {"FOR"},
-    {"chain"},
+    {"FOR", "ForData"},
+    {"chain", "any"},
 }, {
 }});
 
@@ -105,7 +105,7 @@ struct PrintInt : dop::Node {
 ZENO_DOP_DEFCLASS(PrintInt, {{
     "misc", "prints a integer",
 }, {
-    {"value"},
+    {"value", "int"},
 }, {
 }});
 
@@ -119,9 +119,9 @@ struct Route : dop::Node {
 ZENO_DOP_DEFCLASS(Route, {{
     "misc", "always return the first input",
 }, {
-    {"value"},
+    {"value", "any"},
 }, {
-    {"value"},
+    {"value", "any"},
 }});
 
 
@@ -134,9 +134,9 @@ struct ToView : dop::Node {
 ZENO_DOP_DEFCLASS(ToView, {{
     "misc", "send object to be viewed",
 }, {
-    {"object"},
+    {"object", "any"},
 }, {
-    {"object"},
+    {"object", "any"},
 }});
 
 

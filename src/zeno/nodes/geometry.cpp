@@ -8,23 +8,23 @@ namespace {
 ZENO_DOP_INTERFACE(Transform, {{
     "geometry", "transform an object (by translation, scaling, and rotation)",
 }, {
-    {"object"},
-    {"translate"},
-    {"scaling"},
-    {"rotation"},
+    {"object", "Mesh"},
+    {"translate", "vec3f"},
+    {"scaling", "vec3f"},
+    {"rotation", "vec4f"},
 }, {
-    {"object"},
+    {"object", "Mesh"},
 }});
 
 
 ZENO_DOP_INTERFACE(Reduction, {{
     "geometry", "perform reduction on object (calculate bounding box, mass center, etc.)",
 }, {
-    {"object"},
-    {"type"},
+    {"object", "Mesh"},
+    {"type", "string"},
 }, {
-    {"res1"},
-    {"res2"},
+    {"res1", "vec3f"},
+    {"res2", "vec3f"},
 }});
 
 
