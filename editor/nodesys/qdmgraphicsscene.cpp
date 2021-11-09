@@ -1,7 +1,6 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
 #include <zeno/ztd/memory.h>
-#include <zeno/dop/execute.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -109,9 +108,7 @@ void QDMGraphicsScene::addNodeByName(QString name)
 
 void QDMGraphicsScene::forceUpdate()
 {
-    std::set<dop::Node *> visited;
     for (auto const &node: nodes) {
-        dop::resolve(dop::Input_Link{.node = node->getDopNode(), .sockid = 0}, visited);
         emit nodeUpdated(node.get(), 0);
     }
 }

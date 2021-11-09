@@ -4,6 +4,8 @@
 #include <QDragMoveEvent>
 #include <QWheelEvent>
 #include <zeno/zmt/log.h>
+#include <zeno/dop/execute.h>
+#include <zeno/dop/Exception.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -101,7 +103,14 @@ void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
 }
 
 static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
-    return makeRenderableFromAny(node->getDopNode()->outputs[0]);
+    auto dopNode = node->getDopNode();
+    ztd::any_ptr val;
+    try {
+        val = dop::resolve(dop::Input_Link{.node = dopNode, .sockid = 0});
+    } catch (dop::Exception const &e) {
+        ZENO_LOG_INFO("Exception during DOP execution: {}", e.what());
+    }
+    return makeRenderableFromAny(val);
 }
 
 void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
