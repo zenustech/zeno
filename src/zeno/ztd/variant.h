@@ -20,7 +20,7 @@ std::optional<T> try_get(auto const &var) {
 }
 
 
-decltype(auto) visit(auto &&var, auto &&...fs) {
+decltype(auto) match(auto &&var, auto &&...fs) {
     return std::visit(overloaded(
             std::forward<decltype(fs)>(fs)...),
         std::forward<decltype(var)>(var));
