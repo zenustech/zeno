@@ -1,7 +1,6 @@
 #include "renderable.h"
 #include "renderablemesh.h"
 #include "renderabletesttriangle.h"
-#include <QDebug>
 
 ZENO_NAMESPACE_BEGIN
 

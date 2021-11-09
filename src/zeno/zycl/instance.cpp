@@ -10,7 +10,7 @@ queue default_queue() {
 #ifdef ZENO_WITH_SYCL
     static std::once_flag flg;
     std::call_once(flg, [&] {
-        ZENO_ZMT_INFO("SYCL device: {}", que.get_device().get_info<zycl::info::device::name>());
+        ZENO_LOG_INFO("SYCL device: {}", que.get_device().get_info<zycl::info::device::name>());
     });
 #endif
     return que;

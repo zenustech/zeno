@@ -3,7 +3,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QDragMoveEvent>
 #include <QWheelEvent>
-#include <QDebug>
+#include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -26,7 +26,7 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
-    qCritical() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
+    ZENO_LOG_INFO("OpenGL version: {}", (char const *)glGetString(GL_VERSION));
 
     glEnable(GL_DEPTH_TEST);
 }
