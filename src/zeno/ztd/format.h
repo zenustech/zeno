@@ -11,7 +11,7 @@ namespace ztd {
 inline namespace _format_h {
 
 template <class ...Ts>
-std::string format(const char *fmt, Ts &&...ts) {
+std::string stringf(const char *fmt, Ts &&...ts) {
     int n = snprintf(nullptr, 0, fmt, std::forward<Ts>(ts)...);
     if (n < 0) return {};
     std::string res;
@@ -26,11 +26,6 @@ std::string to_string(Ts const &...ts) {
     std::ostringstream ss;
     (void)(ss << ... << ts);
     return ss.str();
-}
-
-template <class ...Ts>
-void print(Ts const &...ts) {
-    (std::cout << ... << ts) << std::endl;
 }
 
 }
