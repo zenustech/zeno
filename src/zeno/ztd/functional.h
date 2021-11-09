@@ -7,6 +7,7 @@
 
 ZENO_NAMESPACE_BEGIN
 namespace ztd {
+inline namespace _H_functional {
 
 
 /*template <class T = void, class ...Ts>
@@ -42,5 +43,6 @@ struct match : private Fs... {
 };
 
 
+}
 }
 ZENO_NAMESPACE_END

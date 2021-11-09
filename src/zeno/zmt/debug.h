@@ -38,11 +38,11 @@ struct Debug {
 };
 
 inline auto debug() {
-    return Debug(std::cout) << "zDebug:";
+    return Debug(std::cout) << "(zmt::debug)";
 }
 
 inline auto error() {
-    return Debug(std::cerr) << "zError:";
+    return Debug(std::cerr) << "(zmt::error)";
 }
 
 }
