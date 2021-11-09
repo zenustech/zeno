@@ -10,7 +10,16 @@ ZENO_NAMESPACE_BEGIN
 namespace zycl {
 inline namespace ns_parallel_scan {
 
-#error "TODO: implement parallel_scan for no-sycl"
+template <size_t blksize = 256, class T>
+vector<T> parallel_scan(vector<T> &buf, size_t bufsize) {
+    auto sum = T{};
+    for (size_t i = 0; i < bufsize; i++) {
+        auto tmp = buf[i];
+        buf[i] = sum;
+        sum += tmp;
+    }
+    return vector<T>(1, sum);
+}
 
 }
 }
@@ -107,7 +116,7 @@ void _M_parallel_scan(vector<T> &buf, size_t bufsize) {
 }
 
 
-template <size_t blksize, class T>
+template <size_t blksize = 256, class T>
 vector<T> parallel_scan(vector<T> &buf, size_t bufsize) {
     vector<T> sum(1);
 

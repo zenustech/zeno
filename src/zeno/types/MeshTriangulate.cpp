@@ -47,7 +47,7 @@ zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
         });
     });
 
-    auto sum = zycl::parallel_scan<256>(indices, indices.size());
+    auto sum = zycl::parallel_scan(indices, indices.size());
 
     zycl::vector<math::vec3f> tris(zycl::host_get(sum) * 3);
 
