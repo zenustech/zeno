@@ -7,7 +7,7 @@ namespace dop {
 
 
 ztd::any_ptr Node::get_input(int idx) const {
-    return getval(inputs.at(idx));
+    return Executor::getval(inputs.at(idx));
 }
 
 
@@ -16,9 +16,9 @@ void Node::set_output(int idx, ztd::any_ptr val) {
 }
 
 
-void Node::preapply(std::vector<Node *> &tolink, std::set<Node *> &visited) {
+void Node::preapply(std::vector<Node *> &tolink, Executor *exec) {
     for (auto node: inputs) {
-        touch(node, tolink, visited);
+        exec->touch(node, tolink);
     }
     tolink.push_back(this);
 }

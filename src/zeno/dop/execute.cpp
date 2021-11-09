@@ -59,6 +59,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
         if (!visited.contains(node)) {
             visited.insert(node);
             ZENO_LOG_INFO("* applying {}@{}", node->desc->name, (void *)node);
+            current_node = node;
             node->apply();
         }
     }
@@ -68,6 +69,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
     return ztd::match(input
     , [&] (Input_Link const &input) {
+        current_node = input.node;
         input.node->preapply(tolink, visited);
     }
     , [&] (Input_Value const &) {
@@ -100,6 +102,18 @@ ztd::any_ptr Executor::getval(Input const &input) {
         return val.value;
     }
     );
+}
+
+
+ztd::any_ptr Executor::evaluate(Input const &input) {
+    try {
+        return resolve(input);
+    } catch (std::exception const &e) {
+        ZENO_LOG_INFO("Exception occurred in {}@{}: {}",
+                      current_node->desc->name, (void *)current_node,
+                      e.what());
+        return {};
+    }
 }
 
 

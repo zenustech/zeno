@@ -12,13 +12,14 @@ namespace dop {
 
 
 struct Executor {
-    std::vector<Node *> &tolink;
-    std::set<Node *> &visited;
+    std::set<Node *> visited;
+    Node *current_node{};
 
     ztd::any_ptr resolve(Input const &input);
     void touch(Input const &input, std::vector<Node *> &tolink);
     void sortexec(Node *root, std::vector<Node *> &tolink);
     static ztd::any_ptr getval(Input const &input);
+    ztd::any_ptr evaluate(Input const &input);
 };
 
 

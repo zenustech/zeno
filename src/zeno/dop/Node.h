@@ -16,6 +16,7 @@ namespace dop {
 
 struct Node;
 struct Descriptor;
+struct Executor;
 
 
 struct Input_Value {
@@ -46,7 +47,7 @@ struct Node {
     ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
 
-    virtual void preapply(std::vector<Node *> &tolink, std::set<Node *> &visited);
+    virtual void preapply(std::vector<Node *> &tolink, Executor *exec);
     virtual void apply() = 0;
 };
 

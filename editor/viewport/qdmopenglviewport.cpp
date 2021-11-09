@@ -105,8 +105,9 @@ void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
 static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
     auto dopNode = node->getDopNode();
     ztd::any_ptr val;
+    dop::Executor exec;
     try {
-        val = dop::resolve(dop::Input_Link{.node = dopNode, .sockid = 0});
+        val = exec.evaluate(dop::Input_Link{.node = dopNode, .sockid = 0});
     } catch (dop::Exception const &e) {
         ZENO_LOG_INFO("Exception during DOP execution: {}", e.what());
     }
