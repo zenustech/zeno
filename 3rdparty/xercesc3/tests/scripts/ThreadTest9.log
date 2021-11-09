@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/ThreadTest -parser=sax2 -gc -v=always -quiet -threads 10 -time 20 personal.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/ThreadTest9.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/ThreadTest9.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/ThreadTest9 (exit status: 0)

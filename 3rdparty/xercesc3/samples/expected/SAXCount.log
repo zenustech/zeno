@@ -1,0 +1,20 @@
+
+Usage:
+    SAXCount [options] <XML file | List file>
+
+This program invokes the SAX Parser, and then prints the
+number of elements, attributes, spaces and characters found
+in each XML file, using SAX API.
+
+Options:
+    -l          Indicate the input file is a List File that has a list of xml files.
+                Default to off (Input file is an XML file).
+    -v=xxx      Validation scheme [always | never | auto*].
+    -n          Enable namespace processing. Defaults to off.
+    -s          Enable schema processing. Defaults to off.
+    -f          Enable full schema constraint checking. Defaults to off.
+    -locale=ll_CC specify the locale, default: en_US.
+    -?          Show this help.
+
+  * = Default if not provided explicitly.
+

@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/ThreadTest -parser=dom -n -s -f -v=always -quiet -threads 10 -time 20 personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/ThreadTest11.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/ThreadTest11.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/ThreadTest11 (exit status: 0)

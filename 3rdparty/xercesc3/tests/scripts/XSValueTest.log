@@ -1,0 +1,10 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/XSValueTest  > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSValueTest.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSValueTest.log" 
+Result: pass
+------
+obs=
+XSValueTest Pass
+------
+exp=
+XSValueTest Pass
+------
+PASS scripts/XSValueTest (exit status: 0)

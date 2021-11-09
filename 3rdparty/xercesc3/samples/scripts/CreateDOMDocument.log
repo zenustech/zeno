@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/CreateDOMDocument  > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/CreateDOMDocument.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/CreateDOMDocument.log" 
+Result: pass
+------
+obs=The tree just created contains: 4 elements.
+------
+exp=The tree just created contains: 4 elements.
+------
+PASS scripts/CreateDOMDocument (exit status: 0)

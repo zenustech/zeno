@@ -1,0 +1,21 @@
+
+Usage:
+    MemHandlerTest [options] <XML file | List file>
+
+This program invokes the XercesDOMParser, DOMLSParser, SAXParser ,
+and the SAX2XMLReader, and ensures that MemoryManagers set on these
+domBuilders are called to delete just as many bytes as they allocate.
+This is done for each XML file, and each file is processed
+as many times as indicated.
+Options:
+    -l          Indicate the input file is a List File that has a list of xml files.
+                Default to off (Input file is an XML file).
+    -v=xxx      Validation scheme [always | never | auto*].
+    -n          Enable namespace processing. Defaults to off.
+    -s          Enable schema processing. Defaults to off.
+    -f          Enable full schema constraint checking. Defaults to off.
+    -r=n        Run file through domBuilders n times.
+    -?          Show this help.
+
+  * = Default if not provided explicitly.
+

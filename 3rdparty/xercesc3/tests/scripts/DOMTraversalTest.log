@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/DOMTraversalTest  > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/DOMTraversalTest.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/DOMTraversalTest.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/DOMTraversalTest (exit status: 0)

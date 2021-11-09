@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/SAXCount personal.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SAXCount2.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SAXCount2.log" 
+Result: pass
+------
+obs=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+exp=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+PASS scripts/SAXCount2 (exit status: 0)

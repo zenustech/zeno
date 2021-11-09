@@ -1,0 +1,44 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/PParse  > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse.log" 
+Result: fail
+------
+obs=
+Usage:
+    PParse [options] <XML file>
+
+This program demonstrates the progressive parse capabilities of
+the parser system. It allows you to do a scanFirst() call followed by
+a loop which calls scanNext(). You can drop out when you've found what
+ever it is you want. In our little test, our event handler looks for
+16 new elements then sets a flag to indicate its found what it wants.
+At that point, our progressive parse loop exits.
+
+Options:
+      -v=xxx        - Validation scheme [always | never | auto*].
+      -n            - Enable namespace processing [default is off].
+      -s            - Enable schema processing [default is off].
+      -f            - Enable full schema constraint checking [default is off].
+      -?            - Show this help.
+
+  * = Default if not provided explicitly.
+------
+exp=
+Usage:
+    PParse [options] <XML file>
+
+This program demonstrates the progressive parse capabilities of
+the parser system. It allows you to do a scanFirst() call followed by
+a loop which calls scanNext(). You can drop out when you've found what
+ever it is you want. In our little test, our event handler looks for
+16 new elements then sets a flag to indicate its found what it wants.
+At that point, our progressive parse loop exits.
+
+Options:
+      -v=xxx        - Validation scheme [always | never | auto*].
+      -n            - Enable namespace processing [default is off].
+      -s            - Enable schema processing [default is off].
+      -f            - Enable full schema constraint checking [default is off].
+      -?            - Show this help.
+
+  * = Default if not provided explicitly.
+------
+XFAIL scripts/PParse (exit status: 1)

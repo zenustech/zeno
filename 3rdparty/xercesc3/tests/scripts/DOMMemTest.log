@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/DOMMemTest  > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/DOMMemTest.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/DOMMemTest.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/DOMMemTest (exit status: 0)

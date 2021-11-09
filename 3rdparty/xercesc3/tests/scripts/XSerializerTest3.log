@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/XSerializerTest -v=never personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSerializerTest3.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSerializerTest3.log" 
+Result: pass
+------
+obs=personal-schema.xml:{timing removed}(37 elems, 28 attrs, 0 spaces, 268 chars)
+------
+exp=personal-schema.xml:{timing removed}(37 elems, 28 attrs, 0 spaces, 268 chars)
+------
+PASS scripts/XSerializerTest3 (exit status: 0)

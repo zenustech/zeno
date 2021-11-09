@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/InitTermTest -n -s -f personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest3.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest3.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/InitTermTest3 (exit status: 0)

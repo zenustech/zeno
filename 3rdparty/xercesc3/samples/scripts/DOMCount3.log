@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/DOMCount -n -s personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/DOMCount3.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/DOMCount3.log" 
+Result: pass
+------
+obs=personal-schema.xml:{timing removed}(37 elems).
+------
+exp=personal-schema.xml:{timing removed}(37 elems).
+------
+PASS scripts/DOMCount3 (exit status: 0)

@@ -1,0 +1,9 @@
+
+Usage:
+    EnumVal <XML file>
+
+This program parses the specified XML file, then shows how to
+enumerate the contents of the DTD Grammar. Essentially,
+shows how one can access the DTD information stored in internal
+data structures.
+

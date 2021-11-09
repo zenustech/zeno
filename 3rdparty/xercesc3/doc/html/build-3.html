@@ -1,0 +1,845 @@
+<HTML><HEAD><META content="text/html; charset=utf8" http-equiv="Content-Type"><SCRIPT language="JavaScript" src="resources/script.js" type="text/javascript"></SCRIPT><TITLE>Build Instructions</TITLE></HEAD><BODY alink="#ff0000" bgcolor="#ffffff" leftmargin="4" link="#0000ff" marginheight="4" marginwidth="4" text="#000000" topmargin="4" vlink="#0000aa"><TABLE border="0" cellpadding="0" cellspacing="0" width="620"><TR><TD align="left" height="60" rowspan="3" valign="top" width="135"><IMG border="0" height="60" hspace="0" src="resources/logo.gif" vspace="0" width="135"></TD><TD align="left" colspan="4" height="5" valign="top" width="456"><IMG border="0" height="5" hspace="0" src="resources/line.gif" vspace="0" width="456"></TD><TD align="left" height="60" rowspan="3" valign="top" width="29"><IMG border="0" height="60" hspace="0" src="resources/right.gif" vspace="0" width="29"></TD></TR><TR><TD align="left" bgcolor="#0086b2" colspan="4" height="35" valign="top" width="456"><IMG alt="" border="0" height="35" hspace="0" src="graphics/build-3-header.jpg" vspace="0" width="456"></TD></TR><TR><TD align="left" height="20" valign="top" width="168"><IMG border="0" height="20" hspace="0" src="resources/bottom.gif" vspace="0" width="168"></TD><TD align="left" height="20" valign="top" width="96"><A href="http://xml.apache.org/" onMouseOut="rolloverOff('xml');" onMouseOver="rolloverOn('xml');" target="new"><IMG alt="http://xml.apache.org/" border="0" height="20" hspace="0" name="xml" onLoad="rolloverLoad('xml','resources/button-xml-hi.gif','resources/button-xml-lo.gif');" src="resources/button-xml-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.apache.org/" onMouseOut="rolloverOff('asf');" onMouseOver="rolloverOn('asf');" target="new"><IMG alt="http://www.apache.org/" border="0" height="20" hspace="0" name="asf" onLoad="rolloverLoad('asf','resources/button-asf-hi.gif','resources/button-asf-lo.gif');" src="resources/button-asf-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.w3.org/" onMouseOut="rolloverOff('w3c');" onMouseOver="rolloverOn('w3c');" target="new"><IMG alt="http://www.w3.org/" border="0" height="20" hspace="0" name="w3c" onLoad="rolloverLoad('w3c','resources/button-w3c-hi.gif','resources/button-w3c-lo.gif');" src="resources/button-w3c-lo.gif" vspace="0" width="96"></A></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="620"><TR><TD align="left" valign="top" width="120"><IMG border="0" height="14" hspace="0" src="resources/join.gif" vspace="0" width="120"><BR>
+
+  <A href="../index.html" onMouseOut="rolloverOff('side-ext-2');" onMouseOver="rolloverOn('side-ext-2');"><IMG alt="Xerces Project" border="0" height="12" hspace="0" name="side-ext-2" onLoad="rolloverLoad('side-ext-2','graphics/ext-2-label-2.jpg','graphics/ext-2-label-3.jpg');" src="graphics/ext-2-label-3.jpg" vspace="0" width="120"></A><BR>
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+     <A href="index.html" onMouseOut="rolloverOff('side-index');" onMouseOver="rolloverOn('side-index');"><IMG alt="Overview" border="0" height="12" hspace="0" name="side-index" onLoad="rolloverLoad('side-index','graphics/index-label-2.jpg','graphics/index-label-3.jpg');" src="graphics/index-label-3.jpg" vspace="0" width="120"></A><BR>
+     <A href="charter.html" onMouseOut="rolloverOff('side-charter');" onMouseOver="rolloverOn('side-charter');"><IMG alt="Charter" border="0" height="12" hspace="0" name="side-charter" onLoad="rolloverLoad('side-charter','graphics/charter-label-2.jpg','graphics/charter-label-3.jpg');" src="graphics/charter-label-3.jpg" vspace="0" width="120"></A><BR>
+     <A href="releases.html" onMouseOut="rolloverOff('side-releases');" onMouseOver="rolloverOn('side-releases');"><IMG alt="Release Info" border="0" height="12" hspace="0" name="side-releases" onLoad="rolloverLoad('side-releases','graphics/releases-label-2.jpg','graphics/releases-label-3.jpg');" src="graphics/releases-label-3.jpg" vspace="0" width="120"></A><BR>
+     <A href="secadv.html" onMouseOut="rolloverOff('side-secadv');" onMouseOver="rolloverOn('side-secadv');"><IMG alt="Advisories" border="0" height="12" hspace="0" name="side-secadv" onLoad="rolloverLoad('side-secadv','graphics/secadv-label-2.jpg','graphics/secadv-label-3.jpg');" src="graphics/secadv-label-3.jpg" vspace="0" width="120"></A><BR>
+     
+     
+     <A href="http://xerces.apache.org/xerces-c/download.cgi" onMouseOut="rolloverOff('side-ext-18');" onMouseOver="rolloverOn('side-ext-18');"><IMG alt="Download" border="0" height="12" hspace="0" name="side-ext-18" onLoad="rolloverLoad('side-ext-18','graphics/ext-18-label-2.jpg','graphics/ext-18-label-3.jpg');" src="graphics/ext-18-label-3.jpg" vspace="0" width="120"></A><BR>
+     
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+  <IMG alt="Xerces-C++ 3.2.3" border="0" height="17" hspace="0" name="side-sect-24" src="graphics/sect-24-label.jpg" vspace="0" width="120"><BR>
+
+     <A href="install-3.html" onMouseOut="rolloverOff('side-install-3');" onMouseOver="rolloverOn('side-install-3');"><IMG alt="Installation" border="0" height="12" hspace="0" name="side-install-3" onLoad="rolloverLoad('side-install-3','graphics/install-3-label-2.jpg','graphics/install-3-label-3.jpg');" src="graphics/install-3-label-3.jpg" vspace="0" width="120"></A><BR>
+     <IMG alt="Build Instructions" border="0" height="12" hspace="0" src="graphics/build-3-label-1.jpg" vspace="0" width="120"><BR>
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator-space.gif" vspace="0" width="120"><BR>
+
+     <A href="program-3.html" onMouseOut="rolloverOff('side-program-3');" onMouseOver="rolloverOn('side-program-3');"><IMG alt="Programming" border="0" height="12" hspace="0" name="side-program-3" onLoad="rolloverLoad('side-program-3','graphics/program-3-label-2.jpg','graphics/program-3-label-3.jpg');" src="graphics/program-3-label-3.jpg" vspace="0" width="120"></A><BR>
+     
+     
+     
+     
+     
+
+     <A href="samples-3.html" onMouseOut="rolloverOff('side-samples-3');" onMouseOver="rolloverOn('side-samples-3');"><IMG alt="Samples" border="0" height="12" hspace="0" name="side-samples-3" onLoad="rolloverLoad('side-samples-3','graphics/samples-3-label-2.jpg','graphics/samples-3-label-3.jpg');" src="graphics/samples-3-label-3.jpg" vspace="0" width="120"></A><BR>
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+
+     <A href="faqs-3.html" onMouseOut="rolloverOff('side-faqs-3');" onMouseOver="rolloverOn('side-faqs-3');"><IMG alt="FAQs" border="0" height="12" hspace="0" name="side-faqs-3" onLoad="rolloverLoad('side-faqs-3','graphics/faqs-3-label-2.jpg','graphics/faqs-3-label-3.jpg');" src="graphics/faqs-3-label-3.jpg" vspace="0" width="120"></A><BR>
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator-space.gif" vspace="0" width="120"><BR>
+
+     <A href="api-3.html" onMouseOut="rolloverOff('side-api-3');" onMouseOver="rolloverOn('side-api-3');"><IMG alt="API Reference" border="0" height="12" hspace="0" name="side-api-3" onLoad="rolloverLoad('side-api-3','graphics/api-3-label-2.jpg','graphics/api-3-label-3.jpg');" src="graphics/api-3-label-3.jpg" vspace="0" width="120"></A><BR>
+     <A href="ApacheDOMC++Binding.html" onMouseOut="rolloverOff('side-ext-84');" onMouseOver="rolloverOn('side-ext-84');"><IMG alt="DOM C++ Binding" border="0" height="12" hspace="0" name="side-ext-84" onLoad="rolloverLoad('side-ext-84','graphics/ext-84-label-2.jpg','graphics/ext-84-label-3.jpg');" src="graphics/ext-84-label-3.jpg" vspace="0" width="120"></A><BR>
+     <A href="migrate-3.html" onMouseOut="rolloverOff('side-migrate-3');" onMouseOver="rolloverOn('side-migrate-3');"><IMG alt="Migration Guide" border="0" height="12" hspace="0" name="side-migrate-3" onLoad="rolloverLoad('side-migrate-3','graphics/migrate-3-label-2.jpg','graphics/migrate-3-label-3.jpg');" src="graphics/migrate-3-label-3.jpg" vspace="0" width="120"></A><BR>
+     
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+  <A href="feedback.html" onMouseOut="rolloverOff('side-feedback');" onMouseOver="rolloverOn('side-feedback');"><IMG alt="Feedback" border="0" height="12" hspace="0" name="side-feedback" onLoad="rolloverLoad('side-feedback','graphics/feedback-label-2.jpg','graphics/feedback-label-3.jpg');" src="graphics/feedback-label-3.jpg" vspace="0" width="120"></A><BR>
+  <A href="bug-report.html" onMouseOut="rolloverOff('side-bug-report');" onMouseOver="rolloverOn('side-bug-report');"><IMG alt="Bug-Reporting" border="0" height="12" hspace="0" name="side-bug-report" onLoad="rolloverLoad('side-bug-report','graphics/bug-report-label-2.jpg','graphics/bug-report-label-3.jpg');" src="graphics/bug-report-label-3.jpg" vspace="0" width="120"></A><BR>
+  <A href="mailing-lists.html" onMouseOut="rolloverOff('side-mailing-lists');" onMouseOver="rolloverOn('side-mailing-lists');"><IMG alt="Mailing Lists" border="0" height="12" hspace="0" name="side-mailing-lists" onLoad="rolloverLoad('side-mailing-lists','graphics/mailing-lists-label-2.jpg','graphics/mailing-lists-label-3.jpg');" src="graphics/mailing-lists-label-3.jpg" vspace="0" width="120"></A><BR>
+
+  <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+   <A href="source-repository.html" onMouseOut="rolloverOff('side-source-repository');" onMouseOver="rolloverOn('side-source-repository');"><IMG alt="Source Repository" border="0" height="12" hspace="0" name="side-source-repository" onLoad="rolloverLoad('side-source-repository','graphics/source-repository-label-2.jpg','graphics/source-repository-label-3.jpg');" src="graphics/source-repository-label-3.jpg" vspace="0" width="120"></A><BR>
+   <A href="applications.html" onMouseOut="rolloverOff('side-applications');" onMouseOver="rolloverOn('side-applications');"><IMG alt="Applications" border="0" height="12" hspace="0" name="side-applications" onLoad="rolloverLoad('side-applications','graphics/applications-label-2.jpg','graphics/applications-label-3.jpg');" src="graphics/applications-label-3.jpg" vspace="0" width="120"></A><BR>
+
+<IMG border="0" height="14" hspace="0" src="resources/close.gif" vspace="0" width="120"><BR></TD><TD align="left" valign="top" width="500"><TABLE border="0" cellpadding="3" cellspacing="0"><TR><TD>
+  <TABLE border="0" cellpadding="0" cellspacing="0" width="494"><TR><TD bgcolor="ffffff" colspan="2" width="494"><TABLE border="0" cellpadding="0" cellspacing="0" width="494"><TR><TD bgcolor="#039acc" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#039acc" height="1" width="492"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="492"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#039acc" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" width="492"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="2" hspace="0" src="resources/void.gif" vspace="0" width="2"><B>Build Instructions</B></FONT></TD><TD bgcolor="#017299" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#017299" height="1" width="492"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="492"></TD><TD bgcolor="#017299" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></TD></TR><TR><TD width="10">&nbsp;</TD><TD width="484"><FONT color="#000000" face="arial,helvetica,sanserif">
+
+    <P>Much of this documentation is historical in nature. The only
+    officially supported platforms with committed testing and maintenance
+    at this time are Windows (native, NOT Cygwin or other variants), 
+    Linux, and MacOS. All other builds are unsupported and untested
+    and should be expected to require patching and build debugging.
+    Patches are accepted for other platforms, as are maintainers
+    interested in taking over responsibility for supporting them.</P>
+
+    <P>While the CMake support is portable, officially the autoconf
+    support is intended to be used for Linux and MacOS and CMake used
+    for Windows.</P>
+
+    <P>Build instructions are provided for the following platforms and
+       compilers:</P>
+
+    <UL>
+       <LI><A href="#CMake">All</A></LI>
+       <LI><A href="#UNIX">UNIX/Linux/Mac OS X/Cygwin/MinGW</A></LI>
+    </UL>
+
+    <A name="CMake"><!--anchor--></A>
+    <TABLE border="0" cellpadding="0" cellspacing="0" width="484"><TR><TD bgcolor="ffffff" colspan="2" width="484"><TABLE border="0" cellpadding="0" cellspacing="0" width="484"><TR><TD bgcolor="#039acc" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#039acc" height="1" width="482"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="482"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#039acc" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" width="482"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="2" hspace="0" src="resources/void.gif" vspace="0" width="2"><B>Building on all platforms with CMake</B></FONT></TD><TD bgcolor="#017299" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#017299" height="1" width="482"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="482"></TD><TD bgcolor="#017299" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></TD></TR><TR><TD width="10">&nbsp;</TD><TD width="474"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">
+
+        <P>For building on any platform with any supported build
+           system Xerces-C++ uses the CMake build generator and
+           requires that you have <A href="https://cmake.org/">CMake</A> installed.
+           Additionally, a build tool such as <A href="http://www.gnu.org/software/make/make.html">GNU
+           make</A> or <A href="https://ninja-build.org/">Ninja</A> is required for
+           building.  CMake supports a wide range of generators for
+           several different compilers, build tools and popular IDEs,
+           including Eclipse, Kate, Visual Studio, Sublime Text and more.
+           Any of these may be used to build Xerces-C++.  Run
+           <CODE><FONT face="courier, monospaced">cmake --help</FONT></CODE> to display the full list of
+           supported generators for your platform.</P>
+
+        <P>As with all CMake projects, the build process is divided
+           into several parts: configuration and building, followed by
+           (optional) testing and installation. The configuration part is
+           performed by running the <CODE><FONT face="courier, monospaced">cmake</FONT></CODE> command.  The
+           build part is performed by invoking the chosen build tool
+           such as <CODE><FONT face="courier, monospaced">make</FONT></CODE> or <CODE><FONT face="courier, monospaced">ninja</FONT></CODE>, or by opening
+           the generated project files in your IDE, and building from
+           within the IDE.</P>
+
+        <P>Besides the standard <CODE><FONT face="courier, monospaced">cmake</FONT></CODE> <A href="https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html">variables</A>,
+           Xerces-C++ provides a number of project-specific options
+           that are worth mentioning. You can specify one option for each
+           category outlined below. If you do not specify anything for a
+           particular category then <CODE><FONT face="courier, monospaced">cmake</FONT></CODE> will select the
+           most appropriate default, based upon the available options for
+           your system. At the end of its execution <CODE><FONT face="courier, monospaced">cmake</FONT></CODE>
+           prints the selected values for each category.</P>
+
+
+	<P>Net Accessor (used to access network resources):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dnetwork-accessor=curl</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the libcurl library (only on UNIX)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dnetwork-accessor=socket</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use plain sockets (only on UNIX)&nbsp;
+      </FONT></TD>
+          </TR>
+	  <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dnetwork-accessor=cfurl</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the CFURL API (only on Mac OS X)&nbsp;
+      </FONT></TD>
+          </TR>
+	  <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dnetwork-accessor=winsock</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use WinSock (only on Windows, Cygwin, MinGW)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dnetwork:BOOL=OFF</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">disable network support&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+	<P>Transcoder (used to convert between internal UTF-16 and other encodings):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dtranscoder=gnuiconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the GNU iconv library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dtranscoder=iconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the iconv library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dtranscoder=icu</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the ICU library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dtranscoder=macosunicodeconverter</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use Mac OS X APIs (only on Mac OS X)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dtranscoder=windows</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use Windows APIs (only on Windows and MinGW)&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+	<P>Message Loader (used to access diagnostics messages):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmessage-loader=inmemory</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages in memory&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmessage-loader=icu</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages using the ICU resource bundles&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmessage-loader=iconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages in the iconv message catalog&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+        <P>XMLCh type (UTF-16 character type):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+            <TR>
+                <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+                <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dxmlch-type=char16_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">char16_t</FONT></CODE> (requires a C++11 compiler)&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dxmlch-type=uint16_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">uint16_t</FONT></CODE> from
+                    <CODE><FONT face="courier, monospaced">&lt;cstdint&gt;</FONT></CODE> or
+                    <CODE><FONT face="courier, monospaced">&lt;stdint.h&gt;</FONT></CODE>, or another unsigned
+                    16-bit type such as <CODE><FONT face="courier, monospaced">unsigned short</FONT></CODE> if
+                    the standard types are unavailable&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dxmlch-type=wchar_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">wchar_t</FONT></CODE> (Windows only)&nbsp;
+      </FONT></TD>
+            </TR>
+        </TABLE>
+
+        <P>MFC debug support is enabled by default (Windows only) and
+           can be disabled with the
+           <CODE><FONT face="courier, monospaced">-Dmfc-debug:BOOL=OFF</FONT></CODE> option.</P>
+
+        <P>Thread support is enabled by default and can be disabled
+           with the <CODE><FONT face="courier, monospaced">-Dthreads:BOOL=OFF</FONT></CODE> option.  If disabled,
+           it will not be possible to select a mutex manager other than
+           <CODE><FONT face="courier, monospaced">nothreads</FONT></CODE>.  If enabled, one of the following
+           mutex managers may be selected:</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmutex-manager=standard</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use Standard C++ mutex (requires a C++11 compiler)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmutex-manager=posix</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use POSIX threads (pthreads)  mutex (only on UNIX and Cygwin)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmutex-manager=windows</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use Windows threads mutex (Windows and MinGW only)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">-Dmutex-manager=nothreads</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use dummy implementation (default if threading is disabled)&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+        <P>Shared libraries are built by default. You can use the
+           <CODE><FONT face="courier, monospaced">-DBUILD_SHARED_LIBS:BOOL=OFF</FONT></CODE> option to build
+           static libraries.</P>
+
+         <P>If you need to specify compiler executables that should be
+            used to build Xerces-C++, you can set the CC and CXX
+            environment variables when invoking
+            <CODE><FONT face="courier, monospaced">cmake</FONT></CODE>. Similarly, if you need to specify
+            additional compiler or linker options, you can set the
+            CFLAGS, CXXFLAGS, and LDFLAGS environment variables.  For
+            example:</P>
+
+         <DIV align="left"><TABLE border="0" cellpadding="0" cellspacing="4" width="464"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="462"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="462"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff" width="462"><FONT size="-1"><PRE>CC=gcc-5.3 CXX=g++-5.3 CFLAGS=-O3 CXXFLAGS=-O3 cmake ...</PRE></FONT></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="462"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="462"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+
+         <TABLE border="0" cellpadding="0" cellspacing="3" width="100%"><TR><TD valign="top" width="20"><IMG alt="Note" border="0" height="24" hspace="0" src="resources/note.gif" vspace="0" width="20"></TD><TD valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><I>
+           If building on Windows, the specific Visual Studio version
+           may be selected with some generators, and this may be run
+           from a normal command prompt.  If using a generic generator
+           such as <CODE><FONT face="courier, monospaced">Ninja</FONT></CODE>, then <CODE><FONT face="courier, monospaced">cmake</FONT></CODE> should
+           be run from a Visual Studio command prompt, or in a
+           suitably configured environment, so that the correct
+           compiler will be detected.
+         </I></FONT></TD></TR></TABLE>
+
+         <P>Once the configuration part is complete you can run the
+            build tool of choice.  This may be done generically using
+            <CODE><FONT face="courier, monospaced">cmake --build . [--config=Debug|Release]</FONT></CODE>.
+            Alternatively, a specific build tool, e.g. <CODE><FONT face="courier, monospaced">make</FONT></CODE>,
+            <CODE><FONT face="courier, monospaced">gmake</FONT></CODE>, <CODE><FONT face="courier, monospaced">ninja</FONT></CODE> or
+            <CODE><FONT face="courier, monospaced">msbuild</FONT></CODE> corresponding to the chosen generator
+            may be used directly.  When invoked without a specific
+            target, it will build the Xerces-C++ library, all examples
+            and all unit tests.</P>
+
+         <P>If you would like to run the automated test suite, run
+            <CODE><FONT face="courier, monospaced">ctest [-V] [-C Debug|Release]</FONT></CODE>.  This will run
+            all tests.  Additional <A href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">options</A>
+            are available, such as running a subset of the tests and
+            running the tests in parallel.  If any discrepancies in the
+            output are detected, the differences will be displayed if a
+            <CODE><FONT face="courier, monospaced">diff</FONT></CODE> program is available.</P>
+
+         <P>Finally, install the library and examples.  This may be
+            done generically using <CODE><FONT face="courier, monospaced">cmake --build . --target
+            install</FONT></CODE>.  Alternatively, a specific build tool may be
+            used, e.g. <CODE><FONT face="courier, monospaced">make install</FONT></CODE>.  To change the
+            installation directory, use the
+            <CODE><FONT face="courier, monospaced">-DCMAKE_INSTALL_PREFIX=prefix</FONT></CODE> <CODE><FONT face="courier, monospaced">cmake</FONT></CODE>
+            option.</P>
+
+         <P>Some platforms and configurations may require extra
+            <CODE><FONT face="courier, monospaced">cmake</FONT></CODE> options.  Run <CODE><FONT face="courier, monospaced">cmake -LH</FONT></CODE> to
+            list the additional options, along with a short description
+            for each.  For each of the selection categories mentioned
+            above, the help text will list the valid choices detected for
+            your platform.  Run <CODE><FONT face="courier, monospaced">cmake -LAH</FONT></CODE> for all the
+            additional advanced settings.</P>
+
+         <P>Several examples of configuring, building, testing and
+            installing with CMake using different platforms, generators,
+            and installation options are shown below:</P>
+
+      <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+        <TR>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Platform</B>&nbsp;
+      </FONT></TD>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Generator</B>&nbsp;
+      </FONT></TD>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Example</B>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Any&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Ninja&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">mkdir build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cd build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/opt/xerces-c -DCMAKE_BUILD_TYPE=Release -Dnetwork-accessor=curl /path/to/xerces-c/source</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">ninja</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">ctest -V -j 8</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">ninja install</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Unix&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Unix Makefiles&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">mkdir build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cd build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cmake -G &quot;Unix Makefiles&quot; -DCMAKE_INSTALL_PREFIX=/opt/xerces-c -DCMAKE_BUILD_TYPE=Debug -Dmessage-loader=icu /path/to/xerces-c/source</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">make -j8</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">make test</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">make install</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Windows&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">msbuild with VS2015 x64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">mkdir build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cd build</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cmake -G &quot;Visual Studio 14 2015 Win64&quot; -DCMAKE_INSTALL_PREFIX=D:\libs &nbsp;&nbsp; \path\to\xerces-c\source</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cmake --build . --config Debug</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">ctest -V -C Debug -j 4</FONT></CODE><BR>
+          <CODE><FONT face="courier, monospaced">cmake --build . --config Debug --target install</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        </TABLE>
+        <P></P>
+
+        <TABLE border="0" cellpadding="0" cellspacing="3" width="100%"><TR><TD valign="top" width="20"><IMG alt="Note" border="0" height="24" hspace="0" src="resources/note.gif" vspace="0" width="20"></TD><TD valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><I>
+          Note that different UNIX platforms use different system
+          environment variables for finding shared libraries. On Linux
+          and Solaris, the environment variable name is
+          <CODE><FONT face="courier, monospaced">LD_LIBRARY_PATH</FONT></CODE>, on AIX it is
+          <CODE><FONT face="courier, monospaced">LIBPATH</FONT></CODE>, on Mac OS X it is
+          <CODE><FONT face="courier, monospaced">DYLD_FALLBACK_LIBRARY_PATH</FONT></CODE>, and on HP-UX it is
+          <CODE><FONT face="courier, monospaced">SHLIB_PATH</FONT></CODE>.
+        </I></FONT></TD></TR></TABLE>
+
+	<TABLE border="0" cellpadding="0" cellspacing="3" width="100%"><TR><TD valign="top" width="20"><IMG alt="Note" border="0" height="24" hspace="0" src="resources/note.gif" vspace="0" width="20"></TD><TD valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><I>
+          Note that Windows is different from the UNIX platforms in
+          the way it finds shared libraries at run time.  While UNIX
+          platforms may use the <CODE><FONT face="courier, monospaced">LD_LIBRARY_PATH</FONT></CODE>
+          environment variable, Windows uses the <CODE><FONT face="courier, monospaced">PATH</FONT></CODE>
+          environment variable if the library is not in the same
+          directory as the executable.
+        </I></FONT></TD></TR></TABLE>
+    </FONT></TD></TR></TABLE><BR>
+
+    <A name="UNIX"><!--anchor--></A>
+    <TABLE border="0" cellpadding="0" cellspacing="0" width="484"><TR><TD bgcolor="ffffff" colspan="2" width="484"><TABLE border="0" cellpadding="0" cellspacing="0" width="484"><TR><TD bgcolor="#039acc" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#039acc" height="1" width="482"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="482"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#039acc" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" width="482"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="2" hspace="0" src="resources/void.gif" vspace="0" width="2"><B>Building on UNIX/Linux/Mac OS X/Cygwin/MinGW platforms</B></FONT></TD><TD bgcolor="#017299" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#017299" height="1" width="482"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="482"></TD><TD bgcolor="#017299" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></TD></TR><TR><TD width="10">&nbsp;</TD><TD width="474"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">
+
+        <P>For building on UNIX and UNIX-like (GNU/Linux, Max OS X,
+           Cygwin, MinGW-MSYS) platforms Xerces-C++ uses the
+           GNU automake-based build systems and requires that you
+           have <A href="http://www.gnu.org/software/make/make.html">GNU
+           make</A> installed. On some platforms GNU make is called gmake
+           instead of make.</P>
+
+        <P>As with all automake-based projects the build process is divided
+           into two parts: configuration and building. The configuration
+           part is performed using the <CODE><FONT face="courier, monospaced">configure</FONT></CODE> script that
+           can be found in the <CODE><FONT face="courier, monospaced">xerces-c-3.2.3</FONT></CODE> directory.
+           The build part is performed by invoking <CODE><FONT face="courier, monospaced">make</FONT></CODE>.</P>
+
+        <P>Besides the standard <CODE><FONT face="courier, monospaced">configure</FONT></CODE> options which
+           you can view by running <CODE><FONT face="courier, monospaced">configure --help</FONT></CODE>,
+           Xerces-C++ provides a number of project-specific options
+           that are worth mentioning. You can specify one option for
+           each category outlined below. If you do not specify anything
+           for a particular category then <CODE><FONT face="courier, monospaced">configure</FONT></CODE> will
+           select the most appropriate default. At the end of its
+           execution <CODE><FONT face="courier, monospaced">configure</FONT></CODE> prints the selected
+           values for each category.</P>
+
+
+	<P>Net Accessor (used to access network resources):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-netaccessor-curl</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the libcurl library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-netaccessor-socket</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use plain sockets&nbsp;
+      </FONT></TD>
+          </TR>
+	  <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-netaccessor-cfurl</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the CFURL API (only on Mac OS X)&nbsp;
+      </FONT></TD>
+          </TR>
+	  <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-netaccessor-winsock</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use WinSock (only on Windows, Cygwin, MinGW)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--disable-network</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">disable network support&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+	<P>Transcoder (used to convert between internal UTF-16 and other encodings):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-transcoder-gnuiconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the GNU iconv library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-transcoder-iconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the iconv library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-transcoder-icu</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use the ICU library&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-transcoder-macosunicodeconverter</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use Mac OS X APIs (only on Mac OS X)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-transcoder-windows</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use Windows APIs (only on Windows, Cygwin, MinGW)&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+	<P>Message Loader (used to access diagnostics messages):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-msgloader-inmemory</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages in memory&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-msgloader-icu</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages using the ICU resource bundles&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-msgloader-iconv</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">store the messages in the iconv message catalog&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+        <P>XMLCh type (UTF-16 character type):</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+            <TR>
+                <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+                <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-xmlch-char16_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">char16_t</FONT></CODE> (requires a C++11 compiler)&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-xmlch-uint16_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">uint16_t</FONT></CODE> from
+                    <CODE><FONT face="courier, monospaced">&lt;cstdint&gt;</FONT></CODE> or
+                    <CODE><FONT face="courier, monospaced">&lt;stdint.h&gt;</FONT></CODE>, or another unsigned
+                    16-bit type such as <CODE><FONT face="courier, monospaced">unsigned short</FONT></CODE> if
+                    the standard types are unavailable&nbsp;
+      </FONT></TD>
+            </TR>
+            <TR>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-xmlch-wchar_t</FONT></CODE>&nbsp;
+      </FONT></TD>
+                <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">use <CODE><FONT face="courier, monospaced">wchar_t</FONT></CODE> (Windows only)&nbsp;
+      </FONT></TD>
+            </TR>
+        </TABLE>
+
+        <P>Thread support is enabled by default and can be disabled with the
+           <CODE><FONT face="courier, monospaced">--disable-threads</FONT></CODE> option.  If disabled,
+           it will not be possible to select a mutex manager other than
+           <CODE><FONT face="courier, monospaced">nothreads</FONT></CODE>.  If enabled, one of the following
+           mutex managers may be selected:</P>
+
+        <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+          <TR>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Option</B>&nbsp;
+      </FONT></TD>
+            <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-mutexmgr-standard</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use Standard C++ mutex (requires a C++11 compiler)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-mutexmgr-posix</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use POSIX threads (pthreads)  mutex (only on UNIX and Cygwin)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-mutexmgr-windows</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use Windows threads mutex (Windows and MinGW only)&nbsp;
+      </FONT></TD>
+          </TR>
+          <TR>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">--enable-mutexmgr-nothreads</FONT></CODE>&nbsp;
+      </FONT></TD>
+            <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Use dummy implementation (default if threading is disabled)&nbsp;
+      </FONT></TD>
+          </TR>
+        </TABLE>
+
+        <P>By default <CODE><FONT face="courier, monospaced">configure</FONT></CODE> selects both shared and static
+           libraries. You can use the <CODE><FONT face="courier, monospaced">--disable-shared</FONT></CODE> and
+           <CODE><FONT face="courier, monospaced">--disable-static</FONT></CODE> options to avoid building the
+           version you don't need.</P>
+
+        <P>Finally, to make the build process cleaner the Xerces-C++
+           build system hides actual compiler commands being executed
+           by <CODE><FONT face="courier, monospaced">make</FONT></CODE>. If you would like to see those then you
+           can specify the <CODE><FONT face="courier, monospaced">--disable-pretty-make</FONT></CODE> option.</P>
+
+         <P>If you need to specify compiler executables that should be
+            used to build Xerces-C++, you can set the CC and CXX
+            variables when invoking <CODE><FONT face="courier, monospaced">configure</FONT></CODE>. Similarly,
+	    if you need to specify additional compiler or linker options,
+            you can set the CFLAGS, CXXFLAGS, and LDFLAGS variables.
+            For example:</P>
+
+         <DIV align="left"><TABLE border="0" cellpadding="0" cellspacing="4" width="464"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="462"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="462"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff" width="462"><FONT size="-1"><PRE>./configure --disable-static CC=gcc-4.3 CXX=g++-4.3 CFLAGS=-O3 CXXFLAGS=-O3</PRE></FONT></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="462"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="462"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+
+         <P>Once the configuration part is complete you can run
+            <CODE><FONT face="courier, monospaced">make</FONT></CODE> (or <CODE><FONT face="courier, monospaced">gmake</FONT></CODE>). Running
+            <CODE><FONT face="courier, monospaced">make</FONT></CODE> from the <CODE><FONT face="courier, monospaced">xerces-c-3.2.3</FONT></CODE>
+            directory builds Xerces-C++ library and examples. The
+            library is placed into the <CODE><FONT face="courier, monospaced">src/.libs</FONT></CODE> directory. If
+            you like to build only the library, you can run make from
+            <CODE><FONT face="courier, monospaced">xerces-c-3.2.3/src</FONT></CODE>.</P>
+
+         <P>If you would like to build the tests and run the
+            automated test suite, run <CODE><FONT face="courier, monospaced">make check</FONT></CODE>
+            from the <CODE><FONT face="courier, monospaced">xerces-c-3.2.3</FONT></CODE>
+            directory. The automated test suite required
+            Perl and the <CODE><FONT face="courier, monospaced">diff</FONT></CODE> command.</P>
+
+         <P>Finally, to install the library and examples you can run
+            <CODE><FONT face="courier, monospaced">make install</FONT></CODE> (or <CODE><FONT face="courier, monospaced">gmake install</FONT></CODE>).
+            To change the installation directory, use the <CODE><FONT face="courier, monospaced">--prefix</FONT></CODE>
+            <CODE><FONT face="courier, monospaced">configure</FONT></CODE> option.</P>
+
+         <P>Some platforms and configurations require extra
+            <CODE><FONT face="courier, monospaced">configure</FONT></CODE> and <CODE><FONT face="courier, monospaced">make</FONT></CODE> options
+            which are shown in the following table.</P>
+
+      <TABLE border="0" cellpadding="2" cellspacing="2" width="100%">
+        <TR>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Platform</B>&nbsp;
+      </FONT></TD>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Compiler</B>&nbsp;
+      </FONT></TD>
+          <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Options</B>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Solaris x86&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sun CC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=CC CC=cc</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Solaris x86-64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sun CC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=CC CC=cc CFLAGS=-xarch=amd64 CXXFLAGS=-xarch=amd64</FONT></CODE><BR>
+              (for newer Sun CC versions use -m64 instead of -xarch=amd64)&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Solaris SPARC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sun CC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=CC CC=cc</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Solaris SPARCv9&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sun CC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=CC CC=cc CFLAGS=-xarch=v9 CXXFLAGS=-xarch=v9</FONT></CODE><BR>
+              (for newer Sun CC versions use -m64 instead of -xarch=v9)&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">AIX PowerPC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">IBM XL C++&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=xlC_r CC=xlc_r</FONT></CODE><BR>
+              <CODE><FONT face="courier, monospaced">gmake libxerces_c_la_LDFLAGS=-qmkshrobj</FONT></CODE><BR>
+              (for xlC v11-v13, libxerces_c_la_LDFLAGS is not needed, but CXXFLAGS=-rtti is needed otherwise RTTI is disabled by default)&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">AIX PowerPC-64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">IBM XL C++&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">export OBJECT_MODE=64</FONT></CODE><BR>
+              <CODE><FONT face="courier, monospaced">./configure CXX=xlC_r CC=xlc_r CXXFLAGS=-q64 CFLAGS=-q64</FONT></CODE><BR>
+              <CODE><FONT face="courier, monospaced">gmake libxerces_c_la_LDFLAGS=-qmkshrobj</FONT></CODE><BR>
+              (for xlC v11-v13, libxerces_c_la_LDFLAGS is not needed, but CXXFLAGS=&quot;-q64 -rtti&quot; is needed otherwise RTTI is disabled by default)&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">HP-UX IA-64-32&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">HP aCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=aCC CC=aCC CFLAGS=-mt CXXFLAGS=-mt LDFLAGS=-mt</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">HP-UX IA-64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">HP aCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CXX=aCC CC=aCC CFLAGS=&quot;-mt +DD64&quot; CXXFLAGS=&quot;-mt +DD64&quot; LDFLAGS=&quot;-mt +DD64&quot;</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Mac OS X x86-64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">GCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CFLAGS=&quot;-arch x86_64&quot; CXXFLAGS=&quot;-arch x86_64&quot; </FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Mac OS X PowerPC-64&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">GCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure CFLAGS=&quot;-arch ppc64&quot; CXXFLAGS=&quot;-arch ppc64&quot;</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Mac OS X x86/PowerPC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">GCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure --disable-dependency-tracking CFLAGS=&quot;-arch i386 -arch ppc&quot; CXXFLAGS=&quot;-arch i386 -arch ppc&quot;</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Mingw x86&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">GCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure LDFLAGS=-no-undefined</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        <TR>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Cygwin x86&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">GCC&nbsp;
+      </FONT></TD>
+          <TD align="" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><CODE><FONT face="courier, monospaced">./configure LDFLAGS=-no-undefined</FONT></CODE>&nbsp;
+      </FONT></TD>
+        </TR>
+        </TABLE>
+        <P></P>
+
+        <TABLE border="0" cellpadding="0" cellspacing="3" width="100%"><TR><TD valign="top" width="20"><IMG alt="Note" border="0" height="24" hspace="0" src="resources/note.gif" vspace="0" width="20"></TD><TD valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><I>
+         Note that different UNIX platforms use different system
+         environment variable for finding shared libraries. On Linux
+         and Solaris, the environment variable name is
+         <CODE><FONT face="courier, monospaced">LD_LIBRARY_PATH</FONT></CODE>, on AIX it is
+         <CODE><FONT face="courier, monospaced">LIBPATH</FONT></CODE>, on Mac OS X it is
+         <CODE><FONT face="courier, monospaced">DYLD_LIBRARY_PATH</FONT></CODE>, and on HP-UX
+         it is <CODE><FONT face="courier, monospaced">SHLIB_PATH</FONT></CODE>.
+        </I></FONT></TD></TR></TABLE>
+
+	<TABLE border="0" cellpadding="0" cellspacing="3" width="100%"><TR><TD valign="top" width="20"><IMG alt="Note" border="0" height="24" hspace="0" src="resources/note.gif" vspace="0" width="20"></TD><TD valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1"><I>
+          Note that Cygwin and MinGW are different from the UNIX platforms
+          in the way they find shared libraries at run time. While UNIX
+          platforms may use the <CODE><FONT face="courier, monospaced">LD_LIBRARY_PATH</FONT></CODE> environment
+          variable, Cygwin and MinGW use the <CODE><FONT face="courier, monospaced">PATH</FONT></CODE> environment
+          variable.
+        </I></FONT></TD></TR></TABLE>
+    </FONT></TD></TR></TABLE><BR>
+
+  </FONT></TD></TR></TABLE><BR>
+</TD></TR></TABLE></TD></TR></TABLE><BR><TABLE border="0" cellpadding="0" cellspacing="0" width="620"><TR><TD bgcolor="#0086b2"><IMG height="1" src="resources/dot.gif" width="1"></TD></TR><TR><TD align="center"><FONT color="#0086b2" size="-1"><I>
+              Copyright &copy; 1999-2017 The Apache Software Foundation.
+              All Rights Reserved.
+            </I></FONT></TD></TR></TABLE></BODY></HTML>

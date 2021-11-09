@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/InitTermTest personal.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest1.log" 
+Result: pass
+------
+obs=Test Run Successfully
+------
+exp=Test Run Successfully
+------
+PASS scripts/InitTermTest1 (exit status: 0)

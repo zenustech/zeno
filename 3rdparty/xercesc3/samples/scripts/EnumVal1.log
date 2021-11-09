@@ -1,0 +1,72 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/EnumVal personal.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/EnumVal1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/EnumVal1.log" 
+Result: pass
+------
+obs=
+ELEMENTS:
+----------------------------
+  Name: personnel
+  Content Model: (person)+
+
+  Name: person
+  Content Model: (name,email*,url*,link?)
+  Attributes:
+    Name:id, Type: ID
+
+  Name: name
+  Content Model: (#PCDATA|family|given)*
+
+  Name: email
+  Content Model: (#PCDATA)
+
+  Name: url
+  Content Model: EMPTY
+  Attributes:
+    Name:href, Type: CDATA
+
+  Name: link
+  Content Model: EMPTY
+  Attributes:
+    Name:manager, Type: IDREF(S)
+    Name:subordinates, Type: IDREF(S)
+
+  Name: family
+  Content Model: (#PCDATA)
+
+  Name: given
+  Content Model: (#PCDATA)
+------
+exp=
+ELEMENTS:
+----------------------------
+  Name: personnel
+  Content Model: (person)+
+
+  Name: person
+  Content Model: (name,email*,url*,link?)
+  Attributes:
+    Name:id, Type: ID
+
+  Name: name
+  Content Model: (#PCDATA|family|given)*
+
+  Name: email
+  Content Model: (#PCDATA)
+
+  Name: url
+  Content Model: EMPTY
+  Attributes:
+    Name:href, Type: CDATA
+
+  Name: link
+  Content Model: EMPTY
+  Attributes:
+    Name:manager, Type: IDREF(S)
+    Name:subordinates, Type: IDREF(S)
+
+  Name: family
+  Content Model: (#PCDATA)
+
+  Name: given
+  Content Model: (#PCDATA)
+------
+PASS scripts/EnumVal1 (exit status: 0)

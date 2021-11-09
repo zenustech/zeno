@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/PParse -n -s personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse2.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse2.log" 
+Result: pass
+------
+obs=personal-schema.xml:{timing removed}(37 elems, 29 attrs, 140 spaces, 128 chars)
+------
+exp=personal-schema.xml:{timing removed}(37 elems, 29 attrs, 140 spaces, 128 chars)
+------
+PASS scripts/PParse2 (exit status: 0)

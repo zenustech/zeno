@@ -1,0 +1,28 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/InitTermTest  > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/InitTermTest.log" 
+Result: fail
+------
+obs=
+Usage:
+    InitTermTest [options] <XML file>
+
+This program tests the XMLPlatformUtils::Initialize()/Terminate()
+pair by calling it a number of times.
+Options:
+    -n          Enable namespace processing. Default is off.
+    -s          Enable schema processing. Default is off.
+    -f          Enable full schema constraint checking. Defaults to off.
+    -?          Show this help.
+------
+exp=
+Usage:
+    InitTermTest [options] <XML file>
+
+This program tests the XMLPlatformUtils::Initialize()/Terminate()
+pair by calling it a number of times.
+Options:
+    -n          Enable namespace processing. Default is off.
+    -s          Enable schema processing. Default is off.
+    -f          Enable full schema constraint checking. Defaults to off.
+    -?          Show this help.
+------
+XFAIL scripts/InitTermTest (exit status: 1)

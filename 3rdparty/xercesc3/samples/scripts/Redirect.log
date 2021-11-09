@@ -1,0 +1,26 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/Redirect  > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/Redirect.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/Redirect.log" 
+Result: fail
+------
+obs=
+Usage:
+    Redirect <XML file>
+
+This program installs an entity resolver, traps the call to
+the external DTD file and redirects it to another application
+specific file which contains the actual dtd.
+
+The program then counts and reports the number of elements and
+attributes in the given XML file.
+------
+exp=
+Usage:
+    Redirect <XML file>
+
+This program installs an entity resolver, traps the call to
+the external DTD file and redirects it to another application
+specific file which contains the actual dtd.
+
+The program then counts and reports the number of elements and
+attributes in the given XML file.
+------
+XFAIL scripts/Redirect (exit status: 1)

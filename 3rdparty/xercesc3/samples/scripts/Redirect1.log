@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/Redirect personal.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/Redirect1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/Redirect1.log" 
+Result: pass
+------
+obs=personal.xml:{timing removed}(37 elems, 12 attrs, 0 spaces, 268 chars)
+------
+exp=personal.xml:{timing removed}(37 elems, 12 attrs, 0 spaces, 268 chars)
+------
+PASS scripts/Redirect1 (exit status: 0)

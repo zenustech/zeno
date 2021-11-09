@@ -1,0 +1,108 @@
+Name:			personnel
+Model Type:		Children
+Create Reason:	Declared
+ContentType:	Sequence
+Content Model:	(person+)
+ComplexType:
+	TypeName:	,__AnonC0
+	ContentType:	Sequence
+--------------------------------------------
+Name:			person
+Model Type:		Children
+Create Reason:	Declared
+ContentType:	Sequence
+Content Model:	(name,email*,url*,link?)
+ComplexType:
+	TypeName:	,__AnonC1
+	ContentType:	Sequence
+Attributes:
+	Name:			id
+	Type:			ID
+	Default Type:	#REQUIRED
+	Base Datatype:		ID
+
+	Name:			note
+	Type:			CDATA
+	Default Type:	#IMPLIED
+	Base Datatype:		string
+
+	Name:			contr
+	Type:			CDATA
+	Default Type:	#DEFAULT
+	Value:			false
+	Base Datatype:		string
+Enumeration:		
+	true
+	false
+
+	Name:			salary
+	Type:			CDATA
+	Default Type:	#IMPLIED
+	Base Datatype:		Decimal
+Facets:		
+	fractionDigits=0
+	pattern=[+\-]?[0-9]+
+
+--------------------------------------------
+Name:			name
+Model Type:		Children
+Create Reason:	Declared
+ContentType:	All
+Content Model:	All(family,given)
+ComplexType:
+	TypeName:	,__AnonC2
+	ContentType:	All
+--------------------------------------------
+Name:			family
+Model Type:		Simple
+Create Reason:	Declared
+ComplexType:
+	TypeName:	,__AnonC3
+Base Datatype:		string
+--------------------------------------------
+Name:			given
+Model Type:		Simple
+Create Reason:	Declared
+ComplexType:
+	TypeName:	,__AnonC4
+Base Datatype:		string
+--------------------------------------------
+Name:			email
+Model Type:		Simple
+Create Reason:	Declared
+Base Datatype:		string
+--------------------------------------------
+Name:			url
+Model Type:		Empty
+Create Reason:	Declared
+Content Model:	EMPTY
+ComplexType:
+	TypeName:	,__AnonC5
+Attributes:
+	Name:			href
+	Type:			CDATA
+	Default Type:	#DEFAULT
+	Value:			http://
+	Base Datatype:		string
+
+--------------------------------------------
+Name:			link
+Model Type:		Empty
+Create Reason:	Declared
+Content Model:	EMPTY
+ComplexType:
+	TypeName:	,__AnonC6
+Attributes:
+	Name:			manager
+	Type:			IDREF
+	Default Type:	#IMPLIED
+	Base Datatype:		IDREF
+
+	Name:			subordinates
+	Type:			IDREFS
+	Default Type:	#IMPLIED
+	Base Datatype:		List
+Facets:		
+	minLength=1
+
+--------------------------------------------

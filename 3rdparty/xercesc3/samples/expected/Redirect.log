@@ -1,0 +1,11 @@
+
+Usage:
+    Redirect <XML file>
+
+This program installs an entity resolver, traps the call to
+the external DTD file and redirects it to another application
+specific file which contains the actual dtd.
+
+The program then counts and reports the number of elements and
+attributes in the given XML file.
+

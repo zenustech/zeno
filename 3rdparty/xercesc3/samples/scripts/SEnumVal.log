@@ -1,0 +1,20 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/SEnumVal  > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SEnumVal.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SEnumVal.log" 
+Result: fail
+------
+obs=
+Usage:
+    SEnumVal <XML file>
+
+This program parses a file, then shows how to enumerate the
+contents of the Schema Grammar. Essentially, shows how one can
+access the Schema information stored in internal data structures.
+------
+exp=
+Usage:
+    SEnumVal <XML file>
+
+This program parses a file, then shows how to enumerate the
+contents of the Schema Grammar. Essentially, shows how one can
+access the Schema information stored in internal data structures.
+------
+XFAIL scripts/SEnumVal (exit status: 1)

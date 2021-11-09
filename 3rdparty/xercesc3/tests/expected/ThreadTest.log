@@ -1,0 +1,20 @@
+No input XML file specified on command line.
+usage:  ThreadTest [-v] [-threads nnn] [-time nnn] [-quiet] [-verbose] xmlfile...
+     -v=xxx         Validation scheme [always | never | auto].  Default is AUTO.
+     -n             Enable namespace processing. Defaults to off.
+     -s             Enable schema processing. Defaults to off.
+     -f             Enable full schema constraint checking. Defaults to off.
+     -parser=xxx    Parser Type [dom | sax | sax2].  Default is SAX (SAX1).
+     -p             Enable namespace prefixes. Defaults to off.
+                    (Only used with -parser=sax2, ignored otherwise.)
+     -quiet         Suppress periodic status display.
+     -verbose       Display extra messages.
+     -reuse         Retain and reuse parser.  Default creates new for each parse.
+     -threads nnn   Number of threads.  Default is 2.
+     -time nnn      Total time to run, in seconds.  Default is forever.
+     -parses nnn    Run for nnn parses instead of time.  Default is to use time
+     -dump          Dump DOM tree on error.
+     -mem           Read files into memory once only, and parse them from there.
+     -gc            Enable grammar caching (i.e. grammar cached and used in subsequent parses). Defaults to off.
+     -init          Perform an initial parse of the file(s) before starting up the individual threads.
+

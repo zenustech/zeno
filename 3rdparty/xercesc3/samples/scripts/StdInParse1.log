@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/StdInParse  < personal.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/StdInParse1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/StdInParse1.log" 
+Result: pass
+------
+obs=stdin:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+exp=stdin:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+PASS scripts/StdInParse1 (exit status: 0)

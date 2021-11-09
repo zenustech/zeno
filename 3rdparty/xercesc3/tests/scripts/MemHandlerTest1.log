@@ -1,0 +1,14 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/MemHandlerTest -v=always -n -r=2 personal.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/MemHandlerTest1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/MemHandlerTest1.log" 
+Result: pass
+------
+obs=At destruction, domBuilderMemMonitor has 0 bytes.
+At destruction, sax2MemMonitor has 0 bytes.
+At destruction, sax1MemMonitor has 0 bytes.
+At destruction, staticMemMonitor has 0 bytes.
+------
+exp=At destruction, domBuilderMemMonitor has 0 bytes.
+At destruction, sax2MemMonitor has 0 bytes.
+At destruction, sax1MemMonitor has 0 bytes.
+At destruction, staticMemMonitor has 0 bytes.
+------
+PASS scripts/MemHandlerTest1 (exit status: 0)

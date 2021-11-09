@@ -1,0 +1,23 @@
+
+Finished parsing the memory buffer containing the following XML statements:
+
+<?xml version='1.0' encoding='ascii'?>
+<!DOCTYPE company [
+<!ELEMENT company     (product,category,developedAt)>
+<!ELEMENT product     (#PCDATA)>
+<!ELEMENT category    (#PCDATA)>
+<!ATTLIST category idea CDATA #IMPLIED>
+<!ELEMENT developedAt (#PCDATA)>
+]>
+
+<company>
+    <product>XML4C</product>
+    <category idea='great'>XML Parsing Tools</category>
+    <developedAt>
+      IBM Center for Java Technology, Silicon Valley, Cupertino, CA
+    </developedAt>
+</company>
+
+
+Parsing took{timing removed}(4 elements, 1 attributes, 0 spaces, 111 characters).
+

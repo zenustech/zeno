@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/PParse personal.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse1.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/PParse1.log" 
+Result: pass
+------
+obs=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+exp=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+PASS scripts/PParse1 (exit status: 0)

@@ -1,0 +1,8 @@
+
+Usage:
+    SEnumVal <XML file>
+
+This program parses a file, then shows how to enumerate the
+contents of the Schema Grammar. Essentially, shows how one can
+access the Schema information stored in internal data structures.
+

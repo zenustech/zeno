@@ -1,0 +1,22 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/EnumVal  > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/EnumVal.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/EnumVal.log" 
+Result: fail
+------
+obs=
+Usage:
+    EnumVal <XML file>
+
+This program parses the specified XML file, then shows how to
+enumerate the contents of the DTD Grammar. Essentially,
+shows how one can access the DTD information stored in internal
+data structures.
+------
+exp=
+Usage:
+    EnumVal <XML file>
+
+This program parses the specified XML file, then shows how to
+enumerate the contents of the DTD Grammar. Essentially,
+shows how one can access the DTD information stored in internal
+data structures.
+------
+XFAIL scripts/EnumVal (exit status: 1)

@@ -1,0 +1,86 @@
+Running /Users/scantor/Documents/workspace/xerces-c/samples/SAXPrint -n -s personal-schema.xml > "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SAXPrint3.log" 2> "/Users/scantor/Documents/workspace/xerces-c/samples/observed/SAXPrint3.log" 
+Result: pass
+------
+obs=<?xml version="1.0" encoding="LATIN1"?>
+<?proc-inst-1 'foo' ?><personnel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="personal.xsd">
+
+  <person id="Big.Boss" contr="false">
+    <name xml:base="foo/bar"><family xml:base="bar/bar">Boss</family> <given xml:base="car/bar">Big</given><?proc-inst-2 'foobar' ?></name>
+    <email>chief@foo.com</email>
+    <link subordinates="one.worker two.worker three.worker four.worker five.worker"></link>
+  </person>
+
+  <person id="one.worker" xml:base="/auto/bar" contr="false">
+    <name xml:base="/car/foo/"><family xml:base="bar/bar">Worker</family> <given>One</given></name>
+    <email>one@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="two.worker" xml:base="http://www.example.com/car/car" contr="false">
+    <name xml:base="/bar/foo/"><family xml:base="foo/bar">Worker</family> <given>Two</given></name>
+    <email>two@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="three.worker" contr="false">
+    <name><family>Worker</family> <given>Three</given></name>
+    <email>three@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="four.worker" contr="false">
+    <name><family>Worker</family> <given>Four</given></name>
+    <email>four@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="five.worker" contr="false">
+    <name><family>Worker</family> <given>Five</given></name>
+    <email>five@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+</personnel>
+------
+exp=<?xml version="1.0" encoding="LATIN1"?>
+<?proc-inst-1 'foo' ?><personnel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="personal.xsd">
+
+  <person id="Big.Boss" contr="false">
+    <name xml:base="foo/bar"><family xml:base="bar/bar">Boss</family> <given xml:base="car/bar">Big</given><?proc-inst-2 'foobar' ?></name>
+    <email>chief@foo.com</email>
+    <link subordinates="one.worker two.worker three.worker four.worker five.worker"></link>
+  </person>
+
+  <person id="one.worker" xml:base="/auto/bar" contr="false">
+    <name xml:base="/car/foo/"><family xml:base="bar/bar">Worker</family> <given>One</given></name>
+    <email>one@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="two.worker" xml:base="http://www.example.com/car/car" contr="false">
+    <name xml:base="/bar/foo/"><family xml:base="foo/bar">Worker</family> <given>Two</given></name>
+    <email>two@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="three.worker" contr="false">
+    <name><family>Worker</family> <given>Three</given></name>
+    <email>three@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="four.worker" contr="false">
+    <name><family>Worker</family> <given>Four</given></name>
+    <email>four@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+  <person id="five.worker" contr="false">
+    <name><family>Worker</family> <given>Five</given></name>
+    <email>five@foo.com</email>
+    <link manager="Big.Boss"></link>
+  </person>
+
+</personnel>
+------
+PASS scripts/SAXPrint3 (exit status: 0)

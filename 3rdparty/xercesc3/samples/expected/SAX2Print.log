@@ -1,0 +1,28 @@
+
+Usage:
+    SAX2Print [options] <XML file>
+
+This program invokes the SAX2XMLReader, and then prints the
+data returned by the various SAX2 handlers for the specified
+XML file.
+
+Options:
+    -u=xxx      Handle unrepresentable chars [fail | rep | ref*].
+    -v=xxx      Validation scheme [always | never | auto*].
+    -e          Expand Namespace Alias with URI's. Defaults to off.
+    -x=XXX      Use a particular encoding for output (LATIN1*).
+    -f          Enable full schema constraint checking processing. Defaults to off.
+    -p          Enable namespace-prefixes feature. Defaults to off.
+    -n          Disable namespace processing. Defaults to on.
+                NOTE: THIS IS OPPOSITE FROM OTHER SAMPLES.
+    -s          Disable schema processing. Defaults to on.
+                NOTE: THIS IS OPPOSITE FROM OTHER SAMPLES.
+    -sa         Print the attributes in alphabetic order. Defaults to off.
+    -?          Show this help.
+
+  * = Default if not provided explicitly.
+
+The parser has intrinsic support for the following encodings:
+    UTF-8, US-ASCII, ISO8859-1, UTF-16[BL]E, UCS-4[BL]E,
+    WINDOWS-1252, IBM1140, IBM037, IBM1047.
+

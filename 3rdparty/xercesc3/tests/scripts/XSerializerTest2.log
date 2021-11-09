@@ -1,0 +1,8 @@
+Running /Users/scantor/Documents/workspace/xerces-c/tests/XSerializerTest -v=always personal.xml > "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSerializerTest2.log" 2> "/Users/scantor/Documents/workspace/xerces-c/tests/observed/XSerializerTest2.log" 
+Result: pass
+------
+obs=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+exp=personal.xml:{timing removed}(37 elems, 12 attrs, 134 spaces, 134 chars)
+------
+PASS scripts/XSerializerTest2 (exit status: 0)

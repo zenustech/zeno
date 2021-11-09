@@ -1,0 +1,34 @@
+
+ELEMENTS:
+----------------------------
+  Name: personnel
+  Content Model: (person)+
+
+  Name: person
+  Content Model: (name,email*,url*,link?)
+  Attributes:
+    Name:id, Type: ID
+
+  Name: name
+  Content Model: (#PCDATA|family|given)*
+
+  Name: email
+  Content Model: (#PCDATA)
+
+  Name: url
+  Content Model: EMPTY
+  Attributes:
+    Name:href, Type: CDATA
+
+  Name: link
+  Content Model: EMPTY
+  Attributes:
+    Name:manager, Type: IDREF(S)
+    Name:subordinates, Type: IDREF(S)
+
+  Name: family
+  Content Model: (#PCDATA)
+
+  Name: given
+  Content Model: (#PCDATA)
+
