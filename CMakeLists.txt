@@ -71,7 +71,7 @@ set(HIPSYCL_TARGETS "omp;cuda:sm_52;cuda:sm_61;cuda:sm_70;cuda:sm_75;cuda:sm_86"
 if (BATE)
     set(ZENO_WITH_BACKWARD ON)
     set(ZENO_WITH_LEGACY OFF)
-    set(ZENO_WITH_SYCL ON)
+    set(ZENO_WITH_SYCL OFF)
     set(HIPSYCL_TARGETS "omp")
     set(ZENO_TARGET editor)
 endif()
@@ -99,6 +99,10 @@ add_subdirectory(${ZENO_TARGET})
 
 message("-- Building Zeno Core Library")
 add_subdirectory(src)
+
+if (ZENO_WITH_SYCL)
+    target_compile_definitions(zeno PUBLIC -DZENO_WITH_SYCL)
+endif()
 
 if (ZENO_WITH_BACKWARD)
     message("-- Building Zeno with Stack Traceback")
