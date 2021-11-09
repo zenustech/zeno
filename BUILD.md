@@ -19,11 +19,11 @@ Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 > It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
-4. Download and install Qt 5.12: https://download.qt.io/official_releases/qt/5.12/5.12.11/qt-opensource-windows-x86-5.12.11.exe
+4. Download and install Qt via their online installer: https://www.qt.io/download-qt-installer
+
+> You need to click the `Qt 5.12.11` option to install the prebuilt Qt binaries, otherwise only the Qt Creator is selected by default.
 
 > If you find installing Qt troublesome (e.g., asking you for registering a Qt account), feel free to skip it for now, and execute `vcpkg install qt5:x64-windows` later (see the `vcpkg` section) instead.
-
-> Fun fact: you can turn off the Wi-Fi to make Qt not asking you for login to their account.
 
 ### Ubuntu
 

@@ -14,7 +14,7 @@ class QDMNodeParamEdit : public QWidget
 {
     Q_OBJECT
 
-    QFormLayout *layout;
+    QFormLayout *const layout;
     QDMGraphicsNode *currNode{};
 
     QWidget *make_edit_for_type(
