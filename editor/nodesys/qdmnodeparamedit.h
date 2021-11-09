@@ -5,6 +5,8 @@
 #include "qdmgraphicsnode.h"
 #include <QFormLayout>
 #include <QWidget>
+#include <functional>
+#include <string>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -14,6 +16,8 @@ class QDMNodeParamEdit : public QWidget
 
     QFormLayout *layout;
     QDMGraphicsNode *currNode{};
+
+    QWidget *make_edit_for_type(std::string const &type, std::function<void(QString)> const &func);
 
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
