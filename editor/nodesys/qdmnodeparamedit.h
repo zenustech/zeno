@@ -17,7 +17,7 @@ class QDMNodeParamEdit : public QWidget
     QFormLayout *layout;
     QDMGraphicsNode *currNode{};
 
-    QWidget *make_edit_for_type(std::string const &type, std::function<void(QString)> const &func);
+    QWidget *make_edit_for_type(std::string const &type, dop::Input *input);
 
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
