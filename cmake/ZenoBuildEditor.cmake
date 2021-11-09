@@ -8,7 +8,7 @@ find_package(QT NAMES Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 message("-- Found Qt${QT_VERSION_MAJOR} version: ${Qt${QT_VERSION_MAJOR}_VERSION}")
 
-file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
+file(GLOB_RECURSE source RELATIVE editor CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
 add_executable(zeno ${source})
 

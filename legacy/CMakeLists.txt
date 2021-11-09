@@ -1,4 +1,4 @@
-target_include_directories(zeno_core PUBLIC .)
+target_include_directories(zeno PUBLIC .)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp)
-target_sources(zeno_core PRIVATE ${source})
+target_sources(zeno PRIVATE ${source})
