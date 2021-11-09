@@ -7,7 +7,7 @@ namespace types {
 
 
 #ifndef ZENO_WITH_ZYCL
-zycl::vector<math::vec3f> meshToTriangleVertices(Mesh const &mesh) {
+zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
     decltype(auto) vert = mesh.vert.to_vector();
     decltype(auto) loop = mesh.loop.to_vector();
     decltype(auto) poly = mesh.poly.to_vector();
@@ -32,7 +32,7 @@ zycl::vector<math::vec3f> meshToTriangleVertices(Mesh const &mesh) {
     return ret;
 }
 #else
-zycl::vector<math::vec3f> meshToTriangleVertices(Mesh const &mesh) {
+zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
     zycl::vector<int> indices(mesh.poly.size());
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
@@ -49,11 +49,7 @@ zycl::vector<math::vec3f> meshToTriangleVertices(Mesh const &mesh) {
 
     auto sum = zycl::parallel_scan<256>(indices, indices.size());
 
-    zycl::vector<math::vec3f> tris;
-    {
-        auto axr_sum = zycl::host_access<zycl::ro>(sum);
-        tris.resize(axr_sum[0] * 3);
-    }
+    zycl::vector<math::vec3f> tris(zycl::host_get(sum) * 3);
 
     zycl::default_queue().submit([&] (zycl::handler &cgh) {
         auto axr_indices = zycl::make_access<zycl::ro>(cgh, indices);

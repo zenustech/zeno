@@ -50,6 +50,13 @@ auto host_access(auto &&buf, auto &&...args) {
     return make_access<mode>(host_handler{}, buf, std::forward<decltype(args)>(args)...);
 }
 
+
+template <access::mode mode = access::mode::read>
+decltype(auto) host_get(auto &&buf, auto &&...args) {
+    auto axr = zycl::host_access<mode>(buf, std::forward<decltype(args)>(args)...);
+    return axr[0];
+}
+
 }
 }
 ZENO_NAMESPACE_END

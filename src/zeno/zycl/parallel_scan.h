@@ -21,6 +21,7 @@ ZENO_NAMESPACE_BEGIN
 namespace zycl {
 inline namespace ns_parallel_scan {
 
+
 template <size_t blksize, class T>
 auto _M_make_scanner(handler &cgh) {
     auto lxr_blk = local_access<access::mode::read_write, T>(cgh, range<1>(blksize));
@@ -61,6 +62,7 @@ auto _M_make_scanner(handler &cgh) {
         value = lxr_blk[tid];
     };
 }
+
 
 template <size_t blksize, class T>
 void _M_parallel_scan(vector<T> &buf, size_t bufsize) {

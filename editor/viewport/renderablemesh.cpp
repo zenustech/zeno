@@ -98,7 +98,7 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
-        auto tris = types::meshToTriangleVertices(*mesh);
+        auto tris = types::meshToTriangles(*mesh);
         vertices = tris.move_vector();
     }
 
