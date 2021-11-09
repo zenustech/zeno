@@ -1,6 +1,6 @@
-zeno_glob_recurse(source src *.h *.cpp)
+zeno_glob_recurse(source zeno *.h *.cpp)
 target_sources(zeno PRIVATE ${source})
-target_include_directories(zeno PUBLIC src)
+target_include_directories(zeno PUBLIC zeno)
 
 if (ZENO_WITH_SYCL)
     message("-- Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
@@ -17,6 +17,7 @@ endif()
 
 if (ZENO_WITH_BACKWARD)
     message("-- Building Zeno with Stack Traceback")
+    add_subdirectory(depends/backward-cpp)
     target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)
 endif()
