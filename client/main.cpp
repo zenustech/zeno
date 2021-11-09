@@ -1,5 +1,33 @@
 #if 1
 #include <zeno/dop/dop.h>
+#include <zeno/types/Mesh.h>
+#include <zeno/types/MeshIO.h>
+#include <zeno/types/MeshTriangulate.h>
+#include <fstream>
+
+USING_ZENO_NAMESPACE
+
+int main()
+{
+    types::Mesh mesh;
+    {
+        std::ifstream fin("models/cube.obj");
+        types::readMeshFromOBJ(fin, mesh);
+    }
+
+    auto tris = types::meshToTriangleVertices(mesh);
+
+    std::cout << tris.size() << std::endl;
+    for (auto const &[x, y, z]: tris.to_vector()) {
+        std::cout << x << ' ' << y << ' ' << z << std::endl;;
+    }
+
+    return 0;
+}
+
+#else
+#if 1
+#include <zeno/dop/dop.h>
 #include <zeno/ztd/zany.h>
 #include <zeno/types/Mesh.h>
 
@@ -104,4 +132,5 @@ int main()
     return 0;
 }
 
+#endif
 #endif

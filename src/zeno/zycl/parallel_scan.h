@@ -111,7 +111,7 @@ vector<T> parallel_scan(vector<T> &buf, size_t bufsize) {
 
     default_queue().submit([&] (handler &cgh) {
         auto axr_buf = make_access<access::mode::read>(cgh, buf);
-        auto axr_sum = make_access<access::mode::discard_write>(cgh, buf);
+        auto axr_sum = make_access<access::mode::discard_write>(cgh, sum);
 
         cgh.single_task([=] {
             axr_sum[0] = axr_buf[bufsize - 1];
@@ -122,7 +122,7 @@ vector<T> parallel_scan(vector<T> &buf, size_t bufsize) {
 
     default_queue().submit([&] (handler &cgh) {
         auto axr_buf = make_access<access::mode::read>(cgh, buf);
-        auto axr_sum = make_access<access::mode::discard_read_write>(cgh, buf);
+        auto axr_sum = make_access<access::mode::discard_read_write>(cgh, sum);
 
         cgh.single_task([=] {
             axr_sum[0] += axr_buf[bufsize - 1];
