@@ -102,25 +102,23 @@ cmake --build build --parallel 8
 ### Windows (cmd)
 
 ```cmd
-build\editor\zeno.exe
+build\zeno.exe
 ```
 
 ### Linux (bash)
 
 ```bash
-build/editor/zeno
+build/zeno
 ```
 
 ## References
 
 - [VCPKG user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
+- [hipSYCL install guide](https://github.com/illuhad/hipSYCL/blob/develop/doc/installing.md)
 - [CMake documentation](https://cmake.org/cmake/help/latest/)
 - [Git documentation](https://git-scm.com/doc)
 - [C++ references](https://en.cppreference.com/w/)
 - [Qt5 documentation](https://doc.qt.io/qt-5/)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
 - [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020/html/sycl-2020.html)
-- [SYCL specification PDF](https://www.khronos.org/registry/SYCL/specs/sycl-2020-provisional.pdf)
-- [DPC++ documentation](https://intel.github.io/llvm-docs/)
-- [OneAPI references](https://docs.oneapi.io/versions/latest/dpcpp/iface/)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)
