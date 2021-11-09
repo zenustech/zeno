@@ -1,6 +1,5 @@
-#include <zeno/dop/execute.h>
+#include <zeno/dop/Executor.h>
 #include <zeno/dop/Descriptor.h>
-#include <zeno/dop/Exception.h>
 #include <zeno/ztd/variant.h>
 #include <zeno/ztd/any_ptr.h>
 #include <zeno/ztd/error.h>
@@ -70,7 +69,7 @@ void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
     return ztd::match(input
     , [&] (Input_Link const &input) {
         current_node = input.node;
-        input.node->preapply(tolink, visited);
+        input.node->preapply(tolink, this);
     }
     , [&] (Input_Value const &) {
     }
@@ -109,7 +108,7 @@ ztd::any_ptr Executor::evaluate(Input const &input) {
     try {
         return resolve(input);
     } catch (std::exception const &e) {
-        ZENO_LOG_INFO("Exception occurred in {}@{}: {}",
+        ZENO_LOG_INFO("[exception in {}@{}] {}",
                       current_node->desc->name, (void *)current_node,
                       e.what());
         return {};

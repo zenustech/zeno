@@ -6,12 +6,12 @@ namespace {
 
 
 struct If : dop::Node {
-    void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto cond = value_cast<bool>(resolve(inputs.at(0), visited));
+    void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
+        auto cond = value_cast<bool>(exec->resolve(inputs.at(0)));
         if (cond) {
-            touch(inputs.at(1), tolink, visited);
+            exec->touch(inputs.at(1), tolink);
         } else {
-            touch(inputs.at(2), tolink, visited);
+            exec->touch(inputs.at(2), tolink);
         }
     }
 
@@ -52,11 +52,13 @@ ZENO_DOP_DEFCLASS(ForBegin, {{
 
 
 struct ForEnd : dop::Node {
-    void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
-        auto fordata = value_cast<ForData>(resolve(inputs.at(0), visited));
+    void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
+        auto fordata = value_cast<ForData>(exec->resolve(inputs.at(0)));
         for (int i = 0; i < fordata.times; i++) {
-            auto tmp_visited = visited;
-            resolve(inputs.at(1), tmp_visited);
+            auto copied_visited = exec->visited;
+            std::swap(copied_visited, exec->visited);
+            exec->resolve(inputs.at(1));
+            std::swap(copied_visited, exec->visited);
         }
     }
 
@@ -74,7 +76,7 @@ ZENO_DOP_DEFCLASS(ForEnd, {{
 
 #if 0
 struct ListForeach : dop::Node {
-    void preapply(std::vector<dop::Node *> &tolink, std::set<dop::Node *> &visited) override {
+    void preapply(std::vector<dop::Node *> &tolink, Executor *exec) override {
         auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
         for (int i = 0; i < cond; i++) {
             auto tmp_visited = visited;
