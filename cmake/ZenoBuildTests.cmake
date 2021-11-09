@@ -1,4 +1,4 @@
-file(GLOB_RECURSE source RELATIVE tests CONFIGURE_DEPENDS *.h *.cpp)
+glob_recurse(source tests *.h *.cpp)
 
 add_executable(zeno ${source})
 
