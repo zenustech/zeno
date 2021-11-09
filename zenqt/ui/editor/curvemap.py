@@ -67,7 +67,7 @@ class QDMOneClickButton(QGraphicsItem):
         self.setPos(x, y)
         self.setWidthHeight(w, h)
 
-class QDMGraphicsNode_CurveMap(QDMGraphicsNode):
+class QDMGraphicsNode_MakeCurveMap(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.points = [

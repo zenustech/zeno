@@ -5,7 +5,7 @@ import sys, random, math
 from copy import deepcopy
 
 radius = 5
-bound = 20
+bound = 50
 distance_threshold = 0.05
 segment = 20
 epsilon = 0.00001
@@ -116,8 +116,8 @@ class CurveEditor(QDialog):
         self.idx = None
         self.pressed = False
         self.alt_pressed = False
-        self.w = 300
-        self.h = 200
+        self.w = 900
+        self.h = 700
         self.length = min(self.w, self.h)
         self.setGeometry(300, 300, self.w, self.h)
         self.setWindowTitle('CurveEditor')
@@ -137,9 +137,7 @@ class CurveEditor(QDialog):
         self.drawPoints(qp, points, self.idx)
         if type(self.idx) == int:
             p = self.points[self.idx]
-            info = 'x={}, y={}'.format(p[0], p[1])
-            qp.drawText(self.length + 2 * bound, bound, info)
-            info2 = 'input={}, output={}'.format(
+            info2 = 'input={:.5}, output={:.5}'.format(
                 lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), p[0]),
                 lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), p[1]),
             )
