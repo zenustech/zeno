@@ -108,7 +108,7 @@ ztd::any_ptr Executor::evaluate(Input const &input) {
     try {
         return resolve(input);
     } catch (std::exception const &e) {
-        ZENO_LOG_INFO("[exception in {}@{}] {}",
+        ZENO_LOG_ERROR("[{}@{}] {}",
                       current_node->desc->name, (void *)current_node,
                       e.what());
         return {};
