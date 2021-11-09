@@ -4,7 +4,7 @@
 
 To work with Zeno, you need:
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
 ```
 
 ### Windows
@@ -19,9 +19,11 @@ Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 > It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
-4. Download and install Qt 5.12: https://www.qt.io/offline-installers
+4. Download and install Qt 5.12: https://download.qt.io/official_releases/qt/5.12/5.12.11/qt-opensource-windows-x86-5.12.11.exe
 
 > If you find installing Qt troublesome (e.g., asking you for registering a Qt account), feel free to skip it for now, and execute `vcpkg install qt5:x64-windows` later (see the `vcpkg` section) instead.
+
+> Fun fact: you can turn off the Wi-Fi to make Qt not asking you for login to their account.
 
 ### Ubuntu
 
