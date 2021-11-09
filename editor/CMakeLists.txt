@@ -35,7 +35,7 @@ if (ZENO_WITH_BACKWARD)
     add_backward(zeno)
 endif()
 
-target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${WEB_ENGINE_LINK} kddockwidgets xerces-c)
+target_link_libraries(zeno PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${WEB_ENGINE_LINK} kddockwidgets)
 
 if (APPLE)
     set_target_properties(zeno PROPERTIES
