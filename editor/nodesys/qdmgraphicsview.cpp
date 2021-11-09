@@ -23,22 +23,34 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
-void QDMGraphicsView::switchScene(QDMGraphicsScene *scene)
+void QDMGraphicsView::onSelectionChanged() {
+    auto items = this->scene()->selectedItems();
+    if (!items.size()) {
+        setCurrentNode(nullptr);
+        return;
+    }
+    if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
+        setCurrentNode(node);
+    } else {
+        setCurrentNode(nullptr);
+    }
+}
+
+void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
-    connect(scene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)), this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
-    connect(scene, &QGraphicsScene::selectionChanged, this, [this] () {
-        auto items = this->scene()->selectedItems();
-        if (!items.size()) {
-            setCurrentNode(nullptr);
-            return;
-        }
-        if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
-            setCurrentNode(node);
-        } else {
-            setCurrentNode(nullptr);
-        }
-    });
-    setScene(scene);
+    auto oldScene = getScene();
+
+    disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
+               this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+    disconnect(oldScene, SIGNAL(selectionChanged()),
+               this, SLOT(onSelectionChanged()));
+
+    connect(newScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
+            this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+    connect(newScene, SIGNAL(selectionChanged()),
+            this, SLOT(onSelectionChanged()));
+
+    setScene(newScene);
 }
 
 void QDMGraphicsView::setCurrentNode(QDMGraphicsNode *node)

@@ -20,7 +20,7 @@ QDMGraphicsScene::~QDMGraphicsScene() = default;
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
-    nodeUpdated(node, -1);
+    emit nodeUpdated(node, -1);
     removeItem(node);
     nodes.erase(ztd::stale_ptr(node));
 }
