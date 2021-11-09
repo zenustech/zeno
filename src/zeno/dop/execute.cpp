@@ -1,6 +1,6 @@
 #include <zeno/dop/execute.h>
 #include <zeno/dop/Descriptor.h>
-#include <zeno/ztd/functional.h>
+#include <zeno/ztd/variant.h>
 #include <zeno/ztd/any_ptr.h>
 #include <zeno/zmt/log.h>
 #include <map>
@@ -39,14 +39,17 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
         } else {
             nodes.push_back(node);
             for (auto const &input: node->inputs) {
-                std::visit(ztd::match([&] (Input_Link const &input) {
+                ztd::match(input
+                , [&] (Input_Link const &input) {
                     auto &depord = dfs(dfs, input.node);
                     if (depord.new_order >= ord.new_order) {
                         depord.new_order = ord.new_order;
                         depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
                     }
-                }, [&] (Input_Value const &) {
-                }), input);
+                }
+                , [&] (Input_Value const &) {
+                }
+                );
             }
             auto it = order.emplace(node, ord).first;
             return it->second;
@@ -70,31 +73,40 @@ void sortexec(Node *root, std::vector<Node *> &tolink, std::set<Node *> &visited
 
 
 void touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
-    return std::visit(ztd::match([&] (Input_Link const &input) {
+    return ztd::match(input
+    , [&] (Input_Link const &input) {
         input.node->preapply(tolink, visited);
-    }, [&] (Input_Value const &) {
-    }), input);
+    }
+    , [&] (Input_Value const &) {
+    }
+    );
 }
 
 
 ztd::any_ptr resolve(Input const &input, std::set<Node *> &visited) {
-    return std::visit(ztd::match([&] (Input_Link const &input) {
+    return ztd::match(input
+    , [&] (Input_Link const &input) {
         std::vector<Node *> tolink;
         touch(input, tolink, visited);
         sortexec(input.node, tolink, visited);
         return input.node->outputs.at(input.sockid);
-    }, [&] (Input_Value const &val) {
+    }
+    , [&] (Input_Value const &val) {
         return val.value;
-    }), input);
+    }
+    );
 }
 
 
 ztd::any_ptr getval(Input const &input) {
-    return std::visit(ztd::match([&] (Input_Link const &input) {
+    return ztd::match(input
+    , [&] (Input_Link const &input) {
         return input.node->outputs.at(input.sockid);
-    }, [&] (Input_Value const &val) {
+    }
+    , [&] (Input_Value const &val) {
         return val.value;
-    }), input);
+    }
+    );
 }
 
 
