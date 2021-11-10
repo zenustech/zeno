@@ -1,6 +1,7 @@
 # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 set(HIPSYCL_TARGETS "omp;cuda:sm_52;cuda:sm_61;cuda:sm_70;cuda:sm_75;cuda:sm_86" CACHE STRING "Specify the hipSYCL targets to build against")
 set(ZENO_TARGET "Editor" CACHE STRING "Specify the Zeno target desired to build (Editor, Client, Benchmark, Tests)")
+option(ZENO_WITH_TBB "Build Intel TBB with Zeno" OFF)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
@@ -10,8 +11,9 @@ if (UNIX)  # these are only used by archibate and zhxx1987
 
     if ($ENV{HOME} STREQUAL "/home/dilei")
         message("-- ZHXX detected, making him happy")
-        set(HIPSYCL_TARGETS "omp;cuda:sm_86")
+        set(ZENO_WITH_TBB ON)
         set(ZENO_WITH_SYCL OFF)
+        set(HIPSYCL_TARGETS "omp;cuda:sm_86")
         set(ZENO_WITH_LEGACY ON)
         set(ZENO_WITH_BACKWARD ON)
         set(ZENO_TARGET Editor)
@@ -19,8 +21,9 @@ if (UNIX)  # these are only used by archibate and zhxx1987
 
     elseif ($ENV{HOME} STREQUAL "/home/bate")
         message("-- BATE detected, making him happy")
-        set(HIPSYCL_TARGETS "omp")
+        set(ZENO_WITH_TBB ON)
         set(ZENO_WITH_SYCL OFF)
+        set(HIPSYCL_TARGETS "omp")
         set(ZENO_WITH_LEGACY OFF)
         set(ZENO_WITH_BACKWARD ON)
         set(ZENO_TARGET Editor)
