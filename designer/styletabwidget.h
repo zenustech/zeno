@@ -6,6 +6,12 @@ class StyleTabWidget : public QTabWidget
     Q_OBJECT
 public:
     StyleTabWidget(QWidget* parent = nullptr);
+
+signals:
+    void tabClosed(int);
+
+private slots:
+    void onTabClosed(int);
 };
 
 #endif

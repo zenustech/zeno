@@ -1,0 +1,32 @@
+<xml version="1.0" ...>
+<editor version="1.0">
+	<node>
+		<frame background-clr="#000000" background-img="/images/xxx" radius="5px 5px 4px 4px" radius_fixed="true" border-clr="#FFFFFF" border-width="3" .../>
+		<titlebar fold_btn="/images/xxx" icon_size="" icon_left_margin="3px" icon_vmargin="4px" icon_to_text_margin="10px" background="#666666(or img)" text_alignment="VCenter"/>
+		<socket size="" icon-normal="/images/xxx" icon-hover="..." icon-seleced="..." icon-disable="..." position="center;(left,right)"/>
+		<body>
+			<margin text_to_leftborder="5px" text_to_socket="4px" item_vmargin="5px" text_to_lineedit_xmargin="6px" lineedit_to_rightborder="5px" v-margin="5px"/>
+			<text font-family="" font-size="" font-color="#FFFFFF"/>
+			<lineedit border-width="2px" border-color="" radius="1px" text-hmargin="4px" text-vmargin="5px" font-family="" font-size="" font-color="#FFFFFF"/>
+			<textedit height="30px" border-width="2px" border-color="" radius="1px" text-hmargin="4px" text-vmargin="5px" font-family="" font-size="" font-color="#FFFFFF"/>
+			<combobox .../>
+			<openbtn .../>
+		</body>
+	</node>
+	<line color="#FFFFFF" width="2px" style="...">
+	</line>
+	<blackboard>
+	</blackboard>
+</editor>
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+    <header>
+        
+    </header>
+    <body>
+    </body>
+
+</node>
