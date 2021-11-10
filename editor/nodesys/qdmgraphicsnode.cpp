@@ -101,7 +101,17 @@ void QDMGraphicsNode::setName(QString name)
 
 QString QDMGraphicsNode::getName()
 {
-    return label->plainText();
+    return label->toPlainText();
+}
+
+QDMGraphicsSocketIn *QDMGraphicsNode::socketInAt(size_t index)
+{
+    return socketIns.at(index).get();
+}
+
+QDMGraphicsSocketOut *QDMGraphicsNode::socketOutAt(size_t index)
+{
+    return socketOuts.at(index).get();
 }
 
 void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)

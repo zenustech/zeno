@@ -34,6 +34,8 @@ public:
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
+    QDMGraphicsSocketIn *socketInAt(size_t index);
+    QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
     void socketUnlinked(QDMGraphicsSocketIn *socket);

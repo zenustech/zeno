@@ -23,7 +23,7 @@ static const std::array edit_type_table = {
 QWidget *QDMNodeParamEdit::make_edit_for_type(
     QDMGraphicsNode *node, int sockid, std::string const &type)
 {
-    auto *input = node->socketInAt(sockid)->value;
+    auto *input = &node->socketInAt(sockid)->value;
 
     switch (ztd::try_find_index(edit_type_table, type)) {
 
