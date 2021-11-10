@@ -52,8 +52,8 @@ auto host_access(auto &&buf, auto &&...args) {
 
 
 template <access::mode mode = access::mode::read>
-decltype(auto) host_get(auto &&buf, auto &&...args) {
-    auto axr = zycl::host_access<mode>(buf, std::forward<decltype(args)>(args)...);
+decltype(auto) host_get(auto &&buf, size_t offset = 0) {
+    auto axr = zycl::host_access<mode>(buf, range<1>(1), id<1>(offset));
     return axr[0];
 }
 

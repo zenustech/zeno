@@ -23,13 +23,3 @@ static void BM_meshToTriangles(benchmark::State &state) {
     }
 }
 BENCHMARK(BM_meshToTriangles);
-
-static void BM_meshToTrianglesCPU(benchmark::State &state) {
-    types::Mesh mesh = getTestMesh();
-
-    for (auto _: state) {
-        auto tris = types::meshToTrianglesCPU(mesh);
-        zycl::host_get(tris);
-    }
-}
-BENCHMARK(BM_meshToTriangles);

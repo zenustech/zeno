@@ -25,7 +25,7 @@ if (UNIX)  # these are only used by archibate and zhxx1987
         set(ZENO_WITH_BACKWARD ON)
         set(ZENO_TARGET Benchmark)
         set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/hipSYCL)
-        set(CMAKE_BUILD_TYPE Debug)
+        set(CMAKE_BUILD_TYPE Release)
     endif()
 
 endif()  # normal users won't be affected
