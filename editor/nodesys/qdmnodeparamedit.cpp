@@ -23,7 +23,12 @@ static const std::array edit_type_table = {
 QWidget *QDMNodeParamEdit::make_edit_for_type(
     QDMGraphicsNode *node, int sockid, std::string const &type)
 {
-    auto *input = &node->socketInAt(sockid)->value;
+    auto &inp = node->getDopNode()->inputs.at(sockid);
+    auto inpu = ztd::try_get<dop::Input_Value>(inp);
+    if (!inpu) {
+        return nullptr;
+    }
+    auto *input = &inpu->value;
 
     switch (ztd::try_find_index(edit_type_table, type)) {
 
@@ -96,10 +101,10 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    auto kind = node->getName().toStdString();
-    auto const &desc = dop::descriptor_table().at(kind);
-    for (size_t i = 0; i < desc.inputs.size(); i++) {
-        auto const &input = desc.inputs.at(i);
+    auto dopNode = node->getDopNode();
+    auto *desc = dopNode->desc;
+    for (size_t i = 0; i < desc->inputs.size(); i++) {
+        auto const &input = dopNode->inputs.at(i);
         auto edit = make_edit_for_type(node, i, input.type);
         if (edit) {
             layout->addRow(QString::fromStdString(input.name), edit);

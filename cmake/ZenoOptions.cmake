@@ -16,9 +16,9 @@ if (UNIX)  # these are only used by archibate and zhxx1987
         set(HIPSYCL_TARGETS "omp")
         set(ZENO_WITH_LEGACY OFF)
         set(ZENO_WITH_BACKWARD ON)
-        set(ZENO_TARGET Benchmark)
+        set(ZENO_TARGET Editor)
         set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/hipSYCL)
-        set(CMAKE_BUILD_TYPE Release)
+        set(CMAKE_BUILD_TYPE Debug)
 
     elseif ($ENV{HOME} STREQUAL "/home/dilei")
         message("-- ZHXX detected, making him happy")
