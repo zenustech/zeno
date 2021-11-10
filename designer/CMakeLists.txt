@@ -28,8 +28,10 @@ IF (UNIX)
     ENDIF(APPLE)
 ENDIF (UNIX)
 
+file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
+
 add_executable(designer
-   main.cpp
+   ${source}
 )
 
 if (WIN32)

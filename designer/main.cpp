@@ -1,10 +1,10 @@
-#include <QtWidgets>
+#include "designermainwin.h"
 
 int main(int argc, char* argv[])
 {
 	QApplication app(argc, argv);
 
-	QMainWindow win;
+	DesignerMainWin win;
 	win.show();
 
 	return app.exec();
