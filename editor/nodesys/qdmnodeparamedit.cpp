@@ -30,17 +30,15 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
     case 0: {
         auto edit = new QLineEdit;
 
-        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
-            if (auto expr = inp->value.value_cast<std::string>()) {
-                auto const &value = *expr;
-                edit->setText(QString::fromStdString(value));
-            }
+        if (auto expr = input->value.value_cast<std::string>()) {
+            auto const &value = *expr;
+            edit->setText(QString::fromStdString(value));
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto const &value = expr;
-            *input = dop::Input_Value{.value = ztd::make_any(value)};
+            input->value = ztd::make_any(value);
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -50,17 +48,15 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QIntValidator);
 
-        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
-            if (auto expr = inp->value.value_cast<int>()) {
-                auto value = std::to_string(*expr);
-                edit->setText(QString::fromStdString(value));
-            }
+        if (auto expr = input->value.value_cast<int>()) {
+            auto value = std::to_string(*expr);
+            edit->setText(QString::fromStdString(value));
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
-            *input = dop::Input_Value{.value = ztd::make_any(value)};
+            input->value = ztd::make_any(value);
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -70,17 +66,15 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QDoubleValidator);
 
-        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
-            if (auto expr = inp->value.value_cast<int>()) {
-                auto value = std::to_string(*expr);
-                edit->setText(QString::fromStdString(value));
-            }
+        if (auto expr = input->value.value_cast<int>()) {
+            auto value = std::to_string(*expr);
+            edit->setText(QString::fromStdString(value));
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
-            *input = dop::Input_Value{.value = ztd::make_any(value)};
+            input->value = ztd::make_any(value);
             emit nodeParamUpdated(node);
         });
         return edit;
