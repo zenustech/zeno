@@ -96,10 +96,11 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    auto dopNode = node->getDopNode();
-    for (size_t i = 0; i < dopNode->inputs.size(); i++) {
-        auto const &input = dopNode->desc->inputs.at(i);
-        auto edit = make_edit_for_type(node, input.type, &dopNode->inputs.at(i));
+    auto kind = node->getName().toStdString();
+    auto const &desc = dop::descriptor_table().at(kind);
+    for (size_t i = 0; i < desc.inputs.size(); i++) {
+        auto const &input = desc.inputs.at(i);
+        auto edit = make_edit_for_type(node, i, input.type);
         if (edit) {
             layout->addRow(QString::fromStdString(input.name), edit);
         }

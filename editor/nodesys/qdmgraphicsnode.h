@@ -44,6 +44,7 @@ public:
     QDMGraphicsSocketOut *addSocketOut();
     void initByName(QString name);
     void setName(QString name);
+    QString getName();
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
     static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, SOCKMARGINBOT = -10;

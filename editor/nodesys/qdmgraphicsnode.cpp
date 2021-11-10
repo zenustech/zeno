@@ -99,6 +99,11 @@ void QDMGraphicsNode::setName(QString name)
     label->setPlainText(name);
 }
 
+QString QDMGraphicsNode::getName()
+{
+    return label->plainText();
+}
+
 void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::RightButton) {
