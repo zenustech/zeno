@@ -6,8 +6,9 @@ from copy import deepcopy
 
 radius = 5
 bound = 50
+text_offset = 20
 distance_threshold = 0.05
-segment = 20
+segment = 50
 epsilon = 0.00001
 
 def lerp(start, end, t):
@@ -129,21 +130,55 @@ class CurveEditor(QDialog):
         self.length = min(self.width(), self.height()) - bound * 2
         qp = QPainter()
         qp.begin(self)
+        qp.setPen(Qt.lightGray)
+        self.drawFrame(qp)
         qp.setPen(Qt.gray)
         self.drawLines(qp, points)
         qp.setPen(Qt.magenta)
         self.drawHandlers(qp, self.idx)
         qp.setPen(Qt.blue)
         self.drawPoints(qp, points, self.idx)
-        if type(self.idx) == int:
-            p = self.points[self.idx]
-            info2 = 'input={:.5}, output={:.5}'.format(
-                lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), p[0]),
-                lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), p[1]),
-            )
-            qp.drawText(self.length + 2 * bound, bound * 2, info2)
         qp.end()
 
+    def drawFrame(self, qp):
+        self.drawPolyline(qp, [
+            (0, 0),
+            (0, 1),
+        ])
+        self.drawPolyline(qp, [
+            (0, 0),
+            (1, 0),
+        ])
+        self.drawPolyline(qp, [
+            (1, 0),
+            (1, 1),
+        ])
+        self.drawPolyline(qp, [
+            (0, 1),
+            (1, 1),
+        ])
+        seg = 5
+        for i in range(seg + 1):
+            ratio = i / seg
+            x = int(self.length * ratio) - radius + bound
+            x_label = lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), ratio)
+            qp.drawText(x, self.length + bound + text_offset, str(x_label))
+            y = int(self.length * (1-ratio)) - radius + bound
+            y_label = lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), ratio)
+            qp.drawText(bound - text_offset, y, str(y_label))
+
+        if type(self.idx) == int:
+            p = self.points[self.idx]
+            self.drawPolyline(qp, [
+                (p[0], 0),
+                (p[0], 1),
+            ])
+            self.drawPolyline(qp, [
+                (0, p[1]),
+                (1, p[1]),
+            ])
+
+        
     def drawPoints(self, qp, points, sel=None):
         if type(sel) == tuple:
             sel = sel[0]
@@ -153,6 +188,11 @@ class CurveEditor(QDialog):
             y = int(self.length * (1 - p[1])) - radius + bound
             if i == sel:
                 qp.fillRect(x, y, 10, 10, qp.pen().color())
+                info = '({:.05}, {:.05})'.format(
+                    lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), p[0]),
+                    lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), p[1]),
+                )
+                qp.drawText(x, y, info)
             else:
                 qp.drawRect(x, y, 10, 10)
 
