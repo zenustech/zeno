@@ -43,6 +43,11 @@ CameraData *QDMOpenGLViewport::getCamera() const
 
 void QDMOpenGLViewport::paintGL()
 {
+    for (auto const &task: m_queue) {
+        task();
+    }
+    m_queue.clear();
+
     int nx = width() * devicePixelRatio();
     int ny = height() * devicePixelRatio();
     m_camera->resize(nx, ny);
@@ -110,13 +115,15 @@ static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node
 }
 
 void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
-    if (type > 0) {
-        m_renderables.emplace(node, make_renderable_of_node(node));
-    } else if (type == 0) {
-        m_renderables.at(node) = make_renderable_of_node(node);
-    } else {
-        m_renderables.erase(node);
-    }
+    m_queue.push_back([=, this] {
+        if (type > 0) {
+            m_renderables.emplace(node, make_renderable_of_node(node));
+        } else if (type == 0) {
+            m_renderables.at(node) = make_renderable_of_node(node);
+        } else {
+            m_renderables.erase(node);
+        }
+    });
     repaint();
 }
 

@@ -6,6 +6,7 @@
 #include <QOpenGLFunctions>
 #include "../nodesys/qdmgraphicsnode.h"
 #include "cameradata.h"
+#include <functional>
 #include <optional>
 #include <memory>
 #include <map>
@@ -18,6 +19,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 
+    std::vector<std::function<void()>> m_queue;
     std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
     std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
     std::optional<QPoint> m_mmbPos;
