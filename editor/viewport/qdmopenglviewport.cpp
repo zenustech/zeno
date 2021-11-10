@@ -105,7 +105,7 @@ static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node
     auto dopNode = node->getDopNode();
     ztd::any_ptr val;
     dop::Executor exec;
-    val = exec.evaluate(dop::Input_Link{.node = dopNode, .sockid = 0});
+    val = exec.evaluate({.node = dopNode, .sockid = 0});
     return makeRenderableFromAny(val);
 }
 

@@ -31,17 +31,13 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
         } else {
             nodes.push_back(node);
             for (auto const &input: node->inputs) {
-                ztd::match(input
-                , [&] (Input_Link const &input) {
+                if (input.node) {
                     auto &depord = dfs(dfs, input.node);
                     if (depord.new_order >= ord.new_order) {
                         depord.new_order = ord.new_order;
                         depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
                     }
                 }
-                , [&] (Input_Value const &) {
-                }
-                );
             }
             auto it = order.emplace(node, ord).first;
             return it->second;
@@ -66,41 +62,31 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 
 
 void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
-    return ztd::match(input
-    , [&] (Input_Link const &input) {
+    if (input.node) {
         current_node = input.node;
         input.node->preapply(tolink, this);
     }
-    , [&] (Input_Value const &) {
-    }
-    );
 }
 
 
 ztd::any_ptr Executor::resolve(Input const &input) {
-    return ztd::match(input
-    , [&] (Input_Link const &input) {
+    if (input.node) {
         std::vector<Node *> tolink;
         touch(input, tolink);
         sortexec(input.node, tolink);
         return input.node->outputs.at(input.sockid);
+    } else {
+        return input.value;
     }
-    , [&] (Input_Value const &val) {
-        return val.value;
-    }
-    );
 }
 
 
 ztd::any_ptr Executor::getval(Input const &input) {
-    return ztd::match(input
-    , [&] (Input_Link const &input) {
+    if (input.node) {
         return input.node->outputs.at(input.sockid);
+    } else {
+        return input.value;
     }
-    , [&] (Input_Value const &val) {
-        return val.value;
-    }
-    );
 }
 
 

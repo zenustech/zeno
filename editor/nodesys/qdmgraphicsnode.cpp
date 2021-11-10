@@ -153,13 +153,13 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
-    dopNode->inputs.at(socketInIndex(socket)) = dop::Input_Value{};
+    dopNode->inputs.at(socketInIndex(socket)) = {};
 }
 
 void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket)
 {
     auto srcNode = static_cast<QDMGraphicsNode *>(srcSocket->parentItem());
-    dopNode->inputs.at(socketInIndex(socket)) = dop::Input_Link{
+    dopNode->inputs.at(socketInIndex(socket)) = {
         .node = srcNode->dopNode.get(),
         .sockid = (int)srcNode->socketOutIndex(srcSocket),
     };
