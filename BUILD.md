@@ -91,6 +91,8 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg
 
 > Please **replace the `[path to vcpkg]` by the path where we previously cloned vcpkg**, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
 
+> Remove the `-DCMAKE_TOOLCHAIN_FILE=xxx` flag if you **skipped vcpkg requirements installation**, ZENO supports build with zero-dependency as well.
+
 > CLion users may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
 
 Starts to build (`8` here means using 8 CPU cores):

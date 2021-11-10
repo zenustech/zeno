@@ -3,6 +3,7 @@
 #include <zeno/types/Mesh.h>
 #include <zeno/types/MeshIO.h>
 #include <zeno/types/MeshTriangulate.h>
+#include <iostream>
 #include <fstream>
 
 USING_ZENO_NAMESPACE
@@ -18,7 +19,7 @@ int main()
     auto tris = types::meshToTriangles(mesh);
 
     std::cout << tris.size() << std::endl;
-    for (auto const &[x, y, z]: tris.to_vector()) {
+    for (auto const &[x, y, z]: tris) {
         std::cout << x << ' ' << y << ' ' << z << std::endl;;
     }
 
