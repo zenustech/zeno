@@ -1,0 +1,3 @@
+cuda:sm_75  BM_meshToTriangles     348602 ns       316694 ns         2255
+omp         BM_meshToTriangles     286592 ns       269208 ns         2493
+host        BM_meshToTriangles      97348 ns        97287 ns         7209
