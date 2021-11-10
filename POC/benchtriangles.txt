@@ -1,3 +1,6 @@
 cuda:sm_75  BM_meshToTriangles     348602 ns       316694 ns         2255
 omp         BM_meshToTriangles     286592 ns       269208 ns         2493
 host        BM_meshToTriangles      97348 ns        97287 ns         7209
+
+tbb         BM_meshToTriangles    1826859 ns      1825267 ns          391
+std         BM_meshToTriangles     821724 ns       820990 ns          847

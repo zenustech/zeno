@@ -9,10 +9,18 @@ namespace types {
 
 std::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
 
+#if 0
     tbb::concurrent_vector<math::vec3i> indices;
+#else
+    std::vector<math::vec3i> indices;
+#endif
     indices.reserve(mesh.poly.size() * 3);
 
+#if 0
     tbb::parallel_for_each(begin(mesh.poly), end(mesh.poly), [&] (auto const &poly) {
+#else
+    std::for_each(begin(mesh.poly), end(mesh.poly), [&] (auto const &poly) {
+#endif
         auto const &[p_start, p_num] = poly;
         if (p_num <= 2) return;
         int first = mesh.loop[p_start];
