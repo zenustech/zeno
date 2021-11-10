@@ -23,27 +23,24 @@ static const std::array edit_type_table = {
 QWidget *QDMNodeParamEdit::make_edit_for_type(
     QDMGraphicsNode *node, int sockid, std::string const &type)
 {
-    auto &inp = node->getDopNode()->inputs.at(sockid);
-    auto inpu = ztd::try_get<dop::Input_Value>(inp);
-    if (!inpu) {
-        return nullptr;
-    }
-    auto *input = &inpu->value;
+    auto *input = &node->getDopNode()->inputs.at(sockid);
 
     switch (ztd::try_find_index(edit_type_table, type)) {
 
     case 0: {
         auto edit = new QLineEdit;
 
-        if (auto expr = input->value_cast<std::string>()) {
-            auto const &value = *expr;
-            edit->setText(QString::fromStdString(value));
+        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
+            if (auto expr = inp->value.value_cast<std::string>()) {
+                auto const &value = *expr;
+                edit->setText(QString::fromStdString(value));
+            }
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto const &value = expr;
-            *input = ztd::make_any(value);
+            *input = dop::Input_Value{.value = ztd::make_any(value)};
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -53,15 +50,17 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QIntValidator);
 
-        if (auto expr = input->value_cast<int>()) {
-            auto value = std::to_string(*expr);
-            edit->setText(QString::fromStdString(value));
+        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
+            if (auto expr = inp->value.value_cast<int>()) {
+                auto value = std::to_string(*expr);
+                edit->setText(QString::fromStdString(value));
+            }
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
-            *input = ztd::make_any(value);
+            *input = dop::Input_Value{.value = ztd::make_any(value)};
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -71,15 +70,17 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QDoubleValidator);
 
-        if (auto expr = input->value_cast<float>()) {
-            auto value = std::to_string(*expr);
-            edit->setText(QString::fromStdString(value));
+        if (auto inp = ztd::try_get<dop::Input_Value>(*input)) {
+            if (auto expr = inp->value.value_cast<int>()) {
+                auto value = std::to_string(*expr);
+                edit->setText(QString::fromStdString(value));
+            }
         }
 
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
-            *input = ztd::make_any(value);
+            *input = dop::Input_Value{.value = ztd::make_any(value)};
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -101,13 +102,11 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    auto dopNode = node->getDopNode();
-    auto *desc = dopNode->desc;
+    auto *desc = node->getDopNode()->desc;
     for (size_t i = 0; i < desc->inputs.size(); i++) {
-        auto const &input = dopNode->inputs.at(i);
-        auto edit = make_edit_for_type(node, i, input.type);
+        auto edit = make_edit_for_type(node, i, desc->inputs[i].type);
         if (edit) {
-            layout->addRow(QString::fromStdString(input.name), edit);
+            layout->addRow(QString::fromStdString(desc->inputs[i].name), edit);
         }
     }
 }
