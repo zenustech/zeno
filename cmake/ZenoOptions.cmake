@@ -20,7 +20,7 @@ if (UNIX)  # these are only used by archibate and zhxx1987
     elseif ($ENV{HOME} STREQUAL "/home/bate")
         message("-- BATE detected, making him happy")
         set(HIPSYCL_TARGETS "omp")
-        set(ZENO_WITH_SYCL OFF)
+        set(ZENO_WITH_SYCL ON)
         set(ZENO_WITH_LEGACY OFF)
         set(ZENO_WITH_BACKWARD ON)
         set(ZENO_TARGET Editor)

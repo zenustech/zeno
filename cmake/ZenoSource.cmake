@@ -6,6 +6,7 @@ if (ZENO_WITH_SYCL)
     message("-- Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
     find_package(hipSYCL CONFIG REQUIRED)
     target_compile_definitions(zeno PUBLIC -DZENO_WITH_SYCL)
+    add_sycl_to_target(TARGET zeno)
 endif()
 
 if (ZENO_WITH_LEGACY)

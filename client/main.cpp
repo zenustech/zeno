@@ -15,7 +15,7 @@ int main()
         types::readMeshFromOBJ(fin, mesh);
     }
 
-    auto tris = types::meshToTriangleVertices(mesh);
+    auto tris = types::meshToTriangles(mesh);
 
     std::cout << tris.size() << std::endl;
     for (auto const &[x, y, z]: tris.to_vector()) {
