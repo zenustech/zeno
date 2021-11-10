@@ -107,6 +107,7 @@ if (ZENO_EXECUTABLE STREQUAL "tests")
 endif()
 add_subdirectory(3rdparty)
 add_subdirectory(${ZENO_EXECUTABLE})
+add_subdirectory(designer)
 
 message("-- Building Zeno Core Library")
 add_subdirectory(src)
