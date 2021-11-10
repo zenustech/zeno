@@ -6,8 +6,7 @@ ZENO_NAMESPACE_BEGIN
 namespace types {
 
 
-#ifndef ZENO_WITH_ZYCL
-zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
+zycl::vector<math::vec3f> meshToTrianglesCPU(Mesh const &mesh) {
     decltype(auto) vert = mesh.vert.to_vector();
     decltype(auto) loop = mesh.loop.to_vector();
     decltype(auto) poly = mesh.poly.to_vector();
@@ -30,6 +29,11 @@ zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
         }
     }
     return ret;
+}
+
+#ifndef ZENO_WITH_ZYCL
+zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
+    return meshToTrianglesCPU(mesh);
 }
 #else
 zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh) {
