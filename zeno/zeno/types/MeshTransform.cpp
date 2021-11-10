@@ -18,11 +18,7 @@ void transformMesh
     auto rotmat = math::quaternion_matrix(rotation);
 
     std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
-#if 1
         tbb::parallel_for_each(begin(mesh.vert), end(mesh.vert), [&] (auto &vert) {
-#else
-        std::for_each(begin(mesh.vert), end(mesh.vert), [&] (auto &vert) {
-#endif
             if constexpr (has_scaling)
                 vert *= scaling;
             if constexpr (has_rotation)
