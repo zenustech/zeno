@@ -42,7 +42,7 @@ set(missing_sources
 )
 
 add_custom_target(xerces-c-missing SOURCES ${missing_sources})
-#set_target_properties(xerces-c-missing PROPERTIES FOLDER "Library")
+set_target_properties(xerces-c-missing PROPERTIES FOLDER "Library")
 
 #libxerces_c_la_LIBADD = ${LTLIBOBJS}
 
@@ -1266,9 +1266,9 @@ include_directories(
 #endif()
 
 add_custom_target(xerces-c-headers SOURCES ${libxerces_c_HEADERS})
-#set_target_properties(xerces-c-headers PROPERTIES FOLDER "Library")
+set_target_properties(xerces-c-headers PROPERTIES FOLDER "Library")
 
-add_library(xerces-c STATIC
+add_library(xerces-c
   ${libxerces_c_SOURCES}
   ${libxerces_c_RESOURCES})
 target_link_libraries(xerces-c ${libxerces_c_DEPS})
@@ -1276,21 +1276,14 @@ if(XERCES_USE_NETACCESSOR_CURL)
   target_include_directories(xerces-c SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
 endif()
 
-set_target_properties(xerces-c
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-)
-
 if(MSVC)
   # Add configuration-specific library name to resource file.
   target_compile_definitions(xerces-c PRIVATE "XERCES_DLL_NAME=\"$<TARGET_FILE_NAME:xerces-c>\\0\"")
   # Different naming for Windows than for Unix builds for backward
   # compatibility with the existing project files.
-  #set_target_properties(xerces-c PROPERTIES OUTPUT_NAME "xerces-c_${INTERFACE_VERSION_MAJOR}")
-  #set_target_properties(xerces-c PROPERTIES RUNTIME_OUTPUT_NAME "xerces-c_${INTERFACE_VERSION_U}")
-  #set_target_properties(xerces-c PROPERTIES DEBUG_POSTFIX "D")
+  set_target_properties(xerces-c PROPERTIES OUTPUT_NAME "xerces-c_${INTERFACE_VERSION_MAJOR}")
+  set_target_properties(xerces-c PROPERTIES RUNTIME_OUTPUT_NAME "xerces-c_${INTERFACE_VERSION_U}")
+  set_target_properties(xerces-c PROPERTIES DEBUG_POSTFIX "D")
 elseif(UNIX)
   # For strict libtool compatibility on Unix.  It's a horrible hack to
   # set the version in the filename, and create the symlink at install
@@ -1315,7 +1308,7 @@ else()
     set_target_properties(xerces-c PROPERTIES VERSION ${INTERFACE_VERSION_D})
   endif()
 endif()
-#set_target_properties(xerces-c PROPERTIES FOLDER "Library")
+set_target_properties(xerces-c PROPERTIES FOLDER "Library")
 
 if(WIN32)
   set(xerces_config_dir "cmake")

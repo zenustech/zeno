@@ -7,7 +7,6 @@
 #include "style/zenostyle.h"
 
 //#define TEST_WEBENGINE
-//#define TEST_XERCES
 #define USE_KKDOCK
 
 ZENO_NAMESPACE_BEGIN
@@ -54,22 +53,7 @@ int zenoMain(int argc, char *argv[])
 ZENO_NAMESPACE_END
 
 int main(int argc, char *argv[]) {
-
-#ifdef TEST_XERCES
-
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/util/XMLException.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-
-using namespace XERCES_CPP_NAMESPACE;
-
-    XMLPlatformUtils::Initialize();
-    XercesDOMParser* parser = new XercesDOMParser;
-
-#elif defined(TEST_WEBENGINE)
+#ifdef TEST_WEBENGINE
     #include <QWebEngineView>
 
     QApplication app(argc, argv);

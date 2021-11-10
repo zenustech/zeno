@@ -12,10 +12,6 @@ else()
     set(WEB_ENGINE_LINK Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
 endif()
 
-include_directories(
-  ../3rdparty/xercesc3/src
-)
-
 # Qt6 seems doesn't have <QOpenGLWidget>... let's stick to Qt5 for now
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets ${WEB_ENGINE} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets ${WEB_ENGINE} REQUIRED)
