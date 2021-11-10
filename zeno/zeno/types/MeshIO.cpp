@@ -44,10 +44,10 @@ static std::tuple<int, int, int> read_tuple3i(std::string_view const &exp) {
 void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
     std::vector<math::vec2f> uv_vert;
     std::vector<int> uv_loop;
-    decltype(auto) vert = mesh.vert.as_vector();
-    decltype(auto) loop = mesh.loop.as_vector();
-    decltype(auto) poly = mesh.poly.as_vector();
-    decltype(auto) loop_uv = mesh.loop_uv.as_vector();
+    auto &vert = mesh.vert;
+    auto &loop = mesh.loop;
+    auto &poly = mesh.poly;
+    auto &loop_uv = mesh.loop_uv;
 
     char buf[1025];
     while (in.getline(buf, 1024, '\n')) {
@@ -93,20 +93,16 @@ void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 
 void writeMeshToOBJ(std::ostream &out, Mesh const &mesh) {
-    decltype(auto) vert = mesh.vert.to_vector();
-    decltype(auto) loop = mesh.loop.to_vector();
-    decltype(auto) poly = mesh.poly.to_vector();
-
     // Write vertices
-    for (auto &v : vert) {
+    for (auto &v : mesh.vert) {
         out << "v " << v[0] << " " << v[1] << " " << v[2] << "\n";
     }
 
     // Write indices
-    for (auto &p : poly) {
+    for (auto &p : mesh.poly) {
         out << "f ";
         for (int l = p[0]; l < p[0] + p[1]; ++l) {
-            out << loop[l] << " ";
+            out << mesh.loop[l] << " ";
         }
         out << "\n";
     }

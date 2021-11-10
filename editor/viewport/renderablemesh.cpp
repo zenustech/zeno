@@ -99,8 +99,7 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
-        auto tris = types::meshToTriangles(*mesh);
-        decltype(auto) vertices = tris.to_vector();
+        auto vertices = types::meshToTriangles(*mesh);
         mCount = vertices.size();
 
         if (!mCount) return;

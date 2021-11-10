@@ -510,8 +510,8 @@ __itt_error_notification_t* __itt_set_error_handler(__itt_error_notification_t*)
 
 #if ITT_OS == ITT_OS_WIN
 #define LIBITTNOTIFY_CC __cdecl
-#define LIBITTNOTIFY_EXPORT __declspec(dllexport) 
-#define LIBITTNOTIFY_IMPORT __declspec(dllimport) 
+#define LIBITTNOTIFY_EXPORT //__declspec(dllexport) 
+#define LIBITTNOTIFY_IMPORT //__declspec(dllimport) 
 #elif ITT_OS == ITT_OS_MAC || ITT_OS == ITT_OS_LINUX
 #define LIBITTNOTIFY_CC /* nothing */
 #define LIBITTNOTIFY_EXPORT /* nothing */

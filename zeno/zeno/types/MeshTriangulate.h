@@ -7,7 +7,7 @@
 ZENO_NAMESPACE_BEGIN
 namespace types {
 
-zycl::vector<math::vec3f> meshToTriangles(Mesh const &mesh);
+std::vector<math::vec3f> meshToTriangles(Mesh const &mesh);
 
 }
 ZENO_NAMESPACE_END
