@@ -2,6 +2,13 @@ zeno_glob_recurse(source zeno *.h *.cpp)
 target_sources(zeno PRIVATE ${source})
 target_include_directories(zeno PUBLIC zeno)
 
+if (ZENO_WITH_TBB)
+    message("-- Building Zeno with Intel TBB")
+    add_subdirectory(depends/intel_tbb)
+    target_compile_definitions(zeno PUBLIC -DZENO_WITH_TBB)
+    target_link_libraries(zeno PUBLIC pg_tbb)
+endif()
+
 if (ZENO_WITH_SYCL)
     message("-- Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
     find_package(hipSYCL CONFIG REQUIRED)
