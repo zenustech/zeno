@@ -153,16 +153,17 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
-    dopNode->inputs.at(socketInIndex(socket)) = {};
+    auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
+    sockIn.node = nullptr;
+    sockIn.sockid = 0;
 }
 
 void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket)
 {
     auto srcNode = static_cast<QDMGraphicsNode *>(srcSocket->parentItem());
-    dopNode->inputs.at(socketInIndex(socket)) = {
-        .node = srcNode->dopNode.get(),
-        .sockid = (int)srcNode->socketOutIndex(srcSocket),
-    };
+    auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
+    sockIn.node = srcNode->dopNode.get();
+    sockIn.sockid = srcNode->socketOutIndex(srcSocket);
 }
 
 ZENO_NAMESPACE_END
