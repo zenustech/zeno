@@ -3,7 +3,6 @@
 
 #include <zeno/ztd/vector.h>
 #include <zeno/ztd/any_ptr.h>
-#include <variant>
 #include <string>
 #include <memory>
 #include <vector>
@@ -19,19 +18,11 @@ struct Descriptor;
 struct Executor;
 
 
-struct Input_Value {
-    ztd::any_ptr value;
-};
-
-struct Input_Link {
+struct Input {
     Node *node = nullptr;
     int sockid = 0;
+    ztd::any_ptr value;
 };
-
-using Input = std::variant
-< Input_Value
-, Input_Link
->;
 
 
 struct Node {
