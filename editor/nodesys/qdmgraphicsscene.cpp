@@ -1,5 +1,6 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
+#include "serialization.h"
 #include <zeno/ztd/memory.h>
 #include <zeno/zmt/log.h>
 
@@ -129,7 +130,19 @@ QPointF QDMGraphicsScene::getCursorPos() const
 
 void QDMGraphicsScene::copyPressed()
 {
-    ZENO_LOG_INFO("copyPressed");
+    std::vector<QDMGraphicsNode *> nodes;
+    std::vector<QDMGraphicsLinkFull *> links;
+
+    foreach (auto item, selectedItems()) {
+        if (auto node = dynamic_cast<QDMGraphicsNode *>(item)) {
+            nodes.push_back(node);
+        } else if (auto link = dynamic_cast<QDMGraphicsLinkFull *>(item)) {
+            links.push_back(link);
+        }
+    }
+
+    auto data = serializeGraph(nodes, links);
+    ZENO_LOG_INFO("copyPressed: {}", data);
 }
 
 void QDMGraphicsScene::pastePressed()
