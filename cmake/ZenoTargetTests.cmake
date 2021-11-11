@@ -1,4 +1,4 @@
-add_subdirectory(depends/googletest)
+add_subdirectory(3rdparty/googletest)
 
 zeno_glob_recurse(source tests *.h *.cpp)
 add_executable(zeno ${source})
