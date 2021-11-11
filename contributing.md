@@ -66,7 +66,7 @@ Zeno is written in C++, which means we need a C++ developing environment to star
 
 We support MSVC 2019 or GCC 9+ for compiler, and optionally install require packages via [vcpkg](https://github.com/microsoft/vcpkg).
 
-You may check [BUILD.md](BUILD.md) for the complete build instructions of Zeno.
+Please check the [building.md](building.md) for the complete build instructions of Zeno.
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 

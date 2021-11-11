@@ -73,7 +73,9 @@ To build ZENO, you need:
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 
-[Click me for detailed build instructions](BUILD.md)
+[Click me for detailed build instructions](building.md)
+
+[Click me for contributor guidelines](contributing.md)
 
 
 # Miscellaneous
@@ -90,7 +92,7 @@ Thank you to all the people who have already contributed to ZENO!
 
 ## License
 
-ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](/LICENSE) for more information.
+ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
 
 ## Contact us
 

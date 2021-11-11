@@ -32,6 +32,13 @@ sudo apt-get install -y git cmake g++
 sudo apt-get install -y qt5-default
 ```
 
+### Arch Linux
+
+```bash
+sudo pacman -S git cmake g++
+sudo pacman -S qt5
+```
+
 ## Install required libraries (optional)
 
 Zeno depends on many C++ libraries, we recommend to use the cross-platform package manager `vcpkg` to install these requirements. (feel free to follow your own favor as long as the requirements below can be installed :)
