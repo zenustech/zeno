@@ -87,8 +87,11 @@ void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Delete) {
         parentScene->deletePressed();
 
-    } else if (event->key() == Qt::Key_D && event->modifiers() & Qt::ControlModifier) {
-        parentScene->duplicatePressed();
+    } else if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
+        parentScene->copyPressed();
+
+    } else if (event->key() == Qt::Key_V && event->modifiers() & Qt::ControlModifier) {
+        parentScene->pastePressed();
     }
 
     QGraphicsView::keyPressEvent(event);

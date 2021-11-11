@@ -34,8 +34,9 @@ public:
 
     void socketClicked(QDMGraphicsSocket *socket);
     // TODO: duplicatePressed as well... (Ctrl-D)
-    void duplicatePressed();
     void deletePressed();
+    void copyPressed();
+    void pastePressed();
     void blankClicked();
     void cursorMoved();
 

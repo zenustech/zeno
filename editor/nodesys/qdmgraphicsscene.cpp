@@ -1,6 +1,7 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
 #include <zeno/ztd/memory.h>
+#include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -124,6 +125,16 @@ QPointF QDMGraphicsScene::getCursorPos() const
 {
     auto view = static_cast<QDMGraphicsView const *>(views().at(0));
     return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
+}
+
+void QDMGraphicsScene::copyPressed()
+{
+    ZENO_LOG_INFO("copyPressed");
+}
+
+void QDMGraphicsScene::pastePressed()
+{
+    ZENO_LOG_INFO("pastePressed");
 }
 
 void QDMGraphicsScene::deletePressed()

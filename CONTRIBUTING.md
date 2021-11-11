@@ -56,6 +56,10 @@ After push succeed, please head to `https://github.com/YOUR_NAME/zeno`, and ther
 Click it, then click 'Create Pull Request', click again. The maintainers will see your work soon, they might have some talks with you, have fun!
 After the changes are approved, the PR will be merged into codebase, and your cool feature will be available in next release for all Zeno users!
 
+# Communication
+
+Both Chinese and English are supported! Feel free to express your idea in your favorable language!
+
 # How to build Zeno
 
 Zeno is written in C++, which means we need a C++ developing environment to start coding in Zeno.
