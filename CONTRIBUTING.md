@@ -62,7 +62,7 @@ Zeno is written in C++, which means we need a C++ developing environment to star
 
 We support MSVC 2019 or GCC 9+ for compiler, and optionally install require packages via [vcpkg](https://github.com/microsoft/vcpkg).
 
-You may check [README.md](README.md) for the complete build instructions of Zeno.
+You may check [BUILD.md](BUILD.md) for the complete build instructions of Zeno.
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 
@@ -76,10 +76,11 @@ But it would be great if you could follow these simple rules for others to under
 
 ```cpp
 #include <vector>            // system headers should use '<>' brackets
+#include <memory>
 #include <tbb/parallel_for_each.h>
 #include <zeno/zmt/log.h>    // project headers should also use '<>' for absolute pathing
 
-// and never use 'using namespace std', just think about std::data, std::size, std::ref
+// and never use 'using namespace std', think about std::data, std::size, std::ref
 
 namespace zeno {   // '{' should stay in same line
                    // namespaces does not indent
