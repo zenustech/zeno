@@ -1,10 +1,4 @@
-#ifndef SERIALIZATION_H
-#define SERIALIZATION_H
-
-#include <rapidjson/document.h>
-#include <vector>
-#include "qdmgraphicsnode.h"
-#include "qdmgraphicslinkfull.h"
+#include "serialization.h"
 
 ZENO_NAMESPACE_BEGIN
 
@@ -13,14 +7,15 @@ void serializeGraph
 , rapidjson::Document::AllocatorType &alloc
 , std::vector<QDMGraphicsNode *> const &nodes
 , std::vector<QDMGraphicsLinkFull *> const &links
-);
+) {
+    data.SetInt(42);
+}
 
 void deserializeGraph
 ( rapidjson::Value const &data
 , std::vector<QDMGraphicsNode *> &nodes
 , std::vector<QDMGraphicsLinkFull *> &links
-);
+) {
+}
 
 ZENO_NAMESPACE_END
-
-#endif // SERIALIZATION_H
