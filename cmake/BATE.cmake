@@ -1,4 +1,4 @@
-set(ZENO_TARGET Tests)
+set(ZENO_TARGET Editor)
 set(ZENO_USE_SYSTEM_TBB ON)
 set(ZENO_WITH_SYCL OFF)
 set(HIPSYCL_TARGETS "omp")
