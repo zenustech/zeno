@@ -80,6 +80,20 @@ void QDMGraphicsView::forceUpdate()
     getScene()->forceUpdate();
 }
 
+void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
+{
+    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+
+    if (event->key() == Qt::Key_Delete) {
+        parentScene->deletePressed();
+
+    } else if (event->key() == Qt::Key_D && event->modifiers() & Qt::ControlModifier) {
+        parentScene->duplicatePressed();
+    }
+
+    QGraphicsView::keyPressEvent(event);
+}
+
 void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MiddleButton) {

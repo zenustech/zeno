@@ -24,6 +24,7 @@ class QDMGraphicsView : public QGraphicsView
 public:
     explicit QDMGraphicsView(QWidget *parent = nullptr);
 
+    virtual void keyPressEvent(QKeyEvent *event) override;
     virtual void mousePressEvent(QMouseEvent *event) override;
     virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
