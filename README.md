@@ -10,14 +10,14 @@ Open-source node system framework, to change your algorithmic code into useful t
 
 <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/WelcomePic2.jpg" width="640" position="left">
 
-ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
+ZENO is an open-source, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
 
+- [Why a new node system?](introduction.md)
 
 ## Features
 
-Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
-nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `graphs/` folder).
+Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `graphs/` folder).
 
 ## Gallery
 
@@ -44,6 +44,7 @@ Fig.5 - Muscular-skeleton simulation in ZENO
 Fig.6 - Large scale Fluids in ZENO
 
 <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
+
 
 # End-user Installation
 
@@ -73,9 +74,16 @@ To build ZENO, you need:
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 
-[Click me for detailed build instructions](building.md)
+- [Click me for detailed build instructions](building.md)
 
-[Click me for contributor guidelines](contributing.md)
+
+## Contributors
+
+Thank you to all the people who have already contributed to ZENO!
+
+[![Contributors](https://contrib.rocks/image?repo=zenustech/zeno)](https://github.com/zenustech/zeno/graphs/contributors)
+
+- [Contributor guidelines and helps](contributing.md)
 
 
 # Miscellaneous
@@ -83,12 +91,6 @@ To build ZENO, you need:
 ## Write your own extension!
 
 See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
-
-## Contributors
-
-Thank you to all the people who have already contributed to ZENO!
-
-[![Contributors](https://contrib.rocks/image?repo=zenustech/zeno)](https://github.com/zenustech/zeno/graphs/contributors)
 
 ## License
 
