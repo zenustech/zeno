@@ -8,14 +8,14 @@
 
 ZENO_NAMESPACE_BEGIN
 
-serializeGraph
+void serializeGraph
 ( rapidjson::Value &data
 , rapidjson::Document::AllocatorType &alloc
 , std::vector<QDMGraphicsNode *> const &nodes
 , std::vector<QDMGraphicsLinkFull *> const &links
 );
 
-deserializeGraph
+void deserializeGraph
 ( rapidjson::Value &data
 , std::vector<QDMGraphicsNode *> &nodes
 , std::vector<QDMGraphicsLinkFull *> &links

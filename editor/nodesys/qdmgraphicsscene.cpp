@@ -143,10 +143,13 @@ void QDMGraphicsScene::copyPressed()
         }
     }
 
+    rapidjson::Document doc;
+    serializeGraph(doc, doc.GetAllocator(), nodes, links);
     rapidjson::StringBuffer sb;
     rapidjson::Writer wr(sb);
-    //serializeGraph(nodes, links);
-    //ZENO_LOG_INFO("copyPressed: {}", data);
+    doc.Accept(wr);
+    std::string res = sb.GetString();
+    ZENO_LOG_INFO("copyPressed: {}", res);
 }
 
 void QDMGraphicsScene::pastePressed()
