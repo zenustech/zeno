@@ -3,6 +3,8 @@
 #include "serialization.h"
 #include <zeno/ztd/memory.h>
 #include <zeno/zmt/log.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -141,8 +143,10 @@ void QDMGraphicsScene::copyPressed()
         }
     }
 
-    auto data = serializeGraph(nodes, links);
-    ZENO_LOG_INFO("copyPressed: {}", data);
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer wr(sb);
+    //serializeGraph(nodes, links);
+    //ZENO_LOG_INFO("copyPressed: {}", data);
 }
 
 void QDMGraphicsScene::pastePressed()

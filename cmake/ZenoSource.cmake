@@ -1,6 +1,7 @@
 zeno_glob_recurse(source zeno *.h *.cpp)
 target_sources(zeno PRIVATE ${source})
 target_include_directories(zeno PUBLIC zeno)
+target_include_directories(zeno PUBLIC depends/include)
 
 if (ZENO_WITH_SYSTEM_TBB)
     message("-- Building Zeno with System TBB")
