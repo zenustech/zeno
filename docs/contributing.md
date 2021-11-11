@@ -50,6 +50,8 @@ git commit -m "This is my cool feature description"
 git push -u origin master
 ```
 
+> May also check out [this post for Git tutorial](https://www.liaoxuefeng.com/wiki/896043488029600/896067008724000).
+
 ## Create Pull Request (PR)
 
 After push succeed, please head to `https://github.com/YOUR_NAME/zeno`, and there should be a 'Compare and Pull Request' button show there.
