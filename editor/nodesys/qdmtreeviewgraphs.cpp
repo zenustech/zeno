@@ -1,5 +1,6 @@
 #include "qdmtreeviewgraphs.h"
 #include <QStandardItemModel>
+#include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -11,6 +12,12 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
         auto item = model->item(index.row());
         emit entryClicked(item->text());
+        ZENO_LOG_DEBUG("clicked {}", index.row());
+    });
+    connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
+        auto item = model->item(index.row());
+        ZENO_LOG_DEBUG("double clicked {}", index.row());
+        //emit entryCreated(item->text());
     });
 
     setModel(model);
