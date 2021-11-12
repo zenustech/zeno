@@ -10,6 +10,9 @@ ZENO_NAMESPACE_BEGIN
 
 QDMGraphicsScene::QDMGraphicsScene()
 {
+    connect(this, SIGNAL(selectionChanged()),
+            this, SLOT(updateSceneSelection()));
+
     float w = 100000, h = 100000;
     QRectF rect(-w / 2, -h / 2, w, h);
     setSceneRect(rect);
@@ -19,6 +22,26 @@ QDMGraphicsScene::QDMGraphicsScene()
 }
 
 QDMGraphicsScene::~QDMGraphicsScene() = default;
+
+void QDMGraphicsScene::updateSceneSelection()
+{
+    auto items = selectedItems();
+    if (!items.size()) {
+        setCurrentNode(nullptr);
+        return;
+    }
+    if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
+        setCurrentNode(node);
+    } else {
+        setCurrentNode(nullptr);
+    }
+}
+
+void QDMGraphicsScene::setCurrentNode(QDMGraphicsNode *node)
+{
+    currentNode = node;
+    emit currentNodeChanged(node);
+}
 
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {

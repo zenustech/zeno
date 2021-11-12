@@ -28,41 +28,25 @@ void QDMGraphicsView::invalidateNode(QDMGraphicsNode *node)
     emit nodeUpdated(node, 0);
 }
 
-void QDMGraphicsView::updateSceneSelection()
-{
-    auto items = this->scene()->selectedItems();
-    if (!items.size()) {
-        setCurrentNode(nullptr);
-        return;
-    }
-    if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
-        setCurrentNode(node);
-    } else {
-        setCurrentNode(nullptr);
-    }
-}
-
 void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
     auto oldScene = getScene();
 
-    /*disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
-               this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
-    disconnect(oldScene, SIGNAL(selectionChanged()),
-               this, SLOT(updateSceneSelection()));*/
+    if (oldScene) {
+        disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
+                   this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
+        disconnect(oldScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
+                   this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
+
+        emit currentNodeChanged(nullptr);
+    }
 
     connect(newScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
             this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
-    connect(newScene, SIGNAL(selectionChanged()),
-            this, SLOT(updateSceneSelection()));
+    connect(newScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
+            this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
 
     setScene(newScene);
-}
-
-void QDMGraphicsView::setCurrentNode(QDMGraphicsNode *node)
-{
-    m_currNode = node;
-    emit currentNodeChanged(node);
 }
 
 QDMGraphicsScene *QDMGraphicsView::getScene() const

@@ -17,9 +17,6 @@ class QDMGraphicsView : public QGraphicsView
 
     QPointF m_lastMousePos;
     bool m_mouseDragging{false};
-    QDMGraphicsNode *m_currNode{};
-
-    void setCurrentNode(QDMGraphicsNode *node);
 
 public:
     explicit QDMGraphicsView(QWidget *parent = nullptr);
@@ -38,7 +35,6 @@ public:
 public slots:
     void addNodeByType(QString name);
     void invalidateNode(QDMGraphicsNode *node);
-    void updateSceneSelection();
     void forceUpdate();
 
 signals:

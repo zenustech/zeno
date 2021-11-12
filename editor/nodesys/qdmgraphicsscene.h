@@ -21,6 +21,9 @@ class QDMGraphicsScene : public QGraphicsScene
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
     std::unique_ptr<QDMGraphicsBackground> background;
     QDMGraphicsNode *floatingNode{};
+    QDMGraphicsNode *currentNode{};
+
+    void setCurrentNode(QDMGraphicsNode *node);
 
 public:
     QDMGraphicsScene();
@@ -33,7 +36,6 @@ public:
     QPointF getCursorPos() const;
 
     void socketClicked(QDMGraphicsSocket *socket);
-    // TODO: duplicatePressed as well... (Ctrl-D)
     void deletePressed();
     void copyPressed();
     void pastePressed();
@@ -42,9 +44,11 @@ public:
 
 public slots:
     void addNodeByType(QString type);
+    void updateSceneSelection();
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);
+    void currentNodeChanged(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END
