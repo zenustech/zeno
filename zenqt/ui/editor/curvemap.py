@@ -67,7 +67,7 @@ class QDMOneClickButton(QGraphicsItem):
         self.setPos(x, y)
         self.setWidthHeight(w, h)
 
-class QDMGraphicsNode_MakeCurveMap(QDMGraphicsNode):
+class QDMGraphicsNode_MakeCurvemap(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.points = [
@@ -91,11 +91,13 @@ class QDMGraphicsNode_MakeCurveMap(QDMGraphicsNode):
 
     def dump(self):
         ident, data = super().dump()
-        points = tuple(sorted(self.points, key=lambda x: x[0]))
-        data['points'] = tuple(points)
+        data['points'] = self.points
+        data['handlers'] = self.handlers
+        data['params']['_POINTS'] = '{} '.format(len(self.points)) + ' '.join(['{} {}'.format(p[0], p[1]) for p in self.points])
+        data['params']['_HANDLERS'] = ' '.join(['{} {} {} {}'.format(h[0][0], h[0][1], h[1][0], h[1][1]) for h in self.handlers])
         return ident, data
 
     def load(self, ident, data):
         self.points = list(data['points'])
-
+        self.handlers = list(data['handlers'])
         return super().load(ident, data)

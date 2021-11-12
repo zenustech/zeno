@@ -224,30 +224,6 @@ class NodeEditor(QWidget):
                 'categories': ['layout'],
             },
         })
-        descs.update({
-            'MakeCurveMap': {
-                'inputs': [],
-                'outputs': [('', 'instance', '')],
-                'params': [
-                    ('float', 'input_min', '0'),
-                    ('float', 'input_max', '1'),
-                    ('float', 'output_min', '0'),
-                    ('float', 'output_max', '1'),
-                ],
-                'categories': ['numeric'],
-            },
-        })
-        descs.update({
-            'CurveMap': {
-                'inputs': [
-                    ('', 'instance', ''),
-                    ('', 'input', ''),
-                ],
-                'outputs': [('', 'output', '')],
-                'params': [],
-                'categories': ['numeric'],
-            },
-        })
         self.setDescriptors(descs)
 
     def initDescriptorsComment(self):

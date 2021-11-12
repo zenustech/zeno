@@ -65,9 +65,9 @@ def bezier(p1, p2, h1, h2, t):
     return f
 
 def eval_value(points, handlers, x):
-    if x < 0:
+    if x <= 0:
         return 0
-    if x > 1:
+    if x >= 1:
         return 1
     i = len(list(filter(lambda p: p[0] < x, points))) - 1
     p1 = points[i]
@@ -179,7 +179,7 @@ class CurveEditor(QDialog):
             ])
 
         
-    def drawPoints(self, qp, points, sel=None):
+    def drawPoints(self, qp, points, sel=None, is_point=True):
         if type(sel) == tuple:
             sel = sel[0]
         for i in range(len(points)):
@@ -192,7 +192,8 @@ class CurveEditor(QDialog):
                     lerp(self.params['input_min'].getValue(), self.params['input_max'].getValue(), p[0]),
                     lerp(self.params['output_min'].getValue(), self.params['output_max'].getValue(), p[1]),
                 )
-                qp.drawText(x, y, info)
+                if is_point:
+                    qp.drawText(x, y, info)
             else:
                 qp.drawRect(x, y, 10, 10)
 
@@ -231,13 +232,13 @@ class CurveEditor(QDialog):
         handlers = self.handersToPoints(self.handlers)
         hs = handlers[sel]
         if sel != 0 and sel != len(self.points) - 1:
-            self.drawPoints(qp, hs, h)
+            self.drawPoints(qp, hs, h, False)
             self.drawPolyline(qp, [hs[0], self.points[sel], hs[1]])
         elif sel == 0:
-            self.drawPoints(qp, hs[1:], 0 if h != None else None)
+            self.drawPoints(qp, hs[1:], 0 if h != None else None, False)
             self.drawPolyline(qp, [self.points[sel], hs[1]])
         elif sel == len(self.points) - 1:
-            self.drawPoints(qp, hs[:1], 0 if h != None else None)
+            self.drawPoints(qp, hs[:1], 0 if h != None else None), False
             self.drawPolyline(qp, [hs[0], self.points[sel]])
 
     def keyPressEvent(self, event):
