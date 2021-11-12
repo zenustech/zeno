@@ -35,7 +35,7 @@ add_executable(designer
 )
 
 if (WIN32)
-    target_link_libraries(designer Qt5::Widgets Qt5::Svg)
+    target_link_libraries(designer Qt5::Widgets Qt5::Svg rapidjson)
 else()
     target_link_libraries(designer Qt5::Widgets Qt5::Svg Qt5::X11Extras dl X11)
 endif(WIN32)

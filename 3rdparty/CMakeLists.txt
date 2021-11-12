@@ -1,2 +1,2 @@
 add_subdirectory(KDDockWidgets)
-add_subdirectory(xercesc3)
+#add_subdirectory(xercesc3)
