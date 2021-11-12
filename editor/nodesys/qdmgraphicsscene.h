@@ -37,6 +37,7 @@ public:
     void removeLink(QDMGraphicsLinkFull *link);
 
     std::vector<QDMGraphicsScene *> getChildScenes() const;
+    void setName(std::string const &name);
     std::string const &getName() const;
 
     QPointF getCursorPos() const;

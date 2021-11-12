@@ -32,6 +32,11 @@ std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
     return res;
 }
 
+void QDMGraphicsScene::setName(std::string const &name)
+{
+    this->name = name;
+}
+
 std::string const &QDMGraphicsScene::getName() const
 {
     return name;
