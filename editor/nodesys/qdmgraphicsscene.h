@@ -42,7 +42,6 @@ public:
 
 public slots:
     void addNodeByType(QString type);
-    void forceUpdate();
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);

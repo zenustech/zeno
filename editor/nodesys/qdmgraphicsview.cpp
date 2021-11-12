@@ -77,7 +77,6 @@ void QDMGraphicsView::addNodeByType(QString name)
 
 void QDMGraphicsView::forceUpdate()
 {
-    getScene()->forceUpdate();
 }
 
 void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
