@@ -29,7 +29,7 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 {
     rootScene = scene;
 
-    auto touch = [&] (auto &&touch, auto *parItem, auto const &scenes) -> void {
+    auto touch = [this] (auto &&touch, auto *parItem, auto const &scenes) -> void {
         for (auto const &scene: scenes) {
             auto item = new QStandardItem;
             item->setEditable(false);
