@@ -66,7 +66,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QDoubleValidator);
 
-        if (auto expr = input->value.value_cast<int>()) {
+        if (auto expr = input->value.value_cast<float>()) {
             auto value = std::to_string(*expr);
             edit->setText(QString::fromStdString(value));
         }
