@@ -33,7 +33,9 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
         auto item = static_cast<QDMZenoSceneItem *>(model->item(index.row()));
         ZENO_LOG_DEBUG("double clicked {}", index.row());
-        item->scene->childScenes.add({});
+        auto chScene = std::make_unique<QDMGraphicsScene>();
+        chScene->name.set("child1");
+        item->scene->childScenes.add(std::move(chScene));
         refreshRootScene();
     });
 
@@ -65,7 +67,6 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
                 vname.set(item.text().toStdString());
             });
 #endif
-            raiiItems.emplace_back(item);
             touch(touch, item, scene->childScenes.get());
             parItem->appendRow(item);
         }
