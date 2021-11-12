@@ -24,7 +24,6 @@ class QDMGraphicsScene : public QGraphicsScene
     std::unique_ptr<QDMGraphicsBackground> background;
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
-    std::vector<std::unique_ptr<QDMGraphicsScene>> childScenes;
 
     void setCurrentNode(QDMGraphicsNode *node);
 
@@ -37,8 +36,8 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
-    std::vector<QDMGraphicsScene *> getChildScenes() const;
     ztd::property<std::string> name;
+    ztd::prop_list<std::unique_ptr<QDMGraphicsScene>> childScenes;
 
     QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);

@@ -23,15 +23,6 @@ QDMGraphicsScene::QDMGraphicsScene()
 
 QDMGraphicsScene::~QDMGraphicsScene() = default;
 
-std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
-{
-    std::vector<QDMGraphicsScene *> res;
-    for (auto const &p: childScenes) {
-        res.push_back(p.get());
-    }
-    return res;
-}
-
 void QDMGraphicsScene::updateSceneSelection()
 {
     auto items = selectedItems();

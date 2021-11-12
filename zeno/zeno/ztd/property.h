@@ -36,8 +36,8 @@ class property final {
             return prop->get();
         }
 
-        inline void set(T const &nxt) const {
-            prop->val = nxt;
+        inline void set(T nxt) const {
+            prop->val = std::move(nxt);
             for (auto ch: prop->children) {
                 if (ch != this)
                     ch->do_changed();
@@ -59,8 +59,8 @@ public:
         return val;
     }
 
-    inline void set(T const &nxt) {
-        val = nxt;
+    inline void set(T nxt) {
+        val = std::move(nxt);
         for (auto ch: children) {
             ch->do_changed();
         }
@@ -116,8 +116,8 @@ class prop_list final {
             return prop->get();
         }
 
-        inline void set(T const &nxt) const {
-            prop->val = nxt;
+        inline void set(T &&nxt) const {
+            prop->val = std::move(nxt);
             for (auto ch: prop->children) {
                 if (ch != this)
                     ch->do_changed();
@@ -147,17 +147,17 @@ public:
         return val.size();
     }
 
-    inline size_t add(T const &nxt) {
+    inline size_t add(T nxt) {
         size_t i = val.size();
-        val.push_back(nxt);
+        val.push_back(std::move(nxt));
         for (auto ch: children) {
             ch->do_added(i);
         }
         return i;
     }
 
-    inline void set(size_t i, T const &nxt) {
-        val.at(i) = nxt;
+    inline void set(size_t i, T nxt) {
+        val.at(i) = std::move(nxt);
         for (auto ch: children) {
             ch->do_changed(i);
         }
