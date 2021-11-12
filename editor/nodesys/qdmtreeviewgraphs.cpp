@@ -1,7 +1,4 @@
 #include "qdmtreeviewgraphs.h"
-#include <zeno/dop/Descriptor.h>
-#include <QStandardItemModel>
-#include <QStandardItem>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -9,13 +6,6 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     : QTreeView(parent)
 {
     auto model = new QStandardItemModel(this);
-    for (auto const &k: std::to_array<std::string>({"main", "sub"})) {
-        auto item = new QStandardItem;
-        item->setText(QString::fromStdString(k));
-        item->setEditable(false);
-        items.emplace_back(item);
-        model->appendRow(item);
-    }
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
         auto item = model->item(index.row());
@@ -26,5 +16,22 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
 }
 
 QDMTreeViewGraphs::~QDMTreeViewGraphs() = default;
+
+void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
+{
+    rootScene = scene;
+
+    auto touch = [&] (auto &&touch, QDMGraphicsScene *scene) {
+        for (auto const &chScene: scene->getChildScenes()) {
+            auto name = chScene->getName();
+            auto item = new QStandardItem;
+            item->setText(QString::fromStdString(name));
+            item->setEditable(false);
+            items.emplace_back(item);
+            model->appendRow(item);
+        }
+    };
+    touch(touch, rootScene);
+}
 
 ZENO_NAMESPACE_END
