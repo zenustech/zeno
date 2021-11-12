@@ -23,9 +23,13 @@ QDMGraphicsScene::QDMGraphicsScene()
 
 QDMGraphicsScene::~QDMGraphicsScene() = default;
 
-std::vector<std::unique_ptr<QDMGraphicsScene>> const &QDMGraphicsScene::getChildScenes() const
+std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {
-    return childScenes;
+    std::vector<QDMGraphicsScene *> res;
+    for (auto const &p: childScenes) {
+        res.push_back(p.get());
+    }
+    return res;
 }
 
 std::string const &QDMGraphicsScene::getName() const

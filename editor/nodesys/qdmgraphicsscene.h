@@ -36,7 +36,7 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
-    std::vector<std::unique_ptr<QDMGraphicsScene>> const &getChildScenes() const;
+    std::vector<QDMGraphicsScene *> getChildScenes() const;
     std::string const &getName() const;
 
     QPointF getCursorPos() const;
