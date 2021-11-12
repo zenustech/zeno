@@ -60,8 +60,8 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 template <class T>
-inline T &no_cv(T &p) {
-    return const_cast<std::remove_cv_t<T> &>(p);
+inline T &non_const(T &p) {
+    return const_cast<std::remove_const_t<T> &>(p);
 }
 
 template <class T>
