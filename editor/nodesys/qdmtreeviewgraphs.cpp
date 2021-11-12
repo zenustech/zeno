@@ -29,7 +29,7 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 {
     rootScene = scene;
 
-    auto touch = [&] (auto &&touch, auto *parItem, std::vector<QDMGraphicsScene *> const &scenes) -> void {
+    auto touch = [&] (auto &&touch, auto *parItem, auto const &scenes) -> void {
         for (auto const &scene: scenes) {
             auto item = new QStandardItem;
             item->setEditable(false);
@@ -42,11 +42,13 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
             });
 #endif
             raiiItems.emplace_back(item);
-            touch(touch, item, scene->getChildScenes());
+            touch(touch, item, scene->childScenes.get());
             parItem->appendRow(item);
         }
     };
-    touch(touch, static_cast<QStandardItemModel *>(model()), {rootScene});
+    touch(touch,
+          static_cast<QStandardItemModel *>(model()),
+          std::vector<QDMGraphicsScene *>{rootScene});
 }
 
 ZENO_NAMESPACE_END

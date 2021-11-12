@@ -171,7 +171,7 @@ public:
         val.erase(val.begin() + i);
     }
 
-    inline void pop(size_t i) {
+    inline void pop() {
         if (val.empty())
             return;
         size_t i = val.size() - 1;
