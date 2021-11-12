@@ -16,7 +16,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
         float new_order = 0;
         int dep_order = 0;
 
-        bool operator<(OrderInfo const &that) const {
+        constexpr bool operator<(OrderInfo const &that) const {
             return new_order < that.new_order || dep_order < that.dep_order;
         }
     };
@@ -30,20 +30,25 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 
         } else {
             nodes.push_back(node);
+
+            std::vector<Node *> reqnodes;
             for (auto const &input: node->inputs) {
-                if (input.node) {
-                    auto &depord = dfs(dfs, input.node);
-                    if (depord.new_order >= ord.new_order) {
-                        depord.new_order = ord.new_order;
-                        depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
-                    }
+                if (input.node)
+                    reqnodes.push_back(input.node);
+            }
+
+            for (auto *reqnode: reqnodes) {
+                auto &depord = dfs(dfs, reqnode);
+                if (depord.new_order >= ord.new_order) {
+                    depord.new_order = ord.new_order;
+                    depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
                 }
             }
+
             auto it = order.emplace(node, ord).first;
             return it->second;
         }
     };
-
     dfs(dfs, root);
 
     std::sort(nodes.begin(), nodes.end(), [&] (Node *p, Node *q) {
@@ -53,7 +58,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
     for (auto node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
-            ZENO_LOG_INFO("* applying {}@{}", node->desc->name, (void *)node);
+            ZENO_LOG_INFO("* applying node [{}]", node->name);
             current_node = node;
             node->apply();
         }
@@ -94,9 +99,7 @@ ztd::any_ptr Executor::evaluate(Input const &input) {
     try {
         return resolve(input);
     } catch (std::exception const &e) {
-        ZENO_LOG_ERROR("[{}@{}] {}",
-                      current_node->desc->name, (void *)current_node,
-                      e.what());
+        ZENO_LOG_ERROR("[{}] {}", current_node->name, e.what());
         return {};
     }
 }
