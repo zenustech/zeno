@@ -106,12 +106,12 @@ QDMGraphicsNode *QDMGraphicsScene::addNode()
     return node;
 }
 
-void QDMGraphicsScene::addNodeByName(QString name)
+void QDMGraphicsScene::addNodeByType(QString type)
 {
     if (floatingNode)
         return;
     auto node = addNode();
-    node->initByName(name);
+    node->initByType(type);
     node->hide();
     floatingNode = node;
     emit nodeUpdated(node, 1);

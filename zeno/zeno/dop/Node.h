@@ -28,6 +28,7 @@ struct Input {
 struct Node {
     ztd::vector<Input> inputs;
     ztd::vector<ztd::any_ptr> outputs;
+    std::string name;
 
     float xpos = 0;
     float ypos = 0;

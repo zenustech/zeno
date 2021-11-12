@@ -41,7 +41,7 @@ public:
     void cursorMoved();
 
 public slots:
-    void addNodeByName(QString name);
+    void addNodeByType(QString type);
     void forceUpdate();
 
 signals:

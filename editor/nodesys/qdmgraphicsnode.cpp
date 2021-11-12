@@ -79,10 +79,10 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
     return socketOut;
 }
 
-void QDMGraphicsNode::initByName(QString name)
+void QDMGraphicsNode::initByType(QString type)
 {
-    setName(name);
-    auto const &desc = dop::descriptor_table().at(name.toStdString());
+    setName(type + "1");
+    auto const &desc = dop::descriptor_table().at(type.toStdString());
     dopNode = desc.create();
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
@@ -97,11 +97,17 @@ void QDMGraphicsNode::initByName(QString name)
 void QDMGraphicsNode::setName(QString name)
 {
     label->setPlainText(name);
+    dopNode->name = name.toStdString();
 }
 
-QString QDMGraphicsNode::getName()
+std::string QDMGraphicsNode::getType()
 {
-    return label->toPlainText();
+    return dopNode->desc->name;
+}
+
+std::string QDMGraphicsNode::getName()
+{
+    return dopNode->name;
 }
 
 QDMGraphicsSocketIn *QDMGraphicsNode::socketInAt(size_t index)
@@ -149,7 +155,7 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
     return it - begin(socketOuts);
 }
 
-// TODO: add socketValueChanged
+// TODO: add socketValueChanged?
 
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {

@@ -153,7 +153,7 @@
    <slots>
     <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
-    <slot>addNodeByName(QString)</slot>
+    <slot>addNodeByType(QString)</slot>
     <slot>forceUpdate()</slot>
     <slot>invalidateNode(QDMGraphicsNode*)</slot>
    </slots>
@@ -206,7 +206,7 @@
    <sender>nodeMenu</sender>
    <signal>entryClicked(QString)</signal>
    <receiver>nodeView</receiver>
-   <slot>addNodeByName(QString)</slot>
+   <slot>addNodeByType(QString)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>417</x>
