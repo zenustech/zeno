@@ -26,8 +26,19 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     auto model = new QStandardItemModel(this);
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
-        auto item = static_cast<QDMZenoSceneItem *>(model->item(index.row()));
-        emit entryClicked(item->text());
+        std::vector<QModelIndex> indices;
+        do {
+            indices.push_back(index);
+            index = index.parent();
+        } while (index.isValid());
+        std::reverse(indices.begin(), indices.end());
+        auto item = static_cast<QDMZenoSceneItem *>(model->item(indices[0].row()));
+        QString path = item->text();
+        std::for_each(indices.begin() + 1, indices.end(), [&] (auto const &idx) {
+            path += "/" + item->text();
+            item = static_cast<QDMZenoSceneItem *>(item->child(idx.row()));
+        });
+        emit entryClicked(path);
         ZENO_LOG_DEBUG("clicked {}", index.row());
     });
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
