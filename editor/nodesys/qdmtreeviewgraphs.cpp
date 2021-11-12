@@ -49,6 +49,9 @@ void QDMTreeViewGraphs::refreshRootScene()
 
 void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 {
+    while (model()->rowCount())
+        model()->removeRow(0);
+
     rootScene = scene;
 
     auto touch = [this] (auto &&touch, auto *parItem, auto const &scenes) -> void {
