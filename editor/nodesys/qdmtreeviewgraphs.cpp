@@ -1,5 +1,5 @@
 #include "qdmtreeviewgraphs.h"
-#include <zeno/ztd/memory.h>
+#include <QStandardItemModel>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -29,11 +29,11 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
             item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
             item->setEditable(false);
             raiiItems.emplace_back(item);
-            parItem->appendRow(item);
             touch(touch, item, scene->getChildScenes());
+            parItem->appendRow(item);
         }
     };
-    touch(touch, model, {rootScene});
+    touch(touch, static_cast<QStandardItemModel *>(model()), {rootScene});
 }
 
 ZENO_NAMESPACE_END

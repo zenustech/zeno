@@ -5,7 +5,6 @@
 #include "qdmgraphicsscene.h"
 #include <QTreeView>
 #include <QStandardItem>
-#include <QStandardItemModel>
 #include <memory>
 #include <vector>
 
@@ -16,7 +15,6 @@ class QDMTreeViewGraphs : public QTreeView
     Q_OBJECT
 
     QDMGraphicsScene *rootScene;
-    QStandardItemModel *model;
 
     std::vector<std::unique_ptr<QStandardItem>> raiiItems;
 
