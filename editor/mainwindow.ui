@@ -25,6 +25,9 @@
       </property>
      </widget>
     </item>
+    <item row="0" column="0">
+     <widget class="QDMTreeViewGraphs" name="treeView"/>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -198,6 +201,11 @@
     <signal>nodeParamUpdated(QDMGraphicsNode*)</signal>
     <slot>setCurrentNode(QDMGraphicsNode*)</slot>
    </slots>
+  </customwidget>
+  <customwidget>
+   <class>QDMTreeViewGraphs</class>
+   <extends>QTreeView</extends>
+   <header>nodesys/qdmtreeviewgraphs.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
