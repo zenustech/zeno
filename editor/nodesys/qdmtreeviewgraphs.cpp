@@ -24,10 +24,16 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 
     auto touch = [&] (auto &&touch, auto *parItem, std::vector<QDMGraphicsScene *> const &scenes) -> void {
         for (auto const &scene: scenes) {
-            auto const &name = scene->getName();
             auto item = new QStandardItem;
-            item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
             item->setEditable(false);
+            auto vName = scene->name.view([=] (std::string const &name) {
+                item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
+            });
+#if XXX
+            connect(item, QStandardItem::editingFinished, this, [=] {
+                vName.set(item.text().toStdString());
+            });
+#endif
             raiiItems.emplace_back(item);
             touch(touch, item, scene->getChildScenes());
             parItem->appendRow(item);

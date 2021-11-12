@@ -2,13 +2,15 @@
 #define QDMGRAPHICSSCENE_H
 
 #include <QGraphicsScene>
-#include <set>
+#include <zeno/ztd/property.h>
 #include "qdmgraphicsnode.h"
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicslinkhalf.h"
 #include "qdmgraphicslinkfull.h"
 #include "qdmgraphicsbackground.h"
 #include <QString>
+#include <vector>
+#include <set>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -23,7 +25,6 @@ class QDMGraphicsScene : public QGraphicsScene
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
     std::vector<std::unique_ptr<QDMGraphicsScene>> childScenes;
-    std::string name;
 
     void setCurrentNode(QDMGraphicsNode *node);
 
@@ -37,8 +38,7 @@ public:
     void removeLink(QDMGraphicsLinkFull *link);
 
     std::vector<QDMGraphicsScene *> getChildScenes() const;
-    void setName(std::string const &name);
-    std::string const &getName() const;
+    ztd::property<std::string> name;
 
     QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);
