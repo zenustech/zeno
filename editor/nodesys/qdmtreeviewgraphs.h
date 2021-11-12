@@ -23,6 +23,7 @@ public:
     ~QDMTreeViewGraphs();
 
     void setRootScene(QDMGraphicsScene *scene);
+    void refreshRootScene();
 
 signals:
     void entryClicked(QString name);

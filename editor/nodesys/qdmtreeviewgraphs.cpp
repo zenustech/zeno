@@ -1,8 +1,24 @@
 #include "qdmtreeviewgraphs.h"
 #include <QStandardItemModel>
+#include <zeno/ztd/memory.h>
 #include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
+
+namespace {
+
+struct QDMZenoSceneItem final : QStandardItem
+{
+    QDMGraphicsScene *scene;
+
+    explicit QDMZenoSceneItem(QDMGraphicsScene *scene)
+        : scene(scene)
+    {
+        setEditable(false);
+    }
+};
+
+}
 
 QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     : QTreeView(parent)
@@ -10,14 +26,15 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     auto model = new QStandardItemModel(this);
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
-        auto item = model->item(index.row());
+        auto item = static_cast<QDMZenoSceneItem *>(model->item(index.row()));
         emit entryClicked(item->text());
         ZENO_LOG_DEBUG("clicked {}", index.row());
     });
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
-        auto item = model->item(index.row());
+        auto item = static_cast<QDMZenoSceneItem *>(model->item(index.row()));
         ZENO_LOG_DEBUG("double clicked {}", index.row());
-        //emit entryCreated(item->text());
+        item->scene->childScenes.add({});
+        refreshRootScene();
     });
 
     setModel(model);
@@ -25,14 +42,18 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
 
 QDMTreeViewGraphs::~QDMTreeViewGraphs() = default;
 
+void QDMTreeViewGraphs::refreshRootScene()
+{
+    setRootScene(rootScene);
+}
+
 void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 {
     rootScene = scene;
 
     auto touch = [this] (auto &&touch, auto *parItem, auto const &scenes) -> void {
         for (auto const &scene: scenes) {
-            auto item = new QStandardItem;
-            item->setEditable(false);
+            auto item = new QDMZenoSceneItem(ztd::get_ptr(scene));
             auto vname = scene->name.view([=] (std::string const &name) {
                 item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
             });

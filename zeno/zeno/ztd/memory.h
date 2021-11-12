@@ -59,6 +59,27 @@ template <class T>
 copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
+template <class T>
+inline T &no_cv(T &p) {
+    return const_cast<std::remove_cv_t<T> &>(p);
+}
+
+template <class T>
+inline T *get_ptr(T *p) {
+    return p;
+}
+
+template <class T>
+inline T *get_ptr(std::unique_ptr<T> const &p) {
+    return p.get();
+}
+
+template <class T>
+inline T *get_ptr(std::shared_ptr<T> const &p) {
+    return p.get();
+}
+
+
 }
 }
 ZENO_NAMESPACE_END
