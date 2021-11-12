@@ -45,9 +45,9 @@ public:
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
     void initByType(QString type);
-    std::string getType();
+    std::string const &getType();
     void setName(QString name);
-    std::string getName();
+    std::string const &getName();
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
     static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, SOCKMARGINBOT = -10;

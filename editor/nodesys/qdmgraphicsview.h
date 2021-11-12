@@ -36,7 +36,7 @@ public:
     static constexpr float ZOOMFACTOR = 1.25f;
 
 public slots:
-    void addNodeByName(QString name);
+    void addNodeByType(QString name);
     void forceUpdate();
     void invalidateNode(QDMGraphicsNode *node);
     void updateSceneSelection();

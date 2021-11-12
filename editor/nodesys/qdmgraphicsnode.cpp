@@ -81,7 +81,6 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
 void QDMGraphicsNode::initByType(QString type)
 {
-    setName(type + "1");
     auto const &desc = dop::descriptor_table().at(type.toStdString());
     dopNode = desc.create();
     for (auto const &sockinfo: desc.inputs) {
@@ -92,6 +91,7 @@ void QDMGraphicsNode::initByType(QString type)
         auto socket = addSocketOut();
         socket->setName(QString::fromStdString(sockinfo.name));
     }
+    setName(type + "1");
 }
 
 void QDMGraphicsNode::setName(QString name)
@@ -100,12 +100,12 @@ void QDMGraphicsNode::setName(QString name)
     dopNode->name = name.toStdString();
 }
 
-std::string QDMGraphicsNode::getType()
+std::string const &QDMGraphicsNode::getType()
 {
     return dopNode->desc->name;
 }
 
-std::string QDMGraphicsNode::getName()
+std::string const &QDMGraphicsNode::getName()
 {
     return dopNode->name;
 }

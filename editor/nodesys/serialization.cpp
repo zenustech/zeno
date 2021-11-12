@@ -17,10 +17,14 @@ void serializeGraph
     for (auto node: nodes) {
         rapidjson::Value d_node(rapidjson::kObjectType);
 
-        auto name = node->getName().toStdString();
+        auto const &type = node->getType();
+        rapidjson::Value d_type;
+        d_type.SetString(type.data(), type.size());
+        d_node.AddMember("type", d_type, alloc);
+
+        auto const &name = node->getName();
         rapidjson::Value d_name;
         d_name.SetString(name.data(), name.size());
-        ZENO_LOG_INFO("! {}", name.data());
         d_node.AddMember("name", d_name, alloc);
 
         d_nodes.PushBack(d_node, alloc);

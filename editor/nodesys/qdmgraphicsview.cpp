@@ -70,9 +70,9 @@ QDMGraphicsScene *QDMGraphicsView::getScene() const
     return static_cast<QDMGraphicsScene *>(scene());
 }
 
-void QDMGraphicsView::addNodeByName(QString name)
+void QDMGraphicsView::addNodeByType(QString name)
 {
-    getScene()->addNodeByName(name);
+    getScene()->addNodeByType(name);
 }
 
 void QDMGraphicsView::forceUpdate()
