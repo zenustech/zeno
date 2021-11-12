@@ -315,7 +315,7 @@ class CurveEditor(QDialog):
                 else:
                     x = x if x > 0 else 0
                 self.handlers[i[0]][i[1]] = (x, y)
-                if not self.alt_pressed:
+                if not self.alt_pressed and plen((x, y)) != 0:
                     v = pnorm((x, y))
                     self.handlers[i[0]][1-i[1]] = pmul(
                         v,
