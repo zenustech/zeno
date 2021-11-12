@@ -64,26 +64,29 @@ vec3 calc_ray_dir(vec3 pos) {
     return rd;
 }
 
-void main() {
-    vec3 view_dir = -calc_ray_dir(varyPos);
-    vec3 normal = normalize(cross(dFdx(varyPos), dFdy(varyPos)));
-
-    vec3 v_color = vec3(0.96);
+vec3 studio_shading(vec3 view_dir, vec3 normal) {
+    vec3 matColor = vec3(0.96);
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
     light_dir = normalize((uInvMV * vec4(1., 2., 5., 0.)).xyz);
-    color += vec3(0.45, 0.47, 0.5) * pbr(v_color, 0.19, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.45, 0.47, 0.5) * pbr(matColor, 0.19, 0.0, 1.0, normal, light_dir, view_dir);
 
     light_dir = normalize((uInvMV * vec4(-4., -2., 1., 0.)).xyz);
-    color += vec3(0.3, 0.23, 0.18) * pbr(v_color, 0.14, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.3, 0.23, 0.18) * pbr(matColor, 0.14, 0.0, 1.0, normal, light_dir, view_dir);
 
     light_dir = normalize((uInvMV * vec4(3., -5., 2., 0.)).xyz);
-    color += vec3(0.15, 0.2, 0.22) * pbr(v_color, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.15, 0.2, 0.22) * pbr(matColor, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
 
     color *= 1.2;
-
     //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
+    return color;
+}
+
+void main() {
+    vec3 view_dir = -calc_ray_dir(varyPos);
+    vec3 normal = normalize(cross(dFdx(varyPos), dFdy(varyPos)));
+    vec3 color = studio_shading(view_dir, normal);
     gl_FragColor = vec4(color, 1.0);
 }
 )");
@@ -99,14 +102,14 @@ public:
 
     RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
     {
-        auto vertices = types::meshToTriangles(*mesh);
-        mCount = vertices.size();
-
+        auto dataPos = types::meshToTriangles(*mesh);
+        mCount = dataPos.size();
         if (!mCount) return;
+
         attrPos.create();
         attrPos.setUsagePattern(QOpenGLBuffer::StreamDraw);
         attrPos.bind();
-        attrPos.allocate(vertices.data(), vertices.size() * sizeof(vertices[0]));
+        attrPos.allocate(dataPos.data(), dataPos.size() * sizeof(dataPos[0]));
         attrPos.release();
     }
 
