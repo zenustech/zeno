@@ -28,6 +28,11 @@ std::vector<std::unique_ptr<QDMGraphicsScene>> const &QDMGraphicsScene::getChild
     return childScenes;
 }
 
+std::string const &QDMGraphicsScene::getName() const
+{
+    return name;
+}
+
 void QDMGraphicsScene::updateSceneSelection()
 {
     auto items = selectedItems();

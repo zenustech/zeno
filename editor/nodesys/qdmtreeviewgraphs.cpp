@@ -21,17 +21,18 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 {
     rootScene = scene;
 
-    auto touch = [&] (auto &&touch, QDMGraphicsScene *scene) {
-        for (auto const &chScene: scene->getChildScenes()) {
-            auto name = chScene->getName();
+    auto touch = [&] (auto &&touch, auto *parItem, QDMGraphicsScene *parScene) -> void {
+        for (auto const &scene: parScene->getChildScenes()) {
+            auto const &name = scene->getName();
             auto item = new QStandardItem;
             item->setText(QString::fromStdString(name));
             item->setEditable(false);
-            items.emplace_back(item);
-            model->appendRow(item);
+            raiiItems.emplace_back(item);
+            parItem->appendRow(item);
+            touch(touch, item, scene.get());
         }
     };
-    touch(touch, rootScene);
+    touch(touch, model, rootScene);
 }
 
 ZENO_NAMESPACE_END

@@ -18,7 +18,7 @@ class QDMTreeViewGraphs : public QTreeView
     QDMGraphicsScene *rootScene;
     QStandardItemModel *model;
 
-    std::vector<std::unique_ptr<QStandardItem>> items;
+    std::vector<std::unique_ptr<QStandardItem>> raiiItems;
 
 public:
     explicit QDMTreeViewGraphs(QWidget *parent = nullptr);
