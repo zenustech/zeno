@@ -9,19 +9,19 @@ namespace ztd {
 
 template <class T>
 class property final {
-public:
     class propview final {
-    private:
+        friend property;
+
         property *prop;
         std::function<void(T const &)> changed;
 
-        void do_changed() const {
+        inline void do_changed() const {
             changed(std::as_const(prop->val));
         }
 
     public:
-        inline propview(property *prop, std::function<void(T const &)> const &changed)
-            : prop(prop), changed(changed)
+        inline propview(property *prop, auto &&changed)
+            : prop(prop), changed(std::forward<decltype(changed)>(changed))
         {
             prop->children.push_back(this);
             do_changed();
@@ -40,12 +40,11 @@ public:
             prop->val = nxt;
             for (auto ch: prop->children) {
                 if (ch != this)
-                    ch.do_changed();
+                    ch->do_changed();
             }
         }
     };
 
-private:
     T val;
     std::vector<propview *> children;
 
@@ -63,12 +62,12 @@ public:
     inline void set(T const &nxt) {
         val = nxt;
         for (auto ch: children) {
-            ch.do_changed();
+            ch->do_changed();
         }
     }
 
-    propview view(std::function<void(T const &)> const &changed) const {
-        return {this, changed};
+    inline propview view(auto &&changed) const {
+        return {const_cast<property *>(this), std::forward<decltype(changed)>(changed)};
     }
 };
 

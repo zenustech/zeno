@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , nodeScene(new QDMGraphicsScene)
 {
     ui->setupUi(this);
-    nodeScene->setName("root");
+    nodeScene->name.set("root");
     ui->nodeView->switchScene(nodeScene.get());
     ui->treeView->setRootScene(nodeScene.get());
 }
