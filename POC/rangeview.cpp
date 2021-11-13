@@ -2,6 +2,7 @@
 #include <iterator>
 #include <concepts>
 #include <iostream>
+#include <memory>
 
 
 template <class T>
@@ -168,11 +169,10 @@ inline constexpr auto map(auto f)
     });
 }
 
-
 int main()
 {
-    std::vector<int> arr = {32, 64, 32};
-    for (int x: arr | map([] (int i) { return i + 1; })) {
+    std::vector<std::unique_ptr<int>> arr = {new int, new int};
+    for (auto *x: arr | map([] (auto &&t) { return t.get(); })) {
         std::cout << x << std::endl;
     }
 }

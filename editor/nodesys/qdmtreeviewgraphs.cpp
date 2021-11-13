@@ -52,6 +52,7 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
         auto [path, item] = resolveIndex(model, index);
         ZENO_LOG_DEBUG("double clicked {}", path);
 
+        item->scene->childScenes.get();
         auto chScene = std::make_unique<QDMGraphicsScene>();
         chScene->name.set("child1");
         item->scene->childScenes.add(std::move(chScene));
