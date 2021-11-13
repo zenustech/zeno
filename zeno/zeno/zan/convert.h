@@ -12,7 +12,8 @@ inline namespace ns_convert {
 
 
 template <class T = void>
-static constexpr auto convert_to = transform([] (auto r) {
+static constexpr auto convert_to =
+transform([] (auto r) {
     if constexpr (std::is_void_v<T>) {
         return range{r.begin(), r.end()};
     } else {
@@ -21,13 +22,15 @@ static constexpr auto convert_to = transform([] (auto r) {
 });
 
 
-static constexpr auto to_vector = transform([] (auto r) {
+static constexpr auto to_vector =
+transform([] (auto r) {
     using T = std::remove_cvref_t<decltype(*r.begin())>;
     return convert_to<std::vector<T>>(r);
 });
 
 
-static constexpr auto to_set = transform([] (auto r) {
+static constexpr auto to_set =
+transform([] (auto r) {
     using T = std::remove_cvref_t<decltype(*r.begin())>;
     return convert_to<std::set<T>>(r);
 });
