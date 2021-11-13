@@ -20,30 +20,38 @@ struct QDMZenoSceneItem final : QStandardItem
 
 }
 
+static std::pair<std::string, QDMZenoSceneItem *>
+resolveIndex(QStandardItemModel *model, QModelIndex index) {
+    std::vector<QModelIndex> indices;
+    do {
+        indices.push_back(index);
+        index = index.parent();
+    } while (index.isValid());
+    std::reverse(indices.begin(), indices.end());
+    auto item = static_cast<QDMZenoSceneItem *>(model->item(indices[0].row()));
+    QString path = item->text();
+    std::for_each(indices.begin() + 1, indices.end(), [&] (QModelIndex index) {
+        item = static_cast<QDMZenoSceneItem *>(item->child(index.row()));
+        path += "/" + item->text();
+    });
+    return {path.toStdString(), item};
+}
+
 QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     : QTreeView(parent)
 {
     auto model = new QStandardItemModel(this);
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
-        std::vector<QModelIndex> indices;
-        do {
-            indices.push_back(index);
-            index = index.parent();
-        } while (index.isValid());
-        std::reverse(indices.begin(), indices.end());
-        auto item = static_cast<QDMZenoSceneItem *>(model->item(indices[0].row()));
-        QString path = item->text();
-        std::for_each(indices.begin() + 1, indices.end(), [&] (auto const &idx) {
-            path += "/" + item->text();
-            item = static_cast<QDMZenoSceneItem *>(item->child(idx.row()));
-        });
-        emit entryClicked(path);
-        ZENO_LOG_DEBUG("clicked {}", index.row());
+        auto [path, item] = resolveIndex(model, index);
+        ZENO_LOG_DEBUG("clicked {}", path);
+        emit entryClicked(QString::fromStdString(path));
     });
+
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
-        auto item = static_cast<QDMZenoSceneItem *>(model->item(index.row()));
-        ZENO_LOG_DEBUG("double clicked {}", index.row());
+        auto [path, item] = resolveIndex(model, index);
+        ZENO_LOG_DEBUG("double clicked {}", path);
+
         auto chScene = std::make_unique<QDMGraphicsScene>();
         chScene->name.set("child1");
         item->scene->childScenes.add(std::move(chScene));
@@ -54,6 +62,11 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
 }
 
 QDMTreeViewGraphs::~QDMTreeViewGraphs() = default;
+
+QSize QDMTreeViewGraphs::sizeHint() const
+{
+    return QSize(420, 800);
+}
 
 void QDMTreeViewGraphs::refreshRootScene()
 {

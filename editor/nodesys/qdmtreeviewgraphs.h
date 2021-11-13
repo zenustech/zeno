@@ -22,6 +22,8 @@ public:
     explicit QDMTreeViewGraphs(QWidget *parent = nullptr);
     ~QDMTreeViewGraphs();
 
+    virtual QSize sizeHint() const override;
+
     void setRootScene(QDMGraphicsScene *scene);
     void refreshRootScene();
 
