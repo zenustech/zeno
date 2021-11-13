@@ -1,15 +1,16 @@
 #include <vector>
 #include <iterator>
 #include <concepts>
+#include <iostream>
 
 
 template <class T>
 concept is_iterator =
-requires (T t)
+requires (T t, T tt)
 {
     *t;
+    t != tt;
 };
-
 
 template <class T>
 concept is_forward_iterator = is_iterator<T> &&
@@ -27,13 +28,6 @@ requires (T t)
 };
 
 template <class T>
-concept is_differential_iterator = is_iterator<T> &&
-requires (T t, T tt, std::size_t i)
-{
-    t - tt;
-};
-
-template <class T>
 concept is_random_iterator = is_iterator<T> &&
 requires (T t, T tt, std::size_t i)
 {
@@ -46,8 +40,8 @@ requires (T t, T tt, std::size_t i)
 template <class T>
 concept is_ranged = requires (T t)
 {
-    t.begin() -> is_iterator;
-    t.end() -> std::template same_as<decltype(t.begin())>;
+    t.begin();
+    t.end();
 };
 
 
@@ -63,30 +57,19 @@ struct range
         : m_begin(std::move(begin)), m_end(std::move(end))
     {}
 
-    range(range const &) = default;
-    range &operator=(range const &) = default;
-    range(range &&) = default;
-    range &operator=(range &&) = default;
-
     template <is_ranged R>
     constexpr range(R &&r) : range(r.begin(), r.end())
     {
     }
 
-    constexpr auto begin() const
+    constexpr iterator begin() const
     {
         return m_begin;
     }
 
-    constexpr auto end() const
+    constexpr iterator end() const
     {
         return m_end;
-    }
-
-    constexpr auto size() const
-        requires is_differential_iterator<T>
-    {
-        return m_end - m_begin;
     }
 };
 
@@ -95,41 +78,41 @@ range(R &&r) -> range<decltype(std::declval<R>().begin())>;
 
 
 template <class F>
-struct transform
+struct transformer
 {
-    F m_func;
+    F m_f;
 
-    constexpr transform(F func)
-        : m_func(std::move(func))
+    constexpr transformer(F f)
+        : m_f(std::move(f))
     {
     }
 
-    template <class T>
-    friend constexpr auto operator|(range<T> const &r, transform const &self)
+    constexpr decltype(auto) operator()(is_ranged auto &...rs) const
     {
-        return self.m_func(r);
+        return m_f(range(rs)...);
+    }
+
+    friend constexpr decltype(auto) operator|(is_ranged auto &r, transformer const &self)
+    {
+        return self(r);
     }
 };
 
 
-template <is_iterator T, class F>
-struct map_range : range<T>
+template <class R, class F>
+struct map_range
 {
-    F m_func;
-
-    map_range(range<T> r, F const &func)
-        : range<T>(std::move(r))
-        , m_func(std::move(func))
-    {
-    }
+    R m_r;
+    F m_f;
 
     struct iterator
     {
-        typename range<T>::iterator m_it;
+        typename R::iterator m_it;
+        F m_f;
 
         constexpr decltype(auto) operator*() const
         {
-            return func(*m_it);
+            return m_f(*m_it);
         }
 
         constexpr iterator &operator++()
@@ -143,5 +126,53 @@ struct map_range : range<T>
             m_it--;
             return *this;
         }
+
+        constexpr iterator &operator+=(std::size_t i)
+        {
+            m_it += i;
+            return *this;
+        }
+
+        constexpr iterator &operator-=(std::size_t i)
+        {
+            m_it -= i;
+            return *this;
+        }
+
+        constexpr std::ptrdiff_t operator-(iterator const &o) const
+        {
+            return m_it - o.m_it;
+        }
+
+        constexpr std::ptrdiff_t operator!=(iterator const &o) const
+        {
+            return m_it != o.m_it;
+        }
     };
+
+    constexpr iterator begin() const
+    {
+        return {m_r.begin(), m_f};
+    }
+
+    constexpr iterator end() const
+    {
+        return {m_r.end(), m_f};
+    }
 };
+
+inline constexpr auto map(auto f)
+{
+    return transformer([=] (auto r) {
+        return map_range<decltype(r), decltype(f)>{r, f};
+    });
+}
+
+
+int main()
+{
+    std::vector<int> arr = {32, 64, 32};
+    for (int x: arr | map([] (int i) { return i + 1; })) {
+        std::cout << x << std::endl;
+    }
+}
