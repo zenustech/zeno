@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno/zan/range.h>
+#include <zeno/zan/transform.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -15,7 +15,7 @@ struct map_range
     R m_r;
     F m_f;
 
-    struct iterator
+    struct iterator : std::iterator_traits<typename R::iterator>
     {
         typename R::iterator m_it;
         F m_f;
@@ -62,19 +62,19 @@ struct map_range
 
     constexpr iterator begin() const
     {
-        return {m_r.begin(), m_f};
+        return {.m_it = m_r.begin(), .m_f = m_f};
     }
 
     constexpr iterator end() const
     {
-        return {m_r.end(), m_f};
+        return {.m_it = m_r.end(), .m_f = m_f};
     }
 };
 
 static constexpr auto map(auto f)
 {
-    return transformer([f] (auto r) {
-        return map_range<decltype(r), decltype(f)>{r, f};
+    return transform([f] (auto r) {
+        return map_range<decltype(r), decltype(f)>{.m_r = r, .m_f = f};
     });
 }
 

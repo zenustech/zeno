@@ -3,6 +3,7 @@
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/macros.h>
 #include <zeno/zan/map.h>
+#include <zeno/zan/cast.h>
 #include <zeno/zan/find_unique_name.h>
 #include <zeno/zmt/log.h>
 
@@ -59,6 +60,7 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
             ( item->scene->childScenes.get()
             | zan::map(ztd::get_ptr)
             | zan::map(ZENO_F1(p, p->name.get()))
+            | zan::to_vector
             , "child");
         auto chScene = std::make_unique<QDMGraphicsScene>();
         chScene->name.set(chName);
