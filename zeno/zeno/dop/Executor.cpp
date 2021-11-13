@@ -58,7 +58,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
     for (auto node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
-            ZENO_LOG_INFO("* applying node [{}]", node->name);
+            ZENO_INFO("* applying node [{}]", node->name);
             current_node = node;
             node->apply();
         }
@@ -99,7 +99,7 @@ ztd::any_ptr Executor::evaluate(Input const &input) {
     try {
         return resolve(input);
     } catch (std::exception const &e) {
-        ZENO_LOG_ERROR("[{}] {}", current_node->name, e.what());
+        ZENO_ERROR("[{}] {}", current_node->name, e.what());
         return {};
     }
 }

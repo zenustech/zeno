@@ -10,3 +10,4 @@
 #define ZENO_F1(x, ...) [&] (auto &&x) { return (__VA_ARGS__); }
 #define ZENO_F2(x, y, ...) [&] (auto &&x, auto &&y) { return (__VA_ARGS__); }
 #define ZENO_F3(x, y, z, ...) [&] (auto &&x, auto &&y, auto &&z) { return (__VA_ARGS__); }
+#define ZENO_F4(x, y, z, w, ...) [&] (auto &&x, auto &&y, auto &&z, auto &&w) { return (__VA_ARGS__); }

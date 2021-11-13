@@ -167,12 +167,12 @@ void QDMGraphicsScene::copyPressed()
     rapidjson::Writer wr(sb);
     doc.Accept(wr);
     std::string res = sb.GetString();
-    ZENO_LOG_INFO("copyPressed: {}", res);
+    ZENO_INFO("copyPressed: {}", res);
 }
 
 void QDMGraphicsScene::pastePressed()
 {
-    ZENO_LOG_INFO("pastePressed");
+    ZENO_INFO("pastePressed");
 }
 
 void QDMGraphicsScene::deletePressed()

@@ -46,15 +46,16 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
         auto [path, item] = resolveIndex(model, index);
-        ZENO_LOG_DEBUG("clicked {}", path);
+        ZENO_DEBUG("clicked {}", path);
         emit entryClicked(QString::fromStdString(path));
     });
 
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
         auto [path, item] = resolveIndex(model, index);
-        ZENO_LOG_DEBUG("double clicked {}", path);
+        ZENO_DEBUG("double clicked {}", path);
 
-        zan::range r = item->scene->childScenes.get()
+        zan::range rnames
+            = item->scene->childScenes.get()
             | zan::map(ztd::get_ptr)
             | zan::map(ZENO_F1(p, p->name.get()))
             ;
