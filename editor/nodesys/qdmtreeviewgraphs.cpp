@@ -3,6 +3,7 @@
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/macros.h>
 #include <zeno/zan/map.h>
+#include <zeno/zan/find_unique_name.h>
 #include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
@@ -54,13 +55,13 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
         auto [path, item] = resolveIndex(model, index);
         ZENO_DEBUG("double clicked {}", path);
 
-        zan::range rnames
-            = item->scene->childScenes.get()
+        auto chName = find_unique_name
+            ( item->scene->childScenes.get()
             | zan::map(ztd::get_ptr)
             | zan::map(ZENO_F1(p, p->name.get()))
-            ;
+            , "child");
         auto chScene = std::make_unique<QDMGraphicsScene>();
-        chScene->name.set("child1");
+        chScene->name.set(chName);
         item->scene->childScenes.add(std::move(chScene));
         refreshRootScene();
     });

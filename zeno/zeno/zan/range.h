@@ -83,6 +83,10 @@ template <is_ranged R>
 range(R &&r) -> range<decltype(std::declval<R>().begin())>;
 
 
+template <class R, class T>
+concept is_range_of = std::same_as<std::remove_cvref_t<decltype(*std::declval<R>().begin())>, T>;
+
+
 template <class F>
 struct transformer
 {
