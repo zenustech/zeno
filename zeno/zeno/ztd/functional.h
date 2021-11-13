@@ -10,15 +10,6 @@ namespace ztd {
 inline namespace _H_functional {
 
 
-/*template <class T = void, class ...Ts>
-using promise = std::function<T(Ts...)>;
-
-template <class ...Ts, class T>
-promise<T, Ts...> make_promise(T val) {
-    return [val = std::move(val)] (Ts...) -> T { return val; };
-}*/
-
-
 struct dtor_function : std::function<void()> {
     using std::function<void()>::function;
 

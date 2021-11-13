@@ -171,8 +171,8 @@ inline constexpr auto map(auto f)
 
 int main()
 {
-    std::vector<std::unique_ptr<int>> arr = {new int, new int};
-    for (auto *x: arr | map([] (auto &&t) { return t.get(); })) {
+    std::vector<int> arr;
+    for (auto x: arr | map([] (auto &&t) { return t; }) | map([] (auto &&t) { return t; })) {
         std::cout << x << std::endl;
     }
 }

@@ -1,6 +1,8 @@
 #include "qdmtreeviewgraphs.h"
 #include <QStandardItemModel>
 #include <zeno/ztd/memory.h>
+#include <zeno/ztd/macros.h>
+#include <zeno/zan/map.h>
 #include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
@@ -52,7 +54,10 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
         auto [path, item] = resolveIndex(model, index);
         ZENO_LOG_DEBUG("double clicked {}", path);
 
-        item->scene->childScenes.get();
+        zan::range r = item->scene->childScenes.get()
+            | zan::map(ztd::get_ptr)
+            | zan::map(ZENO_F1(p, p->name.get()))
+            ;
         auto chScene = std::make_unique<QDMGraphicsScene>();
         chScene->name.set("child1");
         item->scene->childScenes.add(std::move(chScene));

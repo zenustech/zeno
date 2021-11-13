@@ -60,30 +60,31 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 template <class T>
-inline T &non_const(T &p) {
+constexpr T &non_const(T &p) {
     return const_cast<std::remove_const_t<T> &>(p);
 }
 
 template <class T>
-inline T *non_const_ptr(T *p) {
+constexpr T *non_const_ptr(T *p) {
     return const_cast<std::remove_const_t<T> *>(p);
 }
 
-template <class T>
-inline T *get_ptr(T *p) {
-    return p;
-}
+static constexpr struct {
+    template <class T>
+    constexpr T *operator()(T *p) const {
+        return p;
+    }
 
-template <class T>
-inline T *get_ptr(std::unique_ptr<T> const &p) {
-    return p.get();
-}
+    template <class T>
+    constexpr T *operator()(std::unique_ptr<T> const &p) const {
+        return p.get();
+    }
 
-template <class T>
-inline T *get_ptr(std::shared_ptr<T> const &p) {
-    return p.get();
-}
-
+    template <class T>
+    constexpr T *operator()(std::shared_ptr<T> const &p) const {
+        return p.get();
+    }
+} get_ptr;
 
 }
 }
