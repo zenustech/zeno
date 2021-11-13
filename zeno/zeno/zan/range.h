@@ -87,28 +87,6 @@ template <class R, class T>
 concept is_range_of = std::same_as<std::remove_cvref_t<decltype(*std::declval<R>().begin())>, T>;
 
 
-template <class F>
-struct transformer
-{
-    F m_f;
-
-    constexpr transformer(F f)
-        : m_f(std::move(f))
-    {
-    }
-
-    constexpr decltype(auto) operator()(is_ranged auto &&...rs) const
-    {
-        return m_f(range(std::forward<decltype(rs)>(rs))...);
-    }
-
-    friend constexpr decltype(auto) operator|(is_ranged auto &&r, transformer const &self)
-    {
-        return self(std::forward<decltype(r)>(r));
-    }
-};
-
-
 }
 }
 ZENO_NAMESPACE_END

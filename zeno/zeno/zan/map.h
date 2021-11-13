@@ -1,10 +1,7 @@
-
 #pragma once
 
 
 #include <zeno/zan/range.h>
-#include <iterator>
-#include <concepts>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -74,9 +71,9 @@ struct map_range
     }
 };
 
-inline constexpr auto map(auto f)
+static constexpr auto map(auto f)
 {
-    return transformer([=] (auto r) {
+    return transformer([f] (auto r) {
         return map_range<decltype(r), decltype(f)>{r, f};
     });
 }
