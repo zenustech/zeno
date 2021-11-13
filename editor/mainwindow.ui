@@ -159,6 +159,7 @@
     <slot>addNodeByType(QString)</slot>
     <slot>forceUpdate()</slot>
     <slot>invalidateNode(QDMGraphicsNode*)</slot>
+    <slot>switchScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -206,6 +207,9 @@
    <class>QDMTreeViewGraphs</class>
    <extends>QTreeView</extends>
    <header>nodesys/qdmtreeviewgraphs.h</header>
+   <slots>
+    <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -221,8 +225,8 @@
      <y>979</y>
     </hint>
     <hint type="destinationlabel">
-     <x>800</x>
-     <y>332</y>
+     <x>1731</x>
+     <y>403</y>
     </hint>
    </hints>
   </connection>
@@ -233,8 +237,8 @@
    <slot>updateNode(QDMGraphicsNode*,int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>684</x>
-     <y>556</y>
+     <x>1615</x>
+     <y>627</y>
     </hint>
     <hint type="destinationlabel">
      <x>50</x>
@@ -287,6 +291,22 @@
     <hint type="destinationlabel">
      <x>1732</x>
      <y>685</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>treeView</sender>
+   <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+   <receiver>nodeView</receiver>
+   <slot>switchScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>870</x>
+     <y>521</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>989</x>
+     <y>430</y>
     </hint>
    </hints>
   </connection>

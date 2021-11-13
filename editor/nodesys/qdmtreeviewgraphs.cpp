@@ -23,8 +23,7 @@ struct QDMZenoSceneItem final : QStandardItem
 
 }
 
-static std::pair<std::string, QDMZenoSceneItem *>
-resolveIndex(QStandardItemModel *model, QModelIndex index) {
+static QDMZenoSceneItem *resolveIndex(QStandardItemModel *model, QModelIndex index) {
     std::vector<QModelIndex> indices;
     do {
         indices.push_back(index);
@@ -32,12 +31,12 @@ resolveIndex(QStandardItemModel *model, QModelIndex index) {
     } while (index.isValid());
     std::reverse(indices.begin(), indices.end());
     auto item = static_cast<QDMZenoSceneItem *>(model->item(indices[0].row()));
-    QString path = item->text();
+    //QString path = item->text();
     std::for_each(indices.begin() + 1, indices.end(), [&] (QModelIndex index) {
         item = static_cast<QDMZenoSceneItem *>(item->child(index.row()));
-        path += "/" + item->text();
+        //path += '/' + item->text();
     });
-    return {path.toStdString(), item};
+    return item;
 }
 
 QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
@@ -46,25 +45,26 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
     auto model = new QStandardItemModel(this);
 
     connect(this, &QTreeView::clicked, [=, this] (QModelIndex index) {
-        auto [path, item] = resolveIndex(model, index);
-        ZENO_DEBUG("clicked {}", path);
-        emit entryClicked(QString::fromStdString(path));
+        auto item = resolveIndex(model, index);
+        emit sceneSwitched(item->scene);
     });
 
+#if 1
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
-        auto [path, item] = resolveIndex(model, index);
-        ZENO_DEBUG("double clicked {}", path);
+        auto item = resolveIndex(model, index);
 
         auto chName = zan::find_unique_name
             ( item->scene->childScenes.get()
             | zan::map(ztd::get_ptr)
             | zan::map(ZENO_F1(p, p->name.get()))
             , "child");
+
         auto chScene = std::make_unique<QDMGraphicsScene>();
         chScene->name.set(chName);
         item->scene->childScenes.add(std::move(chScene));
         refreshRootScene();
     });
+#endif
 
     setModel(model);
 }

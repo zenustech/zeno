@@ -27,7 +27,6 @@ public:
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
     virtual QSize sizeHint() const override;
-    void switchScene(QDMGraphicsScene *newScene);
     QDMGraphicsScene *getScene() const;
 
     static constexpr float ZOOMFACTOR = 1.25f;
@@ -35,7 +34,8 @@ public:
 public slots:
     void addNodeByType(QString name);
     void invalidateNode(QDMGraphicsNode *node);
-    void forceUpdate();
+    void switchScene(QDMGraphicsScene *newScene);
+    void forceUpdate();  // TODO: remove this!
 
 signals:
     void nodeUpdated(QDMGraphicsNode *node, int type);

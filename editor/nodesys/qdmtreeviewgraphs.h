@@ -28,7 +28,7 @@ public:
     void refreshRootScene();
 
 signals:
-    void entryClicked(QString name);
+    void sceneSwitched(QDMGraphicsScene *scene);
 };
 
 ZENO_NAMESPACE_END
