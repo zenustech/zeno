@@ -65,6 +65,11 @@ inline T &non_const(T &p) {
 }
 
 template <class T>
+inline T *non_const_ptr(T *p) {
+    return const_cast<std::remove_const_t<T> *>(p);
+}
+
+template <class T>
 inline T *get_ptr(T *p) {
     return p;
 }
