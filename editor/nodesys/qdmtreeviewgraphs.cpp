@@ -55,7 +55,7 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
         auto [path, item] = resolveIndex(model, index);
         ZENO_DEBUG("double clicked {}", path);
 
-        auto chName = find_unique_name
+        auto chName = zan::find_unique_name
             ( item->scene->childScenes.get()
             | zan::map(ztd::get_ptr)
             | zan::map(ZENO_F1(p, p->name.get()))
@@ -106,6 +106,8 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
     touch(touch,
           static_cast<QStandardItemModel *>(model()),
           std::vector<QDMGraphicsScene *>{rootScene});
+
+    expandAll();
 }
 
 ZENO_NAMESPACE_END

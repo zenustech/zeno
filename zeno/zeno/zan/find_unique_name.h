@@ -24,10 +24,13 @@ static std::string find_unique_name
         }
     }
 
-    for (int i = 1; i <= found.size(); i++) {
+    if (found.empty())
+        return base + '1';
+
+    for (int i = 1; i <= found.size() + 1; i++) {
         std::string is = std::to_string(i);
-        if (found.contains(is)) {
-            return is;
+        if (!found.contains(is)) {
+            return base + is;
         }
     }
 
