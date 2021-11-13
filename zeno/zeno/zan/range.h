@@ -18,30 +18,6 @@ requires (T t, T tt)
     t != tt;
 };
 
-template <class T>
-concept is_forward_iterator = is_iterator<T> &&
-requires (T t)
-{
-    ++t;
-};
-
-template <class T>
-concept is_bidirectional_iterator = is_iterator<T> &&
-requires (T t)
-{
-    ++t;
-    --t;
-};
-
-template <class T>
-concept is_random_iterator = is_iterator<T> &&
-requires (T t, T tt, std::ptrdiff_t i)
-{
-    t - tt;
-    t += i;
-    t -= i;
-};
-
 
 template <class T>
 concept is_ranged = requires (T t)
