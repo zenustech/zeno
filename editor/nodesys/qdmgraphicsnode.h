@@ -38,18 +38,20 @@ public:
     QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
+
     void socketUnlinked(QDMGraphicsSocketIn *socket);
     void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
     void socketValueChanged(QDMGraphicsSocketIn *socket);
-    void unlinkAll();
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
+
     void initByType(QString type);
     std::string const &getType();
     void setName(QString name);
     std::string const &getName();
 
+    void unlinkAll();
     void invalidate();
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;

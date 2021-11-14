@@ -178,7 +178,7 @@ void QDMGraphicsNode::socketValueChanged(QDMGraphicsSocketIn *socket)
 
 void QDMGraphicsNode::invalidate()
 {
-    // TODO: implement cache value
+    // TODO: implement cache value...
 }
 
 ZENO_NAMESPACE_END

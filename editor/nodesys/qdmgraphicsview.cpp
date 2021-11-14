@@ -27,7 +27,7 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent)
 
 void QDMGraphicsView::invalidateNode(QDMGraphicsNode *node)
 {
-    emit nodeUpdated(node, 0);
+    emit getScene()->nodeUpdated(node, 0);
 }
 
 void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
