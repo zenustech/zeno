@@ -74,7 +74,7 @@ If you have trouble setting up developing environment, please let us help by ope
 
 # Coding style
 
-Zeno is based on C++17 and Python 3.7+, you may assume all their features are available in coding.
+Zeno is based on C++20, you may assume all C++17 features and some C++20 features to be available in coding.
 
 Code style is not forced, also we won't format every code merged in to the repo.
 
@@ -85,6 +85,7 @@ But it would be great if you could follow these simple rules for others to under
 #include <memory>
 #include <tbb/parallel_for_each.h>
 #include <zeno/zmt/log.h>    // project headers should also use '<>' for absolute pathing
+#include <zeno/zmt/format.h>
 
 // and never use 'using namespace std', think about std::data, std::size, std::ref
 
@@ -104,6 +105,8 @@ auto staticFunc(int arg) {   // this function is visible only to this file
         // tab size in lambda is also 4
         x = x * 2 + arg;  // leave two spaces between operators like '=', '*', '+'
     });
+
+    auto expr = zmt::format("the answer is {}", 42);  // instead of fmt or std for compatibilty
     
     return x;
 }
