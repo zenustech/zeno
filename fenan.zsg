@@ -1,0 +1,6808 @@
+{
+ "graph": {
+  "main": {
+   "nodes": {
+    "f620d7e4-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "8b0ff5ad-NumericOperator",
+       "ret",
+       4
+      ],
+      "ny": [
+       null,
+       null,
+       0
+      ],
+      "nz": [
+       null,
+       null,
+       0
+      ],
+      "sizeX": [
+       null,
+       null,
+       null
+      ],
+      "sizeY": [
+       null,
+       null,
+       null
+      ],
+      "sizeZ": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       1.0
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCentered": false
+     },
+     "uipos": [
+      574.5574233232219,
+      -895.5466451831828
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "e894e1b6-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 4
+     },
+     "uipos": [
+      -14.86557776126969,
+      -856.2597228814005
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "8b0ff5ad-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "e894e1b6-NumericInt",
+       "value",
+       null
+      ],
+      "rhs": [
+       "c8a4316a-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      283.4467120181405,
+      -840.5966553287979
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "c8a4316a-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -11.645962732919259,
+      -676.2422360248445
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4ec78438-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       null,
+       null,
+       1.01
+      ],
+      "rhs": [
+       "e894e1b6-NumericInt",
+       "value",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "div"
+     },
+     "uipos": [
+      297.86552302080224,
+      -557.0421103223897
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "e237832b-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
+     "inputs": {
+      "prim": [
+       "7b390e4b-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "primNei": [
+       "ec7d71ff-Clone",
+       "newObject",
+       null
+      ],
+      "hashGrid": [
+       "8bd4d71a-ParticlesBuildHashGrid",
+       "hashGrid",
+       null
+      ],
+      "zfxCode": [
+       "4cf6cfdc-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2540.268170904165,
+      -690.7819989898383
+     ],
+     "options": []
+    },
+    "8bd4d71a-ParticlesBuildHashGrid": {
+     "name": "ParticlesBuildHashGrid",
+     "inputs": {
+      "primNei": [
+       "ec7d71ff-Clone",
+       "newObject",
+       null
+      ],
+      "radius": [
+       "4ec78438-x",
+       "ret",
+       null
+      ],
+      "radiusMin": [
+       "13422ad9-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2169.6899952986255,
+      -523.2164052998405
+     ],
+     "options": []
+    },
+    "4cf6cfdc-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@dval += @@val >= 6 ? 1 : 0"
+     },
+     "uipos": [
+      2076.7397298944934,
+      -1046.4381530690205
+     ],
+     "options": []
+    },
+    "107cfaba-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "f620d7e4-Make3DGridPrimitive",
+       "prim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "val",
+      "type": "float"
+     },
+     "uipos": [
+      852.111678004535,
+      -829.081632653061
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "c1e011e9-PrimitiveSetAttrValue": {
+     "name": "PrimitiveSetAttrValue",
+     "inputs": {
+      "prim": [
+       "107cfaba-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "index": [
+       null,
+       null,
+       62
+      ],
+      "value": [
+       "74e04bc7-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "val",
+      "type": "float"
+     },
+     "uipos": [
+      1137.8835388321988,
+      -893.410749716553
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "27d18e95-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "107cfaba-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "SRC": [
+       "c1e011e9-PrimitiveSetAttrValue",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1434.9865683011901,
+      -691.7394495453708
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "74e04bc7-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 8.0
+     },
+     "uipos": [
+      1123.7721021610994,
+      -581.5324165029464
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "33058f9a-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "3\n0 0 0.4956713227833071 1\n0.5086357650208341 0.4870571471750271 0.4836028411666925 0.4853084047583082\n1 1 0.5094885468166407 0"
+     },
+     "uipos": [
+      3533.621377701373,
+      -451.40594302554007
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0.4956713227833071,
+        1
+       ]
+      ],
+      [
+       0.5086357650208341,
+       [
+        0.4870571471750271,
+        0.4836028411666925,
+        0.4853084047583082
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        0.5094885468166407,
+        0
+       ]
+      ]
+     ]
+    },
+    "b98acc4f-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "4140d233-Clone",
+       "newObject",
+       null
+      ],
+      "heatmap": [
+       "33058f9a-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       -6.0
+      ],
+      "max": [
+       null,
+       null,
+       6.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "dval"
+     },
+     "uipos": [
+      3973.8049484282897,
+      -626.9118369351667
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "ec7d71ff-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "27d18e95-Route",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1791.5029469548117,
+      -609.037328094302
+     ],
+     "options": []
+    },
+    "4140d233-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "0132a416-x",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3545.9955181728847,
+      -657.6191060903726
+     ],
+     "options": []
+    },
+    "13422ad9-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4ec78438-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.01
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      612.7210216110016,
+      -403.9783889980351
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "7b390e4b-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "27d18e95-Route",
+       "output",
+       null
+      ],
+      "zfxCode": [
+       "ed568284-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "ec7d71ff-Clone",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1779.960707269154,
+      -862.4754420432212
+     ],
+     "options": []
+    },
+    "ed568284-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@dval = @val >= 6 ? -6 : 0"
+     },
+     "uipos": [
+      1690.5697445972482,
+      -1260.3143418467575
+     ],
+     "options": []
+    },
+    "0132a416-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "e237832b-ParticlesNeighborWrangle",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "6c4b3ff8-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3016.1123219548117,
+      -671.640931974459
+     ],
+     "options": []
+    },
+    "6c4b3ff8-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@val += @dval"
+     },
+     "uipos": [
+      2926.7213592829057,
+      -1069.4798317779955
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 1515.7031006509474,
+    "y": -1238.5062527829327,
+    "width": 624.9999999999997,
+    "height": 624.9999999999997
+   }
+  }
+ },
+ "views": {},
+ "descs": {
+  "AABBCollideDetect": {
+   "inputs": [
+    [
+     "vec3f",
+     "bminA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bminB",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "overlap",
+     ""
+    ],
+    [
+     "bool",
+     "AinsideB",
+     ""
+    ],
+    [
+     "bool",
+     "BinsideA",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "AppendList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Assign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "BeginFor": {
+   "inputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginForEach": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginSubstep": {
+   "inputs": [
+    [
+     "float",
+     "total_dt",
+     ""
+    ],
+    [
+     "float",
+     "min_scale",
+     "0.05"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "elapsed_time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachePrimitive": {
+   "inputs": [
+    [
+     "",
+     "inPrim",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "CachedByKey": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedIf": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedOnce": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DelUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSize": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictUnion": {
+   "inputs": [
+    [
+     "dict1",
+     "dict",
+     ""
+    ],
+    [
+     "dict2",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "EndFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "EndForEach": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "bool",
+     "accept",
+     "1"
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "droppedList",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "0"
+    ]
+   ],
+   "categories": [
+    "control"
+   ]
+  },
+  "ExitProcess": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "status",
+     "-1"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "ExportObjMesh": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "ExportObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExportParticles": {
+   "inputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ExportZpmPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExtendList": {
+   "inputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "list2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "ExtractList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "FinalOutput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    [
+     "",
+     "extraArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "GeoVertexVel": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "TargetMesh",
+     ""
+    ],
+    [
+     "",
+     "OriginMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MeshVel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "GetFrameNum": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FrameNum",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFramePortion": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePortion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTimeElapsed": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    [
+     "",
+     "true",
+     ""
+    ],
+    [
+     "",
+     "false",
+     ""
+    ],
+    [
+     "bool",
+     "cond",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ImportObjMesh": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "ImportObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ImportParticles": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ImportZpmPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "IntegrateFrameTime": {
+   "inputs": [
+    [
+     "",
+     "desired_dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actual_dt",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "min_scale",
+     "0.0001"
+    ]
+   ],
+   "categories": [
+    "frame"
+   ]
+  },
+  "ListGetItem": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ListLength": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "length",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Make2DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPointsInAABB": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "4"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isStaggered",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "sizeZ",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeBoxPrimitive": {
+   "inputs": [
+    [
+     "float",
+     "size_x",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_y",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_z",
+     "2.0"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "use_quads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeCubePrimitive": {
+   "inputs": [
+    [
+     "",
+     "spacing",
+     ""
+    ],
+    [
+     "",
+     "nx",
+     ""
+    ],
+    [
+     "",
+     "ny",
+     ""
+    ],
+    [
+     "",
+     "nz",
+     ""
+    ],
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "MakeGCTest": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "42"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "MakeHeatmap": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeMultilineString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeMutable": {
+   "inputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "MakePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeReadPath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    [
+     "",
+     "obj0",
+     ""
+    ],
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "",
+     "obj3",
+     ""
+    ],
+    [
+     "",
+     "obj4",
+     ""
+    ],
+    [
+     "",
+     "obj5",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "1"
+    ]
+   ],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeVisualAABBPrimitive": {
+   "inputs": [
+    [
+     "vec3f",
+     "boundMin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "boundMax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points edges trifaces quadfaces",
+     "type",
+     "edges"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeWritePath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MeshCopy": {
+   "inputs": [
+    [
+     "",
+     "copyFrom",
+     ""
+    ],
+    [
+     "",
+     "copyTo",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "MeshMix": {
+   "inputs": [
+    [
+     "",
+     "meshA",
+     ""
+    ],
+    [
+     "",
+     "meshB",
+     ""
+    ],
+    [
+     "",
+     "coef",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "MeshToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MoveAssign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveClone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveDelete": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "NumericCounter": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericFloat": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInt": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3i",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInterpolation": {
+   "inputs": [
+    [
+     "NumericObject",
+     "src",
+     ""
+    ],
+    [
+     "NumericObject",
+     "srcMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "srcMax",
+     "1"
+    ],
+    [
+     "NumericObject",
+     "dstMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "dstMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isClamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericOperator": {
+   "inputs": [
+    [
+     "NumericObject",
+     "lhs",
+     ""
+    ],
+    [
+     "NumericObject",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum add sub mul div mod and or xor shr shl cmpge cmple cmpgt cmplt cmpne cmpeq land lor pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat anytrue alltrue copy copyr",
+     "op_type",
+     "add"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRandom": {
+   "inputs": [
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ],
+    [
+     "bool",
+     "symmetric",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRangeList": {
+   "inputs": [
+    [
+     "int",
+     "start",
+     "0"
+    ],
+    [
+     "int",
+     "end",
+     "1"
+    ],
+    [
+     "int",
+     "skip",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "NumericVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2f",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericWrangle": {
+   "inputs": [
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject:NumericObject",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PackNumericIntVec2": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim1",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "prim2",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesBuildHashGrid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "hashgrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "HashGrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ParticlesWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "normal",
+     ""
+    ],
+    [
+     "",
+     "tangent",
+     ""
+    ],
+    [
+     "",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "boundMin2D",
+     ""
+    ],
+    [
+     "",
+     "boundMax2D",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "PolyDuplicate": {
+   "inputs": [
+    [
+     "",
+     "Mesh",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Meshes",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "PortalIn": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PortalOut": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PrimitiveAddAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "fillValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBoundingBox": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "bmin",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "exWidth",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcCentroid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "centroid",
+     ""
+    ],
+    [
+     "float",
+     "totalArea",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClearConnect": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClip": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "distance",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reverse",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "float",
+     "min",
+     "0"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rho"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveDuplicate": {
+   "inputs": [
+    [
+     "",
+     "meshPrim",
+     ""
+    ],
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "float",
+     "uniScale",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "attrFromMesh",
+     "1"
+    ],
+    [
+     "bool",
+     "attrFromParticles",
+     "1"
+    ],
+    [
+     "string",
+     "scaleByAttr",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFaceToEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clearFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFillAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFilterByAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rad"
+    ],
+    [
+     "enum cmpgt cmplt cmpge cmple cmpeq cmpne",
+     "acceptIf",
+     "cmpgt"
+    ],
+    [
+     "enum any all",
+     "vecSelType",
+     "all"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetFaceCount": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetSize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "valueB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMerge": {
+   "inputs": [
+    [
+     "",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "coef",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePrintAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "min",
+     "-1"
+    ],
+    [
+     "NumericObject",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomizeAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ],
+    [
+     "float",
+     "min",
+     "-1"
+    ],
+    [
+     "float",
+     "minY",
+     "-1"
+    ],
+    [
+     "float",
+     "minZ",
+     "-1"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "float",
+     "maxY",
+     "1"
+    ],
+    [
+     "float",
+     "maxZ",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveReduction": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum avg max min absmax",
+     "op",
+     "avg"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveResize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveShade": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shade",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points lines tris quads",
+     "primtype",
+     "points"
+    ],
+    [
+     "readpath",
+     "vertpath",
+     "assets/particles.vert"
+    ],
+    [
+     "readpath",
+     "fragpath",
+     "assets/particles.frag"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveSimpleLines": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimplePoints": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleQuads": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleTris": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSplitEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveToMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveToParticles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveTraceTrail": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "parsPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "trailPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "PrintNumeric": {
+   "inputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintNumeric"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "RandomParticles": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "count",
+     "1 0"
+    ],
+    [
+     "float",
+     "Prange",
+     "1 0"
+    ],
+    [
+     "float",
+     "Vrange",
+     "1 0"
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ReadMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ReadObjMesh": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "ReadObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadParticles": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ResizeList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "newSize",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Route": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SetRandomSeed": {
+   "inputs": [
+    [
+     "",
+     "routeIn",
+     ""
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "routeOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "SetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SpdlogErrorMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "error from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "SpdlogInfoMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "StringEqual": {
+   "inputs": [
+    [
+     "string",
+     "lhs",
+     ""
+    ],
+    [
+     "string",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "StringToMesh": {
+   "inputs": [
+    [
+     "",
+     "string",
+     ""
+    ],
+    [
+     "",
+     "AZmesh",
+     ""
+    ],
+    [
+     "",
+     "spacing",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "StringMeshList",
+     ""
+    ],
+    [
+     "",
+     "SpacingList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "SubCategory": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubInput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "input1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubOutput": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubResult": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "Subgraph": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "DoNotUseThisNodeDirectly"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubstepDt": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "desired_dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "actual_dt",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "TransformMesh": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "translate",
+     ""
+    ],
+    [
+     "",
+     "rotate",
+     ""
+    ],
+    [
+     "",
+     "scaling",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "TransformPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "eulerXYZ",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "quatRotation",
+     "0,0,0,1"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TranslatePrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TriggerAbortSignal": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerDivideZero": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerException": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "exception occurred!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerSegFault": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "X",
+     ""
+    ],
+    [
+     "float",
+     "Y",
+     ""
+    ],
+    [
+     "float",
+     "Z",
+     ""
+    ],
+    [
+     "float",
+     "W",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "UpdateMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "WriteObjMesh": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "WriteObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "WriteParticles": {
+   "inputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "Blackboard": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
+   ]
+  }
+ },
+ "version": "v1"
+}
