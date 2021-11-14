@@ -1,9 +1,6 @@
 #include "qdmtreeviewgraphs.h"
 #include <QStandardItemModel>
 #include <zeno/ztd/memory.h>
-#include <zeno/ztd/macros.h>
-#include <zeno/zan/map.h>
-#include <zeno/zan/find_unique_name.h>
 #include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN

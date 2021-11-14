@@ -3,6 +3,7 @@
 #include "serialization.h"
 #include <zeno/ztd/memory.h>
 #include <zeno/zmt/log.h>
+#include <zeno/zan/zan.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
@@ -78,7 +79,14 @@ void QDMGraphicsScene::blankClicked()
 
 void QDMGraphicsScene::doubleClicked()
 {
-    // TODO: impl doubleClicked for add custom subnet nodes
+    auto chName = zan::find_unique_name
+        ( childScenes.get()
+        | zan::map(ZENO_F1(p, p->name.get()))
+        , "subnet");
+
+    auto chScene = std::make_unique<QDMGraphicsScene>();
+    chScene->name.set(chName);
+    childScenes.add(std::move(chScene));
     emit sceneCreatedOrRemoved();
 }
 
