@@ -49,7 +49,7 @@ QDMTreeViewGraphs::QDMTreeViewGraphs(QWidget *parent)
         emit sceneSwitched(item->scene);
     });
 
-#if 1
+#if 0
     connect(this, &QTreeView::doubleClicked, [=, this] (QModelIndex index) {
         auto item = resolveIndex(model, index);
 

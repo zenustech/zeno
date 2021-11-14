@@ -59,16 +59,14 @@ void QDMGraphicsView::addNodeByType(QString name)
 
 void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
 {
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-
     if (event->key() == Qt::Key_Delete) {
-        parentScene->deletePressed();
+        getScene()->deletePressed();
 
     } else if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
-        parentScene->copyPressed();
+        getScene()->copyPressed();
 
     } else if (event->key() == Qt::Key_V && event->modifiers() & Qt::ControlModifier) {
-        parentScene->pastePressed();
+        getScene()->pastePressed();
     }
 
     QGraphicsView::keyPressEvent(event);
@@ -92,6 +90,15 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
     QGraphicsView::mousePressEvent(event);
 }
 
+void QDMGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        getScene()->doubleClicked();
+    }
+
+    QGraphicsView::mousePressEvent(event);
+}
+
 void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_mouseDragging) {
@@ -101,8 +108,7 @@ void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
         m_lastMousePos = event->pos();
     }
 
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    parentScene->cursorMoved();
+    getScene()->cursorMoved();
 
     QGraphicsView::mouseMoveEvent(event);
 }

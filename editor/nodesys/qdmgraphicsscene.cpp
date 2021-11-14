@@ -76,6 +76,11 @@ void QDMGraphicsScene::blankClicked()
    }
 }
 
+void QDMGraphicsScene::doubleClicked()
+{
+    // TODO: impl doubleClicked for add custom subnet nodes
+}
+
 void QDMGraphicsScene::cursorMoved()
 {
     if (floatingNode) {
