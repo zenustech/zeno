@@ -228,8 +228,8 @@ std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {
     std::vector<QDMGraphicsScene *> res;
     for (auto const &node: nodes) {
-        if (node->isSubnetNode())
-            res.push_back(node.get());
+        if (auto subnet = node->getSubnetScene())
+            res.push_back(subnet);
     }
     return res;
 }

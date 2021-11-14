@@ -107,6 +107,11 @@ void QDMGraphicsNode::setName(QString name)
     dopNode->name = name.toStdString();
 }
 
+QDMGraphicsScene *QDMGraphicsNode::getSubnetScene() const
+{
+    return subnetScene.get();
+}
+
 std::string const &QDMGraphicsNode::getType()
 {
     return dopNode->desc->name;

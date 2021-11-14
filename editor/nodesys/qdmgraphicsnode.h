@@ -21,9 +21,10 @@ class QDMGraphicsNode : public QGraphicsItem
 {
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
-    std::unique_ptr<QGraphicsTextItem> label;
-
+    std::unique_ptr<QDMGraphicsScene> subnetScene;
     std::unique_ptr<dop::Node> dopNode;
+
+    std::unique_ptr<QGraphicsTextItem> label;
 
 public:
     QDMGraphicsNode();
@@ -51,6 +52,7 @@ public:
     void initAsSubnet();
     void initByType(QString type);
 
+    QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;
     std::string const &getType();
     void setName(QString name);
