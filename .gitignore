@@ -6,6 +6,8 @@ cmake-build-*
 __pycache__
 
 # vim files
+.vimspector.json
+.vim_localrc
 .*.swp
 .*.un~
 tags
