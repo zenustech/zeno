@@ -172,4 +172,8 @@ void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocke
     sockIn.sockid = srcNode->socketOutIndex(srcSocket);
 }
 
+void QDMGraphicsNode::invalidate()
+{
+}
+
 ZENO_NAMESPACE_END
