@@ -79,7 +79,7 @@ public:
         }
     }
 
-     static void UpdateDoFs(FEM_Scaler up_value,SPMAT_SCALER* _des,int nm_updofs,const int *updofs){
+     static void UpdateDoFsWithConstantValue(FEM_Scaler up_value,SPMAT_SCALER* _des,int nm_updofs,const int *updofs){
         for(int i = 0;i < nm_updofs;++i){
             _des[updofs[i]] = up_value;
         }
@@ -148,6 +148,29 @@ public:
                 C(i,j) = v1[i] * v2[j];
 
         return C;
+    }
+
+    static Mat3x3d Orient2R(const Vec3d& orient){
+        Mat3x3d R;
+        Vec3d dir0 = orient / orient.norm();
+        Vec3d tmp_dir = dir0;
+        tmp_dir[0] += 1;
+
+        Vec3d dir1 = dir0.cross(tmp_dir);
+        if(dir1.norm() < 1e-3){
+            tmp_dir = dir0;
+            tmp_dir[1] += 1;
+            dir1 = dir0.cross(tmp_dir);
+        }
+        dir1 /= dir1.norm();
+        Vec3d dir2 = dir0.cross(dir1);
+        dir2 /= dir2.norm();
+
+        R.col(0) << dir0[0],dir0[1],dir0[2];
+        R.col(1) << dir1[0],dir1[1],dir1[2];
+        R.col(2) << dir2[0],dir2[1],dir2[2];
+
+        return R;
     }
 };
 

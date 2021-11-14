@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base_force_model.h"
+#include "base_elastic_model.h"
 #include "cubicBspline.h"
 /**
  * @class <BSplineIsotropicMuscle>
@@ -9,17 +9,17 @@
  * The current version only support isotropic elasto and damping model. The force model base class is unaware of the TetMesh, the input to all its
  * function is deformation gradient of individual element, instead of its deformaed shape.
  */
-class BSplineIsotropicMuscle : public MuscleForceModel {
+class BSplineIsotropicMuscle : public ElasticModel {
 public:
     /**
      * @brief The constructor of BSplineIsotropicMuscle class
      */
     BSplineIsotropicMuscle(std::shared_ptr<UniformCubicBasisSpline> _I1Spline,
         std::shared_ptr<UniformCubicBasisSpline> _I2Spline,
-        std::shared_ptr<UniformCubicBasisSpline> _I3Spline) : MuscleForceModel(),I1Spline(_I1Spline),I2Spline(_I2Spline),I3Spline(_I3Spline){}
+        std::shared_ptr<UniformCubicBasisSpline> _I3Spline) : ElasticModel(),I1Spline(_I1Spline),I2Spline(_I2Spline),I3Spline(_I3Spline){}
 
     // the default constructor intialize the spline with stable neohookean elastic model
-    BSplineIsotropicMuscle(FEM_Scaler YoungModulus,FEM_Scaler PossonRatio) : MuscleForceModel() {
+    BSplineIsotropicMuscle(FEM_Scaler E,FEM_Scaler nu) : ElasticModel() {
         I1Spline = std::make_shared<UniformCubicBasisSpline>();
         I2Spline = std::make_shared<UniformCubicBasisSpline>();
         I3Spline = std::make_shared<UniformCubicBasisSpline>();
@@ -37,14 +37,14 @@ public:
         for(size_t i = 0;i < nm_interps;++i)
             interp_u[i] = inner_range[0] + step * i;
 
-        FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-        FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
+        FEM_Scaler mu = Enu2Mu(E,nu);
+        FEM_Scaler lambda = Enu2Lambda(E,nu);
 
         // neohookean model
         for(size_t i = 0;i < nm_interps;++i)
             I1Interps[i] = 0;
         for(size_t i = 0;i < nm_interps;++i)
-            I2Interps[i] = mu / 2;
+            I2Interps[i] = mu / 2 /* + spline define here*/;
         for(size_t i = 0;i < nm_interps;++i)
             I3Interps[i] = -mu + lambda * (interp_u[i] - 1);
 
@@ -59,19 +59,14 @@ public:
     /**
      * @brief An interface for defining the potential energy of anisotropic force model, all the force models should inherit this method and implement their 
      * own version of element-wise potential energy defination.
-     * @param activation the activation level along the fiber direction
-     * @param fiber_direction the three orthogonal fiber directions
+     * @param Act the Act level along the fiber direction
+     * @param forient the three orthogonal fiber directions
      * @param F the deformation gradient
      * @param energy the potential energy output
      */
-    void ComputePhi(const Mat3x3d& activation,
-        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-        const Mat3x3d& F,FEM_Scaler& psi) const override {
-            Mat3x3d ActInv = activation.inverse();
+    void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const override {
+            Mat3x3d ActInv = mp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
-
-            FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-            FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
 
             Vec3d Is;
             EvalIsoInvarients(FAct,Is);
@@ -83,20 +78,15 @@ public:
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
      * own version of element-wise potential energy defination and element-wise energy gradient.
-     * @param activation the activation level along the three orthogonal fiber directions
-     * @param fiber_direction the three orthogonal fiber directions
+     * @param Act the Act level along the three orthogonal fiber directions
+     * @param forient the three orthogonal fiber directions
      * @param F the deformation gradient
      * @param energy the potential energy output
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
-    void ComputePhiDeriv(const Mat3x3d& activation,
-        const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-        const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
-            Mat3x3d ActInv = activation.inverse();
+    void ComputePhiDeriv(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
+            Mat3x3d ActInv = mp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
-
-            FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-            FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
 
             Vec3d Is;
             std::array<Vec9d,3> gs;
@@ -117,23 +107,17 @@ public:
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
      * own version of element-wise potential energy defination, element-wise energy gradient and 12x12 element-wise energy hessian w.r.t deformed shape.
-     * @param activation the activation level along the three orthogonal fiber directions
-     * @param fiber_direction the three orthogonal fiber directions
+     * @param Act the Act level along the three orthogonal fiber directions
+     * @param forient the three orthogonal fiber directions
      * @param <F> the deformation gradient
      * @param <energy> the potential energy output
      * @param <derivative> the derivative of potential energy w.r.t the deformation gradient
      * @param <Hessian> the hessian of potential energy w.r.t the deformed shape for elasto model or nodal velocities for damping model
-     * @param <enforcing_spd> decide whether we should enforce the SPD of hessian matrix
+     * @param <spd> decide whether we should enforce the SPD of hessian matrix
      */
-    void ComputePhiDerivHessian(const Mat3x3d& activation,
-            const Vec3d& aniso_weight,const Mat3x3d& fiber_direction,const FEM_Scaler& YoungModulus,const FEM_Scaler& PossonRatio,
-            const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool enforcing_spd = true) const override {
-
-        Mat3x3d ActInv = activation.inverse();
+    void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override {
+        Mat3x3d ActInv = mp.Act.inverse();
         Mat3x3d FAct = F * ActInv;
-
-        FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-        FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
 
         Vec3d Is;
         std::array<Vec9d,3> gs;
@@ -146,6 +130,7 @@ public:
         Vec3d dphi;
         dphi << I1Spline->EvalOnKnot(Is[0]),I2Spline->EvalOnKnot(Is[1]),I3Spline->EvalOnKnot(Is[2]);
 
+
         Mat9x9d dFactdF = EvaldFactdF(ActInv); 
 
         dpsi = dphi[0] * gs[0] + dphi[1] * gs[1] + dphi[2] * gs[2];     
@@ -154,21 +139,9 @@ public:
         Vec9d eigen_vecs[9];
         Vec9d eigen_vals;
             
-        // compute the eigen system of Hessian
-        // FAct = Mat3x3d::Random();
-        // FAct = FAct.transpose() * FAct;
-        ComputeIsoEigenSystem(YoungModulus,PossonRatio, FAct, eigen_vals, eigen_vecs);  
+        ComputeIsoEigenSystem(0,0,FAct, eigen_vals, eigen_vecs);  
 
-        // std::cout << "BSpline IsoEigenSystem : " << std::endl;
-        
-        // for(size_t i = 0;i < 9;++i)
-        //     std::cout << "L[" << i << "] : " << eigen_vals[i] << std::endl;
-        // for(size_t i = 0;i < 9;++i)
-        //     std::cout << "V[" << i << "] : " << eigen_vecs[i].transpose() << std::endl;
-
-        // throw std::runtime_error("ISO_EIGEN_SYSTEM_CHECK");
-
-        if (enforcing_spd) {
+        if (spd) {
             for (size_t i = 0; i < 9; ++i)
                 eigen_vals[i] = eigen_vals[i] > 1e-12 ? eigen_vals[i] : 1e-12;
         }
@@ -185,13 +158,10 @@ public:
         ddpsi = dFactdF.transpose() * ddpsi * dFactdF; 
     }
 
-    void ComputeIsoEigenSystem(FEM_Scaler YoungModulus,FEM_Scaler PossonRatio,
+    void ComputeIsoEigenSystem(FEM_Scaler lambda,FEM_Scaler mu,
         const Mat3x3d& F,
         Vec9d& eigen_vals,
         Vec9d eigen_vecs[9]) const {
-        FEM_Scaler mu = Enu2Mu(YoungModulus,PossonRatio);
-        FEM_Scaler lambda = Enu2Lambda(YoungModulus,PossonRatio);
-
         Mat3x3d U,V;
         Vec3d s;
 
@@ -239,23 +209,12 @@ public:
         }
     }
 
+    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) override {
+        throw std::runtime_error("BSpline MODEL IS NOT IMPLEMENTED HERE");
+    }
 
-    inline Mat9x9d EvaldFactdF(const Mat3x3d& Act_inv) const {
-        Mat9x9d M = Mat9x9d::Zero();
-        
-        M(0,0) = M(1,1) = M(2,2) = Act_inv(0,0);
-        M(3,0) = M(4,1) = M(5,2) = Act_inv(0,1);
-        M(6,0) = M(7,1) = M(8,2) = Act_inv(0,2);
-
-        M(0,3) = M(1,4) = M(2,5) = Act_inv(1,0);
-        M(3,3) = M(4,4) = M(5,5) = Act_inv(1,1);
-        M(6,3) = M(7,4) = M(8,5) = Act_inv(1,2);
-
-        M(0,6) = M(1,7) = M(2,8) = Act_inv(2,0);
-        M(3,6) = M(4,7) = M(5,8) = Act_inv(2,1);
-        M(6,6) = M(7,7) = M(8,8) = Act_inv(2,2);
-
-        return M;
+    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) override {
+        throw std::runtime_error("BSPLINE NOT IMPLEMENTED YET");
     }
 
 private:
