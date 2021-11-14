@@ -28,6 +28,7 @@ public:
     void refreshRootScene();
 
 signals:
+    void rootSceneChanged(QDMGraphicsScene *scene);
     void sceneSwitched(QDMGraphicsScene *scene);
 };
 

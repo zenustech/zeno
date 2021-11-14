@@ -154,8 +154,8 @@
    <extends>QGraphicsView</extends>
    <header>nodesys/qdmgraphicsview.h</header>
    <slots>
-    <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
+    <signal>sceneUpdated()</signal>
     <slot>addNodeByType(QString)</slot>
     <slot>forceUpdate()</slot>
     <slot>invalidateNode(QDMGraphicsNode*)</slot>
@@ -175,7 +175,8 @@
    <extends>QOpenGLWidget</extends>
    <header>viewport/qdmopenglviewport.h</header>
    <slots>
-    <slot>updateNode(QDMGraphicsNode*,int)</slot>
+    <slot>updateScene()</slot>
+    <slot>setRootScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -209,6 +210,7 @@
    <header>nodesys/qdmtreeviewgraphs.h</header>
    <slots>
     <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+    <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
    </slots>
   </customwidget>
  </customwidgets>
@@ -232,17 +234,17 @@
   </connection>
   <connection>
    <sender>nodeView</sender>
-   <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
+   <signal>sceneUpdated()</signal>
    <receiver>viewport</receiver>
-   <slot>updateNode(QDMGraphicsNode*,int)</slot>
+   <slot>updateScene()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1615</x>
-     <y>627</y>
+     <x>1602</x>
+     <y>536</y>
     </hint>
     <hint type="destinationlabel">
      <x>50</x>
-     <y>625</y>
+     <y>536</y>
     </hint>
    </hints>
   </connection>
@@ -253,7 +255,7 @@
    <slot>forceUpdate()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1135</x>
+     <x>1354</x>
      <y>724</y>
     </hint>
     <hint type="destinationlabel">
@@ -305,8 +307,24 @@
      <y>521</y>
     </hint>
     <hint type="destinationlabel">
-     <x>989</x>
+     <x>1208</x>
      <y>430</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>treeView</sender>
+   <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
+   <receiver>viewport</receiver>
+   <slot>setRootScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>533</x>
+     <y>421</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>413</y>
     </hint>
    </hints>
   </connection>

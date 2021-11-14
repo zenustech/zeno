@@ -38,6 +38,7 @@ public:
     ztd::prop_list<std::unique_ptr<QDMGraphicsScene>> childScenes;
 
     void setCurrentNode(QDMGraphicsNode *node);
+    std::vector<QDMGraphicsNode *> getVisibleNodes() const;
 
     QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);
@@ -52,7 +53,7 @@ public slots:
     void updateSceneSelection();
 
 signals:
-    void nodeUpdated(QDMGraphicsNode *node, int type);
+    void sceneUpdated();
     void currentNodeChanged(QDMGraphicsNode *node);
 };
 

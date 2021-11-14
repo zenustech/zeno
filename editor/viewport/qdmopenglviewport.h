@@ -5,6 +5,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include "../nodesys/qdmgraphicsnode.h"
+#include "../nodesys/qdmgraphicsscene.h"
 #include "cameradata.h"
 #include <optional>
 #include <memory>
@@ -21,6 +22,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
     std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
     std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
     std::optional<QPoint> m_mmbPos;
+    QDMGraphicsScene *m_rootScene{};
 
 public:
     explicit QDMOpenGLViewport(QWidget *parent = nullptr);
@@ -38,7 +40,8 @@ public:
     virtual void wheelEvent(QWheelEvent *event) override;
 
 public slots:
-    void updateNode(QDMGraphicsNode *node, int type);
+    void updateScene();
+    void setRootScene(QDMGraphicsScene *scene);
 };
 
 ZENO_NAMESPACE_END

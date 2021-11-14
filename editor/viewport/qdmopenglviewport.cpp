@@ -53,6 +53,7 @@ void QDMOpenGLViewport::paintGL()
 
     QOpenGLVertexArrayObject vao;
     vao.bind();
+    ZENO_DEBUG("renderables: {}", m_renderables.size());
     for (auto const &[_, r]: m_renderables) {
         r->render(this);
     }
@@ -101,23 +102,26 @@ void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
     QOpenGLWidget::wheelEvent(event);
 }
 
-static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
-    auto dopNode = node->getDopNode();
-    ztd::any_ptr val;
+void QDMOpenGLViewport::updateScene()
+{
+    ZENO_DEBUG("updateScene");
+
     dop::Executor exec;
-    val = exec.evaluate({.node = dopNode, .sockid = 0});
-    return makeRenderableFromAny(val);
+
+    m_renderables.clear();
+    for (auto *node: m_rootScene->getVisibleNodes()) {
+        ZENO_DEBUG("a visible node {}", node);
+        auto val = exec.evaluate({.node = node->getDopNode(), .sockid = 0});
+        m_renderables.emplace(node, makeRenderableFromAny(val));
+    }
+
+    repaint();
 }
 
-void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
-    if (type > 0) {
-        m_renderables.emplace(node, make_renderable_of_node(node));
-    } else if (type == 0) {
-        m_renderables.at(node) = make_renderable_of_node(node);
-    } else {
-        m_renderables.erase(node);
-    }
-    repaint();
+void QDMOpenGLViewport::setRootScene(QDMGraphicsScene *scene)
+{
+    m_rootScene = scene;
+    emit updateScene();
 }
 
 ZENO_NAMESPACE_END

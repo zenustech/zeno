@@ -108,6 +108,8 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
           std::vector<QDMGraphicsScene *>{rootScene});
 
     expandAll();
+
+    emit rootSceneChanged(rootScene);
 }
 
 ZENO_NAMESPACE_END

@@ -46,9 +46,9 @@ void QDMGraphicsScene::setCurrentNode(QDMGraphicsNode *node)
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
-    emit nodeUpdated(node, -1);
     removeItem(node);
     nodes.erase(ztd::stale_ptr(node));
+    emit sceneUpdated();
 }
 
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
@@ -106,7 +106,7 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
 
     auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
     dstNode->invalidate();
-    emit nodeUpdated(dstNode, 0);
+    emit sceneUpdated();
 
     return link;
 }
@@ -121,7 +121,7 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     links.erase(ztd::stale_ptr(link));
 
     dstNode->invalidate();
-    emit nodeUpdated(dstNode, 0);
+    emit sceneUpdated();
 }
 
 QDMGraphicsNode *QDMGraphicsScene::addNode()
@@ -141,7 +141,7 @@ void QDMGraphicsScene::addNodeByType(QString type)
     node->hide();
     floatingNode = node;
 
-    emit nodeUpdated(node, 1);
+    emit sceneUpdated();
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
@@ -171,12 +171,12 @@ void QDMGraphicsScene::copyPressed()
     rapidjson::Writer wr(sb);
     doc.Accept(wr);
     std::string res = sb.GetString();
-    ZENO_INFO("copyPressed: {}", res);
+    ZENO_DEBUG("copyPressed: {}", res);
 }
 
 void QDMGraphicsScene::pastePressed()
 {
-    ZENO_INFO("pastePressed");
+    ZENO_DEBUG("pastePressed");
 }
 
 void QDMGraphicsScene::deletePressed()
@@ -198,6 +198,15 @@ void QDMGraphicsScene::deletePressed()
     for (auto node: nodes) {
         removeNode(node);
     }
+}
+
+std::vector<QDMGraphicsNode *> QDMGraphicsScene::getVisibleNodes() const
+{
+    std::vector<QDMGraphicsNode *> res;
+    for (auto const &node: nodes) {
+        res.push_back(node.get());
+    }
+    return res;
 }
 
 ZENO_NAMESPACE_END
