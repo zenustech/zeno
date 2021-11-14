@@ -53,7 +53,6 @@ void QDMOpenGLViewport::paintGL()
 
     QOpenGLVertexArrayObject vao;
     vao.bind();
-    ZENO_DEBUG("renderables: {}", m_renderables.size());
     for (auto const &[_, r]: m_renderables) {
         r->render(this);
     }
@@ -110,7 +109,6 @@ void QDMOpenGLViewport::updateScene()
 
     m_renderables.clear();
     for (auto *node: m_rootScene->getVisibleNodes()) {
-        ZENO_DEBUG("a visible node {}", node);
         auto val = exec.evaluate({.node = node->getDopNode(), .sockid = 0});
         m_renderables.emplace(node, makeRenderableFromAny(val));
     }

@@ -104,23 +104,17 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
     addItem(link);
     links.emplace(link);
 
-    auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
-    dstNode->invalidate();
     emit sceneUpdated();
-
     return link;
 }
 
 void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
 {
-    auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
-
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
     links.erase(ztd::stale_ptr(link));
 
-    dstNode->invalidate();
     emit sceneUpdated();
 }
 
