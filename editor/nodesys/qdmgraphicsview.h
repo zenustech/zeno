@@ -38,7 +38,7 @@ public slots:
     void forceUpdate();  // TODO: remove this!
 
 signals:
-    void nodeUpdated(QDMGraphicsNode *node, int type);
+    void sceneUpdated();
     void currentNodeChanged(QDMGraphicsNode *node);
 };
 

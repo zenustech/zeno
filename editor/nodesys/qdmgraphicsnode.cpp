@@ -155,8 +155,6 @@ size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
     return it - begin(socketOuts);
 }
 
-// TODO: add socketValueChanged?
-
 void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
     auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
@@ -172,8 +170,11 @@ void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocke
     sockIn.sockid = srcNode->socketOutIndex(srcSocket);
 }
 
+// TODO: also add socketValueChanged?
+
 void QDMGraphicsNode::invalidate()
 {
+    // TODO: implement cache value
 }
 
 ZENO_NAMESPACE_END

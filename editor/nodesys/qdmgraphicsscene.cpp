@@ -107,6 +107,7 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
     auto dstNode = static_cast<QDMGraphicsNode *>(link->dstSocket->parentItem());
     dstNode->invalidate();
     emit nodeUpdated(dstNode, 0);
+
     return link;
 }
 
