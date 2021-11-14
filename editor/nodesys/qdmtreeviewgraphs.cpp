@@ -1,6 +1,5 @@
 #include "qdmtreeviewgraphs.h"
 #include <QStandardItemModel>
-#include <zeno/ztd/memory.h>
 #include <zeno/zmt/log.h>
 
 ZENO_NAMESPACE_BEGIN
@@ -85,24 +84,21 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 
     rootScene = scene;
 
-    auto touch = [this] (auto &&touch, auto *parItem, auto const &scenes) -> void {
+    auto touch = [this] ( auto &&touch
+                        , auto *parItem
+                        , std::vector<QDMGraphicsScene *> const &scenes
+                        ) -> void {
         for (auto const &scene: scenes) {
-            auto item = new QDMZenoSceneItem(ztd::get_ptr(scene));
-            auto vname = scene->name.view([=] (std::string const &name) {
-                item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
-            });
-#if XXX
-            connect(item, QStandardItem::editingFinished, this, [=] {
-                vname.set(item.text().toStdString());
-            });
-#endif
-            touch(touch, item, scene->childScenes.get());
+            auto item = new QDMZenoSceneItem(scene);
+            auto name = scene->getName();
+            item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
+            touch(touch, item, scene->getChildScenes());
             parItem->appendRow(item);
         }
     };
     touch(touch,
           static_cast<QStandardItemModel *>(model()),
-          std::vector<QDMGraphicsScene *>{rootScene});
+          {rootScene});
 
     expandAll();
 

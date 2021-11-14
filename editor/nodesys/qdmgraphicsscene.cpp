@@ -77,16 +77,23 @@ void QDMGraphicsScene::blankClicked()
    }
 }
 
+std::string QDMGraphicsScene::getName() const
+{
+    return subnetNode ? subnetNode->getName() : "/";
+}
+
+std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
+{
+    return zan::find_unique_name
+        ( nodes
+        | zan::map(ZENO_F1(p, p->getName()))
+        , prefix);
+}
+
 void QDMGraphicsScene::doubleClicked()
 {
-    auto chName = zan::find_unique_name
-        ( childScenes.get()
-        | zan::map(ZENO_F1(p, p->name.get()))
-        , "subnet");
-
-    auto chScene = std::make_unique<QDMGraphicsScene>();
-    chScene->name.set(chName);
-    childScenes.add(std::move(chScene));
+    auto node = addNode();
+    node->initAsSubnet();
     emit sceneCreatedOrRemoved();
 }
 
@@ -213,6 +220,16 @@ std::vector<QDMGraphicsNode *> QDMGraphicsScene::getVisibleNodes() const
     std::vector<QDMGraphicsNode *> res;
     for (auto const &node: nodes) {
         res.push_back(node.get());
+    }
+    return res;
+}
+
+std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
+{
+    std::vector<QDMGraphicsScene *> res;
+    for (auto const &node: nodes) {
+        if (node->isSubnetNode())
+            res.push_back(node.get());
     }
     return res;
 }

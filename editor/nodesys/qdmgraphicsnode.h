@@ -15,6 +15,8 @@
 
 ZENO_NAMESPACE_BEGIN
 
+class QDMGraphicsScene;
+
 class QDMGraphicsNode : public QGraphicsItem
 {
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
@@ -46,7 +48,10 @@ public:
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
 
+    void initAsSubnet();
     void initByType(QString type);
+
+    QDMGraphicsScene *getScene() const;
     std::string const &getType();
     void setName(QString name);
     std::string const &getName();

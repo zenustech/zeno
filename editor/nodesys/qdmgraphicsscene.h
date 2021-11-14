@@ -20,8 +20,10 @@ class QDMGraphicsScene : public QGraphicsScene
 
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
-    std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
+    QDMGraphicsNode *subnetNode{};
+
     std::unique_ptr<QDMGraphicsBackground> background;
+    std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
 
@@ -34,11 +36,11 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
-    ztd::property<std::string> name;
-    ztd::prop_list<std::unique_ptr<QDMGraphicsScene>> childScenes;
-
     void setCurrentNode(QDMGraphicsNode *node);
     std::vector<QDMGraphicsNode *> getVisibleNodes() const;
+    std::vector<QDMGraphicsScene *> getChildScenes() const;
+    std::string allocateNodeName(std::string const &prefix) const;
+    std::string getName() const;
 
     QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);

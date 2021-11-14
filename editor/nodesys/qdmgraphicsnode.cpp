@@ -79,6 +79,11 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
     return socketOut;
 }
 
+void QDMGraphicsNode::initAsSubnet()
+{
+    initByType("CustomSubnet");
+}
+
 void QDMGraphicsNode::initByType(QString type)
 {
     auto const &desc = dop::descriptor_table().at(type.toStdString());
@@ -91,7 +96,9 @@ void QDMGraphicsNode::initByType(QString type)
         auto socket = addSocketOut();
         socket->setName(QString::fromStdString(sockinfo.name));
     }
-    setName(type + "1");
+
+    auto name = getScene()->allocateNodeName(type.toStdString());
+    setName(QString::fromStdString(name));
 }
 
 void QDMGraphicsNode::setName(QString name)
@@ -120,11 +127,15 @@ QDMGraphicsSocketOut *QDMGraphicsNode::socketOutAt(size_t index)
     return socketOuts.at(index).get();
 }
 
+QDMGraphicsScene *QDMGraphicsNode::getScene() const
+{
+    return static_cast<QDMGraphicsScene *>(scene());
+}
+
 void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::RightButton) {
-        auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-        parentScene->removeNode(this);
+        getScene()->removeNode(this);
         return;
     }
 
