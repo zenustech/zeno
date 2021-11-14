@@ -34,8 +34,6 @@ public:
 public slots:
     void addNodeByType(QString name);
     void switchScene(QDMGraphicsScene *newScene);
-    void invalidateNode(QDMGraphicsNode *node);
-    void forceUpdate();  // TODO: remove this!
 
 signals:
     void sceneUpdated();

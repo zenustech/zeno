@@ -25,11 +25,6 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
-void QDMGraphicsView::invalidateNode(QDMGraphicsNode *node)
-{
-    emit getScene()->nodeUpdated(node, 0);
-}
-
 void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
     auto oldScene = getScene();
@@ -39,15 +34,13 @@ void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
     if (oldScene) {
         ZENO_DEBUG("oldScene: {}", oldScene);
         oldScene->setCurrentNode(nullptr);
-        disconnect(oldScene, SIGNAL(sceneUpdated()),
-                   this, SIGNAL(sceneUpdated()));
+        disconnect(oldScene, SIGNAL(sceneUpdated()), this, SIGNAL(sceneUpdated()));
         disconnect(oldScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
                    this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
     }
 
     ZENO_DEBUG("newScene: {}", newScene);
-    connect(newScene, SIGNAL(sceneUpdated()),
-            this, SIGNAL(sceneUpdated()));
+    connect(newScene, SIGNAL(sceneUpdated()), this, SIGNAL(sceneUpdated()));
     connect(newScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
             this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
 

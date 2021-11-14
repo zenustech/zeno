@@ -18,13 +18,6 @@
     <item row="0" column="1">
      <widget class="QDMGraphicsView" name="nodeView"/>
     </item>
-    <item row="1" column="1">
-     <widget class="QPushButton" name="updateButton">
-      <property name="text">
-       <string>Force Update</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0">
      <widget class="QDMTreeViewGraphs" name="treeView"/>
     </item>
@@ -157,8 +150,6 @@
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
     <signal>sceneUpdated()</signal>
     <slot>addNodeByType(QString)</slot>
-    <slot>forceUpdate()</slot>
-    <slot>invalidateNode(QDMGraphicsNode*)</slot>
     <slot>switchScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
@@ -223,12 +214,12 @@
    <slot>addNodeByType(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>417</x>
-     <y>979</y>
+     <x>1271</x>
+     <y>827</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1731</x>
-     <y>403</y>
+     <x>1271</x>
+     <y>414</y>
     </hint>
    </hints>
   </connection>
@@ -249,22 +240,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>updateButton</sender>
-   <signal>clicked()</signal>
-   <receiver>nodeView</receiver>
-   <slot>forceUpdate()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1354</x>
-     <y>724</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1156</x>
-     <y>667</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>nodeView</sender>
    <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
    <receiver>widget</receiver>
@@ -277,22 +252,6 @@
     <hint type="destinationlabel">
      <x>1695</x>
      <y>855</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>widget</sender>
-   <signal>nodeParamUpdated(QDMGraphicsNode*)</signal>
-   <receiver>nodeView</receiver>
-   <slot>invalidateNode(QDMGraphicsNode*)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1736</x>
-     <y>805</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1732</x>
-     <y>685</y>
     </hint>
    </hints>
   </connection>
