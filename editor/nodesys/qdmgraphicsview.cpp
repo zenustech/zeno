@@ -34,13 +34,19 @@ void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
     if (oldScene) {
         ZENO_DEBUG("switch from oldScene: {}", oldScene);
         oldScene->setCurrentNode(nullptr);
-        disconnect(oldScene, SIGNAL(sceneUpdated()), this, SIGNAL(sceneUpdated()));
+        disconnect(oldScene, SIGNAL(sceneUpdated()),
+                   this, SIGNAL(sceneUpdated()));
+        disconnect(oldScene, SIGNAL(sceneCreatedOrRemoved()),
+                   this, SIGNAL(sceneCreatedOrRemoved()));
         disconnect(oldScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
                    this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
     }
 
     ZENO_DEBUG("switch to newScene: {}", newScene);
-    connect(newScene, SIGNAL(sceneUpdated()), this, SIGNAL(sceneUpdated()));
+    connect(newScene, SIGNAL(sceneUpdated()),
+            this, SIGNAL(sceneUpdated()));
+    connect(newScene, SIGNAL(sceneCreatedOrRemoved()),
+            this, SIGNAL(sceneCreatedOrRemoved()));
     connect(newScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
             this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
 

@@ -149,6 +149,7 @@
    <slots>
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
     <signal>sceneUpdated()</signal>
+    <signal>sceneCreatedOrRemoved()</signal>
     <slot>addNodeByType(QString)</slot>
     <slot>switchScene(QDMGraphicsScene*)</slot>
    </slots>
@@ -202,6 +203,8 @@
    <slots>
     <signal>sceneSwitched(QDMGraphicsScene*)</signal>
     <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
+    <slot>refreshRootScene()</slot>
+    <slot>setRootScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -284,6 +287,22 @@
     <hint type="destinationlabel">
      <x>486</x>
      <y>413</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>sceneCreatedOrRemoved()</signal>
+   <receiver>treeView</receiver>
+   <slot>refreshRootScene()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1160</x>
+     <y>374</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1131</x>
+     <y>368</y>
     </hint>
    </hints>
   </connection>

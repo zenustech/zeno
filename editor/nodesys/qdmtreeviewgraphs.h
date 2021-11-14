@@ -24,6 +24,7 @@ public:
 
     virtual QSize sizeHint() const override;
 
+public slots:
     void setRootScene(QDMGraphicsScene *scene);
     void refreshRootScene();
 

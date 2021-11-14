@@ -55,6 +55,7 @@ public slots:
 
 signals:
     void sceneUpdated();
+    void sceneCreatedOrRemoved();
     void currentNodeChanged(QDMGraphicsNode *node);
 };
 
