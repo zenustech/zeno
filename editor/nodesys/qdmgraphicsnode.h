@@ -40,6 +40,7 @@ public:
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
     void socketUnlinked(QDMGraphicsSocketIn *socket);
     void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+    void socketValueChanged(QDMGraphicsSocketIn *socket);
     void unlinkAll();
 
     QDMGraphicsSocketIn *addSocketIn();

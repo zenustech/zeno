@@ -170,7 +170,11 @@ void QDMGraphicsNode::socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocke
     sockIn.sockid = srcNode->socketOutIndex(srcSocket);
 }
 
-// TODO: also add socketValueChanged?
+void QDMGraphicsNode::socketValueChanged(QDMGraphicsSocketIn *socket)
+{
+    auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
+    sockIn.value = socket->value;
+}
 
 void QDMGraphicsNode::invalidate()
 {

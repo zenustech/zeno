@@ -3,7 +3,6 @@
 
 #include "qdmgraphicssocket.h"
 #include <zeno/ztd/any_ptr.h>
-#include <zeno/ztd/property.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -12,7 +11,7 @@ class QDMGraphicsSocketIn final : public QDMGraphicsSocket
 public:
     QDMGraphicsSocketIn();
 
-    ztd::property<ztd::any_ptr> value;
+    ztd::any_ptr value;
 
     virtual void unlinkAll() override;
     virtual void linkRemoved(QDMGraphicsLinkFull *link) override;

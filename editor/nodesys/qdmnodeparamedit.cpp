@@ -30,7 +30,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
     case 0: {
         auto edit = new QLineEdit;
 
-        if (auto expr = sockIn->value.get().value_cast<std::string>()) {
+        if (auto expr = sockIn->value.value_cast<std::string>()) {
             auto const &value = *expr;
             edit->setText(QString::fromStdString(value));
         }
@@ -38,7 +38,8 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto const &value = expr;
-            sockIn->value.set(ztd::make_any(value));
+            sockIn->value = ztd::make_any(value);
+            node->socketValueChanged(sockIn);
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -48,7 +49,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QIntValidator);
 
-        if (auto expr = sockIn->value.get().value_cast<int>()) {
+        if (auto expr = sockIn->value.value_cast<int>()) {
             auto value = std::to_string(*expr);
             edit->setText(QString::fromStdString(value));
         }
@@ -56,7 +57,8 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
-            sockIn->value.set(ztd::make_any(value));
+            sockIn->value = ztd::make_any(value);
+            node->socketValueChanged(sockIn);
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -66,7 +68,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         auto edit = new QLineEdit;
         edit->setValidator(new QDoubleValidator);
 
-        if (auto expr = sockIn->value.get().value_cast<float>()) {
+        if (auto expr = sockIn->value.value_cast<float>()) {
             auto value = std::to_string(*expr);
             edit->setText(QString::fromStdString(value));
         }
@@ -74,7 +76,8 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
-            sockIn->value.set(ztd::make_any(value));
+            sockIn->value = ztd::make_any(value);
+            node->socketValueChanged(sockIn);
             emit nodeParamUpdated(node);
         });
         return edit;
