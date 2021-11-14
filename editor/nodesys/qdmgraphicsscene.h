@@ -25,8 +25,6 @@ class QDMGraphicsScene : public QGraphicsScene
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
 
-    void setCurrentNode(QDMGraphicsNode *node);
-
 public:
     QDMGraphicsScene();
     ~QDMGraphicsScene();
@@ -38,6 +36,8 @@ public:
 
     ztd::property<std::string> name;
     ztd::prop_list<std::unique_ptr<QDMGraphicsScene>> childScenes;
+
+    void setCurrentNode(QDMGraphicsNode *node);
 
     QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);

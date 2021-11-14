@@ -72,7 +72,9 @@ Please check the [building.md](building.md) for the complete build instructions 
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 
-# Coding style
+# Coding
+
+## Code Style
 
 Zeno is based on C++20, you may assume all C++17 features and some C++20 features to be available in coding.
 
@@ -106,7 +108,7 @@ auto staticFunc(int arg) {   // this function is visible only to this file
         x = x * 2 + arg;  // leave two spaces between operators like '=', '*', '+'
     });
 
-    auto expr = zmt::format("the answer is {}", 42);  // instead of fmt or std for compatibilty
+    std::string expr = zmt::format("the answer is {}", 42);  // instead of fmt or std
     
     return x;
 }

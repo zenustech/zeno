@@ -1,5 +1,6 @@
 #include "qdmgraphicsview.h"
 #include "qdmgraphicsscene.h"
+#include <zeno/zmt/log.h>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QScrollBar>
@@ -11,7 +12,8 @@ QSize QDMGraphicsView::sizeHint() const
     return QSize(1024, 640);
 }
 
-QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
+QDMGraphicsView::QDMGraphicsView(QWidget *parent)
+    : QGraphicsView(parent)
 {
     setRenderHints(QPainter::Antialiasing
             | QPainter::SmoothPixmapTransform
@@ -31,16 +33,19 @@ void QDMGraphicsView::invalidateNode(QDMGraphicsNode *node)
 void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
     auto oldScene = getScene();
+    if (oldScene == newScene)
+        return;
 
     if (oldScene) {
+        ZENO_INFO("oldScene: {}", oldScene);
+        oldScene->setCurrentNode(nullptr);
         disconnect(oldScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
                    this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
         disconnect(oldScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
                    this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
-
-        emit currentNodeChanged(nullptr);
     }
 
+    ZENO_INFO("newScene: {}", newScene);
     connect(newScene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)),
             this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
     connect(newScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
