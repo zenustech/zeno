@@ -2,15 +2,115 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
+Contributions to Zeno are always welcome. Contributions can take many
+forms, such as:
+
+* Raising, responding to, or reacting to Issues or Pull Requests
+* Testing new in-progress changes and providing feedback
+* Discussing in the Gitter channel
+* etc.
+
+## Communication
+
+Both Chinese and English are supported! Feel free to express your idea in your favorable language!
+
+# Issues
+
+If you have
+
+* found a bug in Zeno and would like to report (bug report)
+* a cool idea or improvenent you'd like to share (feature request)
+* any question on how to use Zeno (question)
+
+Please feel free to check out [this page](https://github.com/zenustech/zeno/issues) for raising GitHub issues!
+
+Make sure you choose the right *issue template* accordingly to your issue type, like `Bug Report`.
+Please take some time to fill the template completely, this help us understand your problem easier.
+Therefore *you get a better answer, faster*, thanks for your support!
+
+For bug reports, the *console output* is very helpful to us, make sure you attach it if possible.
+
+Hint: you may use triple back quotes to insert pretty-shown code (for console output) like this:
+
+```md
+\`\`\`
+This is the Zeno log...
+\`\`\`
+```
+
+## Usage Tips
+
+The GitHub issue tracker is for *bug reports* and *features requests* for the
+Zeno project, and on-topic comments and follow-ups to them. It is not for
+general discussion, general support or for any other purpose.
+
+Please **search the issue tracker for similar issues** before creating a new
+one. There's no point in duplication; if an existing open issue addresses your
+problem, please comment there instead of creating a duplicate. However, if the
+issue you found is **closed as resolved** (e.g. with a PR or the original user's
+problem was resolved), raise a **new issue**, because you've found a new
+problem. Reference the original issue if you think that's useful information.
+
+Closed issues which have been inactive for 60 days will be locked, this helps to
+keep discussions focussed. If you believe you are still experiencing an issue
+which has been closed, please raise a new issue, completing the issue template.
+
+If you do find a similar _open_ issue, **don't just post 'me too' or similar**
+responses. This almost never helps resolve the issue, and just causes noise for
+the maintainers. Only post if it will aid the maintainers in solving the issue;
+if there are existing diagnostics requested in the thread, perform
+them and post the results.
+
+Please do not be offended if your Issue or comment is closed or hidden, for any
+of the following reasons:
+
+* The issue template was not completed
+* The issue or comment is off-topic
+* The issue does not represent a Zeno bug or feature request
+* The issue cannot be reasonably reproduced using the minimal vimrc
+* The issue is a duplicate of an existing issue
+* etc.
+
+Issue titles are important. It's not usually helpful to write a title like
+`bug report` or `issue with Zeno` or even pasting an error message.
+Spend a minute to come up with a consise summary of the problem. This helps with
+management of issues, with triage, and above all with searching.
+
+But above all else, please *please* complete the *issue template*. I know it is a
+little tedious to get all the various diagnostics, but you *must* provide them,
+*even if you think they are irrelevant*. This is important, because the
+maintainer(s) can quickly cross-check theories by inspecting the provided
+diagnostics without having to spend time asking for them, and waiting for the
+response. This means *you get a better answer, faster*. So it's worth it,
+honestly.
+
+<!--
+### Reproduce your issue with the minimal graph
+
+Many problems can be caused by unexpected configuration or other plugins.
+Therefore when raising an issue, you must attempt to reproduce your issue
+with the minimal vimrc provided, and to provide any additional changes required
+to that file in order to reproduce it. The purpose of this is to ensure that
+the issue is not a conflict with another plugin, or a problem unique to your
+configuration.
+
+If your issue does _not_ reproduce with the minimal vimrc, then you must say so
+in the issue report.
+-->
+
+# Coding
+
+Not only you may contribute to Zeno via issues, but also you can contribute by adding code to Zeno! (i.e. pull requests)
+
 Many people is using Zeno, if you find your wanted feature is missing, and you know how to implement it technically.
 Please help us improve by submitting your code to us (so called contribute), so that other people could also enjoy this cool feature you made!
 
 Contributions can be a one-line BUG fix, a new example graph, or even a README improvement, up to a brand new simulation algorithm.
 We're very happy to see people utilizing Zeno and having fun in both using it and coding it!
 
-# How to play with Git
+## How to play with Git
 
-## Get Zeno Source Code
+### Get Zeno Source Code
 
 Before start, we need to clone the source code of Zeno locally to your disk, to do so, you need [Git](https://git-scm.com/download/win).
 
@@ -26,7 +126,7 @@ git clone https://gitee.com/zenustech/zeno.git
 cd zeno
 ```
 
-## Create your own Fork
+### Create your own Fork
 
 Wait, before you start to modifying the source code to implement your cool feature, please create your own 'fork' of Zeno on GitHub.
 To do so, just click the 'Fork' button on the right-top of Zeno project main page.
@@ -40,7 +140,7 @@ git remote set-url https://github.com/YOUR_NAME/zeno.git
 ```
 > Don't forget to replace the `YOUR_NAME` to your user name :)
 
-## Start Coding
+### Start Coding
 
 Now you could start writting codes with your favorite editor and implement the feature, and possibly debug it.
 After everying thing is done, let's push the change to your own fork hosted on GitHub:
@@ -52,17 +152,13 @@ git push -u origin master
 
 > May also check out [this post for Git tutorial](https://www.liaoxuefeng.com/wiki/896043488029600/896067008724000).
 
-## Create Pull Request (PR)
+### Create Pull Request (PR)
 
 After push succeed, please head to `https://github.com/YOUR_NAME/zeno`, and there should be a 'Compare and Pull Request' button show there.
 Click it, then click 'Create Pull Request', click again. The maintainers will see your work soon, they might have some talks with you, have fun!
 After the changes are approved, the PR will be merged into codebase, and your cool feature will be available in next release for all Zeno users!
 
-# Communication
-
-Both Chinese and English are supported! Feel free to express your idea in your favorable language!
-
-# How to build Zeno
+## How to build Zeno
 
 Zeno is written in C++, which means we need a C++ developing environment to start coding in Zeno.
 
@@ -72,9 +168,7 @@ Please check the [building.md](building.md) for the complete build instructions 
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 
-# Coding
-
-## Code Style
+### Code Style
 
 Zeno is based on C++20, you may assume all C++17 features and some C++20 features to be available in coding.
 
