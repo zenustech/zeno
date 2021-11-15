@@ -90,11 +90,15 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
         , prefix);
 }
 
-void QDMGraphicsScene::doubleClicked()
+void QDMGraphicsScene::addSubNetNode()
 {
     auto node = addNode();
     node->initAsSubnet();
     emit sceneCreatedOrRemoved();
+}
+
+void QDMGraphicsScene::doubleClicked()
+{
 }
 
 void QDMGraphicsScene::cursorMoved()

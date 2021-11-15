@@ -52,6 +52,7 @@ public:
     void cursorMoved();
 
 public slots:
+    void addSubNetNode();
     void addNodeByType(QString type);
     void updateSceneSelection();
 
