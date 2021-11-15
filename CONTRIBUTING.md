@@ -17,7 +17,7 @@ Both Chinese and English are supported! Feel free to express your idea in your f
 If you have
 
 * found a bug in Zeno and would like to report (bug report)
-* a cool idea or improvenent you'd like to share (feature request)
+* a cool feature you'd like to have in Zeno (feature request)
 * any question on how to use Zeno (question)
 
 Please feel free to check out [this page](https://github.com/zenustech/zeno/issues) for raising GitHub issues!
