@@ -6,8 +6,8 @@ namespace {
 
 
 struct If : dop::Node {
-    void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
-        auto cond = value_cast<bool>(exec->resolve(inputs.at(0)));
+    virtual void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
+        bool cond = value_cast<bool>(exec->resolve(inputs.at(0)));
         if (cond) {
             exec->touch(inputs.at(1), tolink);
         } else {
@@ -15,7 +15,13 @@ struct If : dop::Node {
         }
     }
 
-    void apply() override {}
+    virtual void apply() override {
+        if (get_input(0)) {
+            set_output(0, get_input(1));
+        } else {
+            set_output(0, get_input(2));
+        }
+    }
 };
 
 ZENO_DOP_DEFCLASS(If, {{
@@ -25,6 +31,7 @@ ZENO_DOP_DEFCLASS(If, {{
     {"then", "any"},
     {"else", "any"},
 }, {
+    {"result", "any"},
 }});
 
 
@@ -34,7 +41,7 @@ struct ForData {
 
 
 struct ForBegin : dop::Node {
-    void apply() override {
+    virtual void apply() override {
         ForData fordata = {
             .times = value_cast<int>(get_input(0)),
         };
@@ -52,7 +59,7 @@ ZENO_DOP_DEFCLASS(ForBegin, {{
 
 
 struct ForEnd : dop::Node {
-    void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
+    virtual void preapply(std::vector<dop::Node *> &tolink, dop::Executor *exec) override {
         auto fordata = value_cast<ForData>(exec->resolve(inputs.at(0)));
         for (int i = 0; i < fordata.times; i++) {
             auto copied_visited = exec->visited;
@@ -62,7 +69,7 @@ struct ForEnd : dop::Node {
         }
     }
 
-    void apply() override {}
+    virtual void apply() override {}
 };
 
 ZENO_DOP_DEFCLASS(ForEnd, {{
@@ -98,7 +105,7 @@ ZENO_DOP_DEFCLASS(ListForeach, {{
 
 
 struct PrintInt : dop::Node {
-    void apply() override {
+    virtual void apply() override {
         auto val = value_cast<int>(get_input(0));
         printf("Print %d\n", val);
     }
@@ -113,7 +120,7 @@ ZENO_DOP_DEFCLASS(PrintInt, {{
 
 
 struct Route : dop::Node {
-    void apply() override {
+    virtual void apply() override {
         set_output(0, get_input(0));
     }
 };
@@ -128,7 +135,7 @@ ZENO_DOP_DEFCLASS(Route, {{
 
 
 struct ToView : dop::Node {
-    void apply() override {
+    virtual void apply() override {
         set_output(0, get_input(0));
     }
 };

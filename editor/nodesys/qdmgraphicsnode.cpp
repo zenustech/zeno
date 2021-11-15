@@ -2,6 +2,7 @@
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicsscene.h"
 #include <zeno/dop/Descriptor.h>
+#include <zeno/dop/SubnetNode.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/assert.h>
 #include <QLineEdit>
@@ -81,9 +82,10 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
 void QDMGraphicsNode::initAsSubnet()
 {
-    initByType("CustomSubnet");
+    initByType("SubnetNode");
     subnetScene = std::make_unique<QDMGraphicsScene>();
     subnetScene->setSubnetNode(this);
+    auto node = static_cast<dop::SubnetNode *>(dopNode.get());
 }
 
 void QDMGraphicsNode::initByType(QString type)
