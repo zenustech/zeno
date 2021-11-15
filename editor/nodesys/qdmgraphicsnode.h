@@ -51,6 +51,7 @@ public:
 
     void initAsSubnet();
     void initByType(QString type);
+    void initByDescriptor(dop::Descriptor const &desc);
 
     QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;

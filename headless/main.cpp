@@ -20,7 +20,7 @@ int main()
 
     std::cout << tris.size() << std::endl;
     for (auto const &[x, y, z]: tris) {
-        std::cout << x << ' ' << y << ' ' << z << std::endl;;
+        std::cout << x << ' ' << y << ' ' << z << std::endl;
     }
 
     return 0;

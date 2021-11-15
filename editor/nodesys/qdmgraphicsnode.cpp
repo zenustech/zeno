@@ -82,7 +82,10 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
 void QDMGraphicsNode::initAsSubnet()
 {
-    initByType("SubnetNode");
+    dop::Descriptor desc;
+    desc.name = "SubnetNode";
+    desc.factory = std::make_unique<dop::SubnetNode>;
+    initByDescriptor(desc);
     subnetScene = std::make_unique<QDMGraphicsScene>();
     subnetScene->setSubnetNode(this);
     auto node = static_cast<dop::SubnetNode *>(dopNode.get());
@@ -91,6 +94,11 @@ void QDMGraphicsNode::initAsSubnet()
 void QDMGraphicsNode::initByType(QString type)
 {
     auto const &desc = dop::descriptor_table().at(type.toStdString());
+    initByDescriptor(desc);
+}
+
+void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
+{
     dopNode = desc.create();
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
@@ -101,7 +109,7 @@ void QDMGraphicsNode::initByType(QString type)
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 
-    auto name = getScene()->allocateNodeName(type.toStdString());
+    auto name = getScene()->allocateNodeName(desc.name);
     setName(QString::fromStdString(name));
 }
 

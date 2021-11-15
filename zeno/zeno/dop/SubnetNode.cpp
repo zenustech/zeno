@@ -1,7 +1,6 @@
 #include <zeno/dop/SubnetNode.h>
 #include <zeno/dop/Descriptor.h>
 #include <zeno/dop/Executor.h>
-#include <zeno/dop/macros.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -20,13 +19,6 @@ void SubnetNode::apply() {
         outputs[i] = exec.evaluate({.node = subouts[i], .sockid = 0});
     }
 }
-
-
-ZENO_DOP_DEFCLASS(SubnetNode, {{
-    "misc", "A user-defined subnet node",
-}, {
-}, {
-}});
 
 
 }
