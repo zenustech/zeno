@@ -98,14 +98,57 @@ If your issue does _not_ reproduce with the minimal vimrc, then you must say so
 in the issue report.
 -->
 
-# Coding
+# Pull Requests
 
-Not only you may contribute to Zeno via issues, but also you can contribute by adding code to Zeno! (i.e. pull requests)
+Zeno is open to all contributors with ideas great and small! However,
+there is a limit to the intended scope of the plugin and the amount of time the
+maintainer has to support and... well... maintain features. It's probably well
+understood that the contributor's input typically ends when a PR is megred, but
+the maintainers have to keep it working forever.
+
+## Small changes
+
+For bug fixes, documentation changes, gadget versin updates, etc. please just
+send a PR, I'm super happy to merge these!
+
+If you are unsure, or looking for some pointers, feel free to ask in Gitter, or
+mention is in the PR.
+
+## Larger changes
+
+For larger features that might be in any way controvertial, or increase the
+complexity of the overall plugin, please and talk to the maintainer(s) via [GitHub
+issues](https://github.com/zenustech/zeno/issues) first. This saves a lot of
+potential back-and-forth and makes sure that we're "on the same page" about the
+idea and the ongoing maintenance.
+
+In addition, if you like hacking, feel free to raise a PR tagged with `[RFC]` in
+the title and we can discuss the idea. I still prefer to discuss these things on
+Gitter rather than back-and-forth on GitHub, though.
+
+Please don't be offended if the maintainer(s) request significant rework for (or
+perhaps even dismiss) a PR that's not gone through this process.
+
+Please also don't be offended if the maintainer(s) ask if you're willing to
+provide ongoing support for the feature. As an OSS project manned entirely in
+what little spare time the maintainer(s) have, we're always looking for
+contributions and contributors who will help with support and maintenance of
+larger new features.
+
+## PR Guidelines
+
+When contributing pull requests for Zeno, I ask that:
+
+* You provide a clear and complete summary of the change, the use case and how the change was tested.
+* You follow the style of the code as-is; ref: [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+* Your changes worked on both Linux and Windows (GitHub CI will automatically check this).
+
+# Coding Guide
 
 Many people is using Zeno, if you find your wanted feature is missing, and you know how to implement it technically.
 Please help us improve by submitting your code to us (so called contribute), so that other people could also enjoy this cool feature you made!
 
-Contributions can be a one-line BUG fix, a new example graph, or even a README improvement, up to a brand new simulation algorithm.
+Contributions to codebase can be a one-line BUG fix, a new example graph, or even a README improvement, up to a brand new simulation algorithm.
 We're very happy to see people utilizing Zeno and having fun in both using it and coding it!
 
 ## How to play with Git
@@ -174,7 +217,8 @@ Zeno is based on C++20, you may assume all C++17 features and some C++20 feature
 
 Code style is not forced, also we won't format every code merged in to the repo.
 
-But it would be great if you could follow these simple rules for others to understand your code better and review faster:
+But it would be great if you could follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
+for others to understand your code better and review your PR faster, like this:
 
 ```cpp
 #include <vector>            // system headers should use '<>' brackets
@@ -218,3 +262,7 @@ std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visib
 
 }   // end of namespace zeno
 ```
+
+# Code of conduct
+
+Please see [code of conduct](CODE_OF_CONDUCT.md).
