@@ -7,7 +7,8 @@ namespace dop {
 
 
 struct SubnetNode : Node {
-    std::vector<Node *> outputs;
+    std::vector<Node *> subins;
+    std::vector<Node *> subouts;
 
     virtual void apply() override;
 };
