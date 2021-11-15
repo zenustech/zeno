@@ -7,10 +7,8 @@ forms, such as:
 
 * Raising, responding to, or reacting to Issues or Pull Requests
 * Testing new in-progress changes and providing feedback
-* Discussing in the Gitter channel
+* Discussing in the [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
 * etc.
-
-## Communication
 
 Both Chinese and English are supported! Feel free to express your idea in your favorable language!
 
@@ -37,6 +35,11 @@ Hint: you may use triple back quotes to insert pretty-shown code (for console ou
 This is the Zeno log...
 \`\`\`
 ```
+
+## Discussions
+
+If you feel issues being too formal, check out our [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
+for discussing problems in Q&A style.
 
 ## Usage Tips
 
@@ -118,7 +121,7 @@ mention is in the PR.
 
 For larger features that might be in any way controvertial, or increase the
 complexity of the overall plugin, please and talk to the maintainer(s) via [GitHub
-issues](https://github.com/zenustech/zeno/issues) first. This saves a lot of
+discussions](https://github.com/zenustech/zeno/discussions) first. This saves a lot of
 potential back-and-forth and makes sure that we're "on the same page" about the
 idea and the ongoing maintenance.
 
