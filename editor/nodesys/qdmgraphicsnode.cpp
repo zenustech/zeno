@@ -82,6 +82,8 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 void QDMGraphicsNode::initAsSubnet()
 {
     initByType("CustomSubnet");
+    subnetScene = std::make_unique<QDMGraphicsScene>();
+    subnetScene->setSubnetNode(this);
 }
 
 void QDMGraphicsNode::initByType(QString type)

@@ -36,6 +36,7 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
+    void setSubnetNode(QDMGraphicsNode *node);
     void setCurrentNode(QDMGraphicsNode *node);
     std::vector<QDMGraphicsNode *> getVisibleNodes() const;
     std::vector<QDMGraphicsScene *> getChildScenes() const;
