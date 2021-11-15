@@ -15,7 +15,9 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/math/differentiable_SVD.cpp
     src/force_model/stable_anisotropic_NH.h
     src/force_model/stable_isotropic_NH.h
-    src/force_model/base_force_model.h
+    src/force_model/base_elastic_model.h
+    src/force_model/stable_Stvk.h
+    src/force_model/bspline_isotropic_model.h
     src/integrator/base_integrator.h
     src/integrator/backward_euler_integrator.h
     src/integrator/backward_euler_integrator.cpp

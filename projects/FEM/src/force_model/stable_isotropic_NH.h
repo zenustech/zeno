@@ -177,7 +177,7 @@ public:
         ddpsi = dFactdF.transpose() * ddpsi * dFactdF; 
     }
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress) override {
+    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress) const override {
         FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
         FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
         FEM_Scaler J = strain[0] * strain[1] * strain[2];
@@ -186,7 +186,7 @@ public:
         stress[2] = mu * strain[2] - mu * strain[0] * strain[1] + lambda * (J - 1) * strain[0] * strain[1];
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) override {
+    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
         FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
         FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
         FEM_Scaler J = strain[0] * strain[1] * strain[2];

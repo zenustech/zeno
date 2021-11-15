@@ -29,16 +29,16 @@ public:
      * @param energy the potential energy output
      */
     void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const override {
-            Mat3x3d ActInv = mp.Act.inverse();
-            Mat3x3d FAct = F * ActInv;
+        Mat3x3d ActInv = mp.Act.inverse();
+        Mat3x3d FAct = F * ActInv;
 
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-            FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+        FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
+        FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
 
-            Mat3x3d CStrain = 0.5 * (FAct.transpose() * FAct - Mat3x3d::Identity());
+        Mat3x3d CStrain = 0.5 * (FAct.transpose() * FAct - Mat3x3d::Identity());
 
-            FEM_Scaler TE = CStrain.trace();
-            psi = mu * CStrain.squaredNorm() + lambda / 2 * TE * TE;
+        FEM_Scaler TE = CStrain.trace();
+        psi = mu * CStrain.squaredNorm() + lambda / 2 * TE * TE;
     }
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -140,6 +140,27 @@ public:
 
         Mat3x3d P = FAct * (2 * mu * CStrain + lambda * TE * Mat3x3d::Identity());
 
+        // bool check_principal_stress = true;
+        // if(check_principal_stress){
+        //     Mat3x3d Ftest = Mat3x3d::Random();
+        //     Vec3d pstrain,pstress;
+        //     Mat3x3d U,V;
+        //     DiffSVD::SVD_Decomposition(Ftest,U,pstrain,V);
+        //     ComputePrincipalStress(mp,pstrain,pstress);
+
+        //     Mat3x3d CStrainTest = 0.5 * (Ftest.transpose() * Ftest - Mat3x3d::Identity());
+
+        //     FEM_Scaler TETest = CStrainTest.trace();
+        //     Mat3x3d PTest = Ftest * (2 * mu * CStrainTest + lambda * TETest * Mat3x3d::Identity());
+
+        //     Mat3x3d Prc = U * pstress.asDiagonal() * V.transpose();
+
+        //     std::cout << "PTest : " << std::endl << U.transpose() * PTest * V << std::endl << "Prc : " << std::endl << pstress << std::endl;
+
+        //     throw std::runtime_error("PTest vs Prc");
+        // }
+
+
         Mat9x9d dFactdF = EvaldFactdF(ActInv); 
         dpsi = dFactdF.transpose() * MatHelper::VEC(P);
 
@@ -165,14 +186,30 @@ public:
         ddpsi = dFactdF.transpose() * ddpsi * dFactdF; 
     }
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) override {
+    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress) const override {
         FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
         FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
-            throw std::runtime_error("STVK NOT IMPLEMENTED YET");
+
+        const Vec3d &s = strain;
+        stress[0] = mu * (s[0] * s[0] - 1) * s[0] + lambda * (s.squaredNorm() - 3) * s[0] / 2;
+        stress[1] = mu * (s[1] * s[1] - 1) * s[1] + lambda * (s.squaredNorm() - 3) * s[1] / 2;
+        stress[2] = mu * (s[2] * s[2] - 1) * s[2] + lambda * (s.squaredNorm() - 3) * s[2] / 2;
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) override {
-        throw std::runtime_error("STVK NOT IMPLEMENTED YET");
+    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
+        FEM_Scaler lambda = ElasticModel::Enu2Lambda(mp.E,mp.nu);
+        FEM_Scaler mu = ElasticModel::Enu2Mu(mp.E,mp.nu);
+
+        const Vec3d &s = strain;
+        stress[0] = mu * (s[0] * s[0] - 1) * s[0] + lambda * (s.squaredNorm() - 3) * s[0] / 2;
+        stress[1] = mu * (s[1] * s[1] - 1) * s[1] + lambda * (s.squaredNorm() - 3) * s[1] / 2;
+        stress[2] = mu * (s[2] * s[2] - 1) * s[2] + lambda * (s.squaredNorm() - 3) * s[2] / 2;
+        stress[1] = mu * (s[1] * s[1] - 1) * s[1] + lambda * (s.squaredNorm() - 3) * s[1] / 2;
+        stress[2] = mu * (s[2] * s[2] - 1) * s[2] + lambda * (s.squaredNorm() - 3) * s[2] / 2;
+
+        Vec3d Is;
+        EvalIsoInvarients(strain, Is);
+        ComputeIsoStretchingMatrix(lambda,mu,Is,strain,Jac);
     }
 
 private :

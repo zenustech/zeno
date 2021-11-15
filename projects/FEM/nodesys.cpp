@@ -889,6 +889,45 @@ ZENDEFNODE(MakeElasticForceModel, {
 });
 
 
+struct MakePlasticForceModel : zeno::INode {
+    virtual void apply() override {
+        auto model_type = std::get<std::string>(get_param("ForceModel"));
+        auto aniso_strength = get_param<float>("aniso_strength");
+
+
+        std::shared_ptr<ElasticModel> elastic_model_ptr;
+
+        if(model_type == "Fiberic"){
+            elastic_model_ptr = std::make_shared<StableAnisotropicMuscle>(aniso_strength);
+        }
+        else if(model_type == "HyperElastic")
+            elastic_model_ptr = std::make_shared<StableIsotropicMuscle>();
+        else if(model_type == "BSplineModel"){
+            FEM_Scaler default_E = 1e7;
+            FEM_Scaler default_nu = 0.499;
+            elastic_model_ptr = std::make_shared<BSplineIsotropicMuscle>(default_E,default_nu);
+        }else if(model_type == "Stvk"){
+            elastic_model_ptr = std::make_shared<StableStvk>();
+        }
+        else{
+            std::cerr << "UNKNOWN MODEL_TYPE" << std::endl;
+            throw std::runtime_error("UNKNOWN MODEL_TYPE");
+        }
+        auto res = std::make_shared<MuscleModelObject>();
+        res->_forceModel = std::make_shared<PlasticForceModel>(elastic_model_ptr);
+
+        set_output("BaseForceModel",res);
+    }
+};
+
+ZENDEFNODE(MakePlasticForceModel, {
+    {},
+    {"BaseForceModel"},
+    {{"enum HyperElastic Fiberic BSplineModel Stvk", "ForceModel", "HyperElastic"},{"float","aniso_strength","20"}},
+    {"FEM"},
+});
+
+
 struct MakeDampingForceModel : zeno::INode {
     virtual void apply() override {
         auto res = std::make_shared<DampingForceModel>();
@@ -915,6 +954,21 @@ struct FEMIntegrator : zeno::IObject {
     std::vector<Vec12d> _derivBuffer;
     std::vector<Mat12x12d> _HBuffer;
 
+    std::vector<Vec3d> kinematic_hardening_shifts;
+    std::vector<Vec3d> plastic_strains;
+    std::vector<Vec3d> init_stresses;
+    std::vector<Vec3d> init_strains;
+    std::vector<FEM_Scaler> kinimatic_hardening_coeffs;
+    std::vector<FEM_Scaler> yielding_stresses;
+
+    std::vector<FEM_Scaler> restoring_strains;
+    std::vector<FEM_Scaler> fail_strains;
+
+    std::vector<bool> failed;
+    std::vector<Vec3d> the_strains_failed;
+
+    std::vector<zeno::vec3f> respStress_traj;
+
     VecXd& GetCurrentFrame() {return _traj[(_stepID + _intPtr->GetCouplingLength()) % _intPtr->GetCouplingLength()];} 
 
     void AssignElmAttribs(size_t elm_id,TetAttributes& attrbs,const std::shared_ptr<FEMMesh>& mesh,const std::shared_ptr<PrimitiveObject>& fiber,const Vec12d& ext_force) const {
@@ -939,6 +993,26 @@ struct FEMIntegrator : zeno::IObject {
         attrbs._volume = mesh->_elmVolume[elm_id];
         attrbs._density = mesh->_elmDensity[elm_id];
         attrbs._ext_f = ext_force; 
+
+        attrbs.pmp.init_stress = init_stresses[elm_id];
+        attrbs.pmp.isotropic_hardening_coeff = 0;
+        attrbs.pmp.kinematic_hardening_coeff = kinimatic_hardening_coeffs[elm_id];
+        attrbs.pmp.kinematic_hardening_shift = kinematic_hardening_shifts[elm_id];
+        attrbs.pmp.plastic_strain = plastic_strains[elm_id];
+        attrbs.pmp.yield_stress = yielding_stresses[elm_id];
+        attrbs.pmp.restoring_strain = restoring_strains[elm_id];
+        attrbs.pmp.failed_strain = fail_strains[elm_id];
+        attrbs.pmp.failed = failed[elm_id];
+        attrbs.pmp.the_strain_failed = the_strains_failed[elm_id];
+
+
+        // if(elm_id != 400){
+        //     std::cout << "CHECK PARAM : " << std::endl;
+
+        //     std::cout << "rs : " << attrbs.pmp.restoring_strain << std::endl;
+        //     std::cout << "fs : " << attrbs.pmp.failed_strain << std::endl;
+        // }else
+        //     throw std::runtime_error("CHECK PARAM");
     }
 
 
@@ -1036,16 +1110,18 @@ struct FEMIntegrator : zeno::IObject {
         VecXd& HValBuffer,
         bool enforce_spd) {
             FEM_Scaler obj = 0;
+
             size_t clen = _intPtr->GetCouplingLength();
+
             size_t nm_elms = mesh->_mesh->quads.size();
 
             _objBuffer.resize(nm_elms);
             _derivBuffer.resize(nm_elms);
             _HBuffer.resize(nm_elms);
 
+
             // #pragma omp parallel for 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
-                // std::cout << "attrbs.elm_Act" << std::endl << attrbs._activation << std::endl;
                 // throw std::runtime_error("CHECK ATTRS");
                 std::vector<Vec12d> elm_traj(clen);
                 auto tet = mesh->_mesh->quads[elm_id];
@@ -1054,7 +1130,10 @@ struct FEMIntegrator : zeno::IObject {
                 RetrieveElmVector(tet,elm_ext_force,_extForce);
 
                 TetAttributes attrbs;
-                AssignElmAttribs(elm_id,attrbs,mesh,fiber,elm_ext_force);                
+                AssignElmAttribs(elm_id,attrbs,mesh,fiber,elm_ext_force); 
+
+                // std::cout << "CHECK PARAM OUT" << std::endl;
+                // std::cout << "attrbs.elm_Act" << std::endl << attrbs._activation << std::endl;               
 
                 for(size_t i = 0;i < clen;++i){
                     size_t frameID = (_stepID + clen - i) % clen;
@@ -1160,9 +1239,23 @@ struct MakeFEMIntegrator : zeno::INode {
 
         res->_stepID = 0;
 
+        size_t nm_elms = mesh->_mesh->quads.size();
+
         res->_extForce.resize(mesh->_mesh->size() * 3);
-        res->_objBuffer.resize(mesh->_mesh->quads.size());
-        res->_derivBuffer.resize(mesh->_mesh->quads.size());
+        res->_objBuffer.resize(nm_elms);
+        res->_derivBuffer.resize(nm_elms);
+
+        // by default, no plastic behavior
+        res->kinematic_hardening_shifts.resize(nm_elms,Vec3d::Zero());
+        res->plastic_strains.resize(nm_elms,Vec3d::Zero());
+        res->init_stresses.resize(nm_elms,Vec3d::Zero());
+        res->init_strains.resize(nm_elms,Vec3d::Zero());
+        res->kinimatic_hardening_coeffs.resize(nm_elms,0);
+        res->yielding_stresses.resize(nm_elms,-1);
+        res->restoring_strains.resize(nm_elms,1e6);// default setting, no restoring strain
+        res->fail_strains.resize(nm_elms,1e6); // default setting, no fail strain
+        res->failed.resize(nm_elms,false);
+        res->the_strains_failed.resize(nm_elms,Vec3d::Zero()); // only effective when the material break
 
         set_output("FEMIntegrator",res);
     }
@@ -1172,6 +1265,51 @@ ZENDEFNODE(MakeFEMIntegrator,{
     {{"Mesh"},{"gravity"},{"dt"}},
     {"FEMIntegrator"},
     {{"enum BackwardEuler QuasiStatic", "integType", "BackwardEuler"}},
+    {"FEM"},
+});
+
+
+    // std::vector<Vec3d> kinematic_hardening_shifts;
+    // std::vector<Vec3d> plastic_strains;
+    // std::vector<Vec3d> init_stresses;
+    // std::vector<Vec3d> init_strains;
+    // std::vector<FEM_Scaler> kinimatic_hardening_coeffs;
+    // std::vector<FEM_Scaler> yielding_stresses;
+struct SetUniformPlasticParam : zeno::INode {
+    virtual void apply() override {
+        auto intIn = get_input<FEMIntegrator>("intIn");
+        auto khs = get_input<zeno::NumericObject>("khs")->get<zeno::vec3f>();
+        auto ps = get_input<zeno::NumericObject>("ps")->get<zeno::vec3f>();
+        auto init_stress = get_input<zeno::NumericObject>("initStress")->get<zeno::vec3f>();
+        auto init_strain = get_input<zeno::NumericObject>("initStrain")->get<zeno::vec3f>();
+
+        auto khc = get_input<zeno::NumericObject>("khc")->get<float>();
+        auto ys = get_input<zeno::NumericObject>("ys")->get<float>();
+        auto rs = get_input<zeno::NumericObject>("rs")->get<float>();
+        auto fs = get_input<zeno::NumericObject>("fs")->get<float>();
+
+        size_t nm_elms = intIn->kinematic_hardening_shifts.size();
+
+        for(size_t i = 0;i < nm_elms;++i){
+            intIn->kinematic_hardening_shifts[i] << khs[0],khs[1],khs[2];
+            intIn->plastic_strains[i] << ps[0],ps[1],ps[2];
+            intIn->init_stresses[i] << init_stress[0],init_stress[1],init_stress[2];
+            intIn->init_strains[i] << init_strain[0],init_strain[1],init_strain[2];
+            intIn->kinimatic_hardening_coeffs[i] = khc;
+
+            intIn->yielding_stresses[i] = ys;
+            intIn->restoring_strains[i] = rs;
+            intIn->fail_strains[i] = fs;
+        }
+
+        set_output("intOut",std::move(intIn));
+    }
+};
+
+ZENDEFNODE(SetUniformPlasticParam,{
+    {{"intIn"},{"khs"},{"ps"},{"initStress"},{"initStrain"},{"khc"},{"ys"},{"rs"},{"fs"}},
+    {"intOut"},
+    {},
     {"FEM"},
 });
 
@@ -1334,6 +1472,12 @@ struct SolveEquaUsingNRSolver : zeno::INode {
         auto damping_model = get_input<DampingForceModel>("dampForce");
         auto integrator = get_input<FEMIntegrator>("integrator");
 
+
+        // for(size_t i = 0;i < mesh->_mesh->quads.size();++i){
+        //     std::cout << "ELM<" << i << "> : \t" << integrator->yielding_stresses[i] << std::endl;
+        // }
+        // throw std::runtime_error("CHECK YS HRERE");
+
         std::shared_ptr<PrimitiveObject> fiber = nullptr;
         if(has_input("fiber")){
             fiber = get_input<PrimitiveObject>("fiber");
@@ -1369,7 +1513,7 @@ struct SolveEquaUsingNRSolver : zeno::INode {
             MatHelper::RetrieveDoFs(HBuffer.data(),HucBuffer.data(),mesh->_SpMatFreeDoFs.size(),mesh->_SpMatFreeDoFs.data());
 
             if(ruc.norm() < epsilon){
-                std::cout << "BREAK WITH RUC = " << ruc.norm() << std::endl;
+                // std::cout << "BREAK WITH RUC = " << ruc.norm() << std::endl;
                 break;
             }
             ruc *= -1;
@@ -1385,11 +1529,12 @@ struct SolveEquaUsingNRSolver : zeno::INode {
             eg0 = -dpuc.dot(ruc);
 
             if(fabs(eg0) < epsilon * epsilon){
-                std::cout << "BREAK WITH EG0 = " << eg0 << "\t" << ruc.norm() << std::endl;
+                // std::cout << "BREAK WITH EG0 = " << eg0 << "\t" << ruc.norm() << std::endl;
                 break;
             }
 
             if(eg0 > 0){
+                std::cout << "eg0 = " << eg0 << std::endl;
                 throw std::runtime_error("non-negative descent direction");
             }
             dp.setZero();
@@ -1420,7 +1565,6 @@ struct SolveEquaUsingNRSolver : zeno::INode {
                 for(size_t i = 0;i < max_linesearch;++i)
                     std::cout << "idx:" << i << "\t" << wolfeBuffer[i].transpose() << std::endl;
 
-                
                 throw std::runtime_error("LINESEARCH");
             }
             ++iter_idx;
@@ -1429,18 +1573,210 @@ struct SolveEquaUsingNRSolver : zeno::INode {
         if(iter_idx == max_iters){
             std::cout << "MAX NEWTON ITERS EXCEED" << std::endl;
         }
-        set_output("intOut",std::move(integrator));     
+
+        VecXd force = VecXd::Zero(mesh->_mesh->size() * 3);
+
+        integrator->EvalObjDerivHessian(mesh,fiber,force_model,damping_model,force,HBuffer,true);
+
+        Vec3d CForce = Vec3d::Zero();
+        Vec3d FForce = Vec3d::Zero();
+
+        auto CBind = std::make_shared<PrimitiveObject>();
+        auto& cforce = CBind->add_attr<zeno::vec3f>("force");
+        auto& cpos = CBind->add_attr<zeno::vec3f>("pos");
+        CBind->resize( mesh->_closeBindPoints.size());
+
+        for(size_t i = 0;i < mesh->_closeBindPoints.size();++i){
+            size_t idx = mesh->_closeBindPoints[i];
+            Vec3d f = force.segment(idx*3,3);
+            Vec3d p = integrator->GetCurrentFrame().segment(idx*3,3);
+            CForce += f;
+            cforce[i] = zeno::vec3f(f[0],f[1],f[2]);
+            cpos[i] = zeno::vec3f(p[0],p[1],p[2]);
+        }
+
+        CForce /= (0.12 * 0.04);
+
+        auto FBind = std::make_shared<PrimitiveObject>();
+        auto fforce = CBind->add_attr<zeno::vec3f>("force");
+        auto fpos = CBind->add_attr<zeno::vec3f>("pos");
+        FBind->resize( mesh->_farBindPoints.size());
+
+
+        for(size_t i = 0;i < mesh->_farBindPoints.size();++i){
+            size_t idx = mesh->_farBindPoints[i];
+            Vec3d f = force.segment(idx*3,3);
+            Vec3d p = integrator->GetCurrentFrame().segment(idx*3,3);
+            FForce += f;
+            fforce[i] = zeno::vec3f(f[0],f[1],f[2]);
+            fpos[i] = zeno::vec3f(p[0],p[1],p[2]);
+        }
+
+        FForce /=  (0.12 * 0.04);
+
+        set_output("CBind",std::move(CBind));
+        set_output("FBind",std::move(FBind));
+
+        // std::cout << "Boundary Force : " << CForce.transpose() << "\t --- \t" << FForce.transpose() << std::endl; 
+
+        auto resp_stress = std::make_shared<zeno::NumericObject>(zeno::vec3f(CForce[0],CForce[1],CForce[2]));
+
+        integrator->respStress_traj.emplace_back(CForce[0],CForce[1],CForce[2]);
+        std::cout << "INT_ID : " << integrator->_stepID << std::endl;
+        if(integrator->_stepID == 399) {
+            std::cout << "OUTPUT RESP_TRAJ: "<< std::endl;
+            std::ofstream fout("/home/lsl/LSL/Model/Aloy/alloy_stress/respStressTraj.txt");
+            if(!fout.is_open()){
+                std::cerr << "FAILED opening /home/lsl/LSL/Model/Aloy/alloy_stress/respStressTraj.txt" << std::endl;
+            }else{
+                try{
+                    for(size_t i = 0;i < integrator->respStress_traj.size();++i)
+                        fout << integrator->respStress_traj[i][0] << "\t" << integrator->respStress_traj[i][1] << "\t" << integrator->respStress_traj[i][2] << std::endl;
+                    fout.close();
+                }catch(std::exception& e){
+                    std::cerr << e.what() << std::endl;
+                }
+            }
+        }
+
+        set_output("respStress",std::move(resp_stress));
+
+        set_output("intOut",std::move(integrator)); 
     }
 };
 
 ZENDEFNODE(SolveEquaUsingNRSolver,{
-    {{"mesh","muscleForce","dampForce","integrator"}},
-    {"intOut"},
+    {"mesh","muscleForce","dampForce","integrator","fiber"},
+    {"intOut","respStress","CBind","FBind"},
     {{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},{"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},{"float","epsilon","1e-6"}},
     {"FEM"},
 });
 
-struct GetEffectiveStrain : INode {
+struct UpdatePlasticParam : zeno::INode {
+    virtual void apply() override {
+        auto mesh = get_input<FEMMesh>("mesh");
+        auto force_model = get_input<MuscleModelObject>("muscleForce");
+        auto integrator = get_input<FEMIntegrator>("integrator");
+        auto deform = get_input<PrimitiveObject>("deform");
+
+        if(dynamic_cast<PlasticForceModel*>(force_model->_forceModel.get())){
+            size_t nm_elms = mesh->_mesh->quads.size();
+            const auto& model = dynamic_cast<PlasticForceModel*>(force_model->_forceModel.get());
+            for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+                PlasticMaterialParam pmp;
+                pmp.init_stress = integrator->init_stresses[elm_id];
+                pmp.isotropic_hardening_coeff = 0;
+                pmp.kinematic_hardening_coeff = integrator->kinimatic_hardening_coeffs[elm_id];
+                pmp.kinematic_hardening_shift = integrator->kinematic_hardening_shifts[elm_id];
+                pmp.plastic_strain = integrator->plastic_strains[elm_id];
+                pmp.yield_stress = integrator->yielding_stresses[elm_id];
+                pmp.restoring_strain = integrator->restoring_strains[elm_id]; 
+                pmp.failed_strain = integrator->fail_strains[elm_id]; 
+                pmp.failed = integrator->failed[elm_id];
+                pmp.the_strain_failed = integrator->the_strains_failed[elm_id]; 
+
+                ElastoMaterialParam emp;
+                if(has_input("fiber")){
+                    auto fiber = get_input<PrimitiveObject>("fiber");
+                    const auto& orient = fiber->attr<zeno::vec3f>("orient")[elm_id];
+                    emp.forient << orient[0],orient[1],orient[2];
+                    zeno::vec3f act = fiber->attr<zeno::vec3f>("act")[elm_id];
+                    Vec3d act_vec;act_vec << act[0],act[1],act[2];
+                    Mat3x3d R = MatHelper::Orient2R(emp.forient);
+                    emp.Act = R * act_vec.asDiagonal() * R.transpose();
+                }else{
+                    emp.forient << 1.0,0.0,0.0;
+                    emp.Act =  Mat3x3d::Identity();
+                }
+                emp.E = mesh->_elmYoungModulus[elm_id];
+                emp.nu = mesh->_elmPossonRatio[elm_id];
+
+                const auto& tet = mesh->_mesh->quads[elm_id];
+                Vec12d tet_shape = Vec12d::Zero();
+                for(size_t j = 0;j < 4;++j){
+                    size_t v_id = tet[j];
+                    const auto& vert = deform->attr<zeno::vec3f>("pos")[v_id];
+                    tet_shape.segment(j*3,3) << vert[0],vert[1],vert[2];
+                }
+
+                Mat3x3d F;
+                BaseIntegrator::ComputeDeformationGradient(mesh->_elmMinv[elm_id],tet_shape,F);
+
+                model->UpdatePlasticParameters(elm_id,pmp,emp,F);
+
+                integrator->kinematic_hardening_shifts[elm_id] = pmp.kinematic_hardening_shift;
+                integrator->plastic_strains[elm_id] = pmp.plastic_strain;
+                integrator->init_stresses[elm_id] = pmp.init_stress;
+                integrator->init_strains[elm_id].setZero();
+
+                integrator->kinimatic_hardening_coeffs[elm_id] = pmp.kinematic_hardening_coeff;
+                integrator->yielding_stresses[elm_id] = pmp.yield_stress;
+                integrator->failed[elm_id] = pmp.failed;
+                integrator->the_strains_failed[elm_id] = pmp.the_strain_failed;
+            }  
+        }
+
+        set_output("intOut",std::move(integrator));
+    }
+};
+
+ZENDEFNODE(UpdatePlasticParam,{
+    {"mesh","muscleForce","integrator","fiber","deform"},
+    {"intOut"},
+    {},
+    {"FEM"},
+});
+
+
+struct GetPlasticStrain : zeno::INode {
+    virtual void apply() override {
+        auto deformation = get_input<PrimitiveObject>("deform");
+        auto refmesh = get_input<FEMMesh>("refMesh");
+        auto integrator = get_input<FEMIntegrator>("intIn");
+
+        auto res = std::make_shared<PrimitiveObject>();
+        auto& pos = res->add_attr<zeno::vec3f>("pos");
+        auto& es = res->add_attr<float>("esigma");
+
+        res->resize(refmesh->_mesh->quads.size());
+        for(size_t i = 0;i < res->size();++i){
+            const auto& tet = refmesh->_mesh->quads[i];
+            pos[i] = zeno::vec3f(0.0);
+            Vec12d tet_shape = Vec12d::Zero();
+            for(size_t j = 0;j < 4;++j){
+                size_t v_id = tet[j];
+                const auto& vert = deformation->attr<zeno::vec3f>("pos")[v_id];
+                pos[i] += vert;
+                tet_shape.segment(j*3,3) << vert[0],vert[1],vert[2];
+            }
+
+            pos[i] /= 4;
+            Vec3d s = integrator->plastic_strains[i];
+
+            FEM_Scaler vm = compute_von_mises_strain(s);
+            es[i] = vm;
+        }
+
+        set_output("res",std::move(res));
+    }
+
+    FEM_Scaler compute_von_mises_strain(const Vec3d& s) {
+        FEM_Scaler s01 = s[0] - s[1];
+        FEM_Scaler s02 = s[0] - s[2];
+        FEM_Scaler s12 = s[1] - s[2];
+        return sqrt(0.5 * (s01*s01 + s02*s02 + s12*s12));
+    }
+};
+
+ZENDEFNODE(GetPlasticStrain,{
+    {"deform","refMesh","intIn"},
+    {"res"},
+    {},
+    {"FEM"},
+});
+
+
+struct GetEffectiveStrain : zeno::INode {
     virtual void apply() override {
         auto deformation = get_input<PrimitiveObject>("deform");
         auto refmesh = get_input<FEMMesh>("refMesh");
@@ -1489,6 +1825,61 @@ ZENDEFNODE(GetEffectiveStrain,{
     {},
     {"FEM"},
 });
+
+struct GetEffectiveStress : zeno::INode {
+    virtual void apply() override {
+        auto deformation = get_input<PrimitiveObject>("deform");
+        auto refmesh = get_input<FEMMesh>("refMesh");
+        auto force_model = get_input<MuscleModelObject>("forceModel");
+        auto yield_stress = get_input<zeno::NumericObject>("yield_stress")->get<float>();
+
+        auto res = std::make_shared<PrimitiveObject>();
+        auto& pos = res->add_attr<zeno::vec3f>("pos");
+        auto& es = res->add_attr<float>("esigma");
+
+        res->resize(refmesh->_mesh->quads.size());
+        for(size_t i = 0;i < res->size();++i){
+            const auto& tet = refmesh->_mesh->quads[i];
+            pos[i] = zeno::vec3f(0.0);
+            Vec12d tet_shape = Vec12d::Zero();
+            for(size_t j = 0;j < 4;++j){
+                size_t v_id = tet[j];
+                const auto& vert = deformation->attr<zeno::vec3f>("pos")[v_id];
+                pos[i] += vert;
+                tet_shape.segment(j*3,3) << vert[0],vert[1],vert[2];
+            }
+
+            pos[i] /= 4;
+            Mat3x3d F;
+            BaseIntegrator::ComputeDeformationGradient(refmesh->_elmMinv[i],tet_shape,F);
+            Mat3x3d U,V;Vec3d s;
+            DiffSVD::SVD_Decomposition(F,U,s,V);
+
+            Vec3d ps;
+            FEM_Scaler E = refmesh->_elmYoungModulus[i];
+            FEM_Scaler nu = refmesh->_elmPossonRatio[i];
+            ElastoMaterialParam param;
+            param.E = E;param.nu = nu;param.Act = Mat3x3d::Identity();param.forient << 0.0,1.0,0.0;
+
+            dynamic_cast<ElasticModel*>(force_model->_forceModel.get())->ComputePrincipalStress(param,s,ps);
+            FEM_Scaler vm = pow(ps[0] - ps[1],2) + pow(ps[1] - ps[2],2) + pow(ps[0] - ps[2],2);
+            vm = vm / 2;
+            vm = sqrt(vm);
+
+            es[i] = vm / yield_stress;
+        }
+
+        set_output("res",std::move(res));
+    }
+};
+
+ZENDEFNODE(GetEffectiveStress,{
+    {"deform","refMesh","forceModel","yield_stress"},
+    {"res"},
+    {},
+    {"FEM"},
+});
+
 
 struct DebugBSplineImp : zeno::INode {
     virtual void apply() override {

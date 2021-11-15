@@ -209,11 +209,11 @@ public:
         }
     }
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) override {
+    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) const override {
         throw std::runtime_error("BSpline MODEL IS NOT IMPLEMENTED HERE");
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) override {
+    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
         throw std::runtime_error("BSPLINE NOT IMPLEMENTED YET");
     }
 

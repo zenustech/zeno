@@ -161,11 +161,11 @@ public:
             ddpsi = aniso_ddpsi + iso_ddpsi;
     }        
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) override {
+    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) const override {
         throw std::runtime_error("ANISOTROPIC_MODEL MIGHT BE PROBLEMATIC HERE");
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) override {
+    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
         throw std::runtime_error("ANISO_NH NOT IMPLEMENTED YET");
     }
 

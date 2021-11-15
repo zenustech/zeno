@@ -36,7 +36,8 @@ int BackEulerIntegrator::EvalElmObj(const TetAttributes attrs,
         auto model = dynamic_cast<ElasticModel*>(force_model.get());
         model->ComputePhi(attrs.emp,F,PsiE);
     }else{
-        throw std::runtime_error("PLASTIC_MODEL ENERGY NOT DEFINED");
+        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+        model->ComputePsi(attrs.pmp,attrs.emp,F,PsiE);
     }
      
     damping_model->ComputePhi(attrs.v,L,PsiD);
@@ -72,7 +73,8 @@ int BackEulerIntegrator::EvalElmObjDeriv(const TetAttributes attrs,
         auto model = dynamic_cast<ElasticModel*>(force_model.get());
         model->ComputePhiDeriv(attrs.emp,F,PsiE,dPsiE);
     }else{
-        throw std::runtime_error("PLASTIC_MODEL ENERGY NOT DEFINED");
+        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+        model->ComputePsiDeriv(attrs.pmp,attrs.emp,F,PsiE,dPsiE);
     }
 
     damping_model->ComputePhiDeriv(attrs.v,L,PsiD,dPsiD);
@@ -147,7 +149,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         Vec9d dpsi_cmp = Vec9d::Zero();
         FEM_Scaler psi_cmp = 0;
 
-        dynamic_cast<StableStvk*>(force_model.get())->ComputePhiDerivHessian(attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false);
+        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false);
 
         Mat9x9d ddpsi_fd = Mat9x9d::Zero();
         Vec9d dpsi_fd = Vec9d::Zero();
@@ -162,7 +164,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
                 FEM_Scaler psi_tmp;
                 Vec9d dpsi_tmp;
-                dynamic_cast<StableStvk*>(force_model.get())->ComputePhiDeriv(attrs.emp,F_tmp,psi_tmp,dpsi_tmp);
+                dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDeriv(attrs.pmp,attrs.emp,F_tmp,psi_tmp,dpsi_tmp);
 
                 dpsi_fd[i] = (psi_tmp - psi_cmp) / step;
                 ddpsi_fd.col(i) = (dpsi_tmp - dpsi_cmp) / step;
@@ -173,20 +175,20 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         // if(ddpsi_error > 1e-5 || dpsi_error > 1e-3){
                 FEM_Scaler lambda = ElasticModel::Enu2Lambda(attrs.emp.E,attrs.emp.nu);
                 FEM_Scaler mu = ElasticModel::Enu2Mu(attrs.emp.E,attrs.emp.nu);
-                Vec9d eig_vals;
-                Vec9d eig_vecs[9];
+                // Vec9d eig_vals;
+                // Vec9d eig_vecs[9];
 
-                dynamic_cast<StableStvk*>(force_model.get())->ComputeIsoEigenSystem(lambda,mu,Ftest,eig_vals,eig_vecs);
-                std::cout << "Check Eigen !!!!!: " << std::endl;
-                for(size_t i = 0;i < 9;++i){
-                    Vec9d Ax = ddpsi_fd * eig_vecs[i];
-                    Vec9d lx = eig_vals[i] * eig_vecs[i];
-                    std::cout << "IDX : " << i << std::endl;
-                    for(size_t j = 0;j < 9;++j){
-                        std::cout << Ax[j] /  lx[j] << "\t";std::cout.flush();
-                    }
-                    std::cout << std::endl;
-                }
+                // dynamic_cast<StableStvk*>(force_model.get())->ComputeIsoEigenSystem(lambda,mu,Ftest,eig_vals,eig_vecs);
+                // std::cout << "Check Eigen !!!!!: " << std::endl;
+                // for(size_t i = 0;i < 9;++i){
+                //     Vec9d Ax = ddpsi_fd * eig_vecs[i];
+                //     Vec9d lx = eig_vals[i] * eig_vecs[i];
+                //     std::cout << "IDX : " << i << std::endl;
+                //     for(size_t j = 0;j < 9;++j){
+                //         std::cout << Ax[j] /  lx[j] << "\t";std::cout.flush();
+                //     }
+                //     std::cout << std::endl;
+                // }
 
                 std::cout << "FAIL WITH FAct = " << std::endl << Ftest << std::endl << Act << std::endl;
                 std::cerr << "dpsi_error : " << dpsi_error << std::endl;
@@ -199,7 +201,6 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         // }
 
         throw std::runtime_error("material check");
-
     }
 
 
@@ -207,7 +208,8 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         auto model = dynamic_cast<ElasticModel*>(force_model.get());
         model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
     }else{
-        throw std::runtime_error("PLASTIC ENERGY NOT DEFINED");
+        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
     }
 
     // force_model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);

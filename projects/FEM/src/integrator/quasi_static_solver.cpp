@@ -16,7 +16,8 @@ int QuasiStaticSolver::EvalElmObj(const TetAttributes attrs,
             auto model = dynamic_cast<ElasticModel*>(force_model.get());
             model->ComputePhi(attrs.emp,F,psiE);
         }else{
-            throw std::runtime_error("PLASTIC MODEL NOT DEFINED");
+            auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+            model->ComputePsi(attrs.pmp,attrs.emp,F,psiE);
         }
 
         Vec12d gravity_force = _gravity.replicate(4,1) * m;
@@ -42,9 +43,9 @@ int QuasiStaticSolver::EvalElmObjDeriv(const TetAttributes attrs,
             auto model = dynamic_cast<ElasticModel*>(force_model.get());
             model->ComputePhiDeriv(attrs.emp,F,psiE,dpsiE);
         }else{
-            throw std::runtime_error("PLASTIC MODEL NOT DEFINED");
+            auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+            model->ComputePsiDeriv(attrs.pmp,attrs.emp,F,psiE,dpsiE);
         }
-
         const Mat9x12d& dFdX = attrs._dFdX;
 
         Vec12d gravity_force = _gravity.replicate(4,1) * m;
@@ -57,7 +58,7 @@ int QuasiStaticSolver::EvalElmObjDeriv(const TetAttributes attrs,
 int QuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes attrs,
     const std::shared_ptr<BaseForceModel>& force_model,
     const std::shared_ptr<DiricletDampingModel>& damping_model,
-    const std::vector<Vec12d>& elm_states,FEM_Scaler* elm_obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd) const {
+    const std::vector<Vec12d>& elm_states,FEM_Scaler* elm_obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool spd) const {
         Vec12d u0 = elm_states[0];
         FEM_Scaler vol = attrs._volume;
         FEM_Scaler m = vol * attrs._density / 4;
@@ -70,9 +71,10 @@ int QuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
         if(dynamic_cast<ElasticModel*>(force_model.get())){
             auto model = dynamic_cast<ElasticModel*>(force_model.get());
-            model->ComputePhiDerivHessian(attrs.emp,F,psiE,dpsiE,ddpsiE,enforce_spd);
+            model->ComputePhiDerivHessian(attrs.emp,F,psiE,dpsiE,ddpsiE,spd);
         }else{
-            throw std::runtime_error("PLASTIC MODEL NOT DEFINED");
+            auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
+            model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,psiE,dpsiE,ddpsiE,spd);
         }
 
         const Mat9x12d& dFdX = attrs._dFdX;
