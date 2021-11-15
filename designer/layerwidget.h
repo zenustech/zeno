@@ -17,8 +17,12 @@ public:
     LayerWidget(QWidget* parent = nullptr);
 
 private:
+    void initModel();
+
+private:
     LayerTreeView* m_pHeader;
     LayerTreeView* m_pBody;
+    QStandardItemModel* m_model;
 };
 
 #endif
