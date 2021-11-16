@@ -223,16 +223,20 @@ Zeno is based on C++20, you may assume all C++17 features and some C++20 feature
 
 We generally follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), excepts a few differences:
 
+- We target C++20 instead of C++17.
 - We use `T const &t` instead of `const T& t`
+- We allow implicit conversions when used properly
 - We allow exceptions as we widely adopted smart pointers for exception-safety
 - We avoid using STL streams (`std::cout` and so on) -- use `zmt::format` instead
 - We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
+- We mainly use `smallCamelCase` for function methods, `underline_case` for variables
+- We don't add trialling underscope like `m_google_style_`, we use `m_zeno_style`
 
 Code style is not forced, we also won't format every code merged in to the repo.
 
-But it would be great if you could follow the 
-for others to understand your code better and review your PR faster, like this:
+But it would be great if you could follow them for others to understand your code better and review your PR faster.
 
+Example:
 ```cpp
 #include <vector>            // system headers should use '<>' brackets
 #include <memory>
@@ -275,6 +279,10 @@ std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visib
 
 }   // end of namespace zeno
 ```
+
+## Write a custom node
+
+See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
 
 # Code of conduct
 
