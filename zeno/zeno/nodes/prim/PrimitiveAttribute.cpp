@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/ListObject.h>
 #include <cassert>
 
 namespace zeno {
@@ -129,4 +130,42 @@ ZENDEFNODE(PrimitiveSetAttrValue,
     }, /* category: */ {
     "primitive",
     } });
+
+
+
+struct PrimitiveGetIndicesByTag : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto tagname = std::get<std::string>(get_param("tagName"));
+        auto tagvalue = get_param<float>("tagValue");
+        const auto& tag = prim->attr<float>(tagname);
+
+        auto list = std::make_shared<zeno::ListObject>();
+
+        const auto& prim_tagvalue = prim->attr<float>(tagname);
+    
+        for(size_t i = 0;i < prim->size();++i){
+            if(prim_tagvalue[i] == tagvalue){
+                auto idx = std::make_shared<zeno::NumericObject>((int)i);
+                list->arr.push_back(std::move(idx));
+            }
+        }
+
+        set_output("list", std::move(list));
+    }
+};
+
+
+ZENDEFNODE(PrimitiveGetIndicesByTag,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+        "list",
+    }, /* params: */ {
+    {"string", "tagName", "mark"},
+    {"float", "tagValue", "1.0"},
+    }, /* category: */ {
+    "primitive",
+    } });
 }
+
