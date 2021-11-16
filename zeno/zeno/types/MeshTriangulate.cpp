@@ -16,8 +16,8 @@ void meshTriangulate(Mesh const &mesh) {
     loop.reserve(mesh.poly.size() * 3);
 
     size_t index = 0;
-    std::for_each(begin(mesh.poly), end(mesh.poly), [&] (auto const &poly) {
-        auto const &[p_start, p_num] = poly;
+    std::for_each(begin(mesh.poly), end(mesh.poly), [&] (auto const &p) {
+        auto const &[p_start, p_num] = p;
         if (p_num <= 2) return;
         int first = mesh.loop[p_start];
         int last = mesh.loop[p_start + 1];

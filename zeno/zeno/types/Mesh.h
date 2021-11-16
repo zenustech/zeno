@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <zeno/math/vec.h>
-#include <zeno/types/field.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -14,8 +13,12 @@ struct Mesh {
     // points
     std::vector<math::vec3f> vert;
 
+    // corners
+    std::vector<int> loop;
+    std::vector<math::vec2f> loop_uv;
+
     // faces
-    std::vector<std::vector<int>> poly;
+    std::vector<math::vec2i> poly;
 };
 
 

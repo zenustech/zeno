@@ -1,2 +1,2 @@
-zeno_glob_recurse(source client *.h *.cpp)
+zeno_glob_recurse(source headless *.h *.cpp)
 add_executable(zeno ${source})
