@@ -30,6 +30,10 @@ ENDIF (UNIX)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
+include_directories(
+    ../3rdparty
+)
+
 add_executable(designer
    ${source}
 )

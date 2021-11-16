@@ -8,13 +8,13 @@ class NodesView : public QGraphicsView
 public:
 	NodesView(QWidget* parent = nullptr);
 	QSize sizeHint() const override;
+	void initSkin(const QString& fn);
+	void initNode();
 
 protected:
 	void mousePressEvent(QMouseEvent* event);
 
 private:
-	void initView();
-
 	int m_gridX;
 	int m_gridY;
 	NodeScene* m_scene;

@@ -1,52 +1,42 @@
 #ifndef __ZENONODE_H__
 #define __ZENONODE_H__
 
+#include "renderparam.h"
 
-struct PictureParam
-{
-	QString normal;
-	QString selected;
-	int fitmode;		//0:  1:  2:
-	int x, y, w, h;
-
-	PictureParam() : fitmode(0) {}
-};
-
-struct TextParam
-{
-	QFont font;
-	QBrush fill;
-	int x, y;
-};
-
-struct HeaderParam
-{
-	PictureParam once;
-	PictureParam mute;
-	PictureParam view;
-	PictureParam prep;
-	PictureParam collapse;
-	PictureParam genshin;
-	PictureParam background;
-	TextParam nodename;
-};
-
-
-class ZenoNode : public QGraphicsObject
+class ResizableComponentItem : public QGraphicsObject
 {
 	Q_OBJECT
 public:
-	ZenoNode(QGraphicsItem* parent = nullptr);
+	ResizableComponentItem(int x, int y, int w, int h, QGraphicsItem* parent = nullptr);
 
 	virtual QRectF boundingRect() const override;
 	virtual QPainterPath shape() const override;
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
 private:
-	void initComponent(const QString& ztffile);
+	const int dragW = 6;
+	const int dragH = 8;
+	const int borderW = 3;
+
+	QGraphicsRectItem* m_borderItem;
+	QGraphicsRectItem* m_ltcorner;
+	QGraphicsRectItem* m_rtcorner;
+	QGraphicsRectItem* m_lbcorner;
+	QGraphicsRectItem* m_rbcorner;
+};
+
+class ZenoNode : public QGraphicsObject
+{
+	Q_OBJECT
+public:
+	ZenoNode(QGraphicsItem* parent = nullptr);
+	void initStyle(const NodeParam& param);
+
+	virtual QRectF boundingRect() const override;
+	virtual QPainterPath shape() const override;
+	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
 private:
-	HeaderParam m_param;
 	QGraphicsPixmapItem* m_once;
 	QGraphicsPixmapItem* m_prep;
 	QGraphicsPixmapItem* m_mute;
@@ -55,6 +45,16 @@ private:
 	QGraphicsPixmapItem* m_genshin;
 	QGraphicsPixmapItem* m_background;
 	QGraphicsTextItem* m_nodename;
+
+	ResizableComponentItem* m_holder_nodename;
+	ResizableComponentItem* m_holder_status;
+	ResizableComponentItem* m_holder_control;
+	ResizableComponentItem* m_holder_display;
+	ResizableComponentItem* m_holder_header_backboard;
+	ResizableComponentItem* m_holder_topleftsocket;
+	ResizableComponentItem* m_holder_body_backboard;
+
+	NodeParam m_param;
 };
 
 #endif

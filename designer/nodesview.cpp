@@ -11,13 +11,16 @@ NodesView::NodesView(QWidget* parent)
 {
 	setScene(m_scene);
 	setBackgroundBrush(QBrush(QColor(30, 34, 36), Qt::SolidPattern));
-	initView();
 }
 
-void NodesView::initView()
+void NodesView::initSkin(const QString& fn)
 {
-	//m_scene->setSceneRect(QRectF(-100, -100, 100, 100));
-	//m_scene->initGrid();
+	m_scene->initSkin(fn);
+}
+
+void NodesView::initNode()
+{
+	m_scene->initNode();
 }
 
 QSize NodesView::sizeHint() const

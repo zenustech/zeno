@@ -1,6 +1,7 @@
 #include "framework.h"
 #include "nodescene.h"
 #include "zenonode.h"
+#include "ztfutil.h"
 
 
 NodeScene::NodeScene(QObject* parent)
@@ -11,15 +12,11 @@ NodeScene::NodeScene(QObject* parent)
 	, m_nPixelsInCell(12)
 {
 	initGrid();
-	initNode();
 }
 
-void NodeScene::initNode()
+void NodeScene::initSkin(const QString& fn)
 {
-	ZenoNode* pNode = new ZenoNode;
-	addItem(pNode);
-	pNode->setPos(QPointF(0, 0));
-	pNode->show();
+	m_nodeparam = ZtfUtil::GetInstance().loadZtf(fn);
 }
 
 void NodeScene::initGrid()
@@ -69,6 +66,13 @@ void NodeScene::initGrid()
 			addLine(x + n * m_nPixelsInCell, 0, x + n * m_nPixelsInCell, yend, QPen(lineColor));
 		}
 	}
+}
 
-
+void NodeScene::initNode()
+{
+	ZenoNode* pNode = new ZenoNode;
+	pNode->initStyle(m_nodeparam);
+	addItem(pNode);
+	pNode->setPos(QPointF(0, 0));
+	pNode->show();
 }
