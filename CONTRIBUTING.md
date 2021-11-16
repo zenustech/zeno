@@ -218,9 +218,19 @@ If you have trouble setting up developing environment, please let us help by ope
 
 Zeno is based on C++20, you may assume all C++17 features and some C++20 features to be available in coding.
 
-Code style is not forced, also we won't format every code merged in to the repo.
+> Modules and coroutines are very nice feature in C++20, but we ain't using them for now due to compiler support.
+> As an oppisite, concepts and template-lambdas are widely used in the codebase.
 
-But it would be great if you could follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
+We generally follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), excepts a few differences:
+
+- We use `T const &t` instead of `const T& t`
+- We allow exceptions as we widely adopted smart pointers for exception-safety
+- We avoid using STL streams (`std::cout` and so on) -- use `zmt::format` instead
+- We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
+
+Code style is not forced, we also won't format every code merged in to the repo.
+
+But it would be great if you could follow the 
 for others to understand your code better and review your PR faster, like this:
 
 ```cpp
