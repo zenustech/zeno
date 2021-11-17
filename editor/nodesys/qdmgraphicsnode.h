@@ -15,18 +15,20 @@
 
 ZENO_NAMESPACE_BEGIN
 
+struct Interceptor;
 class QDMGraphicsScene;
 
 class QDMGraphicsNode : public QGraphicsItem
 {
+    friend Interceptor;
+
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
     std::unique_ptr<QDMGraphicsScene> subnetScene;
 
     std::unique_ptr<QGraphicsTextItem> label;
-    std::string name;
-    std::string type;
     dop::Descriptor const *desc{};
+    std::string name;
 
 public:
     QDMGraphicsNode();
@@ -58,7 +60,6 @@ public:
     QDMGraphicsScene *getScene() const;
     void setName(QString name);
 
-    inline std::string const &getType() { return type; }
     inline std::string const &getName() { return name; }
     inline dop::Descriptor const *getDescriptor() { return desc; }
 

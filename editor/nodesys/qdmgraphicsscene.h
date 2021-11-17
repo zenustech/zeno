@@ -8,15 +8,20 @@
 #include "qdmgraphicslinkhalf.h"
 #include "qdmgraphicslinkfull.h"
 #include "qdmgraphicsbackground.h"
+#include <zeno/dop/SceneGraph.h>
 #include <QString>
 #include <vector>
 #include <set>
 
 ZENO_NAMESPACE_BEGIN
 
+struct Interceptor;
+
 class QDMGraphicsScene : public QGraphicsScene
 {
     Q_OBJECT
+
+    friend Interceptor;
 
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
@@ -51,6 +56,8 @@ public:
     void blankClicked();
     void doubleClicked();
     void cursorMoved();
+
+    void toDopGraph(dop::SceneGraph *d_graph) const;
 
 public slots:
     void addSubNetNode();

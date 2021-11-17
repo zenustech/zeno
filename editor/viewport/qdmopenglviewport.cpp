@@ -5,6 +5,7 @@
 #include <QWheelEvent>
 #include <zeno/zmt/log.h>
 #include <zeno/dop/Executor.h>
+#include <zeno/dop/SceneGraph.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -106,10 +107,12 @@ void QDMOpenGLViewport::updateScene()
     ZENO_DEBUG("updateScene");
 
     dop::Executor exec;
+    dop::SceneGraph graph;
+    m_rootScene->toGraph(graph);
 
     m_renderables.clear();
-    for (auto *node: m_rootScene->getVisibleNodes()) {
-        auto val = exec.evaluate({.node = node->getDopNode(), .sockid = 0});
+    for (auto *node: graph->visibleNodes()) {
+        auto val = exec.evaluate({.node = node, .sockid = 0});
         m_renderables.emplace(node, makeRenderableFromAny(val));
     }
 

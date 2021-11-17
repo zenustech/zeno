@@ -10,8 +10,8 @@ ZENO_NAMESPACE_BEGIN
 class QDMGraphicsLinkFull final : public QDMGraphicsLink
 {
 public:
-    QDMGraphicsSocketOut *srcSocket;
-    QDMGraphicsSocketIn *dstSocket;
+    QDMGraphicsSocketOut *const srcSocket;
+    QDMGraphicsSocketIn *const dstSocket;
 
     QDMGraphicsLinkFull(QDMGraphicsSocketOut *srcSocket, QDMGraphicsSocketIn *dstSocket);
 
