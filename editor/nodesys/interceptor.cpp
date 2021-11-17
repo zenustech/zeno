@@ -2,6 +2,8 @@
 #include <zeno/dop/Node.h>
 
 
+ZENO_NAMESPACE_BEGIN
+
 void Interceptor::toDopGraph
     ( QDMGraphicsScene *scene
     , dop::SceneGraph *d_scene
@@ -48,3 +50,5 @@ void Interceptor::toDopGraph
         }
     }
 }
+
+ZENO_NAMESPACE_END

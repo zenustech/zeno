@@ -20,15 +20,14 @@ class QDMNodeParamEdit : public QWidget
     QWidget *make_edit_for_type(QDMGraphicsNode *node, int sockid,
                                 std::string const &type);
 
+    void invalidateNode(QDMGraphicsNode *node) const;
+
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
     ~QDMNodeParamEdit();
 
 public slots:
     void setCurrentNode(QDMGraphicsNode *node);
-
-signals:
-    void nodeParamUpdated(QDMGraphicsNode *node);
 };
 
 ZENO_NAMESPACE_END

@@ -192,7 +192,6 @@
    <header>nodesys/qdmnodeparamedit.h</header>
    <container>1</container>
    <slots>
-    <signal>nodeParamUpdated(QDMGraphicsNode*)</signal>
     <slot>setCurrentNode(QDMGraphicsNode*)</slot>
    </slots>
   </customwidget>

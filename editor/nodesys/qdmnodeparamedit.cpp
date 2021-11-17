@@ -1,4 +1,5 @@
 #include "qdmnodeparamedit.h"
+#include "qdmgraphicsscene.h"
 #include <zeno/ztd/variant.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/dop/Descriptor.h>
@@ -39,8 +40,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto const &value = expr;
             sockIn->value = ztd::make_any(value);
-            node->invalidate();
-            emit nodeParamUpdated(node);
+            invalidateNode(node);
         });
         return edit;
     } break;
@@ -58,8 +58,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
             sockIn->value = ztd::make_any(value);
-            node->invalidate();
-            emit nodeParamUpdated(node);
+            invalidateNode(node);
         });
         return edit;
     } break;
@@ -76,8 +75,8 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
-            node->invalidate();
-            emit nodeParamUpdated(node);
+            sockIn->value = ztd::make_any(value);
+            invalidateNode(node);
         });
         return edit;
     } break;
@@ -105,6 +104,12 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
             layout->addRow(QString::fromStdString(desc->inputs[i].name), edit);
         }
     }
+}
+
+void QDMNodeParamEdit::invalidateNode(QDMGraphicsNode *node) const
+{
+    auto scene = static_cast<QDMGraphicsScene *>(node->scene());
+    emit scene->sceneUpdated();
 }
 
 QDMNodeParamEdit::~QDMNodeParamEdit() = default;
