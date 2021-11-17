@@ -14,9 +14,9 @@ void Interceptor::toDopGraph
 
     std::map<QDMGraphicsNode *, dop::Node *> nodes;
     for (auto const &node: scene->nodes) {
-        auto d_node = std::make_unique<dop::Node>();
+        auto desc = node->getDescriptor();
+        auto d_node = desc->create();
 
-        d_node->desc = node->getDescriptor();
         d_node->name = node->getName();
         d_node->inputs.resize(node->socketIns.size());
         d_node->outputs.resize(node->socketOuts.size());
