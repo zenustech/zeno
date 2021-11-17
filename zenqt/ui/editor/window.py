@@ -246,13 +246,15 @@ class NodeEditor(QWidget):
         views = {}
         for name, scene in self.scenes.items():
             nodes = scene.dumpGraph()
-            view_rect = {
-                'x': scene._scene_rect.x(),
-                'y': scene._scene_rect.y(),
-                'width': scene._scene_rect.width(),
-                'height': scene._scene_rect.height(),
-            }
-            graphs[name] = {'nodes': nodes, 'view_rect': view_rect}
+            graphs[name] = {'nodes': nodes}
+            if scene._scene_rect:
+                graphs[name]['view_rect'] = {
+                    'x': scene._scene_rect.x(),
+                    'y': scene._scene_rect.y(),
+                    'width': scene._scene_rect.width(),
+                    'height': scene._scene_rect.height(),
+                }
+
         prog = {}
         prog['graph'] = graphs
         prog['views'] = views
