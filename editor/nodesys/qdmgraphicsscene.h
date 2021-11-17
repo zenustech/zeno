@@ -8,7 +8,6 @@
 #include "qdmgraphicslinkhalf.h"
 #include "qdmgraphicslinkfull.h"
 #include "qdmgraphicsbackground.h"
-#include <zeno/dop/SceneGraph.h>
 #include <QString>
 #include <vector>
 #include <set>
@@ -56,8 +55,6 @@ public:
     void blankClicked();
     void doubleClicked();
     void cursorMoved();
-
-    void toDopGraph(dop::SceneGraph *d_graph) const;
 
 public slots:
     void addSubNetNode();

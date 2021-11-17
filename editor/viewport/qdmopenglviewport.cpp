@@ -1,5 +1,6 @@
 #include "qdmopenglviewport.h"
 #include "renderable.h"
+#include "../nodesys/interceptor.h"
 #include <QOpenGLVertexArrayObject>
 #include <QDragMoveEvent>
 #include <QWheelEvent>
@@ -108,10 +109,10 @@ void QDMOpenGLViewport::updateScene()
 
     dop::Executor exec;
     dop::SceneGraph graph;
-    m_rootScene->toGraph(graph);
+    Interceptor::toDopGraph(m_rootScene, &graph);
 
     m_renderables.clear();
-    for (auto *node: graph->visibleNodes()) {
+    for (auto *node: graph.visibleNodes()) {
         auto val = exec.evaluate({.node = node, .sockid = 0});
         m_renderables.emplace(node, makeRenderableFromAny(val));
     }

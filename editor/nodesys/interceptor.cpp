@@ -13,6 +13,7 @@ void Interceptor::toDopGraph
     }
 
     std::map<QDMGraphicsNode *, dop::Node *> nodes;
+    std::map<QDMGraphicsSocketOut *, std::pair<dop::Node *, int>> sockets;
     for (auto const &node: scene->nodes) {
         auto desc = node->getDescriptor();
         auto d_node = desc->create();
@@ -22,6 +23,10 @@ void Interceptor::toDopGraph
         d_node->outputs.resize(node->socketOuts.size());
 
         nodes.emplace(node.get(), d_node.get());
+        for (size_t i = 0; i < node->socketOuts.size(); i++) {
+            sockets.try_emplace(node->socketOuts[i].get(), d_node.get(), i);
+        }
+
         d_scene->nodes.insert(std::move(d_node));
     }
 
