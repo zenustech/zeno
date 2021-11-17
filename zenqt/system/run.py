@@ -42,7 +42,6 @@ def runScene(graphs, nframes, iopath):
             for name, value in params.items():
                 if type(value) is str:
                     value = evaluateExpr(value, frameid)
-                    rasrasr
                     core.setNodeParam(ident, name, value)
         ### ENDOF XINXIN HAPPY <<<<<
 
