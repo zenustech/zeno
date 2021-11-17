@@ -28,5 +28,6 @@ from .textarea import *
 from .makedict import *
 from .makelist import *
 from .heatmap import *
+from .curvemap import *
 from .scene import *
 from .window import *
