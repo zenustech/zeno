@@ -3,33 +3,59 @@
 
 #include "renderparam.h"
 
+class ResizableComponentItem;
+class DragPointItem : public QGraphicsRectItem
+{
+public:
+	DragPointItem(const QRectF& rect, ResizableComponentItem* parent = nullptr);
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+
+protected:
+	void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+
+private:
+	ResizableComponentItem* m_parent;
+};
+
 class ResizableComponentItem : public QGraphicsObject
 {
 	Q_OBJECT
+	typedef QGraphicsObject _base;
 public:
-	ResizableComponentItem(int x, int y, int w, int h, QGraphicsItem* parent = nullptr);
+	ResizableComponentItem(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
 
 	virtual QRectF boundingRect() const override;
 	virtual QPainterPath shape() const override;
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+	void resizeByDragPoint(DragPointItem* item);
+
+protected:
+	bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+	void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-	const int dragW = 6;
-	const int dragH = 8;
-	const int borderW = 3;
+	void _adjustItemsPos();
 
-	QGraphicsRectItem* m_borderItem;
+	const qreal dragW = 8.;
+	const qreal dragH = 8.;
+	const qreal borderW = 2.;
+
+	qreal m_width, m_height;
+
 	QGraphicsRectItem* m_ltcorner;
 	QGraphicsRectItem* m_rtcorner;
 	QGraphicsRectItem* m_lbcorner;
 	QGraphicsRectItem* m_rbcorner;
 };
 
+class NodeScene;
+
 class ZenoNode : public QGraphicsObject
 {
 	Q_OBJECT
 public:
-	ZenoNode(QGraphicsItem* parent = nullptr);
+	ZenoNode(NodeScene* pScene, QGraphicsItem* parent = nullptr);
 	void initStyle(const NodeParam& param);
 
 	virtual QRectF boundingRect() const override;
