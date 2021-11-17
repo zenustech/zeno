@@ -8,7 +8,7 @@
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
- <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/WelcomePic.png" width="640" position="left">
+ <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/WelcomePic2.jpg" width="640" position="left">
 
 ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
@@ -33,7 +33,7 @@ Fig.2 - SuperSonic Flow
 
 Fig.3 - Fluid-structure interaction in ZENO
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water.gif" width="640" position="left">
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water2.gif" width="640" position="left">
 
 Fig.4 - Rigid fracture in ZENO
 
