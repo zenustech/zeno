@@ -13,14 +13,14 @@ void QDMGraphicsSocketIn::unlinkAll()
 {
     QDMGraphicsSocket::unlinkAll();
     auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
-    parentNode->socketUnlinked(this);
+    parentNode->invalidate();
 }
 
 void QDMGraphicsSocketIn::linkRemoved(QDMGraphicsLinkFull *link)
 {
     QDMGraphicsSocket::linkRemoved(link);
     auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
-    parentNode->socketUnlinked(this);
+    parentNode->invalidate();
 }
 
 void QDMGraphicsSocketIn::linkAttached(QDMGraphicsLinkFull *link)
@@ -29,8 +29,7 @@ void QDMGraphicsSocketIn::linkAttached(QDMGraphicsLinkFull *link)
     QDMGraphicsSocket::linkAttached(link);
     if (link) {
         auto parentNode = static_cast<QDMGraphicsNode *>(parentItem());
-        auto srcSocket = link->srcSocket;
-        parentNode->socketLinked(this, srcSocket);
+        parentNode->invalidate();
     }
 }
 

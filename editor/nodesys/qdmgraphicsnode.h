@@ -9,8 +9,8 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsTextItem>
+#include <zeno/dop/Descriptor.h>
 #include <QWidget>
-#include <zeno/dop/Node.h>
 #include <memory>
 
 ZENO_NAMESPACE_BEGIN
@@ -22,16 +22,17 @@ class QDMGraphicsNode : public QGraphicsItem
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
     std::unique_ptr<QDMGraphicsScene> subnetScene;
-    std::unique_ptr<dop::Node> dopNode;
 
     std::unique_ptr<QGraphicsTextItem> label;
+    std::string name;
+    std::string type;
+    dop::Descriptor const *desc{};
 
 public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
 
     float getHeight() const;
-    dop::Node *getDopNode() const;
 
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
@@ -42,9 +43,9 @@ public:
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
 
-    void socketUnlinked(QDMGraphicsSocketIn *socket);
-    void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
-    void socketValueChanged(QDMGraphicsSocketIn *socket);
+    //void socketUnlinked(QDMGraphicsSocketIn *socket);
+    //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+    //void socketValueChanged(QDMGraphicsSocketIn *socket);
 
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
@@ -55,10 +56,13 @@ public:
 
     QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;
-    std::string const &getType();
     void setName(QString name);
-    std::string const &getName();
 
+    inline std::string const &getType() { return type; }
+    inline std::string const &getName() { return name; }
+    inline dop::Descriptor const *getDescriptor() { return desc; }
+
+    void invalidate();
     void unlinkAll();
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;

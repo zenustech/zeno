@@ -39,7 +39,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto const &value = expr;
             sockIn->value = ztd::make_any(value);
-            node->socketValueChanged(sockIn);
+            node->invalidate();
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -58,7 +58,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
             auto expr = edit->text().toStdString();
             auto value = std::stoi(expr);
             sockIn->value = ztd::make_any(value);
-            node->socketValueChanged(sockIn);
+            node->invalidate();
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -76,8 +76,7 @@ QWidget *QDMNodeParamEdit::make_edit_for_type(
         connect(edit, &QLineEdit::editingFinished, this, [=, this] {
             auto expr = edit->text().toStdString();
             auto value = std::stof(expr);
-            sockIn->value = ztd::make_any(value);
-            node->socketValueChanged(sockIn);
+            node->invalidate();
             emit nodeParamUpdated(node);
         });
         return edit;
@@ -99,7 +98,7 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    auto *desc = node->getDopNode()->desc;
+    auto const *desc = node->getDescriptor();
     for (size_t i = 0; i < desc->inputs.size(); i++) {
         auto edit = make_edit_for_type(node, i, desc->inputs[i].type);
         if (edit) {

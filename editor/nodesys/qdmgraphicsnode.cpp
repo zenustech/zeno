@@ -4,7 +4,8 @@
 #include <zeno/dop/Descriptor.h>
 #include <zeno/dop/SubnetNode.h>
 #include <zeno/ztd/memory.h>
-#include <zeno/ztd/assert.h>
+#include <zeno/ztd/algorithm.h>
+#include <zeno/zmt/log.h>
 #include <QLineEdit>
 #include <algorithm>
 
@@ -21,11 +22,6 @@ QDMGraphicsNode::QDMGraphicsNode()
 }
 
 QDMGraphicsNode::~QDMGraphicsNode() = default;
-
-dop::Node *QDMGraphicsNode::getDopNode() const
-{
-    return dopNode.get();
-}
 
 float QDMGraphicsNode::getHeight() const
 {
@@ -88,18 +84,18 @@ void QDMGraphicsNode::initAsSubnet()
     initByDescriptor(desc);
     subnetScene = std::make_unique<QDMGraphicsScene>();
     subnetScene->setSubnetNode(this);
-    auto node = static_cast<dop::SubnetNode *>(dopNode.get());
 }
 
 void QDMGraphicsNode::initByType(QString type)
 {
-    auto const &desc = dop::descriptor_table().at(type.toStdString());
+    this->type = type.toStdString();
+    auto const &desc = dop::descriptor_table().at(this->type);
     initByDescriptor(desc);
 }
 
 void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
 {
-    dopNode = desc.create();
+    this->desc = &desc;
     for (auto const &sockinfo: desc.inputs) {
         auto socket = addSocketIn();
         socket->setName(QString::fromStdString(sockinfo.name));
@@ -116,22 +112,12 @@ void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
 void QDMGraphicsNode::setName(QString name)
 {
     label->setPlainText(name);
-    dopNode->name = name.toStdString();
+    this->name = name.toStdString();
 }
 
 QDMGraphicsScene *QDMGraphicsNode::getSubnetScene() const
 {
     return subnetScene.get();
-}
-
-std::string const &QDMGraphicsNode::getType()
-{
-    return dopNode->desc->name;
-}
-
-std::string const &QDMGraphicsNode::getName()
-{
-    return dopNode->name;
 }
 
 QDMGraphicsSocketIn *QDMGraphicsNode::socketInAt(size_t index)
@@ -171,19 +157,15 @@ void QDMGraphicsNode::unlinkAll()
 
 size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
 {
-    auto it = find(begin(socketIns), end(socketIns), ztd::stale_ptr(socket));
-    ZENO_ASSERT(it != end(socketIns));
-    return it - begin(socketIns);
+    return ztd::find_index(socketIns, ztd::stale_ptr(socket));
 }
 
 size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 {
-    auto it = find(begin(socketOuts), end(socketOuts), ztd::stale_ptr(socket));
-    ZENO_ASSERT(it != end(socketOuts));
-    return it - begin(socketOuts);
+    return ztd::find_index(socketOuts, ztd::stale_ptr(socket));
 }
 
-void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
+/*void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
 {
     auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
     sockIn.node = nullptr;
@@ -202,6 +184,11 @@ void QDMGraphicsNode::socketValueChanged(QDMGraphicsSocketIn *socket)
 {
     auto &sockIn = dopNode->inputs.at(socketInIndex(socket));
     sockIn.value = socket->value;
+}*/
+
+void QDMGraphicsNode::invalidate()
+{
+    ZENO_INFO("invalidate node");
 }
 
 ZENO_NAMESPACE_END
