@@ -285,7 +285,7 @@ class NodeEditor(QWidget):
                     'view_rect': {
                         'scale': 1,
                         'x': 0,
-                        'x': 0,
+                        'y': 0,
                     },
                 }
 
