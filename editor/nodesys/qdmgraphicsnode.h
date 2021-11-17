@@ -30,11 +30,12 @@ class QDMGraphicsNode : public QGraphicsItem
     dop::Descriptor const *desc{};
     std::string name;
 
+    void initByDescriptor(dop::Descriptor const &desc);
+    float getHeight() const;
+
 public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
-
-    float getHeight() const;
 
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
@@ -54,7 +55,6 @@ public:
 
     void initAsSubnet();
     void initByType(QString type);
-    void initByDescriptor(dop::Descriptor const &desc);
 
     QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;
