@@ -17,7 +17,7 @@ void serializeGraph
     for (auto node: nodes) {
         rapidjson::Value d_node(rapidjson::kObjectType);
 
-        auto const &type = node->getType();
+        auto const &type = node->getDescriptor()->name;
         rapidjson::Value d_type;
         d_type.SetString(type.data(), type.size());
         d_node.AddMember("type", d_type, alloc);

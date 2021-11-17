@@ -4,7 +4,6 @@
 #include <zeno/common.h>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
-#include "../nodesys/qdmgraphicsnode.h"
 #include "../nodesys/qdmgraphicsscene.h"
 #include "cameradata.h"
 #include <optional>
@@ -19,7 +18,7 @@ class QDMOpenGLViewport : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 
-    std::map<QDMGraphicsNode *, std::unique_ptr<Renderable>> m_renderables;
+    std::map<std::string, std::unique_ptr<Renderable>> m_renderables;
     std::unique_ptr<CameraData> m_camera = std::make_unique<CameraData>();
     std::optional<QPoint> m_mmbPos;
     QDMGraphicsScene *m_rootScene{};

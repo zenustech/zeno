@@ -114,7 +114,7 @@ void QDMOpenGLViewport::updateScene()
     m_renderables.clear();
     for (auto *node: graph.visibleNodes()) {
         auto val = exec.evaluate({.node = node, .sockid = 0});
-        m_renderables.emplace(node, makeRenderableFromAny(val));
+        m_renderables.emplace(node->name, makeRenderableFromAny(val));
     }
 
     repaint();

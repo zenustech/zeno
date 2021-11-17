@@ -88,7 +88,7 @@ void QDMGraphicsNode::initAsSubnet()
 
 void QDMGraphicsNode::initByType(QString type)
 {
-    auto const &desc = dop::descriptor_table().at(this->type);
+    auto const &desc = dop::descriptor_table().at(type.toStdString());
     initByDescriptor(desc);
 }
 
