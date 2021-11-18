@@ -33,6 +33,10 @@ add_library(zeno_zsfft SHARED)
 target_sources(zeno_zsfft PRIVATE
   oceanfft/Ocean.cu
 )
+target_compile_options(zeno_zsfft # MSVC, GNU, Clang, Intel
+  PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
+)
+
 
 add_library(zeno_gmpm SHARED)
 
@@ -134,7 +138,8 @@ target_link_libraries(zeno_zsfem PUBLIC ZFX)
 target_include_directories(zeno_zsfem PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfem PRIVATE ../zenvdb/include)
 
-target_link_libraries(zeno_zsfft PRIVATE zensim CUDA::cufft)
+find_package(OpenMP REQUIRED)
+target_link_libraries(zeno_zsfft PRIVATE zensim zpcomp OpenMP::OpenMP_CXX CUDA::cufft)
 target_link_libraries(zeno_zsfft PUBLIC zeno)
 target_link_libraries(zeno_zsfft PRIVATE zeno_nodep)
 target_link_libraries(zeno_zsfft PUBLIC ZFX)
