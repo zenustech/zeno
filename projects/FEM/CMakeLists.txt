@@ -25,7 +25,9 @@ set(FEM_MUSCLE_SOURCE_FILES
 )
 
 add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
+find_package(Eigen3 REQUIRED)
 target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
+find_package(OpenMP REQUIRED)
 target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
 
 target_include_directories(zeno_FEM PUBLIC 
