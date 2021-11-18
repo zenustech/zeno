@@ -2,7 +2,7 @@
 #include "nodescene.h"
 #include "zenonode.h"
 #include "ztfutil.h"
-#include "screenwidget.h"
+#include "resizerectitem.h"
 
 
 NodeScene::NodeScene(QObject* parent)
@@ -78,8 +78,11 @@ void NodeScene::initNode()
 	//addItem(pNode);
 	//pNode->installEventFilter(this);
 
-	ResizableComponentItem* ptemp = new ResizableComponentItem(50, 40, 100, 30);
-	addItem(ptemp);
+	//ResizableComponentItem* ptemp = new ResizableComponentItem(50, 40, 100, 30);
+	//addItem(ptemp);
+
+	ResizableRectItem* ptemp2 = new ResizableRectItem(150, 140, 100, 30);
+	addItem(ptemp2);
 	//QPointF pos = ptemp->pos();
 	//QPointF scenePos = ptemp->scenePos();
 
