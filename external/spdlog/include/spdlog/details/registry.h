@@ -8,7 +8,7 @@
 // If user requests a non existing logger, nullptr will be returned
 // This class is thread safe
 
-#include <spdlog/common.h>
+#include "spdlog/common.h"
 
 #include <chrono>
 #include <functional>
@@ -24,10 +24,9 @@ namespace details {
 class thread_pool;
 class periodic_worker;
 
-class SPDLOG_API registry
+class registry
 {
 public:
-    using log_levels = std::unordered_map<std::string, level::level_enum>;
     registry(const registry &) = delete;
     registry &operator=(const registry &) = delete;
 
@@ -63,7 +62,7 @@ public:
 
     void flush_every(std::chrono::seconds interval);
 
-    void set_error_handler(err_handler handler);
+    void set_error_handler(void (*handler)(const std::string &msg));
 
     void apply_all(const std::function<void(const std::shared_ptr<logger>)> &fun);
 
@@ -78,28 +77,23 @@ public:
 
     std::recursive_mutex &tp_mutex();
 
-    void set_automatic_registration(bool automatic_registration);
-
-    // set levels for all existing/future loggers. global_level can be null if should not set.
-    void set_levels(log_levels levels, level::level_enum *global_level);
+    void set_automatic_registration(bool automatic_regsistration);
 
     static registry &instance();
 
 private:
     registry();
-    ~registry();
+    ~registry() = default;
 
     void throw_if_exists_(const std::string &logger_name);
     void register_logger_(std::shared_ptr<logger> new_logger);
-    bool set_level_from_cfg_(logger *logger);
     std::mutex logger_map_mutex_, flusher_mutex_;
     std::recursive_mutex tp_mutex_;
     std::unordered_map<std::string, std::shared_ptr<logger>> loggers_;
-    log_levels log_levels_;
     std::unique_ptr<formatter> formatter_;
-    spdlog::level::level_enum global_log_level_ = level::info;
+    level::level_enum level_ = level::info;
     level::level_enum flush_level_ = level::off;
-    err_handler err_handler_;
+    void (*err_handler_)(const std::string &msg);
     std::shared_ptr<thread_pool> tp_;
     std::unique_ptr<periodic_worker> periodic_flusher_;
     std::shared_ptr<logger> default_logger_;
@@ -111,5 +105,5 @@ private:
 } // namespace spdlog
 
 #ifdef SPDLOG_HEADER_ONLY
-#    include "registry-inl.h"
+#include "registry-inl.h"
 #endif
