@@ -22,6 +22,7 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/integrator/quasi_static_solver.h
     src/integrator/quasi_static_solver.cpp
     nodesys.cpp
+    testopensim.cpp
 )
 
 add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
@@ -42,3 +43,11 @@ target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)
 
 add_subdirectory(OpenSim)
+target_link_libraries(zeno_FEM PRIVATE OpenSim)
+target_include_directories(zeno_FEM PRIVATE OpenSim
+        OpenSim/dependencies/simbody/SimTKcommon/include              OpenSim/dependencies/simbody/SimTKcommon/Simulation/include
+ OpenSim/dependencies/simbody/Simbody/include                 OpenSim/dependencies/simbody/SimTKcommon/Mechanics/include    OpenSim/dependencies/simbody/SimTKcommon/SmallMatrix/include
+ OpenSim/dependencies/simbody/Simbody/Visualizer/include      OpenSim/dependencies/simbody/SimTKcommon/Polynomial/include   OpenSim/dependencies/simbody/SimTKmath/Geometry/include
+ OpenSim/dependencies/simbody/SimTKcommon/BigMatrix/include   OpenSim/dependencies/simbody/SimTKcommon/Random/include       OpenSim/dependencies/simbody/SimTKmath/include
+ OpenSim/dependencies/simbody/SimTKcommon/Geometry/include    OpenSim/dependencies/simbody/SimTKcommon/Scalar/include       OpenSim/dependencies/simbody/SimTKmath/Integrators/include
+)
