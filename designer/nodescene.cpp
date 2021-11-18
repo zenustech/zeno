@@ -3,6 +3,7 @@
 #include "zenonode.h"
 #include "ztfutil.h"
 #include "resizerectitem.h"
+#include "timelineitem.h"
 
 
 NodeScene::NodeScene(QObject* parent)
@@ -11,8 +12,9 @@ NodeScene::NodeScene(QObject* parent)
 	, m_nLargeCellColumns(12)
 	, m_nCellsInLargeCells(5)
 	, m_nPixelsInCell(12)
+	, m_pHTimeline(nullptr)
 {
-	initGrid();
+	//initGrid();
 }
 
 void NodeScene::initSkin(const QString& fn)
@@ -69,11 +71,30 @@ void NodeScene::initGrid()
 	}
 }
 
+void NodeScene::initTimelines()
+{
+	m_pHTimeline = new TimelineItem;
+	addItem(m_pHTimeline);
+	connect(this, SIGNAL(changed(QList<QRectF>)), SLOT(timelineChanged()));
+}
+
+void NodeScene::timelineChanged()
+{
+	QList<QGraphicsView*> views = this->views();
+	bool empty = views.isEmpty();
+	for (int i = 0; i < views.length(); i++)
+	{
+		QGraphicsView* pView = views[i];
+		if (pView)
+		{
+			QRect rcViewport = pView->viewport()->rect();
+			m_pHTimeline->setPos(pView->mapToScene(rcViewport.topLeft()));
+		}
+	}
+}
+
 void NodeScene::initNode()
 {
-	//ZenoNode* pNode = new ZenoNode(this);
-	//pNode->initStyle(m_nodeparam);
-
-	ResizableRectItem* ptemp2 = new ResizableRectItem(150, 140, 100, 30);
-	addItem(ptemp2);
+	ZenoNode* pNode = new ZenoNode(this);
+	pNode->initStyle(m_nodeparam);
 }

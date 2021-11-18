@@ -32,7 +32,12 @@ private:
 	ResizableRectItem* m_holder_control;
 	ResizableRectItem* m_holder_display;
 	ResizableRectItem* m_holder_header_backboard;
+
 	ResizableRectItem* m_holder_topleftsocket;
+	ResizableRectItem* m_holder_bottomleftsocket;
+	ResizableRectItem* m_holder_toprightsocket;
+	ResizableRectItem* m_holder_bottomrightsocket;
+
 	ResizableRectItem* m_holder_body_backboard;
 
 	NodeParam m_param;

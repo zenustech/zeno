@@ -39,10 +39,10 @@ struct HeaderParam
 
 struct BodyParam
 {
-	Component leftTop;
-	Component leftBottom;
-	Component rightTop;
-	Component rightBottom;
+	Component leftTopSocket;
+	Component leftBottomSocket;
+	Component rightTopSocket;
+	Component rightBottomSocket;
 
 	Component backboard;
 };

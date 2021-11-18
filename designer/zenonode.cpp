@@ -49,12 +49,21 @@ void ZenoNode::initStyle(const NodeParam& param)
 	comp = m_param.header.control;
 	m_holder_control = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 
+	comp = m_param.body.leftTopSocket;
+	m_holder_topleftsocket = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
+
+	comp = m_param.body.leftBottomSocket;
+	m_holder_bottomleftsocket = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
+
+	comp = m_param.body.rightTopSocket;
+	m_holder_toprightsocket = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
+
+	comp = m_param.body.rightBottomSocket;
+	m_holder_bottomrightsocket = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
+
 	comp = m_param.body.backboard;
 	m_holder_body_backboard = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 	m_holder_body_backboard->setZValue(-10);
-
-	comp = m_param.body.leftTop;
-	m_holder_topleftsocket = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 
 	/*
 	m_nodename = new QGraphicsTextItem("Node-name", this);

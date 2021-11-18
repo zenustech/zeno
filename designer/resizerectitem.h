@@ -53,6 +53,7 @@ private:
     const qreal borderW = 2.;
 
     QVector<QGraphicsRectItem*> m_dragPoints;
+    std::unordered_map<DRAG_ITEM, Qt::CursorShape> m_cursor_mapper;
 
     DRAG_ITEM m_mouseHint;
     SCALE_INFO m_movescale_info;

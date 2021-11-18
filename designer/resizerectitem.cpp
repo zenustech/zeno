@@ -43,6 +43,16 @@ void ResizableRectItem::_initDragPoints()
         }
         m_dragPoints[i]->setPos(pts[i]);
     }
+
+    m_cursor_mapper.insert(make_pair(DRAG_LEFTTOP, Qt::SizeFDiagCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_LEFTMID, Qt::SizeHorCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_LEFTBOTTOM, Qt::SizeBDiagCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_MIDTOP, Qt::SizeVerCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_MIDBOTTOM, Qt::SizeVerCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_RIGHTTOP, Qt::SizeBDiagCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_RIGHTMID, Qt::SizeHorCursor));
+	m_cursor_mapper.insert(make_pair(DRAG_RIGHTBOTTOM, Qt::SizeFDiagCursor));
+	m_cursor_mapper.insert(make_pair(TRANSLATE, Qt::SizeAllCursor));
 }
 
 void ResizableRectItem::_adjustItemsPos()
@@ -93,6 +103,21 @@ QRectF ResizableRectItem::boundingRect() const
 
 bool ResizableRectItem::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 {
+    if (event->type() == QEvent::GraphicsSceneHoverEnter ||
+        event->type() == QEvent::GraphicsSceneHoverMove)
+    {
+        QGraphicsSceneHoverEvent* e = static_cast<QGraphicsSceneHoverEvent*>(event);
+        if (QGraphicsItem* item = getResizeHandleItem(e->scenePos()))
+        {
+            QGraphicsRectItem* pItem = qgraphicsitem_cast<QGraphicsRectItem*>(item);
+            DRAG_ITEM mouseHint = (DRAG_ITEM)m_dragPoints.indexOf(pItem);
+            setCursor(m_cursor_mapper[mouseHint]);
+        }
+    }
+    else if (event->type() == QEvent::GraphicsSceneHoverLeave)
+    {
+        setCursor(Qt::ArrowCursor);
+    }
     return _base::sceneEventFilter(watched, event);
 }
 

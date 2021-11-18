@@ -66,7 +66,19 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
 				}
 				else if (comp.id == "topleftsocket")
 				{
-					body.leftTop = comp;
+					body.leftTopSocket = comp;
+				}
+				else if (comp.id == "bottomleftsocket")
+				{
+					body.leftBottomSocket = comp;
+				}
+				else if (comp.id == "toprightsocket")
+				{
+					body.rightTopSocket = comp;
+				}
+				else if (comp.id == "bottomrightsocket")
+				{
+					body.rightBottomSocket = comp;
 				}
 			}
 			param.body = body;
