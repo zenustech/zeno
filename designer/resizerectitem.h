@@ -7,23 +7,18 @@ class ResizableRectItem : public QObject
     Q_OBJECT
     typedef QGraphicsRectItem _base;
 
-    enum MOUSE_HINT
+    enum DRAG_ITEM
     {
-        MOUSE_DONOTHING,
-
-        SCALE_LEFT_TOP,
-        SCALE_LEFT_MID,
-        SCALE_LEFT_BOTTOM,
-
-        SCALE_MID_TOP,
-        SCALE_MID_BOTTOM,
-
-        SCALE_RIGHT_TOP,
-        SCALE_RIGHT_MID,
-        SCALE_RIGHT_BOTTOM,
-
+        DRAG_LEFTTOP,
+        DRAG_LEFTMID,
+        DRAG_LEFTBOTTOM,
+        DRAG_MIDTOP,
+        DRAG_MIDBOTTOM,
+        DRAG_RIGHTTOP,
+        DRAG_RIGHTMID,
+        DRAG_RIGHTBOTTOM,
         TRANSLATE,
-        OUTSIDE,
+        NO_DRAG,
     };
 
     struct SCALE_INFO {
@@ -50,17 +45,16 @@ protected:
 
 private:
     void _adjustItemsPos();
+    void _initDragPoints();
+    QGraphicsItem* getResizeHandleItem(QPointF scenePos);
 
     const qreal dragW = 8.;
     const qreal dragH = 8.;
     const qreal borderW = 2.;
 
-    QGraphicsRectItem* m_ltcorner;
-    QGraphicsRectItem* m_rtcorner;
-    QGraphicsRectItem* m_lbcorner;
-    QGraphicsRectItem* m_rbcorner;
+    QVector<QGraphicsRectItem*> m_dragPoints;
 
-    MOUSE_HINT m_mouseHint;
+    DRAG_ITEM m_mouseHint;
     SCALE_INFO m_movescale_info;
 };
 

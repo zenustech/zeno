@@ -6,25 +6,48 @@ using namespace std;
 
 ResizableRectItem::ResizableRectItem(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent)
     : QGraphicsRectItem(0, 0, w, h, parent)
-    , m_mouseHint(MOUSE_DONOTHING)
+    , m_mouseHint(NO_DRAG)
 {
-    m_ltcorner = new QGraphicsRectItem(QRectF(0, 0, dragW, dragH), this);
-    m_lbcorner = new QGraphicsRectItem(QRectF(0, 0, dragW, dragH), this);
-    m_rtcorner = new QGraphicsRectItem(QRectF(0, 0, dragW, dragH), this);
-    m_rbcorner = new QGraphicsRectItem(QRectF(0, 0, dragW, dragH), this);
     setFlags(ItemIsMovable | ItemIsSelectable);
 
     setPos(x, y);
     _adjustItemsPos();
 }
 
+void ResizableRectItem::_initDragPoints()
+{
+    int w = rect().width(), h = rect().height();
+    qreal offset = dragW / 2;
+    QVector<QPointF> pts = {
+        QPointF(-offset, -offset),
+        QPointF(-offset, h / 2 - offset),
+        QPointF(-offset, h - offset),
+
+        QPointF(w / 2 - offset, -offset),
+        QPointF(w / 2 - offset, h - offset),
+
+        QPointF(w - offset, -offset),
+        QPointF(w - offset, h / 2 - offset),
+        QPointF(w - offset, h - offset)
+    };
+
+    if (m_dragPoints.size() != pts.size())
+        m_dragPoints.resize(pts.size());
+    for (int i = 0; i < pts.size(); i++)
+    {
+        if (m_dragPoints[i] == nullptr)
+        {
+            m_dragPoints[i] = new QGraphicsRectItem(QRectF(0, 0, dragW, dragW), this);
+            m_dragPoints[i]->installSceneEventFilter(this);
+            m_dragPoints[i]->setAcceptHoverEvents(true);
+        }
+        m_dragPoints[i]->setPos(pts[i]);
+    }
+}
+
 void ResizableRectItem::_adjustItemsPos()
 {
-    QPointF pos = this->pos();
-    m_ltcorner->setPos(- dragW / 2., - dragH / 2.);
-    m_lbcorner->setPos(-dragW / 2., rect().height() - dragH / 2.);
-    m_rtcorner->setPos(rect().width() - dragW / 2., -dragH / 2.);
-    m_rbcorner->setPos(rect().width() - dragW / 2., rect().height() - dragH / 2.);
+    _initDragPoints();
 }
 
 void ResizableRectItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -35,36 +58,24 @@ void ResizableRectItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         pen.setJoinStyle(Qt::MiterJoin);
         QBrush brush(QColor(255, 255, 255));
 
-        m_ltcorner->setPen(pen);
-        m_ltcorner->setBrush(brush);
-
-        m_lbcorner->setPen(pen);
-        m_lbcorner->setBrush(brush);
-
-        m_rtcorner->setPen(pen);
-        m_rtcorner->setBrush(brush);
-
-        m_rbcorner->setPen(pen);
-        m_rbcorner->setBrush(brush);
-
-        m_ltcorner->show();
-        m_lbcorner->show();
-        m_rtcorner->show();
-        m_rbcorner->show();
-
+        for (int i = 0; i < m_dragPoints.size(); i++)
+        {
+            m_dragPoints[i]->setPen(pen);
+            m_dragPoints[i]->setBrush(brush);
+            m_dragPoints[i]->show();
+        }
         setPen(pen);
         setBrush(Qt::NoBrush);
     }
     else
     {
+        for (int i = 0; i < m_dragPoints.size(); i++)
+        {
+            m_dragPoints[i]->hide();
+        }
+
         QPen pen(QColor(0, 0, 0), borderW);
         pen.setJoinStyle(Qt::MiterJoin);
-
-        m_ltcorner->hide();
-        m_lbcorner->hide();
-        m_rtcorner->hide();
-        m_rbcorner->hide();
-
         setPen(pen);
         setBrush(Qt::NoBrush);
     }
@@ -85,45 +96,80 @@ bool ResizableRectItem::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
     return _base::sceneEventFilter(watched, event);
 }
 
+QGraphicsItem* ResizableRectItem::getResizeHandleItem(QPointF scenePos)
+{
+    int hitTextLength = 2 * dragW;
+    //construct a "bounding rect" which will fully contain corner if mouse over it.
+    QRectF brCorner(scenePos.x() - hitTextLength, scenePos.y() - hitTextLength, 2 * hitTextLength, 2 * hitTextLength);
+    QList<QGraphicsItem*> items = scene()->items(brCorner, Qt::ContainsItemShape);
+    if (items.isEmpty())
+        return nullptr;
+    else
+        return items[0];
+}
+
 void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+    QPointF itemScenePos = this->scenePos();
     QPointF scenePos = event->scenePos();
-
-    //construct a "bounding rect" which will fully contain corner if mouse over it.
-    QRectF brCorner(scenePos.x() - dragW, scenePos.y() - dragH, 2 * dragW, 2 * dragH);
-    QList<QGraphicsItem*> items = scene()->items(brCorner, Qt::ContainsItemShape);
-    if (!items.isEmpty())
+    QGraphicsItem* item = getResizeHandleItem(scenePos);
+    if (item)
     {
-        int W = rect().width(), H = rect().height();
-        if (items[0] == m_ltcorner)
+        QRectF rc = rect();
+        int W = rc.width(), H = rc.height();
+        if (item == m_dragPoints[DRAG_LEFTTOP])
         {
-            m_mouseHint = SCALE_LEFT_TOP;
-            m_movescale_info.fixed_point = mapToScene(rect().bottomRight());
+            m_mouseHint = DRAG_LEFTTOP;
+            m_movescale_info.fixed_point = mapToScene(rc.bottomRight());
         }
-        if (items[0] == m_lbcorner)
+        if (item == m_dragPoints[DRAG_LEFTBOTTOM])
         {
-            m_mouseHint = SCALE_LEFT_BOTTOM;
-            m_movescale_info.fixed_point = mapToScene(rect().topRight());
+            m_mouseHint = DRAG_LEFTBOTTOM;
+            m_movescale_info.fixed_point = mapToScene(rc.topRight());
         }
-        if (items[0] == m_rtcorner)
+        if (item == m_dragPoints[DRAG_RIGHTTOP])
         {
-            m_mouseHint = SCALE_RIGHT_TOP;
-            m_movescale_info.fixed_point = mapToScene(rect().bottomLeft());
+            m_mouseHint = DRAG_RIGHTTOP;
+            m_movescale_info.fixed_point = mapToScene(rc.bottomLeft());
         }
-        if (items[0] == m_rbcorner)
+        if (item == m_dragPoints[DRAG_RIGHTBOTTOM])
         {
-            m_mouseHint = SCALE_RIGHT_BOTTOM;
-            m_movescale_info.fixed_point = mapToScene(rect().topLeft());
+            m_mouseHint = DRAG_RIGHTBOTTOM;
+            m_movescale_info.fixed_point = mapToScene(rc.topLeft());
         }
-        m_movescale_info.old_width = rect().width();
-        m_movescale_info.old_height = rect().height();
-        return;
+
+        if (item == m_dragPoints[DRAG_MIDTOP])
+        {
+            m_mouseHint = DRAG_MIDTOP;
+            m_movescale_info.fixed_x = itemScenePos.x();
+            m_movescale_info.fixed_y = itemScenePos.y() + H - 1;
+        }
+        if (item == m_dragPoints[DRAG_MIDBOTTOM])
+        {
+            m_mouseHint = DRAG_MIDBOTTOM;
+            m_movescale_info.fixed_x = itemScenePos.x();
+            m_movescale_info.fixed_y = itemScenePos.y();
+        }
+        if (item == m_dragPoints[DRAG_LEFTMID])
+        {
+            m_mouseHint = DRAG_LEFTMID;
+            m_movescale_info.fixed_y = itemScenePos.y();
+            m_movescale_info.fixed_x = itemScenePos.x() + W - 1;
+        }
+        if (item == m_dragPoints[DRAG_RIGHTMID])
+        {
+            m_mouseHint = DRAG_RIGHTMID;
+            m_movescale_info.fixed_y = itemScenePos.y();
+            m_movescale_info.fixed_x = itemScenePos.x();
+        }
     }
     else
     {
         m_mouseHint = TRANSLATE;
+        
     }
-
+    m_movescale_info.old_width = rect().width();
+    m_movescale_info.old_height = rect().height();
     _base::mousePressEvent(event);
 }
 
@@ -135,17 +181,16 @@ void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     }
     else
     {
-        QPointF pos = event->pos();
         QPointF scenePos = event->scenePos();
         qreal newWidth = 0, newHeight = 0;
         QPointF newTopLeft;
 
         switch (m_mouseHint)
         {
-            case SCALE_LEFT_TOP:
-            case SCALE_RIGHT_TOP:
-            case SCALE_LEFT_BOTTOM:
-            case SCALE_RIGHT_BOTTOM:
+            case DRAG_LEFTTOP:
+            case DRAG_RIGHTTOP:
+            case DRAG_LEFTBOTTOM:
+            case DRAG_RIGHTBOTTOM:
             {
                 //fixed_bottomright
                 qreal left = min(scenePos.x(), m_movescale_info.fixed_point.x());
@@ -153,6 +198,28 @@ void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
                 qreal top = min(scenePos.y(), m_movescale_info.fixed_point.y());
                 qreal bottom = max(scenePos.y(), m_movescale_info.fixed_point.y());
                 newWidth = right - left;
+                newHeight = bottom - top;
+                newTopLeft = QPointF(left, top);
+                break;
+            }
+            case DRAG_LEFTMID:
+            case DRAG_RIGHTMID:
+            {
+                qreal left = min(scenePos.x(), m_movescale_info.fixed_x);
+                qreal right = max(scenePos.x(), m_movescale_info.fixed_x);
+                qreal top = m_movescale_info.fixed_y;
+                newWidth = right - left;
+                newHeight = m_movescale_info.old_height;
+                newTopLeft = QPointF(left, top);
+                break;
+            }
+            case DRAG_MIDTOP:
+            case DRAG_MIDBOTTOM:
+            {
+                qreal left = m_movescale_info.fixed_x;
+                qreal top = min(scenePos.y(), m_movescale_info.fixed_y);
+                qreal bottom = max(scenePos.y(), m_movescale_info.fixed_y);
+                newWidth = m_movescale_info.old_width;
                 newHeight = bottom - top;
                 newTopLeft = QPointF(left, top);
                 break;
@@ -168,6 +235,6 @@ void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ResizableRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    m_mouseHint = MOUSE_DONOTHING;
+    m_mouseHint = NO_DRAG;
     _base::mouseReleaseEvent(event);
 }

@@ -74,24 +74,6 @@ void NodeScene::initNode()
 	//ZenoNode* pNode = new ZenoNode(this);
 	//pNode->initStyle(m_nodeparam);
 
-	//ScreenGrabRect* pNode = new ScreenGrabRect(QRectF(50, 50, 100, 30));
-	//addItem(pNode);
-	//pNode->installEventFilter(this);
-
-	//ResizableComponentItem* ptemp = new ResizableComponentItem(50, 40, 100, 30);
-	//addItem(ptemp);
-
 	ResizableRectItem* ptemp2 = new ResizableRectItem(150, 140, 100, 30);
 	addItem(ptemp2);
-	//QPointF pos = ptemp->pos();
-	//QPointF scenePos = ptemp->scenePos();
-
-	return;
-
-	//auto m_ltcorner = new QGraphicsRectItem(0, 0, 8, 8);
-	//m_ltcorner->setPen(QPen(QColor(21, 152, 255), 1));
-	//m_ltcorner->setBrush(QBrush(QColor(255, 255, 255)));
-	//m_ltcorner->setZValue(100);
-	//m_ltcorner->setPos(QPointF(0, 0));
-	//addItem(m_ltcorner);
 }
