@@ -84,6 +84,13 @@ std::string QDMGraphicsScene::getName() const
     return subnetNode ? subnetNode->getName() : "/";
 }
 
+std::string QDMGraphicsScene::getFullPath() const
+{
+    if (!subnetNode)
+        return "/";
+    return parentScene->getFullPath() + '/' + subnetNode->getName();
+}
+
 std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 {
     return zan::find_unique_name

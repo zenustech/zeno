@@ -47,6 +47,7 @@ public:
     std::vector<QDMGraphicsScene *> getChildScenes() const;
     inline QDMGraphicsScene *getParentScene() const { return parentScene; }
     std::string allocateNodeName(std::string const &prefix) const;
+    std::string getFullPath() const;
     std::string getName() const;
 
     QPointF getCursorPos() const;
