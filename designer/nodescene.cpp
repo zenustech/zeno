@@ -5,6 +5,7 @@
 #include "resizerectitem.h"
 #include "componentitem.h"
 #include "timelineitem.h"
+#include "dragpointitem.h"
 
 
 NodeScene::NodeScene(QObject* parent)
@@ -100,9 +101,11 @@ void NodeScene::timelineChanged()
 
 void NodeScene::initNode()
 {
-	//ZenoNode* pNode = new ZenoNode(this);
-	//pNode->initStyle(m_nodeparam);
-	ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
+	ZenoNode* pNode = new ZenoNode(this);
+	pNode->initStyle(m_nodeparam);
+	//ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
+
+	//ComponentItem* pItem2 = new ComponentItem(this, 350, 350, 150, 30);
 }
 
 void NodeScene::initSelectionDragBorder()
@@ -133,6 +136,7 @@ void NodeScene::initSelectionDragBorder()
 
 void NodeScene::onSelectionChanged()
 {
+	return;
 	QList<QGraphicsItem*> selItems = this->selectedItems();
 	if (selItems.isEmpty())
 	{
@@ -175,6 +179,7 @@ void NodeScene::_adjustDragRectPos(QGraphicsItem* pSel)
 
 void NodeScene::updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay)
 {
+	return;
 	switch (dragWay)
 	{
 		case DRAG_LEFTTOP:

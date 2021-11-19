@@ -4,36 +4,6 @@
 
 using namespace std;
 
-DragPointItem::DragPointItem(NodeScene::DRAG_ITEM dragObj, NodeScene* pScene, int w, int h)
-    : _base(0, 0, w, h)
-    , m_pScene(pScene)
-    , m_dragObj(dragObj)
-{
-    setFlags(ItemIsMovable | ItemSendsGeometryChanges | ItemSendsScenePositionChanges );
-}
-
-void DragPointItem::setWatchedObject(QGraphicsItem* pObject)
-{
-
-}
-
-void DragPointItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-    _base::mousePressEvent(event);
-}
-
-void DragPointItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
-{
-    _base::mouseMoveEvent(event);
-    m_pScene->updateDragPoints(this, m_dragObj);
-}
-
-void DragPointItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
-{
-    _base::mouseReleaseEvent(event);
-}
-
-
 
 ResizableRectItem::ResizableRectItem(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent)
     : QGraphicsRectItem(0, 0, w, h, parent)
@@ -47,7 +17,7 @@ ResizableRectItem::ResizableRectItem(qreal x, qreal y, qreal w, qreal h, QGraphi
 
 void ResizableRectItem::_initDragPoints()
 {
-    int w = rect().width(), h = rect().height();
+    qreal w = rect().width(), h = rect().height();
     qreal offset = dragW / 2;
     QVector<QPointF> pts = {
         QPointF(-offset, -offset),
@@ -71,6 +41,7 @@ void ResizableRectItem::_initDragPoints()
             m_dragPoints[i] = new QGraphicsRectItem(QRectF(0, 0, dragW, dragW), this);
             m_dragPoints[i]->installSceneEventFilter(this);
             m_dragPoints[i]->setAcceptHoverEvents(true);
+            m_dragPoints[i]->setFlag(QGraphicsItem::ItemIgnoresTransformations, false);
         }
         m_dragPoints[i]->setPos(pts[i]);
     }
@@ -154,7 +125,7 @@ bool ResizableRectItem::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 
 QGraphicsItem* ResizableRectItem::getResizeHandleItem(QPointF scenePos)
 {
-    int hitTextLength = 2 * dragW;
+    qreal hitTextLength = 2 * dragW;
     //construct a "bounding rect" which will fully contain corner if mouse over it.
     QRectF brCorner(scenePos.x() - hitTextLength, scenePos.y() - hitTextLength, 2 * hitTextLength, 2 * hitTextLength);
     QList<QGraphicsItem*> items = scene()->items(brCorner, Qt::ContainsItemShape);
@@ -172,7 +143,7 @@ void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     if (item)
     {
         QRectF rc = rect();
-        int W = rc.width(), H = rc.height();
+        qreal W = rc.width(), H = rc.height();
         if (item == m_dragPoints[DRAG_LEFTTOP])
         {
             m_mouseHint = DRAG_LEFTTOP;

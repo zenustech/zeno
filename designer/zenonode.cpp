@@ -36,6 +36,7 @@ void ZenoNode::initStyle(const NodeParam& param)
 	m_holder_nodename = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 	QPointF pos = m_holder_nodename->scenePos();
 
+	/*
 	comp = m_param.header.status;
 	m_holder_status = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 
@@ -65,7 +66,7 @@ void ZenoNode::initStyle(const NodeParam& param)
 	m_holder_body_backboard = new ResizableRectItem(comp.x, comp.y, comp.w, comp.h, this);
 	m_holder_body_backboard->setZValue(-10);
 
-	/*
+	
 	m_nodename = new QGraphicsTextItem("Node-name", this);
 	QTextDocument* doc = m_nodename->document();
 	QTextFrame* rootFrame = doc->rootFrame();

@@ -3,24 +3,6 @@
 
 #include "nodescene.h"
 
-class DragPointItem : public QGraphicsRectItem
-{
-    typedef QGraphicsRectItem _base;
-public:
-    DragPointItem(NodeScene::DRAG_ITEM dragObj, NodeScene* pScene, int w, int h);
-    void setWatchedObject(QGraphicsItem* pObject);
-
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent* event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
-
-private:
-    NodeScene* m_pScene;
-    NodeScene::DRAG_ITEM m_dragObj;
-};
-
-
 class ResizableRectItem : public QObject
                         , public QGraphicsRectItem
 {
@@ -68,9 +50,9 @@ private:
     void _initDragPoints();
     QGraphicsItem* getResizeHandleItem(QPointF scenePos);
 
-    const qreal dragW = 8.;
-    const qreal dragH = 8.;
-    const qreal borderW = 2.;
+    const qreal dragW = 6.;
+    const qreal dragH = 6.;
+    const qreal borderW = 1.;
 
     QVector<QGraphicsRectItem*> m_dragPoints;
     std::unordered_map<DRAG_ITEM, Qt::CursorShape> m_cursor_mapper;
