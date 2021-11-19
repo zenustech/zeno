@@ -49,7 +49,7 @@ osimAnalyses
 osimCommon
 osimExampleComponents
 osimLepton
-osimMocoCustomEffortGoal
+#osimMocoCustomEffortGoal
 osimMoco
 osimSimulation
 osimTools
