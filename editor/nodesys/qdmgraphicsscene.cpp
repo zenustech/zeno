@@ -108,11 +108,6 @@ void QDMGraphicsScene::addSubNetNode()
     emit sceneCreatedOrRemoved();
 }
 
-void QDMGraphicsScene::rightClicked()
-{
-    addSubNetNode();
-}
-
 void QDMGraphicsScene::cursorMoved()
 {
     printf("!!!curmove?\n");

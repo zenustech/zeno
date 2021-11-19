@@ -33,6 +33,7 @@ public:
 
 public slots:
     void addNodeByType(QString name);
+    void addSubNetNode();
     void switchScene(QDMGraphicsScene *newScene);
 
 signals:

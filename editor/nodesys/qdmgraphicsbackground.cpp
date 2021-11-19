@@ -20,8 +20,10 @@ void QDMGraphicsBackground::paint(QPainter *painter, QStyleOptionGraphicsItem co
 
 void QDMGraphicsBackground::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    parentScene->blankClicked();
+    if (event->button() == Qt::LeftButton) {
+        auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+        parentScene->blankClicked();
+    }
 
     QGraphicsItem::mousePressEvent(event);
 }

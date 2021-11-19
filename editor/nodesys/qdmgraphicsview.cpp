@@ -63,6 +63,11 @@ void QDMGraphicsView::addNodeByType(QString name)
     getScene()->addNodeByType(name);
 }
 
+void QDMGraphicsView::addSubNetNode()
+{
+    getScene()->addSubNetNode();
+}
+
 void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete) {
@@ -91,10 +96,6 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
 
     if (event->button() == Qt::LeftButton) {
         setDragMode(QGraphicsView::RubberBandDrag);
-    }
-
-    if (event->button() == Qt::RightButton) {
-        getScene()->rightClicked();
     }
 
     QGraphicsView::mousePressEvent(event);
