@@ -20,5 +20,5 @@ tags
 CMakeLists.txt.user
 CMakeSettings.json
 
-# zeno files
-outputs
+# archibate files
+/GNUmakefile
