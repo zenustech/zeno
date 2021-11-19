@@ -103,6 +103,7 @@ void QDMGraphicsScene::addSubnetNode()
         return;
     floatingNode = addNode();
     floatingNode->initAsSubnet();
+    floatingNode->hide();
     floatingNode->setPos(getCursorPos());
     emit sceneCreatedOrRemoved();
 }
@@ -161,10 +162,9 @@ void QDMGraphicsScene::addNodeByType(QString type)
 {
     if (floatingNode)
         return;
-    auto node = addNode();
-    node->initByType(type);
-    node->hide();
-    floatingNode = node;
+    floatingNode = addNode();
+    floatingNode->hide();
+    floatingNode->initByType(type);
 
     emit sceneUpdated();
 }
