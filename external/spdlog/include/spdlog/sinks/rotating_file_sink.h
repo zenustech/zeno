@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <spdlog/sinks/base_sink.h>
-#include <spdlog/details/file_helper.h>
-#include <spdlog/details/null_mutex.h>
-#include <spdlog/details/synchronous_factory.h>
+#include "spdlog/sinks/base_sink.h"
+#include "spdlog/details/file_helper.h"
+#include "spdlog/details/null_mutex.h"
+#include "spdlog/details/synchronous_factory.h"
 
 #include <chrono>
 #include <mutex>
@@ -24,7 +24,7 @@ class rotating_file_sink final : public base_sink<Mutex>
 public:
     rotating_file_sink(filename_t base_filename, std::size_t max_size, std::size_t max_files, bool rotate_on_open = false);
     static filename_t calc_filename(const filename_t &filename, std::size_t index);
-    filename_t filename();
+    const filename_t &filename() const;
 
 protected:
     void sink_it_(const details::log_msg &msg) override;
@@ -40,7 +40,7 @@ private:
 
     // delete the target if exists, and rename the src file  to target
     // return true on success, false otherwise.
-    bool rename_file_(const filename_t &src_filename, const filename_t &target_filename);
+    bool rename_file(const filename_t &src_filename, const filename_t &target_filename);
 
     filename_t base_filename_;
     std::size_t max_size_;
@@ -74,5 +74,5 @@ inline std::shared_ptr<logger> rotating_logger_st(
 } // namespace spdlog
 
 #ifdef SPDLOG_HEADER_ONLY
-#    include "rotating_file_sink-inl.h"
+#include "rotating_file_sink-inl.h"
 #endif

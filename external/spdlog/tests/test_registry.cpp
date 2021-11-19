@@ -1,7 +1,7 @@
 #include "includes.h"
 
-static const char *const tested_logger_name = "null_logger";
-static const char *const tested_logger_name2 = "null_logger2";
+static const char *tested_logger_name = "null_logger";
+static const char *tested_logger_name2 = "null_logger2";
 
 #ifndef SPDLOG_NO_EXCEPTIONS
 TEST_CASE("register_drop", "[registry]")
@@ -9,7 +9,7 @@ TEST_CASE("register_drop", "[registry]")
     spdlog::drop_all();
     spdlog::create<spdlog::sinks::null_sink_mt>(tested_logger_name);
     REQUIRE(spdlog::get(tested_logger_name) != nullptr);
-    // Throw if registering existing name
+    // Throw if registring existing name
     REQUIRE_THROWS_AS(spdlog::create<spdlog::sinks::null_sink_mt>(tested_logger_name), spdlog::spdlog_ex);
 }
 
@@ -19,7 +19,7 @@ TEST_CASE("explicit register", "[registry]")
     auto logger = std::make_shared<spdlog::logger>(tested_logger_name, std::make_shared<spdlog::sinks::null_sink_st>());
     spdlog::register_logger(logger);
     REQUIRE(spdlog::get(tested_logger_name) != nullptr);
-    // Throw if registering existing name
+    // Throw if registring existing name
     REQUIRE_THROWS_AS(spdlog::create<spdlog::sinks::null_sink_mt>(tested_logger_name), spdlog::spdlog_ex);
 }
 #endif
@@ -103,7 +103,7 @@ TEST_CASE("disable automatic registration", "[registry]")
     spdlog::set_level(log_level);
     // but disable automatic registration
     spdlog::set_automatic_registration(false);
-    auto logger1 = spdlog::create<spdlog::sinks::daily_file_sink_st>(tested_logger_name, SPDLOG_FILENAME_T("filename"), 11, 59);
+    auto logger1 = spdlog::create<spdlog::sinks::daily_file_sink_st>(tested_logger_name, "filename", 11, 59);
     auto logger2 = spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>(tested_logger_name2);
     // loggers should not be part of the registry
     REQUIRE_FALSE(spdlog::get(tested_logger_name));
