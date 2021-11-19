@@ -78,7 +78,8 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 
 void QDMGraphicsNode::initAsSubnet()
 {
-    dop::Descriptor desc;
+    subnetDesc = std::make_unique<dop::Descriptor>();
+    dop::Descriptor &desc = *subnetDesc;
     desc.name = "SubnetNode";
     desc.factory = std::make_unique<dop::SubnetNode>;
     initByDescriptor(desc);
