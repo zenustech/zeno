@@ -25,7 +25,7 @@ class QDMGraphicsNode : public QGraphicsItem
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
     std::unique_ptr<QDMGraphicsScene> subnetScene;
-    std::unique_ptr<dop::Descriptor> subnetDesc{};
+    std::unique_ptr<dop::Descriptor> subnetDescStorage{};
 
     std::unique_ptr<QGraphicsTextItem> label;
     dop::Descriptor const *desc{};
