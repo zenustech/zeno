@@ -41,6 +41,7 @@ public:
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
     QDMGraphicsSocketIn *socketInAt(size_t index);
     QDMGraphicsSocketOut *socketOutAt(size_t index);

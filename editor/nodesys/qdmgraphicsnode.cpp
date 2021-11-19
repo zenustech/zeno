@@ -76,6 +76,17 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
     return socketOut;
 }
 
+void QDMGraphicsNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (subnetScene) {
+            emit getScene()->subnetSceneEntered(subnetScene.get());
+        }
+    }
+
+    QGraphicsItem::mousePressEvent(event);
+}
+
 void QDMGraphicsNode::initAsSubnet()
 {
     subnetDescStorage = std::make_unique<dop::Descriptor>();

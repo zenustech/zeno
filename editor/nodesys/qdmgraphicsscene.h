@@ -64,6 +64,7 @@ signals:
     void sceneUpdated();
     void sceneCreatedOrRemoved();
     void currentNodeChanged(QDMGraphicsNode *node);
+    void subnetSceneEntered(QDMGraphicsScene *subScene);
 };
 
 ZENO_NAMESPACE_END
