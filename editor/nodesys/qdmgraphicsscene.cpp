@@ -67,7 +67,6 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 void QDMGraphicsScene::blankClicked()
 {
     if (floatingNode) {
-        printf("!!!blankrmfloat\n");
         floatingNode->setPos(getCursorPos());
         floatingNode->show();
         floatingNode = nullptr;
@@ -110,9 +109,7 @@ void QDMGraphicsScene::addSubNetNode()
 
 void QDMGraphicsScene::cursorMoved()
 {
-    printf("!!!curmove?\n");
     if (floatingNode) {
-        printf("!!!curmovefloat\n");
         floatingNode->setPos(getCursorPos());
         floatingNode->show();
     }
