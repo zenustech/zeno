@@ -10,7 +10,7 @@ namespace dop {
 void SubnetNode::apply() {
     inputs.resize(subins.size());
     for (size_t i = 0; i < subins.size(); i++) {
-        subins[i]->inputs.at(0) = inputs[i];
+        subins[i]->inputs.at(i) = inputs[i];
     }
 
     Executor exec;

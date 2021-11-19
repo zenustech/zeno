@@ -8,7 +8,5 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/hipSYCL)
 set(CMAKE_BUILD_TYPE Debug)
 add_compile_options(-fdiagnostics-color=always)
 
-add_custom_target(run
-    COMMAND $<TARGET_FILE:zeno>
-    )
+add_custom_target(run COMMAND $<TARGET_FILE:zeno>)
 add_dependencies(run zeno)

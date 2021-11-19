@@ -171,7 +171,7 @@ void QDMGraphicsScene::addNodeByType(QString type)
 
 QPointF QDMGraphicsScene::getCursorPos() const
 {
-    [[unlikely]] if (!views().size())
+    if (!views().size())
         return this->sceneRect().topLeft();
     auto view = static_cast<QDMGraphicsView const *>(views().at(0));
     return view->mapToScene(view->mapFromGlobal(QCursor::pos()));
