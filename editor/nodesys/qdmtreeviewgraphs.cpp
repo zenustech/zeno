@@ -84,11 +84,11 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 
     rootScene = scene;
 
-    auto touch = [this] ( auto &&touch
+    auto touch = [this] ( auto &touch
                         , auto *parItem
                         , std::vector<QDMGraphicsScene *> const &scenes
                         ) -> void {
-        for (auto const &scene: scenes) {
+        for (auto *scene: scenes) {
             auto item = new QDMZenoSceneItem(scene);
             auto name = scene->getName();
             item->setText(QString::fromStdString(name.empty() ? "(unnamed)" : name));
@@ -103,6 +103,11 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
     expandAll();
 
     emit rootSceneChanged(rootScene);
+}
+
+void QDMTreeViewGraphs::switchScene(QDMGraphicsScene *scene)
+{
+    emit sceneSwitched(scene);
 }
 
 ZENO_NAMESPACE_END

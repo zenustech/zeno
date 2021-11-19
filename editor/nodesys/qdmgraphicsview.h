@@ -40,6 +40,7 @@ signals:
     void sceneUpdated();
     void sceneCreatedOrRemoved();
     void currentNodeChanged(QDMGraphicsNode *node);
+    void sceenSwitched(QDMGraphicsScene *newScene);
 };
 
 ZENO_NAMESPACE_END

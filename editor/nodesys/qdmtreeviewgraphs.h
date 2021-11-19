@@ -27,6 +27,7 @@ public:
 public slots:
     void setRootScene(QDMGraphicsScene *scene);
     void refreshRootScene();
+    void switchScene(QDMGraphicsScene *scene);
 
 signals:
     void rootSceneChanged(QDMGraphicsScene *scene);

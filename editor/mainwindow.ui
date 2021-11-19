@@ -157,6 +157,7 @@
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
     <signal>sceneUpdated()</signal>
     <signal>sceneCreatedOrRemoved()</signal>
+    <signal>sceneSwitched(QDMGraphicsScene*)</signal>
     <slot>addNodeByType(QString)</slot>
     <slot>switchScene(QDMGraphicsScene*)</slot>
     <slot>addSubnetNode()</slot>
@@ -212,6 +213,7 @@
     <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
     <slot>refreshRootScene()</slot>
     <slot>setRootScene(QDMGraphicsScene*)</slot>
+    <slot>switchScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -305,11 +307,11 @@
    <hints>
     <hint type="sourcelabel">
      <x>1160</x>
-     <y>374</y>
+     <y>298</y>
     </hint>
     <hint type="destinationlabel">
-     <x>924</x>
-     <y>439</y>
+     <x>918</x>
+     <y>298</y>
     </hint>
    </hints>
   </connection>
@@ -320,12 +322,28 @@
    <slot>addSubnetNode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1312</x>
-     <y>886</y>
+     <x>298</x>
+     <y>969</y>
     </hint>
     <hint type="destinationlabel">
      <x>1314</x>
      <y>678</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+   <receiver>treeView</receiver>
+   <slot>switchScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>953</x>
+     <y>375</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>890</x>
+     <y>383</y>
     </hint>
    </hints>
   </connection>
