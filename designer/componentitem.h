@@ -9,6 +9,8 @@ class ComponentItem : QGraphicsRectItem
 public:
     ComponentItem(NodeScene* pScene, qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
 
+    QRectF boundingRect() const override;
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);

@@ -1,13 +1,14 @@
-#ifndef __RESIZABLE_RECT_ITEM_H__
-#define __RESIZABLE_RECT_ITEM_H__
+#ifndef __RESIZABLE_ITEM_IMPL_H__
+#define __RESIZABLE_ITEM_IMPL_H__
 
 #include "nodescene.h"
 
-class ResizableRectItem : public QObject
-                        , public QGraphicsRectItem
+class ResizableCoreItem;
+
+class ResizableItemImpl : public QGraphicsObject
 {
     Q_OBJECT
-    typedef QGraphicsRectItem _base;
+    typedef QGraphicsObject _base;
 
     enum DRAG_ITEM
     {
@@ -35,9 +36,11 @@ class ResizableRectItem : public QObject
     };
 
 public:
-    ResizableRectItem(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
+    ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     QRectF boundingRect() const override;
+    void setCoreItem(ResizableCoreItem* pItem);
+    void showBorder(bool bShow);
 
 protected:
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
@@ -47,18 +50,28 @@ protected:
 
 private:
     void _adjustItemsPos();
-    void _initDragPoints();
+
     QGraphicsItem* getResizeHandleItem(QPointF scenePos);
 
     const qreal dragW = 6.;
     const qreal dragH = 6.;
     const qreal borderW = 1.;
 
+    QGraphicsRectItem* m_borderitem;
     QVector<QGraphicsRectItem*> m_dragPoints;
     std::unordered_map<DRAG_ITEM, Qt::CursorShape> m_cursor_mapper;
 
+    ResizableCoreItem* m_coreitem;
+
+    QPixmap m_originalPix;
+
     DRAG_ITEM m_mouseHint;
     SCALE_INFO m_movescale_info;
+
+    qreal m_width;
+    qreal m_height;
+
+    bool m_showBdr;
 };
 
 

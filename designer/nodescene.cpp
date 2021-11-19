@@ -2,7 +2,7 @@
 #include "nodescene.h"
 #include "zenonode.h"
 #include "ztfutil.h"
-#include "resizerectitem.h"
+#include "resizableitemimpl.h"
 #include "componentitem.h"
 #include "timelineitem.h"
 #include "dragpointitem.h"
@@ -103,9 +103,15 @@ void NodeScene::initNode()
 {
 	ZenoNode* pNode = new ZenoNode(this);
 	pNode->initStyle(m_nodeparam);
-	//ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
 
+	//ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
 	//ComponentItem* pItem2 = new ComponentItem(this, 350, 350, 150, 30);
+
+	//m_originalPix = QPixmap("C:\\editor\\uirender\\Header_back_board.jpg");
+	//m_coreitem = new QGraphicsPixmapItem(m_originalPix.scaled(m_width, m_height), this);
+
+	//ResizablePixmapItem* pItem = new ResizablePixmapItem(this, QPixmap("C:\\editor\\uirender\\view.jpg").scaled(60, 61));
+	//pItem->setPos(50, 50);
 }
 
 void NodeScene::initSelectionDragBorder()

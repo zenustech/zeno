@@ -2,7 +2,7 @@
 #define __ZENONODE_H__
 
 #include "renderparam.h"
-#include "resizerectitem.h"
+#include "resizableitemimpl.h"
 
 class NodeScene;
 
@@ -27,18 +27,18 @@ private:
 	QGraphicsPixmapItem* m_background;
 	QGraphicsTextItem* m_nodename;
 
-	ResizableRectItem* m_holder_nodename;
-	ResizableRectItem* m_holder_status;
-	ResizableRectItem* m_holder_control;
-	ResizableRectItem* m_holder_display;
-	ResizableRectItem* m_holder_header_backboard;
+	ResizableItemImpl* m_holder_nodename;
+	ResizableItemImpl* m_holder_status;
+	ResizableItemImpl* m_holder_control;
+	ResizableItemImpl* m_holder_display;
+	ResizableItemImpl* m_holder_header_backboard;
 
-	ResizableRectItem* m_holder_topleftsocket;
-	ResizableRectItem* m_holder_bottomleftsocket;
-	ResizableRectItem* m_holder_toprightsocket;
-	ResizableRectItem* m_holder_bottomrightsocket;
+	ResizableItemImpl* m_holder_topleftsocket;
+	ResizableItemImpl* m_holder_bottomleftsocket;
+	ResizableItemImpl* m_holder_toprightsocket;
+	ResizableItemImpl* m_holder_bottomrightsocket;
 
-	ResizableRectItem* m_holder_body_backboard;
+	ResizableItemImpl* m_holder_body_backboard;
 
 	NodeParam m_param;
 };

@@ -6,7 +6,7 @@ ComponentItem::ComponentItem(NodeScene* pScene, qreal x, qreal y, qreal w, qreal
     : QGraphicsRectItem(0, 0, w, h, parent)
     , m_pScene(pScene)
 {
-    QPen pen(QColor(0, 0, 0), 1);
+    QPen pen(QColor(0, 0, 0), 3);
     pen.setJoinStyle(Qt::MiterJoin);
 
     setPen(pen);
@@ -37,4 +37,10 @@ void ComponentItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void ComponentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     _base::paint(painter, option, widget);
+}
+
+QRectF ComponentItem::boundingRect() const
+{
+    QRectF br = _base::boundingRect();
+    return br;
 }

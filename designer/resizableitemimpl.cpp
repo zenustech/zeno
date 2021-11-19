@@ -1,23 +1,32 @@
 #include "framework.h"
-#include "resizerectitem.h"
+#include "resizableitemimpl.h"
+#include "resizecoreitem.h"
 #include "zenonode.h"
 
 using namespace std;
 
 
-ResizableRectItem::ResizableRectItem(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent)
-    : QGraphicsRectItem(0, 0, w, h, parent)
+ResizableItemImpl::ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent)
+    : QGraphicsObject(parent)
+    , m_width(w)
+    , m_height(h)
     , m_mouseHint(NO_DRAG)
+    , m_borderitem(nullptr)
+    , m_coreitem(nullptr)
+    , m_showBdr(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
-
     setPos(x, y);
     _adjustItemsPos();
 }
 
-void ResizableRectItem::_initDragPoints()
+void ResizableItemImpl::_adjustItemsPos()
 {
-    qreal w = rect().width(), h = rect().height();
+	if (m_borderitem == nullptr)
+		m_borderitem = new QGraphicsRectItem(0, 0, m_width, m_height, this);
+	m_borderitem->setPos(QPointF(0, 0));
+
+    qreal w = m_width, h = m_height;
     qreal offset = dragW / 2;
     QVector<QPointF> pts = {
         QPointF(-offset, -offset),
@@ -57,12 +66,19 @@ void ResizableRectItem::_initDragPoints()
 	m_cursor_mapper.insert(make_pair(TRANSLATE, Qt::SizeAllCursor));
 }
 
-void ResizableRectItem::_adjustItemsPos()
+void ResizableItemImpl::setCoreItem(ResizableCoreItem* pItem)
 {
-    _initDragPoints();
+    if (pItem == nullptr)
+        return;
+
+    m_coreitem = pItem;
+    pItem->setZValue(-100);
+    pItem->setParentItem(this);
+    pItem->setPos(QPointF(0, 0));
+    pItem->resize(QSizeF(m_width, m_height));
 }
 
-void ResizableRectItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void ResizableItemImpl::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus))
     {
@@ -76,8 +92,9 @@ void ResizableRectItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
             m_dragPoints[i]->setBrush(brush);
             m_dragPoints[i]->show();
         }
-        setPen(pen);
-        setBrush(Qt::NoBrush);
+        m_borderitem->setPen(pen);
+        m_borderitem->setBrush(Qt::NoBrush);
+        m_borderitem->show();
     }
     else
     {
@@ -85,25 +102,29 @@ void ResizableRectItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         {
             m_dragPoints[i]->hide();
         }
-
-        QPen pen(QColor(0, 0, 0), borderW);
-        pen.setJoinStyle(Qt::MiterJoin);
-        setPen(pen);
-        setBrush(Qt::NoBrush);
+ 
+        if (m_showBdr)
+        {
+			QPen pen(QColor(0, 0, 0), borderW);
+			pen.setJoinStyle(Qt::MiterJoin);
+			m_borderitem->setPen(pen);
+			m_borderitem->setBrush(Qt::NoBrush);
+            m_borderitem->show();
+        }
+        else
+		{
+			m_borderitem->hide();
+        }
     }
-
-    painter->setPen(pen());
-    painter->setBrush(brush());
-    painter->drawRect(rect());
 }
 
-QRectF ResizableRectItem::boundingRect() const
+QRectF ResizableItemImpl::boundingRect() const
 {
-    QRectF rc = _base::boundingRect();
-    return rc.adjusted(-dragW / 2., -dragH / 2, dragW / 2, dragH / 2);
+    QRectF rc = childrenBoundingRect();
+    return rc;
 }
 
-bool ResizableRectItem::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
+bool ResizableItemImpl::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 {
     if (event->type() == QEvent::GraphicsSceneHoverEnter ||
         event->type() == QEvent::GraphicsSceneHoverMove)
@@ -123,7 +144,7 @@ bool ResizableRectItem::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
     return _base::sceneEventFilter(watched, event);
 }
 
-QGraphicsItem* ResizableRectItem::getResizeHandleItem(QPointF scenePos)
+QGraphicsItem* ResizableItemImpl::getResizeHandleItem(QPointF scenePos)
 {
     qreal hitTextLength = 2 * dragW;
     //construct a "bounding rect" which will fully contain corner if mouse over it.
@@ -135,14 +156,19 @@ QGraphicsItem* ResizableRectItem::getResizeHandleItem(QPointF scenePos)
         return items[0];
 }
 
-void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void ResizableItemImpl::showBorder(bool bShow)
+{
+    m_showBdr = bShow;
+}
+
+void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     QPointF itemScenePos = this->scenePos();
     QPointF scenePos = event->scenePos();
     QGraphicsItem* item = getResizeHandleItem(scenePos);
     if (item)
     {
-        QRectF rc = rect();
+        QRectF rc = QRectF(0, 0, m_width, m_height);
         qreal W = rc.width(), H = rc.height();
         if (item == m_dragPoints[DRAG_LEFTTOP])
         {
@@ -195,12 +221,12 @@ void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
         m_mouseHint = TRANSLATE;
         
     }
-    m_movescale_info.old_width = rect().width();
-    m_movescale_info.old_height = rect().height();
+    m_movescale_info.old_width = m_width;
+    m_movescale_info.old_height = m_height;
     _base::mousePressEvent(event);
 }
 
-void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_mouseHint == TRANSLATE)
     {
@@ -252,15 +278,28 @@ void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
                 break;
             }
         }
+        m_width = newWidth;
+        m_height = newHeight;
+        m_borderitem->setRect(QRectF(0, 0, newWidth, newHeight));
+        if (m_coreitem)
+            m_coreitem->resize(QSizeF(newWidth, newHeight));
+        
+        if (parentItem())
+        {
+            QPointF localPos = parentItem()->mapFromScene(newTopLeft);
+            setPos(localPos);
+        }
+        else
+        {
+            setPos(newTopLeft);
+        }
 
-        setRect(QRectF(0, 0, newWidth, newHeight));
-        setPos(newTopLeft);
         _adjustItemsPos();
         update();
     }
 }
 
-void ResizableRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void ResizableItemImpl::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     m_mouseHint = NO_DRAG;
     _base::mouseReleaseEvent(event);

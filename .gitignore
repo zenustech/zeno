@@ -21,3 +21,4 @@ CMakeSettings.json
 # zeno files
 outputs
 zeno_output.txt
+/Debug
