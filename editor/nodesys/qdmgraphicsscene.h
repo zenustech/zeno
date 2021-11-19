@@ -25,6 +25,7 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
     QDMGraphicsNode *subnetNode{};
+    QDMGraphicsScene *parentScene{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
@@ -42,8 +43,9 @@ public:
 
     void setSubnetNode(QDMGraphicsNode *node);
     void setCurrentNode(QDMGraphicsNode *node);
-    std::vector<QDMGraphicsNode *> getVisibleNodes() const;
+    //std::vector<QDMGraphicsNode *> getVisibleNodes() const;
     std::vector<QDMGraphicsScene *> getChildScenes() const;
+    inline QDMGraphicsScene *getParentScene() const { return parentScene; }
     std::string allocateNodeName(std::string const &prefix) const;
     std::string getName() const;
 

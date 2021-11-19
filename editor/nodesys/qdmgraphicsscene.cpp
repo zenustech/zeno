@@ -95,6 +95,7 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
 {
     subnetNode = node;
+    parentScene = node->getScene();
 }
 
 void QDMGraphicsScene::addSubnetNode()
@@ -225,14 +226,14 @@ void QDMGraphicsScene::deletePressed()
     }
 }
 
-std::vector<QDMGraphicsNode *> QDMGraphicsScene::getVisibleNodes() const
+/*std::vector<QDMGraphicsNode *> QDMGraphicsScene::getVisibleNodes() const
 {
     std::vector<QDMGraphicsNode *> res;
     for (auto const &node: nodes) {
         res.push_back(node.get());
     }
     return res;
-}
+}*/
 
 std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {

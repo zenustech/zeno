@@ -107,6 +107,10 @@ void QDMTreeViewGraphs::setRootScene(QDMGraphicsScene *scene)
 
 void QDMTreeViewGraphs::switchScene(QDMGraphicsScene *scene)
 {
+    QModelIndex index;
+    auto item = static_cast<QStandardItemModel *>(model())->itemFromIndex(index);
+
+    ZENO_DEBUG("QDMTreeViewGraph::switchScene: {}", scene);
     emit sceneSwitched(scene);
 }
 
