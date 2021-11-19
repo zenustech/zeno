@@ -53,7 +53,7 @@ public:
     void copyPressed();
     void pastePressed();
     void blankClicked();
-    void doubleClicked();
+    void rightClicked();
     void cursorMoved();
 
 public slots:

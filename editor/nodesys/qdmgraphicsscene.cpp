@@ -108,7 +108,7 @@ void QDMGraphicsScene::addSubNetNode()
     emit sceneCreatedOrRemoved();
 }
 
-void QDMGraphicsScene::doubleClicked()
+void QDMGraphicsScene::rightClicked()
 {
     addSubNetNode();
 }

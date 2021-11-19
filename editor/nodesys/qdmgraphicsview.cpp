@@ -93,13 +93,8 @@ void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
         setDragMode(QGraphicsView::RubberBandDrag);
     }
 
-    QGraphicsView::mousePressEvent(event);
-}
-
-void QDMGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton) {
-        getScene()->doubleClicked();
+    if (event->button() == Qt::RightButton) {
+        getScene()->rightClicked();
     }
 
     QGraphicsView::mousePressEvent(event);
