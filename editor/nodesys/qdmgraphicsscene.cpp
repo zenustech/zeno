@@ -97,7 +97,7 @@ void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
     subnetNode = node;
 }
 
-void QDMGraphicsScene::addSubNetNode()
+void QDMGraphicsScene::addSubnetNode()
 {
     if (floatingNode)
         return;
