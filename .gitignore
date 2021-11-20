@@ -22,3 +22,6 @@ CMakeSettings.json
 
 # archibate files
 /GNUmakefile
+
+# zpm files
+/installed
