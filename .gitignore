@@ -4,6 +4,7 @@ cmake-build-*
 
 # python files
 __pycache__
+.venv
 
 # vim files
 .vimspector.json
@@ -22,6 +23,3 @@ CMakeSettings.json
 
 # archibate files
 /GNUmakefile
-
-# zpm files
-/installed
