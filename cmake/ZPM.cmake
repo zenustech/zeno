@@ -7,11 +7,13 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 if (NOT ZPM_INSTALL_PREFIX)
     set(ZPM_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/.venv)
-    message(STATUS "Setting ZPM_INSTALL_PREFIX to [${ZPM_INSTALL_PREFIX}] by default")
+endif()
+if (NOT ZPM_BUILD_DIRECTORY)
+    set(ZPM_BUILD_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build)
 endif()
 
 message(STATUS "ZPM_INSTALL_PREFIX: [${ZPM_INSTALL_PREFIX}]")
-message(STATUS "CMAKE_CURRENT_BINARY_DIR: [${CMAKE_CURRENT_BINARY_DIR}]")
+message(STATUS "ZPM_BUILD_DIRECTORY: [${ZPM_BUILD_DIRECTORY}]")
 message(STATUS "CMAKE_BUILD_TYPE: [${CMAKE_BUILD_TYPE}]")
 message(STATUS "CMAKE_COMMAND: [${CMAKE_COMMAND}]")
 message(STATUS "CMAKE_GENERATOR: [${CMAKE_GENERATOR}]")
@@ -24,13 +26,13 @@ function (_zpm_install pkg_desc)
     message(STATUS "ZPM installing package [${pkg_desc}]")
     execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
 
-    file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path})
+    file(REMOVE_RECURSE ${ZPM_BUILD_DIRECTORY}/${pkg_path})
 
     execute_process(
         COMMAND ${CMAKE_COMMAND}
         -G ${CMAKE_GENERATOR}
         -Wno-dev -S ${pkg_path}
-        -B ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+        -B ${ZPM_BUILD_DIRECTORY}/${pkg_path}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${ZPM_INSTALL_PREFIX}
         -DCMAKE_FIND_USE_CMAKE_PATH:BOOL=TRUE
@@ -52,7 +54,7 @@ function (_zpm_install pkg_desc)
     endif()
     execute_process(
         COMMAND ${CMAKE_COMMAND}
-        --build ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+        --build ${ZPM_BUILD_DIRECTORY}/${pkg_path}
         --config ${CMAKE_BUILD_TYPE}
         ${parallel_flag}
         RESULT_VARIABLE ret
@@ -64,7 +66,7 @@ function (_zpm_install pkg_desc)
     if (NOT "${pkg_path}" MATCHES "^BoostBuilder$")
         execute_process(
             COMMAND ${CMAKE_COMMAND}
-            --build ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+            --build ${ZPM_BUILD_DIRECTORY}/${pkg_path}
             --config ${CMAKE_BUILD_TYPE}
             --target install
             RESULT_VARIABLE ret
