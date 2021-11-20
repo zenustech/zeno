@@ -5,7 +5,8 @@ if (NOT CMAKE_BUILD_TYPE)
     message(FATAL_ERROR "CMAKE_BUILD_TYPE not set, please specify it with, e.g. -DCMAKE_BUILD_TYPE=Release")
 endif()
 if (NOT ZPM_INSTALL_PREFIX)
-    message(FATAL_ERROR "ZPM_INSTALL_PREFIX not set, please specify it with, e.g. -DZPM_INSTALL_PREFIX=/home/bate/zpm-packages-root")
+    set(ZPM_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/.venv)
+    message(STATUS "Setting ZPM_INSTALL_PREFIX to [${ZPM_INSTALL_PREFIX}] by default")
 endif()
 
 message(STATUS "ZPM_INSTALL_PREFIX: [${ZPM_INSTALL_PREFIX}]")
@@ -13,8 +14,6 @@ message(STATUS "PROJECT_BINARY_DIR: [${PROJECT_BINARY_DIR}]")
 message(STATUS "CMAKE_BUILD_TYPE: [${CMAKE_BUILD_TYPE}]")
 message(STATUS "CMAKE_COMMAND: [${CMAKE_COMMAND}]")
 message(STATUS "CMAKE_GENERATOR: [${CMAKE_GENERATOR}]")
-#message(STATUS "BUILD_SHARED_LIBS: [${BUILD_SHARED_LIBS}]")
-#message(STATUS "CMAKE_POSITION_INDEPENDENT_CODE: [${CMAKE_POSITION_INDEPENDENT_CODE}]")
 
 function (_zpm_install pkg_desc)
     string(REPLACE "," ";" pkg_args ${pkg_desc})
@@ -32,8 +31,6 @@ function (_zpm_install pkg_desc)
         -Wno-dev -S ${pkg_path}
         -B ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        #-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-        #-DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}
         -DCMAKE_INSTALL_PREFIX=${ZPM_INSTALL_PREFIX}
         -DCMAKE_FIND_USE_CMAKE_PATH:BOOL=TRUE
         -DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH:BOOL=FALSE
@@ -53,7 +50,10 @@ function (_zpm_install pkg_desc)
       set(parallel_flag)
     endif()
     execute_process(
-        COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path} --config ${CMAKE_BUILD_TYPE} ${parallel_flag}
+        COMMAND ${CMAKE_COMMAND}
+        --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+        --config ${CMAKE_BUILD_TYPE}
+        ${parallel_flag}
         RESULT_VARIABLE ret
         )
     if (NOT "${ret}" STREQUAL "0")
@@ -62,7 +62,10 @@ function (_zpm_install pkg_desc)
 
     if (NOT "${pkg_path}" MATCHES "^BoostBuilder$")
         execute_process(
-            COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path} --config ${CMAKE_BUILD_TYPE} --target install
+            COMMAND ${CMAKE_COMMAND}
+            --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+            --config ${CMAKE_BUILD_TYPE}
+            --target install
             RESULT_VARIABLE ret
             )
         if (NOT "${ret}" STREQUAL "0")

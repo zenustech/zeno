@@ -34,10 +34,6 @@ endif()
 message("-- Build type: ${CMAKE_BUILD_TYPE}")
 
 if (ZENO_WITH_ZPM)
-    if (NOT DEFINED ZPM_INSTALL_PREFIX)
-        set(ZPM_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/.venv")
-    endif()
-    message("-- ZPM directory at: ${ZPM_INSTALL_PREFIX}")
     include(cmake/ZenoRequires.cmake)
 endif()
 
