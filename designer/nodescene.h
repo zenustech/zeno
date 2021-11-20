@@ -32,23 +32,21 @@ public:
 public:
 	NodeScene(QObject* parent = nullptr);
 	void initGrid();
-	void initTimelines();
+	void initTimelines(QRectF rcView);
 	void initSkin(const QString& fn);
 	void initNode();
 	void initSelectionDragBorder();
 
 public slots:
-	void timelineChanged();
     void updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay);
     void onSelectionChanged();
     void _adjustDragRectPos(QGraphicsItem* pSelection);
 
 private:
-	TimelineItem* m_pHTimeline;
-
 	QVector<DragPointItem*> m_dragPoints;
 	QGraphicsRectItem* m_selectedRect;
     QGraphicsItem* m_selectedItem;
+    TimelineItem* m_pHTimeline, *m_pVTimeline;
 
 	NodeParam m_nodeparam;
 	int m_nLargeCellRows;

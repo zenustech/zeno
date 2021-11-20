@@ -77,26 +77,12 @@ void NodeScene::initGrid()
 	initSelectionDragBorder();
 }
 
-void NodeScene::initTimelines()
+void NodeScene::initTimelines(QRectF rcView)
 {
-	m_pHTimeline = new TimelineItem;
-	addItem(m_pHTimeline);
-	connect(this, SIGNAL(changed(QList<QRectF>)), SLOT(timelineChanged()));
-}
-
-void NodeScene::timelineChanged()
-{
-	QList<QGraphicsView*> views = this->views();
-	bool empty = views.isEmpty();
-	for (int i = 0; i < views.length(); i++)
-	{
-		QGraphicsView* pView = views[i];
-		if (pView)
-		{
-			QRect rcViewport = pView->viewport()->rect();
-			m_pHTimeline->setPos(pView->mapToScene(rcViewport.topLeft()));
-		}
-	}
+    m_pHTimeline = new TimelineItem(this, true, rcView);
+    addItem(m_pHTimeline);
+    m_pVTimeline = new TimelineItem(this, false, rcView);
+    addItem(m_pVTimeline);
 }
 
 void NodeScene::initNode()

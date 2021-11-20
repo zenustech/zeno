@@ -12,9 +12,12 @@ NodesView::NodesView(QWidget* parent)
 	, m_factor(1.)
 	, m_dragMove(false)
 {
+	QRectF rcView(QPointF(-3600, -2400), QPointF(4500, 3200));
+
 	setScene(m_scene);
+	setSceneRect(rcView);
 	m_scene->initGrid();
-	m_scene->initTimelines();
+	m_scene->initTimelines(rcView);
 	setBackgroundBrush(QBrush(QColor(30, 34, 36), Qt::SolidPattern));
 	setDragMode(QGraphicsView::NoDrag);
 	setTransformationAnchor(QGraphicsView::NoAnchor);
@@ -136,7 +139,6 @@ void NodesView::wheelEvent(QWheelEvent* wheel_event)
 
 void NodesView::paintEvent(QPaintEvent* event)
 {
-	m_scene->timelineChanged();
 	QGraphicsView::paintEvent(event);
 }
 
