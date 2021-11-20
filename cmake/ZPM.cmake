@@ -18,9 +18,9 @@ function (_zpm_install pkg_desc)
     string(REPLACE "," ";" pkg_args ${pkg_desc})
     list(POP_FRONT pkg_args pkg_path)
 
-    message("======================================")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
     message(STATUS "ZPM installing package [${pkg_desc}]")
-    message("======================================")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
 
     file(REMOVE_RECURSE ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path})
 
@@ -59,9 +59,9 @@ function (_zpm_install pkg_desc)
         message(STATUS "Skipping install for [${pkg_path}] as it have no install target")
     endif()
 
-    message("======================================")
-    message(STATUS "ZPM installed package: [${pkg_path}]")
-    message("======================================")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "======================================")
+    message(STATUS "ZPM installed package: [${pkg_desc}]")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "======================================")
 endfunction()
 
 function(zpm_requires)
