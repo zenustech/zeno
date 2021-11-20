@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.10)
+
+if (DEFINED ZPM_PREFIX)
+    message("-- ZPM_PREFIX is [${ZPM_PREFIX}]")
+    set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES "${ZPM_PREFIX}/include")
+    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES "${ZPM_PREFIX}/include")
+    if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        set(CMAKE_INSTALL_PREFIX "${ZPM_PREFIX}")
+    endif()
+else()
+    message("-- ZPM_PREFIX is not defined")
+endif()
