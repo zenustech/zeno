@@ -6,6 +6,15 @@ option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
 
+if (DEFINED ZENO_PREFIX)
+    message("-- ZENO_PREFIX is [${ZENO_PREFIX}]")
+    set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES "${ZENO_PREFIX}/include")
+    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES "${ZENO_PREFIX}/include")
+    if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        set(CMAKE_INSTALL_PREFIX "${ZENO_PREFIX}")
+    endif()
+endif()
+
 ############### BEGIN ADHOC ###############
 if (UNIX)  # these are only used by archibate and zhxx1987
 
