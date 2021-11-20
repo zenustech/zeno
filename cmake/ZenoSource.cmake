@@ -9,7 +9,7 @@ if (ZENO_WITH_SYSTEM_TBB)
     target_link_libraries(zeno PUBLIC TBB::tbb)
 else()
     message("-- Building Zeno with Bundled TBB")
-    add_subdirectory(3rdparty/tbb)
+    add_subdirectory(3rdparty/bundled_tbb)
     target_link_libraries(zeno PUBLIC tbb)
 endif()
 

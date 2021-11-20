@@ -1,10 +1,10 @@
 # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 set(HIPSYCL_TARGETS "omp;cuda:sm_52;cuda:sm_61;cuda:sm_70;cuda:sm_75;cuda:sm_86" CACHE STRING "Specify the hipSYCL targets to build against")
 set(ZENO_TARGET "Editor" CACHE STRING "Specify the Zeno target desired to build (Editor, Headless, Benchmark, Tests)")
-option(ZENO_USE_SYSTEM_TBB "Build Zeno with TBB in system instead of bundled one" OFF)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
+option(ZENO_WITH_ZPM "Use ZPM to manage Zeno dependencies" ON)
 
 ############### BEGIN ADHOC ###############
 if (UNIX)  # these are only used by archibate and zhxx1987
