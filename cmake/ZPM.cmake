@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
-project(ZPMPackageRoot)
 
 if (NOT CMAKE_BUILD_TYPE)
-    message(FATAL_ERROR "CMAKE_BUILD_TYPE not set, please specify it with, e.g. -DCMAKE_BUILD_TYPE=Release")
+    message(FATAL_ERROR
+        "CMAKE_BUILD_TYPE not set, please specify it with, e.g. -DCMAKE_BUILD_TYPE=Release"
+        "from command line, or set(CMAKE_BUILD_TYPE Release) in CMakeLists.txt")
 endif()
 if (NOT ZPM_INSTALL_PREFIX)
     set(ZPM_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/.venv)
@@ -10,26 +11,26 @@ if (NOT ZPM_INSTALL_PREFIX)
 endif()
 
 message(STATUS "ZPM_INSTALL_PREFIX: [${ZPM_INSTALL_PREFIX}]")
-message(STATUS "PROJECT_BINARY_DIR: [${PROJECT_BINARY_DIR}]")
+message(STATUS "CMAKE_CURRENT_BINARY_DIR: [${CMAKE_CURRENT_BINARY_DIR}]")
 message(STATUS "CMAKE_BUILD_TYPE: [${CMAKE_BUILD_TYPE}]")
 message(STATUS "CMAKE_COMMAND: [${CMAKE_COMMAND}]")
 message(STATUS "CMAKE_GENERATOR: [${CMAKE_GENERATOR}]")
 
 function (_zpm_install pkg_desc)
-    string(REPLACE "," ";" pkg_args ${pkg_desc})
+    string(REPLACE " " ";" pkg_args ${pkg_desc})
     list(POP_FRONT pkg_args pkg_path)
 
     execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
     message(STATUS "ZPM installing package [${pkg_desc}]")
     execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
 
-    file(REMOVE_RECURSE ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path})
+    file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path})
 
     execute_process(
         COMMAND ${CMAKE_COMMAND}
         -G ${CMAKE_GENERATOR}
         -Wno-dev -S ${pkg_path}
-        -B ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+        -B ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${ZPM_INSTALL_PREFIX}
         -DCMAKE_FIND_USE_CMAKE_PATH:BOOL=TRUE
@@ -51,7 +52,7 @@ function (_zpm_install pkg_desc)
     endif()
     execute_process(
         COMMAND ${CMAKE_COMMAND}
-        --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+        --build ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
         --config ${CMAKE_BUILD_TYPE}
         ${parallel_flag}
         RESULT_VARIABLE ret
@@ -63,7 +64,7 @@ function (_zpm_install pkg_desc)
     if (NOT "${pkg_path}" MATCHES "^BoostBuilder$")
         execute_process(
             COMMAND ${CMAKE_COMMAND}
-            --build ${PROJECT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
+            --build ${CMAKE_CURRENT_BINARY_DIR}/zpm_pkg_build/${pkg_path}
             --config ${CMAKE_BUILD_TYPE}
             --target install
             RESULT_VARIABLE ret
@@ -80,23 +81,35 @@ function (_zpm_install pkg_desc)
     execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "======================================")
 endfunction()
 
-function(zpm_requires)
+function(_zpm_install_list requirements)
     set(lock_path ${ZPM_INSTALL_PREFIX}/zpm.lock)
     if (EXISTS ${lock_path})
         file(READ ${lock_path} content)
     else()
         set(content ZPM_INVALID_CONTENT)
     endif()
-    if (NOT "${content}" STREQUAL "${ARGN}")
-        message(STATUS "ZPM installing requirements: [${ARGN}]")
-        foreach (pkg_desc ${ARGN})
+    if (NOT "${content}" STREQUAL "${requirements}")
+        message(STATUS "ZPM installing requirements: [${requirements}]")
+        foreach (pkg_desc ${requirements})
             _zpm_install(${pkg_desc})
         endforeach()
-        file(WRITE ${lock_path} "${ARGN}")
-        message(STATUS "ZPM successfully installed: [${ARGN}]")
+        file(WRITE ${lock_path} "${requirements}")
+        message(STATUS "ZPM successfully installed: [${requirements}]")
     endif()
     set(CMAKE_INSTALL_PREFIX ${ZPM_INSTALL_PREFIX} CACHE PATH "For ZPM virtual environment" FORCE)
     set(CMAKE_PREFIX_PATH ${ZPM_INSTALL_PREFIX} CACHE PATH "For ZPM virtual environment" FORCE)
     set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE CACHE BOOL "For ZPM virtual environment" FORCE)
     set(CMAKE_FIND_USE_CMAKE_PATH TRUE CACHE BOOL "For ZPM virtual environment" FORCE)
+endfunction()
+
+set(ZPM_REQUIREMENTS "" CACHE STRING "For ZPM virtual environment" FORCE)
+
+function(zpm_requires pkg_desc)
+    string(REPLACE ";" " " pkg_desc "${ARGV}")
+    list(APPEND ZPM_REQUIREMENTS ${pkg_desc})
+    set(ZPM_REQUIREMENTS "${ZPM_REQUIREMENTS}" CACHE STRING "For ZPM virtual environment" FORCE)
+endfunction()
+
+function(zpm_finalize)
+    _zpm_install_list(${ZPM_REQUIREMENTS})
 endfunction()
