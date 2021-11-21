@@ -19,6 +19,7 @@ In the `3rdparty/mods` directory:
 https://github.com/google/googletest
 https://github.com/google/benchmark
 https://github.com/bombela/backward-cpp
+https://github.com/ericniebler/range-v3
 https://github.com/wjakob/tbb
 https://github.com/fmtlib/fmt
 https://github.com/gabime/spdlog
