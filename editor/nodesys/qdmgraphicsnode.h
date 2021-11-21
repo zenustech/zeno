@@ -34,6 +34,9 @@ class QDMGraphicsNode : public QGraphicsItem
     void initByDescriptor(dop::Descriptor const &desc);
     float getHeight() const;
 
+    QDMGraphicsSocketIn *addSocketIn();
+    QDMGraphicsSocketOut *addSocketOut();
+
 public:
     QDMGraphicsNode();
     ~QDMGraphicsNode();
@@ -51,9 +54,6 @@ public:
     //void socketUnlinked(QDMGraphicsSocketIn *socket);
     //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
     //void socketValueChanged(QDMGraphicsSocketIn *socket);
-
-    QDMGraphicsSocketIn *addSocketIn();
-    QDMGraphicsSocketOut *addSocketOut();
 
     void initAsSubnet();
     void initAsSubnetInput();

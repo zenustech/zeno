@@ -6,14 +6,17 @@
       <file path="$PROJECT_DIR$/editor" />
       <file path="$PROJECT_DIR$/src" />
       <file path="$PROJECT_DIR$/tests" />
+      <file path="$PROJECT_DIR$/zeno" />
     </sourceRoots>
     <libraryRoots>
+      <file path="$PROJECT_DIR$/3rdparty" />
       <file path="$PROJECT_DIR$/src/zs/tpls" />
       <file path="$PROJECT_DIR$/tpls" />
     </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/.cache" />
       <file path="$PROJECT_DIR$/.github" />
+      <file path="$PROJECT_DIR$/.vscode" />
       <file path="$PROJECT_DIR$/POC" />
       <file path="$PROJECT_DIR$/blender" />
       <file path="$PROJECT_DIR$/build" />

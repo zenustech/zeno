@@ -51,7 +51,7 @@ public:
     //std::vector<QDMGraphicsNode *> getVisibleNodes() const;
     std::vector<QDMGraphicsScene *> getChildScenes() const;
     std::string allocateNodeName(std::string const &prefix) const;
-    QDMGraphicsScene *getParentScene() const;
+    QDMGraphicsNode *getParentNode() const;
     std::string getFullPath() const;
     std::string getName() const;
 

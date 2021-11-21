@@ -52,7 +52,7 @@ jobs:
 
     - name: Packaging
       id: packaging
-      run: python .packaging.py
+      run: python .github/get_ver.py
 
     - name: Upload Release Asset
       id: upload_release_asset

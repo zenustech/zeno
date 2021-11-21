@@ -113,9 +113,9 @@ void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
     subnetNode = node;
 }
 
-QDMGraphicsScene *QDMGraphicsScene::getParentScene() const
+QDMGraphicsNode *QDMGraphicsScene::getParentNode() const
 {
-    return subnetNode ? subnetNode->getScene() : nullptr;
+    return subnetNode;
 }
 
 void QDMGraphicsScene::addSubnetNode()
@@ -214,15 +214,15 @@ void QDMGraphicsScene::addNormalNode(std::string const &type)
     emit sceneUpdated();
 }
 
-void QDMGraphicsScene::addNodeByType(QString type_)
+void QDMGraphicsScene::addNodeByType(QString type)
 {
-    auto type = type_.toStdString();
+    auto typ = type.toStdString();
     std::array table = {"SubnetNode", "SubnetIn", "SubnetOut"};
-    switch (ztd::try_find_index(table, type)) {
+    switch (ztd::try_find_index(table, typ)) {
     case 0: addSubnetNode(); break;
     case 1: addSubnetInput(); break;
     case 2: addSubnetOutput(); break;
-    default: addNormalNode(type);
+    default: addNormalNode(typ);
     }
 }
 

@@ -104,6 +104,9 @@ void QDMGraphicsNode::initAsSubnetInput()
     dop::Descriptor &desc = *subnetDescStorage;
     desc.name = "SubnetIn";
     desc.factory = std::make_unique<dop::SubnetIn>;
+    if (auto parNode = getScene()->getParentNode()) {
+        parNode->addSocketIn();
+    }
     initByDescriptor(desc);
 }
 
