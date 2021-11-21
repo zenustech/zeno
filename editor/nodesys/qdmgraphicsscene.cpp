@@ -1,10 +1,10 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
 #include "serialization.h"
+#include "utilities.h"
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/zmt/log.h>
-#include <zeno/zan/zan.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
@@ -101,10 +101,11 @@ std::string QDMGraphicsScene::getFullPath() const
 
 std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 {
-    return zan::find_unique_name
-        ( nodes
-        | zan::map(ZENO_F1(p, p->getName()))
-        , prefix);
+    std::vector<std::string> names;
+    for (auto const &node: nodes) {
+        names.push_back(node->getName());
+    }
+    return find_unique_name(names, prefix);
 }
 
 void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)

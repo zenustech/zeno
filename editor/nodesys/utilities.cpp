@@ -1,19 +1,11 @@
-#pragma once
-
-
-#include <zeno/zan/map.h>
-#include <cstdlib>
-#include <string>
+#include "utilities.h"
 #include <set>
 
 
 ZENO_NAMESPACE_BEGIN
-namespace zan {
-inline namespace ns_find_unique_name {
 
-
-static std::string find_unique_name
-    ( zan::is_range_of<std::string> auto const &names
+std::string find_unique_name
+    ( std::vector<std::string> const &names
     , std::string const &base
     )
 {
@@ -37,7 +29,4 @@ static std::string find_unique_name
     return base + '0' + std::to_string(std::rand());
 }
 
-
-}
-}
-ZENO_NAMESPACE_BEGIN
+ZENO_NAMESPACE_END
