@@ -10,7 +10,7 @@
 
 ZENO_NAMESPACE_BEGIN
 
-class QDMNodeParamEdit : public QWidget
+class QDMNodeParamEdit final : public QWidget
 {
     Q_OBJECT
 
@@ -21,11 +21,12 @@ class QDMNodeParamEdit : public QWidget
 
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
-    ~QDMNodeParamEdit();
+    ~QDMNodeParamEdit() override;
 
     QWidget *makeEditForType(QDMGraphicsNode *node, int sockid,
                              std::string const &type);
     void addRow(QString const &name, QWidget *row);
+    void clearRows();
 
 public slots:
     void setCurrentNode(QDMGraphicsNode *node);

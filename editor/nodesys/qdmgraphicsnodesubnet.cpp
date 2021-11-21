@@ -38,9 +38,26 @@ QDMGraphicsScene *QDMGraphicsNodeSubnet::getSubnetScene() const
 }
 
 void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
-    auto btnNew = new QPushButton;
-    btnNew->setText("(+)");
-    paredit->addRow("New", btnNew);
+    paredit->clearRows();
+
+    {
+        auto btnNew = new QPushButton;
+        btnNew->setText("(+I)");
+        paredit->addRow("New Input", btnNew);
+        QObject::connect(btnNew, &QPushButton::clicked, [this] {
+             subnetScene->addSubnetInput();
+        });
+    }
+
+    {
+        auto btnNew = new QPushButton;
+        btnNew->setText("(+O)");
+        paredit->addRow("New Output", btnNew);
+        QObject::connect(btnNew, &QPushButton::clicked, [this] {
+            subnetScene->addSubnetOutput();
+        });
+    }
+
     QDMGraphicsNode::setupParamEdit(paredit);
 }
 
@@ -56,6 +73,13 @@ void QDMGraphicsNodeSubnetIn::initialize()
     initByDescriptor(desc);
 }
 
+QDMGraphicsSocketOut *QDMGraphicsNodeSubnetIn::addSocket()
+{
+    auto sock = addSocketOut();
+    sock->setName("dummy");
+    return sock;
+}
+
 
 QDMGraphicsNodeSubnetOut::QDMGraphicsNodeSubnetOut() = default;
 
@@ -66,4 +90,11 @@ void QDMGraphicsNodeSubnetOut::initialize()
     desc.name = "SubnetOut";
     desc.factory = std::make_unique<dop::SubnetOut>;
     initByDescriptor(desc);
+}
+
+QDMGraphicsSocketIn *QDMGraphicsNodeSubnetOut::addSocket()
+{
+    auto sock = addSocketIn();
+    sock->setName("dummy");
+    return sock;
 }

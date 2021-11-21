@@ -49,8 +49,8 @@ public:
     void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
-    QDMGraphicsSocketIn *socketInAt(size_t index);
-    QDMGraphicsSocketOut *socketOutAt(size_t index);
+    [[nodiscard]] QDMGraphicsSocketIn *socketInAt(size_t index);
+    [[nodiscard]] QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
     void resetInOutList();

@@ -59,6 +59,9 @@ public:
     [[nodiscard]] std::string getFullPath() const;
     [[nodiscard]] std::string getName() const;
 
+    void addSubnetInput();
+    void addSubnetOutput();
+
     [[nodiscard]] QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);
     void deletePressed();

@@ -112,6 +112,12 @@ void QDMNodeParamEdit::addRow(const QString &name, QWidget *row)
     layout->addRow(name, row);
 }
 
+void QDMNodeParamEdit::clearRows()
+{
+    while (layout->rowCount())
+        layout->removeRow(0);
+}
+
 QDMNodeParamEdit::~QDMNodeParamEdit() = default;
 
 ZENO_NAMESPACE_END

@@ -287,4 +287,12 @@ void QDMGraphicsScene::addNode(QDMGraphicsNode *node) {
     nodes.emplace(node);
 }
 
+void QDMGraphicsScene::addSubnetOutput() {
+    subnetOutNode->addSocket();
+}
+
+void QDMGraphicsScene::addSubnetInput() {
+    subnetInNode->addSocket();
+}
+
 ZENO_NAMESPACE_END

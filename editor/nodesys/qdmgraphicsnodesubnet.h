@@ -25,6 +25,7 @@ class QDMGraphicsNodeSubnetIn final : public QDMGraphicsNode {
 public:
     QDMGraphicsNodeSubnetIn();
     void initialize();
+    QDMGraphicsSocketOut *addSocket();
 };
 
 class QDMGraphicsNodeSubnetOut final : public QDMGraphicsNode {
@@ -33,6 +34,7 @@ class QDMGraphicsNodeSubnetOut final : public QDMGraphicsNode {
 public:
     QDMGraphicsNodeSubnetOut();
     void initialize();
+    QDMGraphicsSocketIn *addSocket();
 };
 
 
