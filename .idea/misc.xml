@@ -14,6 +14,7 @@
       <file path="$PROJECT_DIR$/tpls" />
     </libraryRoots>
     <excludeRoots>
+      <file path="$PROJECT_DIR$/.POC" />
       <file path="$PROJECT_DIR$/.cache" />
       <file path="$PROJECT_DIR$/.github" />
       <file path="$PROJECT_DIR$/.vscode" />

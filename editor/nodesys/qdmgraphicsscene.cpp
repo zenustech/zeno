@@ -109,7 +109,7 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
     return find_unique_name(names, prefix);
 }
 
-void QDMGraphicsScene::setSubnetNode(QDMGraphicsNodeSubnet *node)
+void QDMGraphicsScene::initAsSubnet(QDMGraphicsNodeSubnet *node)
 {
     subnetNode = node;
 

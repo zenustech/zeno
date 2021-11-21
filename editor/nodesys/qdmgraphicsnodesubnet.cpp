@@ -16,7 +16,7 @@ void QDMGraphicsNodeSubnet::initialize()
     desc.factory = std::make_unique<dop::SubnetNode>;
     initByDescriptor(desc);
     subnetScene = std::make_unique<QDMGraphicsScene>();
-    subnetScene->setSubnetNode(this);
+    subnetScene->initAsSubnet(this);
 }
 
 void QDMGraphicsNodeSubnet::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
@@ -27,7 +27,7 @@ void QDMGraphicsNodeSubnet::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *even
         }
     }
 
-    QGraphicsItem::mousePressEvent(event);
+    QGraphicsItem::mouseDoubleClickEvent(event);
 }
 
 QDMGraphicsNodeSubnetIn::QDMGraphicsNodeSubnetIn() = default;

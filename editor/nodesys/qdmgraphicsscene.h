@@ -40,20 +40,18 @@ class QDMGraphicsScene : public QGraphicsScene
 
     void addNode(QDMGraphicsNode *node);
     void addSubnetNode();
-    void addSubnetInput();
-    void addSubnetOutput();
     void addNormalNode(std::string const &type);
     void setFloatingNode(QDMGraphicsNode *node);
 
 public:
     QDMGraphicsScene();
-    ~QDMGraphicsScene();
+    ~QDMGraphicsScene() override;
 
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
-    void setSubnetNode(QDMGraphicsNodeSubnet *node);
+    void initAsSubnet(QDMGraphicsNodeSubnet *node);
     void setCurrentNode(QDMGraphicsNode *node);
     //std::vector<QDMGraphicsNode *> getVisibleNodes() const;
     [[nodiscard]] std::vector<QDMGraphicsScene *> getChildScenes() const;
