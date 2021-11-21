@@ -12,7 +12,7 @@ NodesView::NodesView(QWidget* parent)
 	, m_factor(1.)
 	, m_dragMove(false)
 {
-	QRectF rcView(QPointF(-3600, -2400), QPointF(4500, 3200));
+	QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
 
 	setScene(m_scene);
 	setSceneRect(rcView);
@@ -25,6 +25,7 @@ NodesView::NodesView(QWidget* parent)
 	setMouseTracking(true);
 
 	connect(m_scene, SIGNAL(changed(QList<QRectF>)), this, SLOT(update()));
+	connect(this, SIGNAL(viewChanged(qreal)), m_scene, SLOT(onViewTransformChanged(qreal)));
 }
 
 void NodesView::initSkin(const QString& fn)
@@ -53,11 +54,28 @@ void NodesView::gentle_zoom(qreal factor)
 
 	qreal factor_i_want = transform().m11();
 	emit zoomed(factor_i_want);
+	emit viewChanged(m_factor);
+}
+
+qreal NodesView::_factorStep(qreal factor)
+{
+	if (factor < 2)
+		return 0.1;
+	else if (factor < 3)
+		return 0.25;
+	else if (factor < 4)
+		return 0.4;
+	else if (factor < 10)
+		return 0.7;
+	else if (factor < 20)
+		return 1.0;
+	else
+		return 1.5;
 }
 
 void NodesView::zoomIn()
 {
-	m_factor = std::min(m_factor + m_factor_step, 8.0);
+	m_factor = std::min(m_factor + _factorStep(m_factor), 32.0);
 	qreal current_factor = transform().m11();
 	qreal factor_complicate = m_factor / current_factor;
 	gentle_zoom(factor_complicate);
@@ -65,7 +83,7 @@ void NodesView::zoomIn()
 
 void NodesView::zoomOut()
 {
-	m_factor = std::max(m_factor - m_factor_step, 0.4);
+	m_factor = std::max(m_factor - _factorStep(m_factor), 0.4);
 	qreal current_factor = transform().m11();
 	qreal factor_complicate = m_factor / current_factor;
 	gentle_zoom(factor_complicate);
@@ -109,6 +127,7 @@ void NodesView::mouseMoveEvent(QMouseEvent* mouse_event)
 		qreal deltaY = delta.y() / transform.m22();
 		translate(-deltaX, -deltaY);
 		m_startPos = mouse_event->pos();
+		emit viewChanged(m_factor);
 		return;
 	}
 	QGraphicsView::mouseMoveEvent(mouse_event);

@@ -6,6 +6,7 @@
 #include "componentitem.h"
 #include "timelineitem.h"
 #include "dragpointitem.h"
+#include "nodegrid.h"
 
 
 NodeScene::NodeScene(QObject* parent)
@@ -17,6 +18,7 @@ NodeScene::NodeScene(QObject* parent)
 	, m_pHTimeline(nullptr)
 	, m_selectedRect(nullptr)
 	, m_selectedItem(nullptr)
+	, m_grid(nullptr)
 {
 	//initGrid();
 	connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
@@ -29,52 +31,8 @@ void NodeScene::initSkin(const QString& fn)
 
 void NodeScene::initGrid()
 {
-	int W = m_nLargeCellColumns * m_nCellsInLargeCells * m_nPixelsInCell;
-	int H = m_nLargeCellRows * m_nCellsInLargeCells * m_nPixelsInCell;
-
-	//fill background
-	addRect(QRectF(0, 0, W, H), QPen(Qt::NoPen), QColor(51, 59, 62));
-
-	for (int r = 0; r < m_nLargeCellRows; r++)
-	{
-		int y = r * m_nCellsInLargeCells * m_nPixelsInCell;
-		int xend = W;
-		addLine(0, y, xend, y, QPen(QColor(81, 87, 92)));
-		for (int n = 0; n <= m_nCellsInLargeCells; n++)
-		{
-			QColor lineColor;
-			if (n == 0 || n == m_nCellsInLargeCells)
-			{
-				lineColor = QColor(81, 87, 92);
-			}
-			else
-			{
-				lineColor = QColor(58, 65, 71);
-			}
-			addLine(0, y + n * m_nPixelsInCell, xend, y + n * m_nPixelsInCell, QPen(lineColor));
-		}
-	}
-
-	for (int c = 0; c < m_nLargeCellColumns; c++)
-	{
-		int x = c * m_nCellsInLargeCells * m_nPixelsInCell;
-		int yend = H;
-		addLine(x, 0, x, yend, QPen(QColor(81, 87, 92)));
-		for (int n = 0; n <= m_nCellsInLargeCells; n++)
-		{
-			QColor lineColor;
-			if (n == 0 || n == m_nCellsInLargeCells)
-			{
-				lineColor = QColor(81, 87, 92);
-			}
-			else
-			{
-				lineColor = QColor(58, 65, 71);
-			}
-			addLine(x + n * m_nPixelsInCell, 0, x + n * m_nPixelsInCell, yend, QPen(lineColor));
-		}
-	}
-	initSelectionDragBorder();
+	m_grid = new NodeGridItem;
+	addItem(m_grid);
 }
 
 void NodeScene::initTimelines(QRectF rcView)
@@ -83,6 +41,20 @@ void NodeScene::initTimelines(QRectF rcView)
     addItem(m_pHTimeline);
     m_pVTimeline = new TimelineItem(this, false, rcView);
     addItem(m_pVTimeline);
+}
+
+void NodeScene::onViewTransformChanged(qreal factor)
+{
+	updateTimeline(factor);
+	m_grid->setFactor(factor);
+}
+
+void NodeScene::updateTimeline(qreal factor)
+{
+	if (m_pHTimeline)
+		m_pHTimeline->updateScalar(factor);
+	if (m_pVTimeline)
+		m_pVTimeline->updateScalar(factor);
 }
 
 void NodeScene::initNode()
@@ -98,32 +70,6 @@ void NodeScene::initNode()
 
 	//ResizablePixmapItem* pItem = new ResizablePixmapItem(this, QPixmap("C:\\editor\\uirender\\view.jpg").scaled(60, 61));
 	//pItem->setPos(50, 50);
-}
-
-void NodeScene::initSelectionDragBorder()
-{
-	m_dragPoints.resize(DRAG_RIGHTBOTTOM + 1);
-	for (int i = DRAG_LEFTTOP; i <= DRAG_RIGHTBOTTOM; i++)
-	{
-        QPen pen(QColor(21, 152, 255), borderW);
-        pen.setJoinStyle(Qt::MiterJoin);
-        QBrush brush(QColor(255, 255, 255));
-
-		m_dragPoints[i] = new DragPointItem((DRAG_ITEM)i, this, dragW, dragH);
-		m_dragPoints[i]->setPen(pen);
-		m_dragPoints[i]->setBrush(brush);
-		m_dragPoints[i]->hide();
-		m_dragPoints[i]->setZValue(100);
-		addItem(m_dragPoints[i]);
-	}
-
-    QPen pen(QColor(21, 152, 255), borderW);
-    pen.setJoinStyle(Qt::MiterJoin);
-	m_selectedRect = new QGraphicsRectItem;
-	m_selectedRect->setPen(pen);
-	m_selectedRect->setBrush(Qt::NoBrush);
-	m_selectedRect->hide();
-	addItem(m_selectedRect);
 }
 
 void NodeScene::onSelectionChanged()

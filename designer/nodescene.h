@@ -7,6 +7,7 @@
 class TimelineItem;
 class DragPointItem;
 class ComponentItem;
+class NodeGridItem;
 
 class NodeScene : public QGraphicsScene
 {
@@ -35,17 +36,19 @@ public:
 	void initTimelines(QRectF rcView);
 	void initSkin(const QString& fn);
 	void initNode();
-	void initSelectionDragBorder();
 
 public slots:
     void updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay);
     void onSelectionChanged();
     void _adjustDragRectPos(QGraphicsItem* pSelection);
+    void updateTimeline(qreal factor);
+    void onViewTransformChanged(qreal factor);
 
 private:
 	QVector<DragPointItem*> m_dragPoints;
 	QGraphicsRectItem* m_selectedRect;
     QGraphicsItem* m_selectedItem;
+    NodeGridItem* m_grid;
     TimelineItem* m_pHTimeline, *m_pVTimeline;
 
 	NodeParam m_nodeparam;

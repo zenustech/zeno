@@ -163,6 +163,9 @@ void ResizableItemImpl::showBorder(bool bShow)
 
 void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (QApplication::keyboardModifiers() == Qt::ControlModifier)
+        return;
+
     QPointF itemScenePos = this->scenePos();
     QPointF scenePos = event->scenePos();
     QGraphicsItem* item = getResizeHandleItem(scenePos);
@@ -228,6 +231,9 @@ void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (QApplication::keyboardModifiers() == Qt::ControlModifier)
+        return;
+
     if (m_mouseHint == TRANSLATE)
     {
         _base::mouseMoveEvent(event);
@@ -301,6 +307,9 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ResizableItemImpl::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (QApplication::keyboardModifiers() == Qt::ControlModifier)
+        return;
+
     m_mouseHint = NO_DRAG;
     _base::mouseReleaseEvent(event);
 }

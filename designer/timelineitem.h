@@ -22,14 +22,15 @@ public:
 
 public slots:
 	void resetPosition();
+	void updateScalar(qreal factor);
 
 private:
-	int _getframes();
-
-	qreal m_left, m_top, m_right, m_bottom, m_from, m_to;
-	const int sz = 24;
 	QRectF m_view;
+	qreal m_left, m_top, m_right, m_bottom, m_from, m_to;
 	NodeScene* m_pScene;
+	const int sz = 24;
+	int m_nframes;
+	qreal m_factor;
 	bool m_bHorizontal;
 };
 

@@ -21,6 +21,7 @@ protected:
 
 signals:
 	void zoomed(qreal);
+	void viewChanged(qreal);
 
 private:
 	void gentle_zoom(qreal factor);
@@ -28,13 +29,14 @@ private:
 	void zoomIn();
 	void zoomOut();
 	void resetTransform();
+	qreal _factorStep(qreal factor);
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 
 	int m_gridX;
 	int m_gridY;
 	qreal m_factor;
-	const double m_factor_step = 0.25;
+	const double m_factor_step = 0.1;
 	bool m_dragMove;
 	NodeScene* m_scene;
 	Qt::KeyboardModifiers _modifiers;
