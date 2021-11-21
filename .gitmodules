@@ -25,3 +25,6 @@
 [submodule "3rdparty/pkgs/openvdb"]
 	path = 3rdparty/pkgs/openvdb
 	url = https://github.com/AcademySoftwareFoundation/openvdb.git
+[submodule "3rdparty/pkgs/eigen"]
+	path = 3rdparty/pkgs/eigen
+	url = https://gitlab.com/libeigen/eigen.git
