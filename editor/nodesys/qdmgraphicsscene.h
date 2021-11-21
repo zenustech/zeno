@@ -16,6 +16,10 @@ ZENO_NAMESPACE_BEGIN
 
 struct Interceptor;
 
+class QDMGraphicsNodeSubnet;
+class QDMGraphicsNodeSubnetIn;
+class QDMGraphicsNodeSubnetOut;
+
 class QDMGraphicsScene : public QGraphicsScene
 {
     Q_OBJECT
@@ -24,21 +28,22 @@ class QDMGraphicsScene : public QGraphicsScene
 
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
-    QDMGraphicsNode *subnetNode{};
-    QDMGraphicsNode *subnetInNode{};
-    QDMGraphicsNode *subnetOutNode{};
+    // not null if the scene is a subnet:
+    QDMGraphicsNodeSubnet *subnetNode{};
+    QDMGraphicsNodeSubnetIn *subnetInNode{};
+    QDMGraphicsNodeSubnetOut *subnetOutNode{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
 
-    QDMGraphicsNode *addNode();
+    void addNode(QDMGraphicsNode *node);
     void addSubnetNode();
     void addSubnetInput();
     void addSubnetOutput();
     void addNormalNode(std::string const &type);
-    void updateFloatingNode();
+    void setFloatingNode(QDMGraphicsNode *node);
 
 public:
     QDMGraphicsScene();
@@ -48,16 +53,15 @@ public:
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
 
-    void setSubnetNode(QDMGraphicsNode *node);
+    void setSubnetNode(QDMGraphicsNodeSubnet *node);
     void setCurrentNode(QDMGraphicsNode *node);
     //std::vector<QDMGraphicsNode *> getVisibleNodes() const;
-    std::vector<QDMGraphicsScene *> getChildScenes() const;
-    std::string allocateNodeName(std::string const &prefix) const;
-    QDMGraphicsNode *getParentNode() const;
-    std::string getFullPath() const;
-    std::string getName() const;
+    [[nodiscard]] std::vector<QDMGraphicsScene *> getChildScenes() const;
+    [[nodiscard]] std::string allocateNodeName(std::string const &prefix) const;
+    [[nodiscard]] std::string getFullPath() const;
+    [[nodiscard]] std::string getName() const;
 
-    QPointF getCursorPos() const;
+    [[nodiscard]] QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);
     void deletePressed();
     void copyPressed();

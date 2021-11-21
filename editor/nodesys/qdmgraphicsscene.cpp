@@ -1,5 +1,6 @@
 #include "qdmgraphicsscene.h"
 #include "qdmgraphicsview.h"
+#include "qdmgraphicsnodesubnet.h"
 #include "serialization.h"
 #include "utilities.h"
 #include <zeno/ztd/memory.h>
@@ -108,54 +109,37 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
     return find_unique_name(names, prefix);
 }
 
-void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
+void QDMGraphicsScene::setSubnetNode(QDMGraphicsNodeSubnet *node)
 {
     subnetNode = node;
-    subnetInNode = addNode();
-    subnetInNode->setPos(QPointF(-200, -100));
-    subnetInNode->initAsSubnetInput();
-    subnetOutNode = addNode();
-    subnetOutNode->setPos(QPointF(200, -100));
-    subnetOutNode->initAsSubnetOutput();
-}
 
-QDMGraphicsNode *QDMGraphicsScene::getParentNode() const
-{
-    return subnetNode;
+    subnetInNode = new QDMGraphicsNodeSubnetIn;
+    addNode(subnetInNode);
+    subnetInNode->setPos(QPointF(-200, -100));
+    subnetInNode->initialize();
+
+    subnetOutNode = new QDMGraphicsNodeSubnetOut;
+    addNode(subnetOutNode);
+    subnetOutNode->setPos(QPointF(200, -100));
+    subnetOutNode->initialize();
 }
 
 void QDMGraphicsScene::addSubnetNode()
 {
     if (floatingNode)
         return;
-    floatingNode = addNode();
-    floatingNode->initAsSubnet();
-    updateFloatingNode();
+    auto node = new QDMGraphicsNodeSubnet;
+    addNode(node);
+    node->initialize();
+    setFloatingNode(node);
     emit sceneCreatedOrRemoved();
 }
 
-void QDMGraphicsScene::addSubnetInput()
+void QDMGraphicsScene::setFloatingNode(QDMGraphicsNode *node)
 {
-    if (floatingNode)
-        return;
-    floatingNode = addNode();
-    floatingNode->initAsSubnetInput();
-    updateFloatingNode();
-}
-
-void QDMGraphicsScene::addSubnetOutput()
-{
-    if (floatingNode)
-        return;
-    floatingNode = addNode();
-    floatingNode->initAsSubnetOutput();
-    updateFloatingNode();
-}
-
-void QDMGraphicsScene::updateFloatingNode()
-{
-    floatingNode->hide();
-    floatingNode->setPos(getCursorPos());
+    node->hide();
+    node->setPos(getCursorPos());
+    floatingNode = node;
     emit sceneUpdated();
 }
 
@@ -201,19 +185,12 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     emit sceneUpdated();
 }
 
-QDMGraphicsNode *QDMGraphicsScene::addNode()
-{
-    auto node = new QDMGraphicsNode;
-    addItem(node);
-    nodes.emplace(node);
-    return node;
-}
-
 void QDMGraphicsScene::addNormalNode(std::string const &type)
 {
     if (floatingNode)
         return;
-    floatingNode = addNode();
+    floatingNode = new QDMGraphicsNode;
+    addNode(floatingNode);
     floatingNode->initByType(type);
     floatingNode->hide();
 
@@ -299,10 +276,15 @@ std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {
     std::vector<QDMGraphicsScene *> res;
     for (auto const &node: nodes) {
-        if (auto subnet = node->getSubnetScene())
-            res.push_back(subnet);
+        if (auto subnet = dynamic_cast<QDMGraphicsNodeSubnet *>(node.get()))
+            res.push_back(subnet->getSubnetScene());
     }
     return res;
+}
+
+void QDMGraphicsScene::addNode(QDMGraphicsNode *node) {
+    addItem(node);
+    nodes.emplace(node);
 }
 
 ZENO_NAMESPACE_END

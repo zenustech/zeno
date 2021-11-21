@@ -24,32 +24,29 @@ class QDMGraphicsNode : public QGraphicsItem
 
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
-    std::unique_ptr<QDMGraphicsScene> subnetScene;
-    std::unique_ptr<dop::Descriptor> subnetDescStorage;
-    std::vector<std::string> subInNames;
-    std::vector<std::string> subOutNames;
 
     std::unique_ptr<QGraphicsTextItem> label;
     dop::Descriptor const *desc{};
     std::string name;
 
-    void initByDescriptor(dop::Descriptor const &desc);
-    float getHeight() const;
+    [[nodiscard]] float getHeight() const;
 
+protected:
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
+    void initByDescriptor(const dop::Descriptor &desc);
 
 public:
+    QDMGraphicsNode();
+    void initByType(std::string const &type);
     //void socketUnlinked(QDMGraphicsSocketIn *socket);
     //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
-    QDMGraphicsNode();
 
-    ~QDMGraphicsNode();
-    virtual QRectF boundingRect() const override;
-    virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    ~QDMGraphicsNode() override;
+    [[nodiscard]] QRectF boundingRect() const override;
+    void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     QDMGraphicsSocketIn *socketInAt(size_t index);
     QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
@@ -57,13 +54,7 @@ public:
     void resetInOutList();
 
     //void socketValueChanged(QDMGraphicsSocketIn *socket);
-    void initAsSubnet();
-    void initAsSubnetInput();
-    void initAsSubnetOutput();
-
-    void initByType(std::string const &type);
-    QDMGraphicsScene *getSubnetScene() const;
-    QDMGraphicsScene *getScene() const;
+    [[nodiscard]] QDMGraphicsScene *getScene() const;
 
     void setName(QString name);
     inline std::string const &getName() { return name; }

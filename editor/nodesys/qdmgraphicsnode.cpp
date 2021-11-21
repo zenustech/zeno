@@ -2,7 +2,6 @@
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicsscene.h"
 #include <zeno/dop/Descriptor.h>
-#include <zeno/dop/SubnetNode.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/zmt/log.h>
@@ -31,7 +30,7 @@ float QDMGraphicsNode::getHeight() const
 
 QRectF QDMGraphicsNode::boundingRect() const
 {
-    return QRectF(-QDMGraphicsSocket::SIZE, 1e-6f, WIDTH + QDMGraphicsSocket::SIZE * 2, getHeight() - 2e-6f);
+    return {-QDMGraphicsSocket::SIZE, 1e-6f, WIDTH + QDMGraphicsSocket::SIZE * 2, getHeight() - 2e-6f};
 }
 
 void QDMGraphicsNode::paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget)
@@ -76,47 +75,7 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
     return socketOut;
 }
 
-void QDMGraphicsNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton) {
-        if (subnetScene) {
-            emit getScene()->subnetSceneEntered(subnetScene.get());
-        }
-    }
-
-    QGraphicsItem::mousePressEvent(event);
-}
-
-void QDMGraphicsNode::initAsSubnet()
-{
-    subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetNode";
-    desc.factory = std::make_unique<dop::SubnetNode>;
-    initByDescriptor(desc);
-    subnetScene = std::make_unique<QDMGraphicsScene>();
-    subnetScene->setSubnetNode(this);
-}
-
-void QDMGraphicsNode::initAsSubnetInput()
-{
-    subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetIn";
-    desc.factory = std::make_unique<dop::SubnetIn>;
-    initByDescriptor(desc);
-}
-
-void QDMGraphicsNode::initAsSubnetOutput()
-{
-    subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetOut";
-    desc.factory = std::make_unique<dop::SubnetOut>;
-    initByDescriptor(desc);
-}
-
-void QDMGraphicsNode::initByType(std::string const &type)
+void QDMGraphicsNode::initByType(const std::string &type)
 {
     auto const &desc = dop::descriptor_table().at(type);
     initByDescriptor(desc);
@@ -134,7 +93,8 @@ void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 
-    auto name = getScene()->allocateNodeName(desc.name);
+    auto scene = getScene();
+    auto name = scene->allocateNodeName(desc.name);
     setName(QString::fromStdString(name));
 }
 
@@ -142,11 +102,6 @@ void QDMGraphicsNode::setName(QString name)
 {
     label->setPlainText(name);
     this->name = name.toStdString();
-}
-
-QDMGraphicsScene *QDMGraphicsNode::getSubnetScene() const
-{
-    return subnetScene.get();
 }
 
 QDMGraphicsSocketIn *QDMGraphicsNode::socketInAt(size_t index)
@@ -222,6 +177,8 @@ void QDMGraphicsNode::invalidate()
 
 void QDMGraphicsNode::resetInOutList()
 {
+    std::vector<std::string> subInNames;//TODO
+    std::vector<std::string> subOutNames;//TODO
     for (const auto& inName: subInNames) {
         auto sockIn = addSocketIn();
         sockIn->setName(QString::fromStdString(inName));
