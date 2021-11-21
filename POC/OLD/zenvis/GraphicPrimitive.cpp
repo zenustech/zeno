@@ -48,9 +48,17 @@ struct GraphicPrimitive : IGraphic {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
 
         if (prim->has_attr("rad")) {
-            auto &rad = prim->attr<float>("rad");
-            for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
+            if (prim->has_attr("opa")) {
+                auto &rad = prim->attr<float>("rad");
+                auto &opa = prim->attr<float>("opa");
+                for (size_t i = 0; i < nrm.size(); i++) {
+                    nrm[i] = zeno::vec3f(rad[i], opa[i], 0.0f);
+                }
+            } else {
+                auto &rad = prim->attr<float>("rad");
+                for (size_t i = 0; i < nrm.size(); i++) {
+                    nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
+                }
             }
         } else if (prim->tris.size()) {
             for (size_t i = 0; i < nrm.size(); i++) {
@@ -209,11 +217,13 @@ attribute vec3 vNormal;
 varying vec3 position;
 varying vec3 color;
 varying float radius;
+varying float opacity;
 void main()
 {
   position = vPosition;
   color = vColor;
   radius = vNormal.x;
+  opacity = vNormal.y;
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
@@ -237,6 +247,7 @@ uniform mat4 mProj;
 varying vec3 position;
 varying vec3 color;
 varying float radius;
+varying float opacity;
 void main()
 {
   const vec3 lightDir = vec3(0.577, 0.577, 0.577);
@@ -258,7 +269,7 @@ void main()
   }
   else
     oColor = color;
-  gl_FragColor = vec4(oColor, 1.0);
+  gl_FragColor = vec4(oColor, 1.0 - opacity);
 }
 )";
     }

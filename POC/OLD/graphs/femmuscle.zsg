@@ -170,7 +170,7 @@
       ]
      },
      "params": {
-      "integType": "QuasiStatic"
+      "integType": "BackwardEuler"
      },
      "uipos": [
       1059.3236381867284,
@@ -271,17 +271,17 @@
       "NodeFile": [
        null,
        null,
-       "/home/lsl/LSL/ActiveMuscle/model/muscles/R_bicep.node"
+       "/home/dilei/Desktop/femmuscle_model/muscle/R_bicep.node"
       ],
       "EleFile": [
        null,
        null,
-       "/home/lsl/LSL/ActiveMuscle/model/muscles/R_bicep.ele"
+       "/home/dilei/Desktop/femmuscle_model/muscle/R_bicep.ele"
       ],
       "BouFile": [
        null,
        null,
-       "/home/lsl/LSL/ActiveMuscle/model/muscles/R_bicep.bou"
+       "/home/dilei/Desktop/femmuscle_model/muscle/R_bicep.bou"
       ],
       "density": [
        "bc30b27d-NumericFloat",
@@ -406,7 +406,7 @@
      },
      "params": {
       "type": "",
-      "path": "/home/lsl/Desktop/muscleFiber.vdb"
+      "path": "/home/dilei/Desktop/femmuscle_model/muscle/muscleFiber.vdb"
      },
      "uipos": [
       -5602.910809975152,
@@ -704,8 +704,8 @@
      },
      "params": {},
      "uipos": [
-      2334.166181386918,
-      -1461.834091376679
+      2370.152436958984,
+      -1458.351550514866
      ],
      "options": []
     },
@@ -762,8 +762,8 @@
       "reverse": false
      },
      "uipos": [
-      3452.1295380280567,
-      -1074.4420891417114
+      3456.362342260861,
+      -1023.6484383480606
      ],
      "options": []
     },
@@ -1726,7 +1726,7 @@
      },
      "params": {},
      "uipos": [
-      792.7777777777778,
+      785.2221684934452,
       -1737.4999999999998
      ],
      "options": []
@@ -1818,8 +1818,8 @@
       "value": "a = $lent/$len0+0.00001\na = (a<0.6)?0.6:a\nratio = 0.5\nb = (a>1)?pow(sqrt(1.0/a),ratio):pow(sqrt(1.0/a),1.0/ratio)\n@ret=vec3(a, b, b)"
      },
      "uipos": [
-      435.36864535768655,
-      -1878.9639269406389
+      264.36335435239585,
+      -1864.5723925491045
      ],
      "options": []
     },
@@ -1841,8 +1841,8 @@
       "_KEYS": "ret\nobj1"
      },
      "uipos": [
-      1077.7777777777783,
-      -1673.3333333333333
+      981.0659789383199,
+      -1692.9779174725982
      ],
      "options": [],
      "socket_keys": [
@@ -1903,11 +1903,11 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
+      "value": "/home/dilei/Desktop/femmuscle_model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
-      -2843.515731521004,
-      -4457.008275956126
+      -2856.88517059257,
+      -4457.008275956127
      ],
      "options": [
       "ONCE"
@@ -1962,7 +1962,7 @@
       "path": [
        "4a6c0b43-x",
        "value",
-       "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1}.obj"
+       "/home/dilei/Desktop/femmuscle_model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
       ],
       "SRC": [
        null,
@@ -1972,8 +1972,8 @@
      },
      "params": {},
      "uipos": [
-      -2410.594502465974,
-      -4396.257950703755
+      -2437.6738061410224,
+      -4433.975552251144
      ],
      "options": [
       "ONCE"
@@ -2012,7 +2012,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
+      "value": "/home/dilei/Desktop/femmuscle_model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3044.5618136093394,
@@ -2297,7 +2297,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
+      "value": "/home/dilei/Desktop/femmuscle_model/bones/outobj_split/outobj/bone2_squ_v01/bone2_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3168.673741793745,
@@ -2315,7 +2315,7 @@
       ]
      },
      "params": {
-      "value": "/home/lsl/LSL/ActiveMuscle/model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
+      "value": "/home/dilei/Desktop/femmuscle_model/bones/outobj_split/outobj/bone1_squ_v01/bone1_squ_v01.{frame+1:04d}.obj"
      },
      "uipos": [
       -3202.9704243450497,
@@ -2375,8 +2375,8 @@
     }
    },
    "view_rect": {
-    "x": -3845.139417570773,
-    "y": -4909.0707402243215,
+    "x": -3456.4046774636854,
+    "y": -5821.303743777607,
     "width": 5820.766091346737,
     "height": 5820.766091346737
    }
@@ -7714,6 +7714,46 @@
     "FEM"
    ]
   },
+  "AddMuscleFibers2": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "AppendList": {
    "inputs": [
     [
@@ -10139,6 +10179,66 @@
     "GPUMPM"
    ]
   },
+  "ExplicitTimeStepping": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "muscleForce",
+     ""
+    ],
+    [
+     "",
+     "dampForce",
+     ""
+    ],
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "epsilon",
+     ""
+    ],
+    [
+     "",
+     "CT",
+     ""
+    ],
+    [
+     "",
+     "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "depa",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "ExportObjMesh": {
    "inputs": [
     [
@@ -10886,6 +10986,41 @@
    ]
   },
   "FiberParticleToFEMFiber": {
+   "inputs": [
+    [
+     "",
+     "fp",
+     ""
+    ],
+    [
+     "",
+     "femMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fiberOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "FiberParticleToFEMFiber2": {
    "inputs": [
     [
      "",
@@ -11768,6 +11903,31 @@
    "params": [],
    "categories": [
     "EasyGL"
+   ]
+  },
+  "GenerateSpectrum": {
+   "inputs": [
+    [
+     "",
+     "real_ocean",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
    ]
   },
   "GeoVertexVel": {
@@ -12935,6 +13095,71 @@
     "CompressibleFlow"
    ]
   },
+  "MakeCuOcean": {
+   "inputs": [
+    [
+     "int",
+     "WaveExponent",
+     "8"
+    ],
+    [
+     "float",
+     "chop",
+     "0.5"
+    ],
+    [
+     "float",
+     "gravity",
+     "9.81"
+    ],
+    [
+     "float",
+     "windDir",
+     "0"
+    ],
+    [
+     "float",
+     "timeScale",
+     "1.0"
+    ],
+    [
+     "float",
+     "patchSize",
+     "100.0"
+    ],
+    [
+     "float",
+     "speed",
+     "100.0"
+    ],
+    [
+     "float",
+     "timeshift",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "gpuOcean",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
   "MakeCubePrimitive": {
    "inputs": [
     [
@@ -13035,6 +13260,36 @@
     "dict"
    ]
   },
+  "MakeExplicitTimeIntegrator2": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeFEMIntegrator": {
    "inputs": [
     [
@@ -13082,6 +13337,66 @@
    ]
   },
   "MakeFEMMeshFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "NodeFile",
+     ""
+    ],
+    [
+     "readpath",
+     "EleFile",
+     ""
+    ],
+    [
+     "readpath",
+     "BouFile",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "YoungModulus",
+     ""
+    ],
+    [
+     "",
+     "PossonRatio",
+     ""
+    ],
+    [
+     "",
+     "Damp",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeFEMMeshFromFile2": {
    "inputs": [
     [
      "readpath",
@@ -13311,6 +13626,31 @@
     [
      "",
      "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeIdentityMatrix2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "eyeMat4",
      ""
     ],
     [
@@ -14808,6 +15148,41 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "OceanCompute": {
+   "inputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "ocean_FFT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OceanData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
    ]
   },
   "OutputZensimParticles": {
@@ -18990,6 +19365,11 @@
     ],
     [
      "string",
+     "sampleBy",
+     "pos"
+    ],
+    [
+     "string",
      "primAttr",
      "sdf"
     ],
@@ -19333,6 +19713,41 @@
     "FEM"
    ]
   },
+  "SetUniformActivation2": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "uniform_act",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetUniformFiberDirection": {
    "inputs": [
     [
@@ -19369,6 +19784,41 @@
    ]
   },
   "SetUniformMuscleAnisotropicWeight": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "aniMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetUniformMuscleAnisotropicWeight2": {
    "inputs": [
     [
      "",
@@ -20707,6 +21157,56 @@
     "numeric"
    ]
   },
+  "UpdateDx": {
+   "inputs": [
+    [
+     "",
+     "real_ocean",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
+  "UpdateHeightmap": {
+   "inputs": [
+    [
+     "",
+     "real_ocean",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
   "UpdateMutable": {
    "inputs": [
     [
@@ -21361,6 +21861,46 @@
     "visualize"
    ]
   },
+  "VDBWrangle": {
+   "inputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "Vec3FieldExtrapolate": {
    "inputs": [
     [
@@ -21777,171 +22317,6 @@
    ],
    "categories": [
     "GPUMPM"
-   ]
-  },
-  "ZsAddMuscleFibers": {
-   "inputs": [
-    [
-     "",
-     "fibers",
-     ""
-    ],
-    [
-     "",
-     "femmesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outMesh",
-     ""
-    ],
-    [
-     "",
-     "fiberGeo",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "ZsMakeFEMMeshFromFile": {
-   "inputs": [
-    [
-     "readpath",
-     "NodeFile",
-     ""
-    ],
-    [
-     "readpath",
-     "EleFile",
-     ""
-    ],
-    [
-     "readpath",
-     "BouFile",
-     ""
-    ],
-    [
-     "",
-     "density",
-     ""
-    ],
-    [
-     "",
-     "YoungModulus",
-     ""
-    ],
-    [
-     "",
-     "PossonRatio",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FEMMesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "ZsSetUniformActivation": {
-   "inputs": [
-    [
-     "",
-     "inputMesh",
-     ""
-    ],
-    [
-     "",
-     "uniform_act",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "actMesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "ZsSetUniformMuscleAnisotropicWeight": {
-   "inputs": [
-    [
-     "",
-     "inputMesh",
-     ""
-    ],
-    [
-     "",
-     "weight",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "aniMesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "makeCompressibleSim": {
@@ -22418,6 +22793,27 @@
    "params": [],
    "categories": [
     "zelloWorld"
+   ],
+   "is_subgraph": true
+  },
+  "musclFEM": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },
