@@ -88,7 +88,7 @@ std::string QDMGraphicsScene::getFullPath() const
 {
     if (!subnetNode)
         return "/";
-    return parentScene->getFullPath() + '/' + subnetNode->getName();
+    return subnetNode->getScene()->getFullPath() + '/' + subnetNode->getName();
 }
 
 std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
@@ -102,7 +102,11 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
 {
     subnetNode = node;
-    parentScene = node->getScene();
+}
+
+QDMGraphicsScene *QDMGraphicsScene::getParentScene() const
+{
+    return subnetNode->getScene();
 }
 
 void QDMGraphicsScene::addSubnetNode()
@@ -111,9 +115,33 @@ void QDMGraphicsScene::addSubnetNode()
         return;
     floatingNode = addNode();
     floatingNode->initAsSubnet();
+    updateFloatingNode();
+    emit sceneCreatedOrRemoved();
+}
+
+void QDMGraphicsScene::addSubnetInput()
+{
+    if (floatingNode)
+        return;
+    floatingNode = addNode();
+    floatingNode->initAsSubnetInput();
+    updateFloatingNode();
+}
+
+void QDMGraphicsScene::addSubnetOutput()
+{
+    if (floatingNode)
+        return;
+    floatingNode = addNode();
+    floatingNode->initAsSubnetOutput();
+    updateFloatingNode();
+}
+
+void QDMGraphicsScene::updateFloatingNode()
+{
     floatingNode->hide();
     floatingNode->setPos(getCursorPos());
-    emit sceneCreatedOrRemoved();
+    emit sceneUpdated();
 }
 
 void QDMGraphicsScene::cursorMoved()
@@ -171,8 +199,8 @@ void QDMGraphicsScene::addNodeByType(QString type)
     if (floatingNode)
         return;
     floatingNode = addNode();
-    floatingNode->hide();
     floatingNode->initByType(type);
+    floatingNode->hide();
 
     emit sceneUpdated();
 }

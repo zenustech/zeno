@@ -25,18 +25,19 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
     QDMGraphicsNode *subnetNode{};
-    QDMGraphicsScene *parentScene{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
 
+    QDMGraphicsNode *addNode();
+    void updateFloatingNode();
+
 public:
     QDMGraphicsScene();
     ~QDMGraphicsScene();
 
-    QDMGraphicsNode *addNode();
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
@@ -45,8 +46,8 @@ public:
     void setCurrentNode(QDMGraphicsNode *node);
     //std::vector<QDMGraphicsNode *> getVisibleNodes() const;
     std::vector<QDMGraphicsScene *> getChildScenes() const;
-    inline QDMGraphicsScene *getParentScene() const { return parentScene; }
     std::string allocateNodeName(std::string const &prefix) const;
+    QDMGraphicsScene *getParentScene() const;
     std::string getFullPath() const;
     std::string getName() const;
 
@@ -60,6 +61,8 @@ public:
 
 public slots:
     void addSubnetNode();
+    void addSubnetInput();
+    void addSubnetOutput();
     void addNodeByType(QString type);
     void updateSceneSelection();
 
