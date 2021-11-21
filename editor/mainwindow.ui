@@ -65,13 +65,6 @@
      <item row="1" column="0">
       <widget class="QDMListViewNodeMenu" name="nodeMenu"/>
      </item>
-     <item row="2" column="0">
-      <widget class="QPushButton" name="pushButton">
-       <property name="text">
-        <string>Add Subnet</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -160,7 +153,6 @@
     <signal>sceneSwitched(QDMGraphicsScene*)</signal>
     <slot>addNodeByType(QString)</slot>
     <slot>switchScene(QDMGraphicsScene*)</slot>
-    <slot>addSubnetNode()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -312,22 +304,6 @@
     <hint type="destinationlabel">
      <x>918</x>
      <y>298</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButton</sender>
-   <signal>clicked()</signal>
-   <receiver>nodeView</receiver>
-   <slot>addSubnetNode()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>298</x>
-     <y>969</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1314</x>
-     <y>678</y>
     </hint>
    </hints>
   </connection>

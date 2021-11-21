@@ -32,6 +32,10 @@ class QDMGraphicsScene : public QGraphicsScene
     QDMGraphicsNode *currentNode{};
 
     QDMGraphicsNode *addNode();
+    void addSubnetNode();
+    void addSubnetInput();
+    void addSubnetOutput();
+    void addNormalNode(std::string const &type);
     void updateFloatingNode();
 
 public:
@@ -60,11 +64,8 @@ public:
     void cursorMoved();
 
 public slots:
-    void addSubnetNode();
-    void addSubnetInput();
-    void addSubnetOutput();
-    void addNodeByType(QString type);
     void updateSceneSelection();
+    void addNodeByType(QString type);
 
 signals:
     void sceneUpdated();

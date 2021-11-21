@@ -98,9 +98,27 @@ void QDMGraphicsNode::initAsSubnet()
     subnetScene->setSubnetNode(this);
 }
 
-void QDMGraphicsNode::initByType(QString type)
+void QDMGraphicsNode::initAsSubnetInput()
 {
-    auto const &desc = dop::descriptor_table().at(type.toStdString());
+    subnetDescStorage = std::make_unique<dop::Descriptor>();
+    dop::Descriptor &desc = *subnetDescStorage;
+    desc.name = "SubnetIn";
+    desc.factory = std::make_unique<dop::SubnetIn>;
+    initByDescriptor(desc);
+}
+
+void QDMGraphicsNode::initAsSubnetOutput()
+{
+    subnetDescStorage = std::make_unique<dop::Descriptor>();
+    dop::Descriptor &desc = *subnetDescStorage;
+    desc.name = "SubnetOut";
+    desc.factory = std::make_unique<dop::SubnetOut>;
+    initByDescriptor(desc);
+}
+
+void QDMGraphicsNode::initByType(std::string const &type)
+{
+    auto const &desc = dop::descriptor_table().at(type);
     initByDescriptor(desc);
 }
 

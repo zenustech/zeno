@@ -67,12 +67,6 @@ void QDMGraphicsView::addNodeByType(QString name)
     getScene()->addNodeByType(name);
 }
 
-void QDMGraphicsView::addSubnetNode()
-{
-    ZENO_DEBUG("addSubnetNode");
-    getScene()->addSubnetNode();
-}
-
 void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete) {

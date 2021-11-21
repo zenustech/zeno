@@ -21,5 +21,13 @@ void SubnetNode::apply() {
 }
 
 
+void SubnetIn::apply() {
+}
+
+
+void SubnetOut::apply() {
+}
+
+
 }
 ZENO_NAMESPACE_END

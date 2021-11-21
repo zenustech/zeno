@@ -56,7 +56,9 @@ public:
     QDMGraphicsSocketOut *addSocketOut();
 
     void initAsSubnet();
-    void initByType(QString type);
+    void initAsSubnetInput();
+    void initAsSubnetOutput();
+    void initByType(std::string const &type);
 
     QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;

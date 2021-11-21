@@ -2,6 +2,7 @@
 #include "qdmgraphicsview.h"
 #include "serialization.h"
 #include <zeno/ztd/memory.h>
+#include <zeno/ztd/algorithm.h>
 #include <zeno/zmt/log.h>
 #include <zeno/zan/zan.h>
 #include <rapidjson/writer.h>
@@ -194,7 +195,7 @@ QDMGraphicsNode *QDMGraphicsScene::addNode()
     return node;
 }
 
-void QDMGraphicsScene::addNodeByType(QString type)
+void QDMGraphicsScene::addNormalNode(std::string const &type)
 {
     if (floatingNode)
         return;
@@ -203,6 +204,18 @@ void QDMGraphicsScene::addNodeByType(QString type)
     floatingNode->hide();
 
     emit sceneUpdated();
+}
+
+void QDMGraphicsScene::addNodeByType(QString type_)
+{
+    auto type = type_.toStdString();
+    std::array table = {"SubnetNode", "SubnetIn", "SubnetOut"};
+    switch (ztd::try_find_index(table, type)) {
+    case 0: addSubnetNode(); break;
+    case 1: addSubnetInput(); break;
+    case 2: addSubnetOutput(); break;
+    default: addNormalNode(type);
+    }
 }
 
 QPointF QDMGraphicsScene::getCursorPos() const
