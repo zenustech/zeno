@@ -25,6 +25,8 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
     QDMGraphicsNode *subnetNode{};
+    QDMGraphicsNode *subnetInNode{};
+    QDMGraphicsNode *subnetOutNode{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;

@@ -25,7 +25,9 @@ class QDMGraphicsNode : public QGraphicsItem
     std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
     std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
     std::unique_ptr<QDMGraphicsScene> subnetScene;
-    std::unique_ptr<dop::Descriptor> subnetDescStorage{};
+    std::unique_ptr<dop::Descriptor> subnetDescStorage;
+    std::vector<std::string> subInNames;
+    std::vector<std::string> subOutNames;
 
     std::unique_ptr<QGraphicsTextItem> label;
     dop::Descriptor const *desc{};
@@ -38,38 +40,38 @@ class QDMGraphicsNode : public QGraphicsItem
     QDMGraphicsSocketOut *addSocketOut();
 
 public:
+    //void socketUnlinked(QDMGraphicsSocketIn *socket);
+    //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
     QDMGraphicsNode();
-    ~QDMGraphicsNode();
 
+    ~QDMGraphicsNode();
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     QDMGraphicsSocketIn *socketInAt(size_t index);
     QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
+    void resetInOutList();
 
-    //void socketUnlinked(QDMGraphicsSocketIn *socket);
-    //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
     //void socketValueChanged(QDMGraphicsSocketIn *socket);
-
     void initAsSubnet();
     void initAsSubnetInput();
     void initAsSubnetOutput();
-    void initByType(std::string const &type);
 
+    void initByType(std::string const &type);
     QDMGraphicsScene *getSubnetScene() const;
     QDMGraphicsScene *getScene() const;
+
     void setName(QString name);
-
     inline std::string const &getName() { return name; }
+
     inline dop::Descriptor const *getDescriptor() { return desc; }
-
     void invalidate();
-    void unlinkAll();
 
+    void unlinkAll();
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
     static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, SOCKMARGINBOT = -10;
 };

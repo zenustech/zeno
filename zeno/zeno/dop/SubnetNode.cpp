@@ -31,24 +31,9 @@ ZENO_DOP_DEFCLASS(SubnetNode, {{
 void SubnetIn::apply() {
 }
 
-ZENO_DOP_DEFCLASS(SubnetIn, {{
-    "misc", "fetch input data of current subnet",
-}, {
-}, {
-    {"any", "value"},
-}});
-
 
 void SubnetOut::apply() {
 }
-
-ZENO_DOP_DEFCLASS(SubnetOut, {{
-    "misc", "return output data of current subnet",
-}, {
-    {"any", "value"},
-}, {
-    {"any", "value"},
-}});
 
 
 }

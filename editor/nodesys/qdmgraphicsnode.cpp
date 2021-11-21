@@ -104,9 +104,6 @@ void QDMGraphicsNode::initAsSubnetInput()
     dop::Descriptor &desc = *subnetDescStorage;
     desc.name = "SubnetIn";
     desc.factory = std::make_unique<dop::SubnetIn>;
-    if (auto parNode = getScene()->getParentNode()) {
-        parNode->addSocketIn();
-    }
     initByDescriptor(desc);
 }
 
@@ -221,6 +218,18 @@ void QDMGraphicsNode::socketValueChanged(QDMGraphicsSocketIn *socket)
 void QDMGraphicsNode::invalidate()
 {
     ZENO_INFO("invalidate node");
+}
+
+void QDMGraphicsNode::resetInOutList()
+{
+    for (const auto& inName: subInNames) {
+        auto sockIn = addSocketIn();
+        sockIn->setName(QString::fromStdString(inName));
+    }
+    for (const auto& outName: subOutNames) {
+        auto sockOut = addSocketOut();
+        sockOut->setName(QString::fromStdString(outName));
+    }
 }
 
 ZENO_NAMESPACE_END
