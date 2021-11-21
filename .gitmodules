@@ -4,3 +4,24 @@
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
+[submodule "3rdparty/pkgs/tbb"]
+	path = 3rdparty/pkgs/tbb
+	url = https://github.com/wjakob/tbb.git
+[submodule "3rdparty/pkgs/c-blosc"]
+	path = 3rdparty/pkgs/c-blosc
+	url = https://github.com/Blosc/c-blosc.git
+[submodule "3rdparty/pkgs/zlib"]
+	path = 3rdparty/pkgs/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "3rdparty/pkgs/fmt"]
+	path = 3rdparty/pkgs/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "3rdparty/pkgs/spdlog"]
+	path = 3rdparty/pkgs/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "3rdparty/pkgs/BoostBuilder"]
+	path = 3rdparty/pkgs/BoostBuilder
+	url = https://github.com/drbenmorgan/BoostBuilder.git
+[submodule "3rdparty/pkgs/openvdb"]
+	path = 3rdparty/pkgs/openvdb
+	url = https://github.com/AcademySoftwareFoundation/openvdb.git
