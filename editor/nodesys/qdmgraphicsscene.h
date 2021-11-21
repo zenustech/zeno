@@ -61,6 +61,7 @@ public:
     void copyPressed();
     void pastePressed();
     void blankClicked();
+    void doubleClicked();
     void cursorMoved();
 
 public slots:

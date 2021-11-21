@@ -28,4 +28,14 @@ void QDMGraphicsBackground::mousePressEvent(QGraphicsSceneMouseEvent *event)
     QGraphicsItem::mousePressEvent(event);
 }
 
+void QDMGraphicsBackground::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+        parentScene->doubleClicked();
+    }
+
+    QGraphicsItem::mousePressEvent(event);
+}
+
 ZENO_NAMESPACE_END

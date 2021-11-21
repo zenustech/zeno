@@ -80,6 +80,13 @@ void QDMGraphicsScene::blankClicked()
    }
 }
 
+void QDMGraphicsScene::doubleClicked()
+{
+    if (subnetNode) {
+        emit subnetSceneEntered(subnetNode->getScene());
+    }
+}
+
 std::string QDMGraphicsScene::getName() const
 {
     return subnetNode ? subnetNode->getName() : "/";
@@ -107,7 +114,7 @@ void QDMGraphicsScene::setSubnetNode(QDMGraphicsNode *node)
 
 QDMGraphicsScene *QDMGraphicsScene::getParentScene() const
 {
-    return subnetNode->getScene();
+    return subnetNode ? subnetNode->getScene() : nullptr;
 }
 
 void QDMGraphicsScene::addSubnetNode()
