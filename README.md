@@ -2,7 +2,7 @@
 
 [![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
 
-[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [q&a forum](https://github.com/zenustech/zeno/discussions) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
+[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
 [国内高速下载](https://gitee.com/zenustech/zeno/releases) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
@@ -13,9 +13,9 @@ Open-source node system framework, to change your algorithmic code into useful t
 ZENO is an open-source, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
 
-- [Why a new node system?](docs/introduction.md)
-- [How to build from source](BUILD.md)
 - [Contributor guidelines](CONTRIBUTING.md)
+- [How to build from source](BUILD.md)
+- [Why a new node system?](docs/introduction.md)
 
 ## Features
 

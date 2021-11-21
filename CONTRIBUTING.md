@@ -20,7 +20,7 @@ If you have
 * a cool feature you'd like to have in Zeno (feature request)
 * any question on how to use Zeno (question)
 
-Please feel free to check out [this page](https://github.com/zenustech/zeno/issues) for raising GitHub issues!
+Please check out [this page](https://github.com/zenustech/zeno/issues) for raising GitHub issues!
 
 Make sure you choose the right *issue template* accordingly to your issue type, like `Bug Report`.
 Please take some time to fill the template completely, this help us understand your problem easier.
@@ -146,7 +146,7 @@ When contributing pull requests for Zeno, I ask that:
 * You follow the style of the code as-is; ref: [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
 * Your changes worked on both Linux and Windows (GitHub CI will automatically check this).
 
-# Coding Guide
+# Coding
 
 Many people is using Zeno, if you find your wanted feature is missing, and you know how to implement it technically.
 Please help us improve by submitting your code to us (so called contribute), so that other people could also enjoy this cool feature you made!
@@ -210,7 +210,7 @@ Zeno is written in C++, which means we need a C++ developing environment to star
 
 We support MSVC 2019 or GCC 9+ for compiler, and optionally install require packages via [vcpkg](https://github.com/microsoft/vcpkg).
 
-Please check the [building.md](building.md) for the complete build instructions of Zeno.
+Please check the [BUILD.md](BUILD.md) for the complete build instructions of Zeno.
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 
@@ -280,7 +280,7 @@ std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visib
 }   // end of namespace zeno
 ```
 
-## Write a custom node
+### Write a custom node
 
 See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
 
