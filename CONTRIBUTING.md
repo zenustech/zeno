@@ -280,6 +280,8 @@ std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visib
 }   // end of namespace zeno
 ```
 
+See also [.clang-format](.clang-format) for automated formatting rules.
+
 ### Write a custom node
 
 See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
