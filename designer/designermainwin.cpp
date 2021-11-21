@@ -3,6 +3,7 @@
 #include "viewmdiarea.h"
 #include "propertypane.h"
 #include "styletabwidget.h"
+#include "ztabpanel.h"
 
 
 DesignerMainWin::DesignerMainWin()
@@ -32,7 +33,7 @@ void DesignerMainWin::initWidgets()
     m_tabWidget = new StyleTabWidget;
 	pSplitter->addWidget(m_tabWidget);
 
-    m_properties = new PropertyPane;
+    m_properties = new ZTabPanel;
     pSplitter->addWidget(m_properties);
 
     pLayout->addWidget(pSplitter);

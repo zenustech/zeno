@@ -7,6 +7,7 @@ class LayerWidget;
 class ViewMdiArea;
 class PropertyPane;
 class StyleTabWidget;
+class ZTabPanel;
 
 class DesignerMainWin : public QMainWindow
 {
@@ -22,7 +23,7 @@ private:
     QMenuBar* m_pMenubar;
     LayerWidget* m_pLayerWidget;
     ViewMdiArea* m_pMdiArea;
-    PropertyPane* m_properties;
+    ZTabPanel* m_properties;
     StyleTabWidget* m_tabWidget;
 };
 

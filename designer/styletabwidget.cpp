@@ -17,7 +17,7 @@ StyleTabWidget::StyleTabWidget(QWidget* parent)
     connect(this, SIGNAL(tabCloseRequested(int)), this, SLOT(onTabClosed(int)));
 
     //temp: new tab
-    pView->initSkin("C:/editor/uirender/node-empty.xml");
+    pView->initSkin("E:/zeno/uirender/node-empty.xml");
     pView->initNode();
 }
 
