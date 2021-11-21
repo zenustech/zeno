@@ -9,7 +9,7 @@
 
 ZENO_NAMESPACE_BEGIN
 
-class QDMListViewNodeMenu : public QListView
+class QDMListViewNodeMenu final : public QListView
 {
     Q_OBJECT
 
@@ -17,7 +17,7 @@ class QDMListViewNodeMenu : public QListView
 
 public:
     explicit QDMListViewNodeMenu(QWidget *parent = nullptr);
-    ~QDMListViewNodeMenu();
+    ~QDMListViewNodeMenu() override;
 
 signals:
     void entryClicked(QString name);

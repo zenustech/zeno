@@ -17,14 +17,15 @@ class QDMNodeParamEdit : public QWidget
     QFormLayout *const layout;
     QDMGraphicsNode *currNode{};
 
-    QWidget *make_edit_for_type(QDMGraphicsNode *node, int sockid,
-                                std::string const &type);
-
     void invalidateNode(QDMGraphicsNode *node) const;
 
 public:
     explicit QDMNodeParamEdit(QWidget *parent = nullptr);
     ~QDMNodeParamEdit();
+
+    QWidget *makeEditForType(QDMGraphicsNode *node, int sockid,
+                             std::string const &type);
+    void addRow(QString const &name, QWidget *row);
 
 public slots:
     void setCurrentNode(QDMGraphicsNode *node);

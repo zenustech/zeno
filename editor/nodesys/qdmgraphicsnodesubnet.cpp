@@ -3,8 +3,10 @@
 //
 
 #include "qdmgraphicsnodesubnet.h"
+#include "qdmnodeparamedit.h"
 #include "qdmgraphicsscene.h"
 #include <zeno/dop/SubnetNode.h>
+#include <QPushButton>
 
 QDMGraphicsNodeSubnet::QDMGraphicsNodeSubnet() = default;
 
@@ -30,6 +32,19 @@ void QDMGraphicsNodeSubnet::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *even
     QGraphicsItem::mouseDoubleClickEvent(event);
 }
 
+QDMGraphicsScene *QDMGraphicsNodeSubnet::getSubnetScene() const
+{
+    return subnetScene.get();
+}
+
+void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
+    auto btnNew = new QPushButton;
+    btnNew->setText("(+)");
+    paredit->addRow("New", btnNew);
+    QDMGraphicsNode::setupParamEdit(paredit);
+}
+
+
 QDMGraphicsNodeSubnetIn::QDMGraphicsNodeSubnetIn() = default;
 
 void QDMGraphicsNodeSubnetIn::initialize()
@@ -40,6 +55,7 @@ void QDMGraphicsNodeSubnetIn::initialize()
     desc.factory = std::make_unique<dop::SubnetIn>;
     initByDescriptor(desc);
 }
+
 
 QDMGraphicsNodeSubnetOut::QDMGraphicsNodeSubnetOut() = default;
 

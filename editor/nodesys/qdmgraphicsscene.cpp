@@ -200,7 +200,7 @@ void QDMGraphicsScene::addNormalNode(std::string const &type)
 void QDMGraphicsScene::addNodeByType(QString type)
 {
     auto typ = type.toStdString();
-    std::array table = {"SubnetNode"};
+    static constexpr std::array table = {"SubnetNode"};
     switch (ztd::try_find_index(table, typ)) {
     case 0: addSubnetNode(); break;
     default: addNormalNode(typ);
@@ -276,8 +276,8 @@ std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {
     std::vector<QDMGraphicsScene *> res;
     for (auto const &node: nodes) {
-        if (auto subnet = dynamic_cast<QDMGraphicsNodeSubnet *>(node.get()))
-            res.push_back(subnet->getSubnetScene());
+        if (auto subnet = node->getSubnetScene())
+            res.push_back(subnet);
     }
     return res;
 }

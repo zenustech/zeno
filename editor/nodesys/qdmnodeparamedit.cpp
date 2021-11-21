@@ -1,5 +1,6 @@
 #include "qdmnodeparamedit.h"
 #include "qdmgraphicsscene.h"
+#include "qdmgraphicsnodesubnet.h"
 #include <zeno/ztd/variant.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/dop/Descriptor.h>
@@ -15,16 +16,16 @@ QDMNodeParamEdit::QDMNodeParamEdit(QWidget *parent)
 {
 }
 
-static const std::array edit_type_table = {
-    "string",
-    "int",
-    "float",
-};
-
-QWidget *QDMNodeParamEdit::make_edit_for_type(
+QWidget *QDMNodeParamEdit::makeEditForType(
     QDMGraphicsNode *node, int sockid, std::string const &type)
 {
     auto *sockIn = node->socketInAt(sockid);
+
+    static constexpr std::array edit_type_table = {
+            "string",
+            "int",
+            "float",
+    };
 
     switch (ztd::try_find_index(edit_type_table, type)) {
 
@@ -97,19 +98,18 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    auto const *desc = node->getDescriptor();
-    for (size_t i = 0; i < desc->inputs.size(); i++) {
-        auto edit = make_edit_for_type(node, i, desc->inputs[i].type);
-        if (edit) {
-            layout->addRow(QString::fromStdString(desc->inputs[i].name), edit);
-        }
-    }
+    node->setupParamEdit(this);
 }
 
 void QDMNodeParamEdit::invalidateNode(QDMGraphicsNode *node) const
 {
     auto scene = static_cast<QDMGraphicsScene *>(node->scene());
     emit scene->sceneUpdated();
+}
+
+void QDMNodeParamEdit::addRow(const QString &name, QWidget *row)
+{
+    layout->addRow(name, row);
 }
 
 QDMNodeParamEdit::~QDMNodeParamEdit() = default;

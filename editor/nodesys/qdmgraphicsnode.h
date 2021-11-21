@@ -17,6 +17,7 @@ ZENO_NAMESPACE_BEGIN
 
 struct Interceptor;
 class QDMGraphicsScene;
+class QDMNodeParamEdit;
 
 class QDMGraphicsNode : public QGraphicsItem
 {
@@ -41,6 +42,7 @@ public:
     void initByType(std::string const &type);
     //void socketUnlinked(QDMGraphicsSocketIn *socket);
     //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+    virtual void setupParamEdit(QDMNodeParamEdit *paredit);
 
     ~QDMGraphicsNode() override;
     [[nodiscard]] QRectF boundingRect() const override;
@@ -54,6 +56,7 @@ public:
     void resetInOutList();
 
     //void socketValueChanged(QDMGraphicsSocketIn *socket);
+    [[nodiscard]] virtual QDMGraphicsScene *getSubnetScene() const;
     [[nodiscard]] QDMGraphicsScene *getScene() const;
 
     void setName(QString name);

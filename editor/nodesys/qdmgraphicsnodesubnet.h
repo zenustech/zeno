@@ -13,8 +13,9 @@ class QDMGraphicsNodeSubnet final : public QDMGraphicsNode {
 
 public:
     QDMGraphicsNodeSubnet();
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
-    inline QDMGraphicsScene *getSubnetScene() const { return subnetScene.get(); }
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+    [[nodiscard]] QDMGraphicsScene *getSubnetScene() const override;
+    void setupParamEdit(QDMNodeParamEdit *paredit) override;
     void initialize();
 };
 

@@ -1,6 +1,7 @@
 #include "qdmgraphicsnode.h"
 #include "qdmgraphicssocket.h"
 #include "qdmgraphicsscene.h"
+#include "qdmnodeparamedit.h"
 #include <zeno/dop/Descriptor.h>
 #include <zeno/ztd/memory.h>
 #include <zeno/ztd/algorithm.h>
@@ -93,8 +94,7 @@ void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 
-    auto scene = getScene();
-    auto name = scene->allocateNodeName(desc.name);
+    auto name = getScene()->allocateNodeName(desc.name);
     setName(QString::fromStdString(name));
 }
 
@@ -117,6 +117,11 @@ QDMGraphicsSocketOut *QDMGraphicsNode::socketOutAt(size_t index)
 QDMGraphicsScene *QDMGraphicsNode::getScene() const
 {
     return static_cast<QDMGraphicsScene *>(scene());
+}
+
+QDMGraphicsScene *QDMGraphicsNode::getSubnetScene() const
+{
+    return nullptr;
 }
 
 void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -186,6 +191,14 @@ void QDMGraphicsNode::resetInOutList()
     for (const auto& outName: subOutNames) {
         auto sockOut = addSocketOut();
         sockOut->setName(QString::fromStdString(outName));
+    }
+}
+
+void QDMGraphicsNode::setupParamEdit(QDMNodeParamEdit *paredit)
+{
+    for (size_t i = 0; i < desc->inputs.size(); i++) {
+        if (auto edit = paredit->makeEditForType(this, i, desc->inputs[i].type))
+            paredit->addRow(QString::fromStdString(desc->inputs[i].name), edit);
     }
 }
 
