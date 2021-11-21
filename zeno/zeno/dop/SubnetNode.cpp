@@ -1,6 +1,7 @@
 #include <zeno/dop/SubnetNode.h>
 #include <zeno/dop/Descriptor.h>
 #include <zeno/dop/Executor.h>
+#include <zeno/dop/macros.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -20,13 +21,34 @@ void SubnetNode::apply() {
     }
 }
 
+ZENO_DOP_DEFCLASS(SubnetNode, {{
+    "misc", "a custom subnet to combine many nodes into one",
+}, {
+}, {
+}});
+
 
 void SubnetIn::apply() {
 }
 
+ZENO_DOP_DEFCLASS(SubnetIn, {{
+    "misc", "fetch input data of current subnet",
+}, {
+}, {
+    {"any", "value"},
+}});
+
 
 void SubnetOut::apply() {
 }
+
+ZENO_DOP_DEFCLASS(SubnetOut, {{
+    "misc", "return output data of current subnet",
+}, {
+    {"any", "value"},
+}, {
+    {"any", "value"},
+}});
 
 
 }
