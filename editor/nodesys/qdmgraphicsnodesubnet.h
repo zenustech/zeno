@@ -7,9 +7,16 @@
 
 #include "qdmgraphicsnode.h"
 
+ZENO_NAMESPACE_BEGIN
+
+class QDMGraphicsNodeSubnetIn;
+class QDMGraphicsNodeSubnetOut;
+
 class QDMGraphicsNodeSubnet final : public QDMGraphicsNode {
     std::unique_ptr<QDMGraphicsScene> subnetScene;
     std::unique_ptr<dop::Descriptor> subnetDescStorage;
+    QDMGraphicsNodeSubnetIn *subnetInNode{};
+    QDMGraphicsNodeSubnetOut *subnetOutNode{};
 
 public:
     QDMGraphicsNodeSubnet();
@@ -17,6 +24,8 @@ public:
     [[nodiscard]] QDMGraphicsScene *getSubnetScene() const override;
     void setupParamEdit(QDMNodeParamEdit *paredit) override;
     void initialize();
+    void addSubnetInput(QString name);
+    void addSubnetOutput(QString name);
 };
 
 class QDMGraphicsNodeSubnetIn final : public QDMGraphicsNode {
@@ -37,5 +46,6 @@ public:
     QDMGraphicsSocketIn *addSocket();
 };
 
+ZENO_NAMESPACE_END
 
 #endif //ZENO_QDMGRAPHICSNODESUBNET_H

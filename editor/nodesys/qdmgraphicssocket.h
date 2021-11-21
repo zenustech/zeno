@@ -18,6 +18,7 @@ class QDMGraphicsLinkFull;
 class QDMGraphicsSocket : public QGraphicsItem
 {
     std::set<QDMGraphicsLinkFull *> links;
+    std::string name;
 
 protected:
     std::unique_ptr<QGraphicsTextItem> label;
@@ -32,6 +33,7 @@ public:
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual QRectF boundingRect() const override;
     virtual QPointF getLinkedPos() const = 0;
+    inline std::string const &getName() const { return name; }
     void setName(QString name);
 
     static constexpr float SIZE = 20, ROUND = 4;

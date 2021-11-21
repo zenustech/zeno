@@ -112,16 +112,6 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 void QDMGraphicsScene::initAsSubnet(QDMGraphicsNodeSubnet *node)
 {
     subnetNode = node;
-
-    subnetInNode = new QDMGraphicsNodeSubnetIn;
-    addNode(subnetInNode);
-    subnetInNode->setPos(QPointF(-200, -100));
-    subnetInNode->initialize();
-
-    subnetOutNode = new QDMGraphicsNodeSubnetOut;
-    addNode(subnetOutNode);
-    subnetOutNode->setPos(QPointF(200, -100));
-    subnetOutNode->initialize();
 }
 
 void QDMGraphicsScene::addSubnetNode()
@@ -285,14 +275,6 @@ std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 void QDMGraphicsScene::addNode(QDMGraphicsNode *node) {
     addItem(node);
     nodes.emplace(node);
-}
-
-void QDMGraphicsScene::addSubnetOutput() {
-    subnetOutNode->addSocket();
-}
-
-void QDMGraphicsScene::addSubnetInput() {
-    subnetInNode->addSocket();
 }
 
 ZENO_NAMESPACE_END

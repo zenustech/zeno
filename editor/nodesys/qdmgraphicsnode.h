@@ -53,7 +53,8 @@ public:
     [[nodiscard]] QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
-    void resetInOutList();
+    [[nodiscard]] std::vector<std::string> getInputNames() const;
+    [[nodiscard]] std::vector<std::string> getOutputNames() const;
 
     //void socketValueChanged(QDMGraphicsSocketIn *socket);
     [[nodiscard]] virtual QDMGraphicsScene *getSubnetScene() const;

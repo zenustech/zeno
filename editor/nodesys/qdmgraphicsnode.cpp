@@ -180,26 +180,26 @@ void QDMGraphicsNode::invalidate()
     ZENO_INFO("invalidate node");
 }
 
-void QDMGraphicsNode::resetInOutList()
-{
-    std::vector<std::string> subInNames;//TODO
-    std::vector<std::string> subOutNames;//TODO
-    for (const auto& inName: subInNames) {
-        auto sockIn = addSocketIn();
-        sockIn->setName(QString::fromStdString(inName));
-    }
-    for (const auto& outName: subOutNames) {
-        auto sockOut = addSocketOut();
-        sockOut->setName(QString::fromStdString(outName));
-    }
-}
-
 void QDMGraphicsNode::setupParamEdit(QDMNodeParamEdit *paredit)
 {
     for (size_t i = 0; i < desc->inputs.size(); i++) {
         if (auto edit = paredit->makeEditForType(this, i, desc->inputs[i].type))
             paredit->addRow(QString::fromStdString(desc->inputs[i].name), edit);
     }
+}
+
+std::vector<std::string> QDMGraphicsNode::getInputNames() const {
+    std::vector<std::string> ret;
+    for (auto const &in: socketIns)
+        ret.push_back(in->getName());
+    return ret;
+}
+
+std::vector<std::string> QDMGraphicsNode::getOutputNames() const {
+    std::vector<std::string> ret;
+    for (auto const &out: socketOuts)
+        ret.push_back(out->getName());
+    return ret;
 }
 
 ZENO_NAMESPACE_END

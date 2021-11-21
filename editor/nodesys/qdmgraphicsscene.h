@@ -17,8 +17,6 @@ ZENO_NAMESPACE_BEGIN
 struct Interceptor;
 
 class QDMGraphicsNodeSubnet;
-class QDMGraphicsNodeSubnetIn;
-class QDMGraphicsNodeSubnetOut;
 
 class QDMGraphicsScene : public QGraphicsScene
 {
@@ -30,15 +28,12 @@ class QDMGraphicsScene : public QGraphicsScene
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
     // not null if the scene is a subnet:
     QDMGraphicsNodeSubnet *subnetNode{};
-    QDMGraphicsNodeSubnetIn *subnetInNode{};
-    QDMGraphicsNodeSubnetOut *subnetOutNode{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
     QDMGraphicsNode *floatingNode{};
     QDMGraphicsNode *currentNode{};
 
-    void addNode(QDMGraphicsNode *node);
     void addSubnetNode();
     void addNormalNode(std::string const &type);
     void setFloatingNode(QDMGraphicsNode *node);
@@ -47,6 +42,7 @@ public:
     QDMGraphicsScene();
     ~QDMGraphicsScene() override;
 
+    void addNode(QDMGraphicsNode *node);
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
@@ -58,9 +54,6 @@ public:
     [[nodiscard]] std::string allocateNodeName(std::string const &prefix) const;
     [[nodiscard]] std::string getFullPath() const;
     [[nodiscard]] std::string getName() const;
-
-    void addSubnetInput();
-    void addSubnetOutput();
 
     [[nodiscard]] QPointF getCursorPos() const;
     void socketClicked(QDMGraphicsSocket *socket);

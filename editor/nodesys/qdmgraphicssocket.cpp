@@ -60,6 +60,7 @@ void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
 
 void QDMGraphicsSocket::setName(QString name)
 {
+    this->name = name.toStdString();
     label->setPlainText(name);
 }
 
