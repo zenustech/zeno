@@ -26,8 +26,6 @@ class QDMGraphicsScene : public QGraphicsScene
 
     std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
     std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
-    // not null if the scene is a subnet:
-    QDMGraphicsNodeSubnet *subnetNode{};
 
     std::unique_ptr<QDMGraphicsBackground> background;
     std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
@@ -39,8 +37,10 @@ class QDMGraphicsScene : public QGraphicsScene
     void setFloatingNode(QDMGraphicsNode *node);
 
 public:
-    QDMGraphicsScene();
+    explicit QDMGraphicsScene(QDMGraphicsNodeSubnet *subnetNode = nullptr);
     ~QDMGraphicsScene() override;
+
+    QDMGraphicsNodeSubnet *const subnetNode;
 
     void addNode(QDMGraphicsNode *node);
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);

@@ -9,7 +9,7 @@ namespace dop {
 
 
 void SubnetNode::apply() {
-    inputs.resize(subins.size());
+    /*inputs.resize(subins.size());
     for (size_t i = 0; i < subins.size(); i++) {
         subins[i]->inputs.at(i) = inputs[i];
     }
@@ -18,7 +18,8 @@ void SubnetNode::apply() {
     outputs.resize(subouts.size());
     for (size_t i = 0; i < subouts.size(); i++) {
         outputs[i] = exec.evaluate({.node = subouts[i], .sockid = 0});
-    }
+    }*/
+    // TODO: FIXME: PLEASE IMPL THIS!
 }
 
 ZENO_DOP_DEFCLASS(SubnetNode, {{

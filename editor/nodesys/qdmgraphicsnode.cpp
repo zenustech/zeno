@@ -79,22 +79,22 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
 void QDMGraphicsNode::initByType(const std::string &type)
 {
     auto const &desc = dop::descriptor_table().at(type);
-    initByDescriptor(desc);
+    initByDescriptor(&desc);
 }
 
-void QDMGraphicsNode::initByDescriptor(dop::Descriptor const &desc)
+void QDMGraphicsNode::initByDescriptor(const dop::Descriptor *desc)
 {
-    this->desc = &desc;
-    for (auto const &sockinfo: desc.inputs) {
+    this->desc = desc;
+    for (auto const &sockinfo: desc->inputs) {
         auto socket = addSocketIn();
         socket->setName(QString::fromStdString(sockinfo.name));
     }
-    for (auto const &sockinfo: desc.outputs) {
+    for (auto const &sockinfo: desc->outputs) {
         auto socket = addSocketOut();
         socket->setName(QString::fromStdString(sockinfo.name));
     }
 
-    auto name = getScene()->allocateNodeName(desc.name);
+    auto name = getScene()->allocateNodeName(desc->name);
     setName(QString::fromStdString(name));
 }
 
@@ -200,6 +200,10 @@ std::vector<std::string> QDMGraphicsNode::getOutputNames() const {
     for (auto const &out: socketOuts)
         ret.push_back(out->getName());
     return ret;
+}
+
+QDMGraphicsNode *QDMGraphicsNode::underlyingNode() {
+    return this;
 }
 
 ZENO_NAMESPACE_END

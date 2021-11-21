@@ -35,7 +35,7 @@ class QDMGraphicsNode : public QGraphicsItem
 protected:
     QDMGraphicsSocketIn *addSocketIn();
     QDMGraphicsSocketOut *addSocketOut();
-    void initByDescriptor(const dop::Descriptor &desc);
+    void initByDescriptor(const dop::Descriptor *desc);
 
 public:
     QDMGraphicsNode();
@@ -43,6 +43,7 @@ public:
     //void socketUnlinked(QDMGraphicsSocketIn *socket);
     //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
     virtual void setupParamEdit(QDMNodeParamEdit *paredit);
+    virtual QDMGraphicsNode *underlyingNode();
 
     ~QDMGraphicsNode() override;
     [[nodiscard]] QRectF boundingRect() const override;

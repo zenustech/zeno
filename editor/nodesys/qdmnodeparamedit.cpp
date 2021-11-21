@@ -98,7 +98,7 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
     if (!node)
         return;
 
-    node->setupParamEdit(this);
+    node->underlyingNode()->setupParamEdit(this);
 }
 
 void QDMNodeParamEdit::invalidateNode(QDMGraphicsNode *node) const

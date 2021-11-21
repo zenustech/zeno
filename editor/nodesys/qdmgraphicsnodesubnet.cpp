@@ -16,12 +16,11 @@ QDMGraphicsNodeSubnet::QDMGraphicsNodeSubnet() = default;
 void QDMGraphicsNodeSubnet::initialize()
 {
     subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetNode";
-    desc.factory = std::make_unique<dop::SubnetNode>;
+    dop::Descriptor *desc = subnetDescStorage.get();
+    desc->name = "SubnetNode";
+    desc->factory = std::make_unique<dop::SubnetNode>;
     initByDescriptor(desc);
-    subnetScene = std::make_unique<QDMGraphicsScene>();
-    subnetScene->initAsSubnet(this);
+    subnetScene = std::make_unique<QDMGraphicsScene>(this);
 
     {
         auto node = new QDMGraphicsNodeSubnetIn;
@@ -102,17 +101,20 @@ QDMGraphicsNodeSubnetIn::QDMGraphicsNodeSubnetIn() = default;
 void QDMGraphicsNodeSubnetIn::initialize()
 {
     subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetIn";
-    desc.factory = std::make_unique<dop::SubnetIn>;
+    dop::Descriptor *desc = subnetDescStorage.get();
+    desc->name = "SubnetIn";
+    desc->factory = std::make_unique<dop::SubnetIn>;
     initByDescriptor(desc);
 }
 
 QDMGraphicsSocketOut *QDMGraphicsNodeSubnetIn::addSocket()
 {
     auto sock = addSocketOut();
-    sock->setName("dummy");
     return sock;
+}
+
+QDMGraphicsNode *QDMGraphicsNodeSubnetIn::underlyingNode() {
+    return getScene()->subnetNode;
 }
 
 
@@ -121,16 +123,15 @@ QDMGraphicsNodeSubnetOut::QDMGraphicsNodeSubnetOut() = default;
 void QDMGraphicsNodeSubnetOut::initialize()
 {
     subnetDescStorage = std::make_unique<dop::Descriptor>();
-    dop::Descriptor &desc = *subnetDescStorage;
-    desc.name = "SubnetOut";
-    desc.factory = std::make_unique<dop::SubnetOut>;
+    dop::Descriptor *desc = subnetDescStorage.get();
+    desc->name = "SubnetOut";
+    desc->factory = std::make_unique<dop::SubnetOut>;
     initByDescriptor(desc);
 }
 
 QDMGraphicsSocketIn *QDMGraphicsNodeSubnetOut::addSocket()
 {
     auto sock = addSocketIn();
-    sock->setName("dummy");
     return sock;
 }
 

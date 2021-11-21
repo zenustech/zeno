@@ -11,7 +11,8 @@
 
 ZENO_NAMESPACE_BEGIN
 
-QDMGraphicsScene::QDMGraphicsScene()
+QDMGraphicsScene::QDMGraphicsScene(QDMGraphicsNodeSubnet *subnetNode)
+    : subnetNode(subnetNode)
 {
     connect(this, SIGNAL(selectionChanged()),
             this, SLOT(updateSceneSelection()));
@@ -107,11 +108,6 @@ std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
         names.push_back(node->getName());
     }
     return find_unique_name(names, prefix);
-}
-
-void QDMGraphicsScene::initAsSubnet(QDMGraphicsNodeSubnet *node)
-{
-    subnetNode = node;
 }
 
 void QDMGraphicsScene::addSubnetNode()

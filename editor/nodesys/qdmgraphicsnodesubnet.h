@@ -15,8 +15,8 @@ class QDMGraphicsNodeSubnetOut;
 class QDMGraphicsNodeSubnet final : public QDMGraphicsNode {
     std::unique_ptr<QDMGraphicsScene> subnetScene;
     std::unique_ptr<dop::Descriptor> subnetDescStorage;
-    QDMGraphicsNodeSubnetIn *subnetInNode{};
-    QDMGraphicsNodeSubnetOut *subnetOutNode{};
+    QDMGraphicsNodeSubnetIn *subnetInNode;
+    QDMGraphicsNodeSubnetOut *subnetOutNode;
 
 public:
     QDMGraphicsNodeSubnet();
@@ -35,6 +35,7 @@ public:
     QDMGraphicsNodeSubnetIn();
     void initialize();
     QDMGraphicsSocketOut *addSocket();
+    QDMGraphicsNode *underlyingNode() override;
 };
 
 class QDMGraphicsNodeSubnetOut final : public QDMGraphicsNode {
