@@ -182,9 +182,10 @@ void QDMGraphicsNode::invalidate()
 
 void QDMGraphicsNode::setupParamEdit(QDMNodeParamEdit *paredit)
 {
-    for (size_t i = 0; i < desc->inputs.size(); i++) {
-        if (auto edit = paredit->makeEditForType(this, i, desc->inputs[i].type))
-            paredit->addRow(QString::fromStdString(desc->inputs[i].name), edit);
+    for (size_t i = 0; i < socketIns.size(); i++) {
+        auto sockIn = socketIns[i].get();
+        if (auto edit = paredit->makeEditForType(this, i, sockIn->getType()))
+            paredit->addRow(QString::fromStdString(sockIn->getName()), edit);
     }
 }
 

@@ -64,4 +64,9 @@ void QDMGraphicsSocket::setName(QString name)
     label->setPlainText(name);
 }
 
+void QDMGraphicsSocket::setType(QString type)
+{
+    this->type = type.toStdString();
+}
+
 ZENO_NAMESPACE_END
