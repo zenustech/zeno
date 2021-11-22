@@ -80,6 +80,10 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
 				{
 					body.rightBottomSocket = comp;
 				}
+				else if (comp.id == "parameters")
+				{
+					//TODO
+				}
 			}
 			param.body = body;
 		}

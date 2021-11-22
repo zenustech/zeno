@@ -19,6 +19,9 @@ NodeScene::NodeScene(QObject* parent)
 	, m_selectedRect(nullptr)
 	, m_selectedItem(nullptr)
 	, m_grid(nullptr)
+	, m_model(new QStandardItemModel(this))
+	, m_selection(new QItemSelectionModel(m_model))
+	, m_pNode(nullptr)
 {
 	//initGrid();
 	connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
@@ -59,8 +62,14 @@ void NodeScene::updateTimeline(qreal factor)
 
 void NodeScene::initNode()
 {
-	ZenoNode* pNode = new ZenoNode(this);
-	pNode->initStyle(m_nodeparam);
+	if (m_pNode == nullptr)
+		m_pNode = new ZenoNode(this);
+
+	m_pNode->initStyle(m_nodeparam);
+	m_pNode->initModel(m_model);
+
+	connect(m_selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+		m_pNode, SLOT(onSelectionChanged(const QItemSelection&, const QItemSelection&)));
 
 	//ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
 	//ComponentItem* pItem2 = new ComponentItem(this, 350, 350, 150, 30);
@@ -70,6 +79,16 @@ void NodeScene::initNode()
 
 	//ResizablePixmapItem* pItem = new ResizablePixmapItem(this, QPixmap("C:\\editor\\uirender\\view.jpg").scaled(60, 61));
 	//pItem->setPos(50, 50);
+}
+
+QStandardItemModel* NodeScene::model() const
+{
+	return m_model;
+}
+
+QItemSelectionModel* NodeScene::selectionModel() const
+{
+	return m_selection;
 }
 
 void NodeScene::onSelectionChanged()

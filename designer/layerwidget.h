@@ -16,12 +16,11 @@ class LayerWidget : public QWidget
 public:
     LayerWidget(QWidget* parent = nullptr);
 
-private:
-    void initModel();
+public slots:
+    void setModel(QStandardItemModel* model, QItemSelectionModel* selectionModel);
 
 private:
-    LayerTreeView* m_pHeader;
-    LayerTreeView* m_pBody;
+    LayerTreeView* m_pLayer;
     QStandardItemModel* m_model;
 };
 

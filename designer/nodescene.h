@@ -8,6 +8,7 @@ class TimelineItem;
 class DragPointItem;
 class ComponentItem;
 class NodeGridItem;
+class ZenoNode;
 
 class NodeScene : public QGraphicsScene
 {
@@ -36,6 +37,8 @@ public:
 	void initTimelines(QRectF rcView);
 	void initSkin(const QString& fn);
 	void initNode();
+    QStandardItemModel* model() const;
+    QItemSelectionModel* selectionModel() const;
 
 public slots:
     void updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay);
@@ -50,6 +53,10 @@ private:
     QGraphicsItem* m_selectedItem;
     NodeGridItem* m_grid;
     TimelineItem* m_pHTimeline, *m_pVTimeline;
+    ZenoNode* m_pNode;
+
+    QStandardItemModel* m_model;
+    QItemSelectionModel* m_selection;
 
 	NodeParam m_nodeparam;
 	int m_nLargeCellRows;

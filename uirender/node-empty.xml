@@ -12,5 +12,6 @@
 		<component id="toprightsocket" x="490" y="379" w="160" h="50"/>
 		<component id="bottomrightsocket" x="490" y="410" w="160" h="50"/>
 		<component id="backboard" x="121" y="230" w="396" h="297"/>
+		<component id="parameters" x="121" y="150" w="396" h="120"/>
 	</body>
 </node>

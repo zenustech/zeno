@@ -18,7 +18,9 @@ public:
 private:
     void initMenu();
     void initWidgets();
+    void initConnections();
     void initMdiWindows();
+    void resetModels();
 
     QMenuBar* m_pMenubar;
     LayerWidget* m_pLayerWidget;

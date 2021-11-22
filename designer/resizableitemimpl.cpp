@@ -161,10 +161,18 @@ void ResizableItemImpl::showBorder(bool bShow)
     m_showBdr = bShow;
 }
 
+bool ResizableItemImpl::_enableMouseEvent()
+{
+    return m_coreitem || isSelected();
+}
+
 void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     if (QApplication::keyboardModifiers() == Qt::ControlModifier)
         return;
+
+	if (!_enableMouseEvent())
+		return;
 
     QPointF itemScenePos = this->scenePos();
     QPointF scenePos = event->scenePos();
@@ -232,6 +240,9 @@ void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     if (QApplication::keyboardModifiers() == Qt::ControlModifier)
+        return;
+
+    if (!_enableMouseEvent())
         return;
 
     if (m_mouseHint == TRANSLATE)
@@ -302,6 +313,7 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
         _adjustItemsPos();
         update();
+        emit itemGeoChanged(m_coreitem->scenePos());
     }
 }
 
@@ -310,6 +322,9 @@ void ResizableItemImpl::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (QApplication::keyboardModifiers() == Qt::ControlModifier)
         return;
 
-    m_mouseHint = NO_DRAG;
-    _base::mouseReleaseEvent(event);
+    if (_enableMouseEvent())
+	{
+		m_mouseHint = NO_DRAG;
+		_base::mouseReleaseEvent(event);
+    }
 }

@@ -10,8 +10,8 @@ ValueInputWidget::ValueInputWidget(const QString& name, QWidget* parent)
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->addWidget(new QLabel(name));
 
-    m_pSpinBox = new QSpinBox;
-    pLayout->addWidget(m_pSpinBox);
+    //m_pSpinBox = new QSpinBox;
+    //pLayout->addWidget(m_pSpinBox);
 
     m_pLineEdit = new QLineEdit;
     pLayout->addWidget(m_pLineEdit);
@@ -72,9 +72,8 @@ ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
     pLayout->addWidget(m_pY, 1, 0);
     pLayout->addWidget(m_pHeight, 1, 1);
 
-    pVBoxLayout->addStretch();
-
     pVBoxLayout->addLayout(pLayout);
+    pVBoxLayout->addStretch();
 
     setLayout(pVBoxLayout);
 }

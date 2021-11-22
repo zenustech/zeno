@@ -8,6 +8,7 @@ class NodesView : public QGraphicsView
 public:
 	NodesView(QWidget* parent = nullptr);
 	QSize sizeHint() const override;
+	NodeScene* scene() const { return m_scene; }
 	void initSkin(const QString& fn);
 	void initNode();
 

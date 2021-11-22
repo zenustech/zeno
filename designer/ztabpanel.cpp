@@ -10,7 +10,7 @@ ZTabPanel::ZTabPanel(QWidget* parent)
     propertiesPane->addWidget(new ZComponentPropPanel);
     propertiesPane->addWidget(new ZElementPropPanel);
     addTab(propertiesPane, "Properties");
-    propertiesPane->setCurrentIndex(2);
+    propertiesPane->setCurrentIndex(1);
 }
 
 ZTabPanel::~ZTabPanel()

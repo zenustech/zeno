@@ -48,8 +48,12 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
+signals:
+    void itemGeoChanged(QPointF newPos);
+
 private:
     void _adjustItemsPos();
+    bool _enableMouseEvent();
 
     QGraphicsItem* getResizeHandleItem(QPointF scenePos);
 

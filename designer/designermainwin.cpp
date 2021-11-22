@@ -15,7 +15,8 @@ DesignerMainWin::DesignerMainWin()
 {
     initMenu();
     initWidgets();
-    //initMdiWindows();
+	initConnections();
+	resetModels();
 }
 
 void DesignerMainWin::initWidgets()
@@ -30,7 +31,7 @@ void DesignerMainWin::initWidgets()
     m_pLayerWidget = new LayerWidget;
     pSplitter->addWidget(m_pLayerWidget);
 
-    m_tabWidget = new StyleTabWidget;
+    m_tabWidget = new StyleTabWidget(m_pLayerWidget);
 	pSplitter->addWidget(m_tabWidget);
 
     m_properties = new ZTabPanel;
@@ -42,6 +43,16 @@ void DesignerMainWin::initWidgets()
     centralWidget->setLayout(pLayout);
 
     setCentralWidget(centralWidget);
+}
+
+void DesignerMainWin::initConnections()
+{
+	connect(m_tabWidget, SIGNAL(tabviewActivated(QStandardItemModel*)), m_pLayerWidget, SLOT(setModel(QStandardItemModel*)));
+}
+
+void DesignerMainWin::resetModels()
+{
+	m_pLayerWidget->setModel(m_tabWidget->getCurrentModel(), m_tabWidget->getSelectionModel());
 }
 
 void DesignerMainWin::initMdiWindows()
