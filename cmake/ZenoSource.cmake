@@ -26,5 +26,3 @@ if (ZENO_WITH_BACKWARD)
     target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)
 endif()
-
-install(TARGETS zeno DESTINATION bin)
