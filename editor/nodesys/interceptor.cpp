@@ -1,5 +1,7 @@
 #include "interceptor.h"
+#include "qdmgraphicsnodesubnet.h"
 #include <zeno/dop/Node.h>
+#include <zeno/dop/SubnetNode.h>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -7,6 +9,7 @@ ZENO_NAMESPACE_BEGIN
 void Interceptor::toDopGraph
     ( QDMGraphicsScene *scene
     , dop::SceneGraph *d_scene
+    , std::map<QDMGraphicsNode *, dop::Node *> &nodes
     )
 {
     std::map<QDMGraphicsSocketIn *, QDMGraphicsSocketOut *> links;
@@ -14,7 +17,6 @@ void Interceptor::toDopGraph
         links.emplace(link->dstSocket, link->srcSocket);
     }
 
-    std::map<QDMGraphicsNode *, dop::Node *> nodes;
     std::map<QDMGraphicsSocketOut *, std::pair<dop::Node *, int>> sockets;
     for (auto const &node: scene->nodes) {
         auto desc = node->getDescriptor();
@@ -23,6 +25,19 @@ void Interceptor::toDopGraph
         d_node->name = node->getName();
         d_node->inputs.resize(node->socketIns.size());
         d_node->outputs.resize(node->socketOuts.size());
+
+        if (auto subnet = dynamic_cast<QDMGraphicsNodeSubnet *>(node.get())) {
+            auto d_subnet = std::make_unique<dop::SceneGraph>();
+            std::map<QDMGraphicsNode *, dop::Node *> lut;
+            toDopGraph(subnet->subnetScene.get(), d_subnet.get(), lut);
+
+            auto d_sub_in = static_cast<dop::SubnetIn *>(lut.at(subnet->subnetInNode));
+            auto d_sub_out = static_cast<dop::SubnetOut *>(lut.at(subnet->subnetOutNode));
+            auto d_sub = static_cast<dop::SubnetNode *>(d_node.get());
+            d_sub->subnet = std::move(d_subnet);
+            d_sub->subnetIn = d_sub_in;
+            d_sub->subnetOut = d_sub_out;
+        }
 
         nodes.emplace(node.get(), d_node.get());
         for (size_t i = 0; i < node->socketOuts.size(); i++) {
@@ -49,6 +64,15 @@ void Interceptor::toDopGraph
             d_node->inputs[i] = input;
         }
     }
+}
+
+void Interceptor::toDopGraph
+    ( QDMGraphicsScene *scene
+    , dop::SceneGraph *d_scene
+    )
+{
+    std::map<QDMGraphicsNode *, dop::Node *> nodes;
+    return toDopGraph(scene, d_scene, nodes);
 }
 
 ZENO_NAMESPACE_END

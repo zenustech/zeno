@@ -60,13 +60,13 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 template <class T>
-constexpr T &non_const(T &p) {
-    return const_cast<std::remove_const_t<T> &>(p);
+constexpr T &nocv_ref(T &p) {
+    return const_cast<std::remove_cv_t<T> &>(p);
 }
 
 template <class T>
-constexpr T *non_const_ptr(T *p) {
-    return const_cast<std::remove_const_t<T> *>(p);
+constexpr T *nocv_ptr(T *p) {
+    return const_cast<std::remove_cv_t<T> *>(p);
 }
 
 template <class T>

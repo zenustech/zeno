@@ -5,7 +5,7 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 
-std::vector<Node *> SceneGraph::visibleNodes() {
+std::vector<Node *> SceneGraph::visibleNodes() const {
     std::vector<Node *> res;
     for (auto const &node: nodes) {
         res.push_back(node.get());

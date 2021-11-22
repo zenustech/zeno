@@ -13,6 +13,8 @@ class QDMGraphicsNodeSubnetIn;
 class QDMGraphicsNodeSubnetOut;
 
 class QDMGraphicsNodeSubnet final : public QDMGraphicsNode {
+    friend Interceptor;
+
     std::unique_ptr<QDMGraphicsScene> subnetScene;
     std::unique_ptr<dop::Descriptor> subnetDescStorage;
     QDMGraphicsNodeSubnetIn *subnetInNode;

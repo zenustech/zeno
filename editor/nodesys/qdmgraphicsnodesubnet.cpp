@@ -107,8 +107,7 @@ void QDMGraphicsNodeSubnetIn::initialize()
     initByDescriptor(desc);
 }
 
-QDMGraphicsSocketOut *QDMGraphicsNodeSubnetIn::addSocket()
-{
+QDMGraphicsSocketOut *QDMGraphicsNodeSubnetIn::addSocket() {
     auto sock = addSocketOut();
     return sock;
 }
@@ -129,8 +128,7 @@ void QDMGraphicsNodeSubnetOut::initialize()
     initByDescriptor(desc);
 }
 
-QDMGraphicsSocketIn *QDMGraphicsNodeSubnetOut::addSocket()
-{
+QDMGraphicsSocketIn *QDMGraphicsNodeSubnetOut::addSocket() {
     auto sock = addSocketIn();
     return sock;
 }

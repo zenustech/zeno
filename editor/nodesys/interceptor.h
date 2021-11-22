@@ -12,6 +12,12 @@ struct Interceptor {
     static void toDopGraph
     ( QDMGraphicsScene *scene
     , dop::SceneGraph *d_scene
+    , std::map<QDMGraphicsNode *, dop::Node *> &nodes
+    );
+
+    static void toDopGraph
+    ( QDMGraphicsScene *scene
+    , dop::SceneGraph *d_scene
     );
 };
 

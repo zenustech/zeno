@@ -13,7 +13,7 @@ namespace dop {
 struct SceneGraph {
     std::set<std::unique_ptr<Node>> nodes;
 
-    std::vector<Node *> visibleNodes();
+    std::vector<Node *> visibleNodes() const;
 };
 
 
