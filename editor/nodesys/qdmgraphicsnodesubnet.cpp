@@ -63,10 +63,11 @@ void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
         auto btnNew = new QPushButton;
         btnNew->setText("(+I)");
         paredit->addRow("New Input", btnNew);
-        QObject::connect(btnNew, &QPushButton::clicked, [this] {
+        QObject::connect(btnNew, &QPushButton::clicked, [=, this] {
             auto name = find_unique_name(getInputNames(), "in");
             addSubnetInput(QString::fromStdString(name));
             emit getScene()->sceneUpdated();
+            setupParamEdit(paredit);
         });
     }
 
@@ -74,10 +75,11 @@ void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
         auto btnNew = new QPushButton;
         btnNew->setText("(+O)");
         paredit->addRow("New Output", btnNew);
-        QObject::connect(btnNew, &QPushButton::clicked, [this] {
+        QObject::connect(btnNew, &QPushButton::clicked, [=, this] {
             auto name = find_unique_name(getOutputNames(), "out");
             addSubnetOutput(QString::fromStdString(name));
             emit getScene()->sceneUpdated();
+            setupParamEdit(paredit);
         });
     }
 
@@ -136,6 +138,10 @@ void QDMGraphicsNodeSubnetOut::initialize()
 QDMGraphicsSocketIn *QDMGraphicsNodeSubnetOut::addSocket() {
     auto sock = addSocketIn();
     return sock;
+}
+
+QDMGraphicsNode *QDMGraphicsNodeSubnetOut::underlyingNode() {
+    return getScene()->subnetNode;
 }
 
 ZENO_NAMESPACE_END

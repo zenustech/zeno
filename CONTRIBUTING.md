@@ -249,7 +249,7 @@ Example:
 ZENO_NAMESPACE_BEGIN  // all codes should be wrapped with ZENO_NAMESPACE_BEGIN/END
 
 namespace myutils {   // '{' should stay in same line
-                      // namespaces does not indent
+                      // and namespaces does not indent
 
 namespace {        // use an anonymous namespace for static functions
 
@@ -292,9 +292,16 @@ void awesomeFunction();
 struct AwesomeClass {
 private:
     int mAwesomeMember = 0;
+    static int gAwesomeStaticMember = 1;
 
 public:
-    void awesomeMethod();
+    void awesomeMethod() {
+        int awesomeLocal = mAwesomeMember;
+        awesomeLocal *= gAwesomeStaticMember;
+        mAwesomeMember = awesomeLocal;
+    }
+
+    static void awesomeStaticMethod();
 };
 
 #define AWESOME_MACRO 3.14f
@@ -307,7 +314,7 @@ enum {
 
 }  // end of namespace awesomenamespace
 
-ZENO_NAMESPACE_END    // all codes should be wrapped with ZENO_NAMESPACE_BEGIN/END
+ZENO_NAMESPACE_END    // all code should be wrapped with ZENO_NAMESPACE_BEGIN/END
 ```
 
 See also [.clang-format](.clang-format) for automated formatting rules.

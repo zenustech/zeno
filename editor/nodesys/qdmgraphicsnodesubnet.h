@@ -53,6 +53,7 @@ public:
 
     void initialize();
     QDMGraphicsSocketIn *addSocket();
+    QDMGraphicsNode *underlyingNode() override;
 };
 
 ZENO_NAMESPACE_END
