@@ -23,6 +23,7 @@ https://github.com/ericniebler/range-v3
 https://github.com/wjakob/tbb
 https://github.com/fmtlib/fmt
 https://github.com/gabime/spdlog
+https://github.com/lua/lua
 
 ## As Packages
 
