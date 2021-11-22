@@ -26,6 +26,15 @@ function (_zpm_install pkg_desc)
     message(STATUS "ZPM installing package [${pkg_desc}]")
     execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --yellow "======================================")
 
+    if (NOT EXISTS ${pkg_path}/CMakeLists.txt)
+        message(FATAL_ERROR "
+File not found: [${pkg_path}/CMakeLists.txt]
+Is there a CMake project at all?
+You may need to run this command:
+        git submodule update --init --recursive
+")
+    endif()
+
     file(REMOVE_RECURSE ${ZPM_BUILD_DIRECTORY}/${pkg_path})
 
     execute_process(
