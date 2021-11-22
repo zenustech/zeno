@@ -246,8 +246,10 @@ Example:
 
 // and never use 'using namespace std', think about std::data, std::size, std::ref
 
-namespace zeno {   // '{' should stay in same line
-                   // namespaces does not indent
+ZENO_NAMESPACE_BEGIN  // all codes should be wrapped with ZENO_NAMESPACE_BEGIN/END
+
+namespace myutils {   // '{' should stay in same line
+                      // namespaces does not indent
 
 namespace {        // use an anonymous namespace for static functions
 
@@ -277,7 +279,35 @@ std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visib
    return ptr;
 }
 
-}   // end of namespace zeno
+}   // end of namespace myutils
+
+// naming convensions example:
+
+namespace awesomenamespace {
+
+int gAwesomeGlobal = 233;
+
+void awesomeFunction();
+
+struct AwesomeClass {
+private:
+    int mAwesomeMember = 0;
+
+public:
+    void awesomeMethod();
+};
+
+#define AWESOME_MACRO 3.14f
+
+static constexpr int kAwesomeConstant = 42;
+
+enum {
+    kAwesomeEnum,
+};
+
+}  // end of namespace awesomenamespace
+
+ZENO_NAMESPACE_END    // all codes should be wrapped with ZENO_NAMESPACE_BEGIN/END
 ```
 
 See also [.clang-format](.clang-format) for automated formatting rules.

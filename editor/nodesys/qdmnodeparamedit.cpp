@@ -103,8 +103,7 @@ void QDMNodeParamEdit::setCurrentNode(QDMGraphicsNode *node)
 
 void QDMNodeParamEdit::invalidateNode(QDMGraphicsNode *node) const
 {
-    auto scene = static_cast<QDMGraphicsScene *>(node->scene());
-    emit scene->sceneUpdated();
+    emit node->getScene()->sceneUpdated();
 }
 
 void QDMNodeParamEdit::addRow(const QString &name, QWidget *row)

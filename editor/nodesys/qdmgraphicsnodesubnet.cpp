@@ -64,7 +64,8 @@ void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
         paredit->addRow("New Input", btnNew);
         QObject::connect(btnNew, &QPushButton::clicked, [this] {
             auto name = find_unique_name(getInputNames(), "in");
-            this->addSubnetInput(QString::fromStdString(name));
+            addSubnetInput(QString::fromStdString(name));
+            emit getScene()->sceneUpdated();
         });
     }
 
@@ -74,7 +75,8 @@ void QDMGraphicsNodeSubnet::setupParamEdit(QDMNodeParamEdit *paredit) {
         paredit->addRow("New Output", btnNew);
         QObject::connect(btnNew, &QPushButton::clicked, [this] {
             auto name = find_unique_name(getOutputNames(), "out");
-            this->addSubnetOutput(QString::fromStdString(name));
+            addSubnetOutput(QString::fromStdString(name));
+            emit getScene()->sceneUpdated();
         });
     }
 
