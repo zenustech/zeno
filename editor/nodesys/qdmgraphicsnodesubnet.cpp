@@ -12,6 +12,7 @@
 ZENO_NAMESPACE_BEGIN
 
 QDMGraphicsNodeSubnet::QDMGraphicsNodeSubnet() = default;
+QDMGraphicsNodeSubnet::~QDMGraphicsNodeSubnet() = default;
 
 void QDMGraphicsNodeSubnet::initialize()
 {
@@ -99,6 +100,7 @@ void QDMGraphicsNodeSubnet::addSubnetOutput(QString name) {
 
 
 QDMGraphicsNodeSubnetIn::QDMGraphicsNodeSubnetIn() = default;
+QDMGraphicsNodeSubnetIn::~QDMGraphicsNodeSubnetIn() = default;
 
 void QDMGraphicsNodeSubnetIn::initialize()
 {
@@ -120,6 +122,7 @@ QDMGraphicsNode *QDMGraphicsNodeSubnetIn::underlyingNode() {
 
 
 QDMGraphicsNodeSubnetOut::QDMGraphicsNodeSubnetOut() = default;
+QDMGraphicsNodeSubnetOut::~QDMGraphicsNodeSubnetOut() = default;
 
 void QDMGraphicsNodeSubnetOut::initialize()
 {

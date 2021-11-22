@@ -22,6 +22,8 @@ class QDMGraphicsNodeSubnet final : public QDMGraphicsNode {
 
 public:
     QDMGraphicsNodeSubnet();
+    ~QDMGraphicsNodeSubnet() override;
+
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     [[nodiscard]] QDMGraphicsScene *getSubnetScene() const override;
     void setupParamEdit(QDMNodeParamEdit *paredit) override;
@@ -35,6 +37,8 @@ class QDMGraphicsNodeSubnetIn final : public QDMGraphicsNode {
 
 public:
     QDMGraphicsNodeSubnetIn();
+    ~QDMGraphicsNodeSubnetIn() override;
+
     void initialize();
     QDMGraphicsSocketOut *addSocket();
     QDMGraphicsNode *underlyingNode() override;
@@ -45,6 +49,8 @@ class QDMGraphicsNodeSubnetOut final : public QDMGraphicsNode {
 
 public:
     QDMGraphicsNodeSubnetOut();
+    ~QDMGraphicsNodeSubnetOut() override;
+
     void initialize();
     QDMGraphicsSocketIn *addSocket();
 };
