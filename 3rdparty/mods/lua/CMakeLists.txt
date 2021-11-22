@@ -59,14 +59,27 @@ src/ltable.c
 src/ltablib.c
 src/ltests.c
 src/ltm.c
-#src/lua.c
 src/lundump.c
 src/lutf8lib.c
 src/lvm.c
 src/lzio.c
-#src/onelua.c
 )
 
-add_library(lua ${srcFiles})
+if (DEFINED LUA_BUILD_REPL AND LUA_BUILD_REPL)
+    add_executable(lua src/lua.c ${srcFiles})
+else()
+    add_library(lua ${srcFiles})
+    target_include_directories(lua PUBLIC include)
+endif()
+
 target_include_directories(lua PRIVATE include/lua)
-target_include_directories(lua PUBLIC include)
+
+find_library(MATH_LIBRARY m)
+if (MATH_LIBRARY)
+    target_link_libraries(lua PUBLIC ${MATH_LIBRARY})
+endif()
+target_link_libraries(lua PUBLIC ${CMAKE_DL_LIBS})
+
+target_compile_definitions(lua PRIVATE $<$<PLATFORM_ID:Linux>:LUA_USE_LINUX>)
+target_compile_definitions(lua PRIVATE $<$<PLATFORM_ID:Windows>:LUA_USE_WINDOWS>)
+target_compile_definitions(lua PRIVATE $<$<PLATFORM_ID:Darwin>:LUA_USE_MACOSX>)
