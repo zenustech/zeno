@@ -26,3 +26,7 @@ if (ZENO_WITH_BACKWARD)
     target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)
 endif()
+
+if (ZENO_INSTALL_TARGETS)
+    include(cmake/ZenoInstall.cmake)
+endif()

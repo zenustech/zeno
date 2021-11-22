@@ -8,4 +8,3 @@ project(zeno VERSION 0.1 LANGUAGES CXX DESCRIPTION "Zeno node system for simulat
 message(STATUS "Zeno Target: [${ZENO_TARGET}]")
 include(cmake/ZenoTarget${ZENO_TARGET}.cmake)
 include(cmake/ZenoSource.cmake)
-include(cmake/ZenoInstall.cmake)

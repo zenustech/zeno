@@ -4,6 +4,7 @@ option(ZENO_WITH_ZPM "Use ZPM to manage Zeno dependencies" ON)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
+option(ZENO_INSTALL_TARGETS "Create install targets for Zeno" OFF)
 
 ############### BEGIN ADHOC ###############
 if (UNIX)  # these are only used by archibate and zhxx1987
