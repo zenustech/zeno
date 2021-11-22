@@ -36,8 +36,8 @@ public:
     virtual QPointF getLinkedPos() const = 0;
     inline std::string const &getName() const { return name; }
     inline std::string const &getType() const { return type; }
-    void setType(QString type);
-    void setName(QString name);
+    void setType(std::string const &type);
+    void setName(std::string const &name);
 
     static constexpr float SIZE = 20, ROUND = 4;
 };

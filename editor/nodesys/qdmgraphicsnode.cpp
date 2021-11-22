@@ -26,7 +26,7 @@ QDMGraphicsNode::~QDMGraphicsNode() = default;
 float QDMGraphicsNode::getHeight() const
 {
     size_t count = std::max(socketIns.size(), socketOuts.size());
-    return SOCKMARGINTOP + SOCKSTRIDE * count + SOCKMARGINBOT;
+    return SOCKMARGINTOP + std::max(SOCKSTRIDE * count, MINHEIGHT) + SOCKMARGINBOT;
 }
 
 QRectF QDMGraphicsNode::boundingRect() const
@@ -87,11 +87,11 @@ void QDMGraphicsNode::initByDescriptor(const dop::Descriptor *desc)
     this->desc = desc;
     for (auto const &sockinfo: desc->inputs) {
         auto socket = addSocketIn();
-        socket->setName(QString::fromStdString(sockinfo.name));
+        socket->setName(sockinfo.name);
     }
     for (auto const &sockinfo: desc->outputs) {
         auto socket = addSocketOut();
-        socket->setName(QString::fromStdString(sockinfo.name));
+        socket->setName(sockinfo.name);
     }
 
     auto name = getScene()->allocateNodeName(desc->name);

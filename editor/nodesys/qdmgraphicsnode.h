@@ -69,7 +69,7 @@ public:
 
     void unlinkAll();
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
-    static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, SOCKMARGINBOT = -10;
+    static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, MINHEIGHT = 20, SOCKMARGINBOT = -10;
 };
 
 ZENO_NAMESPACE_END

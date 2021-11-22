@@ -58,15 +58,15 @@ void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
     links.erase(link);
 }
 
-void QDMGraphicsSocket::setName(QString name)
+void QDMGraphicsSocket::setName(std::string const &name)
 {
-    this->name = name.toStdString();
-    label->setPlainText(name);
+    this->name = name;
+    label->setPlainText(QString::fromStdString(name));
 }
 
-void QDMGraphicsSocket::setType(QString type)
+void QDMGraphicsSocket::setType(std::string const &type)
 {
-    this->type = type.toStdString();
+    this->type = type;
 }
 
 ZENO_NAMESPACE_END

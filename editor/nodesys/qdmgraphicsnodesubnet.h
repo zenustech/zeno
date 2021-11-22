@@ -28,8 +28,8 @@ public:
     [[nodiscard]] QDMGraphicsScene *getSubnetScene() const override;
     void setupParamEdit(QDMNodeParamEdit *paredit) override;
     void initialize();
-    void addSubnetInput(QString name);
-    void addSubnetOutput(QString name);
+    void addSubnetInput(std::string const &name);
+    void addSubnetOutput(std::string const &name);
 };
 
 class QDMGraphicsNodeSubnetIn final : public QDMGraphicsNode {

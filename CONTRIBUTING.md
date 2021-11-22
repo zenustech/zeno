@@ -287,7 +287,7 @@ namespace awesomenamespace {
 
 int gAwesomeGlobal = 233;
 
-void awesomeFunction();
+void awesomeFunction(float awesomeArgument);
 
 struct AwesomeClass {
 private:
