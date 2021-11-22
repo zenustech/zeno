@@ -88,10 +88,14 @@ void QDMGraphicsNode::initByDescriptor(const dop::Descriptor *desc)
     for (auto const &sockinfo: desc->inputs) {
         auto socket = addSocketIn();
         socket->setName(sockinfo.name);
+        socket->setType(sockinfo.type);
+        socket->setDefl(sockinfo.defl);
     }
     for (auto const &sockinfo: desc->outputs) {
         auto socket = addSocketOut();
         socket->setName(sockinfo.name);
+        socket->setType(sockinfo.type);
+        socket->setDefl(sockinfo.defl);
     }
 
     auto name = getScene()->allocateNodeName(desc->name);

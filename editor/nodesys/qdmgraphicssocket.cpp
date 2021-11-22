@@ -69,4 +69,9 @@ void QDMGraphicsSocket::setType(std::string const &type)
     this->type = type;
 }
 
+void QDMGraphicsSocket::setDefl(std::string const &defl)
+{
+    this->defl = defl;
+}
+
 ZENO_NAMESPACE_END
