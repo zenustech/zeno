@@ -34,3 +34,6 @@
 [submodule "3rdparty/pkgs/python-cmake-buildsystem"]
 	path = 3rdparty/pkgs/python-cmake-buildsystem
 	url = https://github.com/python-cmake-buildsystem/python-cmake-buildsystem.git
+[submodule "3rdparty/pkgs/range-v3"]
+	path = 3rdparty/pkgs/range-v3
+	url = https://github.com/ericniebler/range-v3.git

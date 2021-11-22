@@ -36,3 +36,5 @@ https://github.com/AcademySoftwareFoundation/openvdb
 https://gitlab.com/libeigen/eigen
 https://github.com/fmtlib/fmt
 https://github.com/gabime/spdlog
+https://github.com/ericniebler/range-v3
+https://github.com/python-cmake-buildsystem/python-cmake-buildsystem
