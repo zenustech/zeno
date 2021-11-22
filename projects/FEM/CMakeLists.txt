@@ -42,6 +42,9 @@ target_link_libraries(zeno_FEM PRIVATE zeno_nodep)
 target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)
 
+if (NOT EXISTS OpenSim/CMakeLists.txt)
+    message(FATAL_ERROR "Please run: git submodule --init --recursive")
+endif()
 add_subdirectory(OpenSim)
 target_link_libraries(zeno_FEM PRIVATE
 osimActuators
