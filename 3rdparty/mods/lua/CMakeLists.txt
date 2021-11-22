@@ -59,12 +59,12 @@ src/ltable.c
 src/ltablib.c
 src/ltests.c
 src/ltm.c
-src/lua.c
+#src/lua.c
 src/lundump.c
 src/lutf8lib.c
 src/lvm.c
 src/lzio.c
-src/onelua.c
+#src/onelua.c
 )
 
 add_library(lua ${srcFiles})
