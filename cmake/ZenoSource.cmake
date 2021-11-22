@@ -3,21 +3,21 @@ target_sources(zeno PRIVATE ${source})
 target_include_directories(zeno PUBLIC zeno)
 target_include_directories(zeno PUBLIC 3rdparty/include)
 
+#find_package(fmt REQUIRED)
+#message(STATUS "Found fmt: ${fmt_DIR}")
+#target_link_libraries(zeno PUBLIC fmt::fmt)
+
+#find_package(spdlog REQUIRED)
+#message(STATUS "Found spdlog: ${spdlog_DIR}")
+#target_link_libraries(zeno PUBLIC spdlog::spdlog)
+
+#find_package(range-v3 REQUIRED)
+#message(STATUS "Found range-v3: ${range-v3_DIR}")
+#target_link_libraries(zeno PUBLIC range-v3::range-v3)
+
 find_package(TBB COMPONENTS tbb REQUIRED)
 message(STATUS "Found TBB: ${TBB_DIR}")
 target_link_libraries(zeno PUBLIC TBB::tbb)
-
-find_package(fmt REQUIRED)
-message(STATUS "Found fmt: ${fmt_DIR}")
-target_link_libraries(zeno PUBLIC fmt::fmt)
-
-find_package(spdlog REQUIRED)
-message(STATUS "Found spdlog: ${spdlog_DIR}")
-target_link_libraries(zeno PUBLIC spdlog::spdlog)
-
-find_package(range-v3 REQUIRED)
-message(STATUS "Found range-v3: ${range-v3_DIR}")
-target_link_libraries(zeno PUBLIC range-v3::range-v3)
 
 if (ZENO_WITH_SYCL)
     message(STATUS "Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
