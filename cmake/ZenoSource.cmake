@@ -4,7 +4,16 @@ target_include_directories(zeno PUBLIC zeno)
 target_include_directories(zeno PUBLIC 3rdparty/include)
 
 find_package(TBB COMPONENTS tbb REQUIRED)
+message(STATUS "Found TBB: ${TBB_DIR}")
 target_link_libraries(zeno PUBLIC TBB::tbb)
+
+find_package(fmt COMPONENTS fmt REQUIRED)
+message(STATUS "Found fmt: ${fmt_DIR}")
+target_link_libraries(zeno PUBLIC fmt::fmt)
+
+find_package(spdlog COMPONENTS spdlog REQUIRED)
+message(STATUS "Found spdlog: ${spdlog_DIR}")
+target_link_libraries(zeno PUBLIC spdlog::spdlog)
 
 if (ZENO_WITH_SYCL)
     message(STATUS "Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
@@ -25,8 +34,4 @@ if (ZENO_WITH_BACKWARD)
     add_subdirectory(3rdparty/mods/backward-cpp)
     target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)
-endif()
-
-if (ZENO_INSTALL_TARGETS)
-    include(cmake/ZenoInstall.cmake)
 endif()
