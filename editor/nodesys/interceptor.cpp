@@ -23,8 +23,10 @@ void Interceptor::toDopGraph
         auto d_node = desc->create();
 
         d_node->name = node->getName();
-        d_node->inputs.resize(node->socketIns.size());
-        d_node->outputs.resize(node->socketOuts.size());
+        auto numIn = node->socketIns.size();
+        auto numOut = node->socketOuts.size();
+        d_node->inputs.resize(numIn);
+        d_node->outputs.resize(numOut);
 
         if (auto subnet = dynamic_cast<QDMGraphicsNodeSubnet *>(node.get())) {
             auto d_subnet = std::make_unique<dop::SceneGraph>();
@@ -37,6 +39,8 @@ void Interceptor::toDopGraph
             d_sub->subnet = std::move(d_subnet);
             d_sub->subnetIn = d_sub_in;
             d_sub->subnetOut = d_sub_out;
+            d_sub->inputs.resize(numIn);
+            d_sub->inputs.resize(numOut);
         }
 
         nodes.emplace(node.get(), d_node.get());

@@ -9,6 +9,18 @@ namespace dop {
 
 
 void SubnetNode::apply() {
+    subnetIn->outputs.resize(inputs.size());
+    subnetOut->inputs.resize(outputs.size());
+
+    for (int i = 0; i < inputs.size(); i++) {
+        subnetIn->outputs[i] = get_input(i);
+    }
+
+    Executor exec;
+    for (int i = 0; i < outputs.size(); i++) {
+        outputs[i] = exec.evaluate({.node = subnetOut, .sockid = i});
+    }
+
     /*inputs.resize(subins.size());
     for (size_t i = 0; i < subins.size(); i++) {
         subins[i]->inputs.at(i) = inputs[i];
