@@ -7,7 +7,6 @@
 ZENO_NAMESPACE_BEGIN
 namespace dop {
 
-
 void SubnetNode::apply() {
     subnetIn->outputs.resize(inputs.size());
     subnetOut->inputs.resize(outputs.size());

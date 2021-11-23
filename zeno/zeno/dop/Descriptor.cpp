@@ -21,7 +21,7 @@ std::unique_ptr<Node> Descriptor::create() const {
 }
 
 
-void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc) {
+void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc) noexcept {
     desc.name = kind;
     desc.factory = std::move(fac);
     desc.inputs.push_back({"SRC"});

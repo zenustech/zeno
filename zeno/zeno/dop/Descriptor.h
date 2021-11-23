@@ -42,7 +42,7 @@ struct Descriptor {
 };
 
 
-void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc);
+void add_descriptor(const char *kind, NodeFactory fac, Descriptor desc) noexcept;
 ztd::map<std::string, Descriptor> &descriptor_table();
 
 

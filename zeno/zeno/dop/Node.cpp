@@ -16,9 +16,9 @@ void Node::set_output(int idx, ztd::any_ptr val) {
 }
 
 
-void Node::preapply(std::vector<Node *> &tolink, Executor *exec) {
+void Node::preapply(Executor *exec, std::vector<Node *> &tolink, std::set<Node *> &visited) {
     for (auto node: inputs) {
-        exec->touch(node, tolink);
+        exec->touch(node, tolink, visited);
     }
     tolink.push_back(this);
 }

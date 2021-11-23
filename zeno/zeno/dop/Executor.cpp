@@ -66,10 +66,13 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 }
 
 
-void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
-    if (input.node) {
+void Executor::touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
+    if (!input.node) {
+        [[unlikely]] if (visited.contains(input.node))
+            throw ztd::error("loop detected in graph");
+        visited.insert(input.node);
         current_node = input.node;
-        input.node->preapply(tolink, this);
+        input.node->preapply(this, tolink, visited);
     }
 }
 
@@ -77,7 +80,8 @@ void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
 ztd::any_ptr Executor::resolve(Input const &input) {
     if (input.node) {
         std::vector<Node *> tolink;
-        touch(input, tolink);
+        std::set<Node *> visited;
+        touch(input, tolink, visited);
         sortexec(input.node, tolink);
         return input.node->outputs.at(input.sockid);
     } else {
