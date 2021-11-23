@@ -18,20 +18,8 @@ void SubnetNode::apply() {
 
     Executor exec;
     for (int i = 0; i < outputs.size(); i++) {
-        outputs[i] = exec.evaluate({.node = subnetOut, .sockid = i});
+        outputs[i] = exec.evaluate(subnetOut->inputs[i]);
     }
-
-    /*inputs.resize(subins.size());
-    for (size_t i = 0; i < subins.size(); i++) {
-        subins[i]->inputs.at(i) = inputs[i];
-    }
-
-    Executor exec;
-    outputs.resize(subouts.size());
-    for (size_t i = 0; i < subouts.size(); i++) {
-        outputs[i] = exec.evaluate({.node = subouts[i], .sockid = 0});
-    }*/
-    // TODO: FIXME: PLEASE IMPL THIS!
 }
 
 ZENO_DOP_DEFCLASS(SubnetNode, {{

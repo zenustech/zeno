@@ -240,7 +240,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
 
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const
 {
-    if (cc == CC_ZenoToolButton)
+    if ((decltype(CC_ZenoToolButton))(std::underlying_type_t<SubControl>)cc == CC_ZenoToolButton)
     {
         const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
         Q_ASSERT(opt);
