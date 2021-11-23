@@ -39,6 +39,9 @@ public:
     ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     QRectF boundingRect() const override;
+    QRectF coreItemSceneRect();
+    int width() const { return m_width; }
+    int height() const { return m_height; }
     void setCoreItem(ResizableCoreItem* pItem);
     void showBorder(bool bShow);
 
@@ -49,7 +52,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 signals:
-    void itemGeoChanged(QPointF newPos);
+    void itemGeoChanged(QRectF sceneRect);
 
 private:
     void _adjustItemsPos();

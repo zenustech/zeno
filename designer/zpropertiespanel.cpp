@@ -1,5 +1,24 @@
 #include "framework.h"
 #include "zpropertiespanel.h"
+#include "common.h"
+#include "designermainwin.h"
+#include "styletabwidget.h"
+#include "nodesview.h"
+
+
+DesignerMainWin* getMainWindow(QWidget* pWidget)
+{
+    QWidget* p = pWidget;
+    while (p)
+    {
+        if (DesignerMainWin* pWin = qobject_cast<DesignerMainWin*>(p))
+        {
+            return pWin;
+        }
+        p = p->parentWidget();
+    }
+    return nullptr;
+}
 
 
 ValueInputWidget::ValueInputWidget(const QString& name, QWidget* parent)
@@ -16,11 +35,13 @@ ValueInputWidget::ValueInputWidget(const QString& name, QWidget* parent)
     m_pLineEdit = new QLineEdit;
     pLayout->addWidget(m_pLineEdit);
 
-   
-
     setLayout(pLayout);
 }
 
+void ValueInputWidget::setValue(qreal value)
+{
+    m_pLineEdit->setText(QString::number(value));
+}
 
 ZPagePropPanel::ZPagePropPanel(QWidget* parent)
     : QWidget(parent)
@@ -77,6 +98,44 @@ ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
 
     setLayout(pVBoxLayout);
 }
+
+void ZComponentPropPanel::initModel()
+{
+    DesignerMainWin* pWin = getMainWindow(this);
+    if (auto view = pWin->getTabWidget()->getCurrentView())
+    {
+        QStandardItemModel* model = view->findChild<QStandardItemModel*>(NODE_MODEL_NAME);
+        QItemSelectionModel* selection= view->findChild<QItemSelectionModel*>(NODE_SELECTION_MODEL);
+        connect(model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(onModelDataChanged(QStandardItem*)));
+        connect(selection, &QItemSelectionModel::selectionChanged, this, &ZComponentPropPanel::onSelectionChanged);
+    }
+}
+
+void ZComponentPropPanel::onModelDataChanged(QStandardItem* pItem)
+{
+    QRectF rc = pItem->data(NODEPOS_ROLE).toRectF();
+    m_pX->setValue(rc.left());
+    m_pY->setValue(rc.top());
+    m_pWidth->setValue(rc.width());
+    m_pHeight->setValue(rc.height());
+}
+
+void ZComponentPropPanel::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+    QModelIndexList lst = selected.indexes();
+    if (!lst.isEmpty())
+    {
+        QModelIndex idx = lst.at(0);
+        NODE_ID id = (NODE_ID)idx.data(Qt::UserRole + 1).toInt();
+        
+        QRectF rc = idx.data(NODEPOS_ROLE).toRectF();
+        m_pX->setValue(rc.left());
+        m_pY->setValue(rc.top());
+        m_pWidth->setValue(rc.width());
+        m_pHeight->setValue(rc.height());
+    }
+}
+
 
 ZElementPropPanel::ZElementPropPanel(QWidget* parent)
     : QWidget(parent)

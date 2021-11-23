@@ -17,7 +17,7 @@ public:
     LayerWidget(QWidget* parent = nullptr);
 
 public slots:
-    void setModel(QStandardItemModel* model, QItemSelectionModel* selectionModel);
+    void resetModel();
 
 private:
     LayerTreeView* m_pLayer;

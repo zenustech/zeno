@@ -6,6 +6,7 @@ class ValueInputWidget : public QWidget
     Q_OBJECT
 public:
     ValueInputWidget(const QString& name, QWidget* parent = nullptr);
+    void setValue(qreal value);
 
 private:
     QSpinBox* m_pSpinBox;
@@ -28,6 +29,11 @@ class ZComponentPropPanel : public QWidget
     Q_OBJECT
 public:
     ZComponentPropPanel(QWidget* parent = nullptr);
+    void initModel();
+
+public slots:
+    void onModelDataChanged(QStandardItem* pItem);
+    void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
 private:
     ValueInputWidget* m_pWidth;

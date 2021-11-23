@@ -33,8 +33,6 @@ void ZenoNode::initStyle(const NodeParam& param)
 {
 	m_param = param;
 
-	
-
 	Component& comp = m_param.header.name;
 	m_component_nodename = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
 	
@@ -85,6 +83,17 @@ void ZenoNode::initStyle(const NodeParam& param)
 	//m_mute->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\mute.jpg")));
 }
 
+QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name)
+{
+    QStandardItem* pItem = new QStandardItem(QIcon(), name);
+    pItem->setData(id);
+    pItem->setData(gvItem->coreItemSceneRect(), NODEPOS_ROLE);
+    connect(gvItem, &ResizableItemImpl::itemGeoChanged, this, [=](QRectF rcNew) {
+        pItem->setData(rcNew, NODEPOS_ROLE);
+        });
+	return pItem;
+}
+
 void ZenoNode::initModel(QStandardItemModel* pModel)
 {
 	if (!pModel)
@@ -96,32 +105,27 @@ void ZenoNode::initModel(QStandardItemModel* pModel)
 	headerItem->setData(NODE_ID::HEADER);
 	if (m_component_nodename)
 	{
-		QStandardItem* nodenameItem = new QStandardItem(QIcon(), "Node-name");
-		nodenameItem->setData(NODE_ID::COMP_NODENAME);
+		QStandardItem* nodenameItem = createItemWithGVItem(m_component_nodename, NODE_ID::COMP_NODENAME, "Node-name");
 		headerItem->appendRow(nodenameItem);
 	}
 	if (m_component_status)
 	{
-		QStandardItem* statusItem = new QStandardItem(QIcon(), "Status");
-		statusItem->setData(NODE_ID::COMP_STATUS);
+		QStandardItem* statusItem = createItemWithGVItem(m_component_status, NODE_ID::COMP_STATUS, "Status");
 		headerItem->appendRow(statusItem);
 	}
 	if (m_component_control)
 	{
-		QStandardItem* controlItem = new QStandardItem(QIcon(), "Control");
-		controlItem->setData(NODE_ID::COMP_CONTROL);
+		QStandardItem* controlItem = createItemWithGVItem(m_component_control, NODE_ID::COMP_CONTROL, "Control");
 		headerItem->appendRow(controlItem);
 	}
 	if (m_component_header_backboard)
 	{
-		QStandardItem* backboardItem = new QStandardItem(QIcon(), "Back-board");
-		backboardItem->setData(NODE_ID::COMP_HEADER_BACKBOARD);
+		QStandardItem* backboardItem = createItemWithGVItem(m_component_header_backboard, NODE_ID::COMP_HEADER_BACKBOARD, "Back-board");
 		headerItem->appendRow(backboardItem);
 	}
 	if (m_component_display)
 	{
-		QStandardItem* displayItem = new QStandardItem(QIcon(), "Display");
-		displayItem->setData(NODE_ID::COMP_DISPLAY);
+		QStandardItem* displayItem = createItemWithGVItem(m_component_display, NODE_ID::COMP_DISPLAY, "Display");
 		headerItem->appendRow(displayItem);
 	}
 
@@ -129,33 +133,28 @@ void ZenoNode::initModel(QStandardItemModel* pModel)
 	bodyItem->setData(NODE_ID::BODY);
 	if (m_component_ltsocket)
 	{
-		QStandardItem* ltsocketItem = new QStandardItem(QIcon(), "LTSocket");
-		ltsocketItem->setData(NODE_ID::COMP_LTSOCKET);
+		QStandardItem* ltsocketItem = createItemWithGVItem(m_component_ltsocket, NODE_ID::COMP_LTSOCKET, "LTSocket");
 		bodyItem->appendRow(ltsocketItem);
 	}
 	if (m_component_lbsocket)
 	{
-		QStandardItem* lbsocketItem = new QStandardItem(QIcon(), "LBSocket");
-		lbsocketItem->setData(NODE_ID::COMP_LBSOCKET);
+		QStandardItem* lbsocketItem = createItemWithGVItem(m_component_lbsocket, NODE_ID::COMP_LBSOCKET, "LBSocket");
 		bodyItem->appendRow(lbsocketItem);
 	}
 	if (m_component_rtsocket)
 	{
-		QStandardItem* rtsocketItem = new QStandardItem(QIcon(), "RTSocket");
-		rtsocketItem->setData(NODE_ID::COMP_RTSOCKET);
+		QStandardItem* rtsocketItem = createItemWithGVItem(m_component_rtsocket, NODE_ID::COMP_RTSOCKET, "RTSocket");
 		bodyItem->appendRow(rtsocketItem);
 	}
 	if (m_component_rbsocket)
 	{
-		QStandardItem* rbsocketItem = new QStandardItem(QIcon(), "RBSocket");
-		rbsocketItem->setData(NODE_ID::COMP_RBSOCKET);
-		bodyItem->appendRow(rbsocketItem);
+        QStandardItem* rbsocketItem = createItemWithGVItem(m_component_rbsocket, NODE_ID::COMP_RBSOCKET, "RBSocket");
+        bodyItem->appendRow(rbsocketItem);
 	}
 
 	if (m_component_body_backboard)
 	{
-		QStandardItem* backboardItem = new QStandardItem(QIcon(), "Back-board");
-		backboardItem->setData(NODE_ID::COMP_BODYBACKBOARD);
+		QStandardItem* backboardItem = createItemWithGVItem(m_component_body_backboard, NODE_ID::COMP_BODYBACKBOARD, "Back-board");
 		bodyItem->appendRow(backboardItem);
 	}
 
@@ -174,42 +173,52 @@ void ZenoNode::onSelectionChanged(const QItemSelection& selected, const QItemSel
 		{
 		case COMP_NODENAME:
 			m_component_nodename->setSelected(true);
+			m_component_nodename->setZValue(100);
 			break;
 
 		case COMP_STATUS:
 			m_component_status->setSelected(true);
+			m_component_status->setZValue(100);
 			break;
 
 		case COMP_CONTROL:
 			m_component_control->setSelected(true);
+			m_component_control->setZValue(100);
 			break;
 
 		case COMP_DISPLAY:
 			m_component_display->setSelected(true);
+			m_component_display->setZValue(100);
 			break;
 
 		case COMP_HEADER_BACKBOARD:
 			m_component_header_backboard->setSelected(true);
+			m_component_header_backboard->setZValue(100);
 			break;
 
 		case COMP_BODYBACKBOARD:
 			m_component_body_backboard->setSelected(true);
+			m_component_body_backboard->setZValue(100);
 			break;
 
 		case COMP_LTSOCKET:
 			m_component_ltsocket->setSelected(true);
+			m_component_ltsocket->setZValue(100);
 			break;
 
 		case COMP_LBSOCKET:
 			m_component_lbsocket->setSelected(true);
+			m_component_lbsocket->setZValue(100);
 			break;
 
 		case COMP_RTSOCKET:
 			m_component_rtsocket->setSelected(true);
+			m_component_rtsocket->setZValue(100);
 			break;
 
 		case COMP_RBSOCKET:
 			m_component_rbsocket->setSelected(true);
+			m_component_rbsocket->setZValue(100);
 			break;
 		}
 	}
@@ -223,42 +232,52 @@ void ZenoNode::onSelectionChanged(const QItemSelection& selected, const QItemSel
 		{
 		case COMP_NODENAME:
 			m_component_nodename->setSelected(false);
+			m_component_nodename->setZValue(-100);
 			break;
 
 		case COMP_STATUS:
 			m_component_status->setSelected(false);
+			m_component_status->setZValue(-100);
 			break;
 
 		case COMP_CONTROL:
 			m_component_control->setSelected(false);
+			m_component_control->setZValue(-100);
 			break;
 
 		case COMP_DISPLAY:
 			m_component_display->setSelected(false);
+			m_component_display->setZValue(-100);
 			break;
 
 		case COMP_HEADER_BACKBOARD:
 			m_component_header_backboard->setSelected(false);
+			m_component_header_backboard->setZValue(-100);
 			break;
 
 		case COMP_BODYBACKBOARD:
 			m_component_body_backboard->setSelected(false);
+			m_component_body_backboard->setZValue(-100);
 			break;
 
 		case COMP_LTSOCKET:
 			m_component_ltsocket->setSelected(false);
+			m_component_ltsocket->setZValue(-100);
 			break;
 
 		case COMP_LBSOCKET:
 			m_component_lbsocket->setSelected(false);
+			m_component_lbsocket->setZValue(-100);
 			break;
 
 		case COMP_RTSOCKET:
 			m_component_rtsocket->setSelected(false);
+			m_component_rtsocket->setZValue(-100);
 			break;
 
 		case COMP_RBSOCKET:
 			m_component_rbsocket->setSelected(false);
+			m_component_rbsocket->setZValue(-100);
 			break;
 		}
 	}
@@ -277,5 +296,4 @@ QPainterPath ZenoNode::shape() const
 
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	//painter->fillRect(boundingRect(), QColor(0,0,0));
 }

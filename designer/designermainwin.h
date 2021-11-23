@@ -14,6 +14,7 @@ class DesignerMainWin : public QMainWindow
     Q_OBJECT
 public:
     DesignerMainWin();
+    StyleTabWidget* getTabWidget() const;
 
 private:
     void initMenu();

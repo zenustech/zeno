@@ -5,6 +5,7 @@
 #include "common.h"
 
 class LayerWidget;
+class NodesView;
 
 class StyleTabWidget : public QTabWidget
 {
@@ -13,14 +14,12 @@ public:
     StyleTabWidget(QWidget* parent = nullptr);
     QStandardItemModel* getCurrentModel();
     QItemSelectionModel* getSelectionModel();
+    NodesView* getCurrentView();
+    NodesView* getView(int index);
 
 signals:
     void tabClosed(int);
     void tabActivate(NodeParam);
-	void imageElemOperated(ImageElement, NODE_ID);
-	void textElemOperated(TextElement, NODE_ID);
-	void compElementOperated(NODE_OPERATE, NODE_ID);
-
     void tabviewActivated(QStandardItemModel*);
 
 public slots:

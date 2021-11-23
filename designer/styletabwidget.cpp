@@ -1,7 +1,7 @@
 #include "framework.h"
+#include "nodesview.h"
 #include "styletabwidget.h"
 #include "nodescene.h"
-#include "nodesview.h"
 #include "layerwidget.h"
 
 
@@ -29,6 +29,16 @@ void StyleTabWidget::initTabs()
     addTab(pView, "node");
 }
 
+NodesView* StyleTabWidget::getCurrentView()
+{
+    return qobject_cast<NodesView*>(currentWidget());
+}
+
+NodesView* StyleTabWidget::getView(int index)
+{
+    return qobject_cast<NodesView*>(widget(index));
+}
+
 QStandardItemModel* StyleTabWidget::getCurrentModel()
 {
     NodesView* w = qobject_cast<NodesView*>(this->currentWidget());
@@ -49,11 +59,4 @@ void StyleTabWidget::onNewTab()
     pView->initNode();
 
     emit tabviewActivated(pView->scene()->model());
-
- //   connect(pView->scene(), SIGNAL(imageElemOperated(ImageElement, NODE_ID)),
- //       this, SIGNAL(imageElemOperated(ImageElement, NODE_ID)));
-	//connect(pView->scene(), SIGNAL(textElemOperated(ImageElement, NODE_ID)),
-	//	this, SIGNAL(textElemOperated(ImageElement, NODE_ID)));
-	//connect(pView->scene(), SIGNAL(compElementOperated(ImageElement, NODE_ID)),
-	//	this, SIGNAL(compElementOperated(ImageElement, NODE_ID)));
 }

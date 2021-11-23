@@ -16,7 +16,8 @@ ResizableItemImpl::ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphi
     , m_showBdr(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
-    setPos(x, y);
+    qreal offset = dragW / 2;
+    setPos(x - offset, y - offset); //x,y is about inner rect pos.
     _adjustItemsPos();
 }
 
@@ -76,6 +77,13 @@ void ResizableItemImpl::setCoreItem(ResizableCoreItem* pItem)
     pItem->setParentItem(this);
     pItem->setPos(QPointF(0, 0));
     pItem->resize(QSizeF(m_width, m_height));
+}
+
+QRectF ResizableItemImpl::coreItemSceneRect()
+{
+    QPointF sceneOri = mapToScene(QPointF(0, 0));
+    QRectF rc(sceneOri.x(), sceneOri.y(), width(), height());
+    return rc;
 }
 
 void ResizableItemImpl::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -313,8 +321,9 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
         _adjustItemsPos();
         update();
-        emit itemGeoChanged(m_coreitem->scenePos());
     }
+    QPointF topLeft = mapToScene(0, 0);
+    emit itemGeoChanged(QRectF(topLeft.x(), topLeft.y(), m_width, m_height));
 }
 
 void ResizableItemImpl::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)

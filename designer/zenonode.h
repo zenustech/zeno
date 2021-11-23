@@ -19,15 +19,12 @@ public:
 	virtual QPainterPath shape() const override;
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
-signals:
-	void imageElemOperated(ImageElement, NODE_ID);
-	void textElemOperated(TextElement, NODE_ID);
-	void compElementOperated(NODE_OPERATE, NODE_ID);
-
 public slots:
 	void onSelectionChanged(const QItemSelection&, const QItemSelection&);
 
 private:
+	QStandardItem* createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name);
+
 	QGraphicsPixmapItem* m_once;
 	QGraphicsPixmapItem* m_prep;
 	QGraphicsPixmapItem* m_mute;

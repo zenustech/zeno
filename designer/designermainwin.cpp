@@ -4,6 +4,7 @@
 #include "propertypane.h"
 #include "styletabwidget.h"
 #include "ztabpanel.h"
+#include "nodescene.h"
 
 
 DesignerMainWin::DesignerMainWin()
@@ -50,9 +51,15 @@ void DesignerMainWin::initConnections()
 	connect(m_tabWidget, SIGNAL(tabviewActivated(QStandardItemModel*)), m_pLayerWidget, SLOT(setModel(QStandardItemModel*)));
 }
 
+StyleTabWidget* DesignerMainWin::getTabWidget() const
+{
+	return m_tabWidget;
+}
+
 void DesignerMainWin::resetModels()
 {
-	m_pLayerWidget->setModel(m_tabWidget->getCurrentModel(), m_tabWidget->getSelectionModel());
+	m_pLayerWidget->resetModel();
+	m_properties->resetModel();
 }
 
 void DesignerMainWin::initMdiWindows()

@@ -9,6 +9,7 @@ class DragPointItem;
 class ComponentItem;
 class NodeGridItem;
 class ZenoNode;
+class NodesView;
 
 class NodeScene : public QGraphicsScene
 {
@@ -32,7 +33,8 @@ public:
     };
 
 public:
-	NodeScene(QObject* parent = nullptr);
+	NodeScene(NodesView* pView, QObject* parent = nullptr);
+    ~NodeScene();
 	void initGrid();
 	void initTimelines(QRectF rcView);
 	void initSkin(const QString& fn);

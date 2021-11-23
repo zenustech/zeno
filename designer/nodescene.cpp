@@ -7,9 +7,10 @@
 #include "timelineitem.h"
 #include "dragpointitem.h"
 #include "nodegrid.h"
+#include "nodesview.h"
 
 
-NodeScene::NodeScene(QObject* parent)
+NodeScene::NodeScene(NodesView* pView, QObject* parent)
 	: QGraphicsScene(parent)
 	, m_nLargeCellRows(10)
 	, m_nLargeCellColumns(12)
@@ -19,12 +20,21 @@ NodeScene::NodeScene(QObject* parent)
 	, m_selectedRect(nullptr)
 	, m_selectedItem(nullptr)
 	, m_grid(nullptr)
-	, m_model(new QStandardItemModel(this))
+	, m_model(new QStandardItemModel(pView))
 	, m_selection(new QItemSelectionModel(m_model))
 	, m_pNode(nullptr)
 {
-	//initGrid();
+	m_model->setObjectName(NODE_MODEL_NAME);
+	m_selection->setObjectName(NODE_SELECTION_MODEL);
 	connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
+}
+
+NodeScene::~NodeScene()
+{
+	m_model->destroyed();
+	m_selection->destroyed();
+	m_model = nullptr;
+	m_selection = nullptr;
 }
 
 void NodeScene::initSkin(const QString& fn)

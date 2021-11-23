@@ -1,0 +1,30 @@
+#ifndef __DESIGNER_COMMON_H__
+#define __DESIGNER_COMMON_H__
+
+enum NODE_ID
+{
+    HEADER,
+    COMP_NODENAME,
+    COMP_STATUS,
+    COMP_CONTROL,
+    COMP_HEADER_BACKBOARD,
+    COMP_DISPLAY,
+
+    BODY,
+    COMP_LTSOCKET,
+    COMP_LBSOCKET,
+    COMP_RTSOCKET,
+    COMP_RBSOCKET,
+    COMP_BODYBACKBOARD
+};
+
+enum NODEITEMROLE
+{
+    NODEID_ROLE = Qt::UserRole + 1,
+    NODEPOS_ROLE,
+};
+
+#define NODE_MODEL_NAME "nodemodeldata"
+#define NODE_SELECTION_MODEL "nodeselectionmodel"
+
+#endif
