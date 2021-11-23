@@ -20,46 +20,49 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
             return new_order < that.new_order || dep_order < that.dep_order;
         }
     };
-    std::map<Node *, OrderInfo> order;
-    std::set<Node *> visited;
     std::vector<Node *> nodes;
 
-    auto dfs = [&] (auto &&dfs, Node *node) -> OrderInfo & {
-        OrderInfo ord{node->xpos, 0};
-        if (order.contains(node)) {
-            return order.at(node);
+    {
+        std::map<Node *, OrderInfo> order;
+        std::set<Node *> nodeset;
 
-        } else {
-            [[unlikely]] if (visited.contains(node))
-                throw ztd::format_error("loop detected near [{}]", node->name);
-            visited.insert(node);
-            nodes.push_back(node);
+        auto dfs = [&] (auto &dfs, Node *node) -> OrderInfo & {
+            OrderInfo ord{node->xpos, 0};
+            if (order.contains(node)) {
+                return order.at(node);
 
-            std::vector<Node *> reqnodes;
-            for (auto const &input: node->inputs) {
-                if (input.node)
-                    reqnodes.push_back(input.node);
-            }
+            } else {
+                [[unlikely]] if (nodeset.contains(node))
+                    throw ztd::format_error("loop detected near [{}]", node->name);
+                nodeset.insert(node);
+                nodes.push_back(node);
 
-            for (auto *reqnode: reqnodes) {
-                auto &depord = dfs(dfs, reqnode);
-                if (depord.new_order >= ord.new_order) {
-                    depord.new_order = ord.new_order;
-                    depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
+                std::vector<Node *> reqnodes;
+                for (auto const &input: node->inputs) {
+                    if (input.node)
+                        reqnodes.push_back(input.node);
                 }
+
+                for (auto *reqnode: reqnodes) {
+                    auto &depord = dfs(dfs, reqnode);
+                    if (depord.new_order >= ord.new_order) {
+                        depord.new_order = ord.new_order;
+                        depord.dep_order = std::min(depord.dep_order, ord.dep_order - 1);
+                    }
+                }
+
+                auto it = order.emplace(node, ord).first;
+                return it->second;
             }
+        };
 
-            auto it = order.emplace(node, ord).first;
-            return it->second;
-        }
-    };
-    dfs(dfs, root);
+        dfs(dfs, root);
+        std::sort(nodes.begin(), nodes.end(), [&] (Node *p, Node *q) {
+            return order.at(p) < order.at(q);
+        });
+    }
 
-    std::sort(nodes.begin(), nodes.end(), [&] (Node *p, Node *q) {
-        return order.at(p) < order.at(q);
-    });
-
-    for (auto node: nodes) {
+    for (auto *node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
             ZENO_INFO("* applying node [{}]", node->name);
