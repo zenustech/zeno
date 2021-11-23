@@ -83,7 +83,7 @@ void ZenoNode::initStyle(const NodeParam& param)
 	//m_mute->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\mute.jpg")));
 }
 
-QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name)
+QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QItemSelectionModel* selection)
 {
     QStandardItem* pItem = new QStandardItem(QIcon(), name);
     pItem->setData(id);
@@ -91,10 +91,18 @@ QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID
     connect(gvItem, &ResizableItemImpl::itemGeoChanged, this, [=](QRectF rcNew) {
         pItem->setData(rcNew, NODEPOS_ROLE);
         });
+    connect(gvItem, &ResizableItemImpl::itemDeselected, this, [=]() {
+        selection->select(pItem->index(), QItemSelectionModel::Deselect);
+        });
 	return pItem;
 }
 
-void ZenoNode::initModel(QStandardItemModel* pModel)
+QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+	return QGraphicsObject::itemChange(change, value);
+}
+
+void ZenoNode::initModel(QStandardItemModel* pModel, QItemSelectionModel* selection)
 {
 	if (!pModel)
 		return;
@@ -105,27 +113,27 @@ void ZenoNode::initModel(QStandardItemModel* pModel)
 	headerItem->setData(NODE_ID::HEADER);
 	if (m_component_nodename)
 	{
-		QStandardItem* nodenameItem = createItemWithGVItem(m_component_nodename, NODE_ID::COMP_NODENAME, "Node-name");
+		QStandardItem* nodenameItem = createItemWithGVItem(m_component_nodename, NODE_ID::COMP_NODENAME, "Node-name", selection);
 		headerItem->appendRow(nodenameItem);
 	}
 	if (m_component_status)
 	{
-		QStandardItem* statusItem = createItemWithGVItem(m_component_status, NODE_ID::COMP_STATUS, "Status");
+		QStandardItem* statusItem = createItemWithGVItem(m_component_status, NODE_ID::COMP_STATUS, "Status", selection);
 		headerItem->appendRow(statusItem);
 	}
 	if (m_component_control)
 	{
-		QStandardItem* controlItem = createItemWithGVItem(m_component_control, NODE_ID::COMP_CONTROL, "Control");
+		QStandardItem* controlItem = createItemWithGVItem(m_component_control, NODE_ID::COMP_CONTROL, "Control", selection);
 		headerItem->appendRow(controlItem);
 	}
 	if (m_component_header_backboard)
 	{
-		QStandardItem* backboardItem = createItemWithGVItem(m_component_header_backboard, NODE_ID::COMP_HEADER_BACKBOARD, "Back-board");
+		QStandardItem* backboardItem = createItemWithGVItem(m_component_header_backboard, NODE_ID::COMP_HEADER_BACKBOARD, "Back-board", selection);
 		headerItem->appendRow(backboardItem);
 	}
 	if (m_component_display)
 	{
-		QStandardItem* displayItem = createItemWithGVItem(m_component_display, NODE_ID::COMP_DISPLAY, "Display");
+		QStandardItem* displayItem = createItemWithGVItem(m_component_display, NODE_ID::COMP_DISPLAY, "Display", selection);
 		headerItem->appendRow(displayItem);
 	}
 
@@ -133,28 +141,27 @@ void ZenoNode::initModel(QStandardItemModel* pModel)
 	bodyItem->setData(NODE_ID::BODY);
 	if (m_component_ltsocket)
 	{
-		QStandardItem* ltsocketItem = createItemWithGVItem(m_component_ltsocket, NODE_ID::COMP_LTSOCKET, "LTSocket");
+		QStandardItem* ltsocketItem = createItemWithGVItem(m_component_ltsocket, NODE_ID::COMP_LTSOCKET, "LTSocket", selection);
 		bodyItem->appendRow(ltsocketItem);
 	}
 	if (m_component_lbsocket)
 	{
-		QStandardItem* lbsocketItem = createItemWithGVItem(m_component_lbsocket, NODE_ID::COMP_LBSOCKET, "LBSocket");
+		QStandardItem* lbsocketItem = createItemWithGVItem(m_component_lbsocket, NODE_ID::COMP_LBSOCKET, "LBSocket", selection);
 		bodyItem->appendRow(lbsocketItem);
 	}
 	if (m_component_rtsocket)
 	{
-		QStandardItem* rtsocketItem = createItemWithGVItem(m_component_rtsocket, NODE_ID::COMP_RTSOCKET, "RTSocket");
+		QStandardItem* rtsocketItem = createItemWithGVItem(m_component_rtsocket, NODE_ID::COMP_RTSOCKET, "RTSocket", selection);
 		bodyItem->appendRow(rtsocketItem);
 	}
 	if (m_component_rbsocket)
 	{
-        QStandardItem* rbsocketItem = createItemWithGVItem(m_component_rbsocket, NODE_ID::COMP_RBSOCKET, "RBSocket");
+        QStandardItem* rbsocketItem = createItemWithGVItem(m_component_rbsocket, NODE_ID::COMP_RBSOCKET, "RBSocket", selection);
         bodyItem->appendRow(rbsocketItem);
 	}
-
 	if (m_component_body_backboard)
 	{
-		QStandardItem* backboardItem = createItemWithGVItem(m_component_body_backboard, NODE_ID::COMP_BODYBACKBOARD, "Back-board");
+		QStandardItem* backboardItem = createItemWithGVItem(m_component_body_backboard, NODE_ID::COMP_BODYBACKBOARD, "Back-board", selection);
 		bodyItem->appendRow(backboardItem);
 	}
 

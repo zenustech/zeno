@@ -13,17 +13,20 @@ class ZenoNode : public QGraphicsObject
 public:
 	ZenoNode(NodeScene* pScene, QGraphicsItem* parent = nullptr);
 	void initStyle(const NodeParam& param);
-	void initModel(QStandardItemModel* pModel);
+	void initModel(QStandardItemModel* pModel, QItemSelectionModel* selection);
 
 	virtual QRectF boundingRect() const override;
 	virtual QPainterPath shape() const override;
 	virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
 public slots:
 	void onSelectionChanged(const QItemSelection&, const QItemSelection&);
 
 private:
-	QStandardItem* createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name);
+	QStandardItem* createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QItemSelectionModel* selection);
 
 	QGraphicsPixmapItem* m_once;
 	QGraphicsPixmapItem* m_prep;

@@ -50,8 +50,10 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 signals:
+    void itemDeselected();
     void itemGeoChanged(QRectF sceneRect);
 
 private:

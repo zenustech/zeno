@@ -123,7 +123,12 @@ void ZComponentPropPanel::onModelDataChanged(QStandardItem* pItem)
 void ZComponentPropPanel::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
     QModelIndexList lst = selected.indexes();
-    if (!lst.isEmpty())
+    bool hasSelection = !lst.isEmpty();
+
+    m_pX->setEnabled(hasSelection); m_pY->setEnabled(hasSelection);
+    m_pWidth->setEnabled(hasSelection); m_pHeight->setEnabled(hasSelection);
+
+    if (hasSelection)
     {
         QModelIndex idx = lst.at(0);
         NODE_ID id = (NODE_ID)idx.data(Qt::UserRole + 1).toInt();

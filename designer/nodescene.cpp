@@ -76,7 +76,7 @@ void NodeScene::initNode()
 		m_pNode = new ZenoNode(this);
 
 	m_pNode->initStyle(m_nodeparam);
-	m_pNode->initModel(m_model);
+	m_pNode->initModel(m_model, m_selection);
 
 	connect(m_selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
 		m_pNode, SLOT(onSelectionChanged(const QItemSelection&, const QItemSelection&)));

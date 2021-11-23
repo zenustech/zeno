@@ -326,6 +326,16 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     emit itemGeoChanged(QRectF(topLeft.x(), topLeft.y(), m_width, m_height));
 }
 
+QVariant ResizableItemImpl::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    {
+        if (!isSelected())
+            emit itemDeselected();
+    }
+    return value;
+}
+
 void ResizableItemImpl::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     if (QApplication::keyboardModifiers() == Qt::ControlModifier)
