@@ -11,7 +11,7 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 
-void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
+void Executor::sortexec(Node *root) {
     std::vector<Node *> nodes;
 
     {
@@ -73,20 +73,19 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 }
 
 
-void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
+void Executor::touch(Input const &input) {
     if (!input.node) {
         visited.insert(input.node);
         current_node = input.node;
-        input.node->preapply(this, tolink);
+        input.node->preapply(this);
     }
 }
 
 
 ztd::any_ptr Executor::resolve(Input const &input) {
     if (input.node) {
-        std::vector<Node *> tolink;
-        touch(input, tolink);
-        sortexec(input.node, tolink);
+        touch(input);
+        sortexec(input.node);
         return input.node->outputs.at(input.sockid);
     } else {
         return input.value;

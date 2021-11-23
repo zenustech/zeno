@@ -17,6 +17,7 @@ QPointF QDMGraphicsLinkHalf::getSrcPos() const {
     if (auto sock = dynamic_cast<QDMGraphicsSocketOut *>(socket))
         return sock->getLinkedPos();
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+    if (!parentScene) return socket->getLinkedPos();
     return parentScene->getCursorPos();
 }
 
@@ -24,6 +25,7 @@ QPointF QDMGraphicsLinkHalf::getDstPos() const {
     if (auto sock = dynamic_cast<QDMGraphicsSocketIn *>(socket))
         return sock->getLinkedPos();
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
+    if (!parentScene) return socket->getLinkedPos();
     return parentScene->getCursorPos();
 }
 

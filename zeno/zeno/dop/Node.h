@@ -39,7 +39,7 @@ struct Node {
     ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
 
-    virtual void preapply(Executor *exec, std::vector<Node *> &tolink);
+    virtual void preapply(Executor *exec);
     virtual void apply() = 0;
 };
 

@@ -6,12 +6,12 @@ namespace {
 
 
 struct If : dop::Node {
-    virtual void preapply(dop::Executor *exec, std::vector<Node *> &tolink) override {
+    virtual void preapply(dop::Executor *exec) override {
         bool cond = value_cast<bool>(exec->resolve(inputs.at(0)));
         if (cond) {
-            exec->touch(inputs.at(1), tolink);
+            exec->touch(inputs.at(1));
         } else {
-            exec->touch(inputs.at(2), tolink);
+            exec->touch(inputs.at(2));
         }
     }
 
@@ -59,7 +59,7 @@ ZENO_DOP_DEFCLASS(ForBegin, {{
 
 
 struct ForEnd : dop::Node {
-    virtual void preapply(dop::Executor *exec, std::vector<Node *> &tolink) override {
+    virtual void preapply(dop::Executor *exec) override {
         auto fordata = value_cast<ForData>(exec->resolve(inputs.at(0)));
         for (int i = 0; i < fordata.times; i++) {
             auto copied_visited = exec->visited;

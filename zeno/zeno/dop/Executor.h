@@ -16,8 +16,8 @@ struct Executor {
     Node *current_node{};
 
     ztd::any_ptr resolve(Input const &input);
-    void touch(Input const &input, std::vector<Node *> &tolink);
-    void sortexec(Node *root, std::vector<Node *> &tolink);
+    void touch(Input const &input);
+    void sortexec(Node *root);
     static ztd::any_ptr getval(Input const &input);
     ztd::any_ptr evaluate(Input const &input);
 };
