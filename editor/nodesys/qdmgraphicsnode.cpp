@@ -3,7 +3,6 @@
 #include "qdmgraphicsscene.h"
 #include "qdmnodeparamedit.h"
 #include <zeno/dop/Descriptor.h>
-#include <zeno/ztd/memory.h>
 #include <zeno/ztd/algorithm.h>
 #include <zeno/zmt/log.h>
 #include <QLineEdit>
@@ -16,7 +15,7 @@ QDMGraphicsNode::QDMGraphicsNode()
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
-    label = std::make_unique<QGraphicsTextItem>(this);
+    label = new QGraphicsTextItem(this);
     label->setDefaultTextColor(QColor(0xcccccc));
     label->setPos(0, -SOCKSTRIDE);
 }
@@ -60,7 +59,7 @@ QDMGraphicsSocketIn *QDMGraphicsNode::addSocketIn()
     size_t index = socketIns.size();
     socketIn->setPos(-socketIn->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketIns.emplace_back(socketIn);
+    socketIns.push_back(socketIn);
     return socketIn;
 }
 
@@ -72,7 +71,7 @@ QDMGraphicsSocketOut *QDMGraphicsNode::addSocketOut()
     size_t index = socketOuts.size();
     socketOut->setPos(WIDTH + socketOut->SIZE / 2, SOCKMARGINTOP + SOCKSTRIDE * index);
 
-    socketOuts.emplace_back(socketOut);
+    socketOuts.push_back(socketOut);
     return socketOut;
 }
 
@@ -110,12 +109,12 @@ void QDMGraphicsNode::setName(QString name)
 
 QDMGraphicsSocketIn *QDMGraphicsNode::socketInAt(size_t index)
 {
-    return socketIns.at(index).get();
+    return socketIns.at(index);
 }
 
 QDMGraphicsSocketOut *QDMGraphicsNode::socketOutAt(size_t index)
 {
-    return socketOuts.at(index).get();
+    return socketOuts.at(index);
 }
 
 QDMGraphicsScene *QDMGraphicsNode::getScene() const
@@ -150,12 +149,12 @@ void QDMGraphicsNode::unlinkAll()
 
 size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
 {
-    return ztd::find_index(socketIns, ztd::stale_ptr(socket));
+    return ztd::find_index(socketIns, socket);
 }
 
 size_t QDMGraphicsNode::socketOutIndex(QDMGraphicsSocketOut *socket)
 {
-    return ztd::find_index(socketOuts, ztd::stale_ptr(socket));
+    return ztd::find_index(socketOuts, socket);
 }
 
 /*void QDMGraphicsNode::socketUnlinked(QDMGraphicsSocketIn *socket)
@@ -187,7 +186,7 @@ void QDMGraphicsNode::invalidate()
 void QDMGraphicsNode::setupParamEdit(QDMNodeParamEdit *paredit)
 {
     for (size_t i = 0; i < socketIns.size(); i++) {
-        auto sockIn = socketIns[i].get();
+        auto sockIn = socketIns[i];
         if (auto edit = paredit->makeEditForType(this, i, sockIn->getType()))
             paredit->addRow(QString::fromStdString(sockIn->getName()), edit);
     }

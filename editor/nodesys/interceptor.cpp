@@ -45,7 +45,7 @@ void Interceptor::toDopGraph
 
         nodes.emplace(node.get(), d_node.get());
         for (size_t i = 0; i < node->socketOuts.size(); i++) {
-            sockets.try_emplace(node->socketOuts[i].get(), d_node.get(), i);
+            sockets.try_emplace(node->socketOuts[i], d_node.get(), i);
         }
 
         d_scene->nodes.insert(std::move(d_node));
@@ -54,7 +54,7 @@ void Interceptor::toDopGraph
     for (auto const &node: scene->nodes) {
         for (size_t i = 0; i < node->socketIns.size(); i++) {
             dop::Input input{};
-            auto sockIn = node->socketIns[i].get();
+            auto *sockIn = node->socketIns[i];
             input.value = sockIn->value;
 
             if (auto it = links.find(sockIn); it != links.end()) {

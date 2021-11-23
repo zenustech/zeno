@@ -23,10 +23,10 @@ class QDMGraphicsNode : public QGraphicsItem
 {
     friend Interceptor;
 
-    std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
-    std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
+    std::vector<QDMGraphicsSocketIn *> socketIns;
+    std::vector<QDMGraphicsSocketOut *> socketOuts;
 
-    std::unique_ptr<QGraphicsTextItem> label;
+    QGraphicsTextItem *label;
     dop::Descriptor const *desc{};
     std::string name;
 
