@@ -36,7 +36,7 @@ struct Node {
 
     virtual ~Node() = default;
 
-    ztd::any_ptr get_input(int idx) const;
+    [[nodiscard]] ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
 
     virtual void preapply(Executor *exec);

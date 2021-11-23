@@ -1,6 +1,5 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
-#include <zeno/types/MeshIO.h>
 #include <sstream>
 
 
@@ -21,6 +20,20 @@ ZENO_DOP_DEFUN(MakeExampleString, {}, {{
 }, {
     {"str"},
 }});
+
+
+static void MakeExampleInt(dop::FuncContext *ctx) {
+    auto val = ztd::make_any<int>(42);
+    ctx->outputs.at(0) = std::move(val);
+}
+
+
+ZENO_DOP_DEFUN(MakeExampleInt, {}, {{
+        "misc", "make an example integer for demo",
+    }, {
+    }, {
+        {"val"},
+    }});
 
 
 }
