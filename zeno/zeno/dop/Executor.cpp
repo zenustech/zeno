@@ -12,17 +12,17 @@ namespace dop {
 
 
 void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
-    struct OrderInfo {
-        float new_order = 0;
-        int dep_order = 0;
-
-        constexpr bool operator<(OrderInfo const &that) const {
-            return new_order < that.new_order || dep_order < that.dep_order;
-        }
-    };
     std::vector<Node *> nodes;
 
     {
+        struct OrderInfo {
+            float new_order = 0;
+            int dep_order = 0;
+
+            constexpr bool operator<(OrderInfo const &that) const {
+                return new_order < that.new_order || dep_order < that.dep_order;
+            }
+        };
         std::map<Node *, OrderInfo> order;
         std::set<Node *> nodeset;
 
