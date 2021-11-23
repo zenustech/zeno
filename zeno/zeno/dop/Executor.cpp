@@ -21,6 +21,7 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
         }
     };
     std::map<Node *, OrderInfo> order;
+    std::set<Node *> visited;
     std::vector<Node *> nodes;
 
     auto dfs = [&] (auto &&dfs, Node *node) -> OrderInfo & {
@@ -29,6 +30,9 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
             return order.at(node);
 
         } else {
+            [[unlikely]] if (visited.contains(node))
+                throw ztd::format_error("loop detected near [{}]", node->name);
+            visited.insert(node);
             nodes.push_back(node);
 
             std::vector<Node *> reqnodes;
@@ -66,13 +70,11 @@ void Executor::sortexec(Node *root, std::vector<Node *> &tolink) {
 }
 
 
-void Executor::touch(Input const &input, std::vector<Node *> &tolink, std::set<Node *> &visited) {
+void Executor::touch(Input const &input, std::vector<Node *> &tolink) {
     if (!input.node) {
-        [[unlikely]] if (visited.contains(input.node))
-            throw ztd::error("loop detected in graph");
         visited.insert(input.node);
         current_node = input.node;
-        input.node->preapply(this, tolink, visited);
+        input.node->preapply(this, tolink);
     }
 }
 
@@ -80,8 +82,7 @@ void Executor::touch(Input const &input, std::vector<Node *> &tolink, std::set<N
 ztd::any_ptr Executor::resolve(Input const &input) {
     if (input.node) {
         std::vector<Node *> tolink;
-        std::set<Node *> visited;
-        touch(input, tolink, visited);
+        touch(input, tolink);
         sortexec(input.node, tolink);
         return input.node->outputs.at(input.sockid);
     } else {
@@ -103,7 +104,7 @@ ztd::any_ptr Executor::evaluate(Input const &input) {
     try {
         return resolve(input);
     } catch (std::exception const &e) {
-        ZENO_ERROR("[{}] {}", current_node->name, e.what());
+        ZENO_ERROR("[{}] {}", current_node ? current_node->name : "(null)", e.what());
         return {};
     }
 }
