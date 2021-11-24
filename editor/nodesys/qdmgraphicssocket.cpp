@@ -37,27 +37,6 @@ void QDMGraphicsSocket::paint(QPainter *painter, QStyleOptionGraphicsItem const 
     painter->drawPath(pathContent.simplified());
 }
 
-void QDMGraphicsSocket::unlinkAll()
-{
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    auto saved_links = links;
-    for (auto *link: saved_links) {
-        parentScene->removeLink(link);
-    }
-}
-
-void QDMGraphicsSocket::linkAttached(QDMGraphicsLinkFull *link)
-{
-    if (link) {  // nullptr for blankClicked
-        links.insert(link);
-    }
-}
-
-void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
-{
-    links.erase(link);
-}
-
 void QDMGraphicsSocket::setName(std::string const &name)
 {
     this->name = name;

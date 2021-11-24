@@ -13,9 +13,6 @@ public:
 
     ztd::any_ptr value;
 
-    virtual void unlinkAll() override;
-    virtual void linkRemoved(QDMGraphicsLinkFull *link) override;
-    virtual void linkAttached(QDMGraphicsLinkFull *link) override;
     virtual QPointF getLinkedPos() const override;
 };
 

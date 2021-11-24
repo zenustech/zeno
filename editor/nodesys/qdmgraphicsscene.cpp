@@ -244,10 +244,10 @@ void QDMGraphicsScene::deletePressed()
         }
     }
 
-    for (auto link: links) {
+    for (auto *link: links) {
         removeLink(link);
     }
-    for (auto node: nodes) {
+    for (auto *node: nodes) {
         removeNode(node);
     }
 }
