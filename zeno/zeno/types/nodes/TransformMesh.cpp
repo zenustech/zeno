@@ -1,7 +1,6 @@
 #include <zeno/dop/dop.h>
 #include <zeno/types/Mesh.h>
 #include <zeno/types/MeshTransform.h>
-#include <variant>
 
 
 ZENO_NAMESPACE_BEGIN
