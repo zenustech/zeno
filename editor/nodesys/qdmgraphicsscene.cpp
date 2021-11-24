@@ -47,7 +47,12 @@ void QDMGraphicsScene::setCurrentNode(QDMGraphicsNode *node)
 
 void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
-    node->unlinkAll();
+    for (auto *s: node->getSocketIns()) {
+        removeSocketLinks(s);
+    }
+    for (auto *s: node->getSocketOuts()) {
+        removeSocketLinks(s);
+    }
     removeItem(node);
     nodes.erase(node);
     delete node;
@@ -65,6 +70,16 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
         addLink(socket, toSocket);
         delete pendingLink;
         pendingLink = nullptr;
+
+        emit sceneUpdated();
+    }
+}
+
+void QDMGraphicsScene::removeSocketLinks(QDMGraphicsSocket *socket)
+{
+    auto links = socket->links;
+    for (auto *l: links) {
+        removeLink(l);
     }
 }
 
@@ -77,11 +92,12 @@ void QDMGraphicsScene::blankClicked()
     }
 
     if (pendingLink) {
-        auto *toSocket = pendingLink->socket;
-        toSocket->linkAttached(nullptr);
+        removeSocketLinks(pendingLink->socket);
         removeItem(pendingLink);
         delete pendingLink;
         pendingLink = nullptr;
+
+        emit sceneUpdated();
    }
 }
 
@@ -121,7 +137,9 @@ void QDMGraphicsScene::addSubnetNode()
     addNode(node);
     node->initialize();
     setFloatingNode(node);
+
     emit sceneCreatedOrRemoved();
+    emit sceneUpdated();
 }
 
 void QDMGraphicsScene::setFloatingNode(QDMGraphicsNode *node)
@@ -129,6 +147,7 @@ void QDMGraphicsScene::setFloatingNode(QDMGraphicsNode *node)
     node->hide();
     node->setPos(getCursorPos());
     floatingNode = node;
+
     emit sceneUpdated();
 }
 
@@ -148,29 +167,33 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
 {
     auto srcIn = dynamic_cast<QDMGraphicsSocketIn *>(srcSocket);
     auto dstIn = dynamic_cast<QDMGraphicsSocketIn *>(dstSocket);
-    auto srcOut = dynamic_cast<QDMGraphicsSocketOut *>(srcSocket);
-    auto dstOut = dynamic_cast<QDMGraphicsSocketOut *>(dstSocket);
-    QDMGraphicsLinkFull *link;
-    if (srcOut && dstIn)
-        link = new QDMGraphicsLinkFull(srcOut, dstIn);
-    else if (dstOut && srcIn)
-        link = new QDMGraphicsLinkFull(dstOut, srcIn);
+    auto srcOut = static_cast<QDMGraphicsSocketOut *>(srcSocket);
+    auto dstOut = static_cast<QDMGraphicsSocketOut *>(dstSocket);
+
+    QDMGraphicsSocketOut *out;
+    QDMGraphicsSocketIn *in;
+    if (!srcIn && dstIn)
+        out = srcOut, in = dstIn;
+    else if (!dstIn && srcIn)
+        out = dstOut, in = srcIn;
     else
         return nullptr;
+
+    removeSocketLinks(in);
+    auto link = new QDMGraphicsLinkFull(out, in);
     addItem(link);
     links.emplace(link);
-
-    emit sceneUpdated();
     return link;
 }
 
 void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
 {
-    link->srcSocket->linkRemoved(link);
-    link->dstSocket->linkRemoved(link);
+    link->srcSocket->links.erase(link);
+    link->dstSocket->links.erase(link);
     removeItem(link);
     links.erase(link);
     delete link;
+
     emit sceneUpdated();
 }
 
@@ -236,7 +259,7 @@ void QDMGraphicsScene::deletePressed()
     std::vector<QDMGraphicsNode *> nodes;
     std::vector<QDMGraphicsLinkFull *> links;
 
-    foreach (auto item, selectedItems()) {
+    foreach (auto *item, selectedItems()) {
         if (auto node = dynamic_cast<QDMGraphicsNode *>(item)) {
             nodes.push_back(node);
         } else if (auto link = dynamic_cast<QDMGraphicsLinkFull *>(item)) {

@@ -137,16 +137,6 @@ void QDMGraphicsNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
     QGraphicsItem::mousePressEvent(event);
 }
 
-void QDMGraphicsNode::unlinkAll()
-{
-    for (auto const &p: socketIns) {
-        p->unlinkAll();
-    }
-    for (auto const &p: socketOuts) {
-        p->unlinkAll();
-    }
-}
-
 size_t QDMGraphicsNode::socketInIndex(QDMGraphicsSocketIn *socket)
 {
     return ztd::find_index(socketIns, socket);

@@ -63,11 +63,12 @@ public:
 
     void setName(QString name);
     inline std::string const &getName() { return name; }
-
     inline dop::Descriptor const *getDescriptor() { return desc; }
+    inline auto const &getSocketIns() const { return socketIns; }
+    inline auto const &getSocketOuts() const { return socketOuts; }
+
     void invalidate();
 
-    void unlinkAll();
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
     static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, MINHEIGHT = 20, SOCKMARGINBOT = -10;
 };

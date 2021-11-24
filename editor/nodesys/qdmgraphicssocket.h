@@ -17,7 +17,6 @@ class QDMGraphicsLinkFull;
 
 class QDMGraphicsSocket : public QGraphicsItem
 {
-    std::set<QDMGraphicsLinkFull *> links;
     std::string name;
     std::string type;
     std::string defl;
@@ -26,6 +25,8 @@ protected:
     QGraphicsTextItem *label;
 
 public:
+    std::set<QDMGraphicsLinkFull *> links;
+
     QDMGraphicsSocket();
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
