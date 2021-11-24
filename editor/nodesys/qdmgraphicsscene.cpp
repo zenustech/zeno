@@ -50,6 +50,7 @@ void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
     node->unlinkAll();
     removeItem(node);
     nodes.erase(node);
+    delete node;
     emit sceneUpdated();
 }
 
@@ -62,6 +63,7 @@ void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
         auto *toSocket = pendingLink->socket;
         removeItem(pendingLink);
         addLink(socket, toSocket);
+        delete pendingLink;
         pendingLink = nullptr;
     }
 }
@@ -78,6 +80,7 @@ void QDMGraphicsScene::blankClicked()
         auto *toSocket = pendingLink->socket;
         toSocket->linkAttached(nullptr);
         removeItem(pendingLink);
+        delete pendingLink;
         pendingLink = nullptr;
    }
 }
@@ -161,13 +164,18 @@ QDMGraphicsLinkFull *QDMGraphicsScene::addLink(QDMGraphicsSocket *srcSocket, QDM
     return link;
 }
 
-void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
+void QDMGraphicsScene::justRemoveLink(QDMGraphicsLinkFull *link)
 {
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
     links.erase(link);
+    delete link;
+}
 
+void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
+{
+    justRemoveLink(link);
     emit sceneUpdated();
 }
 

@@ -42,7 +42,7 @@ void QDMGraphicsSocket::unlinkAll()
     auto parentScene = static_cast<QDMGraphicsScene *>(scene());
     auto saved_links = links;
     for (auto *link: saved_links) {
-        parentScene->removeLink(link);
+        parentScene->justRemoveLink(link);
     }
 }
 

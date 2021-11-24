@@ -44,6 +44,7 @@ public:
     QDMGraphicsLinkFull *addLink(QDMGraphicsSocket *srcSocket, QDMGraphicsSocket *dstSocket);
     void removeNode(QDMGraphicsNode *node);
     void removeLink(QDMGraphicsLinkFull *link);
+    void justRemoveLink(QDMGraphicsLinkFull *link);
 
     void initAsSubnet(QDMGraphicsNodeSubnet *node);
     void setCurrentNode(QDMGraphicsNode *node);

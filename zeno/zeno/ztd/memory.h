@@ -84,6 +84,11 @@ constexpr T *get_ptr(std::shared_ptr<T> const &p) {
     return p.get();
 }
 
+template <class T>
+constexpr T as_copy(T const &t) {
+    return t;
+}
+
 }
 }
 ZENO_NAMESPACE_END
