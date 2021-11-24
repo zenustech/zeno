@@ -3,7 +3,7 @@
       particles->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
       velocity->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
 
   velocity_weights = velocity->deepCopy();
 
