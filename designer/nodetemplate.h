@@ -7,11 +7,11 @@
 
 class NodeScene;
 
-class ZenoNode : public QGraphicsObject
+class NodeTemplate : public QGraphicsObject
 {
 	Q_OBJECT
 public:
-	ZenoNode(NodeScene* pScene, QGraphicsItem* parent = nullptr);
+	NodeTemplate(NodeScene* pScene, QGraphicsItem* parent = nullptr);
 	void initStyle(const NodeParam& param);
 	void initModel(QStandardItemModel* pModel, QItemSelectionModel* selection);
 

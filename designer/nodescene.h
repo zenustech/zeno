@@ -8,7 +8,7 @@ class TimelineItem;
 class DragPointItem;
 class ComponentItem;
 class NodeGridItem;
-class ZenoNode;
+class NodeTemplate;
 class NodesView;
 
 class NodeScene : public QGraphicsScene
@@ -55,7 +55,7 @@ private:
     QGraphicsItem* m_selectedItem;
     NodeGridItem* m_grid;
     TimelineItem* m_pHTimeline, *m_pVTimeline;
-    ZenoNode* m_pNode;
+    NodeTemplate* m_pNode;
 
     QStandardItemModel* m_model;
     QItemSelectionModel* m_selection;

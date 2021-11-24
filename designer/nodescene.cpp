@@ -1,6 +1,6 @@
 #include "framework.h"
 #include "nodescene.h"
-#include "zenonode.h"
+#include "nodetemplate.h"
 #include "ztfutil.h"
 #include "resizableitemimpl.h"
 #include "componentitem.h"
@@ -73,7 +73,7 @@ void NodeScene::updateTimeline(qreal factor)
 void NodeScene::initNode()
 {
 	if (m_pNode == nullptr)
-		m_pNode = new ZenoNode(this);
+		m_pNode = new NodeTemplate(this);
 
 	m_pNode->initStyle(m_nodeparam);
 	m_pNode->initModel(m_model, m_selection);
@@ -151,7 +151,6 @@ void NodeScene::updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay)
 	{
 		case DRAG_LEFTTOP:
 		{
-
 			break;
 		}
 		case DRAG_LEFTMID:

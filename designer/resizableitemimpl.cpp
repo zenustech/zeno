@@ -1,7 +1,7 @@
 #include "framework.h"
 #include "resizableitemimpl.h"
 #include "resizecoreitem.h"
-#include "zenonode.h"
+#include "nodetemplate.h"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
 #include "framework.h"
-#include "zenonode.h"
+#include "nodetemplate.h"
 #include "nodescene.h"
 #include "resizableitemimpl.h"
 #include "resizecoreitem.h"
@@ -8,7 +8,7 @@
 using namespace rapidjson;
 
 
-ZenoNode::ZenoNode(NodeScene* pScene, QGraphicsItem* parent)
+NodeTemplate::NodeTemplate(NodeScene* pScene, QGraphicsItem* parent)
 	: QGraphicsObject(parent)
 	, m_once(nullptr)
 	, m_prep(nullptr)
@@ -29,7 +29,7 @@ ZenoNode::ZenoNode(NodeScene* pScene, QGraphicsItem* parent)
 	//setFlags(ItemIsMovable | ItemSendsGeometryChanges | ItemIsSelectable | ItemClipsToShape);
 }
 
-void ZenoNode::initStyle(const NodeParam& param)
+void NodeTemplate::initStyle(const NodeParam& param)
 {
 	m_param = param;
 
@@ -83,7 +83,7 @@ void ZenoNode::initStyle(const NodeParam& param)
 	//m_mute->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\mute.jpg")));
 }
 
-QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QStandardItemModel* pModel, QItemSelectionModel* selection)
+QStandardItem* NodeTemplate::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QStandardItemModel* pModel, QItemSelectionModel* selection)
 {
     QStandardItem* pItem = new QStandardItem(QIcon(), name);
     pItem->setData(id);
@@ -104,12 +104,12 @@ QStandardItem* ZenoNode::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID
 	return pItem;
 }
 
-QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant& value)
+QVariant NodeTemplate::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	return QGraphicsObject::itemChange(change, value);
 }
 
-void ZenoNode::initModel(QStandardItemModel* pModel, QItemSelectionModel* selection)
+void NodeTemplate::initModel(QStandardItemModel* pModel, QItemSelectionModel* selection)
 {
 	if (!pModel)
 		return;
@@ -176,7 +176,7 @@ void ZenoNode::initModel(QStandardItemModel* pModel, QItemSelectionModel* select
 	pModel->appendRow(bodyItem);
 }
 
-void ZenoNode::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+void NodeTemplate::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
 	QModelIndexList lst = selected.indexes();
 	if (!lst.isEmpty())
@@ -297,17 +297,17 @@ void ZenoNode::onSelectionChanged(const QItemSelection& selected, const QItemSel
 	}
 }
 
-QRectF ZenoNode::boundingRect() const
+QRectF NodeTemplate::boundingRect() const
 {
 	QRectF wtf = this->childrenBoundingRect();
 	return wtf;
 }
 
-QPainterPath ZenoNode::shape() const
+QPainterPath NodeTemplate::shape() const
 {
 	return QGraphicsObject::shape();
 }
 
-void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void NodeTemplate::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 }
