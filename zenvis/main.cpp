@@ -56,7 +56,7 @@ void look_perspective(
                       -100.0, 100.0);
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0);
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);

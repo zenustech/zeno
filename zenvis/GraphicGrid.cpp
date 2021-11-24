@@ -18,6 +18,7 @@ static string vert_code = R"(
     uniform mat4 mProj;
     uniform mat4 mInvView;
     uniform mat4 mInvProj;
+    uniform float mCameraRadius;
 
     attribute vec3 vPosition;
     attribute vec3 vColor;
@@ -25,9 +26,9 @@ static string vert_code = R"(
     varying vec3 pos;
 
     void main() {
-        pos = vPosition;
+        pos = vPosition * max(1, mCameraRadius / 1000);
 
-        gl_Position = mVP * vec4(vPosition, 1.0);
+        gl_Position = mVP * vec4(pos, 1.0);
     }
 )";
 
