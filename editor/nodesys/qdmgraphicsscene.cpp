@@ -166,7 +166,7 @@ void QDMGraphicsScene::removeLink(QDMGraphicsLinkFull *link)
     link->srcSocket->linkRemoved(link);
     link->dstSocket->linkRemoved(link);
     removeItem(link);
-    links.erase(ztd::stale_ptr(link));
+    links.erase(link);
 
     emit sceneUpdated();
 }

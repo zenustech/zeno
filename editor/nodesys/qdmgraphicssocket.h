@@ -23,7 +23,7 @@ class QDMGraphicsSocket : public QGraphicsItem
     std::string defl;
 
 protected:
-    std::unique_ptr<QGraphicsTextItem> label;
+    QGraphicsTextItem *label;
 
 public:
     QDMGraphicsSocket();
