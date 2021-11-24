@@ -24,13 +24,11 @@ class QDMGraphicsScene : public QGraphicsScene
 
     friend Interceptor;
 
-    std::set<std::unique_ptr<QDMGraphicsNode>> nodes;
-    std::set<std::unique_ptr<QDMGraphicsLinkFull>> links;
+    std::set<QDMGraphicsNode *> nodes;
+    std::set<QDMGraphicsLinkFull *> links;
 
-    std::unique_ptr<QDMGraphicsBackground> background;
-    std::unique_ptr<QDMGraphicsLinkHalf> pendingLink;
+    QDMGraphicsLinkHalf *pendingLink{};
     QDMGraphicsNode *floatingNode{};
-    QDMGraphicsNode *currentNode{};
 
     void addSubnetNode();
     void addNormalNode(std::string const &type);

@@ -21,8 +21,7 @@ QDMGraphicsScene::QDMGraphicsScene(QDMGraphicsNodeSubnet *subnetNode)
     QRectF rect(-w / 2, -h / 2, w, h);
     setSceneRect(rect);
 
-    background = std::make_unique<QDMGraphicsBackground>();
-    addItem(background.get());
+    addItem(new QDMGraphicsBackground);
 }
 
 QDMGraphicsScene::~QDMGraphicsScene() = default;
@@ -43,7 +42,6 @@ void QDMGraphicsScene::updateSceneSelection()
 
 void QDMGraphicsScene::setCurrentNode(QDMGraphicsNode *node)
 {
-    currentNode = node;
     emit currentNodeChanged(node);
 }
 
@@ -51,18 +49,19 @@ void QDMGraphicsScene::removeNode(QDMGraphicsNode *node)
 {
     node->unlinkAll();
     removeItem(node);
-    nodes.erase(ztd::stale_ptr(node));
+    nodes.erase(node);
     emit sceneUpdated();
 }
 
 void QDMGraphicsScene::socketClicked(QDMGraphicsSocket *socket)
 {
     if (!pendingLink) {
-        pendingLink = std::make_unique<QDMGraphicsLinkHalf>(socket);
-        addItem(pendingLink.get());
+        pendingLink = new QDMGraphicsLinkHalf(socket);
+        addItem(pendingLink);
     } else {
-        removeItem(pendingLink.get());
-        addLink(socket, pendingLink->socket);
+        auto *toSocket = pendingLink->socket;
+        removeItem(pendingLink);
+        addLink(socket, toSocket);
         pendingLink = nullptr;
     }
 }
@@ -76,8 +75,9 @@ void QDMGraphicsScene::blankClicked()
     }
 
     if (pendingLink) {
-        pendingLink->socket->linkAttached(nullptr);
-        removeItem(pendingLink.get());
+        auto *toSocket = pendingLink->socket;
+        toSocket->linkAttached(nullptr);
+        removeItem(pendingLink);
         pendingLink = nullptr;
    }
 }
@@ -104,7 +104,7 @@ std::string QDMGraphicsScene::getFullPath() const
 std::string QDMGraphicsScene::allocateNodeName(std::string const &prefix) const
 {
     std::vector<std::string> names;
-    for (auto const &node: nodes) {
+    for (auto *node: nodes) {
         names.push_back(node->getName());
     }
     return find_unique_name(names, prefix);
@@ -252,8 +252,8 @@ void QDMGraphicsScene::deletePressed()
 /*std::vector<QDMGraphicsNode *> QDMGraphicsScene::getVisibleNodes() const
 {
     std::vector<QDMGraphicsNode *> res;
-    for (auto const &node: nodes) {
-        res.push_back(node.get());
+    for (auto *node: nodes) {
+        res.push_back(node);
     }
     return res;
 }*/
@@ -261,7 +261,7 @@ void QDMGraphicsScene::deletePressed()
 std::vector<QDMGraphicsScene *> QDMGraphicsScene::getChildScenes() const
 {
     std::vector<QDMGraphicsScene *> res;
-    for (auto const &node: nodes) {
+    for (auto *node: nodes) {
         if (auto subnet = node->getSubnetScene())
             res.push_back(subnet);
     }
