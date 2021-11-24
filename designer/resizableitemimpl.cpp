@@ -86,6 +86,21 @@ QRectF ResizableItemImpl::coreItemSceneRect()
     return rc;
 }
 
+void ResizableItemImpl::setCoreItemSceneRect(const QRectF& sceneRect)
+{
+    qreal offset = dragW / 2;
+    QPointF topLeft = sceneRect.topLeft() - QPointF(offset, offset);
+    setPos(topLeft);
+
+    m_width = sceneRect.width();
+    m_height = sceneRect.height();
+    m_borderitem->setRect(QRectF(0, 0, m_width, m_height));
+    if (m_coreitem)
+        m_coreitem->resize(QSizeF(m_width, m_height));
+    _adjustItemsPos();
+    update();
+}
+
 void ResizableItemImpl::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus))

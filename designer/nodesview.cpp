@@ -5,7 +5,7 @@
 
 NodesView::NodesView(QWidget* parent)
 	: QGraphicsView(parent)
-	, m_scene(new NodeScene(this))
+	, m_scene(new NodeScene(this, this))
 	, m_gridX(142)
 	, m_gridY(76)
 	, _modifiers(Qt::ControlModifier)

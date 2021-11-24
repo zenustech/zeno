@@ -40,6 +40,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     QRectF boundingRect() const override;
     QRectF coreItemSceneRect();
+    void setCoreItemSceneRect(const QRectF& rc);
     int width() const { return m_width; }
     int height() const { return m_height; }
     void setCoreItem(ResizableCoreItem* pItem);

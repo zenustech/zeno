@@ -7,6 +7,10 @@ class ValueInputWidget : public QWidget
 public:
     ValueInputWidget(const QString& name, QWidget* parent = nullptr);
     void setValue(qreal value);
+    qreal value(bool& bOK);
+
+signals:
+    void valueChanged();
 
 private:
     QSpinBox* m_pSpinBox;
@@ -36,6 +40,8 @@ public slots:
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
 private:
+    void onUpdateModel(QStandardItemModel* model, QItemSelectionModel* selection);
+
     ValueInputWidget* m_pWidth;
     ValueInputWidget* m_pHeight;
     ValueInputWidget* m_pX;

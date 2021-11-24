@@ -29,11 +29,10 @@ ValueInputWidget::ValueInputWidget(const QString& name, QWidget* parent)
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->addWidget(new QLabel(name));
 
-    //m_pSpinBox = new QSpinBox;
-    //pLayout->addWidget(m_pSpinBox);
-
     m_pLineEdit = new QLineEdit;
     pLayout->addWidget(m_pLineEdit);
+
+    connect(m_pLineEdit, SIGNAL(returnPressed()), this, SIGNAL(valueChanged()));
 
     setLayout(pLayout);
 }
@@ -41,6 +40,12 @@ ValueInputWidget::ValueInputWidget(const QString& name, QWidget* parent)
 void ValueInputWidget::setValue(qreal value)
 {
     m_pLineEdit->setText(QString::number(value));
+}
+
+qreal ValueInputWidget::value(bool& bOk)
+{
+    float value = m_pLineEdit->text().toFloat(&bOk);
+    return value;
 }
 
 ZPagePropPanel::ZPagePropPanel(QWidget* parent)
@@ -108,6 +113,38 @@ void ZComponentPropPanel::initModel()
         QItemSelectionModel* selection= view->findChild<QItemSelectionModel*>(NODE_SELECTION_MODEL);
         connect(model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(onModelDataChanged(QStandardItem*)));
         connect(selection, &QItemSelectionModel::selectionChanged, this, &ZComponentPropPanel::onSelectionChanged);
+        bool ret = connect(m_pX, &ValueInputWidget::valueChanged, this, [=] {
+            onUpdateModel(model, selection);
+            });
+        connect(m_pY, &ValueInputWidget::valueChanged, this, [=] {
+            onUpdateModel(model, selection);
+            });
+        connect(m_pWidth, &ValueInputWidget::valueChanged, this, [=] {
+            onUpdateModel(model, selection);
+            });
+        connect(m_pHeight, &ValueInputWidget::valueChanged, this, [=] {
+            onUpdateModel(model, selection);
+            });
+    }
+}
+
+void ZComponentPropPanel::onUpdateModel(QStandardItemModel* model, QItemSelectionModel* selection)
+{
+    QModelIndex index = selection->currentIndex();
+    QStandardItem* pItem = model->itemFromIndex(index);
+    if (pItem)
+    {
+        bool bOk = false;
+        qreal x = m_pX->value(bOk);
+        if (!bOk) return;
+        qreal y = m_pY->value(bOk);
+        if (!bOk) return;
+        qreal w = m_pWidth->value(bOk);
+        if (!bOk) return;
+        qreal h = m_pHeight->value(bOk);
+        if (!bOk) return;
+
+        pItem->setData(QRectF(x, y, w, h), NODEPOS_ROLE);
     }
 }
 

@@ -26,7 +26,7 @@ public slots:
 	void onSelectionChanged(const QItemSelection&, const QItemSelection&);
 
 private:
-	QStandardItem* createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QItemSelectionModel* selection);
+	QStandardItem* createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QStandardItemModel* pModel, QItemSelectionModel* selection);
 
 	QGraphicsPixmapItem* m_once;
 	QGraphicsPixmapItem* m_prep;
