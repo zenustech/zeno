@@ -1,0 +1,17 @@
+#ifndef __MODEL_ROLE_H__
+#define __MODEL_ROLE_H__
+
+#include "../framework.h"
+
+enum MODEL_ROLE
+{
+	ROLE_OBJID,
+	ROLE_OBJNAME,
+	ROLE_OBJPOS,
+	ROLE_OBJRECT,
+	ROLE_SRCNODE,
+	ROLE_DSTNODE,
+	ROLE_PARAMETERS,
+};
+
+#endif
