@@ -1,4 +1,5 @@
 #include "ztfutil.h"
+#include <stdexcept>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -14,7 +15,9 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
 {
 	QFile file(filename);
 	bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-	Q_ASSERT(ret);
+    if (!ret) {
+        throw std::runtime_error("ztf file: [" + filename.toStdString() + "] not found");
+    }
 	QByteArray arr = file.readAll();
 
 	rapidxml::xml_document<> doc;
