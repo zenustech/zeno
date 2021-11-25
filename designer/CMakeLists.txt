@@ -13,20 +13,12 @@ if(WIN32)
   set(CMAKE_WIN32_EXECUTABLE ON)
 endif()
 
-IF (WIN32)
-    SET(SHORTCUT_SRCS "./shortcut/gui/qxtwindowsystem.cpp" "./shortcut/gui/qxtwindowsystem.h" "./shortcut/gui/qxtglobalshortcut_win.cpp" "./shortcut/gui/qxtwindowsystem_win.cpp")
+if (WIN32)
     find_package(Qt5 REQUIRED COMPONENTS Widgets Svg)
-ENDIF (WIN32)
-
-IF (UNIX)
+else()
     find_package(X11)
     find_package(Qt5 REQUIRED COMPONENTS Widgets X11Extras Svg)
-    IF (APPLE)
-        SET(SHORTCUT_SRCS "./shortcut/gui/qxtglobalshortcut_mac.cpp" "./shortcut/gui/qxtwindowsystem_mac.cpp" "./shortcut/gui/qxtwindowsystem_mac.h") 
-    ELSE (APPLE)
-        SET(SHORTCUT_SRCS "./shortcut/gui/qxtwindowsystem_x11.cpp" "./shortcut/gui/qxtglobalshortcut_x11.cpp" "./shortcut/gui/x11info.cpp" "./shortcut/gui/x11info.h")
-    ENDIF(APPLE)
-ENDIF (UNIX)
+endif (WIN32)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
