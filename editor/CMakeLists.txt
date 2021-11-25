@@ -8,8 +8,8 @@ if (WIN32)
     set(WEB_ENGINE_LINK "")
     set(CMAKE_WIN32_EXECUTABLE ON)
 else()
-    set(WEB_ENGINE WebEngineWidgets)
-    set(WEB_ENGINE_LINK Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
+    set(WEB_ENGINE "")
+    set(WEB_ENGINE_LINK "")
 endif()
 
 # Qt6 seems doesn't have <QOpenGLWidget>... let's stick to Qt5 for now

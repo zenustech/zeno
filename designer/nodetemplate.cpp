@@ -3,9 +3,6 @@
 #include "nodescene.h"
 #include "resizableitemimpl.h"
 #include "resizecoreitem.h"
-#include <rapidjson/document.h>
-
-using namespace rapidjson;
 
 
 NodeTemplate::NodeTemplate(NodeScene* pScene, QGraphicsItem* parent)
