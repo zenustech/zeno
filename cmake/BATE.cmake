@@ -9,5 +9,5 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #add_compile_options(-fdiagnostics-color=always)
 
-add_custom_target(run COMMAND $<TARGET_FILE:zeno>)
-add_dependencies(run zeno)
+add_custom_target(run COMMAND $<TARGET_FILE:zeno_editor>)
+add_dependencies(run zeno_editor)

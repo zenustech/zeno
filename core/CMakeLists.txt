@@ -1,0 +1,27 @@
+file(GLOB_RECURSE source CONFIGURE_DEPENDS src/*.h src/*.cpp)
+add_library(zeno_core OBJECT ${source})
+
+target_include_directories(zeno_core PUBLIC src)
+target_include_directories(zeno_core PUBLIC ../3rdparty/include)
+
+find_package(TBB COMPONENTS tbb REQUIRED)
+message(STATUS "Found TBB: ${TBB_DIR}")
+target_link_libraries(zeno_core PUBLIC TBB::tbb)
+
+if (ZENO_WITH_SYCL)
+    message(STATUS "Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
+    find_package(hipSYCL CONFIG REQUIRED)
+    add_sycl_to_target(TARGET zeno_core)
+    target_compile_definitions(zeno_core PUBLIC -DZENO_WITH_SYCL)
+endif()
+
+if (ZENO_WITH_LEGACY)
+    message(STATUS "Building Zeno with Legacy Nodes")
+    add_subdirectory(legacy)
+endif()
+
+if (ZENO_WITH_BACKWARD)
+    message(STATUS "Building Zeno with Stack Traceback")
+    target_sources(zeno_core PRIVATE ${BACKWARD_ENABLE})
+    add_backward(zeno_core)
+endif()
