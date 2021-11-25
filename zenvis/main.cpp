@@ -24,6 +24,7 @@ static double last_xpos, last_ypos;
 static glm::vec3 center;
 
 static glm::mat4x4 view(1), proj(1);
+static glm::mat4x4 gizmo_view(1), gizmo_proj(1);
 static float point_scale = 1.f;
 static float camera_radius = 1.f;
 static float grid_scale = 1.f;
@@ -56,7 +57,7 @@ void look_perspective(
                       -100.0, 100.0);
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0);
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
@@ -66,6 +67,11 @@ void look_perspective(
       return fmin(fmax(ratio, 0.0), 1.0);
   };
   grid_blend = ratio_clamp(level - std::floor(level), 0.8, 1.0);
+  center = glm::vec3(0, 0, 0);
+  radius = 5.0;
+  gizmo_view = glm::lookAt(center - back, center, up);
+  gizmo_proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
+                      -100.0, 100.0);
 }
 
 void set_program_uniforms(Program *pro) {
@@ -114,6 +120,20 @@ void initialize() {
   axis = makeGraphicAxis();
 }
 
+static void draw_axis() {
+  glm::mat4x4 backup_view = view;
+  glm::mat4x4 backup_proj = proj;
+  view = gizmo_view;
+  proj = gizmo_proj;
+  CHECK_GL(glViewport(0, 0, nx * 0.1, ny * 0.1));
+  CHECK_GL(glDisable(GL_DEPTH_TEST));
+  axis->draw();
+  CHECK_GL(glEnable(GL_DEPTH_TEST));
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  view = backup_view;
+  proj = backup_proj;
+}
+
 static void paint_graphics(void) {
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
@@ -125,6 +145,7 @@ static void paint_graphics(void) {
   if (show_grid) {
       grid->draw();
       axis->draw();
+      draw_axis();
   }
   vao->unbind();
   CHECK_GL(glFlush());
