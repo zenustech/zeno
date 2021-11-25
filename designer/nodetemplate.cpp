@@ -88,6 +88,8 @@ QStandardItem* NodeTemplate::createItemWithGVItem(ResizableItemImpl* gvItem, NOD
     QStandardItem* pItem = new QStandardItem(QIcon(), name);
     pItem->setData(id);
     pItem->setData(gvItem->coreItemSceneRect(), NODEPOS_ROLE);
+	pItem->setData(true, NODELOCK_ROLE);
+	pItem->setData(false, NODELOCK_VISIBLE);
     connect(gvItem, &ResizableItemImpl::itemGeoChanged, this, [=](QRectF rcNew) {
         pItem->setData(rcNew, NODEPOS_ROLE);
         });

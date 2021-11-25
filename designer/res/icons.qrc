@@ -1,0 +1,8 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+	<file>icons/eye.svg</file>
+    <file>icons/eye_off.svg</file>
+    <file>icons/locked.svg</file>
+    <file>icons/locked_off.svg</file>
+</qresource>
+</RCC>

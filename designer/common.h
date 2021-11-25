@@ -22,6 +22,8 @@ enum NODEITEMROLE
 {
     NODEID_ROLE = Qt::UserRole + 1,
     NODEPOS_ROLE,
+    NODELOCK_ROLE,
+    NODELOCK_VISIBLE,
 };
 
 #define NODE_MODEL_NAME "nodemodeldata"
