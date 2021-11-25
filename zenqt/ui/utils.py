@@ -21,7 +21,7 @@ def merge_condidates(*lsts):
     for lst in lsts:
         res_list.extend([k for k in lst if k not in res_set])
         res_set = set(res_list)
-    return res_list
+    return res_list[:30]
 
 def fuzzy_search(pattern, keys):
     pattern = pattern.lower()
