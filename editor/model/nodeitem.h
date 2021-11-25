@@ -1,7 +1,8 @@
 #ifndef __NODEITEM_H__
 #define __NODEITEM_H__
 
-#include "../framework.h"
+#include <QString>
+#include <QRectF>
 
 struct SocketItem
 {

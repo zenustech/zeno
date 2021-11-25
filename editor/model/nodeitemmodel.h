@@ -1,7 +1,9 @@
 #ifndef __NODE_ITEM_MODEL_H__
 #define __NODE_ITEM_MODEL_H__
 
-#include "../framework.h"
+#include <QModelIndex>
+#include <QString>
+#include <QOBject>
 
 class NodeItemModel : public QAbstractItemModel
 {
