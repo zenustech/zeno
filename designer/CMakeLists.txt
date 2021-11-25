@@ -30,12 +30,9 @@ ENDIF (UNIX)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
-include_directories(../3rdparty/qtmods)
-
 add_executable(zeno_designer ${source})
-
-if (WIN32)
-    target_link_libraries(zeno_designer Qt5::Widgets Qt5::Svg rapidjson)
-else()
-    target_link_libraries(zeno_designer Qt5::Widgets Qt5::Svg Qt5::X11Extras dl X11)
-endif(WIN32)
+target_include_directories(zeno_designer PRIVATE ../3rdparty/include)
+target_link_libraries(zeno_designer PRIVATE Qt5::Widgets Qt5::Svg)
+if (NOT WIN32)
+    target_link_libraries(zeno_designer PRIVATE Qt5::X11Extras dl X11)
+endif(NOT WIN32)
