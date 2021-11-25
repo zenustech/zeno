@@ -3,7 +3,8 @@
 
 #include <QModelIndex>
 #include <QString>
-#include <QOBject>
+#include <QObject>
+#include "nodeitem.h"
 
 class NodeItemModel : public QAbstractItemModel
 {
@@ -14,7 +15,7 @@ public:
 
 	//QAbstractItemModel
 	QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-	QModelIndex index(QString id, const QModelIndex& parent = QModelIndex()) override;	//custom function, index with id
+	QModelIndex index(QString id, const QModelIndex& parent = QModelIndex()) const;	//custom function, index with id
 	QModelIndex parent(const QModelIndex& child) const override;
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex& parent = QModelIndex()) const override;

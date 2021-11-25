@@ -2,6 +2,7 @@
 #include "designermainwin.h"
 #include "nodesview.h"
 #include "styletabwidget.h"
+#include "layertreeitemdelegate.h"
 
 NodesView* getCurrentView(QWidget* pWidget)
 {
@@ -21,9 +22,35 @@ NodesView* getCurrentView(QWidget* pWidget)
 LayerTreeView::LayerTreeView(QWidget* parent)
     : QTreeView(parent)
 {
-
+    setItemDelegate(new LayerTreeitemDelegate(this));
+    setMinimumWidth(320);
 }
 
+QSize LayerTreeView::sizeHint() const
+{
+    QSize sz = QTreeView::sizeHint();
+    if (model() == nullptr || model()->rowCount() == 0)
+        return sz;
+
+    int nToShow = model()->rowCount();
+    return QSize(700, sz.height());
+}
+
+void LayerTreeView::mousePressEvent(QMouseEvent* e)
+{
+    QTreeView::mousePressEvent(e);
+}
+
+void LayerTreeView::mouseMoveEvent(QMouseEvent* e)
+{
+    QTreeView::mouseMoveEvent(e);
+}
+
+void LayerTreeView::updateHoverState(QPoint pos)
+{
+}
+
+////////////////////////////////////////////////////////////
 LayerWidget::LayerWidget(QWidget* parent)
     : QWidget(parent)
     , m_pLayer(nullptr)

@@ -1,8 +1,9 @@
 #include "nodeitemmodel.h"
 #include "modelrole.h"
+#include "nodeitem.h"
 
 
-NodeItemModel::NodeItemModel(QObject* parent = nullptr)
+NodeItemModel::NodeItemModel(QObject* parent)
 {
 
 }
@@ -18,12 +19,13 @@ QModelIndex NodeItemModel::index(int row, int column, const QModelIndex& parent)
 	return QModelIndex();
 }
 
-QModelIndex NodeItemModel::index(QString id, const QModelIndex& parent)
+QModelIndex NodeItemModel::index(QString id, const QModelIndex& parent) const
 {
 	auto it = datas.find(id);
 	if (it == datas.end())
 		return QModelIndex();
-	return createIndex(it - datas.begin(), 0, &it->second);
+	NodeItem item = it->second;
+	return createIndex(0, 0, &item);
 }
 
 QModelIndex NodeItemModel::parent(const QModelIndex& child) const
@@ -37,12 +39,12 @@ int NodeItemModel::rowCount(const QModelIndex& parent) const
 	return datas.size();
 }
 
-int NodeItemModel::columnCount(const QModelIndex& parent)
+int NodeItemModel::columnCount(const QModelIndex& parent) const
 {
 	return 1;
 }
 
-QVariant NodeItemModel::data(const QModelIndex& index, int role)
+QVariant NodeItemModel::data(const QModelIndex& index, int role) const
 {
 	NodeItem* pItem = reinterpret_cast<NodeItem*>(index.internalPointer());
 	switch (role)

@@ -1,6 +1,7 @@
 #include "linkitemmodel.h"
+#include "modelrole.h"
 
-LinkItemModel::LinkItemModel(QObject* parent = nullptr)
+LinkItemModel::LinkItemModel(QObject* parent)
 {
 
 }
@@ -21,7 +22,7 @@ QModelIndex LinkItemModel::index(QString id, const QModelIndex& parent)
 	auto it = datas.find(id);
 	if (it == datas.end())
 		return QModelIndex();
-	return createIndex(it - datas.begin(), 0, &it->second);
+	return createIndex(0, 0, &it->second);
 }
 
 QModelIndex LinkItemModel::parent(const QModelIndex& child) const
@@ -35,12 +36,12 @@ int LinkItemModel::rowCount(const QModelIndex& parent) const
 	return datas.size();
 }
 
-int LinkItemModel::columnCount(const QModelIndex& parent)
+int LinkItemModel::columnCount(const QModelIndex& parent) const
 {
 	return 1;
 }
 
-QVariant LinkItemModel::data(const QModelIndex& index, int role)
+QVariant LinkItemModel::data(const QModelIndex& index, int role) const
 {
 	LinkItem* pItem = reinterpret_cast<LinkItem*>(index.internalPointer());
 	switch (role)
