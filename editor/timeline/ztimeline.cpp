@@ -1,6 +1,6 @@
 #include "ztimeline.h"
 #include "zslider.h"
-#include "../comctrl/zlabel.h"
+#include <comctrl/zlabel.h>
 
 
 //////////////////////////////////////////////

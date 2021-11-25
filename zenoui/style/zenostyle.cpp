@@ -1,7 +1,7 @@
 #include "zenostyle.h"
 #include "zstyleoption.h"
 #include "../comctrl/ztoolbutton.h"
-#include "../tmpwidgets/zobjectbutton.h"
+#include "../comctrl/zobjectbutton.h"
 
 
 ZenoStyle::ZenoStyle()

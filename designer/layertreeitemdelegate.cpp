@@ -1,10 +1,12 @@
 #include "framework.h"
+#include "layerwidget.h"
 #include "layertreeitemdelegate.h"
 
-LayerTreeitemDelegate::LayerTreeitemDelegate(QWidget* parent)
-    : QStyledItemDelegate(parent)
-{
 
+LayerTreeitemDelegate::LayerTreeitemDelegate(QWidget* parent)
+    : QStyledItemDelegate(parent), m_treeview(nullptr)
+{
+    m_treeview = qobject_cast<LayerTreeView*>(parent);
 }
 
 void LayerTreeitemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const

@@ -71,6 +71,7 @@ endif()
 
 message(STATUS "Building Zeno Core Library")
 add_subdirectory(core)
+add_subdirectory(zenoui)
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
