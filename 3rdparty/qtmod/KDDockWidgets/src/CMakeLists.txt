@@ -246,13 +246,6 @@ add_library(kddockwidgets ${KDDockWidgets_LIBRARY_MODE} ${DOCKSLIBS_SRCS} ${DOCK
 add_library(KDAB::kddockwidgets ALIAS kddockwidgets)
 set_target_properties(kddockwidgets PROPERTIES OUTPUT_NAME "kddockwidgets${KDDockWidgets_LIBRARY_QTID}")
 
-set_target_properties( kddockwidgets
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/editor"
-)
-
 set_compiler_flags(kddockwidgets)
 
 if(${PROJECT_NAME}_QT6)

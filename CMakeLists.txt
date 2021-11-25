@@ -74,6 +74,7 @@ add_subdirectory(core)
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
+    add_subdirectory(3rdparty/qtmod/KDDockWidgets)
     add_subdirectory(editor)
 endif()
 
