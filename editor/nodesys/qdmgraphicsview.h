@@ -17,30 +17,29 @@ class QDMGraphicsView : public QGraphicsView
 
     QPointF m_lastMousePos;
     bool m_mouseDragging{false};
-    QDMGraphicsNode *m_currNode{};
-
-    void setCurrentNode(QDMGraphicsNode *node);
 
 public:
     explicit QDMGraphicsView(QWidget *parent = nullptr);
 
+    virtual void keyPressEvent(QKeyEvent *event) override;
     virtual void mousePressEvent(QMouseEvent *event) override;
     virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
     virtual QSize sizeHint() const override;
-    void switchScene(QDMGraphicsScene *scene);
     QDMGraphicsScene *getScene() const;
 
     static constexpr float ZOOMFACTOR = 1.25f;
 
 public slots:
-    void addNodeByName(QString name);
-    void forceUpdate();
+    void addNodeByType(QString name);
+    void switchScene(QDMGraphicsScene *newScene);
 
 signals:
-    void nodeUpdated(QDMGraphicsNode *node, int type);
+    void sceneUpdated();
+    void sceneCreatedOrRemoved();
     void currentNodeChanged(QDMGraphicsNode *node);
+    void sceneSwitched(QDMGraphicsScene *newScene);
 };
 
 ZENO_NAMESPACE_END

@@ -1,9 +1,12 @@
 #include "qdmopenglviewport.h"
 #include "renderable.h"
+#include "../nodesys/interceptor.h"
 #include <QOpenGLVertexArrayObject>
 #include <QDragMoveEvent>
 #include <QWheelEvent>
-#include <QDebug>
+#include <zeno/zmt/log.h>
+#include <zeno/dop/Executor.h>
+#include <zeno/dop/SceneGraph.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -26,7 +29,7 @@ QSize QDMOpenGLViewport::sizeHint() const
 void QDMOpenGLViewport::initializeGL()
 {
     initializeOpenGLFunctions();
-    qCritical() << "OpenGL version:" << (char const *)glGetString(GL_VERSION);
+    ZENO_INFO("OpenGL version: {}", (char const *)glGetString(GL_VERSION));
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -100,19 +103,27 @@ void QDMOpenGLViewport::wheelEvent(QWheelEvent *event)
     QOpenGLWidget::wheelEvent(event);
 }
 
-static std::unique_ptr<Renderable> make_renderable_of_node(QDMGraphicsNode *node) {
-    return makeRenderableFromAny(node->getDopNode()->outputs[0]);
+void QDMOpenGLViewport::updateScene()
+{
+    ZENO_DEBUG("updateScene");
+
+    dop::Executor exec;
+    dop::SceneGraph graph;
+    Interceptor::toDopGraph(m_rootScene, &graph);
+
+    m_renderables.clear();
+    for (auto *node: graph.visibleNodes()) {
+        auto val = exec.evaluate({.node = node, .sockid = 0});
+        m_renderables.emplace(node->name, makeRenderableFromAny(val));
+    }
+
+    repaint();
 }
 
-void QDMOpenGLViewport::updateNode(QDMGraphicsNode *node, int type) {
-    if (type > 0) {
-        m_renderables.emplace(node, make_renderable_of_node(node));
-    } else if (type == 0) {
-        m_renderables.at(node) = make_renderable_of_node(node);
-    } else {
-        m_renderables.erase(node);
-    }
-    repaint();
+void QDMOpenGLViewport::setRootScene(QDMGraphicsScene *scene)
+{
+    m_rootScene = scene;
+    emit updateScene();
 }
 
 ZENO_NAMESPACE_END

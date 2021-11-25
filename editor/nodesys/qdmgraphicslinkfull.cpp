@@ -8,8 +8,6 @@ QDMGraphicsLinkFull::QDMGraphicsLinkFull(QDMGraphicsSocketOut *srcSocket, QDMGra
 {
     setZValue(-1);
     setFlag(QGraphicsItem::ItemIsSelectable);
-    srcSocket->linkAttached(this);
-    dstSocket->linkAttached(this);
 }
 
 QPointF QDMGraphicsLinkFull::getSrcPos() const

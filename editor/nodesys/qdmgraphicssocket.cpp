@@ -5,8 +5,8 @@
 ZENO_NAMESPACE_BEGIN
 
 QDMGraphicsSocket::QDMGraphicsSocket()
+    : label(new QGraphicsTextItem(this))
 {
-    label = std::make_unique<QGraphicsTextItem>(this);
 }
 
 void QDMGraphicsSocket::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -37,30 +37,20 @@ void QDMGraphicsSocket::paint(QPainter *painter, QStyleOptionGraphicsItem const 
     painter->drawPath(pathContent.simplified());
 }
 
-void QDMGraphicsSocket::unlinkAll()
+void QDMGraphicsSocket::setName(std::string const &name)
 {
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    auto saved_links = links;
-    for (auto *link: saved_links) {
-        parentScene->removeLink(link);
-    }
+    this->name = name;
+    label->setPlainText(QString::fromStdString(name));
 }
 
-void QDMGraphicsSocket::linkAttached(QDMGraphicsLinkFull *link)
+void QDMGraphicsSocket::setType(std::string const &type)
 {
-    if (link) {  // nullptr for blankClicked
-        links.insert(link);
-    }
+    this->type = type;
 }
 
-void QDMGraphicsSocket::linkRemoved(QDMGraphicsLinkFull *link)
+void QDMGraphicsSocket::setDefl(std::string const &defl)
 {
-    links.erase(link);
-}
-
-void QDMGraphicsSocket::setName(QString name)
-{
-    label->setPlainText(name);
+    this->defl = defl;
 }
 
 ZENO_NAMESPACE_END

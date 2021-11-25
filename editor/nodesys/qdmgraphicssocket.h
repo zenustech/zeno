@@ -17,22 +17,28 @@ class QDMGraphicsLinkFull;
 
 class QDMGraphicsSocket : public QGraphicsItem
 {
-    std::set<QDMGraphicsLinkFull *> links;
+    std::string name;
+    std::string type;
+    std::string defl;
 
 protected:
-    std::unique_ptr<QGraphicsTextItem> label;
+    QGraphicsTextItem *label;
 
 public:
+    std::set<QDMGraphicsLinkFull *> links;
+
     QDMGraphicsSocket();
 
-    virtual void unlinkAll();
-    virtual void linkRemoved(QDMGraphicsLinkFull *link);
-    virtual void linkAttached(QDMGraphicsLinkFull *link);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     virtual QRectF boundingRect() const override;
     virtual QPointF getLinkedPos() const = 0;
-    void setName(QString name);
+    inline std::string const &getName() const { return name; }
+    inline std::string const &getType() const { return type; }
+    inline std::string const &getDefl() const { return defl; }
+    void setType(std::string const &type);
+    void setName(std::string const &name);
+    void setDefl(std::string const &defl);
 
     static constexpr float SIZE = 20, ROUND = 4;
 };

@@ -4,8 +4,11 @@ cmake-build-*
 
 # python files
 __pycache__
+.venv
 
 # vim files
+.vimspector.json
+.vim_localrc
 .*.swp
 .*.un~
 tags
@@ -18,7 +21,8 @@ tags
 CMakeLists.txt.user
 CMakeSettings.json
 
-# zeno files
+# archibate files
+/GNUmakefile
 outputs
 zeno_output.txt
 /Debug

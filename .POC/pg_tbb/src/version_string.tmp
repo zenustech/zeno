@@ -1,0 +1,11 @@
+
+#define __TBB_VERSION_STRINGS \
+"TBB: BUILD_HOST\t\tUnknown" ENDL \
+"TBB: BUILD_ARCH\t\tUnknown" ENDL \
+"TBB: BUILD_OS\t\tUnknown" ENDL \
+"TBB: BUILD_CL\t\tUnknown" ENDL \
+"TBB: BUILD_COMPILER\t\tUnknown" ENDL \
+"TBB: BUILD_TARGET\tUnknown" ENDL \
+"TBB: BUILD_COMMAND\tUnknown" ENDL
+#define __TBB_DATETIME "Fri, 7 Aug 2009 13:55:54 UTC"
+#define __TBB_VERSION_YMD 2009, 0807

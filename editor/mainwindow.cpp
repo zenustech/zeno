@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->nodeView->switchScene(nodeScene.get());
+    ui->treeView->setRootScene(nodeScene.get());
 }
 
 MainWindow::~MainWindow() = default;

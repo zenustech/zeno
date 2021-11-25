@@ -1,6 +1,5 @@
 #include "qdmlistviewnodemenu.h"
 #include <zeno/dop/Descriptor.h>
-#include <QStandardItemModel>
 #include <QStandardItem>
 
 ZENO_NAMESPACE_BEGIN

@@ -18,12 +18,8 @@
     <item row="0" column="1">
      <widget class="QDMGraphicsView" name="nodeView"/>
     </item>
-    <item row="1" column="1">
-     <widget class="QPushButton" name="updateButton">
-      <property name="text">
-       <string>Force Update</string>
-      </property>
-     </widget>
+    <item row="0" column="0">
+     <widget class="QDMTreeViewGraphs" name="treeView"/>
     </item>
    </layout>
   </widget>
@@ -151,10 +147,12 @@
    <extends>QGraphicsView</extends>
    <header>nodesys/qdmgraphicsview.h</header>
    <slots>
-    <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
     <signal>currentNodeChanged(QDMGraphicsNode*)</signal>
-    <slot>addNodeByName(QString)</slot>
-    <slot>forceUpdate()</slot>
+    <signal>sceneUpdated()</signal>
+    <signal>sceneCreatedOrRemoved()</signal>
+    <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+    <slot>addNodeByType(QString)</slot>
+    <slot>switchScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -170,7 +168,8 @@
    <extends>QOpenGLWidget</extends>
    <header>viewport/qdmopenglviewport.h</header>
    <slots>
-    <slot>updateNode(QDMGraphicsNode*,int)</slot>
+    <slot>updateScene()</slot>
+    <slot>setRootScene(QDMGraphicsScene*)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -197,6 +196,18 @@
     <slot>setCurrentNode(QDMGraphicsNode*)</slot>
    </slots>
   </customwidget>
+  <customwidget>
+   <class>QDMTreeViewGraphs</class>
+   <extends>QTreeView</extends>
+   <header>nodesys/qdmtreeviewgraphs.h</header>
+   <slots>
+    <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+    <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
+    <slot>refreshRootScene()</slot>
+    <slot>setRootScene(QDMGraphicsScene*)</slot>
+    <slot>switchScene(QDMGraphicsScene*)</slot>
+   </slots>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections>
@@ -204,47 +215,31 @@
    <sender>nodeMenu</sender>
    <signal>entryClicked(QString)</signal>
    <receiver>nodeView</receiver>
-   <slot>addNodeByName(QString)</slot>
+   <slot>addNodeByType(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>417</x>
-     <y>979</y>
+     <x>1262</x>
+     <y>827</y>
     </hint>
     <hint type="destinationlabel">
-     <x>800</x>
-     <y>332</y>
+     <x>1271</x>
+     <y>414</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>nodeView</sender>
-   <signal>nodeUpdated(QDMGraphicsNode*,int)</signal>
+   <signal>sceneUpdated()</signal>
    <receiver>viewport</receiver>
-   <slot>updateNode(QDMGraphicsNode*,int)</slot>
+   <slot>updateScene()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>684</x>
-     <y>556</y>
+     <x>1602</x>
+     <y>536</y>
     </hint>
     <hint type="destinationlabel">
      <x>50</x>
-     <y>625</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>updateButton</sender>
-   <signal>clicked()</signal>
-   <receiver>nodeView</receiver>
-   <slot>forceUpdate()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1135</x>
-     <y>724</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1156</x>
-     <y>667</y>
+     <y>536</y>
     </hint>
    </hints>
   </connection>
@@ -261,6 +256,70 @@
     <hint type="destinationlabel">
      <x>1695</x>
      <y>855</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>treeView</sender>
+   <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+   <receiver>nodeView</receiver>
+   <slot>switchScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>870</x>
+     <y>521</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1208</x>
+     <y>430</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>treeView</sender>
+   <signal>rootSceneChanged(QDMGraphicsScene*)</signal>
+   <receiver>viewport</receiver>
+   <slot>setRootScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>533</x>
+     <y>421</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>50</x>
+     <y>475</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>sceneCreatedOrRemoved()</signal>
+   <receiver>treeView</receiver>
+   <slot>refreshRootScene()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1160</x>
+     <y>298</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>918</x>
+     <y>298</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>nodeView</sender>
+   <signal>sceneSwitched(QDMGraphicsScene*)</signal>
+   <receiver>treeView</receiver>
+   <slot>switchScene(QDMGraphicsScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>953</x>
+     <y>375</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>890</x>
+     <y>383</y>
     </hint>
    </hints>
   </connection>

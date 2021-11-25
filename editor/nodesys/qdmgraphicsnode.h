@@ -9,44 +9,68 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsTextItem>
+#include <zeno/dop/Descriptor.h>
 #include <QWidget>
-#include <zeno/dop/Node.h>
 #include <memory>
 
 ZENO_NAMESPACE_BEGIN
 
+struct Interceptor;
+class QDMGraphicsScene;
+class QDMNodeParamEdit;
+
 class QDMGraphicsNode : public QGraphicsItem
 {
-    std::vector<std::unique_ptr<QDMGraphicsSocketIn>> socketIns;
-    std::vector<std::unique_ptr<QDMGraphicsSocketOut>> socketOuts;
-    std::unique_ptr<QGraphicsTextItem> label;
+    friend Interceptor;
 
-    std::unique_ptr<dop::Node> dopNode;
+    std::vector<QDMGraphicsSocketIn *> socketIns;
+    std::vector<QDMGraphicsSocketOut *> socketOuts;
+
+    QGraphicsTextItem *label;
+    dop::Descriptor const *desc{};
+    std::string name;
+
+    [[nodiscard]] float getHeight() const;
+
+protected:
+    QDMGraphicsSocketIn *addSocketIn();
+    QDMGraphicsSocketOut *addSocketOut();
+    void initByDescriptor(const dop::Descriptor *desc);
 
 public:
     QDMGraphicsNode();
-    ~QDMGraphicsNode();
+    void initByType(std::string const &type);
+    //void socketUnlinked(QDMGraphicsSocketIn *socket);
+    //void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
+    virtual void setupParamEdit(QDMNodeParamEdit *paredit);
+    virtual QDMGraphicsNode *underlyingNode();
 
-    float getHeight() const;
-    dop::Node *getDopNode() const;
+    ~QDMGraphicsNode() override;
+    [[nodiscard]] QRectF boundingRect() const override;
+    void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
-    virtual QRectF boundingRect() const override;
-    virtual void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-
+    [[nodiscard]] QDMGraphicsSocketIn *socketInAt(size_t index);
+    [[nodiscard]] QDMGraphicsSocketOut *socketOutAt(size_t index);
     size_t socketInIndex(QDMGraphicsSocketIn *socket);
     size_t socketOutIndex(QDMGraphicsSocketOut *socket);
-    void socketUnlinked(QDMGraphicsSocketIn *socket);
-    void socketLinked(QDMGraphicsSocketIn *socket, QDMGraphicsSocketOut *srcSocket);
-    void unlinkAll();
+    [[nodiscard]] std::vector<std::string> getInputNames() const;
+    [[nodiscard]] std::vector<std::string> getOutputNames() const;
 
-    QDMGraphicsSocketIn *addSocketIn();
-    QDMGraphicsSocketOut *addSocketOut();
-    void initByName(QString name);
+    //void socketValueChanged(QDMGraphicsSocketIn *socket);
+    [[nodiscard]] virtual QDMGraphicsScene *getSubnetScene() const;
+    [[nodiscard]] QDMGraphicsScene *getScene() const;
+
     void setName(QString name);
+    inline std::string const &getName() { return name; }
+    inline dop::Descriptor const *getDescriptor() { return desc; }
+    inline auto const &getSocketIns() const { return socketIns; }
+    inline auto const &getSocketOuts() const { return socketOuts; }
+
+    void invalidate();
 
     static constexpr float WIDTH = 200, HEIGHT = 60, ROUND = 6, BORDER = 3;
-    static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, SOCKMARGINBOT = -10;
+    static constexpr float SOCKMARGINTOP = 20, SOCKSTRIDE = 30, MINHEIGHT = 20, SOCKMARGINBOT = -10;
 };
 
 ZENO_NAMESPACE_END

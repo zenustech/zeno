@@ -4,7 +4,7 @@
 
 To work with Zeno, you need:
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
 ```
 
 ### Windows
@@ -19,9 +19,11 @@ Git >= 2.0 && CMake >= 3.18 && Qt >= 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 > It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
-4. Download and install Qt 5.12: https://www.qt.io/offline-installers
+4. Download and install Qt via their online installer: https://www.qt.io/download-qt-installer
 
-> If you find installing Qt troublesome (e.g., asking you for registering a Qt account), feel free to skip it for now, and execute `vcpkg install qt5:x64-windows` later (see the `vcpkg` section) instead.
+> WARN: You must click the `Qt 5.12.11` option to install the prebuilt Qt binaries, otherwise only the Qt Creator is selected by default.
+
+> JOKE: Yes, we have to register a Qt account to install Qt... because the Qt company sucks :)
 
 ### Ubuntu
 
@@ -30,71 +32,73 @@ sudo apt-get install -y git cmake g++
 sudo apt-get install -y qt5-default
 ```
 
-## Install required libraries (optional)
+> We haven't tested Zeno on WSL, but please give feedback if you meet trouble there, we'd happy to help you resolve :)
 
-Zeno depends on many C++ libraries, we recommend to use the cross-platform package manager `vcpkg` to install these requirements. (feel free to follow your own favor as long as the requirements below can be installed :)
-
-First of all, download `vcpkg`:
+### Arch Linux
 
 ```bash
-git clone https://github.com/microsoft/vcpkg.git --depth=1
-cd vcpkg
+sudo pacman -S git cmake g++
+sudo pacman -S qt5
 ```
 
-Next, let's install Zeno dependencies via `vcpkg`:
+### Mac OS X
 
-### Windows (cmd)
-
-```cmd
-bootstrap-vcpkg.bat
-vcpkg integrate install
-vcpkg install openvdb:x64-windows
-vcpkg install eigen3:x64-windows
-vcpkg install cgal:x64-windows
-vcpkg install openblas:x64-windows
-vcpkg install lapack:x64-windows
-```
-
-> Windows users may need to **install the `English Pack` of Visual Studio** for VCPKG to work.
-
-> Note that the `x64-windows` suffix **must be specified** otherwise VCPKG will install 32-bit packages by default :)
-
-> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
-
-### Linux (bash)
-
-```bash
-./bootstrap-vcpkg.sh
-./vcpkg install openvdb:x64-linux
-./vcpkg install eigen3:x64-linux
-./vcpkg install cgal:x64-linux
-./vcpkg install openblas:x64-linux
-./vcpkg install lapack:x64-linux
-```
+https://www.bilibili.com/video/BV1uT4y1P7CX
 
 ## Building Zeno from Source
 
-Now that all requirements are satisfied, let's clone Zeno from GitHub:
+### Clone source code
+
+Now that development tools are ready, let's clone the source code of Zeno from GitHub:
 
 ```bash
 git clone https://github.com/zenustech/zeno.git
 cd zeno
 ```
 
+> If you find GitHub slow: use `git clone https://gitee.com/zenustech/zeno.git` instead, which is our [official Gitee mirror](https://gitee.com/zenustech/zeno).
+
+### Fetch submodules
+
+Update the submodules of Zeno (for downloading dependencies):
+```bash
+git submodule update --init --recursive
+```
+
+> If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
+
+### Configure and build dependencies
+
+> Hint: `git submodule update --init --recursive` should also be executed every time you `git pull` (when you'd like to synchronize with latest updates).
+
 Configure CMake:
 
 ```bash
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
+cmake -B build
 ```
 
-> Please **replace the `[path to vcpkg]` by the path where we previously cloned vcpkg**, for example: `C:/Users/Administrator/vcpkg`, with `\\` replaced by `/` **even if you are on Windows** to make CMake happy.
+#### Why is 'configure' building a butch of libraries
 
-> CLion users may also want to append the `-GNinja` option for parallel build. (`MSBuild` only use 1 CPU core for CMake targets...)
+Note: All the dependencies of Zeno will be installed to `build/zpm/opt` during this step, so it will take some time to 'configure'...
 
-Starts to build (`8` here means using 8 CPU cores):
+What's going on here is, [our package manager](cmake/ZPM.cmake) will build and install [all the submodules](cmake/ZenoRequires.cmake) we just fetched,
+which are libraries required by Zeno.
+
+If you already have [these dependencies](3rdparty/README.md) on your system (via `apt-get` or `vcpkg`), feel free to use:
 
 ```bash
-cmake --build build --parallel 8
+rm -rf build
+cmake -B build -DZENO_WITH_ZPM:BOOL=OFF
+```
+
+to disable ZPM and use system-wide libraries directly.
+
+### Build Zeno itself
+
+Starts to build (`4` here means using 4 CPU threads):
+
+```bash
+cmake --build build --parallel 4
 ```
 
 ## Run Zeno
@@ -102,13 +106,13 @@ cmake --build build --parallel 8
 ### Windows (cmd)
 
 ```cmd
-build\editor\zeno.exe
+build\zeno.exe
 ```
 
 ### Linux (bash)
 
 ```bash
-build/editor/zeno
+build/zeno
 ```
 
 ## References
@@ -116,11 +120,9 @@ build/editor/zeno
 - [VCPKG user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
 - [CMake documentation](https://cmake.org/cmake/help/latest/)
 - [Git documentation](https://git-scm.com/doc)
-- [C++ references](https://en.cppreference.com/w/)
 - [Qt5 documentation](https://doc.qt.io/qt-5/)
+- [C++ references](https://en.cppreference.com/w/)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
+- [hipSYCL install guide](https://github.com/illuhad/hipSYCL/blob/develop/doc/installing.md)
 - [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020/html/sycl-2020.html)
-- [SYCL specification PDF](https://www.khronos.org/registry/SYCL/specs/sycl-2020-provisional.pdf)
-- [DPC++ documentation](https://intel.github.io/llvm-docs/)
-- [OneAPI references](https://docs.oneapi.io/versions/latest/dpcpp/iface/)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)

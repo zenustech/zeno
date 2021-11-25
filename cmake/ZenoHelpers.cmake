@@ -1,0 +1,7 @@
+macro(zeno_glob_recurse var base)
+    set(list)
+    foreach (x ${ARGN})
+        set(list ${list} ${base}/${x})
+    endforeach()
+    file(GLOB_RECURSE ${var} CONFIGURE_DEPENDS ${list})
+endmacro()

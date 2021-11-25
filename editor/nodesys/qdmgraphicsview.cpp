@@ -1,5 +1,6 @@
 #include "qdmgraphicsview.h"
 #include "qdmgraphicsscene.h"
+#include <zeno/zmt/log.h>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QScrollBar>
@@ -11,7 +12,8 @@ QSize QDMGraphicsView::sizeHint() const
     return QSize(1024, 640);
 }
 
-QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
+QDMGraphicsView::QDMGraphicsView(QWidget *parent)
+    : QGraphicsView(parent)
 {
     setRenderHints(QPainter::Antialiasing
             | QPainter::SmoothPixmapTransform
@@ -23,28 +25,36 @@ QDMGraphicsView::QDMGraphicsView(QWidget *parent) : QGraphicsView(parent)
     setContextMenuPolicy(Qt::NoContextMenu);
 }
 
-void QDMGraphicsView::switchScene(QDMGraphicsScene *scene)
+void QDMGraphicsView::switchScene(QDMGraphicsScene *newScene)
 {
-    connect(scene, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)), this, SIGNAL(nodeUpdated(QDMGraphicsNode*,int)));
-    connect(scene, &QGraphicsScene::selectionChanged, this, [this] () {
-        auto items = this->scene()->selectedItems();
-        if (!items.size()) {
-            setCurrentNode(nullptr);
-            return;
-        }
-        if (auto node = dynamic_cast<QDMGraphicsNode *>(items.at(items.size() - 1))) {
-            setCurrentNode(node);
-        } else {
-            setCurrentNode(nullptr);
-        }
-    });
-    setScene(scene);
-}
+    auto oldScene = getScene();
+    if (oldScene == newScene)
+        return;
 
-void QDMGraphicsView::setCurrentNode(QDMGraphicsNode *node)
-{
-    m_currNode = node;
-    emit currentNodeChanged(node);
+    if (oldScene) {
+        ZENO_DEBUG("switch from oldScene: {}", oldScene);
+        oldScene->setCurrentNode(nullptr);
+        disconnect(oldScene, SIGNAL(sceneUpdated()),
+                   this, SIGNAL(sceneUpdated()));
+        disconnect(oldScene, SIGNAL(sceneCreatedOrRemoved()),
+                   this, SIGNAL(sceneCreatedOrRemoved()));
+        disconnect(oldScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
+                   this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
+        disconnect(oldScene, SIGNAL(subnetSceneEntered(QDMGraphicsScene*)),
+                   this, SIGNAL(sceneSwitched(QDMGraphicsScene*)));
+    }
+
+    ZENO_DEBUG("switch to newScene: {}", newScene);
+    connect(newScene, SIGNAL(sceneUpdated()),
+            this, SIGNAL(sceneUpdated()));
+    connect(newScene, SIGNAL(sceneCreatedOrRemoved()),
+            this, SIGNAL(sceneCreatedOrRemoved()));
+    connect(newScene, SIGNAL(currentNodeChanged(QDMGraphicsNode*)),
+            this, SIGNAL(currentNodeChanged(QDMGraphicsNode*)));
+    connect(newScene, SIGNAL(subnetSceneEntered(QDMGraphicsScene*)),
+            this, SIGNAL(sceneSwitched(QDMGraphicsScene*)));
+
+    setScene(newScene);
 }
 
 QDMGraphicsScene *QDMGraphicsView::getScene() const
@@ -52,14 +62,24 @@ QDMGraphicsScene *QDMGraphicsView::getScene() const
     return static_cast<QDMGraphicsScene *>(scene());
 }
 
-void QDMGraphicsView::addNodeByName(QString name)
+void QDMGraphicsView::addNodeByType(QString name)
 {
-    getScene()->addNodeByName(name);
+    getScene()->addNodeByType(name);
 }
 
-void QDMGraphicsView::forceUpdate()
+void QDMGraphicsView::keyPressEvent(QKeyEvent *event)
 {
-    getScene()->forceUpdate();
+    if (event->key() == Qt::Key_Delete) {
+        getScene()->deletePressed();
+
+    } else if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
+        getScene()->copyPressed();
+
+    } else if (event->key() == Qt::Key_V && event->modifiers() & Qt::ControlModifier) {
+        getScene()->pastePressed();
+    }
+
+    QGraphicsView::keyPressEvent(event);
 }
 
 void QDMGraphicsView::mousePressEvent(QMouseEvent *event)
@@ -89,8 +109,7 @@ void QDMGraphicsView::mouseMoveEvent(QMouseEvent *event)
         m_lastMousePos = event->pos();
     }
 
-    auto parentScene = static_cast<QDMGraphicsScene *>(scene());
-    parentScene->cursorMoved();
+    getScene()->cursorMoved();
 
     QGraphicsView::mouseMoveEvent(event);
 }

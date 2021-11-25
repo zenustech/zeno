@@ -1,0 +1,40 @@
+language: cpp
+sudo: false
+
+matrix:
+  include:
+    - os: linux
+      compiler: g++
+      script:
+        - cmake -DTBB_BUILD_PYTHON=ON -DCMAKE_INSTALL_PREFIX=~/.local .
+        - make install -j2
+        - ctest -j2 --output-on-failure --timeout 500
+      addons:
+        apt:
+          packages:
+            - g++
+            - cmake
+            - swig
+            - python-dev
+    - os: osx
+      compiler: clang
+      script:
+        - cmake -DCMAKE_INSTALL_PREFIX=~/.local .
+        - make install -j2
+        - ctest -j2 --output-on-failure --timeout 500
+    - os: linux
+      compiler: x86_64-w64-mingw32-g++
+      script:
+        - cmake -DCMAKE_TOOLCHAIN_FILE=build/mingw_cross_toolchain.cmake -DCMAKE_INSTALL_PREFIX=~/.local -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/wine-development .
+        - make install -j2
+        - cp -v /usr/lib/gcc/x86_64-w64-mingw32/5.3-posix/*.dll /usr/x86_64-w64-mingw32/lib/*.dll .
+        - ctest -j2 --output-on-failure --timeout 500
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-x86-64
+            - gcc-mingw-w64-x86-64
+            - binutils-mingw-w64-x86-64
+            - cmake
+            - make
+            - wine-development

@@ -1,0 +1,17 @@
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      VS_GEN: Visual Studio 14 2015
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      VS_GEN: Visual Studio 15 2017 Win64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      VS_GEN: Visual Studio 16 2019
+
+install:
+  - cinstall: python
+build_script:
+  - echo Running cmake...
+  - cmake -G "%VS_GEN%" -DCMAKE_SUPPRESS_REGENERATION=1 .
+  - set MSBuildLogger="C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - cmake --build . --config Release -- /v:m /logger:%MSBuildLogger%
+  - ctest -C Release --output-on-failure --timeout 500 -E parallel_for
