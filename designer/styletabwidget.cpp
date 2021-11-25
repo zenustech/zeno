@@ -55,7 +55,7 @@ void StyleTabWidget::onNewTab()
 {
     auto pView = new NodesView;
     addTab(pView, "node");
-    pView->initSkin("C:/editor/uirender/node-empty.xml");
+    pView->initSkin(":/templates/node-empty.xml");
     pView->initNode();
 
     emit tabviewActivated(pView->scene()->model());

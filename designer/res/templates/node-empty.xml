@@ -1,0 +1,17 @@
+<node>
+	<header>
+		<component id="name" x="114" y="83" w="120" h="36"/>
+		<component id="status" x="140" y="140" w="174" h="178"/>
+		<component id="control" x="121" y="230" w="100" h="24"/>
+		<component id="display" x="313" y="20" w="205" h="210"/>
+		<component id="backboard" x="121" y="121" w="396" h="109"/>
+	</header>
+	<body>
+		<component id="topleftsocket" x="121" y="379" w="160" h="50"/>
+		<component id="bottomleftsocket" x="121" y="410" w="160" h="50"/>
+		<component id="toprightsocket" x="490" y="379" w="160" h="50"/>
+		<component id="bottomrightsocket" x="490" y="410" w="160" h="50"/>
+		<component id="backboard" x="121" y="230" w="396" h="297"/>
+		<component id="parameters" x="121" y="150" w="396" h="120"/>
+	</body>
+</node>

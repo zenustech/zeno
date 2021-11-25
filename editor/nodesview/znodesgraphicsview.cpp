@@ -23,6 +23,5 @@ ZNodesGraphicsView::ZNodesGraphicsView(QWidget* parent)
 
 void ZNodesGraphicsView::initNodes()
 {
-    QDMGraphicsNode* node = m_scene->addNode();
-    node->initByName("ForBegin");
+    m_scene->addNode(new QDMGraphicsNode);
 }

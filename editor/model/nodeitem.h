@@ -3,6 +3,8 @@
 
 #include <QString>
 #include <QRectF>
+#include <vector>
+#include <QtWidgets>
 
 struct SocketItem
 {
