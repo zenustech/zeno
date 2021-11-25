@@ -409,7 +409,16 @@ class QDMGraphicsView(QGraphicsView):
     def initShortcuts(self):
         self.msgNumericOperator = QShortcut(QKeySequence(Qt.Key_O), self)
         self.msgNumericOperator.activated.connect(lambda: self.opNumericOperator())
+
+        self.msgView = QShortcut(QKeySequence(Qt.Key_D), self)
+        self.msgView.activated.connect(lambda: self.opView())
     
+    def opView(self):
+        itemList = self.scene().selectedItems()
+        for n in itemList:
+            if isinstance(n, QDMGraphicsNode):
+                n.options['VIEW'].setChecked(not n.options['VIEW'].checked)
+
     def opNumericOperator(self):
         if self._last_mouse_move_pos:
             self.lastContextMenuPos = self.mapToScene(self._last_mouse_move_pos)
