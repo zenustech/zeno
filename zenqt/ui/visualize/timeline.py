@@ -148,7 +148,7 @@ class TimelineWidget(QWidget):
         self.initShortcuts()
 
     def initShortcuts(self):
-        self.msgPlay = QShortcut(QKeySequence(Qt.Key_S), self)
+        self.msgPlay = QShortcut(QKeySequence(Qt.Key_Space), self)
         self.msgPlay.activated.connect(lambda: self.player.change())
         self.msgRun = QShortcut(QKeySequence(Qt.Key_A), self)
         self.msgRun.activated.connect(self.on_execute)
