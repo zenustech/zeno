@@ -44,7 +44,7 @@ default: run
 
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
-	cmake --build build --parallel 24
+	cmake --build build --parallel 8
 
 run: all
 	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt
