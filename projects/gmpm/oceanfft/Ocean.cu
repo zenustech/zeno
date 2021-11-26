@@ -500,6 +500,27 @@ inline float bilerp(float const &v00, float const &v01, float const &v10, float 
 {
     return lerp(lerp(v00, v01, x), lerp(v10, v11, x), y);
 }
+inline float periodicInterp(float2* buffer, int size, float u, float v, float h, float L)
+{
+    float uu = std::fmod(std::fmod(u, L) + L, L);
+    float vv = std::fmod(std::fmod(v, L) + L, L);
+    uu = uu/h;
+    vv = vv/h;
+    int tu = (int)uu;
+    int tv = (int)vv;
+    float cx = uu - tu;
+    float cy = vv - tv;
+    int i00 = tv * size + tu;
+    int i01 = tv * size + (tu + 1)%size;
+    int i10 = ((tv + 1)%(size)) * size + tu;
+    int i11 = ((tv + 1)%(size)) * size + (tu + 1)%(size);
+    float h00 = buffer[i00].x;
+    float h01 = buffer[i01].x;
+    float h10 = buffer[i10].x;
+    float h11 = buffer[i11].x;
+    return bilerp(h00, h01, h10, h11, cx, cy);
+
+}
 struct OceanCompute : zeno::INode {
     void apply() override{
 
@@ -536,43 +557,52 @@ struct OceanCompute : zeno::INode {
     auto grid = std::make_shared<zeno::PrimitiveObject>(*ingrid);
     auto &inpos = ingrid->verts;
     auto &pos = grid->attr<vec3f>("pos");
-    auto &vel = grid->add_attr<vec3f>("vel");
+    auto &Dpos = grid->add_attr<vec3f>("Dpos");
+    auto &mapx = grid->add_attr<vec3f>("mapx");
+    auto &repos = grid->add_attr<vec3f>("RemappedPos");
     grid->resize(ingrid->size());
     float h = CalOcean->L_scale * (float)CalOcean->patchSize / (float)(CalOcean->meshSize);
     float L = CalOcean->L_scale * (float)CalOcean->patchSize;
 #pragma omp parallel for
     for(size_t i = 0; i<pos.size(); i++)
     {
+        zeno::vec3f opos = pos[i];
         float u = pos[i][0]+0.5*L, v = pos[i][2]+0.5*L;
-        float uu = std::fmod(std::fmod(u, L) + L, L);
-        float vv = std::fmod(std::fmod(v, L) + L, L);
-        uu = uu/h;
-        vv = vv/h;
-        int tu = (int)uu;
-        int tv = (int)vv;
-        float cx = uu - tu;
-        float cy = vv - tv;
-        int i00 = tv * CalOcean->meshSize + tu;
-        int i01 = tv * CalOcean->meshSize + (tu + 1)%CalOcean->meshSize;
-        int i10 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + tu;
-        int i11 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + (tu + 1)%(CalOcean->meshSize);
-        float h00 = CalOcean->g_hhptr[i00].x;
-        float h01 = CalOcean->g_hhptr[i01].x;
-        float h10 = CalOcean->g_hhptr[i10].x;
-        float h11 = CalOcean->g_hhptr[i11].x;
-        float Dx00 = CalOcean->g_hDx[i00].x;
-        float Dx01 = CalOcean->g_hDx[i01].x;
-        float Dx10 = CalOcean->g_hDx[i10].x;
-        float Dx11 = CalOcean->g_hDx[i11].x;
-        float Dz00 = CalOcean->g_hDz[i00].x;
-        float Dz01 = CalOcean->g_hDz[i01].x;
-        float Dz10 = CalOcean->g_hDz[i10].x;
-        float Dz11 = CalOcean->g_hDz[i11].x;
-        float h = bilerp(h00, h01, h10, h11, cx, cy);
-        float Dx = bilerp(Dx00, Dx01, Dx10, Dx11, cx, cy);
-        float Dz = bilerp(Dz00, Dz01, Dz10, Dz11, cx, cy);
-        vel[i] = CalOcean->L_scale * zeno::vec3f(-CalOcean->choppyness*Dx, h, -CalOcean->choppyness*Dz);
-        pos[i] = inpos[i] + vel[i];
+        // float uu = std::fmod(std::fmod(u, L) + L, L);
+        // float vv = std::fmod(std::fmod(v, L) + L, L);
+        // uu = uu/h;
+        // vv = vv/h;
+        // int tu = (int)uu;
+        // int tv = (int)vv;
+        // float cx = uu - tu;
+        // float cy = vv - tv;
+        // int i00 = tv * CalOcean->meshSize + tu;
+        // int i01 = tv * CalOcean->meshSize + (tu + 1)%CalOcean->meshSize;
+        // int i10 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + tu;
+        // int i11 = ((tv + 1)%(CalOcean->meshSize)) * CalOcean->meshSize + (tu + 1)%(CalOcean->meshSize);
+        // float h00 = CalOcean->g_hhptr[i00].x;
+        // float h01 = CalOcean->g_hhptr[i01].x;
+        // float h10 = CalOcean->g_hhptr[i10].x;
+        // float h11 = CalOcean->g_hhptr[i11].x;
+        // float Dx00 = CalOcean->g_hDx[i00].x;
+        // float Dx01 = CalOcean->g_hDx[i01].x;
+        // float Dx10 = CalOcean->g_hDx[i10].x;
+        // float Dx11 = CalOcean->g_hDx[i11].x;
+        // float Dz00 = CalOcean->g_hDz[i00].x;
+        // float Dz01 = CalOcean->g_hDz[i01].x;
+        // float Dz10 = CalOcean->g_hDz[i10].x;
+        // float Dz11 = CalOcean->g_hDz[i11].x;
+        // float h = bilerp(h00, h01, h10, h11, cx, cy);
+        // float Dx = bilerp(Dx00, Dx01, Dx10, Dx11, cx, cy);
+        // float Dz = bilerp(Dz00, Dz01, Dz10, Dz11, cx, cy);
+        float hh  = periodicInterp(CalOcean->g_hhptr, CalOcean->meshSize, u, v, h, L);
+        float Dx = periodicInterp(CalOcean->g_hDx, CalOcean->meshSize, u, v, h, L);
+        float Dz = periodicInterp(CalOcean->g_hDz, CalOcean->meshSize, u, v, h, L);
+        Dpos[i] = CalOcean->L_scale * zeno::vec3f(-CalOcean->choppyness*Dx, hh, -CalOcean->choppyness*Dz);
+        pos[i] = inpos[i] + Dpos[i];
+        mapx[i] = opos - vec3f(Dpos[i][0], 0, Dpos[i][2]);
+        float h2 = CalOcean->L_scale * periodicInterp(CalOcean->g_hhptr, CalOcean->meshSize, mapx[i][0]+0.5*L, mapx[i][2]+0.5*L, h, L);
+        repos[i] = zeno::vec3f(opos[0], h2, opos[2]);
     }
 
 //    auto grid = std::make_shared<zeno::PrimitiveObject>();
