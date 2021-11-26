@@ -68,6 +68,7 @@ void look_perspective(
   };
   grid_blend = ratio_clamp(level - std::floor(level), 0.8, 1.0);
   center = glm::vec3(0, 0, 0);
+  radius = 5.0;
   gizmo_view = glm::lookAt(center - back, center, up);
   gizmo_proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
                       -100.0, 100.0);
