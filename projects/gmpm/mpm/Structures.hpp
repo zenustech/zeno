@@ -92,22 +92,56 @@ struct ZenoSparseLevelSet : IObject {
   spls_t ls;
 };
 
-struct ZenoBoundary : IObject {
-  using boundary_t =
-      zs::variant<zs::LevelSetBoundary<zs::SparseLevelSet<3>>,
-                  zs::Collider<zs::AnalyticLevelSet<
-                      zs::analytic_geometry_e::Plane, float, 3>>>;
-  enum category_e { LevelSet, Plane };
+struct ZenoLevelSet : IObject {
+  using spls_t = zs::SparseLevelSet<3>;
+  using plane_t =
+      zs::AnalyticLevelSet<zs::analytic_geometry_e::Plane, float, 3>;
+  using cuboid_t =
+      zs::AnalyticLevelSet<zs::analytic_geometry_e::Cuboid, float, 3>;
+  using sphere_t =
+      zs::AnalyticLevelSet<zs::analytic_geometry_e::Sphere, float, 3>;
+  using levelset_t = zs::variant<spls_t, plane_t, cuboid_t, sphere_t>;
+  enum category_e { LevelSet, Plane, Cuboid, Sphere };
 
-  auto &getBoundary() noexcept { return boundary; }
-  const auto &getBoundary() const noexcept { return boundary; }
-  template <category_e I> auto &getBoundary() noexcept {
-    return std::get<I>(boundary);
+  auto &getLevelSet() noexcept { return levelset; }
+  const auto &getLevelSet() const noexcept { return levelset; }
+  template <category_e I> auto &getLevelSet() noexcept {
+    return std::get<I>(levelset);
   }
-  template <category_e I> const auto &getBoundary() const noexcept {
-    return std::get<I>(boundary);
+  template <category_e I> const auto &getLevelSet() const noexcept {
+    return std::get<I>(levelset);
   }
-  boundary_t boundary;
+  levelset_t levelset;
+};
+
+struct ZenoBoundary : IObject {
+  using spls_t = typename ZenoLevelSet::spls_t;
+  using plane_t = typename ZenoLevelSet::plane_t;
+  using cuboid_t = typename ZenoLevelSet::cuboid_t;
+  using sphere_t = typename ZenoLevelSet::sphere_t;
+  using levelset_t = typename ZenoLevelSet::levelset_t;
+  using category_e = typename ZenoLevelSet::category_e;
+
+  auto &getLevelSet() noexcept { return *levelset; }
+  const auto &getLevelSet() const noexcept { return *levelset; }
+  template <category_e I> auto &getLevelSet() noexcept {
+    return std::get<I>(getLevelSet());
+  }
+  template <category_e I> const auto &getLevelSet() const noexcept {
+    return std::get<I>(getLevelSet());
+  }
+
+  levelset_t *levelset{nullptr};
+  zs::collider_e type{zs::collider_e::Sticky};
+  /** scale **/
+  float s{1};
+  float dsdt{0};
+  /** rotation **/
+  zs::Rotation<float, 3> R{zs::Rotation<float, 3>::identity()};
+  zs::AngularVelocity<float, 3> omega{};
+  /** translation **/
+  zs::vec<float, 3> b{zs::vec<float, 3>::zeros()};
+  zs::vec<float, 3> dbdt{zs::vec<float, 3>::zeros()};
 };
 
 } // namespace zeno
