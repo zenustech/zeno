@@ -71,11 +71,16 @@ endif()
 
 message(STATUS "Building Zeno Core Library")
 add_subdirectory(core)
-add_subdirectory(zenoui)
+
+
+if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
+    message(STATUS "Building Zeno UI Library")
+    add_subdirectory(3rdparty/qtmod/KDDockWidgets)
+    add_subdirectory(zenoui)
+endif()
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
-    add_subdirectory(3rdparty/qtmod/KDDockWidgets)
     add_subdirectory(editor)
 endif()
 
