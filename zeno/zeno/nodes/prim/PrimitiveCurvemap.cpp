@@ -79,9 +79,48 @@ namespace zeno {
         float input_max;
         float output_min;
         float output_max;
+
+        // correctness modify: make bezier to be function
+        std::vector<std::tuple<vec2f, vec2f>> correct_handlers() {
+            std::vector<std::tuple<vec2f, vec2f>> _handlers = handlers;
+            for (int i = 0; i < points.size(); i++) {
+                vec2f cur_p = points[i];
+                if (i != 0) {
+                    vec2f hp = std::get<0>(handlers[i]);
+                    vec2f prev_p = points[i-1];
+                    if (std::abs(hp[0]) > std::abs(cur_p[0] - prev_p[0])) {
+                        float s = std::abs(cur_p[0] - prev_p[0]) / std::abs(hp[0]);
+                        handlers[i] = std::make_tuple(hp * s, std::get<1>(handlers[i]));
+                    }
+
+                }
+                if (i != points.size() - 1) {
+                    vec2f hn = std::get<1>(handlers[i]);
+                    vec2f next_p = points[i+1];
+                    if (std::abs(hn[0]) > std::abs(cur_p[0] - next_p[0])) {
+                        float s = std::abs(cur_p[0] - next_p[0]) / std::abs(hn[0]);
+                        handlers[i] = std::make_tuple(std::get<0>(handlers[i]), hn * s);
+                    }
+                }
+            }
+            return _handlers;
+        }
+
+        std::vector<std::tuple<vec2f, vec2f>> handersToPoints(std::vector<std::tuple<vec2f, vec2f>> _handlers) {
+            std::vector<std::tuple<vec2f, vec2f>> ps;
+            for (int i = 0; i < points.size(); i++) {
+                ps.emplace_back(
+                    points[i] + std::get<0>(_handlers[i]),
+                    points[i] + std::get<1>(_handlers[i])
+                );
+            }
+            return ps;
+        }
+
         float eval(float x) {
             x = ratio(input_min, input_max, x);
-            float y = eval_value(points, handlers, x);
+            auto _handlers = handersToPoints(correct_handlers());
+            float y = eval_value(points, _handlers, x);
             return lerp(output_min, output_max, y);
         }
     };
