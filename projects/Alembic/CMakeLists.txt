@@ -20,6 +20,4 @@ endif()
 target_include_directories(zeno_Alembic PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(zeno_Alembic PRIVATE Alembic::Alembic)
-if (UNIX)
-    target_link_libraries(zeno_Alembic PRIVATE pthread)
-endif()
+target_link_libraries(zeno_Alembic PRIVATE zeno)

@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
+#include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
@@ -14,7 +15,7 @@ static void traverseABC(Alembic::AbcGeom::IObject &obj)
     log_info("found {} children", nch);
 
     for (size_t i = 0; i < nch; i++) {
-        decltype(auto) name = obj.getChildHandler(i).getName();
+        decltype(auto) name = obj.getChildHeader(i).getName();
         log_info("at {} name: [{}]", i, name);
 
         Alembic::AbcGeom::IObject child(obj, name);
@@ -41,15 +42,16 @@ static void readABC(std::string const &path) {
     traverseABC(obj);
 }
 
-struct ReadAlembic {
+struct ReadAlembic : zeno::INode {
     virtual void apply() override {
-        readABC("/tmp/a.obj");
+        auto path = get_input<StringObject>("path")->get();
+        readABC(path);
     }
 };
 
 ZENDEFNODE(ReadAlembic, {
     {{"string", "path"}},
-    {{"PrimitiveObject", "prim"},
+    {{"PrimitiveObject", "prim"}},
     {},
     {"alembic"},
 });
