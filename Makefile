@@ -2,7 +2,7 @@
 #O=b.zsg
 #O=c.zsg
 #O=d.zsg
-O=i.zsg
+O=arts/alembicRubbertoy.zsg
 #O=arts/testspray.zsg
 #O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
 #O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
