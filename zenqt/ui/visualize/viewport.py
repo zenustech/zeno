@@ -12,6 +12,9 @@ from . import zenvis
 from .dialog import RecordVideoDialog
 from .camera_keyframe import CameraKeyframeWidget
 
+from ..utils import asset_path
+from ..editor import locale
+
 
 class CameraControl:
     '''
@@ -27,6 +30,12 @@ class CameraControl:
         self.fov = 45.0
         self.radius = 5.0
         self.res = (1, 1)
+
+        self.update_perspective()
+
+    def reset(self):
+        self.center = (0.0, 0.0, 0.0)
+        self.radius = 5.0
 
         self.update_perspective()
 
@@ -187,6 +196,21 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Camera Keyframe', self)
         self.addAction(action)
 
+        self.addSeparator()
+
+        action = QAction('Use English', self)
+        action.setCheckable(True)
+        with open(asset_path('language.txt')) as f:
+            lang = f.read()
+            action.setChecked(lang == 'en')
+        self.addAction(action)
+
+        self.addSeparator()
+
+        action = QAction('Reset Camera', self)
+        action.setShortcut(QKeySequence('Shift+C'))
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -266,6 +290,15 @@ class DisplayWidget(QWidget):
 
         elif name == 'Camera Keyframe':
             self.camera_keyframe_widget.show()
+
+        elif name == 'Use English':
+            checked = act.isChecked()
+            with open(asset_path('language.txt'), 'w') as f:
+                f.write('en' if checked else 'zh-cn')
+            QMessageBox.information(None, 'Zeno', 'Language switched! Please reboot zeno!')
+
+        elif name == 'Reset Camera':
+            self.view.camera.reset()
 
     def get_output_path(self, extname):
         dir_path = 'outputs'

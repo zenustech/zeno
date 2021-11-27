@@ -16,7 +16,7 @@ static inline float frand(unsigned int i) {
     return (float)value / (float)4294967296;
 }
 static inline struct MakeZhxxHappyRandomTable {
-    float operator[](unsigned int i) { return frand(i); }
+    float operator[](unsigned int i) { return frand(i)-0.5; }
 } randomTable;
 
 struct FLIP_vdb {

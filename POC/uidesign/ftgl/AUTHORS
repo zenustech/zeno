@@ -1,0 +1,42 @@
+						-*- coding: utf-8 -*-
+Maintainers:
+
+   Sam Hocevar <sam@hocevar.net>
+   Christopher Sean Morrison <learner@brlcad.org>
+
+Original author:
+
+   Henry Maddocks <ftgl@opengl.geek.nz>
+   http://homepages.paradise.net.nz/henryj/
+
+Contributors:
+
+   Jed Soane (Bezier curve code)
+   Gérard Lanois (demo, Linux port, extrusion code, gltt maintainance)
+   Matthias Kretz (Linux port)
+   Andrew Ellerton (Windows port)
+   Max Rheiner (Windows port)
+   Sébastien Barré (containers and optimisations)
+   Marcelo E. Magallon <mmagallo@debian.org> (original autoconf, bug fixes)
+   Robert Bell (pixmap font modifications)
+   Éric Beets <ericbeets@free.fr> (C bindings)
+   Jeff Myers (JeffM2501) <JeffM2501@users.sourceforge.net> (Windows fixes)
+   Daniel Remenak <dtremenak@users.sourceforge.net> (Windows fixes)
+   Coleman Kane (build system fixes)
+   Charles Huet <packadal@gmail.com>
+
+Portions derived from ConvertUTF.c Copyright (C) 2001-2004 Unicode, Inc.
+
+Bug fixes:
+
+   Robert Osfield
+   Markku Rontu
+   Mark A. Fox
+   Patrick Rogers
+   Kai Huettemann
+   Tobias Gunkel
+   Bill Robinson
+
+FTGL was inspired by gltt, Copyright (C) 1998-1999 Stephane Rehel
+(http://gltt.sourceforge.net)
+

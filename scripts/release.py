@@ -13,6 +13,7 @@ args = [
 	'--clean',
 	'--with-openvdb',
 	'--with-bullet',
+	'--with-cgal',
 ]
 
 subprocess.check_call(['git', 'pull'])

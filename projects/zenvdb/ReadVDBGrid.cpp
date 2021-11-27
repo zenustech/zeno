@@ -15,18 +15,23 @@ extern std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn);
 static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {
     if (type == "") {
+      std::cout << "vdb read generic data" << std::endl;
       return readGenericVDBGrid(path);
     }
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
       data = zeno::IObject::make<VDBFloatGrid>();
     } else if (type == "float3") {
+      std::cout << "vdb read float3 data" << std::endl;
       data = zeno::IObject::make<VDBFloat3Grid>();
     } else if (type == "int") {
+      std::cout << "vdb read int data" << std::endl;
       data = zeno::IObject::make<VDBIntGrid>();
     } else if (type == "int3") {
+      std::cout << "vdb read int3 data" << std::endl;
       data = zeno::IObject::make<VDBInt3Grid>();
     } else if (type == "points") {
+      std::cout << "vdb read points data" << std::endl;
       data = zeno::IObject::make<VDBPointsGrid>();
     } else {
       printf("%s\n", type.c_str());

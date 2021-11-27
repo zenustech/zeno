@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <spdlog/details/log_msg_buffer.h>
-#include <spdlog/details/circular_q.h>
+#include "spdlog/details/log_msg_buffer.h"
+#include "spdlog/details/circular_q.h"
 
 #include <atomic>
 #include <mutex>
@@ -15,7 +15,7 @@
 
 namespace spdlog {
 namespace details {
-class SPDLOG_API backtracer
+class backtracer
 {
     mutable std::mutex mutex_;
     std::atomic<bool> enabled_{false};
@@ -31,6 +31,7 @@ public:
     void enable(size_t size);
     void disable();
     bool enabled() const;
+    explicit operator bool() const;
     void push_back(const log_msg &msg);
 
     // pop all items in the q and apply the given fun on each of them.
@@ -41,5 +42,5 @@ public:
 } // namespace spdlog
 
 #ifdef SPDLOG_HEADER_ONLY
-#    include "backtracer-inl.h"
+#include "backtracer-inl.h"
 #endif

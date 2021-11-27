@@ -21,11 +21,11 @@ TEST_CASE("basic_logging ", "[basic_logging]")
 {
     // const char
     REQUIRE(log_info("Hello") == "Hello");
-    REQUIRE(log_info("").empty());
+    REQUIRE(log_info("") == "");
 
     // std::string
     REQUIRE(log_info(std::string("Hello")) == "Hello");
-    REQUIRE(log_info(std::string()).empty());
+    REQUIRE(log_info(std::string()) == std::string());
 
     // Numbers
     REQUIRE(log_info(5) == "5");
@@ -37,8 +37,8 @@ TEST_CASE("basic_logging ", "[basic_logging]")
 
 TEST_CASE("log_levels", "[log_levels]")
 {
-    REQUIRE(log_info("Hello", spdlog::level::err).empty());
-    REQUIRE(log_info("Hello", spdlog::level::critical).empty());
+    REQUIRE(log_info("Hello", spdlog::level::err) == "");
+    REQUIRE(log_info("Hello", spdlog::level::critical) == "");
     REQUIRE(log_info("Hello", spdlog::level::info) == "Hello");
     REQUIRE(log_info("Hello", spdlog::level::debug) == "Hello");
     REQUIRE(log_info("Hello", spdlog::level::trace) == "Hello");
@@ -72,7 +72,6 @@ TEST_CASE("to_level_enum", "[convert_to_level_enum]")
     REQUIRE(spdlog::level::from_str("debug") == spdlog::level::debug);
     REQUIRE(spdlog::level::from_str("info") == spdlog::level::info);
     REQUIRE(spdlog::level::from_str("warning") == spdlog::level::warn);
-    REQUIRE(spdlog::level::from_str("warn") == spdlog::level::warn);
     REQUIRE(spdlog::level::from_str("error") == spdlog::level::err);
     REQUIRE(spdlog::level::from_str("critical") == spdlog::level::critical);
     REQUIRE(spdlog::level::from_str("off") == spdlog::level::off);
@@ -81,9 +80,11 @@ TEST_CASE("to_level_enum", "[convert_to_level_enum]")
 
 TEST_CASE("periodic flush", "[periodic_flush]")
 {
-    using spdlog::sinks::test_sink_mt;
-    auto logger = spdlog::create<test_sink_mt>("periodic_flush");
-    auto test_sink = std::static_pointer_cast<test_sink_mt>(logger->sinks()[0]);
+    using namespace spdlog;
+
+    auto logger = spdlog::create<sinks::test_sink_mt>("periodic_flush");
+
+    auto test_sink = std::static_pointer_cast<sinks::test_sink_mt>(logger->sinks()[0]);
 
     spdlog::flush_every(std::chrono::seconds(1));
     std::this_thread::sleep_for(std::chrono::milliseconds(1250));
@@ -94,8 +95,8 @@ TEST_CASE("periodic flush", "[periodic_flush]")
 
 TEST_CASE("clone-logger", "[clone]")
 {
-    using spdlog::sinks::test_sink_mt;
-    auto test_sink = std::make_shared<test_sink_mt>();
+    using namespace spdlog;
+    auto test_sink = std::make_shared<sinks::test_sink_mt>();
     auto logger = std::make_shared<spdlog::logger>("orig", test_sink);
     logger->set_pattern("%v");
     auto cloned = logger->clone("clone");
@@ -116,9 +117,10 @@ TEST_CASE("clone-logger", "[clone]")
 
 TEST_CASE("clone async", "[clone]")
 {
-    using spdlog::sinks::test_sink_st;
+    using namespace spdlog;
+
     spdlog::init_thread_pool(4, 1);
-    auto test_sink = std::make_shared<test_sink_st>();
+    auto test_sink = std::make_shared<sinks::test_sink_st>();
     auto logger = std::make_shared<spdlog::async_logger>("orig", test_sink, spdlog::thread_pool());
     logger->set_pattern("%v");
     auto cloned = logger->clone("clone");
@@ -177,57 +179,6 @@ TEST_CASE("to_hex_no_delimiter", "[to_hex]")
 
     auto output = oss.str();
     REQUIRE(ends_with(output, "0000: 090A0B0CFFFF" + std::string(spdlog::details::os::default_eol)));
-}
-
-TEST_CASE("to_hex_show_ascii", "[to_hex]")
-{
-    std::ostringstream oss;
-    auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-    spdlog::logger oss_logger("oss", oss_sink);
-
-    std::vector<unsigned char> v{9, 0xa, 0xb, 0x41, 0xc, 0x4b, 0xff, 0xff};
-    oss_logger.info("{:Xsa}", spdlog::to_hex(v, 8));
-
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4BFFFF  ...A.K.." + std::string(spdlog::details::os::default_eol)));
-}
-
-TEST_CASE("to_hex_different_size_per_line", "[to_hex]")
-{
-    std::ostringstream oss;
-    auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-    spdlog::logger oss_logger("oss", oss_sink);
-
-    std::vector<unsigned char> v{9, 0xa, 0xb, 0x41, 0xc, 0x4b, 0xff, 0xff};
-
-    oss_logger.info("{:Xsa}", spdlog::to_hex(v, 10));
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4BFFFF  ...A.K.." + std::string(spdlog::details::os::default_eol)));
-
-    oss_logger.info("{:Xs}", spdlog::to_hex(v, 10));
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4BFFFF" + std::string(spdlog::details::os::default_eol)));
-
-    oss_logger.info("{:Xsa}", spdlog::to_hex(v, 6));
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4B  ...A.K" + std::string(spdlog::details::os::default_eol) + "0006: FFFF          .." +
-                                     std::string(spdlog::details::os::default_eol)));
-
-    oss_logger.info("{:Xs}", spdlog::to_hex(v, 6));
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4B" + std::string(spdlog::details::os::default_eol) + "0006: FFFF" +
-                                     std::string(spdlog::details::os::default_eol)));
-}
-
-TEST_CASE("to_hex_no_ascii", "[to_hex]")
-{
-    std::ostringstream oss;
-    auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-    spdlog::logger oss_logger("oss", oss_sink);
-
-    std::vector<unsigned char> v{9, 0xa, 0xb, 0x41, 0xc, 0x4b, 0xff, 0xff};
-    oss_logger.info("{:Xs}", spdlog::to_hex(v, 8));
-
-    REQUIRE(ends_with(oss.str(), "0000: 090A0B410C4BFFFF" + std::string(spdlog::details::os::default_eol)));
-
-    oss_logger.info("{:Xsna}", spdlog::to_hex(v, 8));
-
-    REQUIRE(ends_with(oss.str(), "090A0B410C4BFFFF" + std::string(spdlog::details::os::default_eol)));
 }
 
 TEST_CASE("default logger API", "[default logger]")

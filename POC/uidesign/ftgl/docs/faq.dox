@@ -1,0 +1,55 @@
+/** \page ftgl-faq Frequently Asked Questions
+
+ \section faq FAQ
+
+ \subsection faq1 When I try to compile %FTGL it complains about a missing file from the include: #include <ft2build.h>
+
+ %FTGL relies on FreeType 2 for opening and decoding font files. This include
+ is the main include for FreeType. You will need to download Freetype 2 and
+ install it. Then make sure that the %FTGL project that you are using points to
+ your FreeType installation.
+
+ \subsection faq2 Is it possible to map a font to a "unit" size? My application relies on the fonts being a certain "physical" height (in OpenGL coordinate space) rather than a point size in display space. Any thoughts/suggestions?
+
+ We can do anything:) It would be easy to allow you to set the size in pixels,
+ though I'm not sure this is what you want. Setting the size to 'OpenGL units'
+ may be a bit harder. What does 1.0 in opengl space mean and how does that
+ relate to point size? For one person it might mean scaling the font up, for
+ someone else it may mean scaling down. Plus bitmaps and pixmaps have a pixel
+ to pixel relationship that you can't change.
+
+ Here's some guidelines for vector and texture fonts. Take note that I say
+ 'should' a lot :)
+
+ - One point in pixel space maps to 1 unit in OpenGL space, so a glyph that is
+ 18 points high should be 18.0 units high.
+
+ - If you set an ortho projection to the window size and draw a glyph it's
+ screen size should be the correct physical size ie a 72 point glyph on a 72dpi
+ screen will be 1 inch high. Also if you set a perspective projection that maps
+ 0.0 in the z axis to screen size you will get the same eg.
+ \code
+gluPerspective(90, window_height / 2 , small_number, large_number);
+ \endcode
+ So basically it all depends on your projection matrix. Obviously you can use
+ glScale but I understand if you don't want to.
+
+ Couple of extra things to note:
+
+ - The quality of vector glyphs will not change when you change the size, ie.
+ a really small polygon glyph up close will look exactly the same as a big one
+ from far away. They both contain the same amount of data. This doesn't apply
+ to texture fonts.
+
+ - Secondly, there is a bug in the advance/kerning code that will cause
+ ugliness at really small point sizes. This is because the advance and kerning
+ use ints so an advance of 0.4 will become zero. If this is going to be a
+ probelm, I can fix this.
+
+ Early on I did a lot of head scratching over the OpenGL unit to font size
+ thing because when I was first integrating %FTGL into my engine the fonts
+ weren't the size I was expecting. I was tempted to build in some scaling but I
+ decided doing nothing was the best approach because you can't please everyone.
+ Plus it's 'correct' as it is.
+
+*/

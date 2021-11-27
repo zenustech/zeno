@@ -4,10 +4,9 @@
 #pragma once
 
 #include "dist_sink.h"
-#include <spdlog/details/null_mutex.h>
-#include <spdlog/details/log_msg.h>
+#include "spdlog/details/null_mutex.h"
+#include "spdlog/details/log_msg.h"
 
-#include <cstdio>
 #include <mutex>
 #include <string>
 #include <chrono>
@@ -17,7 +16,7 @@
 //
 // Example:
 //
-//     #include <spdlog/sinks/dup_filter_sink.h>
+//     #include "spdlog/sinks/dup_filter_sink.h"
 //
 //     int main() {
 //         auto dup_filter = std::make_shared<dup_filter_sink_st>(std::chrono::seconds(5));
@@ -33,6 +32,10 @@
 //       [2019-06-25 17:50:56.511] [logger] [info] Hello
 //       [2019-06-25 17:50:56.512] [logger] [info] Skipped 3 duplicate messages..
 //       [2019-06-25 17:50:56.512] [logger] [info] Different Hello
+
+#ifdef SPDLOG_NO_DATETIME
+#error "spdlog::sinks::dup_filter_sink: cannot work when SPDLOG_NO_DATETIME is defined"
+#endif
 
 namespace spdlog {
 namespace sinks {
@@ -63,13 +66,10 @@ protected:
         // log the "skipped.." message
         if (skip_counter_ > 0)
         {
-            char buf[64];
-            auto msg_size = ::snprintf(buf, sizeof(buf), "Skipped %u duplicate messages..", static_cast<unsigned>(skip_counter_));
-            if (msg_size > 0 && static_cast<size_t>(msg_size) < sizeof(buf))
-            {
-                details::log_msg skipped_msg{msg.logger_name, level::info, string_view_t{buf, static_cast<size_t>(msg_size)}};
-                dist_sink<Mutex>::sink_it_(skipped_msg);
-            }
+            memory_buf_t buf;
+            fmt::format_to(buf, "Skipped {} duplicate messages..", skip_counter_);
+            details::log_msg skipped_msg{msg.logger_name, msg.level, string_view_t{buf.data(), buf.size()}};
+            dist_sink<Mutex>::sink_it_(skipped_msg);
         }
 
         // log current message

@@ -4,11 +4,11 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#    include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 #endif
 
-#include <spdlog/common.h>
-#include <spdlog/pattern_formatter.h>
+#include "spdlog/common.h"
+#include "spdlog/details/pattern_formatter.h"
 
 namespace spdlog {
 
@@ -45,16 +45,6 @@ SPDLOG_INLINE void disable_backtrace()
 SPDLOG_INLINE void dump_backtrace()
 {
     default_logger_raw()->dump_backtrace();
-}
-
-SPDLOG_INLINE level::level_enum get_level()
-{
-    return default_logger_raw()->level();
-}
-
-SPDLOG_INLINE bool should_log(level::level_enum log_level)
-{
-    return default_logger_raw()->should_log(log_level);
 }
 
 SPDLOG_INLINE void set_level(level::level_enum log_level)
@@ -102,9 +92,9 @@ SPDLOG_INLINE void shutdown()
     details::registry::instance().shutdown();
 }
 
-SPDLOG_INLINE void set_automatic_registration(bool automatic_registration)
+SPDLOG_INLINE void set_automatic_registration(bool automatic_registation)
 {
-    details::registry::instance().set_automatic_registration(automatic_registration);
+    details::registry::instance().set_automatic_registration(automatic_registation);
 }
 
 SPDLOG_INLINE std::shared_ptr<spdlog::logger> default_logger()

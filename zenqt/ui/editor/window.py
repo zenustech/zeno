@@ -80,10 +80,12 @@ class NodeEditor(QWidget):
         self.scenes = {}
         self.descs = {}
         self.cates = {}
+        self.descs_comment = {}
 
         self.initExecute()
         self.initShortcuts()
         self.initDescriptors()
+        self.initDescriptorsComment()
 
         self.newProgram()
 
@@ -224,6 +226,10 @@ class NodeEditor(QWidget):
         })
         self.setDescriptors(descs)
 
+    def initDescriptorsComment(self):
+        with open(asset_path('descs_comment.json'), 'r') as f:
+            self.descs_comment = json.load(f)
+
     def on_add(self):
         pos = QPointF(0, 0)
         self.view.contextMenu(pos)
@@ -240,13 +246,15 @@ class NodeEditor(QWidget):
         views = {}
         for name, scene in self.scenes.items():
             nodes = scene.dumpGraph()
-            view_rect = {
-                'x': scene._scene_rect.x(),
-                'y': scene._scene_rect.y(),
-                'width': scene._scene_rect.width(),
-                'height': scene._scene_rect.height(),
-            }
-            graphs[name] = {'nodes': nodes, 'view_rect': view_rect}
+            graphs[name] = {'nodes': nodes}
+            if scene._scene_rect:
+                graphs[name]['view_rect'] = {
+                    'x': scene._scene_rect.x(),
+                    'y': scene._scene_rect.y(),
+                    'width': scene._scene_rect.width(),
+                    'height': scene._scene_rect.height(),
+                }
+
         prog = {}
         prog['graph'] = graphs
         prog['views'] = views
@@ -277,7 +285,7 @@ class NodeEditor(QWidget):
                     'view_rect': {
                         'scale': 1,
                         'x': 0,
-                        'x': 0,
+                        'y': 0,
                     },
                 }
 

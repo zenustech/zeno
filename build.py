@@ -23,6 +23,8 @@ ap.add_argument('--with-openvdb', action='store_true')
 ap.add_argument('--with-cuda', action='store_true')
 ap.add_argument('--with-bullet', action='store_true')
 ap.add_argument('--with-cgal', action='store_true')
+ap.add_argument('--build-tests', action='store_true')
+ap.add_argument('--build-launcher', action='store_true')
 ap.add_argument('--cmake-args', default='')
 ap.add_argument('--parallel', default='auto')
 
@@ -50,6 +52,16 @@ if ap.parallel:
         build_args.extend(['--parallel', ap.parallel])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
+
+if ap.build_tests:
+    args.extend([
+    '-DZENO_BUILD_TESTS:BOOL=ON',
+    ])
+
+if ap.build_launcher:
+    args.extend([
+    '-DZENO_BUILD_LAUNCHER:BOOL=ON',
+    ])
 
 if ap.with_openvdb:
     args.extend([

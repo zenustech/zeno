@@ -1872,7 +1872,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
       particles->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
       velocity->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
 
   velocity_weights = velocity->deepCopy();
 
@@ -3166,7 +3166,7 @@ void FLIP_vdb::calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
       liquid_sdf->tree(), openvdb::Vec3f{1.0f}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
       face_weight->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   face_weight->setName("Face_Weights");
   face_weight->setTransform(liquid_sdf->transformPtr());
   face_weight->setGridClass(openvdb::GridClass::GRID_STAGGERED);
@@ -3239,7 +3239,7 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
     openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx) {
   openvdb::tools::dilateActiveValues(
       liquid_sdf->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   auto correct_liquid_phi_in_solid = [&](openvdb::FloatTree::LeafNodeType &leaf,
                                          openvdb::Index leafpos) {
     // detech if there is solid
@@ -3721,7 +3721,7 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 
   openvdb::tools::dilateActiveValues(
       voxel_center_solid_normal->tree(), 5,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   voxel_center_solid_normal->setTransform(in_out_points->transformPtr());
   voxel_center_solid_normal->setName("solidnormal");
 

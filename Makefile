@@ -3,8 +3,9 @@
 #O=c.zsg
 #O=d.zsg
 #O=i.zsg
+O=j.zsg
 #O=arts/testspray.zsg
-O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
+#O=arts/testbulletsim.zsg   # BulletTools/stub.cpp
 #O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
 #O=arts/flip.zsg           # FLIPtools/stub.cpp
 

@@ -1,5 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
+#ifdef ZENO_GLOBALSTATE
+#include <zeno/extra/GlobalState.h>
+#endif
 #include <iostream>
 #include <fstream>
 
@@ -74,6 +77,42 @@ ZENDEFNODE(StringEqual, {
     {},
     {"string"},
 });
+
+struct PrintString : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        printf("PrintString: %s\n", str.c_str());
+    }
+};
+
+ZENDEFNODE(PrintString, {
+    {{"string", "str"}},
+    {},
+    {},
+    {"string"},
+});
+
+#ifdef ZENO_GLOBALSTATE
+struct StringFormat : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        for (int i = 0; i < str.size() - 1; i++) {
+            if (str[i] == '$' && str[i + 1] == 'F') {
+                str.replace(i, 2, std::to_string(zeno::state.frameid));
+                break;
+            }
+        }
+        set_output2("str", str);
+    }
+};
+
+ZENDEFNODE(StringFormat, {
+    {{"string", "str"}},
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
+#endif
 
 /*static int objid = 0;
 
