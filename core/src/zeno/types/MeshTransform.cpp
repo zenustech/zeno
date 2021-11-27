@@ -1,7 +1,7 @@
 #include <zeno/types/MeshTransform.h>
 #include <zeno/math/quaternion.h>
 #include <zeno/ztd/variant.h>
-#include <tbb/parallel_for_each.h>
+#include <zeno/zbb/parallel_for_each.h>
 #include <variant>
 
 
@@ -18,7 +18,7 @@ void transformMesh
     auto rotmat = math::quaternion_matrix(rotation);
 
     std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
-        tbb::parallel_for_each(begin(mesh.vert), end(mesh.vert), [&] (auto &vert) {
+        zbb::parallel_for_each(begin(mesh.vert), end(mesh.vert), [&] (auto &vert) {
             if constexpr (has_scaling)
                 vert *= scaling;
             if constexpr (has_rotation)

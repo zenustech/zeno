@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-option(ZENO_WITH_ZPM "Use ZPM to manage Zeno dependencies" ON)
+option(ZENO_WITH_ZPM "Use ZPM to manage Zeno dependencies" OFF)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
@@ -49,7 +49,7 @@ if (ZENO_WITH_ZPM)
     #zpm_requires(3rdparty/pkgs/eigen)
     #zpm_requires(3rdparty/pkgs/zlib)
     #zpm_requires(3rdparty/pkgs/c-blosc -DBUILD_TESTS:BOOL=OFF)
-    zpm_requires(3rdparty/pkgs/tbb -DTBB_BUILD_TESTS:BOOL=OFF -DTBB_BUILD_STATIC:BOOL=OFF)
+    #zpm_requires(3rdparty/pkgs/tbb -DTBB_BUILD_TESTS:BOOL=OFF -DTBB_BUILD_STATIC:BOOL=OFF)
     #zpm_requires(3rdparty/pkgs/openvdb)
     zpm_finalize()
 endif()
