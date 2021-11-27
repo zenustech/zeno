@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
 
-# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-option(ZENO_WITH_ZPM "Use ZPM to manage Zeno dependencies" OFF)
 option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
 option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
 option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
@@ -38,22 +36,6 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message("-- Build type: ${CMAKE_BUILD_TYPE}")
 
-if (ZENO_WITH_ZPM)
-    include(cmake/ZPM.cmake)
-    
-    #zpm_requires(3rdparty/pkgs/fmt -DFMT_DOC:BOOL=OFF -DFMT_TEST:BOOL=OFF)
-    #zpm_requires(3rdparty/pkgs/spdlog -DSPDLOG_FMT_EXTERNAL:BOOL=ON -DSPDLOG_BUILD_EXAMPLE:BOOL=OFF)
-    #zpm_requires(3rdparty/pkgs/range-v3 -DRANGE_V3_DOCS:BOOL=OFF -DRANGE_V3_TESTS:BOOL=OFF -DRANGE_V3_EXAMPLES:BOOL=OFF)
-    #zpm_requires(3rdparty/pkgs/python-cmake-buildsystem)
-    #zpm_requires(3rdparty/pkgs/BoostBuilder)
-    #zpm_requires(3rdparty/pkgs/eigen)
-    #zpm_requires(3rdparty/pkgs/zlib)
-    #zpm_requires(3rdparty/pkgs/c-blosc -DBUILD_TESTS:BOOL=OFF)
-    #zpm_requires(3rdparty/pkgs/tbb -DTBB_BUILD_TESTS:BOOL=OFF -DTBB_BUILD_STATIC:BOOL=OFF)
-    #zpm_requires(3rdparty/pkgs/openvdb)
-    zpm_finalize()
-endif()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -72,6 +54,10 @@ endif()
 message(STATUS "Building Zeno Core Library")
 add_subdirectory(core)
 
+if (ZENO_BUILD_WORKER)
+    message(STATUS "Building Zeno Worker")
+    add_subdirectory(worker)
+endif()
 
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
