@@ -45,7 +45,7 @@ default: run
 all:
 	test -f build || ln -sf /tmp$$PWD/build build
 	cmake -B /tmp$$PWD/build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
-	cmake --build /tmp$$PWD/build --parallel 24
+	cmake --build /tmp$$PWD/build --parallel `python -c 'from multiprocessing import cpu_count; print(cpu_count())'`
 
 run: all
 	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt
