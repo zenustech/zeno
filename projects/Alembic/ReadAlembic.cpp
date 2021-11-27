@@ -92,7 +92,7 @@ static void traverseABC
 
         Alembic::AbcGeom::IObject child(obj, name);
 
-        auto childTree = std::make_unique<ABCTree>();
+        auto childTree = std::make_shared<ABCTree>();
         traverseABC(child, *childTree);
         tree.children.push_back(std::move(childTree));
     }
@@ -123,17 +123,16 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 
 struct ReadAlembic : INode {
     virtual void apply() override {
-        auto abctree = std::make_unique<ABCTree>();
+        auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
             auto archive = readABC(path);
             auto obj = archive.getTop();
             traverseABC(obj, *abctree);
         }
-        auto retprim = abctree->getFirstPrim();
         if (get_param<bool>("triangulate"))
-            prim_triangulate(retprim.get());
-        set_output("prim", std::move(retprim));
+            abctree->visitPrims(prim_triangulate);
+        set_output("abctree", std::move(abctree));
     }
 };
 

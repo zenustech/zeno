@@ -1,20 +1,29 @@
 #pragma once
 
-#include <zeno/types/IObject.h>
+#include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 
 struct ABCTree : IObjectClone<ABCTree> {
     std::shared_ptr<PrimitiveObject> prim;
-    std::vector<std::unique_ptr<ABCTree>> children;
+    std::vector<std::shared_ptr<ABCTree>> children;
 
-    inline std::shared_ptr<PrimitiveObject> getFirstPrim() const {
-        if (prim) return prim;
-        for (auto const &ch: children)
-            if (auto p = ch->getFirstPrim())
-                return p;
-        return nullptr;
+    template <class Func>
+    bool visitPrims(Func const &func) const {
+        if constexpr (std::is_void_v<std::invoke_result_t<Func, PrimitiveObject *>>) {
+            func(prim.get());
+            for (auto const &ch: children)
+                ch->visitPrims(func);
+        } else {
+            if (prim)
+                if (!func(prim.get()))
+                    return false;
+            for (auto const &ch: children)
+                if (!ch->visitPrims(func))
+                    return false;
+            return true;
+        }
     }
 };
 
