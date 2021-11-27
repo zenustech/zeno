@@ -2,18 +2,20 @@
 // WHY THE FKING ALEMBIC OFFICIAL GIVES NO DOC BUT ONLY "TESTS" FOR ME TO LEARN THEIR FKING LIB
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/StringObject.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
-#include <cstdio>
+#include "ABCTree.h"
 #include <cstring>
-#include <optional>
+#include <cstdio>
 
 namespace zeno {
+namespace {
 
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh) {
     auto prim = std::make_shared<PrimitiveObject>();
@@ -39,23 +41,30 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 parr.emplace_back(val[0], val[1], val[2]);
             }
         }
+
+        if (auto marr = mesamp.getFaceCounts()) {
+            log_info("[alembic] totally {} faces", marr->size());
+            auto &parr = prim->polys;
+            int base = 0;
+            for (size_t i = 0; i < marr->size(); i++) {
+                int cnt = (*marr)[i];
+                parr.emplace_back(base, cnt);
+                base += cnt;
+            }
+        }
+
+        if (auto marr = mesamp.getFaceIndices()) {
+            log_info("[alembic] totally {} face indices", marr->size());
+            auto &parr = prim->loops;
+            for (size_t i = 0; i < marr->size(); i++) {
+                int ind = (*marr)[i];
+                parr.push_back(ind);
+            }
+        }
     }
 
     return prim;
 }
-
-struct ABCTree {
-    std::shared_ptr<PrimitiveObject> prim;
-    std::vector<std::unique_ptr<ABCTree>> children;
-
-    inline std::shared_ptr<PrimitiveObject> getFirstPrim() const {
-        if (prim) return prim;
-        for (auto const &ch: children)
-            if (auto p = ch->getFirstPrim())
-                return p;
-        return nullptr;
-    }
-};
 
 static void traverseABC
 ( Alembic::AbcGeom::IObject &obj
@@ -122,15 +131,18 @@ struct ReadAlembic : INode {
             traverseABC(obj, *abctree);
         }
         auto retprim = abctree->getFirstPrim();
+        if (get_param<bool>("triangulate"))
+            prim_triangulate(retprim.get());
         set_output("prim", std::move(retprim));
     }
 };
 
 ZENDEFNODE(ReadAlembic, {
     {{"string", "path"}},
-    {{"PrimitiveObject", "prim"}},
-    {},
+    {{"ABCTree", "abctree"}},
+    {{"bool", "triangulate", "1"}},
     {"alembic"},
 });
 
+} // namespace
 } // namespace zeno
