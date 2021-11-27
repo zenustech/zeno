@@ -14,7 +14,8 @@ struct ABCTree : IObjectClone<ABCTree> {
     bool visitPrims(Func const &func) const {
         if constexpr (std::is_void_v<std::invoke_result_t<Func,
                       std::shared_ptr<PrimitiveObject> const &>>) {
-            func(prim);
+            if (prim)
+                func(prim);
             for (auto const &ch: children)
                 ch->visitPrims(func);
         } else {

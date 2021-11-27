@@ -43,7 +43,7 @@ struct GetAlembicPrim : INode {
             return true;
         });
         if (!prim)
-            throw Exception("index not found in abctree");
+            throw Exception("index out of range in abctree");
         if (get_param<bool>("triangulate"))
             prim_triangulate(prim.get());
         set_output("prim", std::move(prim));
