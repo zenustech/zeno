@@ -120,7 +120,7 @@ void initialize() {
   axis = makeGraphicAxis();
 }
 
-static void draw_axis() {
+static void draw_small_axis() {
   glm::mat4x4 backup_view = view;
   glm::mat4x4 backup_proj = proj;
   view = gizmo_view;
@@ -143,9 +143,9 @@ static void paint_graphics(void) {
     gra->draw();
   }
   if (show_grid) {
-      grid->draw();
       axis->draw();
-      draw_axis();
+      grid->draw();
+      draw_small_axis();
   }
   vao->unbind();
   CHECK_GL(glFlush());
