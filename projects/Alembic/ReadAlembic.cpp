@@ -2,7 +2,6 @@
 // WHY THE FKING ALEMBIC OFFICIAL GIVES NO DOC BUT ONLY "TESTS" FOR ME TO LEARN THEIR FKING LIB
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <Alembic/AbcGeom/All.h>
@@ -130,8 +129,6 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             traverseABC(obj, *abctree);
         }
-        if (get_param<bool>("triangulate"))
-            abctree->visitPrims(prim_triangulate);
         set_output("abctree", std::move(abctree));
     }
 };
@@ -139,7 +136,7 @@ struct ReadAlembic : INode {
 ZENDEFNODE(ReadAlembic, {
     {{"string", "path"}},
     {{"ABCTree", "abctree"}},
-    {{"bool", "triangulate", "1"}},
+    {},
     {"alembic"},
 });
 

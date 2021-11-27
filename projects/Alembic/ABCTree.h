@@ -11,13 +11,14 @@ struct ABCTree : IObjectClone<ABCTree> {
 
     template <class Func>
     bool visitPrims(Func const &func) const {
-        if constexpr (std::is_void_v<std::invoke_result_t<Func, PrimitiveObject *>>) {
-            func(prim.get());
+        if constexpr (std::is_void_v<std::invoke_result_t<Func,
+                      std::shared_ptr<PrimitiveObject> const &>>) {
+            func(prim);
             for (auto const &ch: children)
                 ch->visitPrims(func);
         } else {
             if (prim)
-                if (!func(prim.get()))
+                if (!func(prim))
                     return false;
             for (auto const &ch: children)
                 if (!ch->visitPrims(func))
