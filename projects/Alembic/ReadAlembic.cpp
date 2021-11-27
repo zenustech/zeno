@@ -19,46 +19,44 @@ namespace {
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh) {
     auto prim = std::make_shared<PrimitiveObject>();
 
-    {
-        Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp;
-        mesh.get(mesamp);
+    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp;
+    mesh.get(mesamp);
 
-        if (auto marr = mesamp.getPositions()) {
-            log_info("[alembic] totally {} positions", marr->size());
-            auto &parr = prim->attr<vec3f>("pos");
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                parr.emplace_back(val[0], val[1], val[2]);
-            }
+    if (auto marr = mesamp.getPositions()) {
+        log_info("[alembic] totally {} positions", marr->size());
+        auto &parr = prim->verts;
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr.emplace_back(val[0], val[1], val[2]);
         }
+    }
 
-        if (auto marr = mesamp.getVelocities()) {
-            log_info("[alembic] totally {} velocities", marr->size());
-            auto &parr = prim->attr<vec3f>("vel");
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                parr.emplace_back(val[0], val[1], val[2]);
-            }
+    if (auto marr = mesamp.getVelocities()) {
+        log_info("[alembic] totally {} velocities", marr->size());
+        auto &parr = prim->attr<vec3f>("vel");
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr.emplace_back(val[0], val[1], val[2]);
         }
+    }
 
-        if (auto marr = mesamp.getFaceCounts()) {
-            log_info("[alembic] totally {} faces", marr->size());
-            auto &parr = prim->polys;
-            int base = 0;
-            for (size_t i = 0; i < marr->size(); i++) {
-                int cnt = (*marr)[i];
-                parr.emplace_back(base, cnt);
-                base += cnt;
-            }
+    if (auto marr = mesamp.getFaceCounts()) {
+        log_info("[alembic] totally {} faces", marr->size());
+        auto &parr = prim->polys;
+        int base = 0;
+        for (size_t i = 0; i < marr->size(); i++) {
+            int cnt = (*marr)[i];
+            parr.emplace_back(base, cnt);
+            base += cnt;
         }
+    }
 
-        if (auto marr = mesamp.getFaceIndices()) {
-            log_info("[alembic] totally {} face indices", marr->size());
-            auto &parr = prim->loops;
-            for (size_t i = 0; i < marr->size(); i++) {
-                int ind = (*marr)[i];
-                parr.push_back(ind);
-            }
+    if (auto marr = mesamp.getFaceIndices()) {
+        log_info("[alembic] totally {} face indices", marr->size());
+        auto &parr = prim->loops;
+        for (size_t i = 0; i < marr->size(); i++) {
+            int ind = (*marr)[i];
+            parr.push_back(ind);
         }
     }
 
@@ -72,6 +70,7 @@ static void traverseABC
     {
         auto const &md = obj.getMetaData();
         log_info("[alembic] meta data: [{}]", md.serialize());
+        tree.name = obj.getName();
 
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
             log_info("[alembic] found a mesh [{}]", obj.getName());
@@ -86,7 +85,7 @@ static void traverseABC
     log_info("[alembic] found {} children", nch);
 
     for (size_t i = 0; i < nch; i++) {
-        decltype(auto) name = obj.getChildHeader(i).getName();
+        auto const &name = obj.getChildHeader(i).getName();
         log_info("[alembic] at {} name: [{}]", i, name);
 
         Alembic::AbcGeom::IObject child(obj, name);

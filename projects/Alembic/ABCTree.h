@@ -6,6 +6,7 @@
 namespace zeno {
 
 struct ABCTree : IObjectClone<ABCTree> {
+    std::string name;
     std::shared_ptr<PrimitiveObject> prim;
     std::vector<std::shared_ptr<ABCTree>> children;
 
