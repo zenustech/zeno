@@ -44,7 +44,7 @@ default: run
 
 all:
 	test -f build || ln -sf /tmp$$PWD/build build
-	cmake -B /tmp$$PWD/build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake -B /tmp$$PWD/build -DCMAKE_BUILD_TYPE=Debug -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
 	cmake --build /tmp$$PWD/build --parallel 8
 
 run: all
