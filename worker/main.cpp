@@ -5,15 +5,15 @@
 int main()
 {
     int ret = zbb::parallel_reduce(1, 101,
-    0, [] (int lhs, int rhs) {
-        return lhs + rhs;
+    0, [] (int &lhs, int rhs) {
+        lhs += rhs;
     }, [] (int &res, int i) {
         res += i;
     });
     printf("result: %d\n", ret);
     ret = zbb::parallel_reduce(1, 10,
-    1, [] (int lhs, int rhs) {
-        return lhs * rhs;
+    1, [] (int &lhs, int rhs) {
+        lhs *= rhs;
     }, [] (int &res, int i) {
         res *= i;
     });
