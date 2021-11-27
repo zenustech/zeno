@@ -6,7 +6,7 @@
 #include "benchmark/benchmark.h"
 
 #include "spdlog/spdlog.h"
-#include "spdlog/pattern_formatter.h"
+#include "spdlog/details/pattern_formatter.h"
 
 void bench_formatter(benchmark::State &state, std::string pattern)
 {
@@ -34,14 +34,14 @@ void bench_formatters()
     for (auto &flag : all_flags)
     {
         auto pattern = std::string("%") + flag;
-        benchmark::RegisterBenchmark(pattern.c_str(), &bench_formatter, pattern);
+        benchmark::RegisterBenchmark(pattern.c_str(), bench_formatter, pattern);
 
         //        pattern = std::string("%16") + flag;
-        //        benchmark::RegisterBenchmark(pattern.c_str(), &bench_formatter, pattern);
+        //        benchmark::RegisterBenchmark(pattern.c_str(), bench_formatter, pattern);
         //
         //        // bench center padding
         //        pattern = std::string("%=16") + flag;
-        //        benchmark::RegisterBenchmark(pattern.c_str(), &bench_formatter, pattern);
+        //        benchmark::RegisterBenchmark(pattern.c_str(), bench_formatter, pattern);
     }
 
     // complex patterns
@@ -52,7 +52,7 @@ void bench_formatters()
     };
     for (auto &pattern : patterns)
     {
-        benchmark::RegisterBenchmark(pattern.c_str(), &bench_formatter, pattern)->Iterations(2500000);
+        benchmark::RegisterBenchmark(pattern.c_str(), bench_formatter, pattern)->Iterations(2500000);
     }
 }
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        benchmark::RegisterBenchmark(pattern.c_str(), &bench_formatter, pattern);
+        benchmark::RegisterBenchmark(pattern.c_str(), bench_formatter, pattern);
     }
     benchmark::Initialize(&argc, argv);
     benchmark::RunSpecifiedBenchmarks();

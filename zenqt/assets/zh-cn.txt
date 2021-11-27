@@ -147,6 +147,7 @@ routeOut 路由点输出
 
 origin 原点
 normal 法线
+transform 变换
 rotation 旋转
 translate 平移
 translation 位置平移
@@ -154,3 +155,18 @@ quatRotation 四元数旋转
 eulerXYZ XYZ欧拉角
 scaling 缩放比例
 scale 缩放
+
+nx X方向个数
+ny Y方向个数
+nz Z方向个数
+sizeX X方向尺寸
+sizeY Y方向尺寸
+sizeZ Z方向尺寸
+radius 半径
+radiusMin 最小半径
+primNei 邻居几何图元
+
+TransformPrimitive 变换几何图元
+TranslatePrimitive 平移几何图元
+ReadObjPrimitive 读取OBJ几何图元
+WriteObjPrimitive 写出OBJ几何图元

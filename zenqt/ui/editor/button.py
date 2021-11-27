@@ -55,7 +55,8 @@ class QDMGraphicsButton(QGraphicsItem):
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
-        self.on_click()
+        if event.button() == Qt.LeftButton:
+            self.on_click()
 
     def setGeometry(self, rect):
         x = rect.x()

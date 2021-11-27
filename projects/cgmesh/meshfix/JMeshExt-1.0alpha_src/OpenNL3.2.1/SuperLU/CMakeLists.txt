@@ -59,7 +59,7 @@ else()
   message("-- SuperLU will be built as a static library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu.a)
 endif()
-
+set(XSDK_ENABLE_Fortran FALSE)
 enable_language(C)
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)

@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ftgl_dll", "ftgl_dll.vcproj", "{F7946C68-319D-441A-A732-BC2A200A9112}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ftgl_static", "ftgl_static.vcproj", "{1D758EEA-59C3-46E4-BEF5-16DCCA8C0B21}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7946C68-319D-441A-A732-BC2A200A9112}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F7946C68-319D-441A-A732-BC2A200A9112}.Debug|Win32.Build.0 = Debug|Win32
+		{F7946C68-319D-441A-A732-BC2A200A9112}.Release|Win32.ActiveCfg = Release|Win32
+		{F7946C68-319D-441A-A732-BC2A200A9112}.Release|Win32.Build.0 = Release|Win32
+		{1D758EEA-59C3-46E4-BEF5-16DCCA8C0B21}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1D758EEA-59C3-46E4-BEF5-16DCCA8C0B21}.Debug|Win32.Build.0 = Debug|Win32
+		{1D758EEA-59C3-46E4-BEF5-16DCCA8C0B21}.Release|Win32.ActiveCfg = Release|Win32
+		{1D758EEA-59C3-46E4-BEF5-16DCCA8C0B21}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

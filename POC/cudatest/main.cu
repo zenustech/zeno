@@ -1,44 +1,52 @@
 #include <cstdio>
+#if 1
 #include "impl_cuda.h"
-//#include "impl_host.h"
-#include "Vector.h"
-#include "H21B3_Grid.h"
+#else
+#include "impl_host.h"
+#endif
+#include "HashListGrid.h"
 
 using namespace fdb;
 
+__managed__ int count = 0;
+
 int main() {
 #if 1
-    H21B3_Grid<vec3f> vel;
-    float dt = 0.01f;
+    const int n = 8192 * 16;
+    HashListGrid<int> a;
+    a.reserve_blocks(65);
 
-    a.reserve_blocks(16);
-    {
-        auto _vel = vel.view();
-        _vel.parallel_foreach([=] FDB_DEVICE (vec3i c, vec3f &vel) {
-            auto btpos = c - vel * dt;
+    auto av = a.view();
+    parallel_for(n, [=] FDB_DEVICE (size_t i) {
+        vec3i coord((i * 114514 + 31415) % 64, 0, 0);
+        av.append(coord, i);
+    });
+
+#if 0
+    av.parallel_foreach([=] FDB_DEVICE (vec3i coord, int &val) {
+        printf("%d = %d\n", coord[0], val);
+        atomic_add(&count, 1);
+    });
+#else
+    av.parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, auto &leaf) {
+        leaf.foreach_load([&] (int val) {
+            //printf("%d = %d\n", coord[0], val);
+            atomic_add(&count, 1);
         });
-    }
+    });
+#endif
+    synchronize();
+    printf("%d = %d\n", n, count);
 
 #else
     Vector<int> a;
-    a.resize(5, 40);
-    {
-        auto av = a.view();
-        parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
-            printf("- %ld %d\n", i, av[i]);
-            av[i] = 42;
-        });
-    }
-    a.resize(8, 4);
-    {
-        auto av = a.view();
-        parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
-            printf("+ %ld %d\n", i, av[i]);
-        });
-    }
+    a.resize(1024);
+
+    auto av = a.view();
+    parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
+        printf("%d\n", av[i]);
+    });
 
 #endif
-
-    synchronize();
     return 0;
-i
+}

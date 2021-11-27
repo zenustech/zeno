@@ -1,0 +1,249 @@
+ftgl (2.3.0) unstable; urgency=medium
+
+  * New Upstream Release.
+    (Closes: #531489, #589601, #742469, #760571).
+
+ -- Frank Heckenbach <f.heckenbach@fh-soft.de>  Sun, 14 Oct 2018 21:17:59 +0200
+
+ftgl (2.1.3~rc5-5polyextr~xenial) xenial; urgency=medium
+
+  * Improved discovery for cmake
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Wed, 19 Oct 2016 20:38:43 +0200
+
+ftgl (2.1.3~rc5-10polyextr~quantal) quantal; urgency=low
+
+  * Added the cmake finder to the debian/install file
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Thu, 01 Nov 2012 23:40:43 +0100
+
+ftgl (2.1.3~rc5-9polyextr~precise) precise; urgency=low
+
+  * another try to get launchpad to build the package 
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Mon, 24 Sep 2012 21:06:44 +0200
+
+ftgl (2.1.3~rc5-8polyextr~precise) precise; urgency=low
+
+  * not building the tests if cxxtest not found 
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Thu, 13 Sep 2012 22:41:38 +0200
+
+ftgl (2.1.3~rc5-7polyextr~precise) precise; urgency=low
+
+  * added some tests 
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Fri, 14 Sep 2012 00:15:42 +0200
+
+ftgl (2.1.3~rc5-6polyextr~precise) precise; urgency=low
+
+  * Fixed a bug with spaces in the text as reported on http://blog.ulrichard.ch/?p=64
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Thu, 26 Jan 2012 21:19:02 +0000
+
+ftgl (2.1.3~rc5-5polyextr~precise) precise; urgency=low
+
+  * Added build dependency for cmake
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Wed, 09 Nov 2011 22:09:02 +0000
+
+ftgl (2.1.3~rc5-4polyextr~precise) precise; urgency=low
+
+  * Changes for polygon extraction
+
+ -- Richard Ulrich <richi@paraeasy.ch>  Wed, 09 Nov 2011 22:09:02 +0000
+
+ftgl (2.1.3~rc5-3ubuntu1) precise; urgency=low
+
+  * Build-depend on doxygen-latex. Closes: #616215. LP: #749191.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 01 Sep 2011 22:09:02 +0000
+
+ftgl (2.1.3~rc5-3) unstable; urgency=low
+
+  * Change package format to 3.0 (quilt).
+  * debian/control:
+    + epstopdf was moved to texlive-font-utils, build-depending on it
+      instead of texlive-extra-utils (Closes: #562315).
+    + Set policy to 3.8.3.
+    + Add ${misc:Depends} to all package dependencies.
+
+ -- Sam Hocevar <sho@debian.org>  Sun, 03 Jan 2010 14:00:17 +0100
+
+ftgl (2.1.3~rc5-2) unstable; urgency=low
+
+  * debian/rules:
+    + Make the package parralel-build safe. Thanks to Paul Wise for the hint.
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Mon, 16 Jun 2008 14:32:00 +0000
+
+ftgl (2.1.3~rc5-1) unstable; urgency=low
+
+  * New development snapshot.
+  * API is now stable, uploading to unstable.
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Sun, 15 Jun 2008 17:12:15 +0200
+
+ftgl (2.1.3~rc4-1) experimental; urgency=low
+
+  * New development snapshot.
+  * debian/control:
+    + Set policy to 3.8.0.
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Mon, 09 Jun 2008 11:56:12 +0000
+
+ftgl (2.1.3~rc3-2) experimental; urgency=low
+
+  * debian/control:
+    + Build-depend on texlive-latex-recommended and texlive-fonts-recommended
+      so that a4.sty, a4wide.sty and the appropriate fonts are present.
+    + Build-depend on ghostscript because texlive-extra-utils only recommends
+      it (despite shipping eps2pdf).
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Mon, 12 May 2008 11:55:15 +0000
+
+ftgl (2.1.3~rc3-1) experimental; urgency=low
+
+  * New development snapshot.
+  * debian/control: build-depend on doxygen, imagemagick, texlive-latex-base,
+    texlive-base-bin, texlive-extra-utils to build documentation
+    (Closes: #480048).
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Sun, 11 May 2008 22:27:30 +0000
+
+ftgl (2.1.3~rc2-1) experimental; urgency=low
+
+  * New development snapshot. Fixes a few upstream bugs.
+
+  * debian/control: build-depend on libcppunit-dev to fix an FTBFS
+    (Closes: #479356).
+  * debian/libftgl-dev.examples: add the simple demos as examples.
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Wed, 07 May 2008 07:24:51 +0000
+
+ftgl (2.1.3~rc1-1) experimental; urgency=low
+
+  * Snapshot from upstream's development tree, targeted at experimental so
+    that people can try dynamically linking with libftgl.
+  * Ship full HTML documentation (Closes: #257155).
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Wed, 30 Apr 2008 12:15:11 +0000
+
+ftgl (2.1.2-4) unstable; urgency=low
+
+  * New maintainer (Closes: #471983).
+
+  * debian/control:
+    + Do not build-depend on g++ (Closes: #268594).
+    + Changed 'libglut3-dev | glutg3-dev' build-dependency to freeglut3-dev
+      (Closes: #394492).
+    + Uncapitalised short description.
+    + Set policy to 3.7.3.
+    + Add Vcs control fields.
+
+  * debian/rules:
+    + Use debian/compat instead of DH_COMPAT.
+    + Use quilt for patch management.
+
+  * debian/patches/000_package_version.diff:
+    + New patch. Fix the version string in .pc files (Closes: #274400).
+
+ -- Sam Hocevar (Debian packages) <sam+deb@zoy.org>  Sat, 12 Apr 2008 09:00:51 +0000
+
+ftgl (2.1.2-3) unstable; urgency=low
+
+  * src/FTVectoriser.cpp, unix/config.guess, unix/config.sub: patch and
+    update for GNU/kFreeBSD.  Thanks Petr Salinger.  closes: bug#340720
+  * include/FTTextureGlyph.h: funny bug.  Remove class qualification
+    from static method declaration.  Thanks Martin Michlmayr.  closes:
+    bug#355744
+  * unix/ftgl.pc.in: hack to include -I/usr/include/FTGL in the include
+    flags.  Thanks Jonathan Brandmeyer.  closes: bug#257660
+  * debian/control: {build}-depend on libGLU.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Fri, 28 Apr 2006 11:44:43 -0600
+
+ftgl (2.1.2-2) unstable; urgency=low
+
+  * debian/control: (build-)?depend on xlibmesa-gl-dev | libgl-dev.
+    Thanks Matthias.  Closes: bug#311282.
+  * debian/rules: build a _pic library, just like the X packages do.
+    (closes: bug# 315330)
+  * Please note that the previous change means that the packages that
+    build shared libraries which include FTGL are _broken_ now.  These
+    include gem and vtk, perhaps blender.
+  * debian/control: change libstdc++-dev dependency to g++.  g++ is an
+    actual package, libstdc++-dev is a virtual one.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Sat, 02 Jul 2005 18:39:41 -0600
+
+ftgl (2.1.2-1) unstable; urgency=low
+
+  * New Upstream Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Mon, 20 Dec 2004 21:07:44 -0600
+
+ftgl (2.0.9-1) unstable; urgency=low
+
+  * New upstream release
+  * Ack NMU (closes: bug#226956)
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Mon, 17 May 2004 15:43:09 -0600
+
+ftgl (2.0.7-1.1) unstable; urgency=low
+
+  * NMU: recompiled with -fPIC, which is needed for building gem
+    (closes: #226956)
+
+ -- Guenter Geiger (Debian/GNU) <geiger@debian.org>  Sun, 29 Feb 2004 17:38:49 +0100
+
+ftgl (2.0.7-1) unstable; urgency=low
+
+  * New Upstream Release.
+  * Fix a couple of build problems (I wonder how this went unnoticed) (closes:
+    bug#215000)
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Wed, 19 Nov 2003 18:34:10 -0600
+
+ftgl (2.0.4-1) unstable; urgency=low
+
+  * New upstream release.
+  * First upload.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Thu, 17 Jul 2003 21:09:05 +0200
+
+ftgl (1.4-2) unstable; urgency=low
+
+  * Put headers in /usr/include
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Wed, 01 Jan 2003 15:50:59 +0100
+
+ftgl (1.4-1) unstable; urgency=low
+
+  * New Upstream Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Wed, 25 Dec 2002 01:07:17 +0100
+
+ftgl (1.3.1-1) unstable; urgency=low
+
+  * New Upstream Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Thu, 14 Feb 2002 09:58:12 +0100
+
+ftgl (1.2-1) unstable; urgency=low
+
+  * New Upstream Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Wed,  7 Nov 2001 11:01:25 +0100
+
+ftgl (1.1-1) unstable; urgency=low
+
+  * New Upstream Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Wed, 31 Oct 2001 15:54:30 +0100
+
+ftgl (1.0.1-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Marcelo E. Magallon <mmagallo@debian.org>  Sun, 28 Oct 2001 19:26:54 +0100

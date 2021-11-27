@@ -134,4 +134,18 @@ ZENDEFNODE(SpdlogErrorMessage, {
 });
 
 
+struct TriggerException : zeno::INode {
+    virtual void apply() override {
+        throw zeno::Exception(get_param<std::string>("message"));
+    }
+};
+
+ZENDEFNODE(TriggerException, {
+    {},
+    {},
+    {{"string", "message", "exception occurred!"}},
+    {"debug"},
+});
+
+
 }

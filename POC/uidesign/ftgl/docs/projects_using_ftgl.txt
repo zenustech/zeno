@@ -1,0 +1,399 @@
+/** \page ftgl-projects Projects using %FTGL
+
+To add your project to this list, please contact one of the %FTGL
+developers at http://sf.net/projects/ftgl
+
+Projects are listed in alphabetical order.
+
+\section bindings %FTGL language bindings
+
+\subsection ftglsharp %FTGL#
+
+  %FTGL# (http://www.paskaluk.com/projects.php) is a collection of .NET
+  bindings for %FTGL.
+
+\subsection glguia GlGuiA
+
+  GlGuiA (http://sourceforge.net/projects/glguia/) is a set of
+  packages for Ada 2006 that can be used to create Graphical User
+  Interfaces, relaying (almost) only on OpenGl. Hence should be rather
+  platform-independant.
+
+\subsection Haskell %FTGL
+
+  Haskell %FTGL (http://www.haskell.org/haskellwiki/FTGL) is a Haskell
+  binding interface to %FTGL.
+
+\subsection ruby-ftgl Ruby %FTGL
+
+  Ruby %FTGL# (http://rubyforge.org/projects/ruby-ftgl/) is a collection
+  of Ruby bindings for %FTGL.
+
+\subsection pyftgl PyFTGL
+
+  PyFTGL (http://code.google.com/p/pyftgl/) wraps the functionality of
+  %FTGL into a Python module so that it can be used in conjunction with
+  PyOpenGL.
+
+\subsection tcl3d Tcl3D
+
+  Tcl3D (http://www.tcl3d.org) offers the 3D functionality of OpenGL
+  and other 3D libraries (including %FTGL) at the Tcl scripting level.
+
+\section current Projects currently using %FTGL
+
+\subsection agentw Agent World
+
+  Agent World (http://code.google.com/p/agentw/) provides tools for
+  simulating and visualizing multi-agent systems and is specially
+  designed for testing machine learning applications (and specially
+  focused on Case Based Reasoning ones). It includes support for
+  representing information using the Feature Term formalism, and
+  provides a series of relational machine learning algorithms that
+  can deal with them. The whole project is created in C++ to maximize
+  efficiency, and uses OpenGL as the visualization library to ensure
+  cross-platformness.
+
+\subsection amaltheia Amaltheia
+
+  Amaltheia (http://home.gna.org/amaltheia/) is a cross-platform game
+  programming API that supports two backends, OpenGL and DirectX. The
+  aim of the Amaltheia project is to create an intuitive and simple to
+  use library, providing core 3d and 2d functionality in a platform
+  independent manner. It also provides platform independence regarding
+  basic network functions, input handling, threads and sound. Currently
+  the GNU/Linux and the Windows OSes are supported.
+
+\subsection armagetronad Armagetron Advanced
+
+  Armagetron Advanced (http://www.armagetronad.net/) is a multiplayer
+  game in 3d that attempts to emulate and expand on the lightcycle
+  sequence from the movie Tron. It's an old school arcade game slung
+  into the 21st century. Highlights include a customizable playing
+  arena, HUD, unique graphics, and AI bots. For the more advanced player
+  there are new game modes and a wide variety of physics settings to
+  tweak as well.
+
+\subsection audicle Audicle
+
+  Audicle (http://audicle.cs.princeton.edu/) is an audio programming
+  environment that integrates the programmability of the development
+  environment with elements of the runtime environment. The result is a
+  duct-taped intersection of a concurrent smart editor, compiler, virtual
+  machine, and debugger.
+
+\subsection battlestartux Battlestar T.U.X.
+
+  Battlestar T.U.X. (http://code.google.com/p/battlestar-tux/) is a
+  top-down scrolling shooter project.
+
+\subsection bjs BJS
+
+  BJS (http://bjs.sourceforge.net/) is a funny arcade 3D multiplayer
+  tank battle. It is fuly playable and very fun in multiplayer. Of
+  course the single player is also possible. There is no story. You just
+  get a tank and go shoot other players. Currently there are 5 different
+  tanks, 6 maps, 9 powerups and 4 weapons.
+
+\subsection blender Blender
+
+  Blender (http://blender.org/) is an integrated 3d suite for modelling,
+  animation, rendering, post-production, interactive creation and
+  playback (games).
+
+\subsection breve Breve
+
+  Breve (http://www.spiderland.org/) is a free, open-source software
+  package which makes it easy to build 3D simulations of multi-agent
+  systems and artificial life. Using Python, or using a simple scripting
+  language called steve, you can define the behaviors of agents in
+  a 3D world and observe how they interact. breve includes physical
+  simulation and collision detection so you can simulate realistic
+  creatures, and an OpenGL display engine so you can visualize your
+  simulated worlds.
+
+\subsection bzflag BZFlag
+
+  BZFlag (http://BZFlag.org/) is a 3D multi-player multiplatform tank
+  battle game that allows users to play against each other in a network
+  environment.
+
+  BZFlag uses %FTGL as of version 2.99.
+
+\subsection capturetf Capture The Flag
+
+  Capture The Flag (http://capturetf.sourceforge.net/) is an open
+  source, multi-platform, network game project.
+
+\subsection cello Cello
+
+  Cello (http://common-lisp.net/project/cello/) is a project to create
+  an open-source, industrial-strength, portable GUI toolkit for Common
+  Lisp. Its features include anti-aliased fonts, accelerated 2d- and
+  3d-graphics, a standard set of GUI widgets, easy construction of new
+  widgets, and much more. Cello heavily utilizes Cells (a sister project
+  on common-lisp.net), in addition to industry-standard technologies
+  such as OpenGL, FreeType, and ImageMagick.
+
+\subsection chimera Chimera
+
+  Chimera (http://www.cgl.ucsf.edu/chimera/) is a highly extensible
+  program for interactive visualization and analysis of molecular
+  structures and related data, including density maps, supramolecular
+  assemblies, sequence alignments, docking results, trajectories, and
+  conformational ensembles. High-quality images and animations can
+  be generated.
+
+\subsection cinepaint Cinepaint
+
+  Cinepaint (http://www.cinepaint.org/) is a deep paint image retouching
+  tool that supports higher color fidelity than ordinary painting tools.
+
+\subsection duel Duel
+
+  Duel (http://www.personal.rdg.ac.uk/~sir03me/play/code.html) is a small
+  overhead perspective spaceship game.
+
+\subsection emptyclip EMAN2
+
+  EMAN2 (http://blake.bcm.tmc.edu/eman/eman2/) is a suite of
+  scientific image processing tools aimed primarily at the
+  transmission electron microscopy community.
+
+
+\subsection emptyclip Empty Clip
+
+  Empty Clip (http://emptyclip.sourceforge.net/) is a top-down 2D Action
+  RPG.
+
+\subsection freebox Freebox
+
+  Freebox (http://freebox.sourceforge.net/) is designed for use in a
+  special type of computer called an 'HTPC', which is connected to a
+  home-theatre system to watch XviD/DivX/DVD movies, play music (MP3,
+  CD, whatever), play some emulated games, or whatever else you want to
+  do with it.
+
+\subsection gem Gem
+
+  Gem (http://gem.iem.at/) is a loadable library for puredata, which
+  adds OpenGL graphics rendering and animation to Pd. Pd is a graphical
+  programming language and computer music system.
+
+\subsection glmayab GLMayan
+
+  GLMayan (http://glmayan.sourceforge.net/) is an OpenGL screensaver.
+
+\subsection glover Glover
+
+  Glover (http://code.google.com/p/glover/) is a movie player that
+  renders the content using openGL allowing all kinds of special effects
+  using fragment shaders. The movie decoding is done using ffmpeg.
+
+\subsection ivfplusplus Ivf++
+
+  Ivf++ (http://ivfplusplus.sourceforge.net/) is a C++ library
+  encapsulating OpenGL functionality. The primary goal is to make it
+  easier to use the OpenGL library in interactive 3D applications. The
+  second goal is extendibility, providing a set of well defined base
+  classes for different object types to build new classes on. The third
+  goal is portability, primarily between Linux and Windows, but the
+  library should also be easily ported to Mac OS X.
+
+\subsection jahshaka Jahshaka
+
+  Jashaka (http://jahshaka.org/) is an advanced video editing,
+  animation, visual effects, painting and music tool.
+
+\subsection karaokefx Karaoke FX
+
+  Karaoke FX (http://jeanchristophe.duber.free.fr/karaokefx/) is a
+  midifile player that can display lyrics in synch whith the sound so
+  as it can be used for karaoke. It relies on plugins for midi output
+  devices as for lyrics display.
+
+\subsection libinstrudeo Libinstrudeo
+
+  Libinstrudeo (http://sourceforge.net/projects/libinstrudeo), initially
+  written for the ScreenKast program, provides the necessary logic to
+  capture screen recordings and to process them. Includes a soap-client
+  for the webservice at captorials.com that enables you to share your
+  recordings.
+
+\subsection lightspeed Light Speed!
+
+  Light Speed! (http://lightspeed.sourceforge.net/) is an OpenGL-based
+  program which illustrates the effects of special relativity on the
+  appearance of moving objects. When an object accelerates past a few
+  million meters per second, these effects begin to grow noticeable,
+  becoming more and more pronounced as the speed of light is approached.
+  These relativistic effects are viewpoint-dependent, and include shifts
+  in length, object hue, brightness and shape.
+
+\subsection mysqlguitools MySQL GUI Tools
+
+  MySQL GUI Tools (http://dev.mysql.com/downloads/gui-tools/5.0.html)
+  is a collection of tools for the MySQL database. It consists of MySQL
+  Administrator, MySQL Query Browser and MySQL Migration Toolkit.
+
+\subsection octplot OctPlot
+
+  OctPlot (http://octplot.sourceforge.net/) is a graphics package for
+  Octave, the free alternative to MATLAB. It provides high quality
+  PostScript and on-screen graphics.
+
+\subsection openactivewrl Open ActiveWrl
+
+  Open ActiveWrl (http://open-activewrl.sourceforge.net/) is a software
+  development toolkit based on a generic software development approach
+  that allows the implementation VRML/X3D browser componentes. These
+  browser components can run within an conventional application or can
+  be linked together for the implementation of parallel immersive VR
+  setups.
+
+\subsection openeaagles OpenEaagles
+
+  OpenEaagles (http://www.openeaagles.org/) is a multi-platform
+  simulation framework targeted to help simulation engineers and
+  software developers build robust, scalable, virtual, constructive,
+  stand-alone, and distributed simulation applications. It has been used
+  extensively to build applications that demand real-time performance.
+  This includes applications to conduct human factor studies,
+  operator training, and the development of complete distributed
+  virtual simulation systems. OpenEaagles has also been used to build
+  stand-alone and distributed constructive applications oriented at
+  system analysis.
+
+\subsection opengc OpenGC
+
+  OpenGC (http://www.opengc.org/) is a multi-platform, multi-simulator,
+  open-source C++ tool for developing and implementing high quality
+  glass cockpit displays for simulated flightdecks.
+
+\subsection opensg OpenSG
+
+  OpenSG (http://www.opensg.org/) is a portable scenegraph system
+  to create realtime graphics programs, e.g. for virtual reality
+  applications.
+
+\subsection panthera Panthera
+
+  Panthera (http://sourceforge.net/projects/panthera) is a C++ framework
+  for interactive visualization, manipulation, and editing of volume
+  data. Applications developed on top of Panthera can utilize both
+  desktop and immersive user interface devices, such as position
+  trackers and haptic displays.
+
+\subsection ppracer Planet Penguin Racer
+
+  PlanetPenguin Racer (http://developer.berlios.de/projects/ppracer/)
+  is a simple OpenGL racing game featuring Tux, the Linux mascot. The
+  goal of the game is to slide down a snow- and ice-covered mountain as
+  quickly as possible, avoiding the trees and rocks that will slow you
+  down.
+
+\subsection projectm projectM
+
+  projectM (http://projectm.sourceforge.net/) is a music visualizer
+  which uses OpenGL for hardware acceleration. It is compatible with
+  Milkdrop presets.
+
+\subsection puzzle Puzzle Bobble 3D
+
+  Puzzle Bobble 3D (http://homepage.mac.com/eric.lee/puzzle/) is a 3D
+  video game for Linux. The game is similar to Tetris/Connect 4: connect
+  balls of the same colour to make them disappear. Puzzle Bobble 3D is
+  based on an already popular arcade game of the same name by Taito
+  Corporation (see links section at the bottom of this page), but this
+  particular variant is played in a 3D environment (hence the name).
+
+\subsection root ROOT
+
+  ROOT (http://root.cern.ch/) is an object-oriented data analysis
+  framework.
+
+\subsection scirun SCIRun
+
+  SCIRun (http://software.sci.utah.edu/scirun.html) is a Problem Solving
+  Environment (PSE), for modeling, simulation and visualization of
+  scientific problems. It is available for free and open source.
+
+\subsection tine TINE
+
+  TINE, or TINE Is Not ELITE (http://tine.sunsite.dk/en/index.html) is
+  an open source cross-platform remake of the classic space adventure
+  game ELITE.
+
+\subsection tinyplanet Tiny Planet
+
+  Tiny Planet (http://www.duberga.net/tinyplanet/) is a real-time OpenGL
+  viewer of detailled earth texture such as BlueMarble from Earth
+  Observatory (NASA) or any other planet texture. Vectorial data such
+  as points of interest, boundaries, rivers can be superimposed to the
+  texture.
+
+\subsection truevision Truevision
+
+  Truevision (http://truevision.sourceforge.net/) is a 3D modeler for
+  GNOME.
+
+\subsection tulip Tulip
+
+  Tulip (http://tulip.labri.fr/) is a system dedicated to the
+  visualization of huge graphs. It is capable of managing graphs with up
+  to 500,000 nodes and edges on relatively modest hardware (eg. 600MHz
+  Pentium III, 256MB RAM).
+
+\subsection ubit Ubit
+
+  Ubit (http://www.infres.enst.fr/~elc/ubit/) Ubit is a new GUI toolkit
+  that combines the advantages of scene graph and widget based toolkits.
+  The Ubit3D extension makes it possible to display 2D GUIs in a 3D
+  space.
+
+\subsection vrs VRS
+
+  The Virtual Rendering System (http://www.hpi.uni-potsdam.de/vrs/) is
+  a computer graphics software library for constructing interactive
+  3D applications. It provides a large collection of 3D rendering
+  components which facilitate implementing 3D graphics applications and
+  experimenting with 3D graphics and imaging algorithms.
+
+\subsection vtk VTK
+
+  VTK, the Visualization Toolkit (http://www.vtk.org/), is an object
+  oriented, high level library that allows one to easily write C++
+  programs, Tcl, Python and Java scripts that do 3D visualization.
+
+\subsection xlock XLock
+
+  XLock (http://www.tux.org/~bagleyd/xlockmore.html) is a screensaver
+  and screen locking utility with additional OpenGL and XPM modes.
+
+\section old Projects that used to use %FTGL
+
+\subsection gnubg GNU Backgammon
+
+  GNU Backgammon (http://www.gnubg.org/) was using %FTGL until version
+  0.14.3+20060520-1.
+
+\subsection openscenegraph OpenSceneGraph
+
+  OpenSceneGraph (http://www.openscenegraph.org/projects/osg) is an
+  open source high performance 3D graphics toolkit, used by application
+  developers in fields such as visual simulation, games, virtual
+  reality, scientific visualization and modelling. Written entirely
+  in Standard C++ and OpenGL it runs on all Windows platforms, OSX,
+  GNU/Linux, IRIX, Solaris, HP-Ux, AIX and FreeBSD operating systems.
+
+\subsection teddy Teddy
+
+  Teddy (http://teddy.sourceforge.net/) was a 3D graphics library. The
+  main purpose was to be a simple scene graph manager.
+
+\subsection vigipac VigiPac
+
+  VigiPac (http://vigipac.sourceforge.net/) was a three-dimensional
+  Pacman clone with multiplayer support, written in the C++ language.
+
+*/

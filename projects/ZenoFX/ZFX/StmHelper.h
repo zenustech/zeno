@@ -17,7 +17,7 @@ struct Stm {
     operator Statement *&() {
         return stmt;
     }
-
+    
     operator Statement * const &() const {
         return stmt;
     }
@@ -94,7 +94,6 @@ inline Stm operator+(Stm const &src) {
 inline Stm operator-(Stm const &src) {
     return {src.ir, src.ir->emplace_back<UnaryOpStmt>("-", src.stmt)};
 }
-
 inline Stm stm_sqrlength(Stm const &src) {
     Stm ret = src[0] * src[0];
     for (int i = 1; i < src->dim; i++) {
@@ -111,8 +110,18 @@ inline Stm stm_dot(Stm const &lhs, Stm const &rhs) {
     return ret;
 }
 
-inline Stm stm_cross(Stm const &lhs, Stm const &rhs) {
-    error("cross product unimplemented for now, sorry");
+inline Stm stm_crossx(Stm const &lhs, Stm const &rhs) {
+    Stm ret = lhs[1]*rhs[2] - lhs[2]*rhs[1];
+    return ret;
+}
+inline Stm stm_crossy(Stm const &lhs, Stm const &rhs) {
+    Stm ret = lhs[2]*rhs[0] - lhs[0]*rhs[2];
+    return ret;
+            
+}
+inline Stm stm_crossz(Stm const &lhs, Stm const &rhs) {
+    Stm ret = lhs[0]*rhs[1] - lhs[1]*rhs[0];
+    return ret;
 }
 
 }

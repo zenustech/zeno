@@ -94,3 +94,14 @@ ImportError: DLL load failed while importing shiboken2
 ```
 
 Don't use Python 3.8, it's a PySide2 bug, use Python 3.9 (or even 3.6) instead. See also [this post](https://blog.csdn.net/sinat_37938004/article/details/106384172).
+
+If you got:
+```bash
+  File "D:\zeno\zenqt\ui\visualize\zenvis.py", line 1, in <module>
+    from ...bin import pylib_zenvis as core
+ImportError: cannot import name 'pylib_zenvis' from 'zenqt.bin' (unknown location)
+```
+
+See [issues 243](https://github.com/zenustech/zeno/issues/243#issuecomment-979619095).
+You might be using different Python version to run Zeno, from the version Pybind11 is compiled for.
+May need to delete the `build` directory and rebuild to force Pybind11 re-search the `PATH`.

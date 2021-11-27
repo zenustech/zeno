@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
+
+#if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+#set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "settle from environ VCPKG_ROOT")
+#endif()
+
 set(CMAKE_CXX_STANDARD 17)
 project(zeno LANGUAGES C CXX)
 
@@ -14,6 +19,7 @@ if (MSVC)
 endif()
 
 option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
+#option(ZENO_BUILD_LAUNCHER "Build ZENO wrapper launcher" OFF)
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
@@ -48,6 +54,10 @@ endif()
 
 add_subdirectory(external/spdlog)
 
+if (ZENO_FAULTHANDLER)
+    add_subdirectory(external/backward-cpp)
+endif()
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
@@ -66,3 +76,7 @@ endif()
 if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+#if (ZENO_BUILD_LAUNCHER)
+#    add_subdirectory(scripts/launcher)
+#endif()
