@@ -41,37 +41,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
-#if 0
-    {
-        auto nrmpa = mesh.getNormalsParam();
-        log_info("normal is indexed: {}", nrmpa.isIndexed());
-        auto nrmsp = nrmpa.getIndexedValue();
-        auto &nrmind = *nrmsp.getIndices();
-        auto &nrmval = *nrmsp.getVals();
-        log_info("normal has {} indices, {} values", nrmind.size(), nrmval.size());
-        for (size_t i = 0; i < nrmind.size(); i++) {
-            auto ind = nrmind[i];
-        }
-        for (size_t i = 0; i < nrmval.size(); i++) {
-            auto val = nrmval[i];
-        }
-    }
-
-    {
-        auto uvpa = mesh.getUVsParam();
-        log_info("UV is indexed: {}", uvpa.isIndexed());
-        auto uvsp = uvpa.getIndexedValue();
-        auto &uvind = *uvsp.getIndices();
-        auto &uvval = *uvsp.getVals();
-        log_info("UV has {} indices, {} values", uvind.size(), uvval.size());
-        for (size_t i = 0; i < uvind.size(); i++) {
-            auto ind = uvind[i];
-        }
-        for (size_t i = 0; i < uvval.size(); i++) {
-            auto val = uvval[i];
-        }
-    }
-#endif
+    return prim;
 }
 
 struct ABCTree {
