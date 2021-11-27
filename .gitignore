@@ -42,6 +42,7 @@ tags
 CMakeSettings.json
 
 # archibate files
+/GNUmakefile
 /a.h
 /a.json
 /a.zsl

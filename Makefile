@@ -44,8 +44,8 @@ default: run
 
 all:
 	test -f build || ln -sf /tmp$$PWD/build build
-	cmake -B /tmp$$PWD/build -DCMAKE_BUILD_TYPE=Debug -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
-	cmake --build /tmp$$PWD/build --parallel 8
+	cmake -B /tmp$$PWD/build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake --build /tmp$$PWD/build --parallel 24
 
 run: all
 	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt
