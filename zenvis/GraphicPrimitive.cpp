@@ -41,7 +41,7 @@ struct GraphicPrimitive : IGraphic {
     if (!prim->has_attr("clr")) {
         auto &clr = prim->add_attr<zeno::vec3f>("clr");
         for (size_t i = 0; i < clr.size(); i++) {
-            clr[i] = zeno::vec3f(0.8);
+            clr[i] = zeno::vec3f(1.0f);
         }
     }
     if (!prim->has_attr("nrm")) {
@@ -381,43 +381,46 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 
-struct Light {
-  vec3 dir;
-  vec3 color;
-};
-
-struct Material {
-  vec3 albedo;
-  float roughness;
-  float metallic;
-  float specular;
-};
-
-vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {
-  float roughness = material.roughness;
-  float metallic = material.metallic;
-  float specular = material.specular;
-  vec3 albedo = material.albedo;
+vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
+    vec3 nrm, vec3 idir, vec3 odir) {
 
   vec3 hdir = normalize(idir + odir);
-  float NoH = max(0, dot(hdir, nrm));
-  float NoL = max(0, dot(idir, nrm));
-  float NoV = max(0, dot(odir, nrm));
-  float VoH = clamp(dot(odir, hdir), 0, 1);
-  float LoH = clamp(dot(idir, hdir), 0, 1);
+  float NoH = max(0., dot(hdir, nrm));
+  float NoL = max(0., dot(idir, nrm));
+  float NoV = max(0., dot(odir, nrm));
+  float VoH = clamp(dot(odir, hdir), 0., 1.);
+  float LoH = clamp(dot(idir, hdir), 0., 1.);
 
-  vec3 f0 = metallic * albedo + (1 - metallic) * 0.16 * specular * specular;
-  vec3 fdf = f0 + (1 - f0) * pow(1 - VoH, 5);
+  vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular * specular;
+  vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
 
-  float k = (roughness + 1) * (roughness + 1) / 8;
-  float vdf = 0.25 / ((NoV * k + 1 - k) * (NoL * k + 1 - k));
+  float k = (roughness + 1.) * (roughness + 1.) / 8.;
+  float vdf = 0.25 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
 
-  float alpha2 = max(0, roughness * roughness);
-  float denom = 1 - NoH * NoH * (1 - alpha2);
+  float alpha2 = max(0., roughness * roughness);
+  float denom = 1. - NoH * NoH * (1. - alpha2);
   float ndf = alpha2 / (denom * denom);
 
-  vec3 brdf = fdf * vdf * ndf * f0 + (1 - f0) * albedo;
+  vec3 brdf = fdf * vdf * ndf * f0 + (1. - f0) * albedo;
   return brdf * NoL;
+}
+
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+    vec3 color = vec3(0.0);
+    vec3 light_dir;
+
+    light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
+    color += vec3(0.45, 0.47, 0.5) * pbr(albedo, 0.19, 0.0, 1.0, normal, light_dir, view_dir);
+
+    light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
+    color += vec3(0.3, 0.23, 0.18) * pbr(albedo, 0.14, 0.0, 1.0, normal, light_dir, view_dir);
+
+    light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
+    color += vec3(0.15, 0.2, 0.22) * pbr(albedo, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
+
+    color *= 1.2;
+    //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
+    return color;
 }
 
 vec3 calcRayDir(vec3 pos)
@@ -444,20 +447,8 @@ void main()
   }
   vec3 viewdir = -calcRayDir(position);
 
-  Material material;
-  //material.albedo = vec3(0.8);
-  material.albedo = iColor;
-  material.roughness = 0.4;
-  material.metallic = 0.0;
-  material.specular = 0.5;
-
-  Light light;
-  light.dir = normalize((mVP * vec4(-1, -2, 5, 0)).xyz);
-  light.dir = faceforward(light.dir, -light.dir, normal);
-  light.color = vec3(1, 1, 1);
-
-  vec3 strength = pbr(material, normal, light.dir, viewdir);
-  vec3 color = light.color * strength;
+  vec3 albedo = iColor;
+  vec3 color = studioShading(albedo, viewdir, normal);
   gl_FragColor = vec4(color, 1.0);
 }
 )";
