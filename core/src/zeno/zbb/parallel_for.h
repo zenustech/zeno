@@ -41,7 +41,7 @@ static void parallel_for(blocked_range<T> const &r, auto const &body, Tls const 
                 ie = ite;
                 flag = false;
             }
-            blocked_range<T> const r{ib, ie, ngrain, nprocs};
+            blocked_range<T> const r{ib, ie, tid, ngrain, nprocs};
             itb = ie;
             mtx.unlock();
             [[likely]] if (ib != ie) {
