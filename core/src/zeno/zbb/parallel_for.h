@@ -11,11 +11,6 @@ ZENO_NAMESPACE_BEGIN
 namespace zbb {
 
 
-static std::size_t get_num_procs() {
-    return std::thread::hardware_concurrency();
-}
-
-
 static void parallel_arena(std::size_t nprocs, auto const &body) {
     std::vector<std::jthread> pool;
     for (std::size_t tid = 0; tid < nprocs; tid++) {
@@ -30,26 +25,25 @@ static void parallel_arena(std::size_t nprocs, auto const &body) {
 
 
 template <class T>
-static void parallel_for(blocked_range<T> const &r, std::size_t grain, auto const &body) {
+static void parallel_for(blocked_range<T> const &r, auto const &body) {
     std::size_t nprocs = get_num_procs();
+    std::size_t ngrain = r.grain();
 
     T it = r.begin();
     std::mutex mtx;
-
     parallel_arena(nprocs, [&] (std::size_t tid) {
         mtx.lock();
-        blocked_range<T> r(it, it + grain);
+        blocked_range<T> const r(it, it + ngrain, ngrain);
         it = r.end();
         mtx.unlock();
-        body(std::as_const(r));
+        body(r);
     });
 }
 
 
 template <class T>
 static void parallel_for(T i0, T i1, auto const &body) {
-    std::size_t grain = (i1 - i0) / (4 * get_num_procs());
-    parallel_for(blocked_range<T>(i0, i1), grain, [&] (blocked_range<T> const &r) {
+    parallel_for(blocked_range<T>(i0, i1), [&] (blocked_range<T> const &r) {
         for (T it = r.begin(); it != r.end(); ++it) {
             body(std::as_const(it));
         }
