@@ -1,25 +1,6 @@
-#include <cstdio>
+#include <zeno/zbb/auto_profiler.h>
 #include <zeno/zbb/parallel_for.h>
 #include <zeno/zbb/parallel_reduce.h>
-#include <iostream>
-#include <chrono>
-
-class AutoProfiler {
-private:
-    std::string m_name;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_beg;
-public:
-    AutoProfiler(std::string name)
-        : m_name(std::move(name))
-        , m_beg(std::chrono::high_resolution_clock::now())
-    {}
-
-    ~AutoProfiler() {
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - m_beg);
-        std::cout << m_name << " : " << dur.count() << " musec\n";
-    }
-};
 
 int main()
 {
@@ -29,7 +10,7 @@ int main()
     }
 
     {
-        AutoProfiler _("omp");
+        zbb::auto_profiler _("omp");
         int res = 0;
 #pragma omp parallel for reduction(+: res)
         for (std::size_t i = 0; i < arr.size(); i++) {
@@ -39,7 +20,7 @@ int main()
     }
 
     {
-        AutoProfiler _("zbb");
+        zbb::auto_profiler _("zbb");
         int res = zbb::parallel_reduce
         ( zbb::make_blocked_range(arr.begin(), arr.end())
         , int{0}, [] (int x, int y) { return x + y; }
