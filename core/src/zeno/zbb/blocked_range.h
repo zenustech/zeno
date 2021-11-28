@@ -55,8 +55,8 @@ struct blocked_range {
 template <class T>
 inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end) {
     std::size_t procs = get_num_procs();
-    std::size_t kprocs = 2 * procs;
-    return {begin, end, 0, procs, (static_cast<std::size_t>(end - begin) + kprocs) / kprocs};
+    std::size_t kprocs = 4 * procs;
+    return {begin, end, 0, procs, (static_cast<std::size_t>(end - begin) + kprocs - 1) / kprocs};
 }
 
 template <class T>
