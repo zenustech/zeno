@@ -10,8 +10,8 @@ namespace zbb {
 
 template <class T>
 static void parallel_for(blocked_range<T> const &r, auto const &body) {
-    parallel_arena(r, [&] (auto const &item) {
-        item(body);
+    parallel_arena(r, [&] (auto const &engine, std::size_t tid) {
+        engine(body);
     });
 }
 
