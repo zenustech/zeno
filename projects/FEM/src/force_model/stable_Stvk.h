@@ -204,8 +204,6 @@ public:
         stress[0] = mu * (s[0] * s[0] - 1) * s[0] + lambda * (s.squaredNorm() - 3) * s[0] / 2;
         stress[1] = mu * (s[1] * s[1] - 1) * s[1] + lambda * (s.squaredNorm() - 3) * s[1] / 2;
         stress[2] = mu * (s[2] * s[2] - 1) * s[2] + lambda * (s.squaredNorm() - 3) * s[2] / 2;
-        stress[1] = mu * (s[1] * s[1] - 1) * s[1] + lambda * (s.squaredNorm() - 3) * s[1] / 2;
-        stress[2] = mu * (s[2] * s[2] - 1) * s[2] + lambda * (s.squaredNorm() - 3) * s[2] / 2;
 
         Vec3d Is;
         EvalIsoInvarients(strain, Is);

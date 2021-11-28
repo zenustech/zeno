@@ -20,5 +20,5 @@ public:
     int EvalElmObjDerivJacobi(const TetAttributes tet_attribs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
-            const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd) const override;         
+            const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd,bool debug = false) const override;         
 };

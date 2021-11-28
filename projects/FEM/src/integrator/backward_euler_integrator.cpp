@@ -95,7 +95,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         const std::shared_ptr<BaseForceModel>& force_model,
         const std::shared_ptr<DiricletDampingModel>& damping_model,
         const std::vector<Vec12d>& elm_states,
-        FEM_Scaler* elm_obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool filtering) const{
+        FEM_Scaler* elm_obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool filtering,bool debug) const{
     Vec12d u2 = elm_states[2];
     Vec12d u1 = elm_states[1];
     Vec12d u0 = elm_states[0];
@@ -115,7 +115,6 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
     ComputeDeformationGradient(attrs._Minv,u2,F);
     ComputeDeformationGradient(attrs._Minv,v2,L);
 
-    bool debug = false;
     if(debug){
         std::cout << "DEBUG" << std::endl;
         Mat3x3d Ftest = Mat3x3d::Random();
@@ -143,7 +142,8 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
         Mat3x3d R = MatHelper::Orient2R(forient);
 
-        Mat3x3d Act = R * act.asDiagonal() * R.transpose();
+        // Mat3x3d Act = R * act.asDiagonal() * R.transpose();
+        Mat3x3d Act = Mat3x3d::Identity();
 
         Mat9x9d ddpsi_cmp = Mat9x9d::Zero();
         Vec9d dpsi_cmp = Vec9d::Zero();
@@ -172,7 +172,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
         FEM_Scaler ddpsi_error = (ddpsi_fd - ddpsi_cmp).norm() / ddpsi_fd.norm();
         FEM_Scaler dpsi_error = (dpsi_fd - dpsi_cmp).norm() / dpsi_fd.norm();
-        // if(ddpsi_error > 1e-5 || dpsi_error > 1e-3){
+        if(ddpsi_error > 1e-5 || dpsi_error > 1e-3){
                 FEM_Scaler lambda = ElasticModel::Enu2Lambda(attrs.emp.E,attrs.emp.nu);
                 FEM_Scaler mu = ElasticModel::Enu2Mu(attrs.emp.E,attrs.emp.nu);
                 // Vec9d eig_vals;
@@ -197,10 +197,14 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
                 std::cerr << "ddpsi_error : " << ddpsi_error << std::endl;
                 std::cout << "ddpsi : " << std::endl << ddpsi_cmp << std::endl;
                 std::cout << "ddpsi_fd : " << std::endl << ddpsi_fd << std::endl;
-                throw std::runtime_error("ddpsi_error");
-        // }
 
-        throw std::runtime_error("material check");
+
+                std::cout << "pstrain : " << attrs.pmp.plastic_strain.transpose() << std::endl;
+                std::cout << "kinimatic_hardening_shift : " << attrs.pmp.kinematic_hardening_shift.transpose() << std::endl;
+
+                throw std::runtime_error("ddpsi_error");
+        }
+
     }
 
 

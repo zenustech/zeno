@@ -30,7 +30,7 @@
       ]
      },
      "params": {
-      "value": 80000000000.0
+      "value": 10000000000.0
      },
      "uipos": [
       -6538.88971050413,
@@ -343,8 +343,8 @@
     "be7d6869-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -6698.26429967451,
-      -829.9783601459053
+      -6703.138987694476,
+      -829.9783601459054
      ],
      "special": true,
      "width": 2006.92392077987,
@@ -638,6 +638,11 @@
        null,
        null
       ],
+      "curStrain": [
+       "1895ad3e-DictGetItem",
+       "object",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -650,7 +655,9 @@
       "ArmijoCoeff": 0.01,
       "CurvatureCoeff": 0.9,
       "BTL_shrinkingRate": 0.5,
-      "epsilon": 0.001
+      "epsilon": 0.01,
+      "traj_length": 400,
+      "output_filepath": "/home/lsl/LSL/Model/Aloy/alloy_stress/simple_bar.txt"
      },
      "uipos": [
       -1073.4780955839894,
@@ -697,8 +704,8 @@
      },
      "params": {},
      "uipos": [
-      -2428.31643214465,
-      -1447.440953649444
+      -2350.0423386331995,
+      -1417.622251359368
      ],
      "options": []
     },
@@ -799,8 +806,8 @@
       "z": 0.0
      },
      "uipos": [
-      -2819.7899198249784,
-      -1733.1752699759713
+      -2745.7437246370932,
+      -1780.0837311752787
      ],
      "options": []
     },
@@ -1371,8 +1378,8 @@
      },
      "params": {},
      "uipos": [
-      -5494.611536561262,
-      -490.21121541501935
+      -5462.4916222143665,
+      -483.51956659274947
      ],
      "options": []
     },
@@ -1391,8 +1398,8 @@
       "z": 0.0
      },
      "uipos": [
-      -5923.06385869565,
-      -667.7680335968375
+      -5948.492124220276,
+      -665.0913740679295
      ],
      "options": []
     },
@@ -1406,7 +1413,7 @@
       ]
      },
      "params": {
-      "value": 0.01
+      "value": 0.1
      },
      "uipos": [
       -5928.853754940708,
@@ -1424,7 +1431,7 @@
       ]
      },
      "params": {
-      "value": 10000000000.0
+      "value": 176200000.0
      },
      "uipos": [
       -5934.643651185771,
@@ -1448,8 +1455,8 @@
      },
      "params": {},
      "uipos": [
-      -5197.396862648217,
-      -459.33176877470316
+      -5184.013565003678,
+      -445.9484711301636
      ],
      "options": []
     },
@@ -1665,36 +1672,10 @@
       "op_type": "sub"
      },
      "uipos": [
-      -4627.941267292486,
-      -2151.0236536561256
+      -4630.480167302886,
+      -2145.945853635327
      ],
      "options": []
-    },
-    "1cd91565-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "9e4ccfde-x",
-       "ret",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      -4348.911692502468,
-      -2147.4483927248016
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
     },
     "de5536b4-AppendList": {
      "name": "AppendList",
@@ -1768,8 +1749,8 @@
       "_KEYS": "obj0"
      },
      "uipos": [
-      -1037.9546998517785,
-      -1107.915946146245
+      -1091.2512888700812,
+      -1092.3169444823513
      ],
      "options": [
       "ONCE"
@@ -1799,8 +1780,8 @@
      },
      "params": {},
      "uipos": [
-      -748.9037796442684,
-      -1110.2550642292488
+      -758.9781348855331,
+      -1126.1790450944723
      ],
      "options": []
     },
@@ -1985,7 +1966,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 0.001,
+      "y": -0.001,
       "z": 0.0
      },
      "uipos": [
@@ -2005,7 +1986,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": -0.001,
+      "y": 0.001,
       "z": 0.0
      },
      "uipos": [
@@ -2035,9 +2016,7 @@
       -1640.8661247565992,
       -3175.077018679904
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "216451e2-NumericOperator": {
      "name": "NumericOperator",
@@ -2088,9 +2067,7 @@
       -1296.3277617065237,
       -2947.2371334371132
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "0c8a0296-NumericVec3": {
      "name": "NumericVec3",
@@ -2107,8 +2084,8 @@
       "z": 0.0
      },
      "uipos": [
-      -4348.893809571793,
-      -3045.899734149752
+      -3858.019260064965,
+      -2593.924677245352
      ],
      "options": []
     },
@@ -2130,145 +2107,11 @@
       "name": "DispUp"
      },
      "uipos": [
-      -4076.3750785399266,
-      -3020.3372104395853
+      -3585.500529033098,
+      -2568.3621535351854
      ],
      "options": [
       "ONCE"
-     ]
-    },
-    "5610349d-x": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "929c50a0-x",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "DispDown"
-     },
-     "uipos": [
-      -4066.668728957225,
-      -2780.827477416063
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "929c50a0-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -4339.187459989091,
-      -2806.39000112623
-     ],
-     "options": []
-    },
-    "2347b85d-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "DispUp"
-     },
-     "uipos": [
-      -3244.8196989994294,
-      -2535.6680561812395
-     ],
-     "options": []
-    },
-    "da0c99f9-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "2347b85d-PortalOut",
-       "port",
-       null
-      ],
-      "rhs": [
-       "5fdf779f-PortalOut",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -2878.4235258203707,
-      -2470.8355685105257
-     ],
-     "options": []
-    },
-    "5fdf779f-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "dirUp"
-     },
-     "uipos": [
-      -3252.970068878033,
-      -2346.3571921827565
-     ],
-     "options": []
-    },
-    "4ef56ab6-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "da0c99f9-NumericOperator",
-       "ret",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "DispUp"
-     },
-     "uipos": [
-      -2447.1948649705982,
-      -2481.579237895958
-     ],
-     "options": [
-      "VIEW"
      ]
     },
     "41c9e62d-x": {
@@ -2292,16 +2135,14 @@
       -2431.449832250568,
       -2090.7782640008522
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "80562671-x": {
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "c361d9ac-PortalIn",
+       "DST",
        null
       ]
      },
@@ -2364,8 +2205,8 @@
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "41c9e62d-x",
+       "DST",
        null
       ]
      },
@@ -2373,8 +2214,8 @@
       "name": "DispDown"
      },
      "uipos": [
-      -2972.1064705045505,
-      -1436.9657803015923
+      -2936.1256134779424,
+      -1442.5228506733677
      ],
      "options": []
     },
@@ -2382,8 +2223,8 @@
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "85d7138c-x",
+       "DST",
        null
       ]
      },
@@ -2395,13 +2236,357 @@
       -792.8087063732926
      ],
      "options": []
+    },
+    "85d7138c-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "0c775dc3-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DispUp"
+     },
+     "uipos": [
+      -2526.1515731695736,
+      -346.2054841616077
+     ],
+     "options": []
+    },
+    "9d533660-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       "329c1007-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "DispUp"
+     },
+     "uipos": [
+      -3248.524412580613,
+      -391.6113799909899
+     ],
+     "options": []
+    },
+    "eb27270b-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dirUp"
+     },
+     "uipos": [
+      -3331.9267770770084,
+      -210.9834384484061
+     ],
+     "options": []
+    },
+    "0c775dc3-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "9d533660-x",
+       "port",
+       null
+      ],
+      "rhs": [
+       "eb27270b-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -2957.380234019346,
+      -335.4618147761753
+     ],
+     "options": []
+    },
+    "329c1007-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "de26ffe2-x",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DispDown"
+     },
+     "uipos": [
+      -3331.5551479958967,
+      -673.8931890322693
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "de26ffe2-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -3614.927532097636,
+      -721.1630188821838
+     ],
+     "options": []
+    },
+    "831bf858-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -0.029,
+      "y": -0.029,
+      "z": 0.058
+     },
+     "uipos": [
+      -5708.259671381029,
+      -747.4521630615636
+     ],
+     "options": []
+    },
+    "d6c3828c-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -118900000.0,
+      "y": -118900000.0,
+      "z": 237900000.0
+     },
+     "uipos": [
+      -5973.117720465889,
+      -903.4421797004989
+     ],
+     "options": []
+    },
+    "ca095eea-NumericWrangle": {
+     "name": "NumericWrangle",
+     "inputs": {
+      "params": [
+       "f660febf-MakeDict",
+       "dict",
+       null
+      ],
+      "zfxCode": [
+       "62c36e11-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2574.472208969464,
+      -1233.0778864503814
+     ],
+     "options": []
+    },
+    "f660febf-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dispDown": [
+       "89641f46-PortalOut",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "AABB": [
+       "b7c84727-PortalOut",
+       "port",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dispDown\nAABB\nobj2"
+     },
+     "uipos": [
+      -2937.4999999999986,
+      -1280.772900763358
+     ],
+     "options": [],
+     "socket_keys": [
+      "dispDown",
+      "AABB",
+      "obj2"
+     ]
+    },
+    "62c36e11-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "height=$AABB.y\n@strain = 2*$dispDown.y/height"
+     },
+     "uipos": [
+      -3355.661639730437,
+      -1569.2231855319649
+     ],
+     "options": []
+    },
+    "b7c84727-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "aabb"
+     },
+     "uipos": [
+      -3278.864503816792,
+      -1111.6412213740455
+     ],
+     "options": []
+    },
+    "81d8c20e-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "9e4ccfde-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4321.848163167937,
+      -2125.345896946563
+     ],
+     "options": []
+    },
+    "1895ad3e-DictGetItem": {
+     "name": "DictGetItem",
+     "inputs": {
+      "dict": [
+       "ca095eea-NumericWrangle",
+       "result",
+       null
+      ],
+      "key": [
+       null,
+       null,
+       "strain"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2270.992366412212,
+      -1162.9293893129764
+     ],
+     "options": []
+    },
+    "863c03ad-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "81d8c20e-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "aabb"
+     },
+     "uipos": [
+      -3951.9083969465632,
+      -2133.587786259541
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": -4040.7648143265674,
-    "y": -1780.982401476561,
-    "width": 1220.7031249999993,
-    "height": 1220.7031249999993
+    "x": -6524.393434688192,
+    "y": -858.0166444961276,
+    "width": 976.5624999999994,
+    "height": 976.5624999999994
    }
   },
   "prepareFEMMuscle": {
@@ -11738,51 +11923,6 @@
     "trimesh"
    ]
   },
-  "GetConstraintFeedBack": {
-   "inputs": [
-    [
-     "",
-     "BulletConstraint",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "forceOnA",
-     ""
-    ],
-    [
-     "",
-     "torqueOnA",
-     ""
-    ],
-    [
-     "",
-     "forceOnB",
-     ""
-    ],
-    [
-     "",
-     "torqueOnB",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "GetCurrentFrame": {
    "inputs": [
     [
@@ -12034,6 +12174,46 @@
     "frame"
    ]
   },
+  "GetPlasticState": {
+   "inputs": [
+    [
+     "",
+     "deform",
+     ""
+    ],
+    [
+     "",
+     "refMesh",
+     ""
+    ],
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "GetPlasticStrain": {
    "inputs": [
     [
@@ -12097,6 +12277,41 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "GetTrajStrain": {
+   "inputs": [
+    [
+     "",
+     "straj",
+     ""
+    ],
+    [
+     "",
+     "frameID",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "GetUserData": {
@@ -12995,6 +13210,41 @@
    ],
    "categories": [
     "primitive"
+   ]
+  },
+  "MakeBindingIndices": {
+   "inputs": [
+    [
+     "",
+     "cbIndices",
+     ""
+    ],
+    [
+     "",
+     "fbIndices",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "BindIndices",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeBoxPrimitive": {
@@ -17139,6 +17389,47 @@
     "primitive"
    ]
   },
+  "PrimitiveGetIndicesByTag": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "tagName",
+     "mark"
+    ],
+    [
+     "float",
+     "tagValue",
+     "1.0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveGetSize": {
    "inputs": [
     [
@@ -18467,6 +18758,36 @@
     "particles"
    ]
   },
+  "ReadStrainTrajFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "trajfile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "ReadVDBGrid": {
    "inputs": [
     [
@@ -19541,6 +19862,41 @@
     "FEM"
    ]
   },
+  "SetFEMBindingPoints": {
+   "inputs": [
+    [
+     "",
+     "bindPoints",
+     ""
+    ],
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "meshOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetFLIPWorld": {
    "inputs": [
     [
@@ -20084,6 +20440,11 @@
     ],
     [
      "",
+     "curStrain",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -20097,16 +20458,6 @@
     [
      "",
      "respStress",
-     ""
-    ],
-    [
-     "",
-     "CBind",
-     ""
-    ],
-    [
-     "",
-     "FBind",
      ""
     ],
     [
@@ -20145,6 +20496,16 @@
      "float",
      "epsilon",
      "1e-6"
+    ],
+    [
+     "int",
+     "traj_length",
+     "100"
+    ],
+    [
+     "string",
+     "output_filepath",
+     "none"
     ]
    ],
    "categories": [
