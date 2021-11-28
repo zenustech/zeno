@@ -4,9 +4,9 @@
 int main()
 {
     zbb::parallel_for
-    ( zbb::blocked_range<int>(0, 1024, 1)
+    ( zbb::make_blocked_range(0, 1024)
     , [] (zbb::blocked_range<int> const &r) {
         printf("%d %d\n", r.begin(), r.end());
     });
-    return 0;
+    return 1;
 }

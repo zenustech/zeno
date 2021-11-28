@@ -11,11 +11,6 @@ ZENO_NAMESPACE_BEGIN
 namespace zbb {
 
 
-inline static auto _idivup(auto lhs, auto rhs) {
-    return (lhs + rhs - 1) / rhs;
-}
-
-
 inline static std::size_t get_num_procs() {
     return std::thread::hardware_concurrency();
 }
@@ -24,14 +19,10 @@ inline static std::size_t get_num_procs() {
 template <class T>
 struct blocked_range {
     T _begin, _end;
-    std::size_t _grain;
+    std::size_t _procs, _grain;
 
-    inline constexpr blocked_range(T const &begin, T const &end, std::size_t grain) noexcept
-        : _begin(begin), _end(end), _grain(grain)
-    {}
-
-    inline constexpr blocked_range(T const &begin, T const &end) noexcept
-        : blocked_range(begin, end, _idivup(end - begin, 4 * get_num_procs()))
+    inline constexpr blocked_range(T const &begin, T const &end, std::size_t procs, std::size_t grain) noexcept
+        : _begin(begin), _end(end), _procs(procs), _grain(grain)
     {}
 
     inline constexpr T begin() const noexcept {
@@ -42,6 +33,10 @@ struct blocked_range {
         return _end;
     }
 
+    inline constexpr std::size_t procs() const noexcept {
+        return _procs;
+    }
+
     inline constexpr std::size_t grain() const noexcept {
         return _grain;
     }
@@ -50,6 +45,22 @@ struct blocked_range {
         return end() - begin();
     }
 };
+
+
+template <class T>
+inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end) noexcept
+{
+    std::size_t procs = get_num_procs();
+    std::size_t kprocs = 2 * procs;
+    return {begin, end, procs, (static_cast<std::size_t>(end - begin) + kprocs) / kprocs};
+}
+
+template <class T>
+inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end, std::size_t grain) noexcept
+{
+    std::size_t procs = get_num_procs();
+    return {begin, end, procs, grain};
+}
 
 
 }

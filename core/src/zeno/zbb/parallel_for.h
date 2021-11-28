@@ -26,29 +26,27 @@ static void parallel_arena(std::size_t nprocs, auto const &body, Tls const &...t
 
 template <class T, class ...Tls>
 static void parallel_for(blocked_range<T> const &r, auto const &body, Tls const &...tls) {
-    std::size_t nprocs = get_num_procs();
+    std::size_t nprocs = r.procs();
     std::size_t ngrain = r.grain();
 
-    T it = r.begin(), end = r.end();
+    T itb = r.begin(), ite = r.end();
     std::mutex mtx;
     parallel_arena<Tls...>(nprocs, [&] (std::size_t tid, Tls &...tls) {
         bool flag = true;
         do {
             mtx.lock();
-            auto ie = it + ngrain;
-            [[unlikely]] if (ie >= end) {
-                it = ie;
-                if (ie == end) {
-                    mtx.unlock();
-                    break;
-                }
-                ie = end;
+            T ib = itb;
+            T ie = ib + ngrain;
+            [[unlikely]] if (ie >= ite) {
+                ie = ite;
                 flag = false;
             }
-            blocked_range<T> const r(it, ie, ngrain);
-            it = ie;
+            blocked_range<T> const r{ib, ie, ngrain, nprocs};
+            itb = ie;
             mtx.unlock();
-            body(r, tls...);
+            [[likely]] if (ib != ie) {
+                body(r, tls...);
+            }
         } while (flag);
     }, tls...);
 }
@@ -56,7 +54,7 @@ static void parallel_for(blocked_range<T> const &r, auto const &body, Tls const 
 
 template <class T>
 static void parallel_for(T i0, T i1, auto const &body) {
-    parallel_for(blocked_range<T>(i0, i1), [&] (blocked_range<T> const &r) {
+    parallel_for(make_blocked_range(i0, i1), [&] (blocked_range<T> const &r) {
         for (T it = r.begin(); it != r.end(); ++it) {
             body(std::as_const(it));
         }

@@ -18,7 +18,7 @@ static Ret parallel_reduce(blocked_range<T> const &r, Ret const &ident, auto con
 
 template <class T, class Ret>
 static Ret parallel_reduce(T const &i0, T const &i1, Ret const &ident, auto const &binop, auto const &body) {
-    return parallel_reduce(blocked_range<T>(i0, i1), ident, binop, body);
+    return parallel_reduce(make_blocked_range(i0, i1), ident, binop, body);
 }
 
 
