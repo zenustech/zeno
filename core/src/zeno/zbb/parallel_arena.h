@@ -26,19 +26,24 @@ struct arena {
     {}
 
     void submit(task func) {
+        std::lock_guard _(_tasks_mtx);
         _tasks.push_front(std::move(func));
     }
 
     void start() {
         for (std::size_t tid = 0; tid < _nprocs; tid++) {
             std::jthread thr{[tid, this] {
-                task func;
-                {
-                    std::lock_guard _(_tasks_mtx);
-                    func = std::move(_tasks.back());
-                    _tasks.pop_back();
+                for (;;) {
+                    task func;
+                    {
+                        std::lock_guard _(_tasks_mtx);
+                        if (_tasks.empty())
+                            break;
+                        func = std::move(_tasks.back());
+                        _tasks.pop_back();
+                    }
+                    func(tid);
                 }
-                func(tid);
             }};
             _procs.push_back(std::move(thr));
         }
@@ -63,9 +68,10 @@ static void parallel_arena(blocked_range<T> const &r, auto const &kern) {
     for (T it = r.begin(); it != r.end();) {
         T b = it;
         T e = it + ngrain;
-        if (e >= r.end())
+        [[unlikely]] if (e >= r.end()) {
             e = r.end();
-        a.submit([&kern, b, e, ngrain, nprocs] (std::size_t tid) {
+        }
+        a.submit([=] (std::size_t tid) {
             kern([&] (auto const &body) {
                 blocked_range<T> const r{b, e, tid, ngrain, nprocs};
                 body(r);

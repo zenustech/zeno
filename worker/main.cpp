@@ -5,7 +5,7 @@
 int main()
 {
     std::vector<int> arr;
-    for (int i = 0; i < 1024*768; i++) {
+    for (int i = 0; i < 100; i++) {
         arr.push_back(i + 1);
     }
 
@@ -25,7 +25,6 @@ int main()
         ( zbb::make_blocked_range(arr.begin(), arr.end())
         , int{0}, [] (int x, int y) { return x + y; }
         , [&] (int &res, auto const &r) {
-            printf("%ld %d %d\n", r.proc_id(), *r.begin(), *r.end());
             for (auto const &i: r) {
                 res += i;
             }

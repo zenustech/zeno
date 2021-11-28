@@ -11,13 +11,12 @@ namespace zbb {
 
 template <class T, class Ret>
 static Ret parallel_reduce(blocked_range<T> const &r, Ret const &ident, auto const &binop, auto const &body) {
-    std::vector<Ret> partial(r.num_procs());
+    std::vector<Ret> partial(r.num_procs(), ident);
     parallel_arena(r, [&] (auto const &engine, std::size_t tid) {
-        Ret tls = ident;
+        Ret &tls = partial[tid];
         engine([&] (blocked_range<T> const &r) {
             body(tls, r);
         });
-        partial[tid] = tls;
     });
     Ret res = ident;
     for (Ret const &x: partial) {
