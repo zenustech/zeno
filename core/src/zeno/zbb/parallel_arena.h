@@ -14,12 +14,36 @@ namespace zbb {
 
 
 struct arena {
-    using task = std::function<void(std::size_t)>;
+    struct task {
+        std::function<void(std::size_t)> _func;
+
+        task() = default;
+
+        inline task(auto &&func)
+            : _func(std::forward<decltype(func)>(func))
+        {}
+
+        inline void operator()(std::size_t tid) const {
+            _func(tid);
+        }
+    };
+
+    struct proc {
+        std::jthread _thr;
+
+        inline explicit proc(auto &&func)
+            : _thr(std::forward<decltype(func)>(func))
+        {}
+
+        inline void join() {
+            _thr.join();
+        }
+    };
 
     std::size_t _nprocs;
     std::mutex _tasks_mtx;
     std::deque<task> _tasks;
-    std::vector<std::jthread> _procs;
+    std::vector<proc> _procs;
 
     explicit arena(std::size_t nprocs)
         : _nprocs(nprocs)
@@ -32,7 +56,7 @@ struct arena {
 
     void start() {
         for (std::size_t tid = 0; tid < _nprocs; tid++) {
-            std::jthread thr{[tid, this] {
+            proc thr{[tid, this] {
                 for (;;) {
                     task func;
                     {
