@@ -10,12 +10,12 @@
 ZENO_NAMESPACE_BEGIN
 namespace zbb {
 
-
-static void parallel_arena(std::size_t nprocs, auto const &body) {
+template <class ...Tls>
+static void parallel_arena(std::size_t nprocs, auto const &body, Tls const &...tls) {
     std::vector<std::jthread> pool;
     for (std::size_t tid = 0; tid < nprocs; tid++) {
-        pool.emplace_back([tid, &body] {
-            body(tid);
+        pool.emplace_back([tid, tls..., &body] {
+            body(tid, tls...);
         });
     }
     for (auto &&thr: pool) {
@@ -24,20 +24,33 @@ static void parallel_arena(std::size_t nprocs, auto const &body) {
 }
 
 
-template <class T>
-static void parallel_for(blocked_range<T> const &r, auto const &body) {
+template <class T, class ...Tls>
+static void parallel_for(blocked_range<T> const &r, auto const &body, Tls const &...tls) {
     std::size_t nprocs = get_num_procs();
     std::size_t ngrain = r.grain();
 
-    T it = r.begin();
+    T it = r.begin(), end = r.end();
     std::mutex mtx;
-    parallel_arena(nprocs, [&] (std::size_t tid) {
-        mtx.lock();
-        blocked_range<T> const r(it, it + ngrain, ngrain);
-        it = r.end();
-        mtx.unlock();
-        body(r);
-    });
+    parallel_arena<Tls...>(nprocs, [&] (std::size_t tid, Tls &...tls) {
+        bool flag = true;
+        do {
+            mtx.lock();
+            auto ie = it + ngrain;
+            [[unlikely]] if (ie >= end) {
+                it = ie;
+                if (ie == end) {
+                    mtx.unlock();
+                    break;
+                }
+                ie = end;
+                flag = false;
+            }
+            blocked_range<T> const r(it, ie, ngrain);
+            it = ie;
+            mtx.unlock();
+            body(r, tls...);
+        } while (flag);
+    }, tls...);
 }
 
 

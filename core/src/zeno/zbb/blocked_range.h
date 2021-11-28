@@ -11,7 +11,7 @@ ZENO_NAMESPACE_BEGIN
 namespace zbb {
 
 
-inline static auto divup(auto lhs, auto rhs) {
+inline static auto _idivup(auto lhs, auto rhs) {
     return (lhs + rhs - 1) / rhs;
 }
 

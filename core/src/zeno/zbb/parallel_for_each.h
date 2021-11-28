@@ -9,12 +9,12 @@ namespace zbb {
 
 
 template <class T>
-static void parallel_for_each(blocked_range<T> const &r, auto const &body) {
+static void parallel_for_each(blocked_range<T> const &r, auto const &body, auto const &...tls) {
     parallel_for(r, [&] (blocked_range<T> const &r) {
         for (T it = r.begin(); it != r.end(); ++it) {
             body(*it);
         }
-    });
+    }, tls...);
 }
 
 
