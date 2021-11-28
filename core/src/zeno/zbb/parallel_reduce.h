@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno/zbb/parallel_for.h>
+#include <zeno/zbb/parallel_arena.h>
 #include <vector>
 
 
