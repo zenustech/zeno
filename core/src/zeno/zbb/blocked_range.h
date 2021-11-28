@@ -34,15 +34,15 @@ struct blocked_range {
         return _end;
     }
 
-    inline constexpr std::size_t tid() const noexcept {
+    inline constexpr std::size_t proc_id() const noexcept {
         return _tid;
     }
 
-    inline constexpr std::size_t procs() const noexcept {
+    inline constexpr std::size_t num_procs() const noexcept {
         return _procs;
     }
 
-    inline constexpr std::size_t grain() const noexcept {
+    inline constexpr std::size_t grain_size() const noexcept {
         return _grain;
     }
 
@@ -53,18 +53,20 @@ struct blocked_range {
 
 
 template <class T>
-inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end) noexcept
-{
+inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end) {
     std::size_t procs = get_num_procs();
     std::size_t kprocs = 2 * procs;
     return {begin, end, 0, procs, (static_cast<std::size_t>(end - begin) + kprocs) / kprocs};
 }
 
 template <class T>
-inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end, std::size_t grain) noexcept
-{
+inline constexpr blocked_range<T> make_blocked_range(T const &begin, T const &end, std::size_t grain) {
     std::size_t procs = get_num_procs();
     return {begin, end, 0, procs, grain};
+}
+
+inline constexpr auto make_blocked_range(auto &&iterable) {
+    return make_blocked_range(iterable.begin(), iterable.end());
 }
 
 
