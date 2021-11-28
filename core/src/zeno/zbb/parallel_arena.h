@@ -57,9 +57,6 @@ static void parallel_arena(blocked_range<T> const &r, auto const &kern) {
         kern(_arena_item{tid, nprocs, [&] (auto const &body) {
             bool flag = true;
             do {
-                std::optional<auto_profiler> prof;
-                prof.emplace("lock");
-
                 mtx.lock();
                 T ib = itb;
                 T ie = ib + ngrain;
@@ -70,8 +67,6 @@ static void parallel_arena(blocked_range<T> const &r, auto const &kern) {
                 blocked_range<T> const r{ib, ie, tid, ngrain, nprocs};
                 itb = ie;
                 mtx.unlock();
-
-                prof.reset();
 
                 [[likely]] if (ib != ie) {
                     body(r);
