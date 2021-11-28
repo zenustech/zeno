@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-#set(ENABLE_GMPM_BUILD ON)
-set(ENABLE_GMPM_BUILD ON)
-
-if (ENABLE_GMPM_BUILD)
-
+# assume cuda
 project(MPM CXX CUDA)
 set(ZS_ENABLE_CUDA ON)
 set(ZS_ENABLE_OPENVDB ON)
@@ -12,14 +8,6 @@ set(ZENSIM_INSTALL OFF)
 add_subdirectory(zecomp)
 
 find_package(CUDAToolkit)
-
-#if (EXISTS zecomp AND EXISTS zecomp/include/zensim/tpls)
-
-#message("enable zeno_gmpm:${ENABLE_GMPM_BUILD}, cuda compiler: ${CMAKE_CUDA_COMPILER}")
-
-# if (POLICY CMP0104)
-#   cmake_policy(SET CMP0104 OLD)
-# endif (POLICY CMP0104)
 
 add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
@@ -37,6 +25,18 @@ target_compile_options(zeno_zsfft # MSVC, GNU, Clang, Intel
   PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
 )
 
+add_library(zeno_mpm SHARED)
+target_sources(zeno_mpm PRIVATE
+  mpm/Generation.cu
+  mpm/Generation.cpp
+  mpm/MPMPipeline.cu
+  mpm/MPMStepping.cu
+)
+target_link_libraries(zeno_mpm PRIVATE zensim)
+target_link_libraries(zeno_mpm PRIVATE zeno_nodep)
+target_link_libraries(zeno_mpm PUBLIC zeno ZFX)
+target_include_directories(zeno_mpm PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_mpm PRIVATE ../zenvdb/include)
 
 add_library(zeno_gmpm SHARED)
 
@@ -145,5 +145,3 @@ target_link_libraries(zeno_zsfft PRIVATE zeno_nodep)
 target_link_libraries(zeno_zsfft PUBLIC ZFX)
 target_include_directories(zeno_zsfft PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
-
-endif(ENABLE_GMPM_BUILD)

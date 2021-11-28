@@ -175,7 +175,7 @@ struct UpdateZSGrid : INode {
     using namespace zs;
     auto gravity = get_param<float>("gravity");
     auto accel = zs::vec<float, 3>::zeros();
-    if (has_input("ExtForce")) {
+    if (has_input("Accel")) {
       auto tmp = get_input<NumericObject>("Accel")->get<vec3f>();
       accel = zs::vec<float, 3>{tmp[0], tmp[1], tmp[2]};
     } else
@@ -215,6 +215,59 @@ ZENDEFNODE(UpdateZSGrid, {
                              {"MPM"},
                          });
 
+struct ApplyBoundaryOnZSGrid : INode {
+  template <typename LS>
+  constexpr void
+  projectBoundary(zs::CudaExecutionPolicy &cudaPol, LS &ls,
+                  ZenoBoundary &boundary,
+                  const typename ZenoPartition::table_t &partition,
+                  typename ZenoGrid::grid_t &grid) {
+    using namespace zs;
+    auto collider = boundary.getBoundary<LS>();
+    cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+            [grid = proxy<execspace_e::cuda>({}, grid),
+             table = proxy<execspace_e::cuda>(partition),
+             boundary = collider] __device__(int bi, int ci) mutable {
+              auto block = grid.block(bi);
+              auto mass = block("m", ci);
+              if (mass != 0.f) {
+                auto vel = block.pack<3>("v", ci);
+                auto pos = (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
+                           grid.dx;
+                boundary.resolveCollision(pos, vel);
+                block.set("v", ci, vel);
+              }
+            });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing ApplyBoundaryOnZSGrid\n");
+
+    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto zsgrid = get_input<ZenoGrid>("ZSGrid");
+    auto &grid = zsgrid->get();
+    auto boundary = get_input<ZenoBoundary>("ZSBoundary");
+
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    match([&](auto &ls) {
+      projectBoundary(cudaPol, ls, *boundary, partition, grid);
+    })(boundary->getLevelSet());
+
+    fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
+    set_output("ZSGrid", zsgrid);
+  }
+};
+
+ZENDEFNODE(ApplyBoundaryOnZSGrid, {
+                                      {"ZSPartition", "ZSGrid", "ZSBoundary"},
+                                      {"ZSGrid"},
+                                      {},
+                                      {"MPM"},
+                                  });
+
 struct ZSParticleToZSGrid : INode {
   template <typename Model>
   void p2g(zs::CudaExecutionPolicy &cudaPol, const Model &model,
@@ -238,6 +291,18 @@ struct ZSParticleToZSGrid : INode {
 
       auto contrib = -dt * Dinv * vol * P * F.transpose();
       auto arena = make_local_arena(grid.dx, localPos);
+
+#if 0
+      if (pi == 0) {
+        printf("mu: %f, lam: %f\n", model.mu, model.lam);
+        printf("F[%d]: %f, %f, %f; %f, %f, %f; %f, %f, %f\n", (int)pi, F(0, 0),
+               F(0, 1), F(0, 2), F(1, 0), F(1, 1), F(1, 2), F(2, 0), F(2, 1),
+               F(2, 2));
+        printf("P[%d]: %f, %f, %f; %f, %f, %f; %f, %f, %f\n", (int)pi, P(0, 0),
+               P(0, 1), P(0, 2), P(1, 0), P(1, 1), P(1, 2), P(2, 0), P(2, 1),
+               P(2, 2));
+      }
+#endif
 
       for (auto loc : arena.range()) {
         auto coord = arena.coord(loc);

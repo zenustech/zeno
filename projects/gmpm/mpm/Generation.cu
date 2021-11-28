@@ -74,28 +74,17 @@ struct ToZSParticles : INode {
     auto model = get_input<ZenoConstitutiveModel>("ZSModel");
 
     auto inParticles = get_input<PrimitiveObject>("prim");
-    // const auto size = inParticles->size();
 
-#if 0
     auto &obj = inParticles->attr<vec3f>("pos");
-#else
-    auto obj = zs::sample_from_vdb_file("/home/mine/Codes/Mn/pig.vdb", 0.1, 8);
-#endif
+    auto &vels = inParticles->attr<vec3f>("vel");
 
     const auto size = obj.size();
 
-    for (int i = 0; i < obj.size(); ++i) {
-      auto x = obj[i];
-      fmt::print("{}: ({}, {}, {})\n", i, x[0], x[1], x[2]);
-      if (i % 1000 == 0)
-        getchar();
-    }
-
     auto outParticles = IObject::make<ZenoParticles>();
-    //
+    // model
     outParticles->getModel() = *model;
 
-    //
+    // particles
     auto &pars = outParticles->getParticles(); // tilevector
 
     std::vector<zs::PropertyTag> tags{
@@ -121,25 +110,24 @@ struct ToZSParticles : INode {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
 
       auto ompExec = zs::omp_exec();
-      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
-                                hasPlasticity, hasF, &inParticles, &model,
-                                &obj](size_t pi) mutable {
-        using vec3 = zs::vec<float, 3>;
-        using mat3 = zs::vec<float, 3, 3>;
-        pars("mass", pi) = model->volume * model->density;
-        pars.tuple<3>("pos", pi) = obj[pi];
-        pars.tuple<3>("vel", pi) =
-            vec3{0, -1, 0}; // inParticles->attr<zeno::vec3f>("vel")[pi];
-        pars.tuple<9>("C", pi) = mat3::zeros();
-        if (hasF)
-          pars.tuple<9>("F", pi) = mat3::identity();
-        else
-          pars("J", pi) = 1.;
+      ompExec(zs::range(size),
+              [pars = proxy<execspace_e::host>({}, pars), hasPlasticity, hasF,
+               &inParticles, &model, &obj, &vels](size_t pi) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+                pars("mass", pi) = model->volume * model->density;
+                pars.tuple<3>("pos", pi) = obj[pi];
+                pars.tuple<3>("vel", pi) = vels[pi];
+                pars.tuple<9>("C", pi) = mat3::zeros();
+                if (hasF)
+                  pars.tuple<9>("F", pi) = mat3::identity();
+                else
+                  pars("J", pi) = 1.;
 
-        if (hasPlasticity)
-          pars("logJp", pi) = 0;
-        pars("vms", pi) = 0; // vms
-      });
+                if (hasPlasticity)
+                  pars("logJp", pi) = 0;
+                pars("vms", pi) = 0; // vms
+              });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
@@ -194,12 +182,44 @@ ZENDEFNODE(MakeZSGrid, {
                            {"MPM"},
                        });
 
+struct ToZSBoundary : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToZSBoundary\n");
+    auto boundary = zeno::IObject::make<ZenoBoundary>();
+
+    auto type = get_param<std::string>("type");
+    auto queryType = [&type]() -> zs::collider_e {
+      if (type == "sticky" || type == "Sticky")
+        return zs::collider_e::Sticky;
+      else if (type == "slip" || type == "Slip")
+        return zs::collider_e::Slip;
+      else if (type == "separate" || type == "Separate")
+        return zs::collider_e::Separate;
+      return zs::collider_e::Sticky;
+    };
+    // pass in FloatGrid::Ptr
+    auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
+
+    boundary->levelset = &ls;
+    boundary->type = queryType();
+    // *boundary = ZenoBoundary{&ls, queryType()};
+    fmt::print(fg(fmt::color::cyan), "done executing ToZSBoundary\n");
+    set_output("ZSBoundary", boundary);
+  }
+};
+ZENDEFNODE(ToZSBoundary, {
+                             {"ZSLevelSet"},
+                             {"ZSBoundary"},
+                             {{"string", "type", "sticky"}},
+                             {"MPM"},
+                         });
+
 /// conversion
 
 struct ZSParticlesToPrimitiveObject : zeno::INode {
   void apply() override {
-    fmt::print(fg(fmt::color::green),
-               "begin executing ZSParticlesToPrimitiveObject\n");
+    fmt::print(fg(fmt::color::green), "begin executing "
+                                      "ZSParticlesToPrimitiveObject\n");
     auto &zspars = get_input<ZenoParticles>("ZSParticles")->getParticles();
     const auto size = zspars.size();
 
@@ -235,8 +255,8 @@ struct ZSParticlesToPrimitiveObject : zeno::INode {
              dst.data(), sizeof(float) * size);
       }
     }
-    fmt::print(fg(fmt::color::cyan),
-               "done executing ZSParticlesToPrimitiveObject\n");
+    fmt::print(fg(fmt::color::cyan), "done executing "
+                                     "ZSParticlesToPrimitiveObject\n");
     set_output("prim", prim);
   }
 };

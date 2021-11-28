@@ -124,12 +124,54 @@ struct ZenoBoundary : IObject {
 
   auto &getLevelSet() noexcept { return *levelset; }
   const auto &getLevelSet() const noexcept { return *levelset; }
-  template <category_e I> auto &getLevelSet() noexcept {
-    return std::get<I>(getLevelSet());
+  template <typename LS> auto getBoundary() noexcept {
+    using namespace zs;
+    if constexpr (zs::is_same_v<LS, spls_t>) {
+      auto ret = zs::Collider{
+          proxy<execspace_e::cuda>(std::get<LS>(getLevelSet())), type};
+      ret.s = s;
+      ret.dsdt = dsdt;
+      ret.R = R;
+      ret.omega = omega;
+      ret.b = b;
+      ret.dbdt = dbdt;
+      return ret;
+    } else {
+      auto ret = Collider{std::get<LS>(getLevelSet()), type};
+      ret.s = s;
+      ret.dsdt = dsdt;
+      ret.R = R;
+      ret.omega = omega;
+      ret.b = b;
+      ret.dbdt = dbdt;
+      return ret;
+    }
   }
-  template <category_e I> const auto &getLevelSet() const noexcept {
-    return std::get<I>(getLevelSet());
+#if 0
+  template <typename LS> auto getBoundary() const noexcept {
+    using namespace zs;
+    if constexpr (zs::is_same_v<LS, spls_t>) {
+      auto ret =
+          Collider{proxy<execspace_e::cuda>(std::get<LS>(getLevelSet())), type};
+      ret.s = s;
+      ret.dsdt = dsdt;
+      ret.R = R;
+      ret.omega = omega;
+      ret.b = b;
+      ret.dbdt = dbdt;
+      return ret;
+    } else {
+      auto ret = Collider{std::get<LS>(getLevelSet()), type};
+      ret.s = s;
+      ret.dsdt = dsdt;
+      ret.R = R;
+      ret.omega = omega;
+      ret.b = b;
+      ret.dbdt = dbdt;
+      return ret;
+    }
   }
+#endif
 
   levelset_t *levelset{nullptr};
   zs::collider_e type{zs::collider_e::Sticky};
