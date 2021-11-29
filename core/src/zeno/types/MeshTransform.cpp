@@ -1,7 +1,6 @@
 #include <zeno/types/MeshTransform.h>
 #include <zeno/math/quaternion.h>
 #include <zeno/ztd/variant.h>
-#include <zeno/zbb/parallel_for_each.h>
 #include <variant>
 
 
@@ -18,14 +17,16 @@ void transformMesh
     auto rotmat = math::quaternion_matrix(rotation);
 
     std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
-        zbb::parallel_for_each(begin(mesh.vert), end(mesh.vert), [&] (auto &vert) {
+#pragma omp parallel for
+        for (std::intptr_t i = 0; i < mesh.vert.size(); i++) {
+            auto &vert = mesh.vert[i];
             if constexpr (has_scaling)
                 vert *= scaling;
             if constexpr (has_rotation)
                 vert = rotmat * vert;
             if constexpr (has_translate)
                 vert += translate;
-        });
+        }
     }
     , ztd::make_bool_variant(translate != math::vec3f(0))
     , ztd::make_bool_variant(scaling != math::vec3f(1))
