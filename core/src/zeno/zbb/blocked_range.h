@@ -19,11 +19,11 @@ inline static std::size_t get_num_procs() {
 template <class T>
 struct blocked_range {
     T _begin, _end;
-    std::size_t _tid;
+    std::size_t _procid;
     std::size_t _procs, _grain;
 
-    inline constexpr blocked_range(T const &begin, T const &end, std::size_t tid, std::size_t procs, std::size_t grain) noexcept
-        : _begin(begin), _end(end), _tid(tid), _procs(procs), _grain(grain)
+    inline constexpr blocked_range(T const &begin, T const &end, std::size_t procid, std::size_t procs, std::size_t grain) noexcept
+        : _begin(begin), _end(end), _procid(procid), _procs(procs), _grain(grain)
     {}
 
     inline constexpr T begin() const noexcept {
@@ -35,7 +35,7 @@ struct blocked_range {
     }
 
     inline constexpr std::size_t proc_id() const noexcept {
-        return _tid;
+        return _procid;
     }
 
     inline constexpr std::size_t num_procs() const noexcept {

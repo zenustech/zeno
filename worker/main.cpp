@@ -26,6 +26,7 @@ int main()
             ( zbb::make_blocked_range(arr.begin(), arr.end())
             , int{0}, [] (int x, int y) { return x + y; }
             , [&] (int &res, auto const &r) {
+                //printf("%d %d\n", *r.begin(), *r.end());
                 for (auto const &i: r) {
                     res += i;
                 }

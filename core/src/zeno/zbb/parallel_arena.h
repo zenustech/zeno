@@ -5,8 +5,6 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#include <mutex>
-#include <deque>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -23,8 +21,8 @@ struct arena {
             : _func(std::forward<decltype(func)>(func))
         {}
 
-        inline void operator()(std::size_t tid) const {
-            _func(tid);
+        inline void operator()(std::size_t procid) const {
+            _func(procid);
         }
     };
 
@@ -41,32 +39,23 @@ struct arena {
     };
 
     std::size_t _nprocs;
-    std::mutex _tasks_mtx;
-    std::deque<task> _tasks;
+    std::vector<task> _tasks;
     std::vector<proc> _procs;
 
     explicit arena(std::size_t nprocs)
         : _nprocs(nprocs)
     {}
 
-    void submit(task func) {
-        std::lock_guard _(_tasks_mtx);
-        _tasks.push_front(std::move(func));
+    inline void submit(task func) {
+        _tasks.push_back(std::move(func));
     }
 
     void start() {
-        for (std::size_t tid = 0; tid < _nprocs; tid++) {
-            proc thr{[tid, this] {
-                for (;;) {
-                    task func;
-                    {
-                        std::lock_guard _(_tasks_mtx);
-                        if (_tasks.empty())
-                            break;
-                        func = std::move(_tasks.back());
-                        _tasks.pop_back();
-                    }
-                    func(tid);
+        for (std::size_t procid = 0; procid < _nprocs; procid++) {
+            proc thr{[procid, this] {
+                for (std::size_t taskid = 0; taskid < _tasks.size(); taskid += _nprocs) {
+                    auto const &func = _tasks[taskid];
+                    func(procid);
                 }
             }};
             _procs.push_back(std::move(thr));
@@ -87,7 +76,6 @@ static void parallel_arena(blocked_range<T> const &r, auto const &kern) {
     std::size_t ngrain = r.grain_size();
 
     T itb = r.begin(), ite = r.end();
-    std::mutex mtx;
     arena a(nprocs);
     for (T it = r.begin(); it != r.end();) {
         T b = it;
@@ -95,11 +83,11 @@ static void parallel_arena(blocked_range<T> const &r, auto const &kern) {
         [[unlikely]] if (e >= r.end()) {
             e = r.end();
         }
-        a.submit([=] (std::size_t tid) {
+        a.submit([=] (std::size_t procid) {
             kern([&] (auto const &body) {
-                blocked_range<T> const r{b, e, tid, ngrain, nprocs};
+                blocked_range<T> const r{b, e, procid, ngrain, nprocs};
                 body(r);
-            }, tid);
+            }, procid);
         });
         it = e;
     }

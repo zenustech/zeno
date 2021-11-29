@@ -12,8 +12,8 @@ namespace zbb {
 template <class T, class Ret>
 static Ret parallel_reduce(blocked_range<T> const &r, Ret const &ident, auto const &binop, auto const &body) {
     std::vector<Ret> partial(r.num_procs(), ident);
-    parallel_arena(r, [&] (auto const &engine, std::size_t tid) {
-        Ret &tls = partial[tid];
+    parallel_arena(r, [&] (auto const &engine, std::size_t procid) {
+        Ret &tls = partial[procid];
         engine([&] (blocked_range<T> const &r) {
             body(tls, r);
         });
