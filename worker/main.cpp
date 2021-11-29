@@ -112,11 +112,7 @@ void prologue()
 
     neigh_list.resize(pos.size());
 
-    tbb::parallel_for
-    ( size_t{0}, nei_index.size()
-    , [&] (size_t i) {
-        neigh_index[i] = nei_index[i];
-    });
+    std::copy(nei_index.begin(), nei_index.end(), std::back_inserter(neigh_index));
 
     tbb::parallel_for
     ( size_t{0}, pos.size()
@@ -128,7 +124,7 @@ void prologue()
 
 void substep()
 {
-    std::vector<float> lam;
+    std::vector<float> lam(pos.size());
 
     tbb::parallel_for
     ( size_t{0}, pos.size()
