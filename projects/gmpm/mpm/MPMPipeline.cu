@@ -243,18 +243,20 @@ struct ApplyBoundaryOnZSGrid : INode {
     fmt::print(fg(fmt::color::green),
                "begin executing ApplyBoundaryOnZSGrid\n");
 
-    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
-    auto boundary = get_input<ZenoBoundary>("ZSBoundary");
 
     using namespace zs;
 
     auto cudaPol = cuda_exec().device(0);
 
-    match([&](auto &ls) {
-      projectBoundary(cudaPol, ls, *boundary, partition, grid);
-    })(boundary->getLevelSet());
+    if (has_input<ZenoBoundary>("ZSBoundary")) {
+      auto boundary = get_input<ZenoBoundary>("ZSBoundary");
+      auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+      match([&](auto &ls) {
+        projectBoundary(cudaPol, ls, *boundary, partition, grid);
+      })(boundary->getLevelSet());
+    }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
     set_output("ZSGrid", zsgrid);
