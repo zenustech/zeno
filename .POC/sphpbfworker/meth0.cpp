@@ -81,32 +81,16 @@ void prologue()
         }
     };
 
-    tbb::concurrent_unordered_multimap<glm::ivec2, size_t, ivec2_hasher> expand_lut;
+    tbb::concurrent_unordered_multimap<glm::ivec2, size_t, ivec2_hasher> space_lut;
 
     {
-        tbb::concurrent_unordered_multimap<glm::ivec2, size_t, ivec2_hasher> cell_lut;
-
-        {
-            zbb::auto_profiler _("prologue1");
-            tbb::parallel_for
-            ( size_t{0}, pos.size()
-            , [&] (size_t i) {
-                glm::ivec2 cell(pos[i] * inv_dx);
-                cell_lut.emplace(cell, i);
-            });
-        }
-
-        {
-            zbb::auto_profiler _("prologue1.5");
-            tbb::parallel_for_each
-            ( cell_lut.begin(), cell_lut.end()
-            , [&] (std::pair<glm::ivec2, size_t> const &cell) {
-                for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++) {
-                    auto newcell = cell.first + glm::ivec2(cx, cy);
-                    expand_lut.emplace(newcell, cell.second);
-                }
-            });
-        }
+        zbb::auto_profiler _("prologue1");
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            glm::ivec2 cell(pos[i] * inv_dx);
+            space_lut.emplace(cell, i);
+        });
     }
 
     tbb::concurrent_vector<size_t> nei_index;
@@ -121,11 +105,14 @@ void prologue()
 
             std::vector<size_t> res;
             res.reserve(16);
-            auto [b, e] = expand_lut.equal_range(cell);
-            for (auto it = b; it != e; ++it) {
-                size_t j = it->second;
-                if (i && j || distance(pos[i], pos[j]) < neigh_radius)
-                    res.push_back(i);
+            for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++) {
+                auto newcell = cell + glm::ivec2(cx, cy);
+                auto [b, e] = space_lut.equal_range(newcell);
+                for (auto it = b; it != e; ++it) {
+                    size_t j = it->second;
+                    if (i && j || distance(pos[i], pos[j]) < neigh_radius)
+                        res.push_back(i);
+                }
             }
 
             size_t nbucket = res.size();
