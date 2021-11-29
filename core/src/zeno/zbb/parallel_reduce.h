@@ -2,6 +2,7 @@
 
 
 #include <zeno/zbb/parallel_arena.h>
+#include <zeno/zbb/auto_profiler.h>
 #include <vector>
 
 

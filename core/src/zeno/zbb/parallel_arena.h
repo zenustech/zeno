@@ -53,7 +53,9 @@ struct arena {
     void start() {
         for (std::size_t procid = 0; procid < _nprocs; procid++) {
             proc thr{[procid, this] {
-                for (std::size_t taskid = 0; taskid < _tasks.size(); taskid += _nprocs) {
+                printf("start %d\n", procid);
+                for (std::size_t taskid = procid; taskid < _tasks.size(); taskid += _nprocs) {
+                    printf("%d %d\n", procid, taskid);
                     auto const &func = _tasks[taskid];
                     func(procid);
                 }
@@ -64,6 +66,7 @@ struct arena {
 
     void wait() {
         for (auto &thr: _procs) {
+            //printf("joining\n");
             thr.join();
         }
     }
