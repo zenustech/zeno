@@ -149,7 +149,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         Vec9d dpsi_cmp = Vec9d::Zero();
         FEM_Scaler psi_cmp = 0;
 
-        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false);
+        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false,true);
 
         Mat9x9d ddpsi_fd = Mat9x9d::Zero();
         Vec9d dpsi_fd = Vec9d::Zero();
@@ -213,7 +213,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
     }else{
         auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
-        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
+        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering,false);
     }
 
     // force_model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);

@@ -83,7 +83,7 @@ int QuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes attrs,
         Vec9d dpsi_cmp = Vec9d::Zero();
         FEM_Scaler psi_cmp = 0;
 
-        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false);
+        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false,true);
 
         Mat9x9d ddpsi_fd = Mat9x9d::Zero();
         Vec9d dpsi_fd = Vec9d::Zero();
@@ -131,9 +131,10 @@ int QuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
                 std::cout << "pstrain : " << attrs.pmp.plastic_strain.transpose() << std::endl;
                 std::cout << "kinimatic_hardening_shift : " << attrs.pmp.kinematic_hardening_shift.transpose() << std::endl;
+                std::cout << "Ftest : " << std::endl << Ftest << std::endl;
 
 
-                // throw std::runtime_error("ddpsi_error");
+                throw std::runtime_error("ddpsi_error");
         }
     }
 
@@ -143,7 +144,10 @@ int QuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes attrs,
         model->ComputePhiDerivHessian(attrs.emp,F,psiE,dpsiE,ddpsiE,spd);
     }else{
         auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
-        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,psiE,dpsiE,ddpsiE,spd);
+        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,psiE,dpsiE,ddpsiE,spd,false);
+        // if(attrs._elmID == 0){
+        //     std::cout << "PS : " << std::endl << attrs.pmp.PS << std::endl;
+        // }
     }
 
     const Mat9x12d& dFdX = attrs._dFdX;

@@ -15,15 +15,15 @@ struct PlasticMaterialParam{
     FEM_Scaler isotropic_hardening_coeff;
     
     Vec3d plastic_strain;
+    Mat3x3d PS;
 
     FEM_Scaler restoring_strain;
     FEM_Scaler failed_strain;
 
     bool failed;
     Vec3d the_strain_failed;// the strain at the very first time the material break down
+    Mat3x3d F_failed;
 };
-
-
 // the Joshph Terra approach for gaurantee SPD is needed? or not
 class PlasticForceModel : public BaseForceModel {
 public:
@@ -39,7 +39,23 @@ public:
         // std::cout << "UPDATE P PARAMETERS" << std::endl;
 
         Mat3x3d U,V;Vec3d total_strain;
-        DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
+        DiffSVD::SVD_Decomposition(F,U,total_strain,V);
+
+        // Mat3x3d R,S;
+        // DiffSVD::Polar_Decomposition(F,R,S);
+
+        // Mat3x3d Up,Vp;Vec3d pstrain;
+        // DiffSVD::SVD_Decomposition(pmp.PS,Up,pstrain,Vp);
+        // Mat3x3d Rp,Sp;
+        // DiffSVD::Polar_Decomposition(pmp.PS,Rp,Sp);
+
+        // Mat3x3d dR = R * Rp.transpose() - Mat3x3d::Identity();
+        // if(dR.norm() > 1e-2){
+        //     std::cout << "THE ROTATION DIFF IS TOO BIG" << std::endl;
+        //     std::cout << dR << std::endl;
+        //     throw std::runtime_error("THE ROTATION DIFF IS TOO BIG");
+        // }
+
 
         FEM_Scaler s01 = total_strain[0] - total_strain[1] - (pmp.init_strain[0] - pmp.init_strain[1]);
         FEM_Scaler s02 = total_strain[0] - total_strain[2] - (pmp.init_strain[0] - pmp.init_strain[2]);
@@ -50,8 +66,9 @@ public:
         if(rm > pmp.failed_strain){
             pmp.failed = true;
             pmp.the_strain_failed = total_strain;
+            pmp.F_failed = U * pmp.the_strain_failed.asDiagonal() * V.transpose();
 
-            std::cout << "FAIL_ELM<" << elm_id << "> : " << total_strain.transpose() << std::endl;
+            // std::cout << "FAIL_ELM<" << elm_id << "> : " << total_strain.transpose() << std::endl;
             // throw std::runtime_error("FAIL");
             return;
         }else{
@@ -64,24 +81,25 @@ public:
         
         vm = EvalVM(trial_stress,pmp.kinematic_hardening_shift,pmp.init_stress,pmp.yield_stress);      
 
-        // std::cout << "VM<" << elm_id << "> : \t" << vm << "\t" << pmp.yield_stress << std::endl;
-
         // the effective stress in the interior of yielding surface, only pure elastic behavior, no update is needed
         if(vm < 0){
-            // if(elm_id == 0)
-            //     std::cout << "ELASTO" << std::endl;
+            // update the orientation of platic deformation
+            pmp.PS = U * pmp.plastic_strain.asDiagonal() * V.transpose();
             return;
         }
-        
-
 
         // if the effective strain go beyond the restoring strain, the object return back to pure elastic behavior
         FEM_Scaler restoring = 1.0;// the default kinematric hardening with plastic behavior
         if(rm > pmp.restoring_strain && rm < pmp.failed_strain){
-            std::cout << "<" << elm_id << ">rm = " << rm << "\t" << pmp.restoring_strain << std::endl;
+            // std::cout << "<" << elm_id << ">rm = " << rm << "\t" << pmp.restoring_strain << std::endl;
             restoring = 0.0;
+            // pmp.PS = U * pmp.plastic_strain.asDiagonal() * V.transpose();
+            // return;
         }
+        // std::cout << "VM<" << elm_id << "> : \t" << vm << "\t" << pmp.yield_stress << std::endl;
 
+
+        
         // else{
         //     std::cout << "VM<" << elm_id << "> : \t" << vm << "\t" << pmp.yield_stress << std::endl;
         //     return;
@@ -150,12 +168,32 @@ public:
         }while(nm_iters < max_iters);
 
         if(nm_iters == max_iters){
-            std::cerr << "ELM<" << elm_id << "> : " << "FAIL UPDATE PLASTIC" << std::endl;
+            std::cout << "ELM<" << elm_id << "> : " << "FAIL UPDATE PLASTIC" << std::endl;
             return;
         }
 
         pmp.plastic_strain += x[0] * p_flow * restoring; // dstrain_p = test_step * p_flow;
         pmp.kinematic_hardening_shift += x.segment(1,3);   
+
+
+        // if(elm_id == 9180 || restoring == 0.0){
+        //     Vec4d x_test = Vec4d::Zero();
+        //     std::cout << "FINISH_RETURN_MAPPING_RES<" << elm_id << "> : " << res.transpose() << std::endl;
+        //     EvalReturnMappingResJacobi(pmp,emp,total_strain,p_flow,x_test,res,Jacobi,restoring);
+        //     std::cout << "CHECK_RETURN_MAPPING_RES<" << elm_id <<  "> : " << res.transpose() << std::endl;
+        //     trial_strain = total_strain - pmp.plastic_strain;
+        //     elastic_model->ComputePrincipalStress(emp,trial_strain,trial_stress);
+        //     vm = EvalVM(trial_stress,pmp.kinematic_hardening_shift,pmp.init_stress,pmp.yield_stress);   
+        //     std::cout << "VM : " << vm << std::endl;
+        // }
+        
+
+        pmp.PS = U * pmp.plastic_strain.asDiagonal() * V.transpose();
+
+        trial_strain = total_strain - pmp.plastic_strain;
+        elastic_model->ComputePrincipalStress(emp,trial_strain,trial_stress);
+        vm = EvalVM(trial_stress,pmp.kinematic_hardening_shift,pmp.init_stress,pmp.yield_stress);    
+        // std::cout << "UPDATE PS : " << std::endl << pmp.PS << std::endl;
 
         // std::cout << "UPDATE P PARAMETERS" << std::endl;
 
@@ -165,17 +203,15 @@ public:
 
     }
 
+    // void UpdatePlasticParametersAlign(size_t elm_id,Plasti)
+
+
     // I don't think there is some fucking naive approach for defining the energy of plastic model, energy defination for damping model might be a good reference
     // We use semi-implicit formulation here, and assume the plastic parameters does not change in one step of time
     void ComputePsi(const PlasticMaterialParam& pmp,const ElastoMaterialParam& emp,const Mat3x3d& F,FEM_Scaler& psi) const {
-        Mat3x3d U,V;Vec3d total_strain;
-        DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
-
+        Mat3x3d Feff = F - pmp.PS;
         if(pmp.failed)
-            total_strain = pmp.the_strain_failed;
-
-        Vec3d elastic_strain = total_strain - pmp.plastic_strain;
-        Mat3x3d Feff = U * elastic_strain.asDiagonal() * V.transpose();
+            Feff = pmp.F_failed - pmp.PS;
 
         elastic_model->ComputePhi(emp,Feff,psi);
     }
@@ -189,22 +225,20 @@ public:
             return;
         }
 
-        Mat3x3d U,V;Vec3d total_strain;
-        DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
+        // Mat3x3d U,V;Vec3d total_strain;
+        // DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
 
-        Vec3d elastic_strain = total_strain - pmp.plastic_strain;
-        Mat3x3d Feff = U * elastic_strain.asDiagonal() * V.transpose();
+        // Vec3d elastic_strain = total_strain - pmp.plastic_strain;
+        // Mat3x3d Feff = U * elastic_strain.asDiagonal() * V.transpose();
+
+        Mat3x3d Feff = F - pmp.PS;
 
         elastic_model->ComputePhiDeriv(emp,Feff,psi,dpsi);
-
-        Mat9x9d dFeffdF;
-        EvaldFeffdF(U,V,elastic_strain,total_strain,dFeffdF);
-        dpsi = dFeffdF.transpose() * dpsi;
     }    
     // Compute the consistent Jacobi
     void ComputePsiDerivHessian(const PlasticMaterialParam& pmp,
             const ElastoMaterialParam& emp,
-            const Mat3x3d& F,FEM_Scaler& psi,Vec9d& dpsi,Mat9x9d& ddpsi,bool spd) const {
+            const Mat3x3d& F,FEM_Scaler& psi,Vec9d& dpsi,Mat9x9d& ddpsi,bool spd,bool debug_dFeffdF) const {
         if(pmp.failed){
             ComputePsi(pmp,emp,F,psi);
             dpsi.setZero();
@@ -212,11 +246,13 @@ public:
             return;
         }
 
-        Mat3x3d U,V;Vec3d total_strain;
-        DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
+        // Mat3x3d U,V;Vec3d total_strain;
+        // DiffSVD::SVD_Decomposition(F,U,total_strain,V);  
 
-        Vec3d elastic_strain = total_strain - pmp.plastic_strain;
-        Mat3x3d Feff = U * elastic_strain.asDiagonal() * V.transpose();
+        // Vec3d elastic_strain = total_strain - pmp.plastic_strain;
+        // Mat3x3d Feff = U * elastic_strain.asDiagonal() * V.transpose();
+
+        Mat3x3d Feff = F - pmp.PS;
 
         elastic_model->ComputePhiDerivHessian(emp,Feff,psi,dpsi,ddpsi,spd);   
 
@@ -228,11 +264,10 @@ public:
         // std::cout << "pstrain : " << pmp.plastic_strain.transpose() << std::endl;
 
         // throw std::runtime_error("PARAM_CHECK");
-        Mat9x9d dFeffdF;
-        EvaldFeffdF(U,V,elastic_strain,total_strain,dFeffdF);
+        // Mat9x9d dFeffdF;
+        // EvaldFeffdF(U,V,elastic_strain,total_strain,dFeffdF);
 
-        bool debug_dFeffdF = false;
-        if(debug_dFeffdF) {
+        if(false) {
 
 
             Mat3x3d Ftest = Mat3x3d::Random();
@@ -246,7 +281,7 @@ public:
             Mat9x9d dFeffdF_cmp;
             EvaldFeffdF(Utest,Vtest,stest,stest,dFeffdF_cmp);
             std::cout << "dFeffdF_cmp : " << std::endl << dFeffdF_cmp << std::endl;
-            throw std::runtime_error("IDNETITY_TEST");
+            // throw std::runtime_error("IDNETITY_TEST");
 
 
             Vec3d seff_test = stest - sptest;
@@ -280,11 +315,11 @@ public:
             std::cout << "dFeffdF_cmp : " << std::endl << dFeffdF_cmp << std::endl;
             std::cout << "dFeffdF_fd  : " << std::endl << dFeffdF_fd << std::endl;
 
-            throw std::runtime_error("dFeffdF compute test");
+            // throw std::runtime_error("dFeffdF compute test");
         }
 
-        dpsi = dFeffdF.transpose() * dpsi;
-        ddpsi = dFeffdF.transpose() * ddpsi * dFeffdF;
+        // dpsi = dFeffdF.transpose() * dpsi;
+        // ddpsi = ddpsi * dFeffdF;
     }
 
 protected:

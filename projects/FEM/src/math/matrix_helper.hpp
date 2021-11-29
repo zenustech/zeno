@@ -159,8 +159,8 @@ public:
         Vec3d dir1 = dir0.cross(tmp_dir);
         if(dir1.norm() < 1e-3){
             tmp_dir = dir0;
-            tmp_dir[1] += 1;
-            dir1 = dir0.cross(tmp_dir);
+            tmp_dir[2] += 1;
+            dir1 = tmp_dir.cross(dir0);
         }
         dir1 /= dir1.norm();
         Vec3d dir2 = dir0.cross(dir1);
