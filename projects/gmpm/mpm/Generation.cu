@@ -202,17 +202,82 @@ struct ToZSBoundary : INode {
 
     boundary->levelset = &ls;
     boundary->type = queryType();
+
+    // translation
+    if (has_input("translation")) {
+      auto b = get_input<NumericObject>("translation")->get<vec3f>();
+      boundary->b = zs::vec<float, 3>{b[0], b[1], b[2]};
+    }
+    if (has_input("translation_rate")) {
+      auto dbdt = get_input<NumericObject>("translation_rate")->get<vec3f>();
+      boundary->dbdt = zs::vec<float, 3>{dbdt[0], dbdt[1], dbdt[2]};
+      // fmt::print("dbdt assigned as {}, {}, {}\n", boundary->dbdt[0],
+      //            boundary->dbdt[1], boundary->dbdt[2]);
+    }
+    // scale
+    if (has_input("scale")) {
+      auto s = get_input<NumericObject>("scale")->get<float>();
+      boundary->s = s;
+    }
+    if (has_input("scale_rate")) {
+      auto dsdt = get_input<NumericObject>("scale_rate")->get<float>();
+      boundary->dsdt = dsdt;
+    }
+    // rotation
+    if (has_input("ypr_angles")) {
+      auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
+      auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
+                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+      boundary->R = rot;
+    }
+    { boundary->omega = zs::AngularVelocity<float, 3>{}; }
+
     // *boundary = ZenoBoundary{&ls, queryType()};
     fmt::print(fg(fmt::color::cyan), "done executing ToZSBoundary\n");
     set_output("ZSBoundary", boundary);
   }
 };
 ZENDEFNODE(ToZSBoundary, {
-                             {"ZSLevelSet"},
+                             {"ZSLevelSet", "translation", "translation_rate",
+                              "scale", "scale_rate", "ypr_angles"},
                              {"ZSBoundary"},
                              {{"string", "type", "sticky"}},
                              {"MPM"},
                          });
+
+struct StepZSBoundary : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing StepZSBoundary\n");
+
+    auto boundary = get_input<ZenoBoundary>("ZSBoundary");
+    auto dt = get_param<float>("dt");
+    if (has_input("dt"))
+      dt = get_input<NumericObject>("dt")->get<float>();
+
+    auto oldB = boundary->b;
+
+    boundary->s += boundary->dsdt * dt;
+    boundary->b += boundary->dbdt * dt;
+
+#if 0
+    auto b = boundary->b;
+    auto dbdt = boundary->dbdt;
+    auto delta = dbdt * dt;
+    fmt::print("({}, {}, {}) + ({}, {}, {}) * {} -> ({}, {}, {})\n", oldB[0],
+               oldB[1], oldB[2], dbdt[0], dbdt[1], dbdt[2], dt, delta[0],
+               delta[1], delta[2]);
+#endif
+
+    fmt::print(fg(fmt::color::cyan), "done executing StepZSBoundary\n");
+    set_output("ZSBoundary", boundary);
+  }
+};
+ZENDEFNODE(StepZSBoundary, {
+                               {"ZSBoundary", "dt"},
+                               {"ZSBoundary"},
+                               {{"float", "dt", "0"}},
+                               {"MPM"},
+                           });
 
 /// conversion
 
