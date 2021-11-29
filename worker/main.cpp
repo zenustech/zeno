@@ -1,3 +1,4 @@
+#include <zeno/zbb/blocked_range.h>
 #include <zeno/zbb/auto_profiler.h>
 #include <zeno/zbb/parallel_for.h>
 #include <zeno/zbb/parallel_reduce.h>
