@@ -347,7 +347,7 @@ struct WriteZSParticles : zeno::INode {
               pars = zs::proxy<zs::execspace_e::cuda>(
                   {}, pars)] __device__(size_t pi) mutable {
                pos[pi] = pars.pack<3>("pos", pi);
-               vms[pi] = pars("vmstress", pi);
+               vms[pi] = pars("vms", pi);
              });
     std::vector<std::array<float, 3>> posOut(pars.size());
     std::vector<float> vmsOut(pars.size());
@@ -367,5 +367,48 @@ ZENDEFNODE(WriteZSParticles, {
                                  {{"string", "path", ""}},
                                  {"MPM"},
                              });
+
+struct ComputeVonMises : INode {
+  template <typename Model>
+  void computeVms(zs::CudaExecutionPolicy &cudaPol, const Model &model,
+                  typename ZenoParticles::particles_t &pars, int option) {
+    using namespace zs;
+    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
+                                 model, option] __device__(size_t pi) mutable {
+      auto F = pars.pack<3, 3>("F", pi);
+      auto [U, S, V] = math::svd(F);
+      auto cauchy = model.dpsi_dsigma(S) * S / S.prod();
+
+      auto diff = cauchy;
+      for (int d = 0; d != 3; ++d)
+        diff(d) -= cauchy((d + 1) % 3);
+
+      auto vms = ::sqrt(diff.l2NormSqr() * 0.5f);
+      pars("vms", pi) = option ? ::log10(vms) : vms;
+    });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ComputeVonMises\n");
+    auto zspars = get_input<ZenoParticles>("ZSParticles");
+    auto &pars = zspars->getParticles();
+    auto model = zspars->getModel();
+    auto option = get_param<int>("by_log10");
+
+    auto cudaExec = zs::cuda_exec().device(0);
+    zs::match([&](auto &elasticModel) {
+      computeVms(cudaExec, elasticModel, pars, option);
+    })(model.getElasticModel());
+
+    set_output("ZSParticles", std::move(zspars));
+    fmt::print(fg(fmt::color::cyan), "done executing ComputeVonMises\n");
+  }
+};
+
+ZENDEFNODE(ComputeVonMises, {
+                                {"ZSParticles"},
+                                {"ZSParticles"},
+                                {{"int", "by_log10", "1"}},
+                                {"MPM"},
+                            });
 
 } // namespace zeno
