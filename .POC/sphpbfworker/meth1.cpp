@@ -85,7 +85,10 @@ void prologue()
         ( size_t{0}, pos.size()
         , [&] (size_t i) {
             glm::ivec2 cell(pos[i] * inv_dx);
-            space_lut.emplace(cell, i);
+            for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++) {
+                auto newcell = cell + glm::ivec2(cx, cy);
+                space_lut.emplace(newcell, i);
+            }
         });
     }
 }
