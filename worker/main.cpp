@@ -10,16 +10,20 @@ int main()
     tbb::concurrent_unordered_multimap<int, size_t> lut;
 
     tbb::parallel_for
-    ( size_t{0}, pos.size(), size_t{1}
+    ( size_t{0}, pos.size()
     , [&] (size_t i) {
         int p = pos[i];
         lut.emplace(p, i);
     });
 
-    tbb::parallel_for_each
-    ( lut.begin(), lut.end()
-    , [&] (std::pair<int, size_t> const &ent) {
-        printf("%d %ld\n", ent.first, ent.second);
+    tbb::parallel_for
+    ( size_t{0}, pos.size()
+    , [&] (size_t i) {
+        auto [b, e] = lut.equal_range(i);
+        for (auto it = b; it != e; ++it) {
+            size_t j = it->second;
+            printf("interact %ld %ld\n", i, j);
+        }
     });
 
     return 0;
