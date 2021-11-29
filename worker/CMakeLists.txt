@@ -7,4 +7,7 @@ if (ZENO_WITH_BACKWARD)
 endif()
 
 target_include_directories(zeno_worker PRIVATE .)
-target_link_libraries(zeno_worker PRIVATE zeno_core)
+#target_link_libraries(zeno_worker PRIVATE zeno_core)
+target_include_directories(zeno_worker PRIVATE ../core/src)
+find_package(OpenMP REQUIRED)
+target_link_libraries(zeno_worker PRIVATE OpenMP::OpenMP_CXX)
