@@ -5,7 +5,8 @@
 
 int main()
 {
-    std::vector<int> pos;
+    std::vector<int> pos = {1, 2, 3, 1};
+
     tbb::concurrent_unordered_multimap<int, size_t> lut;
 
     tbb::parallel_for
@@ -17,7 +18,7 @@ int main()
 
     tbb::parallel_for_each
     ( lut.begin(), lut.end()
-    , [&] (decltype(lut)::value_type const &ent) {
+    , [&] (std::pair<int, size_t> const &ent) {
         printf("%d %ld\n", ent.first, ent.second);
     });
 
