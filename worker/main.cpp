@@ -47,10 +47,10 @@ float compute_scorr(glm::vec2 const &d, float h)
 std::vector<glm::vec2> pos;
 std::vector<glm::vec2> vel;
 
-static constexpr float dx = 0.1f;
-static constexpr float dt = 0.04f;
+static constexpr float dx = 0.01f;
+static constexpr float dt = 0.01f;
 static constexpr float inv_dx = 1.f / dx;
-static constexpr float neigh_radius = 0.58f * dx;
+static constexpr float neigh_radius = 0.86f * dx;
 static constexpr float lambda_epsilon = 100.f;
 
 std::vector<size_t> neigh_index;
@@ -58,17 +58,22 @@ std::vector<std::pair<size_t, size_t>> neigh_list;
 
 void prologue()
 {
+    zbb::auto_profiler _("prologue");
+
     neigh_index.clear();
     neigh_list.clear();
 
-    tbb::parallel_for
-    ( size_t{0}, pos.size()
-    , [&] (size_t i) {
-        auto pos_i = pos[i];
-        auto vel_i = vel[i];
-        pos[i] = pos_i + vel_i * dt;
-        vel[i] = pos_i;
-    });
+    {
+        zbb::auto_profiler _("prologue0");
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            auto pos_i = pos[i];
+            auto vel_i = vel[i];
+            pos[i] = pos_i + vel_i * dt;
+            vel[i] = pos_i;
+        });
+    }
 
     struct ivec2_hasher {
         constexpr int operator()(glm::ivec2 const &u) const {
@@ -78,52 +83,72 @@ void prologue()
 
     tbb::concurrent_unordered_multimap<glm::ivec2, size_t, ivec2_hasher> space_lut;
 
-    tbb::parallel_for
-    ( size_t{0}, pos.size()
-    , [&] (size_t i) {
-        glm::ivec2 cell(pos[i] * inv_dx);
-        space_lut.emplace(cell, i);
-    });
+    {
+        zbb::auto_profiler _("prologue1");
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            glm::ivec2 cell(pos[i] * inv_dx);
+            space_lut.emplace(cell, i);
+        });
+    }
 
     tbb::concurrent_vector<size_t> nei_index;
     std::vector<std::pair<tbb::concurrent_vector<size_t>::iterator, size_t>> nei_list(pos.size());
 
-    tbb::parallel_for
-    ( size_t{0}, pos.size()
-    , [&] (size_t i) {
-        glm::ivec2 cell(pos[i] * inv_dx);
+    {
+        zbb::auto_profiler _("prologue2");
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            glm::ivec2 cell(pos[i] * inv_dx);
 
-        std::vector<size_t> res;
-        for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++) {
-            auto newcell = cell + glm::ivec2(cx, cy);
-            auto [b, e] = space_lut.equal_range(newcell);
-            for (auto it = b; it != e; ++it) {
-                size_t j = it->second;
-                if (i && j || distance(pos[i], pos[j]) < neigh_radius)
-                    res.push_back(i);
+            std::vector<size_t> res;
+            res.reserve(16);
+            for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++) {
+                auto newcell = cell + glm::ivec2(cx, cy);
+                auto [b, e] = space_lut.equal_range(newcell);
+                for (auto it = b; it != e; ++it) {
+                    size_t j = it->second;
+                    if (i && j || distance(pos[i], pos[j]) < neigh_radius)
+                        res.push_back(i);
+                }
             }
-        }
 
-        size_t nbucket = res.size();
-        auto it = nei_index.grow_by(nbucket);
-        std::copy(res.begin(), res.end(), it);
-        nei_list[i] = std::make_pair(std::move(it), nbucket);
-    });
+            size_t nbucket = res.size();
+            auto it = nei_index.grow_by(nbucket);
+            std::copy(res.begin(), res.end(), it);
+            nei_list[i] = std::make_pair(std::move(it), nbucket);
+        });
+    }
 
     neigh_list.resize(pos.size());
 
-    std::copy(nei_index.begin(), nei_index.end(), std::back_inserter(neigh_index));
+    {
+        zbb::auto_profiler _("prologue3");
+        neigh_index.resize(nei_index.size());
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            neigh_index[i] = nei_index[i];
+        });
+    }
 
-    tbb::parallel_for
-    ( size_t{0}, pos.size()
-    , [&] (size_t i) {
-        size_t index = nei_list[i].first - nei_index.begin();
-        neigh_list[i] = std::make_pair(index, nei_list[i].second);
-    });
+    {
+        zbb::auto_profiler _("prologue4");
+        tbb::parallel_for
+        ( size_t{0}, pos.size()
+        , [&] (size_t i) {
+            size_t index = nei_list[i].first - nei_index.begin();
+            neigh_list[i] = std::make_pair(index, nei_list[i].second);
+        });
+    }
 }
 
 void substep()
 {
+    zbb::auto_profiler _("substep");
+
     std::vector<float> lam(pos.size());
 
     tbb::parallel_for
@@ -174,6 +199,8 @@ void substep()
 
 void epilogue()
 {
+    zbb::auto_profiler _("epilogue");
+
     tbb::parallel_for
     ( size_t{0}, pos.size()
     , [&] (size_t i) {
@@ -183,6 +210,7 @@ void epilogue()
 
 void pbfstep()
 {
+    zbb::auto_profiler _("total");
     prologue();
     for (int i = 0; i < 5; i++) {
         substep();
@@ -192,15 +220,13 @@ void pbfstep()
 
 int main()
 {
-    constexpr size_t N = 1024;
+    constexpr size_t N = 1024*4;
     for (int i = 0; i < N; i++) {
         pos.emplace_back(drand48(), drand48());
         vel.emplace_back(0.f, 0.f);
     }
 
     pbfstep();
-
-    zbb::auto_profiler _("main");
 
     return 0;
 }
