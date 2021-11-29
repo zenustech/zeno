@@ -5,8 +5,6 @@
 #include <zeno/common.h>
 #include <vector>
 #include <array>
-#include <mutex>
-#include <new>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -14,35 +12,63 @@ namespace zbb {
 
 
 template <class T>
-struct concurrent_vector {
+struct pot_scaled_vector {
     using value_type = T;
-    inline static constexpr std::uint8_t _kBase = 8;
+    inline static constexpr std::uint8_t _kMin = 8;
     inline static constexpr std::uint8_t _kMax = 32;
 
     std::array<std::vector<T>, _kMax> _bins;
-    std::uint8_t _binid{};
-    std::mutex _mtx;
+    std::uint8_t _numbins{};
 
-    concurrent_vector() = default;
-    concurrent_vector(concurrent_vector const &other) = default;
-    concurrent_vector(concurrent_vector &&) = default;
-    concurrent_vector &operator=(concurrent_vector const &) = default;
-    concurrent_vector &operator=(concurrent_vector &&) = default;
-    ~concurrent_vector() = default;
+    pot_scaled_vector() = default;
+    pot_scaled_vector(pot_scaled_vector const &other) = default;
+    pot_scaled_vector(pot_scaled_vector &&) = default;
+    pot_scaled_vector &operator=(pot_scaled_vector const &) = default;
+    pot_scaled_vector &operator=(pot_scaled_vector &&) = default;
+    ~pot_scaled_vector() = default;
 
-    T *grow_twice() noexcept {
-        std::lock_guard _(_mtx);
-        std::uint8_t nbin = _binid++;
-        auto &bin = _bins[nbin];
-        bin.resize(1 << nbin);
-        return bin.data();
+    std::vector<T> &_grow_twice() noexcept {
+        std::uint8_t nbin = _numbins++;
+        std::vector<T> &bin = _bins[nbin];
+        bin.resize(1 << nbin + _kMin);
+        return bin;
     }
 
-    [[nodiscard]] T &at(std::size_t off) noexcept {
+    std::vector<T> &grow(std::size_t ext) noexcept {
+        std::uint8_t nbin = _numbins - 1;
+        std::vector<T> &bin = _bins[nbin];
+        std::size_t limit = 1 << _kMin << nbin;
+        std::size_t curr = bin.size();
+        if (curr + ext < limit) {
+            bin.resize(curr + ext);
+            return bin;
+        } else {
+            if (curr != limit)
+                bin.resize(limit);
+            ext -= limit - curr;
+            _numbins = ++nbin;
+            std::vector<T> &bin = _bins[nbin];
+            bin.resize(ext);
+            return bin;
+        }
+    }
+
+    T &operator[](std::size_t off) noexcept {
+        off += 1 << _kMin;
         std::uint8_t pot = 0;
-        for (std::size_t i = off >> _kBase; i; i >>= 1)
+        for (std::size_t i = off >> (1 + _kMin); i; i >>= 1)
             pot++;
-        return _bins[pot][off & (1 << pot + _kBase) - 1];
+        off -= 1 << _kMin << pot;
+        return _bins[pot][off];
+    }
+
+    T const &operator[](std::size_t off) const noexcept {
+        off += 1 << _kMin;
+        std::uint8_t pot = 0;
+        for (std::size_t i = off >> (1 + _kMin); i; i >>= 1)
+            pot++;
+        off -= 1 << _kMin << pot;
+        return _bins[pot][off];
     }
 };
 
