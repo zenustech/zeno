@@ -105,12 +105,25 @@ struct ZenoLevelSet : IObject {
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
+
+  bool holdSparseLevelSet() const noexcept {
+    return std::holds_alternative<spls_t>(levelset);
+  }
+
+  decltype(auto) getSparseLevelSet() noexcept {
+    return std::get<spls_t>(levelset);
+  }
+  decltype(auto) getSparseLevelSet() const noexcept {
+    return std::get<spls_t>(levelset);
+  }
+
   template <category_e I> auto &getLevelSet() noexcept {
     return std::get<I>(levelset);
   }
   template <category_e I> const auto &getLevelSet() const noexcept {
     return std::get<I>(levelset);
   }
+
   levelset_t levelset;
 };
 

@@ -281,14 +281,14 @@ ZENDEFNODE(StepZSBoundary, {
 
 /// conversion
 
-struct ZSParticlesToPrimitiveObject : zeno::INode {
+struct ZSParticlesToPrimitiveObject : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing "
                                       "ZSParticlesToPrimitiveObject\n");
     auto &zspars = get_input<ZenoParticles>("ZSParticles")->getParticles();
     const auto size = zspars.size();
 
-    auto prim = zeno::IObject::make<PrimitiveObject>();
+    auto prim = IObject::make<PrimitiveObject>();
     prim->resize(size);
 
     using namespace zs;
@@ -384,7 +384,7 @@ struct ComputeVonMises : INode {
         diff(d) -= cauchy((d + 1) % 3);
 
       auto vms = ::sqrt(diff.l2NormSqr() * 0.5f);
-      pars("vms", pi) = option ? ::log10(vms) : vms;
+      pars("vms", pi) = option ? ::log10(vms + 1) : vms;
     });
   }
   void apply() override {
@@ -392,7 +392,7 @@ struct ComputeVonMises : INode {
     auto zspars = get_input<ZenoParticles>("ZSParticles");
     auto &pars = zspars->getParticles();
     auto model = zspars->getModel();
-    auto option = get_param<int>("by_log10");
+    auto option = get_param<int>("by_log1p(base10)");
 
     auto cudaExec = zs::cuda_exec().device(0);
     zs::match([&](auto &elasticModel) {
@@ -407,7 +407,7 @@ struct ComputeVonMises : INode {
 ZENDEFNODE(ComputeVonMises, {
                                 {"ZSParticles"},
                                 {"ZSParticles"},
-                                {{"int", "by_log10", "1"}},
+                                {{"int", "by_log1p(base10)", "1"}},
                                 {"MPM"},
                             });
 
