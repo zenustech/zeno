@@ -60,6 +60,17 @@ copiable_ptr(std::unique_ptr<T> &&) -> copiable_ptr<T>;
 
 
 template <class T>
+struct inplace_ptr : std::unique_ptr<T> {
+    using std::unique_ptr<T>::unique_ptr;
+    using std::unique_ptr<T>::operator=;
+
+    inplace_ptr()
+        : std::unique_ptr<T>(std::make_unique<T>())
+    {}
+};
+
+
+template <class T>
 constexpr T &nocv_ref(T &p) {
     return const_cast<std::remove_cv_t<T> &>(p);
 }
