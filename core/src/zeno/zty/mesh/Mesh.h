@@ -14,11 +14,11 @@ struct Mesh {
     std::vector<math::vec3f> vert;
 
     // corners
-    std::vector<int> loop;
+    std::vector<uint32_t> loop;
     std::vector<math::vec2f> loop_uv;
 
     // faces
-    std::vector<math::vec2i> poly;
+    std::vector<uint32_t> poly;
 };
 
 

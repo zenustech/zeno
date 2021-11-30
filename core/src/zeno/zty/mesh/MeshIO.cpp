@@ -68,7 +68,7 @@ void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
         } else if (line.starts_with("f ")) {
             line = line.substr(2);
 
-            int start = loop.size(), num = 0;
+            uint32_t num = 0;
             while (num++ < 4096) {
                 auto next = line.find(' ');
                 auto [v, vt, vn] = read_tuple3i(line.substr(0, next));
@@ -81,7 +81,7 @@ void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
                     break;
                 line = line.substr(next + 1);
             }
-            poly.emplace_back(start, num);
+            poly.push_back(num);
         }
     }
 
@@ -98,13 +98,15 @@ void writeMeshToOBJ(std::ostream &out, Mesh const &mesh) {
         out << "v " << v[0] << " " << v[1] << " " << v[2] << "\n";
     }
 
+    size_t start = 0;
     // Write indices
     for (auto &p : mesh.poly) {
         out << "f ";
-        for (int l = p[0]; l < p[0] + p[1]; ++l) {
+        for (size_t l = start; l < start + p; ++l) {
             out << mesh.loop[l] << " ";
         }
         out << "\n";
+        start += p;
     }
 }
 

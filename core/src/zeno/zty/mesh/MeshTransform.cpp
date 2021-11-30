@@ -18,7 +18,7 @@ void transformMesh
 
     std::visit([&] (auto has_translate, auto has_scaling, auto has_rotation) {
 #pragma omp parallel for
-        for (std::intptr_t i = 0; i < mesh.vert.size(); i++) {
+        for (size_t i = 0; i < mesh.vert.size(); i++) {
             auto &vert = mesh.vert[i];
             if constexpr (has_scaling)
                 vert *= scaling;

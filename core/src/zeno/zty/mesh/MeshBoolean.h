@@ -2,13 +2,21 @@
 
 
 #include <zeno/zty/mesh/Mesh.h>
+#include <memory>
 
 
 ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
-void meshBooleanCut(Mesh &mesh1, Mesh &mesh2);
+struct MeshCutter {
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+
+    MeshCutter(Mesh const &mesh1, Mesh const &mesh2);
+    Mesh getComponent(size_t i);
+    ~MeshCutter();
+};
 
 
 }
