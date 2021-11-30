@@ -24,7 +24,7 @@ struct MeshCutter {
     explicit MeshCutter(Mesh const &mesh1, Mesh const &mesh2);
     void selectComponents(CompType compType) const;
     size_t getNumComponents() const;
-    Mesh getComponent(size_t i) const;
+    void getComponent(size_t i, Mesh &mesh) const;
     ~MeshCutter();
 };
 

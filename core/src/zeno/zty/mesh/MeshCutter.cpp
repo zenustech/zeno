@@ -20,6 +20,9 @@ MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     , MC_NULL_HANDLE
     );
 
+    printf("%ld %ld\n", mesh1.vert.size(), mesh1.poly.size());
+    printf("%ld %ld\n", mesh2.vert.size(), mesh2.poly.size());
+
     mcDispatch
     ( impl->ctx
     , MC_DISPATCH_VERTEX_ARRAY_FLOAT
@@ -83,7 +86,7 @@ size_t MeshCutter::getNumComponents() const
 }
 
 
-Mesh MeshCutter::getComponent(size_t i) const
+void MeshCutter::getComponent(size_t i, Mesh &mesh) const
 {
     McConnectedComponent connComp = impl->connComps.at(i);
     uint64_t numBytes;
@@ -142,11 +145,9 @@ Mesh MeshCutter::getComponent(size_t i) const
     , NULL
     );
 
-    Mesh retMesh;
-    retMesh.vert = std::move(vertices);
-    retMesh.loop = std::move(faces);
-    retMesh.poly = std::move(faceSizes);
-    return retMesh;
+    mesh.vert = std::move(vertices);
+    mesh.loop = std::move(faces);
+    mesh.poly = std::move(faceSizes);
 }
 
 

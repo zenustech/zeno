@@ -22,7 +22,7 @@ int main()
     {
         zty::MeshCutter mcut(mesh1, mesh2);
         mcut.selectComponents(zty::MeshCutter::CompType::all);
-        mesh3 = mcut.getComponent(0);
+        mcut.getComponent(0, mesh3);
     }
 
     {
