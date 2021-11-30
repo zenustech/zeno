@@ -1,0 +1,36 @@
+name: macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        include:
+          - shared: -DMCUT_BUILD_AS_SHARED_LIB=ON
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} ${{matrix.shared}} \
+              $GITHUB_WORKSPACE
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        threads=`sysctl -n hw.logicalcpu`
+        cmake --build . --config ${{matrix.build_type}} --parallel $threads
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build/bin
+      run: ./mcut_tests
+      env:
+        CTEST_OUTPUT_ON_FAILURE: True

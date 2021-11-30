@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
-option(ZENO_WITH_SYCL "Enable SYCL support for Zeno" OFF)
-option(ZENO_WITH_LEGACY "Build Zeno With Legacy Nodes" OFF)
-option(ZENO_WITH_BACKWARD "Enable stack backtrace for Zeno" OFF)
-option(ZENO_BUILD_EDITOR "Enable building Zeno Editor" ON)
-option(ZENO_BUILD_DESIGNER "Enable building Zeno Designer" ON)
-option(ZENO_BUILD_TESTS "Enable building Zeno Tests" OFF)
-option(ZENO_BUILD_BENCHMARK "Enable building Zeno Benchmark" OFF)
+option(ZENO_WITH_LEGACY "Build with legacy nodes" OFF)
+option(ZENO_WITH_BACKWARD "Enable stack backtrace" OFF)
+option(ZENO_BUILD_EDITOR "Build Zeno editor" ON)
+option(ZENO_BUILD_DESIGNER "Build Zeno designer" ON)
+option(ZENO_BUILD_TESTS "Build Zeno tests" OFF)
+option(ZENO_BUILD_BENCHMARK "Build Zeno benchmark" OFF)
 
 ############### BEGIN ADHOC ###############
 if (UNIX)  # these are only used by archibate and zhxx1987
@@ -52,6 +51,7 @@ if (ZENO_WITH_BACKWARD)
 endif()
 
 message(STATUS "Building Zeno Core Library")
+add_subdirectory(3rdparty/mods/mcut)
 add_subdirectory(core)
 
 if (ZENO_BUILD_WORKER)
@@ -77,10 +77,12 @@ endif()
 
 if (ZENO_BUILD_TESTS)
     message(STATUS "Building Zeno Tests")
+    add_subdirectory(3rdparty/mods/googletest)
     add_subdirectory(tests)
 endif()
 
 if (ZENO_BUILD_BENCHMARK)
     message(STATUS "Building Zeno Benchmark")
+    add_subdirectory(3rdparty/mods/benchmark)
     add_subdirectory(benchmark)
 endif()

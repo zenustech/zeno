@@ -12,9 +12,11 @@ https://github.com/g-truc/glm
 
 ## As Sub-project
 
+https://github.com/cutdigital/mcut
 https://github.com/google/googletest
 https://github.com/google/benchmark
 https://github.com/bombela/backward-cpp
+https://github.com/abseil/abseil-cpp
 <!-- https://github.com/ericniebler/range-v3 -->
 <!-- https://github.com/wjakob/tbb -->
 <!-- https://github.com/fmtlib/fmt -->

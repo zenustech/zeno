@@ -16,13 +16,6 @@ else()
     message(WARNING "Not Found OpenMP")
 endif()
 
-if (ZENO_WITH_SYCL)
-    message(STATUS "Building Zeno with hipSYCL targets: [${HIPSYCL_TARGETS}]")
-    find_package(hipSYCL CONFIG REQUIRED)
-    add_sycl_to_target(TARGET zeno_core)
-    target_compile_definitions(zeno_core PUBLIC -DZENO_WITH_SYCL)
-endif()
-
 if (ZENO_WITH_LEGACY)
     message(STATUS "Building Zeno with Legacy Nodes")
     add_subdirectory(legacy)

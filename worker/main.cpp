@@ -181,7 +181,6 @@ void substep()
         auto [beg, num] = neigh_list[i];
         for (size_t idx = beg; idx < num; idx++) {
             size_t j = neigh_index[idx];
-            auto lam_j = lam[j];
             auto pos_ji = pos[j] - pos[i];
             auto scorr_ij = compute_scorr(pos_ji, dx);
             auto grad_j = spiky_gradient(pos_ji, dx);
