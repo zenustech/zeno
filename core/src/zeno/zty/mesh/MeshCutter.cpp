@@ -1,4 +1,4 @@
-#include <zeno/zty/mesh/MeshBoolean.h>
+#include <zeno/zty/mesh/MeshCutter.h>
 #include <mcut/mcut.h>
 
 
@@ -6,11 +6,11 @@ ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
-
 struct MeshCutter::Impl {
     McContext ctx = MC_NULL_HANDLE;
     std::vector<McConnectedComponent> connComps;
 };
+
 
 MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     : impl(std::make_unique<Impl>())
@@ -34,11 +34,34 @@ MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     , mesh2.vert.size()
     , mesh2.poly.size()
     );
+}
 
-    uint32_t numConnComps = 0;
+
+void MeshCutter::selectComponents(CompType compType) const
+{
+    McConnectedComponentType mcCompType;
+    switch (compType) {
+    case CompType::all:
+        mcCompType = MC_CONNECTED_COMPONENT_TYPE_ALL;
+        break;
+    case CompType::fragment:
+        mcCompType = MC_CONNECTED_COMPONENT_TYPE_FRAGMENT;
+        break;
+    case CompType::patch:
+        mcCompType = MC_CONNECTED_COMPONENT_TYPE_PATCH;
+        break;
+    case CompType::seam:
+        mcCompType = MC_CONNECTED_COMPONENT_TYPE_SEAM;
+        break;
+    case CompType::input:
+        mcCompType = MC_CONNECTED_COMPONENT_TYPE_INPUT;
+        break;
+    }
+
+    uint32_t numConnComps;
     mcGetConnectedComponents
     ( impl->ctx
-    , MC_CONNECTED_COMPONENT_TYPE_ALL
+    , mcCompType
     , 0
     , NULL
     , &numConnComps
@@ -46,7 +69,7 @@ MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     impl->connComps.resize(numConnComps);
     mcGetConnectedComponents
     ( impl->ctx
-    , MC_CONNECTED_COMPONENT_TYPE_ALL
+    , mcCompType
     , numConnComps
     , impl->connComps.data()
     , NULL
@@ -54,7 +77,13 @@ MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
 }
 
 
-Mesh MeshCutter::getComponent(size_t i)
+size_t MeshCutter::getNumComponents() const
+{
+    return impl->connComps.size();
+}
+
+
+Mesh MeshCutter::getComponent(size_t i) const
 {
     McConnectedComponent connComp = impl->connComps[i];
     uint64_t numBytes;

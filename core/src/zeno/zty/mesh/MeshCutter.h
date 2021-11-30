@@ -1,0 +1,33 @@
+#pragma once
+
+
+#include <zeno/zty/mesh/Mesh.h>
+#include <memory>
+
+
+ZENO_NAMESPACE_BEGIN
+namespace zty {
+
+
+struct MeshCutter {
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+
+    enum class CompType {
+        all,
+        fragment,
+        patch,
+        seam,
+        input,
+    };
+
+    explicit MeshCutter(Mesh const &mesh1, Mesh const &mesh2);
+    void selectComponents(CompType compType) const;
+    size_t getNumComponents() const;
+    Mesh getComponent(size_t i) const;
+    ~MeshCutter();
+};
+
+
+}
+ZENO_NAMESPACE_END
