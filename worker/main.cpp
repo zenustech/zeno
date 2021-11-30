@@ -7,12 +7,13 @@ int main()
     zty::Mesh mesh1;
     {
         std::ifstream ifs("models/monkey.obj");
+        if (!ifs) throw std::runtime_error("ifs");
         zty::readMeshFromOBJ(ifs, mesh1);
     }
 
     zty::Mesh mesh2;
     {
-        std::ifstream ifs("models/Pig_Head.obj");
+        std::ifstream ifs("models/monkey.obj");
         zty::readMeshFromOBJ(ifs, mesh2);
     }
 

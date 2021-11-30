@@ -85,7 +85,7 @@ size_t MeshCutter::getNumComponents() const
 
 Mesh MeshCutter::getComponent(size_t i) const
 {
-    McConnectedComponent connComp = impl->connComps[i];
+    McConnectedComponent connComp = impl->connComps.at(i);
     uint64_t numBytes;
 
     mcGetConnectedComponentData
