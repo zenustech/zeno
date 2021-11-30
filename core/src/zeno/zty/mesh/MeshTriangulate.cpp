@@ -30,8 +30,8 @@ void meshTriangulate(Mesh &mesh) {
         index++;
     });
 
-    mesh->poly = std::move(poly);
-    mesh->loop = std::move(loop);
+    mesh.poly = std::move(poly);
+    mesh.loop = std::move(loop);
 }
 
 
