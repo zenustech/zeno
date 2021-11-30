@@ -103,7 +103,7 @@ void writeMeshToOBJ(std::ostream &out, Mesh const &mesh) {
     for (auto &p : mesh.poly) {
         out << "f ";
         for (size_t l = start; l < start + p; ++l) {
-            out << mesh.loop[l] << " ";
+            out << mesh.loop[l] + 1 << " ";
         }
         out << "\n";
         start += p;
