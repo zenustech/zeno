@@ -21,7 +21,7 @@ struct MeshCutter {
         input,
     };
 
-    explicit MeshCutter(bool debugMode = true);
+    explicit MeshCutter(bool debugMode = false);
     void dispatch(Mesh const &mesh1, Mesh const &mesh2);
     void selectComponents(CompType compType) const;
     size_t getNumComponents() const;
