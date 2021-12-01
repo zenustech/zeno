@@ -1,5 +1,26 @@
 #include <zeno/zty/mesh/MeshCutter.h>
+#include <zeno/zmt/log.h>
 #include <mcut/mcut.h>
+#include <stdexcept>
+
+
+static void mcCheckError_(McResult err, const char *expr, const char *file, int line)
+{
+    // https://cutdigital.github.io/mcut.site/tutorials/debugging/
+    [[unlikely]] if (err != MC_NO_ERROR) {
+        std::string errorStr;
+        switch (err) {
+            case MC_INVALID_OPERATION: errorStr = "MC_INVALID_OPERATION"; break;
+            case MC_INVALID_VALUE:     errorStr = "MC_INVALID_VALUE"; break;
+            case MC_OUT_OF_MEMORY:     errorStr = "MC_OUT_OF_MEMORY"; break;
+            default:                   errorStr = std::to_string(err);
+        }
+        throw std::runtime_error(
+            zmt::format("In {}:{}: {}: {}", file, line, expr, errorStr));
+    }
+}
+
+#define mcCheckError(expr) mcCheckError_((expr), #expr, __FILE__, __LINE__)
 
 
 ZENO_NAMESPACE_BEGIN
@@ -15,15 +36,15 @@ struct MeshCutter::Impl {
 MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     : impl(std::make_unique<Impl>())
 {
-    mcCreateContext
+    mcCheckError(mcCreateContext
     ( &impl->ctx
     , MC_NULL_HANDLE
-    );
+    ));
 
     printf("%ld %ld\n", mesh1.vert.size(), mesh1.poly.size());
     printf("%ld %ld\n", mesh2.vert.size(), mesh2.poly.size());
 
-    mcDispatch
+    mcCheckError(mcDispatch
     ( impl->ctx
     , MC_DISPATCH_VERTEX_ARRAY_FLOAT
     , (float *)mesh1.vert.data()
@@ -36,7 +57,7 @@ MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
     , mesh2.poly.data()
     , mesh2.vert.size()
     , mesh2.poly.size()
-    );
+    ));
 }
 
 
@@ -62,21 +83,21 @@ void MeshCutter::selectComponents(CompType compType) const
     }
 
     uint32_t numConnComps;
-    mcGetConnectedComponents
+    mcCheckError(mcGetConnectedComponents
     ( impl->ctx
     , mcCompType
     , 0
     , NULL
     , &numConnComps
-    );
+    ));
     impl->connComps.resize(numConnComps);
-    mcGetConnectedComponents
+    mcCheckError(mcGetConnectedComponents
     ( impl->ctx
     , mcCompType
     , numConnComps
     , impl->connComps.data()
     , NULL
-    );
+    ));
 }
 
 
@@ -91,59 +112,59 @@ void MeshCutter::getComponent(size_t i, Mesh &mesh) const
     McConnectedComponent connComp = impl->connComps.at(i);
     uint64_t numBytes;
 
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_VERTEX_FLOAT
     , 0
     , NULL
     , &numBytes
-    );
+    ));
     std::vector<math::vec3f> vertices(numBytes / sizeof(math::vec3f));
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_VERTEX_FLOAT
     , numBytes
     , vertices.data()
     , NULL
-    );
+    ));
 
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_FACE
     , 0
     , NULL
     , &numBytes
-    );
+    ));
     std::vector<uint32_t> faces(numBytes / sizeof(uint32_t));
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_FACE
     , numBytes
     , faces.data()
     , NULL
-    );
+    ));
 
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_FACE_SIZE
     , 0
     , NULL
     , &numBytes
-    );
+    ));
     std::vector<uint32_t> faceSizes(numBytes / sizeof(uint32_t));
-    mcGetConnectedComponentData
+    mcCheckError(mcGetConnectedComponentData
     ( impl->ctx
     , connComp
     , MC_CONNECTED_COMPONENT_DATA_FACE_SIZE
     , numBytes
     , faceSizes.data()
     , NULL
-    );
+    ));
 
     mesh.vert = std::move(vertices);
     mesh.loop = std::move(faces);
@@ -153,14 +174,14 @@ void MeshCutter::getComponent(size_t i, Mesh &mesh) const
 
 MeshCutter::~MeshCutter()
 {
-    mcReleaseConnectedComponents
+    mcCheckError(mcReleaseConnectedComponents
     ( impl->ctx
     , 0
     , NULL
-    );
-    mcReleaseContext
+    ));
+    mcCheckError(mcReleaseContext
     ( impl->ctx
-    );
+    ));
 }
 
 
