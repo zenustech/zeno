@@ -34,6 +34,7 @@ class LayerWidget : public QWidget
     Q_OBJECT
 public:
     LayerWidget(QWidget* parent = nullptr);
+    void setModel(QStandardItemModel* model, QItemSelectionModel* selection);
 
 public slots:
     void resetModel();

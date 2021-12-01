@@ -8,6 +8,10 @@
 #include "dragpointitem.h"
 #include "nodegrid.h"
 #include "nodesview.h"
+#include "styletabwidget.h"
+#include "nodeswidget.h"
+#include "designermainwin.h"
+#include "util.h"
 
 
 NodeScene::NodeScene(NodesView* pView, QObject* parent)
@@ -15,26 +19,17 @@ NodeScene::NodeScene(NodesView* pView, QObject* parent)
 	, m_nLargeCellRows(10)
 	, m_nLargeCellColumns(12)
 	, m_nCellsInLargeCells(5)
-	, m_nPixelsInCell(12)
+	, m_nPixelsInCell(PIXELS_IN_CELL)
 	, m_pHTimeline(nullptr)
 	, m_selectedRect(nullptr)
 	, m_selectedItem(nullptr)
 	, m_grid(nullptr)
-	, m_model(new QStandardItemModel(pView))
-	, m_selection(new QItemSelectionModel(m_model))
 	, m_pNode(nullptr)
 {
-	m_model->setObjectName(NODE_MODEL_NAME);
-	m_selection->setObjectName(NODE_SELECTION_MODEL);
-	connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
 }
 
 NodeScene::~NodeScene()
 {
-	m_model->destroyed();
-	m_selection->destroyed();
-	m_model = nullptr;
-	m_selection = nullptr;
 }
 
 void NodeScene::initSkin(const QString& fn)
@@ -62,6 +57,15 @@ void NodeScene::onViewTransformChanged(qreal factor)
 	m_grid->setFactor(factor);
 }
 
+void NodeScene::resetPreset(int W, int H)
+{
+    if (m_grid)
+		delete m_grid;
+    m_grid = new NodeGridItem(QSize(W, H));
+    addItem(m_grid);
+    update();
+}
+
 void NodeScene::updateTimeline(qreal factor)
 {
 	if (m_pHTimeline)
@@ -70,35 +74,36 @@ void NodeScene::updateTimeline(qreal factor)
 		m_pVTimeline->updateScalar(factor);
 }
 
+QSizeF NodeScene::getSceneSize()
+{
+    return m_grid->boundingRect().size();
+}
+
 void NodeScene::initNode()
 {
 	if (m_pNode == nullptr)
 		m_pNode = new NodeTemplate(this);
 
-	m_pNode->initStyle(m_nodeparam);
-	m_pNode->initModel(m_model, m_selection);
-
-	connect(m_selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
-		m_pNode, SLOT(onSelectionChanged(const QItemSelection&, const QItemSelection&)));
-
-	//ComponentItem* pItem = new ComponentItem(this, 50, 50, 150, 30);
-	//ComponentItem* pItem2 = new ComponentItem(this, 350, 350, 150, 30);
-
-	//m_originalPix = QPixmap("C:\\editor\\uirender\\Header_back_board.jpg");
-	//m_coreitem = new QGraphicsPixmapItem(m_originalPix.scaled(m_width, m_height), this);
-
-	//ResizablePixmapItem* pItem = new ResizablePixmapItem(this, QPixmap("C:\\editor\\uirender\\view.jpg").scaled(60, 61));
-	//pItem->setPos(50, 50);
+	m_pNode->initStyleModel(m_nodeparam);
+    connect(m_pNode, SIGNAL(markDirty()), this, SIGNAL(markDirty()));
+    connect(this, &NodeScene::markDirty, [=]() {
+        getMainWindow()->getCurrentTab()->markDirty(true);
+    });
 }
 
 QStandardItemModel* NodeScene::model() const
 {
-	return m_model;
+    return m_pNode ? m_pNode->model() : nullptr;
 }
 
 QItemSelectionModel* NodeScene::selectionModel() const
 {
-	return m_selection;
+    return m_pNode ? m_pNode->selectionModel() : nullptr;
+}
+
+NodeParam NodeScene::exportNodeParam()
+{
+    return m_pNode->exportParam();
 }
 
 void NodeScene::onSelectionChanged()

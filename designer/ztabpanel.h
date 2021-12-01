@@ -12,6 +12,7 @@ public:
 
 public slots:
     void resetModel();
+    void setModel(QStandardItemModel *model, QItemSelectionModel *selection);
 
 private:
     ZPagePropPanel* m_pagePanel;

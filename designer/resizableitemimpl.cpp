@@ -2,30 +2,68 @@
 #include "resizableitemimpl.h"
 #include "resizecoreitem.h"
 #include "nodetemplate.h"
+#include "designermainwin.h"
+#include "nodeswidget.h"
+#include "util.h"
 
 using namespace std;
 
 
-ResizableItemImpl::ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent)
+ResizableItemImpl::ResizableItemImpl(NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem *parent)
     : QGraphicsObject(parent)
-    , m_width(w)
-    , m_height(h)
+    , m_id(id)
+    , m_type(type)
+    , m_width(sceneRc.width())
+    , m_height(sceneRc.height())
     , m_mouseHint(NO_DRAG)
     , m_borderitem(nullptr)
     , m_coreitem(nullptr)
-    , m_showBdr(false)
+    , m_showBdr(true)
+    , m_bLocked(false)
+    , m_content(NC_NONE)
 {
-    setFlags(ItemIsMovable | ItemIsSelectable);
-    qreal offset = dragW / 2;
-    setPos(x - offset, y - offset); //x,y is about inner rect pos.
+    setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
+    QPointF topLeft = parent->mapFromScene(sceneRc.topLeft());
+    setPos(topLeft);
     _adjustItemsPos();
+    setVisible(true);
+    resetZValue();
+}
+
+void ResizableItemImpl::resetZValue()
+{
+    if (m_type == NT_COMPONENT)
+    {
+        setZValue(m_bLocked ? ZVALUE_LOCKED_CP : ZVALUE_COMPONENT);
+    }
+    else if (m_type == NT_COMPONENT_AS_ELEMENT)
+    {
+        if (m_id.contains("backboard"))
+        {
+            setZValue(m_bLocked ? ZVALUE_BACKGROUND : ZVALUE_LOCKED_BG);
+        } 
+        else
+        {
+            setZValue(m_bLocked ? ZVALUE_ELEMENT : ZVALUE_LOCKED_ELEM);
+        }
+    }
+    else if (m_type == NT_ELEMENT)
+    {
+        setZValue(m_bLocked ? ZVALUE_ELEMENT : ZVALUE_LOCKED_ELEM);
+    }
 }
 
 void ResizableItemImpl::_adjustItemsPos()
 {
 	if (m_borderitem == nullptr)
 		m_borderitem = new QGraphicsRectItem(0, 0, m_width, m_height, this);
+
 	m_borderitem->setPos(QPointF(0, 0));
+    m_borderitem->setRect(QRectF(0, 0, m_width, m_height));
+    if (m_coreitem) {
+        m_coreitem->resize(QSizeF(m_width, m_height));
+        m_coreitem->setPos(QPointF(0, 0));
+    }
 
     qreal w = m_width, h = m_height;
     qreal offset = dragW / 2;
@@ -56,15 +94,18 @@ void ResizableItemImpl::_adjustItemsPos()
         m_dragPoints[i]->setPos(pts[i]);
     }
 
-    m_cursor_mapper.insert(make_pair(DRAG_LEFTTOP, Qt::SizeFDiagCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_LEFTMID, Qt::SizeHorCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_LEFTBOTTOM, Qt::SizeBDiagCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_MIDTOP, Qt::SizeVerCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_MIDBOTTOM, Qt::SizeVerCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_RIGHTTOP, Qt::SizeBDiagCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_RIGHTMID, Qt::SizeHorCursor));
-	m_cursor_mapper.insert(make_pair(DRAG_RIGHTBOTTOM, Qt::SizeFDiagCursor));
-	m_cursor_mapper.insert(make_pair(TRANSLATE, Qt::SizeAllCursor));
+    if (m_cursor_mapper.empty())
+    {
+        m_cursor_mapper.insert(make_pair(DRAG_LEFTTOP, Qt::SizeFDiagCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_LEFTMID, Qt::SizeHorCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_LEFTBOTTOM, Qt::SizeBDiagCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_MIDTOP, Qt::SizeVerCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_MIDBOTTOM, Qt::SizeVerCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_RIGHTTOP, Qt::SizeBDiagCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_RIGHTMID, Qt::SizeHorCursor));
+        m_cursor_mapper.insert(make_pair(DRAG_RIGHTBOTTOM, Qt::SizeFDiagCursor));
+        m_cursor_mapper.insert(make_pair(TRANSLATE, Qt::SizeAllCursor));
+    }
 }
 
 void ResizableItemImpl::setCoreItem(ResizableCoreItem* pItem)
@@ -73,7 +114,7 @@ void ResizableItemImpl::setCoreItem(ResizableCoreItem* pItem)
         return;
 
     m_coreitem = pItem;
-    pItem->setZValue(-100);
+    pItem->setZValue(ZVALUE_CORE_ITEM);
     pItem->setParentItem(this);
     pItem->setPos(QPointF(0, 0));
     pItem->resize(QSizeF(m_width, m_height));
@@ -86,29 +127,145 @@ QRectF ResizableItemImpl::coreItemSceneRect()
     return rc;
 }
 
+void ResizableItemImpl::_sizeValidate(bool bTranslate)
+{
+    return;
+    QGraphicsItem *parent = this->parentItem();
+    QSizeF sz;
+
+    ResizableItemImpl *parentItem = dynamic_cast<ResizableItemImpl *>(parent);
+
+    if (parentItem) {
+        sz = QSizeF(parentItem->width(), parentItem->height());
+    } else {
+        sz = sz = parent->boundingRect().size();
+    }
+
+    QPointF pos = this->pos();
+
+    if (bTranslate)
+    {
+        QRectF rcParent = parent->boundingRect();
+
+        qreal xp = pos.x(), yp = pos.y();
+
+        int xRight = sz.width() - m_width - 1;
+        int yBottom = sz.height() - m_height - 1;
+
+        xp = std::min(std::max(0., xp), sz.width() - m_width - 1);
+        yp = std::min(std::max(0., yp), sz.height() - m_height - 1);
+
+        pos.setX(xp);
+        pos.setY(yp);
+
+        setPos(pos);
+    }
+    else
+    {
+        m_width = std::min(m_width, sz.width() - pos.x());
+        m_height = std::min(m_height, sz.height() - pos.y());
+    }
+}
+
+void ResizableItemImpl::_setPosition(QPointF pos)
+{
+    NodesWidget* pTab = getMainWindow()->getCurrentTab();
+    SnapWay snap = pTab->getSnapWay();
+
+    if (m_type == NT_COMPONENT || m_type == NT_COMPONENT_AS_ELEMENT || m_type == NT_ELEMENT && snap == SNAP_GRID)
+    {
+        int x = pos.x(), y = pos.y(), w = m_width, h = m_height;
+        //TODO: it will be a large step when the grid becomes small, should adjust snap to pixel.
+        int x_ = x - x % PIXELS_IN_CELL;
+        int y_ = y - y % PIXELS_IN_CELL;
+        int w_ = w - w % PIXELS_IN_CELL;
+        int h_ = h - h % PIXELS_IN_CELL;
+        setPos(x_, y_);
+        m_width = w_;
+        m_height = h_;
+        _adjustItemsPos();
+    }
+    else if (m_type == NT_ELEMENT)
+    {
+        if (snap == SNAP_PIXEL)
+        {
+            int x = pos.x(), y = pos.y(), w = m_width, h = m_height;
+            setPos(x, y);
+            m_width = w;
+            m_height = h;
+            _adjustItemsPos();
+        }
+        else
+        {
+            setPos(pos);
+        }
+    }
+}
+
 void ResizableItemImpl::setCoreItemSceneRect(const QRectF& sceneRect)
 {
-    qreal offset = dragW / 2;
-    QPointF topLeft = sceneRect.topLeft() - QPointF(offset, offset);
-    setPos(topLeft);
+    QPointF pos = parentItem()->mapFromScene(sceneRect.topLeft());
+
+    QGraphicsItem *parent = this->parentItem();
+    QSizeF sz = parent->boundingRect().size();
+
+    setPos(pos);
 
     m_width = sceneRect.width();
     m_height = sceneRect.height();
     m_borderitem->setRect(QRectF(0, 0, m_width, m_height));
     if (m_coreitem)
+    {
         m_coreitem->resize(QSizeF(m_width, m_height));
+        m_coreitem->setPos(QPointF(0, 0));
+    }
     _adjustItemsPos();
     update();
 }
 
+void ResizableItemImpl::_resetDragPoints()
+{
+    qreal factor = getMainWindow()->getCurrentTab()->factor();
+    qreal w = m_width, h = m_height;
+
+    qreal offset = (dragW / 2) / factor;
+    QVector<QPointF> pts = {
+            QPointF(-offset, -offset),
+            QPointF(-offset, h / 2 - offset),
+            QPointF(-offset, h - offset),
+
+            QPointF(w / 2 - offset, -offset),
+            QPointF(w / 2 - offset, h - offset),
+
+            QPointF(w - offset, -offset),
+            QPointF(w - offset, h / 2 - offset),
+            QPointF(w - offset, h - offset)
+    };
+
+    for (int i = 0; i < pts.size(); i++)
+    {
+        m_dragPoints[i]->setRect(0, 0, dragW / factor, dragH / factor);
+        m_dragPoints[i]->setPos(pts[i]);
+    }
+}
+
 void ResizableItemImpl::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+    qreal factor = 1.0;
+    bool bShowBdr = true;
+    auto pTab = getMainWindow()->getCurrentTab();
+    if (pTab)
+    {
+        factor = pTab->factor();
+        bShowBdr = pTab->showBorder();
+    }
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus))
     {
-        QPen pen(QColor(21, 152, 255), borderW);
+        QPen pen(QColor(21, 152, 255), borderW / factor);
         pen.setJoinStyle(Qt::MiterJoin);
         QBrush brush(QColor(255, 255, 255));
 
+        _resetDragPoints();
         for (int i = 0; i < m_dragPoints.size(); i++)
         {
             m_dragPoints[i]->setPen(pen);
@@ -126,9 +283,9 @@ void ResizableItemImpl::paint(QPainter* painter, const QStyleOptionGraphicsItem*
             m_dragPoints[i]->hide();
         }
  
-        if (m_showBdr)
+        if (bShowBdr)
         {
-			QPen pen(QColor(0, 0, 0), borderW);
+			QPen pen(QColor(0, 0, 0), borderW / factor);
 			pen.setJoinStyle(Qt::MiterJoin);
 			m_borderitem->setPen(pen);
 			m_borderitem->setBrush(Qt::NoBrush);
@@ -169,7 +326,8 @@ bool ResizableItemImpl::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 
 QGraphicsItem* ResizableItemImpl::getResizeHandleItem(QPointF scenePos)
 {
-    qreal hitTextLength = 2 * dragW;
+    qreal factor = getMainWindow()->getCurrentTab()->factor();
+    qreal hitTextLength = 2 * dragW / factor;
     //construct a "bounding rect" which will fully contain corner if mouse over it.
     QRectF brCorner(scenePos.x() - hitTextLength, scenePos.y() - hitTextLength, 2 * hitTextLength, 2 * hitTextLength);
     QList<QGraphicsItem*> items = scene()->items(brCorner, Qt::ContainsItemShape);
@@ -186,7 +344,31 @@ void ResizableItemImpl::showBorder(bool bShow)
 
 bool ResizableItemImpl::_enableMouseEvent()
 {
-    return m_coreitem || isSelected();
+    return !m_bLocked;
+}
+
+void ResizableItemImpl::setLocked(bool bLock)
+{
+    m_bLocked = bLock;
+    if (m_bLocked) {
+        setFlag(ItemIsSelectable, false);
+        m_showBdr = true;
+        resetZValue();
+    } else {
+        setFlag(ItemIsSelectable, true);
+        m_showBdr = true;
+        resetZValue();
+    }
+}
+
+bool ResizableItemImpl::isLocked() const
+{
+    return m_bLocked;
+}
+
+QString ResizableItemImpl::getId() const
+{
+    return m_id;
 }
 
 void ResizableItemImpl::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -271,6 +453,8 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     if (m_mouseHint == TRANSLATE)
     {
         _base::mouseMoveEvent(event);
+        _sizeValidate(true);
+        _setPosition(pos());
     }
     else
     {
@@ -317,36 +501,38 @@ void ResizableItemImpl::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
                 newTopLeft = QPointF(left, top);
                 break;
             }
+            case NO_DRAG:
+                return;
         }
         m_width = newWidth;
         m_height = newHeight;
-        m_borderitem->setRect(QRectF(0, 0, newWidth, newHeight));
-        if (m_coreitem)
-            m_coreitem->resize(QSizeF(newWidth, newHeight));
-        
-        if (parentItem())
-        {
-            QPointF localPos = parentItem()->mapFromScene(newTopLeft);
-            setPos(localPos);
-        }
-        else
-        {
-            setPos(newTopLeft);
-        }
+        newTopLeft = parentItem()->mapFromScene(newTopLeft);
 
+        _setPosition(newTopLeft);
+        _sizeValidate(false);
         _adjustItemsPos();
         update();
     }
+
     QPointF topLeft = mapToScene(0, 0);
-    emit itemGeoChanged(QRectF(topLeft.x(), topLeft.y(), m_width, m_height));
+    emit gvItemGeoChanged(m_id, QRectF(topLeft.x(), topLeft.y(), m_width, m_height));
 }
 
 QVariant ResizableItemImpl::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    switch (change)
     {
-        if (!isSelected())
-            emit itemDeselected();
+        case QGraphicsItem::ItemSelectedHasChanged:
+            emit gvItemSelectedChange(m_id, isSelected());
+            break;
+
+        /*
+        case QGraphicsItem::ItemTransformHasChanged:
+        case QGraphicsItem::ItemPositionHasChanged:
+            QPointF topLeft = mapToScene(0, 0);
+            emit gvItemGeoChanged(m_id, QRectF(topLeft.x(), topLeft.y(), m_width, m_height));
+            break;
+        */
     }
     return value;
 }

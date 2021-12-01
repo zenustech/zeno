@@ -3,10 +3,45 @@
 #include "nodescene.h"
 #include "resizableitemimpl.h"
 #include "resizecoreitem.h"
+#include "styletabwidget.h"
+
+
+class RAII_BLOCKSIGNAL
+{
+public:
+    RAII_BLOCKSIGNAL(QObject *pObject) : m_pObject(pObject) {
+        if (m_pObject)
+            m_pObject->blockSignals(true);
+    }
+    ~RAII_BLOCKSIGNAL() {
+        if (m_pObject)
+            m_pObject->blockSignals(false);
+    }
+
+private:
+    QObject *m_pObject;
+};
+
+class RAII_BATCHLEVEL {
+public:
+    RAII_BATCHLEVEL(int *level) : m_level(level) {
+        if (m_level)
+            (*m_level)++;
+    }
+    ~RAII_BATCHLEVEL() {
+        if (m_level)
+            (*m_level)--;
+    }
+
+private:
+    int *m_level;
+};
+
 
 
 NodeTemplate::NodeTemplate(NodeScene* pScene, QGraphicsItem* parent)
-	: QGraphicsObject(parent)
+    : QGraphicsObject(parent)
+    , m_pScene(pScene)
 	, m_once(nullptr)
 	, m_prep(nullptr)
 	, m_mute(nullptr)
@@ -20,159 +55,363 @@ NodeTemplate::NodeTemplate(NodeScene* pScene, QGraphicsItem* parent)
 	, m_component_display(nullptr)
 	, m_component_header_backboard(nullptr)
 	, m_component_ltsocket(nullptr)
-	, m_component_body_backboard(nullptr)
+    , m_component_body_backboard(nullptr)
+	, m_model(new QStandardItemModel(pScene->views()[0]))
+	, m_selection(new QItemSelectionModel(m_model))
+    , m_batchLevel(0)
 {
+    m_model->setObjectName(NODE_MODEL_NAME);
+    m_selection->setObjectName(NODE_SELECTION_MODEL);
 	pScene->addItem(this);
-	//setFlags(ItemIsMovable | ItemSendsGeometryChanges | ItemIsSelectable | ItemClipsToShape);
 }
 
-void NodeTemplate::initStyle(const NodeParam& param)
+QStandardItem* NodeTemplate::initModelItemFromGvItem(ResizableItemImpl *gvItem, const QString &id, const QString &name)
+{
+    QStandardItem *pItem = new QStandardItem(QIcon(), name);
+    
+	pItem->setData(id, NODEID_ROLE);
+    pItem->setData(gvItem->coreItemSceneRect(), NODEPOS_ROLE);
+    pItem->setData(gvItem->isLocked(), NODELOCK_ROLE);
+    pItem->setData(gvItem->isVisible(), NODEVISIBLE_ROLE);
+    pItem->setData(gvItem->getType(), NODETYPE_ROLE);
+    pItem->setData(gvItem->getContent(), NODECONTENT_ROLE);
+    pItem->setEditable(false);
+	
+	connect(gvItem, SIGNAL(gvItemSelectedChange(QString, bool)), this, SLOT(onGvItemSelectedChange(QString, bool)));
+    connect(gvItem, SIGNAL(gvItemGeoChanged(QString, QRectF)), this, SLOT(onGvItemGeoChanged(QString, QRectF)));
+
+    return pItem;
+}
+
+void NodeTemplate::setComponentPxElem(QStandardItem *pParentItem, ResizableItemImpl *pComponentObj, const ImageElement &imgElem, const QString &showName)
+{
+    pComponentObj->setContent(NC_IMAGE);
+    QString id = pComponentObj->getId();
+    QStandardItem *pItem = initModelItemFromGvItem(pComponentObj, id, showName );
+    pParentItem->appendRow(pItem);
+    pItem->setData(imgElem.image, NODEPATH_ROLE);
+    pItem->setData(imgElem.imageHovered, NODEHOVERPATH_ROLE);
+    pItem->setData(imgElem.imageOn, NODESELECTEDPATH_ROLE);
+    QString path = m_param.header.backboard.image.image;
+    QSizeF sz(imgElem.rc.width(), imgElem.rc.height());
+    ResizableImageItem *pPxItem = new ResizableImageItem(imgElem.image, imgElem.imageHovered, imgElem.imageOn, sz);
+    pComponentObj->setCoreItem(pPxItem);
+}
+
+void NodeTemplate::setComonentTxtElem(QStandardItem* pParentItem, ResizableItemImpl* pComponentObj, const TextElement& textElem, const QString& showName)
+{
+    pComponentObj->setContent(NC_TEXT);
+    QString id = pComponentObj->getId();
+    QStandardItem *pItem = initModelItemFromGvItem(pComponentObj, id, showName);
+    pParentItem->appendRow(pItem);
+    pItem->setData(textElem.font, NODEFONT_ROLE);
+    pItem->setData(textElem.fill, NODEFONTCOLOR_ROLE);
+    pItem->setData(textElem.text, NODETEXT_ROLE);
+
+    ResizableTextItem *pNameItem = new ResizableTextItem(textElem.text);
+    pNameItem->setTextProp(textElem.font, textElem.fill.color());
+    pComponentObj->setCoreItem(pNameItem);
+}
+
+void NodeTemplate::addImageElement(QStandardItem* pParentItem, const ImageElement& imgElem, ResizableItemImpl* pComponentObj, const QString& showName)
+{
+    const QString& id = imgElem.id;
+    auto elem = new ResizableItemImpl(NT_ELEMENT, id, imgElem.rc, pComponentObj);
+    elem->setContent(NC_IMAGE);
+    m_objs.insert(std::make_pair(id, elem));
+    if (!imgElem.image.isEmpty())
+    {
+        QSizeF sz(imgElem.rc.width(), imgElem.rc.height());
+        auto pxItem = new ResizableImageItem(imgElem.image, imgElem.imageHovered, imgElem.imageOn, sz);
+        elem->setCoreItem(pxItem);
+    }
+    QStandardItem* pItem = initModelItemFromGvItem(elem, id, showName);
+    pItem->setData(imgElem.image, NODEPATH_ROLE);
+    pItem->setData(imgElem.imageHovered, NODEHOVERPATH_ROLE);
+    pItem->setData(imgElem.imageOn, NODESELECTEDPATH_ROLE);
+    pParentItem->appendRow(pItem);
+}
+
+void NodeTemplate::addTextElement(QStandardItem *pParentItem, const TextElement &textElem, ResizableItemImpl *pComponentObj, const QString &showName)
+{
+    const QString &id = textElem.id;
+    auto elem = new ResizableItemImpl(NT_ELEMENT, id, textElem.rc, pComponentObj);
+    elem->setContent(NC_TEXT);
+    m_objs.insert(std::make_pair(id, elem));
+    if (!textElem.text.isEmpty())
+    {
+        elem->setCoreItem(new ResizableTextItem(textElem.text));
+    }
+    QStandardItem *pItem = initModelItemFromGvItem(elem, id, showName);
+    pItem->setData(textElem.text, NODETEXT_ROLE);
+    pParentItem->appendRow(pItem);
+}
+
+void NodeTemplate::initStyleModel(const NodeParam& param)
 {
 	m_param = param;
 
-	Component& comp = m_param.header.name;
-	m_component_nodename = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
-	
-	//m_holder_nodename->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\Header_back_board.jpg")));
-	//m_holder_nodename->setCoreItem(new ResizableEclipseItem(QRectF(0,0,200,50)));
-	//m_holder_nodename->setCoreItem(new ResizableTextItem("Node Name"));
+	m_model->clear();
 
-	comp = m_param.header.status;
-	m_component_status = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+    QStandardItem *headerItem = new QStandardItem(QIcon(), "Header");
+    headerItem->setData(HEADER_ID);
+    headerItem->setEditable(false);
+    headerItem->setSelectable(false);
 
-	//Component
-	comp = m_param.header.backborad;
-	m_component_header_backboard = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
-	m_component_header_backboard->setZValue(-10);
+    QString id = m_param.header.name.id;
+    //move as element, actually a component-element
+    m_component_nodename = new ResizableItemImpl(NT_ELEMENT, id, m_param.header.name.rc, this);
+    setComonentTxtElem(headerItem, m_component_nodename, m_param.header.name.text, "Node-name");
+    m_objs.insert(std::make_pair(id, m_component_nodename));
 
-	comp = m_param.header.display;
-	m_component_display = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+    id = m_param.header.status.id;
+    m_component_status = new ResizableItemImpl(NT_COMPONENT, id, m_param.header.status.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_status));
+    QStandardItem *pStatusItem = initModelItemFromGvItem(m_component_status, id, "Status");
+    headerItem->appendRow(pStatusItem);
+    {
+        addImageElement(pStatusItem, m_param.header.status.mute, m_component_status, "Mute");
+        addImageElement(pStatusItem, m_param.header.status.view, m_component_status, "View");
+        addImageElement(pStatusItem, m_param.header.status.prep, m_component_status, "Prep");
+    }
 
-	comp = m_param.header.control;
-	m_component_control = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+    id = m_param.header.backboard.id;
+    m_component_header_backboard = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, m_param.header.backboard.rc, this);
+    setComponentPxElem(headerItem, m_component_header_backboard, m_param.header.backboard.image, "Back-board");
+    m_objs.insert(std::make_pair(id, m_component_header_backboard));
 
-	comp = m_param.body.leftTopSocket;
-	m_component_ltsocket = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+    id = m_param.header.display.id;
+    m_component_display = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, m_param.header.display.rc, this);
+    setComponentPxElem(headerItem, m_component_display, m_param.header.display.image, "Display");
+    m_objs.insert(std::make_pair(id, m_component_display));
 
-	comp = m_param.body.leftBottomSocket;
-	m_component_lbsocket = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
 
-	comp = m_param.body.rightTopSocket;
-	m_component_rtsocket = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+    id = m_param.header.control.id;
+    m_component_control = new ResizableItemImpl(NT_COMPONENT, id, m_param.header.control.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_control));
+    QStandardItem *controlItem = initModelItemFromGvItem(m_component_control, id, "Control");
+    headerItem->appendRow(controlItem);
+    {
+        const QVector<ImageElement>& elems = m_param.header.control.elements;
+        for (int i = 0; i < elems.size(); i++)
+        {
+            const ImageElement& elem = elems[i];
+            addImageElement(controlItem, elem, m_component_control, "Collaspe.svg");
+        }
+    }
 
-	comp = m_param.body.rightBottomSocket;
-	m_component_rbsocket = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
+	QStandardItem *bodyItem = new QStandardItem(QIcon(), "Body");
+    bodyItem->setData(BODY_ID);
+    bodyItem->setEditable(false);
+    bodyItem->setSelectable(false);
 
-	comp = m_param.body.backboard;
-	m_component_body_backboard = new ResizableItemImpl(comp.x, comp.y, comp.w, comp.h, this);
-	m_component_body_backboard->setZValue(-10);
+    id = m_param.body.leftTopSocket.id;
+    m_component_ltsocket = new ResizableItemImpl(NT_COMPONENT, id, m_param.body.leftTopSocket.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_ltsocket));
+    QStandardItem *pLTSocketItem = initModelItemFromGvItem(m_component_ltsocket, id, "LTSocket");
+    bodyItem->appendRow(pLTSocketItem);
+    {
+        addTextElement(pLTSocketItem, m_param.body.leftTopSocket.text, m_component_ltsocket, "socket text");
+        addImageElement(pLTSocketItem, m_param.body.leftTopSocket.image, m_component_ltsocket, "socket image");
+    }
 
-	m_component_status->showBorder(true);
+    id = m_param.body.leftBottomSocket.id;
+    m_component_lbsocket = new ResizableItemImpl(NT_COMPONENT, id, m_param.body.leftBottomSocket.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_lbsocket));
+    QStandardItem *pLBSocketItem = initModelItemFromGvItem(m_component_lbsocket, id, "LBSocket");
+    bodyItem->appendRow(pLBSocketItem);
+    {
+        addTextElement(pLBSocketItem, m_param.body.leftBottomSocket.text, m_component_lbsocket, "socket text");
+        addImageElement(pLBSocketItem, m_param.body.leftBottomSocket.image, m_component_lbsocket, "socket image");
+    }
 
-	//element
-	//auto m_view = new ResizableItemImpl(20, 20, 64, 64, m_holder_status);
-	//m_view->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\view.jpg")));
+    id = m_param.body.rightTopSocket.id;
+    m_component_rtsocket = new ResizableItemImpl(NT_COMPONENT, id, m_param.body.rightTopSocket.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_rtsocket));
+    QStandardItem *pRTSocketItem = initModelItemFromGvItem(m_component_rtsocket, id, "RTSocket");
+    bodyItem->appendRow(pRTSocketItem);
+    {
+        addTextElement(pRTSocketItem, m_param.body.rightTopSocket.text, m_component_rtsocket, "socket text");
+        addImageElement(pRTSocketItem, m_param.body.rightTopSocket.image, m_component_rtsocket, "socket image");
+    }
 
-	//auto m_once = new ResizableItemImpl(80, 20, 64, 64, m_holder_status);
-	//m_once->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\once.jpg")));
+    id = m_param.body.rightBottomSocket.id;
+    m_component_rbsocket = new ResizableItemImpl(NT_COMPONENT, id, m_param.body.rightBottomSocket.rc, this);
+    m_objs.insert(std::make_pair(id, m_component_rbsocket));
+    QStandardItem *pRBSocketItem = initModelItemFromGvItem(m_component_rbsocket, id, "RBSocket");
+    bodyItem->appendRow(pRBSocketItem);
+    {
+        addTextElement(pRBSocketItem, m_param.body.rightBottomSocket.text, m_component_rbsocket, "socket text");
+        addImageElement(pRBSocketItem, m_param.body.rightBottomSocket.image, m_component_rbsocket, "socket image");
+    }
 
-	//auto m_mute = new ResizableItemImpl(140, 20, 64, 64, m_holder_status);
-	//m_mute->setCoreItem(new ResizablePixmapItem(QPixmap("C:\\editor\\uirender\\mute.jpg")));
+    id = m_param.body.backboard.id;
+    m_component_body_backboard = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, QRectF(m_param.body.backboard.rc), this);
+    setComponentPxElem(bodyItem, m_component_body_backboard, m_param.body.backboard.image, "Back-board");
+    m_objs.insert(std::make_pair(id, m_component_body_backboard));
+
+    RAII_BLOCKSIGNAL batch(m_model);
+	m_model->appendRow(headerItem);
+	m_model->appendRow(bodyItem);
+
+	connect(m_selection, SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+        this, SLOT(onSelectionChanged(const QItemSelection &, const QItemSelection &)));
+    connect(m_model, SIGNAL(itemChanged(QStandardItem *)), this, SLOT(onItemChanged(QStandardItem *)));
+    connect(m_model, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>)),
+            this, SLOT(onDataChanged(const QModelIndex &, const QModelIndex &, const QVector<int>)));
 }
 
-QStandardItem* NodeTemplate::createItemWithGVItem(ResizableItemImpl* gvItem, NODE_ID id, const QString& name, QStandardItemModel* pModel, QItemSelectionModel* selection)
+NodeParam NodeTemplate::exportParam()
 {
-    QStandardItem* pItem = new QStandardItem(QIcon(), name);
-    pItem->setData(id);
-    pItem->setData(gvItem->coreItemSceneRect(), NODEPOS_ROLE);
-	pItem->setData(true, NODELOCK_ROLE);
-	pItem->setData(false, NODELOCK_VISIBLE);
-    connect(gvItem, &ResizableItemImpl::itemGeoChanged, this, [=](QRectF rcNew) {
-        pItem->setData(rcNew, NODEPOS_ROLE);
-        });
-    connect(gvItem, &ResizableItemImpl::itemDeselected, this, [=]() {
-        selection->select(pItem->index(), QItemSelectionModel::Deselect);
-        });
-	connect(pModel, &QStandardItemModel::itemChanged, this, [=](QStandardItem* pItemChanged) {
-			if (pItemChanged == pItem)
-			{
-				QRectF rc = pItemChanged->data(NODEPOS_ROLE).toRectF();
-				gvItem->setCoreItemSceneRect(rc);
-			}
-		});
-	return pItem;
+    NodeParam param;
+    param.header = _exportHeaderParam();
+    param.body = _exportBodyParam();
+    return param;
+}
+
+BodyParam NodeTemplate::_exportBodyParam()
+{
+    BodyParam param;
+    param.leftTopSocket = _exportSocket(COMPONENT_LTSOCKET);
+    param.leftBottomSocket = _exportSocket(COMPONENT_LBSOCKET);
+    param.rightTopSocket = _exportSocket(COMPONENT_RTSOCKET);
+    param.rightBottomSocket = _exportSocket(COMPONENT_RBSOCKET);
+    param.backboard = _exportBackground(COMPONENT_BODY_BG);
+    return param;
+}
+    
+HeaderParam NodeTemplate::_exportHeaderParam()
+{
+    HeaderParam param;
+    param.status = _exportStatusComponent(COMPONENT_STATUS);
+    param.control = _exportControlComponent(COMPONENT_CONTROL);
+    param.display = _exportBackground(COMPONENT_DISPLAY);
+    param.name = _exportNameComponent(COMPONENT_NAME);
+    param.backboard = _exportBackground(COMPONENT_HEADER_BG);
+
+    return param;
+}
+
+TextComponent NodeTemplate::_exportNameComponent(QString id)
+{
+    TextComponent comp;
+    QStandardItem *pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+
+    TextElement elem;
+    elem.text = pItem->data(NODETEXT_ROLE).toString();
+    elem.font = qvariant_cast<QFont>(pItem->data(NODEFONT_ROLE));
+    elem.fill = qvariant_cast<QBrush>(pItem->data(NODEFONTCOLOR_ROLE)); //QColor 2 QBrush
+    elem.rc = comp.rc;
+
+    comp.text = elem;
+    return comp;
+}
+
+SocketComponent NodeTemplate::_exportSocket(QString id)
+{
+    SocketComponent comp;
+    QStandardItem* pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+    if (id == COMPONENT_LTSOCKET) {
+        comp.image = _exportImageElement(ELEMENT_LTSOCKET_IMAGE);
+        comp.text = _exportTextElement(ELEMENT_LTSOCKET_TEXT);
+    }
+    else if (id == COMPONENT_LBSOCKET) {
+        comp.image = _exportImageElement(ELEMENT_LBSOCKET_IMAGE);
+        comp.text = _exportTextElement(ELEMENT_LBSOCKET_TEXT);
+    }
+    else if (id == COMPONENT_RTSOCKET) {
+        comp.image = _exportImageElement(ELEMENT_RTSOCKET_IMAGE);
+        comp.text = _exportTextElement(ELEMENT_RTSOCKET_TEXT);
+    }
+    else if (id == COMPONENT_RBSOCKET) {
+        comp.image = _exportImageElement(ELEMENT_RBSOCKET_IMAGE);
+        comp.text = _exportTextElement(ELEMENT_RBSOCKET_TEXT);
+    }
+    return comp;
+}
+
+ImageElement NodeTemplate::_exportImageElement(QString id) {
+    ImageElement elem;
+    QStandardItem *pItem = getItemFromId(id);
+    elem.id = id;
+    elem.rc = pItem->data(NODEPOS_ROLE).toRectF();
+    elem.image = pItem->data(NODEPATH_ROLE).toString();
+    elem.imageHovered = pItem->data(NODEHOVERPATH_ROLE).toString();
+    elem.imageOn = pItem->data(NODESELECTEDPATH_ROLE).toString();
+    return elem;
+}
+
+TextElement NodeTemplate::_exportTextElement(QString id) {
+    TextElement elem;
+    QStandardItem *pItem = getItemFromId(id);
+    elem.id = id;
+    elem.font = qvariant_cast<QFont>(pItem->data(NODEFONT_ROLE));
+    elem.text = pItem->data(NODETEXT_ROLE).toString();
+    elem.fill = qvariant_cast<QColor>(pItem->data(NODEFONTCOLOR_ROLE));
+    QRectF rc = pItem->data(NODEPOS_ROLE).toRectF();
+    elem.rc = rc;
+    return elem;
+}
+
+BackgroundComponent NodeTemplate::_exportBackground(QString id)
+{
+    BackgroundComponent comp;
+    QStandardItem *pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+
+    ImageElement elem;
+    if (id == COMPONENT_HEADER_BG)
+    {
+        elem.id = ELEMENT_HEADER_BG;
+    }
+    else if (id == COMPONENT_BODY_BG)
+    {
+        elem.id = ELEMENT_BODY_BG;
+    }
+    else if (id == COMPONENT_DISPLAY)
+    {
+        elem.id = ELEMENT_DISPLAY;
+    }
+
+    elem.rc = pItem->data(NODEPOS_ROLE).toRectF();
+    elem.image = pItem->data(NODEPATH_ROLE).toString();
+    elem.imageHovered = pItem->data(NODEHOVERPATH_ROLE).toString();
+    elem.imageOn = pItem->data(NODESELECTEDPATH_ROLE).toString();
+    comp.image = elem;
+
+    return comp;
+}
+
+StatusComponent NodeTemplate::_exportStatusComponent(QString id)
+{
+    StatusComponent comp;
+    QStandardItem *pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+    comp.mute = _exportImageElement(ELEMENT_MUTE);
+    comp.view = _exportImageElement(ELEMENT_VIEW);
+    comp.prep = _exportImageElement(ELEMENT_PREP);
+    return comp;
+}
+
+Component NodeTemplate::_exportControlComponent(QString id)
+{
+    Component comp;
+    QStandardItem *pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+    comp.elements.append(_exportImageElement(ELEMENT_COLLAPSE));
+    return comp;
 }
 
 QVariant NodeTemplate::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	return QGraphicsObject::itemChange(change, value);
-}
-
-void NodeTemplate::initModel(QStandardItemModel* pModel, QItemSelectionModel* selection)
-{
-	if (!pModel)
-		return;
-
-	pModel->clear();
-
-	QStandardItem* headerItem = new QStandardItem(QIcon(), "Header");
-	headerItem->setData(NODE_ID::HEADER);
-	if (m_component_nodename)
-	{
-		QStandardItem* nodenameItem = createItemWithGVItem(m_component_nodename, NODE_ID::COMP_NODENAME, "Node-name", pModel, selection);
-		headerItem->appendRow(nodenameItem);
-	}
-	if (m_component_status)
-	{
-		QStandardItem* statusItem = createItemWithGVItem(m_component_status, NODE_ID::COMP_STATUS, "Status", pModel, selection);
-		headerItem->appendRow(statusItem);
-	}
-	if (m_component_control)
-	{
-		QStandardItem* controlItem = createItemWithGVItem(m_component_control, NODE_ID::COMP_CONTROL, "Control", pModel, selection);
-		headerItem->appendRow(controlItem);
-	}
-	if (m_component_header_backboard)
-	{
-		QStandardItem* backboardItem = createItemWithGVItem(m_component_header_backboard, NODE_ID::COMP_HEADER_BACKBOARD, "Back-board", pModel, selection);
-		headerItem->appendRow(backboardItem);
-	}
-	if (m_component_display)
-	{
-		QStandardItem* displayItem = createItemWithGVItem(m_component_display, NODE_ID::COMP_DISPLAY, "Display", pModel, selection);
-		headerItem->appendRow(displayItem);
-	}
-
-	QStandardItem* bodyItem = new QStandardItem(QIcon(), "Body");
-	bodyItem->setData(NODE_ID::BODY);
-	if (m_component_ltsocket)
-	{
-		QStandardItem* ltsocketItem = createItemWithGVItem(m_component_ltsocket, NODE_ID::COMP_LTSOCKET, "LTSocket", pModel, selection);
-		bodyItem->appendRow(ltsocketItem);
-	}
-	if (m_component_lbsocket)
-	{
-		QStandardItem* lbsocketItem = createItemWithGVItem(m_component_lbsocket, NODE_ID::COMP_LBSOCKET, "LBSocket", pModel, selection);
-		bodyItem->appendRow(lbsocketItem);
-	}
-	if (m_component_rtsocket)
-	{
-		QStandardItem* rtsocketItem = createItemWithGVItem(m_component_rtsocket, NODE_ID::COMP_RTSOCKET, "RTSocket", pModel, selection);
-		bodyItem->appendRow(rtsocketItem);
-	}
-	if (m_component_rbsocket)
-	{
-        QStandardItem* rbsocketItem = createItemWithGVItem(m_component_rbsocket, NODE_ID::COMP_RBSOCKET, "RBSocket", pModel, selection);
-        bodyItem->appendRow(rbsocketItem);
-	}
-	if (m_component_body_backboard)
-	{
-		QStandardItem* backboardItem = createItemWithGVItem(m_component_body_backboard, NODE_ID::COMP_BODYBACKBOARD, "Back-board", pModel, selection);
-		bodyItem->appendRow(backboardItem);
-	}
-
-	pModel->appendRow(headerItem);
-	pModel->appendRow(bodyItem);
 }
 
 void NodeTemplate::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
@@ -181,130 +420,189 @@ void NodeTemplate::onSelectionChanged(const QItemSelection& selected, const QIte
 	if (!lst.isEmpty())
 	{
 		QModelIndex idx = lst.at(0);
-		NODE_ID id = (NODE_ID)idx.data(Qt::UserRole + 1).toInt();
-		switch (id)
-		{
-		case COMP_NODENAME:
-			m_component_nodename->setSelected(true);
-			m_component_nodename->setZValue(100);
-			break;
+        QString id = idx.data(NODEID_ROLE).toString();
+        if (m_objs.find(id) == m_objs.end())
+            return;
 
-		case COMP_STATUS:
-			m_component_status->setSelected(true);
-			m_component_status->setZValue(100);
-			break;
-
-		case COMP_CONTROL:
-			m_component_control->setSelected(true);
-			m_component_control->setZValue(100);
-			break;
-
-		case COMP_DISPLAY:
-			m_component_display->setSelected(true);
-			m_component_display->setZValue(100);
-			break;
-
-		case COMP_HEADER_BACKBOARD:
-			m_component_header_backboard->setSelected(true);
-			m_component_header_backboard->setZValue(100);
-			break;
-
-		case COMP_BODYBACKBOARD:
-			m_component_body_backboard->setSelected(true);
-			m_component_body_backboard->setZValue(100);
-			break;
-
-		case COMP_LTSOCKET:
-			m_component_ltsocket->setSelected(true);
-			m_component_ltsocket->setZValue(100);
-			break;
-
-		case COMP_LBSOCKET:
-			m_component_lbsocket->setSelected(true);
-			m_component_lbsocket->setZValue(100);
-			break;
-
-		case COMP_RTSOCKET:
-			m_component_rtsocket->setSelected(true);
-			m_component_rtsocket->setZValue(100);
-			break;
-
-		case COMP_RBSOCKET:
-			m_component_rbsocket->setSelected(true);
-			m_component_rbsocket->setZValue(100);
-			break;
-		}
+        RAII_BLOCKSIGNAL batch(m_objs[id]);
+        m_objs[id]->setSelected(true);
 	}
 
 	lst = deselected.indexes();
 	if (!lst.isEmpty())
 	{
 		QModelIndex idx = lst.at(0);
-		NODE_ID id = (NODE_ID)idx.data(Qt::UserRole + 1).toInt();
-		switch (id)
-		{
-		case COMP_NODENAME:
-			m_component_nodename->setSelected(false);
-			m_component_nodename->setZValue(-100);
-			break;
+        QString id = idx.data(NODEID_ROLE).toString();
+        if (m_objs.find(id) == m_objs.end())
+            return;
 
-		case COMP_STATUS:
-			m_component_status->setSelected(false);
-			m_component_status->setZValue(-100);
-			break;
-
-		case COMP_CONTROL:
-			m_component_control->setSelected(false);
-			m_component_control->setZValue(-100);
-			break;
-
-		case COMP_DISPLAY:
-			m_component_display->setSelected(false);
-			m_component_display->setZValue(-100);
-			break;
-
-		case COMP_HEADER_BACKBOARD:
-			m_component_header_backboard->setSelected(false);
-			m_component_header_backboard->setZValue(-100);
-			break;
-
-		case COMP_BODYBACKBOARD:
-			m_component_body_backboard->setSelected(false);
-			m_component_body_backboard->setZValue(-100);
-			break;
-
-		case COMP_LTSOCKET:
-			m_component_ltsocket->setSelected(false);
-			m_component_ltsocket->setZValue(-100);
-			break;
-
-		case COMP_LBSOCKET:
-			m_component_lbsocket->setSelected(false);
-			m_component_lbsocket->setZValue(-100);
-			break;
-
-		case COMP_RTSOCKET:
-			m_component_rtsocket->setSelected(false);
-			m_component_rtsocket->setZValue(-100);
-			break;
-
-		case COMP_RBSOCKET:
-			m_component_rbsocket->setSelected(false);
-			m_component_rbsocket->setZValue(-100);
-			break;
-		}
+		RAII_BLOCKSIGNAL batch(m_objs[id]);
+        m_objs[id]->setSelected(false);
 	}
+}
+
+void NodeTemplate::onGvItemSelectedChange(QString id, bool selected)
+{
+    QStandardItem *pItemChanged = getItemFromId(id);
+    QRectF rc = pItemChanged->data(NODEPOS_ROLE).toRectF();
+	auto it = m_objs.find(id);
+	if (it != m_objs.end())
+	{
+        m_selection->select(pItemChanged->index(), selected ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
+	}
+}
+
+QStandardItem* NodeTemplate::getItemFromId(const QString &id)
+{
+    QModelIndexList lst = m_model->match(m_model->index(0, 0), NODEID_ROLE, id, 1, Qt::MatchRecursive);
+    if (lst.isEmpty())
+        return nullptr;
+    Q_ASSERT(lst.size() == 1);
+    return m_model->itemFromIndex(lst[0]);
+}
+
+void NodeTemplate::onGvItemGeoChanged(QString id, QRectF sceneRect)
+{
+    if (m_batchLevel > 0)
+        return;
+
+    RAII_BATCHLEVEL batch(&m_batchLevel);
+
+    QStandardItem *pItemChanged = getItemFromId(id);
+    pItemChanged->setData(sceneRect, NODEPOS_ROLE);
+
+    //update children pos to model
+    ResizableItemImpl* gvItem = m_objs.find(id)->second;
+    QList<QGraphicsItem*> children = gvItem->childItems();
+    foreach(QGraphicsItem* childItem, children)
+    {
+        //temp code: need a cast way for graphicsitem because qgraphicsitem_cast is only a static_cast but not "metacast".
+        ResizableItemImpl* pChild = dynamic_cast<ResizableItemImpl*>(childItem);
+        if (pChild) {
+            QRectF rcChild = pChild->coreItemSceneRect();
+            QStandardItem *pChildItemChanged = getItemFromId(pChild->getId());
+            if (pChildItemChanged)
+            {
+                pChildItemChanged->setData(rcChild, NODEPOS_ROLE);
+            }
+        }
+    }
+}
+
+void NodeTemplate::onItemChanged(QStandardItem *pItem)
+{
+    if (m_batchLevel > 0)
+        return;
+
+    RAII_BATCHLEVEL batch(&m_batchLevel);
+
+    QString id = pItem->data(NODEID_ROLE).toString();
+    auto it = m_objs.find(id);
+    if (it != m_objs.end())
+	{
+        ResizableItemImpl *gvItem = it->second;
+        QRectF rc = pItem->data(NODEPOS_ROLE).toRectF();
+        gvItem->setCoreItemSceneRect(rc);
+        bool bLock = pItem->data(NODELOCK_ROLE).toBool();
+        bool bVisible = pItem->data(NODEVISIBLE_ROLE).toBool();
+        gvItem->setVisible(bVisible);
+        gvItem->setLocked(bLock);
+    }
+}
+
+void NodeTemplate::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int>& roles)
+{
+    if (roles.contains(NODEPATH_ROLE) || roles.contains(NODEHOVERPATH_ROLE) || roles.contains(NODESELECTEDPATH_ROLE))
+    {
+        QString id = topLeft.data(NODEID_ROLE).toString();
+        auto it = m_objs.find(id);
+        if (it != m_objs.end())
+        {
+            ResizableItemImpl *gvItem = it->second;
+            if (gvItem->getContent() == NC_IMAGE)
+            {
+                QSizeF sz = QSizeF(gvItem->width(), gvItem->height());
+                QString normal = topLeft.data(NODEPATH_ROLE).toString();
+                QString hovered = topLeft.data(NODEHOVERPATH_ROLE).toString();
+                QString selected = topLeft.data(NODESELECTEDPATH_ROLE).toString();
+                ResizableCoreItem* pCoreItem = gvItem->coreItem();
+                if (pCoreItem == nullptr) {
+                    auto pixmapItem = new ResizableImageItem(normal, hovered, selected, sz);
+                    gvItem->setCoreItem(pixmapItem);
+                } else {
+                    auto pixmapItem = qgraphicsitem_cast<ResizableImageItem *>(pCoreItem);
+                    pixmapItem->resetImage(normal, hovered, selected, sz);
+                }
+            }
+        }
+    } 
+    else if (roles.contains(NODEFONT_ROLE) || roles.contains(NODEFONTCOLOR_ROLE))
+    {
+        QString id = topLeft.data(NODEID_ROLE).toString();
+        auto it = m_objs.find(id);
+        if (it != m_objs.end())
+        {
+            ResizableItemImpl *gvItem = it->second;
+            if (gvItem->getContent() == NC_TEXT)
+            {
+                QFont font = qvariant_cast<QFont>(topLeft.data(NODEFONT_ROLE));
+                QColor fontColor = qvariant_cast<QColor>(topLeft.data(NODEFONTCOLOR_ROLE));
+                QString text = topLeft.data(NODETEXT_ROLE).toString();
+                ResizableTextItem* pCoreItem = qgraphicsitem_cast<ResizableTextItem*>(gvItem->coreItem());
+                if (pCoreItem == nullptr)
+                {
+                    pCoreItem = new ResizableTextItem(text);
+                    gvItem->setCoreItem(pCoreItem);
+                }
+                pCoreItem->setTextProp(font, fontColor);
+            }
+         }
+    }
+    else if (roles.contains(NODETEXT_ROLE))
+    {
+        QString id = topLeft.data(NODEID_ROLE).toString();
+        auto it = m_objs.find(id);
+        if (it != m_objs.end())
+        {
+            ResizableItemImpl *gvItem = it->second;
+            if (gvItem->getContent() == NC_TEXT)
+            {
+                QString text = topLeft.data(NODETEXT_ROLE).toString();
+                ResizableTextItem *pCoreItem = qgraphicsitem_cast<ResizableTextItem *>(gvItem->coreItem());
+                if (pCoreItem)
+                {
+                    pCoreItem->setText(text);
+                }
+            }
+        }
+    }
+    emit markDirty();
+}
+
+void NodeTemplate::onRowsInserted(const QModelIndex &parent, int first, int last)
+{
 }
 
 QRectF NodeTemplate::boundingRect() const
 {
 	QRectF wtf = this->childrenBoundingRect();
-	return wtf;
+    QSizeF sz = m_pScene->getSceneSize();
+    return QRectF(0, 0, sz.width(), sz.height());
 }
 
 QPainterPath NodeTemplate::shape() const
 {
 	return QGraphicsObject::shape();
+}
+
+QStandardItemModel *NodeTemplate::model() const
+{
+    return m_model;
+}
+
+QItemSelectionModel *NodeTemplate::selectionModel() const
+{
+    return m_selection;
 }
 
 void NodeTemplate::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

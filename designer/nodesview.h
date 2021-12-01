@@ -2,15 +2,18 @@
 #define __NODESVIEW_H__
 
 class NodeScene;
+class StyleTabWidget;
+
 class NodesView : public QGraphicsView
 {
 	Q_OBJECT
 public:
-	NodesView(QWidget* parent = nullptr);
+    NodesView(QWidget* parent = nullptr);
 	QSize sizeHint() const override;
 	NodeScene* scene() const { return m_scene; }
 	void initSkin(const QString& fn);
 	void initNode();
+    void resetPreset(int w, int h);
 
 protected:
 	void mousePressEvent(QMouseEvent* event);
@@ -38,9 +41,9 @@ private:
 	int m_gridY;
 	qreal m_factor;
 	const double m_factor_step = 0.1;
-	bool m_dragMove;
 	NodeScene* m_scene;
 	Qt::KeyboardModifiers _modifiers;
+    bool m_dragMove;
 };
 
 

@@ -5,10 +5,11 @@
 
 struct TextElement
 {
+    QString id;
 	QFont font;
 	QBrush fill;
 	QString text;	//only used to template
-	int x, y;
+    QRectF rc;
 };
 
 struct ImageElement
@@ -16,35 +17,67 @@ struct ImageElement
 	QString id;
 	QString type;
 	QString image;
+    QString imageHovered;
 	QString imageOn;
-	int x, y, w, h;
+    QRectF rc;
 };
 
 struct Component
 {
+    QString id;
 	QVector<ImageElement> elements;
 	TextElement text;
-	QString id;
-	int x, y, w, h;
+    QRect rc;
+};
+
+struct BackgroundComponent
+{
+    QString id;
+    ImageElement image;
+    QRect rc;
+};
+
+struct SocketComponent
+{
+    ImageElement image;
+    TextElement text;
+    QRect rc;
+    QString id;
+};
+
+struct TextComponent
+{
+    TextElement text;
+    QRect rc;
+    QString id;
+};
+
+struct StatusComponent
+{
+    ImageElement mute;
+    ImageElement view;
+    ImageElement prep;
+    QRect rc;
+    QString id;
 };
 
 struct HeaderParam
 {
-	Component name;
-	Component status;
+    TextComponent name;
+    StatusComponent status;
 	Component control;
-	Component display;
-	Component backborad;
+    BackgroundComponent display;
+    BackgroundComponent backboard;
 };
 
 struct BodyParam
 {
-	Component leftTopSocket;
-	Component leftBottomSocket;
-	Component rightTopSocket;
-	Component rightBottomSocket;
+    SocketComponent leftTopSocket;
+    SocketComponent leftBottomSocket;
+    SocketComponent rightTopSocket;
+    SocketComponent rightBottomSocket;
 
-	Component backboard;
+	BackgroundComponent backboard;
 };
 
 struct NodeParam

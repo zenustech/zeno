@@ -4,6 +4,7 @@
 #include "designermainwin.h"
 #include "styletabwidget.h"
 #include "nodesview.h"
+#include "nodeswidget.h"
 
 
 DesignerMainWin* getMainWindow(QWidget* pWidget)
@@ -75,18 +76,179 @@ ZPagePropPanel::ZPagePropPanel(QWidget* parent)
     setLayout(pVBoxLayout);
 }
 
-ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
-    : QWidget(parent)
-    , m_pX(new ValueInputWidget("X:"))
-    , m_pY(new ValueInputWidget("Y:"))
-    , m_pWidth(new ValueInputWidget("W:"))
-    , m_pHeight(new ValueInputWidget("H:"))
+ImageGroupBox::ImageGroupBox(QWidget* parent)
+    : QGroupBox(parent)
 {
-    QVBoxLayout* pVBoxLayout = new QVBoxLayout;
+    setTitle("Image");
 
-    pVBoxLayout->addWidget(new QLabel("Transform"));
+    QVBoxLayout *pGbImageLayout = new QVBoxLayout;
 
-    QGridLayout* pLayout = new QGridLayout;
+    QHBoxLayout *pNormalImage = new QHBoxLayout;
+    pNormalImage->addWidget(new QLabel("Normal:"));
+    m_pNormal = new QLabel("");
+    pNormalImage->addWidget(m_pNormal);
+    QPushButton *pBtn1 = new QPushButton("...");
+    pNormalImage->addWidget(pBtn1);
+
+    QHBoxLayout *pHovered = new QHBoxLayout;
+    pHovered->addWidget(new QLabel("Hovered:"));
+    m_pHovered = new QLabel("");
+    pHovered->addWidget(m_pHovered);
+    QPushButton *pBtn2 = new QPushButton("...");
+    pHovered->addWidget(pBtn2);
+
+    QHBoxLayout *pSelected = new QHBoxLayout;
+    pSelected->addWidget(new QLabel("Selected:"));
+    m_pSelected = new QLabel("");
+    pSelected->addWidget(m_pSelected);
+    QPushButton *pBtn3 = new QPushButton("...");
+    pSelected->addWidget(pBtn3);
+
+    pGbImageLayout->addLayout(pNormalImage);
+    pGbImageLayout->addLayout(pHovered);
+    pGbImageLayout->addLayout(pSelected);
+
+    connect(pBtn1, &QPushButton::clicked, this, [=]() {
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        if (original.isEmpty())
+            return;
+        QFileInfo f(original);
+        QString fn = f.fileName();
+        m_pNormal->setText(fn);
+        m_normal = original;
+        emit normalImported(m_normal);
+    });
+
+    connect(pBtn2, &QPushButton::clicked, this, [=]() {
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        if (original.isEmpty())
+            return;
+        QFileInfo f(original);
+        QString fn = f.fileName();
+        m_pHovered->setText(fn);
+        m_hovered = original;
+        emit hoverImported(m_hovered);
+    });
+
+    connect(pBtn3, &QPushButton::clicked, this, [=]() {
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        if (original.isEmpty())
+            return;
+        QFileInfo f(original);
+        QString fn = f.fileName();
+        m_pSelected->setText(fn);
+        m_selected = original;
+        emit selectedImported(m_selected);
+    });
+
+    setLayout(pGbImageLayout);
+}
+
+ColorWidget::ColorWidget(QWidget *parent)
+    : QWidget(parent)
+{
+}
+
+QSize ColorWidget::sizeHint() const
+{
+    return QSize(18, 18);
+}
+
+void ColorWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    QColorDialog dlg(this);
+    dlg.setWindowFlag(Qt::SubWindow);
+    dlg.setWindowTitle(tr("More Color"));
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        QColor clr = dlg.selectedColor();
+        if (clr.isValid())
+        {
+            m_color = clr;
+            emit colorChanged(m_color);
+        }
+    }
+}
+
+void ColorWidget::paintEvent(QPaintEvent *event)
+{
+    QPainter painter(this);
+    QRect rc = rect();
+    painter.fillRect(rc, m_color);
+}
+
+
+TextGroupBox::TextGroupBox(QWidget *parent)
+    : QGroupBox(parent), m_fontsize(12)
+{
+    setTitle("Text");
+
+    QVBoxLayout *pLayout = new QVBoxLayout;
+
+    QGridLayout* pGridLayout = new QGridLayout;
+    QFontComboBox* pComboBox = new QFontComboBox;
+    pGridLayout->addWidget(new QLabel("Font:"),0,0);
+    pGridLayout->addWidget(pComboBox,0,1);
+
+    pGridLayout->addWidget(new QLabel("Font Size:"),1,0);
+    QSpinBox *spinBox = new QSpinBox;
+    auto lineEdit = spinBox->findChild<QLineEdit *>();
+    if (lineEdit) {
+        lineEdit->setReadOnly(true);
+        lineEdit->setFocusPolicy(Qt::NoFocus);
+    }
+    spinBox->setMinimum(5);
+    spinBox->setMaximum(32);
+    spinBox->setValue(m_fontsize);
+    pGridLayout->addWidget(spinBox,1,1);
+
+    pGridLayout->addWidget(new QLabel("Text:"), 2, 0);
+    QLineEdit* pLineEdit = new QLineEdit;
+    pGridLayout->addWidget(pLineEdit, 2, 1);
+
+    QHBoxLayout* pHLayout2 = new QHBoxLayout;
+    pHLayout2->addWidget(new QLabel("Color:"));
+    m_colorWidget = new ColorWidget;
+    pHLayout2->addWidget(m_colorWidget);
+    pHLayout2->addStretch();
+
+    pLayout->addLayout(pGridLayout);
+    pLayout->addLayout(pHLayout2);
+
+    m_font = pComboBox->font();
+    m_font.setPointSize(m_fontsize);
+
+    setLayout(pLayout);
+
+    connect(spinBox, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
+    connect(pLineEdit, &QLineEdit::editingFinished, this, [=]() {
+        QString text = pLineEdit->text();
+        emit textChanged(text);
+    });
+    connect(pComboBox, &QFontComboBox::currentFontChanged, this, [=](const QFont &f) {
+        m_font = f;
+        emit fontChanged(m_font, m_color);
+    });
+
+    connect(m_colorWidget, &ColorWidget::colorChanged, this, [=](QColor color) {
+        m_color = color;
+        emit fontChanged(m_font, m_color);
+    });
+}
+
+void TextGroupBox::onValueChanged(int value)
+{
+    m_fontsize = value;
+    m_font.setPointSize(m_fontsize);
+    emit fontChanged(m_font, m_color);
+}
+
+TransformGroupBox::TransformGroupBox(QWidget* parent)
+    : QGroupBox(parent)
+{
+    setTitle("Transform");
+
+    QGridLayout *pLayout = new QGridLayout;
 
     m_pX = new ValueInputWidget("X:");
     m_pY = new ValueInputWidget("Y:");
@@ -98,8 +260,60 @@ ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
     pLayout->addWidget(m_pY, 1, 0);
     pLayout->addWidget(m_pHeight, 1, 1);
 
-    pVBoxLayout->addLayout(pLayout);
+    connect(m_pX, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_pY, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_pWidth, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_pHeight, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+
+    setLayout(pLayout);
+}
+
+void TransformGroupBox::setValue(const qreal& x, const qreal& y, const qreal& w, const qreal& h)
+{
+    m_pX->setValue(x);
+    m_pY->setValue(y);
+    m_pWidth->setValue(w);
+    m_pHeight->setValue(h);
+}
+
+bool TransformGroupBox::getValue(qreal& x, qreal& y, qreal& w, qreal& h)
+{
+    bool bOk = false;
+    x = m_pX->value(bOk);
+    if (!bOk)
+        return false;
+    y = m_pY->value(bOk);
+    if (!bOk)
+        return false;
+    w = m_pWidth->value(bOk);
+    if (!bOk)
+        return false;
+    h = m_pHeight->value(bOk);
+    if (!bOk)
+        return false;
+    return true;
+}
+
+
+ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
+    : QWidget(parent)
+{
+    QVBoxLayout* pVBoxLayout = new QVBoxLayout;
+
+    m_pGbTransform = new TransformGroupBox;
+    pVBoxLayout->addWidget(m_pGbTransform);
+
+    m_pGbImage = new ImageGroupBox;
+    pVBoxLayout->addWidget(m_pGbImage);
+
+    m_pGbText = new TextGroupBox;
+    pVBoxLayout->addWidget(m_pGbText);
+
     pVBoxLayout->addStretch();
+
+    m_pGbText->setVisible(false);
+    m_pGbImage->setVisible(false);
+    m_pGbTransform->setVisible(false);
 
     setLayout(pVBoxLayout);
 }
@@ -107,74 +321,111 @@ ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
 void ZComponentPropPanel::initModel()
 {
     DesignerMainWin* pWin = getMainWindow(this);
-    if (auto view = pWin->getTabWidget()->getCurrentView())
+    if (auto tab = pWin->getCurrentTab())
     {
-        QStandardItemModel* model = view->findChild<QStandardItemModel*>(NODE_MODEL_NAME);
-        QItemSelectionModel* selection= view->findChild<QItemSelectionModel*>(NODE_SELECTION_MODEL);
-        connect(model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(onModelDataChanged(QStandardItem*)));
+        setEnabled(true);
+        QStandardItemModel* model = tab->model();
+        QItemSelectionModel* selection= tab->selectionModel();
+        connect(model, &QStandardItemModel::itemChanged, this, [=](QStandardItem *pItem) {
+            QModelIndexList lst = selection->selectedIndexes();
+            if (lst.empty())
+                return;
+            QRectF rc = lst[0].data(NODEPOS_ROLE).toRectF();
+            m_pGbTransform->setValue(rc.left(), rc.top(), rc.width(), rc.height());
+        });
+
         connect(selection, &QItemSelectionModel::selectionChanged, this, &ZComponentPropPanel::onSelectionChanged);
-        bool ret = connect(m_pX, &ValueInputWidget::valueChanged, this, [=] {
+        bool ret = connect(m_pGbTransform, &TransformGroupBox::valueChanged, this, [=] {
             onUpdateModel(model, selection);
             });
-        connect(m_pY, &ValueInputWidget::valueChanged, this, [=] {
-            onUpdateModel(model, selection);
+        ret = connect(m_pGbImage, &ImageGroupBox::normalImported, this, [=](QString imgPath) {
+                QModelIndexList lst = selection->selectedIndexes();
+                if (lst.empty())
+                    return;
+                QStandardItem *pItem = model->itemFromIndex(lst[0]);
+                pItem->setData(imgPath, NODEPATH_ROLE);
             });
-        connect(m_pWidth, &ValueInputWidget::valueChanged, this, [=] {
-            onUpdateModel(model, selection);
+        ret = connect(m_pGbImage, &ImageGroupBox::hoverImported, this, [=](QString imgPath) {
+                QModelIndexList lst = selection->selectedIndexes();
+                if (lst.empty())
+                    return;
+                QStandardItem *pItem = model->itemFromIndex(lst[0]);
+                pItem->setData(imgPath, NODEHOVERPATH_ROLE);
             });
-        connect(m_pHeight, &ValueInputWidget::valueChanged, this, [=] {
-            onUpdateModel(model, selection);
+        ret = connect(m_pGbImage, &ImageGroupBox::selectedImported, this, [=](QString imgPath) {
+                QModelIndexList lst = selection->selectedIndexes();
+                if (lst.empty())
+                    return;
+                QStandardItem *pItem = model->itemFromIndex(lst[0]);
+                pItem->setData(imgPath, NODESELECTEDPATH_ROLE);
             });
+        
+        //text
+        connect(m_pGbText, &TextGroupBox::fontChanged, this, [=](QFont font, QColor color) {
+            QModelIndexList lst = selection->selectedIndexes();
+            if (lst.empty())
+                return;
+            QStandardItem *pItem = model->itemFromIndex(lst[0]);
+            pItem->setData(font, NODEFONT_ROLE);
+            pItem->setData(color, NODEFONTCOLOR_ROLE);
+        });
+        connect(m_pGbText, &TextGroupBox::textChanged, this, [=](QString text) {
+            QModelIndexList lst = selection->selectedIndexes();
+            if (lst.empty())
+                return;
+            QStandardItem *pItem = model->itemFromIndex(lst[0]);
+            pItem->setData(text, NODETEXT_ROLE);
+        });
+    }
+    else
+    {
+        setEnabled(false);
     }
 }
 
 void ZComponentPropPanel::onUpdateModel(QStandardItemModel* model, QItemSelectionModel* selection)
 {
-    QModelIndex index = selection->currentIndex();
+    QModelIndexList lst = selection->selectedIndexes();
+    if (lst.empty()) return;
+
+    QModelIndex index = lst[0];
+    QString id = index.data(NODEID_ROLE).toString();
     QStandardItem* pItem = model->itemFromIndex(index);
     if (pItem)
     {
-        bool bOk = false;
-        qreal x = m_pX->value(bOk);
-        if (!bOk) return;
-        qreal y = m_pY->value(bOk);
-        if (!bOk) return;
-        qreal w = m_pWidth->value(bOk);
-        if (!bOk) return;
-        qreal h = m_pHeight->value(bOk);
-        if (!bOk) return;
-
-        pItem->setData(QRectF(x, y, w, h), NODEPOS_ROLE);
+        qreal x, y, w, h;
+        bool bOk = m_pGbTransform->getValue(x, y, w, h);
+        if (bOk)
+            pItem->setData(QRectF(x, y, w, h), NODEPOS_ROLE);
     }
 }
 
 void ZComponentPropPanel::onModelDataChanged(QStandardItem* pItem)
 {
     QRectF rc = pItem->data(NODEPOS_ROLE).toRectF();
-    m_pX->setValue(rc.left());
-    m_pY->setValue(rc.top());
-    m_pWidth->setValue(rc.width());
-    m_pHeight->setValue(rc.height());
+    m_pGbTransform->setValue(rc.left(), rc.top(), rc.width(), rc.height());
 }
 
 void ZComponentPropPanel::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
     QModelIndexList lst = selected.indexes();
     bool hasSelection = !lst.isEmpty();
-
-    m_pX->setEnabled(hasSelection); m_pY->setEnabled(hasSelection);
-    m_pWidth->setEnabled(hasSelection); m_pHeight->setEnabled(hasSelection);
-
+    m_pGbTransform->setEnabled(hasSelection);
+    m_pGbTransform->setVisible(true);
     if (hasSelection)
     {
         QModelIndex idx = lst.at(0);
-        NODE_ID id = (NODE_ID)idx.data(Qt::UserRole + 1).toInt();
-        
+        QString id = idx.data(NODEID_ROLE).toString();
         QRectF rc = idx.data(NODEPOS_ROLE).toRectF();
-        m_pX->setValue(rc.left());
-        m_pY->setValue(rc.top());
-        m_pWidth->setValue(rc.width());
-        m_pHeight->setValue(rc.height());
+        m_pGbTransform->setValue(rc.left(), rc.top(), rc.width(), rc.height());
+
+        NODE_CONTENT content = (NODE_CONTENT) idx.data(NODECONTENT_ROLE).toInt();
+        m_pGbImage->setVisible(content == NC_IMAGE);
+        m_pGbText->setVisible(content == NC_TEXT);
+    }
+    else {
+        m_pGbImage->setVisible(false);
+        m_pGbText->setVisible(false);
     }
 }
 

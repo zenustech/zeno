@@ -25,3 +25,8 @@ void ZTabPanel::resetModel()
 {
     m_componentPanel->initModel();
 }
+
+void ZTabPanel::setModel(QStandardItemModel* model, QItemSelectionModel* selection)
+{
+    m_componentPanel->initModel();
+}

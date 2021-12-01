@@ -33,6 +33,7 @@ public:
     QString text() const;
     QIcon icon() const;
     QSize iconSize() const;
+    void setCheckable(bool bCheckable);
     bool isChecked() const;
     bool isDown() const;
     bool isPressed() const;

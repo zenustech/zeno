@@ -11,16 +11,49 @@ public:
 	virtual void resize(QSizeF sz) = 0;
 };
 
-class ResizablePixmapItem : public ResizableCoreItem
-{
+class MySvgItem : public QGraphicsSvgItem {
 public:
-	ResizablePixmapItem(const QPixmap& pixmap, QGraphicsItem* parent = nullptr);
-	QRectF boundingRect() const override;
-	void resize(QSizeF sz) override;
+    MySvgItem(QGraphicsItem *parent = 0);
+    MySvgItem(const QString &fileName, QGraphicsItem *parent = 0);
+
+    void setSize(QSizeF size);
+    void setSize(qreal width, qreal height) {
+        setSize(QSizeF(width, height));
+    }
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
+    QRectF boundingRect();
 
 private:
-	QGraphicsPixmapItem* m_pixmapitem;
-	QPixmap m_original;
+    QSizeF m_size;
+};
+
+class ResizableImageItem : public ResizableCoreItem
+{
+    typedef ResizableCoreItem _base;
+public:
+	ResizableImageItem(const QString& normal, const QString& hovered, const QString& selected, QSizeF sz, QGraphicsItem* parent = nullptr);
+	QRectF boundingRect() const override;
+	void resize(QSizeF sz) override;
+    bool resetImage(const QString &normal, const QString &hovered, const QString &selected, QSizeF sz);
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+
+private:
+    QPixmap m_normal;
+    QPixmap m_hovered;
+    QPixmap m_selected;
+	QGraphicsPixmapItem *m_pixmap;
+
+	QString m_svgNormal;
+    QString m_svgHovered;
+    QString m_svgSelected;
+	MySvgItem* m_svg;
+
+    QSizeF m_size;
 };
 
 class ResizableRectItem : public ResizableCoreItem
@@ -51,6 +84,8 @@ public:
 	ResizableTextItem(const QString& text, QGraphicsItem* parent = nullptr);
 	QRectF boundingRect() const override;
 	void resize(QSizeF sz) override;
+    void setText(const QString &text);
+    void setTextProp(QFont font, QColor color);
 
 private:
 	QGraphicsTextItem* m_pTextItem;
