@@ -23,6 +23,67 @@ static void mcCheckError_(McResult err, const char *expr, const char *file, int 
 #define mcCheckError(expr) mcCheckError_((expr), #expr, __FILE__, __LINE__)
 
 
+static void MCAPI_CALL mcDebugOutput(McDebugSource source,
+    McDebugType type,
+    unsigned int id,
+    McDebugSeverity severity,
+    size_t length,
+    const char* message,
+    const void* userParam)
+{
+    printf("---------------\n");
+    printf("Debug message ( %d ): %s ", id, message);
+
+    switch (source) {
+    case MC_DEBUG_SOURCE_API:
+        printf("Source: API");
+        break;
+    case MC_DEBUG_SOURCE_KERNEL:
+        printf("Source: Kernel");
+        break;
+    default:
+        printf("Source: unknown");
+    }
+
+    printf("\n");
+
+    switch (type) {
+    case MC_DEBUG_TYPE_ERROR:
+        printf("Type: Error");
+        break;
+    case MC_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        printf("Type: Deprecated Behaviour");
+        break;
+    case MC_DEBUG_TYPE_OTHER:
+        printf("Type: Other");
+        break;
+    default:
+        printf("Type: unknown");
+    }
+
+    printf("\n");
+
+    switch (severity) {
+    case MC_DEBUG_SEVERITY_HIGH:
+        printf("Severity: high");
+        break;
+    case MC_DEBUG_SEVERITY_MEDIUM:
+        printf("Severity: medium");
+        break;
+    case MC_DEBUG_SEVERITY_LOW:
+        printf("Severity: low");
+        break;
+    case MC_DEBUG_SEVERITY_NOTIFICATION:
+        printf("Severity: notification");
+        break;
+    default:
+        printf("Severity: unknown");
+    }
+
+    printf("\n\n");
+}
+
+
 ZENO_NAMESPACE_BEGIN
 namespace zty {
 
@@ -33,26 +94,62 @@ struct MeshCutter::Impl {
 };
 
 
-MeshCutter::MeshCutter(Mesh const &mesh1, Mesh const &mesh2)
+MeshCutter::MeshCutter(bool debugMode)
     : impl(std::make_unique<Impl>())
 {
     mcCheckError(mcCreateContext
     ( &impl->ctx
-    , MC_NULL_HANDLE
+    , debugMode ? MC_DEBUG : MC_NULL_HANDLE
     ));
 
+    uint64_t numBytes = 0;
+    McFlags contextFlags;
+
+    mcCheckError(mcGetInfo
+    ( impl->ctx
+    , MC_CONTEXT_FLAGS
+    , 0
+    , NULL
+    , &numBytes
+    ));
+    mcCheckError(mcGetInfo
+    ( impl->ctx
+    , MC_CONTEXT_FLAGS
+    , numBytes
+    , &contextFlags
+    , NULL
+    ));
+
+    if (contextFlags & MC_DEBUG) {
+        mcCheckError(mcDebugMessageCallback
+        ( impl->ctx
+        , mcDebugOutput
+        , NULL
+        ));
+        mcCheckError(mcDebugMessageControl
+        ( impl->ctx
+        , MC_DEBUG_SOURCE_ALL
+        , MC_DEBUG_TYPE_ALL
+        , MC_DEBUG_SEVERITY_ALL
+        , MC_TRUE
+        ));
+    }
+}
+
+void MeshCutter::dispatch(Mesh const &mesh1, Mesh const &mesh2)
+{
     printf("%ld %ld\n", mesh1.vert.size(), mesh1.poly.size());
     printf("%ld %ld\n", mesh2.vert.size(), mesh2.poly.size());
 
     mcCheckError(mcDispatch
     ( impl->ctx
     , MC_DISPATCH_VERTEX_ARRAY_FLOAT
-    , (float *)mesh1.vert.data()
+    , mesh1.vert.data()
     , mesh1.loop.data()
     , mesh1.poly.data()
     , mesh1.vert.size()
     , mesh1.poly.size()
-    , (float *)mesh2.vert.data()
+    , mesh2.vert.data()
     , mesh2.loop.data()
     , mesh2.poly.data()
     , mesh2.vert.size()

@@ -21,7 +21,8 @@ int main()
 
     zty::Mesh mesh3;
     {
-        zty::MeshCutter mcut(mesh1, mesh2);
+        zty::MeshCutter mcut;
+        mcut.dispatch(mesh1, mesh2);
         mcut.selectComponents(zty::MeshCutter::CompType::all);
         mcut.getComponent(0, mesh3);
     }
