@@ -10,6 +10,7 @@ int main()
         std::ifstream ifs("models/monkey.obj");
         if (!ifs) throw std::runtime_error("src mesh file");
         readMeshFromOBJ(ifs, mesh1);
+        meshTriangulate(mesh1);
     }
 
     zty::Mesh mesh2;
@@ -17,6 +18,7 @@ int main()
         std::ifstream ifs("models/plane.obj");
         if (!ifs) throw std::runtime_error("cut mesh file");
         readMeshFromOBJ(ifs, mesh2);
+        meshTriangulate(mesh2);
     }
 
     zty::Mesh mesh3;

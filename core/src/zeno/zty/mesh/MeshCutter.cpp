@@ -32,7 +32,7 @@ static void MCAPI_CALL mcDebugOutput(McDebugSource source,
     const void* userParam)
 {
     printf("---------------\n");
-    printf("Debug message ( %d ): %s ", id, message);
+    printf("MCUT debug message (%d): %s\n", id, message);
 
     switch (source) {
     case MC_DEBUG_SOURCE_API:
@@ -44,7 +44,6 @@ static void MCAPI_CALL mcDebugOutput(McDebugSource source,
     default:
         printf("Source: unknown");
     }
-
     printf("\n");
 
     switch (type) {
@@ -60,7 +59,6 @@ static void MCAPI_CALL mcDebugOutput(McDebugSource source,
     default:
         printf("Type: unknown");
     }
-
     printf("\n");
 
     switch (severity) {
@@ -79,7 +77,6 @@ static void MCAPI_CALL mcDebugOutput(McDebugSource source,
     default:
         printf("Severity: unknown");
     }
-
     printf("\n\n");
 }
 
