@@ -41,7 +41,7 @@
       "ppc": 8.0,
       "density": 2240.0,
       "type": "stvk",
-      "E": 100000000.0,
+      "E": 200000000.0,
       "nu": 0.22
      },
      "uipos": [
@@ -283,8 +283,8 @@
      "name": "ZSParticlesToPrimitiveObject",
      "inputs": {
       "ZSParticles": [
-       "1dfddf18-PortalOut",
-       "port",
+       "fd72ee23-ComputeVonMises",
+       "ZSParticles",
        null
       ],
       "SRC": [
@@ -295,8 +295,8 @@
      },
      "params": {},
      "uipos": [
-      6097.829398712926,
-      -232.14479798649262
+      6134.59410459528,
+      -239.21493373309897
      ],
      "options": []
     },
@@ -682,8 +682,7 @@
       268.7915442238679
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "635b6174-ToZSLevelSet": {
@@ -694,7 +693,7 @@
        "sdf",
        null
       ],
-      "VDBVecGrid": [
+      "VDBFloat3Grid": [
        null,
        null,
        null
@@ -1152,8 +1151,7 @@
       607.9287929389313
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "bb756ffd-NumericVec3": {
@@ -1201,8 +1199,8 @@
       "dt": 0.0
      },
      "uipos": [
-      5434.4005458402335,
-      -110.9067651609709
+      5393.676563939781,
+      -143.4859506813329
      ],
      "options": []
     },
@@ -1265,7 +1263,7 @@
        "sdf",
        null
       ],
-      "VDBVecGrid": [
+      "VDBFloat3Grid": [
        null,
        null,
        null
@@ -1399,7 +1397,9 @@
       6743.107473613408,
       -79.30124042839404
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "fd72ee23-ComputeVonMises": {
      "name": "ComputeVonMises",
@@ -1419,8 +1419,8 @@
       "by_log10": 1
      },
      "uipos": [
-      5677.2293034345375,
-      -100.6469746672268
+      5649.175004792002,
+      -112.41168054957973
      ],
      "options": []
     },
@@ -1659,16 +1659,89 @@
       8183.71040723982,
       128.50678733031668
      ],
+     "options": []
+    },
+    "04666607-WriteZSParticles": {
+     "name": "WriteZSParticles",
+     "inputs": {
+      "ZSParticles": [
+       "fd72ee23-ComputeVonMises",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/home/mine/pars_out/rock_{frame}.bgeo"
+     },
+     "uipos": [
+      6351.640271493212,
+      -364.2533936651584
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "3ea7bc8a-ZSLevelSetToVDBGrid": {
+     "name": "ZSLevelSetToVDBGrid",
+     "inputs": {
+      "ZSLevelSet": [
+       "36cbc453-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      2407.013795602375,
+      770.3659679015831
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "1932dddf-x": {
+     "name": "ZSLevelSetToVDBGrid",
+     "inputs": {
+      "ZSLevelSet": [
+       "635b6174-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      2082.1549773755637,
+      482.5367647058822
+     ],
      "options": [
       "VIEW"
      ]
     }
    },
    "view_rect": {
-    "x": 6297.955566593935,
-    "y": -364.7506125179756,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": 1919.3104116351424,
+    "y": -1214.1495550948289,
+    "width": 2980.2322387695294,
+    "height": 2980.2322387695294
    }
   },
   "FLIPSimTemplate": {
@@ -2883,8 +2956,8 @@
       "dx": 0.04
      },
      "uipos": [
-      2525.6499999999996,
-      552.75
+      2539.5504524886874,
+      531.8993212669684
      ],
      "options": []
     },
@@ -3077,7 +3150,7 @@
        "DST",
        null
       ],
-      "SDF": [
+      "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n": [
        "55c1f2d9-CombineVDB",
        "FieldOut",
        null
@@ -3094,7 +3167,7 @@
       ]
      },
      "params": {
-      "_KEYS": "SDF\nVel\nobj2"
+      "_KEYS": "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n\nVel\nobj2"
      },
      "uipos": [
       2853.0249999999996,
@@ -3102,7 +3175,7 @@
      ],
      "options": [],
      "socket_keys": [
-      "SDF",
+      "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n",
       "Vel",
       "obj2"
      ]
@@ -3173,8 +3246,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      2508.75,
-      1041.25
+      2471.6821266968327,
+      1080.6346153846152
      ],
      "options": []
     },
@@ -3196,24 +3269,24 @@
        "data",
        null
       ],
-      "obj2": [
+      "\u5bf9\u8c612\n": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "SDF\nVel\nobj2"
+      "_KEYS": "SDF\nVel\n\u5bf9\u8c612\n"
      },
      "uipos": [
-      2822.5,
-      1092.5
+      2867.6764705882347,
+      1130.7262443438913
      ],
      "options": [],
      "socket_keys": [
       "SDF",
       "Vel",
-      "obj2"
+      "\u5bf9\u8c612\n"
      ]
     },
     "d300bc9b-IfElse": {
@@ -3242,17 +3315,17 @@
      },
      "params": {},
      "uipos": [
-      3153.75,
-      1005.75
+      3166.4920814479638,
+      974.4739819004524
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 1757.0,
-    "y": 477.0,
-    "width": 1499.9999999999998,
-    "height": 1249.9999999999998
+    "x": 2661.6111493212734,
+    "y": 520.7126877828034,
+    "width": 767.9999999999995,
+    "height": 639.9999999999997
    }
   },
   "FLIPMakeParticles": {
@@ -17514,7 +17587,7 @@
     ],
     [
      "",
-     "VDBVecGrid",
+     "VDBFloat3Grid",
      ""
     ],
     [
@@ -19075,6 +19148,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSLevelSetToVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
    "categories": [
     "MPM"
    ]
