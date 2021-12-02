@@ -51,7 +51,6 @@ if (ZENO_WITH_BACKWARD)
 endif()
 
 message(STATUS "Building Zeno Core Library")
-add_subdirectory(3rdparty/mods/mcut)
 add_subdirectory(core)
 
 if (ZENO_BUILD_WORKER)
