@@ -571,20 +571,6 @@ ZENDEFNODE(DeformFiberWithFE, {
     {"FEM"},
 });
 
-struct PrimitieveOut : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        set_output("pout",prim);
-    }
-};
-
-ZENDEFNODE(PrimitieveOut, {
-    {"pin"},
-    {"pout"},
-    {},
-    {"FEM"},
-});
-
 struct MakeFEMGeoFromFile : zeno::INode {
     virtual void apply() override {
         auto node_file = get_input<zeno::StringObject>("NodeFile")->get();
@@ -1310,6 +1296,9 @@ struct GetCurrentFrame : zeno::INode {
         auto resGeo = std::make_shared<PrimitiveObject>();
         auto &pos = resGeo->add_attr<zeno::vec3f>("pos");
         auto &btags = resGeo->add_attr<float>("btag");
+
+        auto& fiberDirs = resGeo->add_attr<zeno::vec3f>("fiberDir");
+        const auto& refFiberDirs = mesh->attr<zeno::vec3f>("fiberDir");
    
         for(size_t i = 0;i < mesh->size();++i){
             auto vert = frame.segment(i*3,3);
@@ -1323,6 +1312,31 @@ struct GetCurrentFrame : zeno::INode {
             resGeo->tris.emplace_back(tet[0],tet[2],tet[3]);
             resGeo->tris.emplace_back(tet[0],tet[3],tet[1]);
         }
+
+        fiberDirs.resize(mesh->size(),zeno::vec3f(0));
+        for(size_t i = 0;i < mesh->quads.size();++i){
+            const auto& tet = mesh->quads[i];
+            // compute the deformation gradient
+            Mat4x4d G,M;
+            for(size_t i = 0;i < 4;++i){
+                G.col(i) << mesh->verts[tet[i]][0],mesh->verts[tet[i]][1],mesh->verts[tet[i]][2],1.0;
+                M.col(i) << frame.segment(tet[i]*3,3),1.0;
+            }
+            G = M * G.inverse();
+            auto F = G.topLeftCorner(3,3);  
+
+            FEM_Scaler vol = fabs(G.determinant()) / 6;
+
+            for(size_t i = 0;i < 4;++i){
+                Vec3d deformFiber;
+                deformFiber << refFiberDirs[tet[i]][0],refFiberDirs[tet[i]][1],refFiberDirs[tet[i]][2];
+                deformFiber = F * deformFiber;
+                fiberDirs[tet[i]] += vol * zeno::vec3f(deformFiber[0],deformFiber[1],deformFiber[2]);
+            }
+        }
+
+        for(size_t i = 0;i < mesh->size();++i)
+            fiberDirs[i] /= zeno::length(fiberDirs[i]);
 
         set_output("frame",std::move(resGeo));
     }
