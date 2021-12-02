@@ -29,12 +29,12 @@ public:
      * @param F the deformation gradient
      * @param psi the potential psi output
      */
-    void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const override {
+    void ComputePsi(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler& psi) const override {
             // std::cout << "SNH EVAL PSI" << std::endl;
-            Mat3x3d ActInv = mp.Act.inverse();
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-            FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+            FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
+            FEM_Scaler lambda = Enu2Lambda(attrs.emp.E,attrs.emp.nu);
             Vec3d Is;
             EvalIsoInvarients(FAct,Is);
             eval_phi(lambda,mu,Is,psi);
@@ -49,13 +49,13 @@ public:
      * @param psi the potential psi output
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
-    void ComputePhiDeriv(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
+    void ComputePsiDeriv(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
             // std::cout << "SNH EVAL PSI DERIV" << std::endl;
-            Mat3x3d ActInv = mp.Act.inverse();
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-            FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+            FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
+            FEM_Scaler lambda = Enu2Lambda(attrs.emp.E,attrs.emp.nu);
 
             Vec3d Is;
             std::array<Vec9d,3> gs;
@@ -65,7 +65,6 @@ public:
 
             Vec3d dphi;
             eval_dphi(lambda,mu,Is,dphi);
-
 
             Mat9x9d dFactdF = EvaldFactdF(ActInv); 
 
@@ -133,12 +132,12 @@ public:
      * @param <Hessian> the hessian of potential psi w.r.t the deformed shape for elasto model or nodal velocities for damping model
      * @param <spd> decide whether we should enforce the SPD of hessian matrix
      */
-    void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override {
-        Mat3x3d ActInv = mp.Act.inverse();
+    void ComputePsiDerivHessian(const TetAttributes& attrs,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override {
+        Mat3x3d ActInv = attrs.emp.Act.inverse();
         Mat3x3d FAct = F * ActInv;
 
-        FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-        FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+        FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
+        FEM_Scaler lambda = Enu2Lambda(attrs.emp.E,attrs.emp.nu);
 
         Vec3d Is;
         std::array<Vec9d,3> gs;
@@ -177,18 +176,18 @@ public:
         ddpsi = dFactdF.transpose() * ddpsi * dFactdF; 
     }
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress) const override {
-        FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-        FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+    void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress) const override {
+        FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
+        FEM_Scaler lambda = Enu2Lambda(attrs.emp.E,attrs.emp.nu);
         FEM_Scaler J = strain[0] * strain[1] * strain[2];
         stress[0] = mu * strain[0] - mu * strain[1] * strain[2] + lambda * (J - 1) * strain[1] * strain[2];
         stress[1] = mu * strain[1] - mu * strain[0] * strain[2] + lambda * (J - 1) * strain[0] * strain[2];
         stress[2] = mu * strain[2] - mu * strain[0] * strain[1] + lambda * (J - 1) * strain[0] * strain[1];
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
-        FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
-        FEM_Scaler lambda = Enu2Lambda(mp.E,mp.nu);
+    void ComputePrincipalStressJacobi(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
+        FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
+        FEM_Scaler lambda = Enu2Lambda(attrs.emp.E,attrs.emp.nu);
         FEM_Scaler J = strain[0] * strain[1] * strain[2];
         stress[0] = mu * strain[0] - mu * strain[1] * strain[2] + lambda * (J - 1) * strain[1] * strain[2];
         stress[1] = mu * strain[1] - mu * strain[0] * strain[2] + lambda * (J - 1) * strain[0] * strain[2];

@@ -122,6 +122,24 @@ public:
         return mat;
     }
 
+    static Vec3d ROLL(const Vec3d& vec) {
+        Vec3d res;
+        res[0] = vec[1];
+        res[1] = vec[2];
+        res[2] = vec[0];
+
+        return res;
+    }
+
+    static Mat3x3d ROLL(const Mat3x3d& mat) {
+        Mat3x3d res;
+        res.col(0) = mat.col(1);
+        res.col(1) = mat.col(2);
+        res.col(2) = mat.col(0);
+
+        return res;
+    }
+
     static Mat3x3d ASYM(const Vec3d& v){
         Mat3x3d C;
         C <<    0,-v[2],v[1],
@@ -171,6 +189,17 @@ public:
         R.col(2) << dir2[0],dir2[1],dir2[2];
 
         return R;
+    }
+
+    static FEM_Scaler Height(const Vec3d& v0,const Vec3d& v1,const Vec3d&v2,const Vec3d& v3){
+        Vec3d v30 = v3 - v0;
+        Vec3d v20 = v2 - v0;
+        Vec3d v10 = v1 - v0;
+
+        Vec3d v10xv20 = v10.cross(v20);
+        v10xv20 /= v10xv20.norm();
+
+        return fabs(v30.dot(v10xv20));
     }
 };
 

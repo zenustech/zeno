@@ -40,19 +40,19 @@ public:
      * @param F the deformation gradient
      * @param energy the potential energy output
      */
-    void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const override {
+    void ComputePsi(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler& psi) const override {
             FEM_Scaler iso_psi = 0;
-            StableIsotropicMuscle::ComputePhi(mp,F,iso_psi);
+            StableIsotropicMuscle::ComputePsi(attrs,F,iso_psi);
 
             FEM_Scaler Ia;
-            Mat3x3d ActInv = mp.Act.inverse();
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
-            Vec3d a = mp.forient;
+            Vec3d a = attrs.emp.forient;
 
             EvalAnisoInvarients(FAct,a,Ia);    
             FEM_Scaler Is = EvalReflection(FAct,a);
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
+            FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
 
             FEM_Scaler aniso_psi = fiber_strength * mu / 2 * pow(sqrt(Ia) - Is,2);
             psi = iso_psi + aniso_psi;
@@ -66,23 +66,23 @@ public:
      * @param energy the potential energy output
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
-    void ComputePhiDeriv(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
+    void ComputePsiDeriv(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
             FEM_Scaler iso_psi,aniso_psi;
             Vec9d iso_dpsi,aniso_dpsi;
 
-            StableIsotropicMuscle::ComputePhiDeriv(mp,F,iso_psi,iso_dpsi);
+            StableIsotropicMuscle::ComputePsiDeriv(attrs,F,iso_psi,iso_dpsi);
 
-            Mat3x3d ActInv = mp.Act.inverse();
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
             FEM_Scaler Ia;
             Vec9d ga;
-            Vec3d a = mp.forient;
+            Vec3d a = attrs.emp.forient;
 
             EvalAnisoInvarientsDeriv(FAct,a,Ia,ga);   
             FEM_Scaler Is = EvalReflection(FAct,a);
 
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
+            FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
 
             Mat9x9d dFactdF = EvaldFactdF(ActInv); 
 
@@ -95,7 +95,7 @@ public:
             dpsi = iso_dpsi + dFactdF.transpose() * aniso_dpsi;   
     }
 
-    void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override{
+    void ComputePsiDerivHessian(const TetAttributes& attrs,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override{
             FEM_Scaler iso_psi,aniso_psi;
             Vec9d iso_dpsi,aniso_dpsi;
             Mat9x9d iso_ddpsi,aniso_ddpsi;
@@ -103,20 +103,20 @@ public:
             Vec3d aniso_eigen_vals;
             Vec9d aniso_eigen_vecs[3];
 
-            StableIsotropicMuscle::ComputePhiDerivHessian(mp,F,iso_psi,iso_dpsi,iso_ddpsi,spd);
+            StableIsotropicMuscle::ComputePsiDerivHessian(attrs,F,iso_psi,iso_dpsi,iso_ddpsi,spd);
 
-            Mat3x3d ActInv = mp.Act.inverse();
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
             FEM_Scaler Ia;
             Vec9d ga;
 
-            Vec3d a = mp.forient;
+            Vec3d a = attrs.emp.forient;
 
             EvalAnisoInvarientsDeriv(FAct,a,Ia,ga);    
             FEM_Scaler Is = EvalReflection(FAct,a);
 
-            FEM_Scaler mu = Enu2Mu(mp.E,mp.nu);
+            FEM_Scaler mu = Enu2Mu(attrs.emp.E,attrs.emp.nu);
 
             Mat9x9d dFactdF = EvaldFactdF(ActInv);
 
@@ -161,11 +161,11 @@ public:
             ddpsi = aniso_ddpsi + iso_ddpsi;
     }        
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) const override {
+    void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& pstrain,Vec3d& pstress) const override {
         throw std::runtime_error("ANISOTROPIC_MODEL MIGHT BE PROBLEMATIC HERE");
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
+    void ComputePrincipalStressJacobi(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
         throw std::runtime_error("ANISO_NH NOT IMPLEMENTED YET");
     }
 

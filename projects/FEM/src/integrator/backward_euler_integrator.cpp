@@ -8,7 +8,7 @@
 
 #include "diriclet_damping.h"
 
-int BackEulerIntegrator::EvalElmObj(const TetAttributes attrs,
+int BackEulerIntegrator::EvalElmObj(const TetAttributes& attrs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* elm_obj) const {
@@ -18,36 +18,29 @@ int BackEulerIntegrator::EvalElmObj(const TetAttributes attrs,
     FEM_Scaler h = _dt;
     Vec12d v2 = (u2 - u1)/h;
 
-    FEM_Scaler PhiI,PsiE,PsiD;
+    FEM_Scaler psiI,psi,psiD;
 
     FEM_Scaler vol = attrs._volume;
     FEM_Scaler m = vol * attrs._density / 4;
 
     const auto& ext_f = attrs._ext_f;
 
-    Vec12d y = u2 - 2*u1 + u0 - h*h*_gravity.replicate(4,1) - h*h*ext_f/m; 
-    PhiI = y.squaredNorm() * m / 2 / h;
+    Vec12d y = (u2 -2*u1 + u0) - h*h*_gravity.replicate(4,1) - h*h*ext_f/m;
+    psiI = y.squaredNorm();
 
     Mat3x3d F,L;
     ComputeDeformationGradient(attrs._Minv,u2,F);
     ComputeDeformationGradient(attrs._Minv,v2,L);
 
-    if(dynamic_cast<ElasticModel*>(force_model.get())){
-        auto model = dynamic_cast<ElasticModel*>(force_model.get());
-        model->ComputePhi(attrs.emp,F,PsiE);
-    }else{
-        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
-        model->ComputePsi(attrs.pmp,attrs.emp,F,PsiE);
-    }
-     
-    damping_model->ComputePhi(attrs.v,L,PsiD);
+    force_model->ComputePsi(attrs,F,psi);     
+    damping_model->ComputePsi(attrs,L,psiD);
 
-    *elm_obj = PhiI + h*PsiE*vol + h*h*PsiD*vol;
+    *elm_obj = (psiI*m/h/h + (psi + h*psiD)*vol);
 
     return 0;
 }
 
-int BackEulerIntegrator::EvalElmObjDeriv(const TetAttributes attrs,
+int BackEulerIntegrator::EvalElmObjDeriv(const TetAttributes& attrs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* elm_obj,Vec12d& elm_deriv) const {
@@ -57,8 +50,8 @@ int BackEulerIntegrator::EvalElmObjDeriv(const TetAttributes attrs,
     FEM_Scaler h = _dt;
     Vec12d v2 = (u2 - u1)/h;
 
-    FEM_Scaler PhiI,PsiE,PsiD;
-    Vec9d dPsiE,dPsiD;
+    FEM_Scaler psiI,psi,psiD;
+    Vec9d dpsi,dpsiD;
 
     FEM_Scaler vol = attrs._volume;
     FEM_Scaler m = vol * attrs._density / 4;  // nodal mass
@@ -69,29 +62,21 @@ int BackEulerIntegrator::EvalElmObjDeriv(const TetAttributes attrs,
     ComputeDeformationGradient(attrs._Minv,u2,F);
     ComputeDeformationGradient(attrs._Minv,v2,L);
 
-    if(dynamic_cast<ElasticModel*>(force_model.get())){
-        auto model = dynamic_cast<ElasticModel*>(force_model.get());
-        model->ComputePhiDeriv(attrs.emp,F,PsiE,dPsiE);
-    }else{
-        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
-        model->ComputePsiDeriv(attrs.pmp,attrs.emp,F,PsiE,dPsiE);
-    }
+    force_model->ComputePsiDeriv(attrs,F,psi,dpsi); 
+    damping_model->ComputePsiDeriv(attrs,L,psiD,dpsiD);
 
-    damping_model->ComputePhiDeriv(attrs.v,L,PsiD,dPsiD);
-
-    Vec12d y = u2 - 2*u1 + u0 - h*h*_gravity.replicate(4,1) - h*h*ext_f/m;
-    PhiI = y.squaredNorm() * m / 2 / h;
+    Vec12d y = (u2 -2*u1 + u0) - h*h*_gravity.replicate(4,1) - h*h*ext_f/m;
+    psiI = y.squaredNorm();
 
     const Mat9x12d& dFdX = attrs._dFdX;
 
-    *elm_obj = PhiI + h*PsiE*vol + h*h*PsiD*vol;   
-
-    elm_deriv = m*y/h + h * dFdX.transpose() * dPsiE*vol + h * dFdX.transpose() * dPsiD * vol;
+    *elm_obj = (psiI*m/h/h + (psi + h*psiD)*vol);
+    elm_deriv = (y*m/h/h + dFdX.transpose() * (dpsi + dpsiD) * vol);
 
     return 0;                
 }
 
-int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
+int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes& attrs,
         const std::shared_ptr<BaseForceModel>& force_model,
         const std::shared_ptr<DiricletDampingModel>& damping_model,
         const std::vector<Vec12d>& elm_states,
@@ -102,9 +87,9 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
     FEM_Scaler h = _dt;
     Vec12d v2 = (u2 - u1)/h;
 
-    FEM_Scaler PhiI,PsiE,PsiD;
-    Vec9d dPsiE,dPsiD;
-    Mat9x9d ddPsiE,ddPsiD;
+    FEM_Scaler psiI,psi,psiD;
+    Vec9d dpsi,dpsiD;
+    Mat9x9d ddpsi,ddpsiD;
          
     FEM_Scaler vol = attrs._volume;
     FEM_Scaler m = vol * attrs._density / 4;  // nodal mass
@@ -149,7 +134,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
         Vec9d dpsi_cmp = Vec9d::Zero();
         FEM_Scaler psi_cmp = 0;
 
-        dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDerivHessian(attrs.pmp,attrs.emp,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false,true);
+        force_model->ComputePsiDerivHessian(attrs,Ftest,psi_cmp,dpsi_cmp,ddpsi_cmp,false);
 
         Mat9x9d ddpsi_fd = Mat9x9d::Zero();
         Vec9d dpsi_fd = Vec9d::Zero();
@@ -164,7 +149,7 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
                 FEM_Scaler psi_tmp;
                 Vec9d dpsi_tmp;
-                dynamic_cast<PlasticForceModel*>(force_model.get())->ComputePsiDeriv(attrs.pmp,attrs.emp,F_tmp,psi_tmp,dpsi_tmp);
+                force_model->ComputePsiDeriv(attrs,F_tmp,psi_tmp,dpsi_tmp);
 
                 dpsi_fd[i] = (psi_tmp - psi_cmp) / step;
                 ddpsi_fd.col(i) = (dpsi_tmp - dpsi_cmp) / step;
@@ -207,26 +192,16 @@ int BackEulerIntegrator::EvalElmObjDerivJacobi(const TetAttributes attrs,
 
     }
 
+    force_model->ComputePsiDerivHessian(attrs,F,psi,dpsi,ddpsi,filtering);
+    // force_model->ComputePsiDerivHessian(attrs.emp,F,psi,dpsi,ddpsi,filtering);
+    damping_model->ComputePsiDerivHessian(attrs,L,psiD,dpsiD,ddpsiD);
 
-    if(dynamic_cast<ElasticModel*>(force_model.get())){
-        auto model = dynamic_cast<ElasticModel*>(force_model.get());
-        model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
-    }else{
-        auto model = dynamic_cast<PlasticForceModel*>(force_model.get());
-        model->ComputePsiDerivHessian(attrs.pmp,attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering,false);
-    }
-
-    // force_model->ComputePhiDerivHessian(attrs.emp,F,PsiE,dPsiE,ddPsiE,filtering);
-    damping_model->ComputePhiDerivHessian(attrs.v,L,PsiD,dPsiD,ddPsiD);
-
-    Vec12d y = u2 - 2*u1 + u0 - h*h*_gravity.replicate(4,1) - h*h*ext_f/m;
-    PhiI = y.squaredNorm() * m / 2 / h;
-    *elm_obj = PhiI + h * PsiE * vol + h * h * PsiD * vol;   
-
+    Vec12d y = (u2 -2*u1 + u0) - h*h*_gravity.replicate(4,1) - h*h*ext_f/m;
+    psiI = y.squaredNorm();
     const Mat9x12d& dFdX = attrs._dFdX;
-    elm_deriv = m * y / h + dFdX.transpose() * (h*dPsiE + h*dPsiD) * vol;
-
-    elm_H = Mat12x12d::Identity() * m / h + vol * dFdX.transpose() * (h*ddPsiE + ddPsiD) * dFdX;
+    *elm_obj = (psiI*m/h/h + (psi + h*psiD)*vol);
+    elm_deriv = (y*m/h/h + dFdX.transpose() * (dpsi + dpsiD) * vol);
+    elm_H = Mat12x12d::Identity()*m/h/h + dFdX.transpose() * (ddpsi + ddpsiD/h) * dFdX * vol;
 
     return 0;
 }

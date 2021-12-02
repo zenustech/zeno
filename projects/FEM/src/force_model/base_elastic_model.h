@@ -15,12 +15,6 @@
  * The current version only support isotropic elasto and damping model. The force model base class is unaware of the TetMesh, the input to all its
  * function is deformation gradient of individual element, instead of its deformaed shape.
  */
-struct ElastoMaterialParam {
-    FEM_Scaler E;
-    FEM_Scaler nu;
-    Mat3x3d Act;
-    Vec3d forient;
-};
 
 class ElasticModel : public BaseForceModel {
 public:
@@ -72,46 +66,11 @@ public:
      * @brief destructor method.
      */
     virtual ~ElasticModel(){}
-    /**
-     * @brief An interface for defining the potential energy of anisotropic force model, all the force models should inherit this method and implement their 
-     * own version of element-wise potential energy defination.
-     * @param activation the activation level along the fiber direction
-     * @param forient the three orthogonal fiber directions
-     * @param F the deformation gradient
-     * @param energy the potential energy output
-     */
-    virtual void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const = 0;
-    // virtual void ComputePhi(const ElastoMaterialParam& mp,const Vec3d& sigma,FEM_Scaler& psi) const = 0;
+    // virtual void ComputePhiDerivHessian(const TetAttributes& attrs,const Vec3d &sigma,FEM_Scaler& psi,Vec3d &dpsi, Mat3x3d &ddpsi) const = 0;
 
-    // virtual void ComputePhi() const = 0;
-    /**
-     * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
-     * own version of element-wise potential energy defination and element-wise energy gradient.
-     * @param activation the activation level along the three orthogonal fiber directions
-     * @param forient the three orthogonal fiber directions
-     * @param F the deformation gradient
-     * @param energy the potential energy output
-     * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
-     */
-    virtual void ComputePhiDeriv(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const = 0;
-    // virtual void ComputePhiDeriv(const ElastoMaterialParam& mp,const Vec3d& sigma,FEM_Scaler &psi,Vec3d &dpsi) const = 0;
-    /**
-     * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
-     * own version of element-wise potential energy defination, element-wise energy gradient and 12x12 element-wise energy hessian w.r.t deformed shape.
-     * @param activation the activation level along the three orthogonal fiber directions
-     * @param forient the three orthogonal fiber directions
-     * @param <F> the deformation gradient
-     * @param <energy> the potential energy output
-     * @param <derivative> the derivative of potential energy w.r.t the deformation gradient
-     * @param <Hessian> the hessian of potential energy w.r.t the deformed shape for elasto model or nodal velocities for damping model
-     * @param <spd> decide whether we should enforce the SPD of hessian matrix
-     */
-    virtual void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const = 0;
-    // virtual void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Vec3d &sigma,FEM_Scaler& psi,Vec3d &dpsi, Mat3x3d &ddpsi) const = 0;
+    virtual void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& pstrain,Vec3d& pstress) const = 0;
 
-    virtual void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) const = 0;
-
-    virtual void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const = 0;
+    virtual void ComputePrincipalStressJacobi(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const = 0;
 
     static FEM_Scaler Enu2Lambda(FEM_Scaler E,FEM_Scaler nu) {return (nu * E)/((1 + nu) * (1 - 2*nu));}
     static FEM_Scaler Enu2Mu(FEM_Scaler E,FEM_Scaler nu) {return E / (2 * (1 + nu));}

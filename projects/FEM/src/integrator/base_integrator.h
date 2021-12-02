@@ -7,19 +7,6 @@
 #include <string>
 
 // the TetAttributes encapsulate the information of trajectory-dependent information of force model
-struct TetAttributes{
-    size_t _elmID;
-    Mat4x4d _Minv;
-    Mat9x12d _dFdX;
-
-    FEM_Scaler _volume;
-    FEM_Scaler _density;
-    Vec12d _ext_f;
-
-    ElastoMaterialParam emp;
-    PlasticMaterialParam pmp;// trajectory dependent force model
-    FEM_Scaler v;
-};
 
 /**
  * @class <BaseIntegrator>
@@ -65,7 +52,7 @@ public:
      * and _elm_states[coupling_length - 2] the previous frame ane so on. 
      * @param obj the objective function
      */
-    virtual int EvalElmObj(const TetAttributes tet_attribs,
+    virtual int EvalElmObj(const TetAttributes& attrs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj) const = 0;
@@ -77,7 +64,7 @@ public:
      * @param obj the objective function
      * @param elm_deriv the derivative of objective function with respect to the element shape.
      */
-    virtual int EvalElmObjDeriv(const TetAttributes tet_attribs,
+    virtual int EvalElmObjDeriv(const TetAttributes& attrs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv) const = 0;
@@ -92,12 +79,12 @@ public:
      * @param cou_id the coupling ID
      * @param enforce_spd whether enforcing the SPD of Jacobi matrix
      */
-    virtual int EvalElmObjDerivJacobi(const TetAttributes tet_attribs,
+    virtual int EvalElmObjDerivJacobi(const TetAttributes& attrs,
             const std::shared_ptr<BaseForceModel>& force_model,
             const std::shared_ptr<DiricletDampingModel>& damping_model,
             const std::vector<Vec12d>& elm_states,FEM_Scaler* obj,Vec12d& elm_deriv,Mat12x12d& elm_H,bool enforce_spd,bool debug = false) const = 0;
 
-    // virtual int EvalElmResDifferentials(const TetAttributes tet_attribs,
+    // virtual int EvalElmResDifferentials(const TetAttributes attrs,
     //         const std::shared_ptr<BaseForceModel>& force_model,
     //         const std::shared_ptr<DiricletDampingModel>& damping_model,
     //         const std::vector<Vec12d>& elm_states,const Vec12d& dx,Vec12d& diff,bool enforce_spd) const = 0;

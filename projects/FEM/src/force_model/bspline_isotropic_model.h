@@ -64,8 +64,8 @@ public:
      * @param F the deformation gradient
      * @param energy the potential energy output
      */
-    void ComputePhi(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler& psi) const override {
-            Mat3x3d ActInv = mp.Act.inverse();
+    void ComputePsi(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler& psi) const override {
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
             Vec3d Is;
@@ -84,8 +84,8 @@ public:
      * @param energy the potential energy output
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
-    void ComputePhiDeriv(const ElastoMaterialParam& mp,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
-            Mat3x3d ActInv = mp.Act.inverse();
+    void ComputePsiDeriv(const TetAttributes& attrs,const Mat3x3d& F,FEM_Scaler &psi,Vec9d &dpsi) const override {
+            Mat3x3d ActInv = attrs.emp.Act.inverse();
             Mat3x3d FAct = F * ActInv;
 
             Vec3d Is;
@@ -115,8 +115,8 @@ public:
      * @param <Hessian> the hessian of potential energy w.r.t the deformed shape for elasto model or nodal velocities for damping model
      * @param <spd> decide whether we should enforce the SPD of hessian matrix
      */
-    void ComputePhiDerivHessian(const ElastoMaterialParam& mp,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override {
-        Mat3x3d ActInv = mp.Act.inverse();
+    void ComputePsiDerivHessian(const TetAttributes& attrs,const Mat3x3d &F,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &ddpsi,bool spd = true) const override {
+        Mat3x3d ActInv = attrs.emp.Act.inverse();
         Mat3x3d FAct = F * ActInv;
 
         Vec3d Is;
@@ -209,11 +209,11 @@ public:
         }
     }
 
-    void ComputePrincipalStress(const ElastoMaterialParam& mp,const Vec3d& pstrain,Vec3d& pstress) const override {
+    void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& pstrain,Vec3d& pstress) const override {
         throw std::runtime_error("BSpline MODEL IS NOT IMPLEMENTED HERE");
     }
 
-    void ComputePrincipalStressJacobi(const ElastoMaterialParam& mp,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
+    void ComputePrincipalStressJacobi(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress,Mat3x3d& Jac) const override {
         throw std::runtime_error("BSPLINE NOT IMPLEMENTED YET");
     }
 

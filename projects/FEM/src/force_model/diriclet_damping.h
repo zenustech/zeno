@@ -31,8 +31,8 @@ public:
      * @param L the deformation gradient
      * @param energy the potential energy output
      */
-    void ComputePhi(FEM_Scaler v,const Mat3x3d& L,FEM_Scaler& psi) const {
-        psi = L.squaredNorm() * v / 2;
+    void ComputePsi(const TetAttributes& attrs,const Mat3x3d& L,FEM_Scaler& psi) const {
+        psi = L.squaredNorm() * attrs.v / 2;
     }
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -42,9 +42,9 @@ public:
      * @param energy the potential energy output
      * @param the derivative of potential w.r.t the deformed shape for elasto model or nodal velocities for damping model
      */
-    virtual void ComputePhiDeriv(FEM_Scaler v,const Mat3x3d& L,FEM_Scaler &psi,Vec9d &dpsi) const {
-        ComputePhi(v,L,psi);
-        dpsi = v * MatHelper::VEC(L);
+    virtual void ComputePsiDeriv(const TetAttributes& attrs,const Mat3x3d& L,FEM_Scaler &psi,Vec9d &dpsi) const {
+        ComputePsi(attrs,L,psi);
+        dpsi = attrs.v * MatHelper::VEC(L);
     }
     /**
      * @brief An interface for defining the potential energy of force model, all the force models should inherit this method and implement their
@@ -57,9 +57,9 @@ public:
      * @param <Hessian> the hessian of potential energy w.r.t the deformed shape for elasto model or nodal velocities for damping model
      * @param <enforcing_spd> decide whether we should enforce the SPD of hessian matrix
      */
-    void ComputePhiDerivHessian(FEM_Scaler v,const Mat3x3d& L,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &H) const {
-        ComputePhiDeriv(v,L,psi,dpsi);
-        H = v * Mat9x9d::Identity();
+    void ComputePsiDerivHessian(const TetAttributes& attrs,const Mat3x3d& L,FEM_Scaler& psi,Vec9d &dpsi, Mat9x9d &H) const {
+        ComputePsiDeriv(attrs,L,psi,dpsi);
+        H = attrs.v * Mat9x9d::Identity();
     }
 
 };
