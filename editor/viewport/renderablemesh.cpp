@@ -2,8 +2,8 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <zeno/math/vec.h>
-#include <zeno/types/Mesh.h>
-#include <zeno/types/MeshTriangulate.h>
+#include <zeno/zty/mesh/Mesh.h>
+#include <zeno/zty/mesh/MeshTriangulate.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -100,9 +100,9 @@ public:
     QOpenGLBuffer attrPos;
     size_t mCount{};
 
-    RenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
+    RenderableMesh(std::shared_ptr<zty::Mesh> const &mesh)
     {
-        auto dataPos = types::meshToTriangles(*mesh);
+        auto dataPos = meshToTriangles(*mesh);
         mCount = dataPos.size();
         if (!mCount) return;
 
@@ -143,7 +143,7 @@ public:
 
 }
 
-std::unique_ptr<Renderable> makeRenderableMesh(std::shared_ptr<types::Mesh> const &mesh)
+std::unique_ptr<Renderable> makeRenderableMesh(std::shared_ptr<zty::Mesh> const &mesh)
 {
     return std::make_unique<RenderableMesh>(mesh);
 }

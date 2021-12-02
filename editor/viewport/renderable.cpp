@@ -8,7 +8,7 @@ Renderable::Renderable() = default;
 Renderable::~Renderable() = default;
 
 std::unique_ptr<Renderable> makeRenderableFromAny(ztd::any_ptr obj) {
-    if (auto p = obj.pointer_cast<types::Mesh>()) {
+    if (auto p = obj.pointer_cast<zty::Mesh>()) {
         return makeRenderableMesh(p);
     } else {
         return makeRenderableTestTriangle();

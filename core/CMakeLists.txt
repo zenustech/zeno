@@ -4,9 +4,6 @@ add_library(zeno_core OBJECT ${source})
 target_include_directories(zeno_core PUBLIC src)
 target_include_directories(zeno_core PUBLIC ../3rdparty/include)
 
-target_include_directories(zeno_core PUBLIC ../3rdparty/mods/mcut/include)
-target_link_libraries(zeno_core PUBLIC mcut)
-
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
     message(STATUS "Found OpenMP: ${OpenMP_DIR}")
