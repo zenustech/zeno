@@ -577,6 +577,7 @@ class QDMGraphicsView(QGraphicsView):
             edge.updatePath()
             self.scene().update()
         if self.scene().mmb_press:
+            self.check_scene_rect()
             last_pos = self.mapToScene(self._last_mouse_pos)
             current_pos = self.mapToScene(event.pos())
             delta = last_pos - current_pos
@@ -610,13 +611,17 @@ class QDMGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor, event.pos())
         self._update_scene_rect()
 
-    def resizeEvent(self, event):
+    def check_scene_rect(self):
         if self.scene()._scene_rect is None:
             self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
             self._update_scene_rect()
+
+    def resizeEvent(self, event):
+        self.check_scene_rect()
         super().resizeEvent(event)
 
     def scale(self, sx, sy, pos=None):
+        self.check_scene_rect()
         rect = self.scene()._scene_rect
         if (rect.width() > 10000 and sx < 1) or \
             (rect.width() < 200 and sx > 1):
