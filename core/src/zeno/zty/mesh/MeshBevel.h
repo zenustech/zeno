@@ -9,7 +9,7 @@ namespace zty {
 
 struct MeshBevel {
     float fac = 0.1f;
-    float smo = 0.5f;
+    float smo = 0.25f;
 
     void operator()(Mesh &mesh) const;
 };

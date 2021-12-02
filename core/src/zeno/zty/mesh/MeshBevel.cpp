@@ -1,4 +1,5 @@
 #include <zeno/zty/mesh/MeshBevel.h>
+#include <unordered_map>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -10,6 +11,8 @@ void MeshBevel::operator()(Mesh &mesh) const {
 
     decltype(mesh.vert) new_vert;
     auto new_loop = mesh.loop;
+
+    std::vector<math::vec4f> alter;
 
     size_t start = 0;
     for (size_t i = 0; i < mesh.poly.size(); i++) {
@@ -45,13 +48,22 @@ void MeshBevel::operator()(Mesh &mesh) const {
                 auto mw = lerp(mv, rv, fac);
                 auto rw = lerp(rv, mv, fac);
 
-                new_vert[m] -= smo * (cw - mv);
-
                 new_vert.push_back(cw);
                 new_vert.push_back(mw);
                 new_vert.push_back(rw);
 
                 new_loop[start + p] = base + 3 * p;
+            }
+
+            auto new_base = base - static_cast<uint32_t>(mesh.vert.size());
+            for (uint32_t p = 0; p < npoly; p++) {
+                auto last_p = (p - 1 + npoly) % npoly;
+                auto m = mesh.loop[start + p];
+
+                auto cw = new_vert[new_base + 3 * p];
+                auto last_cw = new_vert[new_base + 3 * last_p];
+                auto [ax, ay, az] = cw + last_cw;
+                alter[m] += math::vec4f(ax, ay, az, 2.0f);
             }
 
             base += 3 * npoly;
@@ -60,7 +72,14 @@ void MeshBevel::operator()(Mesh &mesh) const {
         start += npoly;
     }
 
-    mesh.vert.insert(mesh.vert.begin(), new_vert.begin(), new_vert.end());
+    for (size_t i = 0; i < alter.size(); i++) {
+        auto [ax, ay, az, aw] = alter[i];
+        [[unlikely]] if (!aw) continue;
+        auto apos = math::vec3f(ax, ay, az) / aw;
+        mesh.vert[i] = lerp(mesh.vert[i], apos, smo * 0.5f);
+    }
+
+    mesh.vert.insert(mesh.vert.end(), new_vert.begin(), new_vert.end());
     mesh.poly.resize(mesh.poly.size() + (new_loop.size() - mesh.loop.size()) / 4, 4);
     mesh.loop = std::move(new_loop);
 }
