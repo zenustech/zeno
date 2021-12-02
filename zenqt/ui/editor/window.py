@@ -204,6 +204,7 @@ class NodeEditor(QWidget):
     def on_new_graph(self):
         name = self.edit_graphname.currentText()
         self.on_switch_graph(name)
+        self.view.check_scene_rect()
 
     def setDescriptors(self, descs):
         self.descs = descs
