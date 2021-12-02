@@ -1,4 +1,6 @@
 #include "resizecoreitem.h"
+#include <QSvgRenderer>
+#include <QStyleOptionGraphicsItem>
 
 ResizableCoreItem::ResizableCoreItem(QGraphicsItem* parent)
 	: QGraphicsItem(parent)
@@ -11,22 +13,156 @@ void ResizableCoreItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
 }
 
 
+MySvgItem::MySvgItem(QGraphicsItem *parent)
+    : QGraphicsSvgItem(parent), m_size(-1.0, -1.0)
+{
+}
+
+MySvgItem::MySvgItem(const QString &fileName, QGraphicsItem *parent)
+    : QGraphicsSvgItem(fileName, parent), m_size(-1.0, -1.0)
+{
+}
+
+void MySvgItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    Q_UNUSED(widget);
+    Q_UNUSED(option);
+    if (!renderer()->isValid())
+        return;
+
+    if (elementId().isEmpty())
+        renderer()->render(painter, boundingRect());
+    else
+        renderer()->render(painter, elementId(), boundingRect());
+}
+
+void MySvgItem::setSize(QSizeF size)
+{
+    if (m_size != size)
+    {
+        m_size = size;
+        update();
+    }
+}
+
+QRectF MySvgItem::boundingRect()
+{
+    return QRectF(QPointF(0.0, 0.0), m_size);
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////
-ResizablePixmapItem::ResizablePixmapItem(const QPixmap& pixmap, QGraphicsItem* parent)
-	: ResizableCoreItem(parent)
-	, m_original(pixmap)
-	, m_pixmapitem(new QGraphicsPixmapItem(pixmap, this))
+ResizableImageItem::ResizableImageItem(const QString &normal, const QString &hovered, const QString &selected, QSizeF sz, QGraphicsItem *parent)
+    : ResizableCoreItem(parent)
+    , m_pixmap(nullptr)
+    , m_svg(nullptr)
 {
+    this->setAcceptHoverEvents(true);
+    resetImage(normal, hovered, selected, sz);
 }
 
-QRectF ResizablePixmapItem::boundingRect() const
+QRectF ResizableImageItem::boundingRect() const
 {
-	return m_pixmapitem->boundingRect();
+    if (m_pixmap)
+        return m_pixmap->boundingRect();
+    else
+        return m_svg->boundingRect();
 }
 
-void ResizablePixmapItem::resize(QSizeF sz)
+bool ResizableImageItem::resetImage(const QString &normal, const QString &hovered, const QString &selected, QSizeF sz)
 {
-	m_pixmapitem->setPixmap(m_original.scaledToWidth(sz.width()));
+	QString suffix = QFileInfo(normal).completeSuffix();
+	if (suffix.compare("svg", Qt::CaseInsensitive) == 0)
+	{
+        QFileInfo fileInfo(normal);
+        QString name = fileInfo.fileName();
+        QString ext = fileInfo.completeSuffix();
+
+        if (m_pixmap) {
+            delete m_pixmap;
+            m_pixmap = nullptr;
+        }
+
+        if (m_svg) {
+            delete m_svg;
+            m_svg = nullptr;
+        }
+
+		m_svg = new MySvgItem(normal, this);
+        m_svg->setZValue(ZVALUE_CORE_ITEM);
+        m_svgNormal = normal;
+        m_svgHovered = hovered;
+        m_svgSelected = selected;
+        m_size = sz;
+        m_svg->setSize(m_size);
+    }
+	else
+	{
+        QFileInfo fileInfo(normal);
+        QString name = fileInfo.fileName();
+        QString ext = fileInfo.completeSuffix();
+
+        if (m_svg)
+            delete m_svg;
+        m_svg = nullptr;
+
+        m_normal = QPixmap(normal);
+        m_hovered = QPixmap(hovered);
+        m_selected = QPixmap(selected);
+        m_pixmap = new QGraphicsPixmapItem(m_normal.scaled(sz.toSize()), this);
+        m_pixmap->setZValue(ZVALUE_CORE_ITEM);
+        m_size = sz;
+    }
+    return true;
+}
+
+void ResizableImageItem::resize(QSizeF sz)
+{
+    m_size = sz;
+    if (m_pixmap) {
+        m_pixmap->setPixmap(m_normal.scaled(m_size.toSize()));
+    } else if (m_svg) {
+        m_svg->setSize(m_size);
+    }
+}
+
+void ResizableImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    if (m_pixmap)
+    {
+        if (!m_hovered.isNull())
+        {
+            m_pixmap->setPixmap(m_hovered.scaled(m_size.toSize()));
+        }
+    } 
+    else if (m_svg)
+    {
+        if (!m_svgHovered.isEmpty())
+        {
+            delete m_svg;
+            m_svg = new MySvgItem(m_svgHovered, this);
+            m_svg->setSize(m_size);
+        }
+    }
+    _base::hoverEnterEvent(event);
+}
+
+void ResizableImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
+{
+    _base::hoverMoveEvent(event);
+}
+
+void ResizableImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    if (m_pixmap) {
+        m_pixmap->setPixmap(m_normal.scaled(m_size.toSize()));
+    } else if (m_svg) {
+        //todo
+        delete m_svg;
+        m_svg = new MySvgItem(m_svgNormal, this);
+        m_svg->setSize(m_size);
+    }
+    _base::hoverLeaveEvent(event);
 }
 
 
@@ -88,4 +224,15 @@ QRectF ResizableTextItem::boundingRect() const
 
 void ResizableTextItem::resize(QSizeF sz)
 {
+}
+
+void ResizableTextItem::setText(const QString& text)
+{
+    m_pTextItem->setPlainText(text);
+}
+
+void ResizableTextItem::setTextProp(QFont font, QColor color)
+{
+    m_pTextItem->setFont(font);
+    m_pTextItem->setDefaultTextColor(color);
 }

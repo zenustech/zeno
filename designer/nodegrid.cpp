@@ -18,17 +18,36 @@ void NodeGridLineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 }
 
 
-NodeGridItem::NodeGridItem(QGraphicsItem* parent)
+NodeGridItem::NodeGridItem(QSize sz, QGraphicsItem *parent)
+    : QGraphicsRectItem(parent)
+    , m_nCellsInLargeCells(5)
+    , m_nPixelsInCell(PIXELS_IN_CELL)
+    , m_factor(1)
+{
+    m_nLargeCellColumns = sz.width() / (m_nCellsInLargeCells * m_nPixelsInCell);
+    m_nLargeCellRows = sz.height() / (m_nCellsInLargeCells * m_nPixelsInCell);
+    int W = m_nLargeCellColumns * m_nCellsInLargeCells * m_nPixelsInCell;
+    int H = m_nLargeCellRows * m_nCellsInLargeCells * m_nPixelsInCell;
+    initGrid(W, H);
+}
+
+NodeGridItem::NodeGridItem(QGraphicsItem *parent)
     : QGraphicsRectItem(parent)
     , m_nLargeCellRows(10)
     , m_nLargeCellColumns(12)
     , m_nCellsInLargeCells(5)
-    , m_nPixelsInCell(9)
+    , m_nPixelsInCell(PIXELS_IN_CELL)
     , m_factor(1)
 {
     int W = m_nLargeCellColumns * m_nCellsInLargeCells * m_nPixelsInCell;
     int H = m_nLargeCellRows * m_nCellsInLargeCells * m_nPixelsInCell;
+    initGrid(W, H);
+}
+
+void NodeGridItem::initGrid(int W, int H)
+{
     setRect(0, 0, W, H);
+    setZValue(ZVALUE_GRID_BACKGROUND);
 
     //fill background
     setBrush(QColor(96, 96, 96));
@@ -42,22 +61,23 @@ NodeGridItem::NodeGridItem(QGraphicsItem* parent)
         int x = c * m_nCellsInLargeCells * m_nPixelsInCell;
         int yend = H;
 
-        NodeGridLineItem* item = new NodeGridLineItem(this, x, 0, x, yend, this);
-        item->setPen(QPen(QColor(81, 87, 92)));
-
         for (int n = 0; n <= m_nCellsInLargeCells; n++)
         {
             QColor lineColor;
+            int depth = 0;
             if (n == 0 || n == m_nCellsInLargeCells)
             {
                 lineColor = clrBig;
+                depth = ZVALUE_GRID_BIG;
             }
             else
             {
                 lineColor = clrSmall;
+                depth = ZVALUE_GRID_SMALL;
             }
 
-            item = new NodeGridLineItem(this, x + n * m_nPixelsInCell, 0, x + n * m_nPixelsInCell, yend, this);
+            auto item = new NodeGridLineItem(this, x + n * m_nPixelsInCell, 0, x + n * m_nPixelsInCell, yend, this);
+            item->setZValue(depth);
             item->setPen(QPen(lineColor));
         }
     }
@@ -67,23 +87,24 @@ NodeGridItem::NodeGridItem(QGraphicsItem* parent)
         int y = r * m_nCellsInLargeCells * m_nPixelsInCell;
         int xend = W;
 
-        NodeGridLineItem* item = new NodeGridLineItem(this, 0, y, xend, y, this);
-        item->setPen(QPen(QColor(81, 87, 92)));
-
         for (int n = 0; n <= m_nCellsInLargeCells; n++)
         {
             QColor lineColor;
+            int depth = 0;
             if (n == 0 || n == m_nCellsInLargeCells)
             {
                 lineColor = clrBig;
+                depth = ZVALUE_GRID_BIG;
             }
             else
             {
                 lineColor = clrSmall;
+                depth = ZVALUE_GRID_SMALL;
             }
 
-            item = new NodeGridLineItem(this, 0, y + n * m_nPixelsInCell, xend, y + n * m_nPixelsInCell, this);
+            auto item = new NodeGridLineItem(this, 0, y + n * m_nPixelsInCell, xend, y + n * m_nPixelsInCell, this);
             item->setPen(QPen(lineColor));
+            item->setZValue(depth);
         }
     }
 }

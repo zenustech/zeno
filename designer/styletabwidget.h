@@ -6,6 +6,7 @@
 
 class LayerWidget;
 class NodesView;
+class NodesWidget;
 
 class StyleTabWidget : public QTabWidget
 {
@@ -16,6 +17,7 @@ public:
     QItemSelectionModel* getSelectionModel();
     NodesView* getCurrentView();
     NodesView* getView(int index);
+    QStandardItemModel *model() const;
 
 signals:
     void tabClosed(int);
@@ -25,10 +27,13 @@ signals:
 public slots:
     void onNewTab();
     void onTabClosed(int);
+    void openFile(const QString& fn);
 
 private:
-    void initTabs();
+    void addEmptyTab();
+    void initTab(NodesWidget* pTab);
 
+    int m_currentIndex; //tab id
 };
 
 #endif

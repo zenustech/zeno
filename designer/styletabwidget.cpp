@@ -3,10 +3,12 @@
 #include "styletabwidget.h"
 #include "nodescene.h"
 #include "layerwidget.h"
+#include "nodeswidget.h"
 
 
 StyleTabWidget::StyleTabWidget(QWidget* parent)
     : QTabWidget(parent)
+    , m_currentIndex(0)
 {
     setTabsClosable(true);
     this->tabBar()->setTabsClosable(true);
@@ -23,10 +25,10 @@ void StyleTabWidget::onTabClosed(int index)
     //TODO: disconnect
 }
 
-void StyleTabWidget::initTabs()
+void StyleTabWidget::addEmptyTab()
 {
-    auto pView = new NodesView;
-    addTab(pView, "node");
+    auto pTab = new NodesWidget;
+    addTab(pTab, "node");
 }
 
 NodesView* StyleTabWidget::getCurrentView()
@@ -53,10 +55,33 @@ QItemSelectionModel* StyleTabWidget::getSelectionModel()
 
 void StyleTabWidget::onNewTab()
 {
-    auto pView = new NodesView;
-    addTab(pView, "node");
-    pView->initSkin(":/templates/node-empty.xml");
-    pView->initNode();
+    auto pTab = new NodesWidget(this);
+    initTab(pTab);
+}
 
-    emit tabviewActivated(pView->scene()->model());
+void StyleTabWidget::initTab(NodesWidget *pTab)
+{
+    QString tabName = pTab->fileName();
+    //todo: add suffix when repeat name occurs.
+    addTab(pTab, tabName);
+
+    int idxTab = indexOf(pTab);
+    connect(pTab, &NodesWidget::tabDirtyChanged, [=](bool dirty) {
+        QString fileName = pTab->fileName();
+        if (fileName.isEmpty())
+            fileName = tabName;
+        if (dirty) {
+            setTabText(idxTab, fileName + "*");
+        } else {
+            setTabText(idxTab, fileName);
+        }
+    });
+    setCurrentWidget(pTab);
+    emit tabviewActivated(pTab->model());
+}
+
+void StyleTabWidget::openFile(const QString &filePath)
+{
+    auto pTab = new NodesWidget(filePath, this);
+    initTab(pTab);
 }

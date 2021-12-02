@@ -3,6 +3,9 @@
 #include "nodesview.h"
 #include "styletabwidget.h"
 #include "layertreeitemdelegate.h"
+#include "nodeswidget.h"
+#include "util.h"
+
 
 NodesView* getCurrentView(QWidget* pWidget)
 {
@@ -64,12 +67,25 @@ LayerWidget::LayerWidget(QWidget* parent)
     setLayout(pLayout);
 }
 
+void LayerWidget::setModel(QStandardItemModel* model, QItemSelectionModel* selection)
+{
+    m_pLayer->setModel(model);
+    if (selection) {
+        m_pLayer->setSelectionModel(selection);
+        m_pLayer->expandAll();
+    }
+}
+
 void LayerWidget::resetModel()
 {
     auto view = getCurrentView(this);
-    QStandardItemModel* model = view->findChild<QStandardItemModel*>(NODE_MODEL_NAME);
-    QItemSelectionModel* selection = view->findChild<QItemSelectionModel*>(NODE_SELECTION_MODEL);
-    m_pLayer->setModel(model);
-    m_pLayer->setSelectionModel(selection);
-    m_pLayer->expandAll();
+
+    NodesWidget* pTab = getMainWindow()->getCurrentTab();
+    if (pTab) {
+        QStandardItemModel *model = pTab->model();
+        QItemSelectionModel *selection = pTab->selectionModel();
+        m_pLayer->setModel(model);
+        m_pLayer->setSelectionModel(selection);
+        m_pLayer->expandAll();
+    }
 }

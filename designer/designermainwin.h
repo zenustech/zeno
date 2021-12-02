@@ -7,6 +7,7 @@ class LayerWidget;
 class ViewMdiArea;
 class PropertyPane;
 class StyleTabWidget;
+class NodesWidget;
 class ZTabPanel;
 
 class DesignerMainWin : public QMainWindow
@@ -15,6 +16,13 @@ class DesignerMainWin : public QMainWindow
 public:
     DesignerMainWin();
     StyleTabWidget* getTabWidget() const;
+    NodesWidget *getTab(int index) const;
+    NodesWidget *getCurrentTab() const;
+
+private slots:
+    void onCurrentTabChanged(int index);
+    void onTabClose(int index);
+    void openFileDialog();
 
 private:
     void initMenu();

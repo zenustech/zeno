@@ -36,7 +36,7 @@ class ResizableItemImpl : public QGraphicsObject
     };
 
 public:
-    ResizableItemImpl(qreal x, qreal y, qreal w, qreal h, QGraphicsItem* parent = nullptr);
+    ResizableItemImpl(NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     QRectF boundingRect() const override;
     QRectF coreItemSceneRect();
@@ -44,7 +44,15 @@ public:
     int width() const { return m_width; }
     int height() const { return m_height; }
     void setCoreItem(ResizableCoreItem* pItem);
+    ResizableCoreItem *coreItem() const { return m_coreitem; }
     void showBorder(bool bShow);
+    void setLocked(bool bLock);
+    void setContent(NODE_CONTENT content) { m_content = content; }
+    bool isLocked() const;
+    QString getId() const;
+    NODE_TYPE getType() const { return m_type; }
+    NODE_CONTENT getContent() const { return m_content; }
+    void resetZValue();
 
 protected:
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
@@ -55,11 +63,16 @@ protected:
 
 signals:
     void itemDeselected();
-    void itemGeoChanged(QRectF sceneRect);
+    void itemSelectedChange(NODE_ID id, bool bSelected);
+    void gvItemGeoChanged(QString id, QRectF sceneRect);
+    void gvItemSelectedChange(QString id, bool selected);
 
 private:
+    void _resetDragPoints();
     void _adjustItemsPos();
     bool _enableMouseEvent();
+    void _sizeValidate(bool bTranslate);
+    void _setPosition(QPointF pos);
 
     QGraphicsItem* getResizeHandleItem(QPointF scenePos);
 
@@ -78,10 +91,16 @@ private:
     DRAG_ITEM m_mouseHint;
     SCALE_INFO m_movescale_info;
 
+    const QString m_id;
+
     qreal m_width;
     qreal m_height;
 
+    NODE_TYPE m_type;
+    NODE_CONTENT m_content;
+
     bool m_showBdr;
+    bool m_bLocked;
 };
 
 

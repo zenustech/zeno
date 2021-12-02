@@ -64,6 +64,14 @@ int ZToolButton::buttonOption() const
     return m_options;
 }
 
+void ZToolButton::setCheckable(bool bCheckable)
+{
+    if (bCheckable)
+        m_options |= Opt_Checkable;
+    else
+        m_options &= ~Opt_Checkable;
+}
+
 QSize ZToolButton::sizeHint() const
 {
     int w = 0, h = 0;

@@ -1,12 +1,14 @@
 #include "framework.h"
 #include "nodesview.h"
 #include "nodescene.h"
+#include "styletabwidget.h"
+#include "nodeswidget.h"
 
 
 NodesView::NodesView(QWidget* parent)
-	: QGraphicsView(parent)
-	, m_scene(new NodeScene(this, this))
-	, m_gridX(142)
+    : QGraphicsView(parent)
+    , m_scene(new NodeScene(this, this))
+    , m_gridX(142)
 	, m_gridY(76)
 	, _modifiers(Qt::ControlModifier)
 	, m_factor(1.)
@@ -26,6 +28,9 @@ NodesView::NodesView(QWidget* parent)
 
 	connect(m_scene, SIGNAL(changed(QList<QRectF>)), this, SLOT(update()));
 	connect(this, SIGNAL(viewChanged(qreal)), m_scene, SLOT(onViewTransformChanged(qreal)));
+    NodesWidget* pWidget = qobject_cast<NodesWidget *>(parent);
+    if (pWidget)
+        connect(this, SIGNAL(viewChanged(qreal)), pWidget, SLOT(setFactor(qreal)));
 }
 
 void NodesView::initSkin(const QString& fn)
@@ -36,6 +41,11 @@ void NodesView::initSkin(const QString& fn)
 void NodesView::initNode()
 {
 	m_scene->initNode();
+}
+
+void NodesView::resetPreset(int w, int h)
+{
+    m_scene->resetPreset(w, h);
 }
 
 QSize NodesView::sizeHint() const

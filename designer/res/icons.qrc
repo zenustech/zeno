@@ -4,5 +4,12 @@
     <file>icons/eye_off.svg</file>
     <file>icons/locked.svg</file>
     <file>icons/locked_off.svg</file>
+    <file>icons/redo.png</file>
+    <file>icons/redo_disable.png</file>
+    <file>icons/undo.png</file>
+    <file>icons/undo_disable.png</file>
+    <file>icons/magnet_grid.png</file>
+    <file>icons/magnet_point.png</file>
+	<file>icons/showborder.png</file>
 </qresource>
 </RCC>

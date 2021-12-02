@@ -33,14 +33,16 @@ public:
     };
 
 public:
-	NodeScene(NodesView* pView, QObject* parent = nullptr);
+    NodeScene(NodesView* pView, QObject* parent = nullptr);
     ~NodeScene();
 	void initGrid();
 	void initTimelines(QRectF rcView);
 	void initSkin(const QString& fn);
 	void initNode();
+    QSizeF getSceneSize();
     QStandardItemModel* model() const;
     QItemSelectionModel* selectionModel() const;
+    NodeParam exportNodeParam();
 
 public slots:
     void updateDragPoints(QGraphicsItem* pDragged, DRAG_ITEM dragWay);
@@ -48,6 +50,10 @@ public slots:
     void _adjustDragRectPos(QGraphicsItem* pSelection);
     void updateTimeline(qreal factor);
     void onViewTransformChanged(qreal factor);
+    void resetPreset(int W, int H);
+
+signals:
+    void markDirty();
 
 private:
 	QVector<DragPointItem*> m_dragPoints;
@@ -56,9 +62,6 @@ private:
     NodeGridItem* m_grid;
     TimelineItem* m_pHTimeline, *m_pVTimeline;
     NodeTemplate* m_pNode;
-
-    QStandardItemModel* m_model;
-    QItemSelectionModel* m_selection;
 
 	NodeParam m_nodeparam;
 	int m_nLargeCellRows;

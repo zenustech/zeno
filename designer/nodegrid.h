@@ -16,9 +16,11 @@ private:
 class NodeGridItem : public QGraphicsRectItem
 {
 public:
+    NodeGridItem(QSize sz, QGraphicsItem *parent = nullptr);
     NodeGridItem(QGraphicsItem* parent = nullptr);
     void setFactor(qreal factor) { m_factor = factor; }
     qreal factor() const { return m_factor; }
+    void initGrid(int W, int H);
 
 private:
     qreal m_factor;

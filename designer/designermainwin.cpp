@@ -5,6 +5,7 @@
 #include "styletabwidget.h"
 #include "ztabpanel.h"
 #include "nodescene.h"
+#include "nodeswidget.h"
 
 
 DesignerMainWin::DesignerMainWin()
@@ -14,8 +15,8 @@ DesignerMainWin::DesignerMainWin()
     , m_properties(nullptr)
     , m_tabWidget(nullptr)
 {
-    initMenu();
     initWidgets();
+    initMenu();
 	initConnections();
 	resetModels();
 }
@@ -49,6 +50,8 @@ void DesignerMainWin::initWidgets()
 void DesignerMainWin::initConnections()
 {
 	connect(m_tabWidget, SIGNAL(tabviewActivated(QStandardItemModel*)), m_pLayerWidget, SLOT(setModel(QStandardItemModel*)));
+    connect(m_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onCurrentTabChanged(int)));
+    connect(m_tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(onTabClose(int)));
 }
 
 StyleTabWidget* DesignerMainWin::getTabWidget() const
@@ -56,10 +59,60 @@ StyleTabWidget* DesignerMainWin::getTabWidget() const
 	return m_tabWidget;
 }
 
+NodesWidget *DesignerMainWin::getTab(int index) const
+{
+    return qobject_cast<NodesWidget*>(m_tabWidget->widget(index));
+}
+
+NodesWidget* DesignerMainWin::getCurrentTab() const
+{
+    if (m_tabWidget == nullptr) return nullptr;
+    return qobject_cast<NodesWidget *>(m_tabWidget->currentWidget());
+}
+
 void DesignerMainWin::resetModels()
 {
 	m_pLayerWidget->resetModel();
 	m_properties->resetModel();
+}
+
+void DesignerMainWin::onCurrentTabChanged(int index)
+{
+	if (index == -1) {
+        m_pLayerWidget->setModel(nullptr, nullptr);
+        m_properties->setModel(nullptr, nullptr);
+	}
+
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return;
+    
+	NodesWidget* pTab = qobject_cast<NodesWidget *>(m_tabWidget->widget(index));
+	if (pTab)
+	{
+        auto pModel = pTab->model();
+        auto pSelectionModel = pTab->selectionModel();
+        m_pLayerWidget->setModel(pModel, pSelectionModel);
+        m_properties->setModel(pModel, pSelectionModel);
+	}
+}
+
+void DesignerMainWin::onTabClose(int index)
+{
+
+}
+
+void DesignerMainWin::openFileDialog()
+{
+    const QString &initialPath = ".";
+    QFileDialog fileDialog(this, tr("Open"), initialPath);
+    fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
+    fileDialog.setFileMode(QFileDialog::AnyFile);
+    fileDialog.setDirectory(initialPath);
+    if (fileDialog.exec() != QDialog::Accepted)
+        return;
+
+	QString filePath = fileDialog.selectedFiles().first();
+    m_tabWidget->openFile(filePath);
 }
 
 void DesignerMainWin::initMdiWindows()
@@ -84,10 +137,12 @@ void DesignerMainWin::initMenu()
 	{
 		QAction* pAction = new QAction(tr("New"), pFile);
 		pAction->setCheckable(false);
+        connect(pAction, SIGNAL(triggered()), m_tabWidget, SLOT(onNewTab()));
 		pFile->addAction(pAction);
 
 		pAction = new QAction(tr("Open"), pFile);
 		pAction->setCheckable(false);
+        connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
 		pFile->addAction(pAction);
 
 		pAction = new QAction(tr("Save"), pFile);
