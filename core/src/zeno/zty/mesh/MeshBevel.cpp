@@ -8,8 +8,8 @@ namespace zty {
 void MeshBevel::operator()(Mesh &mesh) const {
     uint32_t base = static_cast<uint32_t>(mesh.vert.size());
 
-    std::vector<math::vec3f> new_vert;
-    std::vector<uint32_t> new_loop = mesh.loop;
+    decltype(mesh.vert) new_vert;
+    auto new_loop = mesh.loop;
 
     size_t start = 0;
     for (size_t i = 0; i < mesh.poly.size(); i++) {
@@ -36,12 +36,17 @@ void MeshBevel::operator()(Mesh &mesh) const {
                 auto l = mesh.loop[start + (p - 1 + npoly) % npoly];
                 auto m = mesh.loop[start + p];
                 auto r = mesh.loop[start + (p + 1) % npoly];
+
                 auto lv = mesh.vert[l];
                 auto mv = mesh.vert[m];
                 auto rv = mesh.vert[r];
+
                 auto cw = mv + fac * (lv - mv) + fac * (rv - mv);
                 auto mw = lerp(mv, rv, fac);
                 auto rw = lerp(rv, mv, fac);
+
+                new_vert[m] -= smo * (cw - mv);
+
                 new_vert.push_back(cw);
                 new_vert.push_back(mw);
                 new_vert.push_back(rw);
@@ -55,7 +60,7 @@ void MeshBevel::operator()(Mesh &mesh) const {
         start += npoly;
     }
 
-    mesh.vert.insert(mesh.vert.end(), new_vert.begin(), new_vert.end());
+    mesh.vert.insert(mesh.vert.begin(), new_vert.begin(), new_vert.end());
     mesh.poly.resize(mesh.poly.size() + (new_loop.size() - mesh.loop.size()) / 4, 4);
     mesh.loop = std::move(new_loop);
 }
