@@ -12,7 +12,7 @@ void MeshBevel::operator()(Mesh &mesh) const {
     decltype(mesh.vert) new_vert;
     auto new_loop = mesh.loop;
 
-    std::vector<math::vec4f> alter;
+    std::vector<math::vec4f> alter(mesh.vert.size());
 
     size_t start = 0;
     for (size_t i = 0; i < mesh.poly.size(); i++) {
@@ -63,7 +63,7 @@ void MeshBevel::operator()(Mesh &mesh) const {
                 auto cw = new_vert[new_base + 3 * p];
                 auto last_cw = new_vert[new_base + 3 * last_p];
                 auto [ax, ay, az] = cw + last_cw;
-                alter[m] += math::vec4f(ax, ay, az, 2.0f);
+                alter.at(m) += math::vec4f(ax, ay, az, 2.0f);
             }
 
             base += 3 * npoly;
