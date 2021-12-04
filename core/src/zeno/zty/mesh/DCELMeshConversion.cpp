@@ -33,7 +33,7 @@ DCEL::operator Mesh() const
 }
 
 
-static uint32_t add(auto &a) {
+static inline uint32_t add(auto &a) {
     auto ret = static_cast<uint32_t>(a.size());
     a.emplace_back();
     return ret;
