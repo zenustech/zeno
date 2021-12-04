@@ -62,23 +62,90 @@ DCEL DCEL::subdivision()
     for (auto const &v: vert) {
         auto [it0, it1] = vert_leaving.equal_range(&v);
 
-        uint32_t n = 0;
+        uint32_t n = 0, nface = 0;
         math::vec3f vpos(0);
+        math::vec3f favg(0);
         for (auto it = it0; it != it1; ++it) {
             auto e = it->second;
-            auto eavg_x2 = e->origin->co + e->twin->origin->co;
-            auto favg = face_lut.at(e->face)->co;
-            vpos += eavg_x2 + favg;
+            vpos += e->origin->co + e->twin->origin->co;
             n++;
+            if (e->face) {
+                favg += face_lut.at(e->face)->co;
+                nface++;
+            }
         }
 
         vpos *= 1.f / n;
+        vpos += favg * (1.f / nface);
         vpos += (n - 3) * v.co;
         vpos *= 1.f / n;
 
         auto vv = &that.vert.emplace_back();
         vv->co = vpos;
         vert_lut.emplace(&v, vv);
+    }
+
+    for (auto const &[f, vf]: face_lut) {
+        auto e0 = f->first;
+        auto e_prev = e0;
+        e0 = e0->next;
+        auto e = e0;
+
+        auto lve = edge_lut.at(e);
+        auto lte0 = &that.edge.emplace_back();
+        auto lte1 = &that.edge.emplace_back();
+        lte0->twin = lte1;
+        lte1->twin = lte0;
+        lte0->origin = const_cast<Vert *>(vf);
+        lte1->origin = const_cast<Vert *>(lve);
+
+        auto lte3 = &that.edge.emplace_back();
+        auto ltf = &that.face.emplace_back();
+        ltf->first = lte0;
+        lte0->face = ltf;
+        // lte1->face = lltf;
+        lte0->next = lte3;
+        // lte1->next = llte0;
+
+        auto lte2 = &that.edge.emplace_back();
+        // lte2->origin = const_cast<Vert *>(llve);
+        // lte2->face = lltf;
+        lte2->next = lte1;
+        // llte3->next = lte2;
+
+        do {
+            auto ve = edge_lut.at(e);
+            auto te0 = &that.edge.emplace_back();
+            auto te1 = &that.edge.emplace_back();
+            te0->twin = te1;
+            te1->twin = te0;
+            te0->origin = const_cast<Vert *>(vf);
+            te1->origin = const_cast<Vert *>(ve);
+
+            auto te3 = &that.edge.emplace_back();
+            auto tf = &that.face.emplace_back();
+            tf->first = te0;
+            te0->face = tf;
+            te1->face = ltf;
+            te0->next = te3;
+            te1->next = lte0;
+
+            auto te2 = &that.edge.emplace_back();
+            te2->origin = const_cast<Vert *>(lve);
+            te2->face = ltf;
+            te2->next = te1;
+            lte3->next = te2;
+
+            lve = ve;
+            lte0 = te0;
+            lte1 = te1;
+            lte3 = te3;
+            ltf = tf;
+            lte2 = te2;
+
+            e_prev = e;
+            e = e->next;
+        } while (e != e0);
     }
 
     return that;
