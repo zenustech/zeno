@@ -9,6 +9,7 @@ namespace zty {
 
 
 void meshSubdivisionSimple(Mesh &mesh);
+void meshSubdivisionCatmull(Mesh &mesh, int numIters = 1);
 
 
 }

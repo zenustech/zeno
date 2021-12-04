@@ -12,7 +12,7 @@ namespace zty {
 
 DCEL DCEL::subdivision()
 {
-    DCEL ret;
+    DCEL that;
     std::unordered_map<Vert const *, Vert const *> vert_lut;
     std::unordered_map<Edge const *, Vert const *> edge_lut;
     std::unordered_map<Face const *, Vert const *> face_lut;
@@ -29,7 +29,7 @@ DCEL DCEL::subdivision()
         }
         favg *= 1.f / fnum;
 
-        auto vf = &ret.vert.emplace_back();
+        auto vf = &that.vert.emplace_back();
         vf->co = favg;
         face_lut.emplace(&f, vf);
     }
@@ -43,8 +43,8 @@ DCEL DCEL::subdivision()
         auto epos = (f0 + f1 + e0 + e1) * 0.25f;
         vert_leaving.emplace(e.origin, &e);
 
-        if (1) if (!edge_lut.contains(&e)) {
-            auto ve = &ret.vert.emplace_back();
+        if (!edge_lut.contains(&e)) {
+            auto ve = &that.vert.emplace_back();
             ve->co = epos;
             edge_lut.emplace(&e, ve);
             edge_lut.emplace(e.twin, ve);
@@ -68,14 +68,12 @@ DCEL DCEL::subdivision()
         vpos += (n - 3) * v.co;
         vpos *= 1.f / n;
 
-        if (!vert_lut.contains(&v)) {
-            auto vv = &ret.vert.emplace_back();
-            vv->co = vpos;
-            vert_lut.emplace(&v, vv);
-        }
+        auto vv = &that.vert.emplace_back();
+        vv->co = vpos;
+        vert_lut.emplace(&v, vv);
     }
 
-    return ret;
+    return that;
 }
 
 
