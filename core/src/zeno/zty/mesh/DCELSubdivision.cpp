@@ -36,27 +36,28 @@ DCEL DCEL::subdivision()
 
     std::unordered_multimap<Vert const *, Edge const *> vert_leaving;
     for (auto const &e: edge) {
-        if (!edge_lut.contains(&e)) {
-            auto e0 = e.origin->co;
-            auto e1 = e.twin->origin->co;
+        if (edge_lut.contains(&e))
+            continue;
 
-            math::vec3f epos;
-            if (e.face && e.twin->face) {
-                auto f0 = face_lut.at(e.face)->co;
-                auto f1 = face_lut.at(e.twin->face)->co;
-                epos = (f0 + f1 + e0 + e1) * 0.25f;
-            } else {
-                epos = (e0 + e1) * 0.5f;
-            }
+        auto e0 = e.origin->co;
+        auto e1 = e.twin->origin->co;
 
-            vert_leaving.emplace(e.origin, &e);
-            vert_leaving.emplace(e.twin->origin, e.twin);
-
-            auto ve = &that.vert.emplace_back();
-            ve->co = epos;
-            edge_lut.emplace(&e, ve);
-            edge_lut.emplace(e.twin, ve);
+        math::vec3f epos;
+        if (e.face && e.twin->face) {
+            auto f0 = face_lut.at(e.face)->co;
+            auto f1 = face_lut.at(e.twin->face)->co;
+            epos = (f0 + f1 + e0 + e1) * 0.25f;
+        } else {
+            epos = (e0 + e1) * 0.5f;
         }
+
+        vert_leaving.emplace(e.origin, &e);
+        vert_leaving.emplace(e.twin->origin, e.twin);
+
+        auto ve = &that.vert.emplace_back();
+        ve->co = epos;
+        edge_lut.emplace(&e, ve);
+        edge_lut.emplace(e.twin, ve);
     }
 
     for (auto const &v: vert) {
@@ -75,6 +76,9 @@ DCEL DCEL::subdivision()
             }
         }
 
+        [[unlikely]] if (!n || !nface)
+            continue;
+
         vpos *= 1.f / n;
         vpos += favg * (1.f / nface);
         vpos += (n - 3) * v.co;
@@ -86,26 +90,25 @@ DCEL DCEL::subdivision()
     }
 
     for (auto const &[f, vf]: face_lut) {
-        auto e0 = f->first;
-        auto e_prev = e0;
-        e0 = e0->next;
-        auto e = e0;
+        auto e0 = f->first, e = e0;
 
         auto lve = edge_lut.at(e);
         auto lte0 = &that.edge.emplace_back();
         auto lte1 = &that.edge.emplace_back();
+        auto lte3 = &that.edge.emplace_back();
         lte0->twin = lte1;
         lte1->twin = lte0;
         lte0->origin = const_cast<Vert *>(vf);
         lte1->origin = const_cast<Vert *>(lve);
+        lte3->origin = const_cast<Vert *>(lve);
 
-        auto lte3 = &that.edge.emplace_back();
         auto ltf = &that.face.emplace_back();
         ltf->first = lte0;
         lte0->face = ltf;
         // lte1->face = lltf;
         lte0->next = lte3;
         // lte1->next = llte0;
+        lte3->face = ltf;
 
         auto lte2 = &that.edge.emplace_back();
         // lte2->origin = const_cast<Vert *>(llve);
@@ -113,22 +116,29 @@ DCEL DCEL::subdivision()
         lte2->next = lte1;
         // llte3->next = lte2;
 
-        do {
+        auto olte1 = lte1;
+        auto olte2 = lte2;
+
+        e = e->next;
+
+        while (e != e0) {
             auto ve = edge_lut.at(e);
             auto te0 = &that.edge.emplace_back();
             auto te1 = &that.edge.emplace_back();
+            auto te3 = &that.edge.emplace_back();
             te0->twin = te1;
             te1->twin = te0;
             te0->origin = const_cast<Vert *>(vf);
             te1->origin = const_cast<Vert *>(ve);
+            te3->origin = const_cast<Vert *>(ve);
 
-            auto te3 = &that.edge.emplace_back();
             auto tf = &that.face.emplace_back();
             tf->first = te0;
             te0->face = tf;
             te1->face = ltf;
             te0->next = te3;
             te1->next = lte0;
+            te3->face = tf;
 
             auto te2 = &that.edge.emplace_back();
             te2->origin = const_cast<Vert *>(lve);
@@ -143,9 +153,14 @@ DCEL DCEL::subdivision()
             ltf = tf;
             lte2 = te2;
 
-            e_prev = e;
             e = e->next;
-        } while (e != e0);
+        }
+
+        olte1->face = ltf;
+        olte1->next = lte0;
+        olte2->origin = const_cast<Vert *>(lve);
+        olte2->face = ltf;
+        lte3->next = olte2;
     }
 
     return that;
