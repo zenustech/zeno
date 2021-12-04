@@ -2,8 +2,8 @@
 #include <zeno/zty/mesh/DCEL.h>
 #include <zeno/zty/mesh/Mesh.h>
 #include <unordered_map>
+#include <optional>
 #include <vector>
-#include <tuple>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -61,28 +61,45 @@ DCEL DCEL::subdivision()
     }
 
     for (auto const &v: vert) {
-        auto [it0, it1] = vert_leaving.equal_range(&v);
-
-        uint32_t n = 0, nface = 0;
-        math::vec3f vpos(0);
-        math::vec3f favg(0);
-        for (auto it = it0; it != it1; ++it) {
-            auto e = it->second;
-            vpos += e->origin->co + e->twin->origin->co;
-            n++;
-            if (e->face) {
-                favg += face_lut.at(e->face)->co;
-                nface++;
-            }
-        }
-
-        [[unlikely]] if (!n || !nface)
+        auto eqr = vert_leaving.equal_range(&v);
+        [[unlikely]] if (eqr.first == eqr.second)
             continue;
 
-        vpos *= 1.f / n;
-        vpos += favg * (1.f / nface);
-        vpos += (n - 3) * v.co;
-        vpos *= 1.f / n;
+        auto vpos = [&] {
+            uint32_t n = 0;
+            math::vec3f vpos(0);
+            math::vec3f favg(0);
+            for (auto it = eqr.first; it != eqr.second; ++it) {
+                auto e = it->second;
+                vpos += e->origin->co + e->twin->origin->co;
+                if (e->face) {
+                    favg += face_lut.at(e->face)->co;
+                } else {
+                    uint32_t n = 0, ne = 0;
+                    math::vec3f vpos(0);
+                    for (auto it = eqr.first; it != eqr.second; ++it) {
+                        auto e = it->second;
+                        if (!e->face || !e->twin->face) {
+                            vpos += e->origin->co + e->twin->origin->co;
+                            ne++;
+                        }
+                        n++;
+                    }
+                    [[likely]] if (ne)
+                        vpos *= 3.f / ne;
+                    vpos += (n - 1.5f) * v.co;
+                    vpos *= 1.f / n;
+                    return vpos;
+                }
+                n++;
+            }
+
+            vpos += favg;
+            vpos *= 1.f / n;
+            vpos += (n - 3) * v.co;
+            vpos *= 1.f / n;
+            return vpos;
+        }();
 
         auto vv = &that.vert.emplace_back();
         vv->co = vpos;
