@@ -42,10 +42,6 @@ DCEL::DCEL(DCEL const &that)
         face_lut.emplace(&o, n);
     }
 
-    for (auto &o: vert) {
-        o.leaving = edge_lut.at(o.leaving);
-    }
-
     for (auto &o: edge) {
         o.origin = vert_lut.at(o.origin);
         o.twin = edge_lut.at(o.twin);

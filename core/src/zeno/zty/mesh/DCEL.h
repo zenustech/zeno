@@ -20,7 +20,6 @@ struct DCEL
 
     struct Vert
     {
-        Edge *leaving;
         math::vec3f co;
     };
 

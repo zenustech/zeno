@@ -17,7 +17,7 @@ DCEL::operator Mesh() const
     uint32_t nvert = 0;
     for (auto const &v: vert) {
         vert_lut.emplace(&v, nvert);
-        mesh.vert.emplace_back(v.co[0], v.co[1], v.co[2]);
+        mesh.vert.push_back(v.co);
         nvert++;
     }
 
@@ -43,9 +43,7 @@ DCEL::DCEL(Mesh const &mesh)
     vert_lut.reserve(mesh.vert.size());
     for (auto const &pos: mesh.vert) {
         auto v = &vert.emplace_back();
-        v->co[0] = pos[0];
-        v->co[1] = pos[1];
-        v->co[2] = pos[2];
+        v->co = pos;
         vert_lut.push_back(v);
     }
 
