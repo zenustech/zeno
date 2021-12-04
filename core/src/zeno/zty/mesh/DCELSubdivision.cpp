@@ -111,7 +111,7 @@ DCEL DCEL::subdivision()
         lte3->face = ltf;
 
         auto lte2 = &that.edge.emplace_back();
-        // lte2->origin = const_cast<Vert *>(llve);
+        lte2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
         // lte2->face = lltf;
         lte2->next = lte1;
         // llte3->next = lte2;
@@ -141,7 +141,7 @@ DCEL DCEL::subdivision()
             te3->face = tf;
 
             auto te2 = &that.edge.emplace_back();
-            te2->origin = const_cast<Vert *>(lve);
+            te2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
             te2->face = ltf;
             te2->next = te1;
             lte3->next = te2;
@@ -158,7 +158,6 @@ DCEL DCEL::subdivision()
 
         olte1->face = ltf;
         olte1->next = lte0;
-        olte2->origin = const_cast<Vert *>(lve);
         olte2->face = ltf;
         lte3->next = olte2;
     }

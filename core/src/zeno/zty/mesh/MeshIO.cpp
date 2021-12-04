@@ -93,19 +93,17 @@ void readMeshFromOBJ(std::istream &in, Mesh &mesh) {
 
 
 void writeMeshToOBJ(std::ostream &out, Mesh const &mesh) {
-    // Write vertices
     for (auto &v : mesh.vert) {
-        out << "v " << v[0] << " " << v[1] << " " << v[2] << "\n";
+        out << 'v' << ' ' << v[0] << ' ' << v[1] << ' ' << v[2] << '\n';
     }
 
     size_t start = 0;
-    // Write indices
     for (auto &p : mesh.poly) {
-        out << "f ";
+        out << 'f';
         for (size_t l = start; l < start + p; ++l) {
-            out << mesh.loop[l] + 1 << " ";
+            out << ' ' << mesh.loop[l] + 1;
         }
-        out << "\n";
+        out << '\n';
         start += p;
     }
 }
