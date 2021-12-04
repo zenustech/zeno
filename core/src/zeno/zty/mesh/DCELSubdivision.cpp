@@ -50,7 +50,7 @@ DCEL DCEL::subdivision()
         auto e1 = vert[edge[edge[e].twin].origin].co;
 
         math::vec3f epos;
-        if (edge[e].face && edge[edge[e].twin].face) {
+        if (edge[e].face != kInvalid && edge[edge[e].twin].face != kInvalid) {
             auto f0 = that.vert[face_lut.at(edge[e].face)].co;
             auto f1 = that.vert[face_lut.at(edge[edge[e].twin].face)].co;
             epos = (f0 + f1 + e0 + e1) * 0.25f;
@@ -76,12 +76,11 @@ DCEL DCEL::subdivision()
         auto vpos = [&] {
             uint32_t n = 0;
             math::vec3f vpos(0);
-            math::vec3f favg(0);
             for (auto it = eqr.first; it != eqr.second; ++it) {
                 auto e = it->second;
                 vpos += vert[edge[e].origin].co + vert[edge[edge[e].twin].origin].co;
                 [[likely]] if (edge[e].face != kInvalid) {
-                    favg += that.vert[face_lut.at(edge[e].face)].co;
+                    vpos += that.vert[face_lut.at(edge[e].face)].co;
                 } else {
                     uint32_t n = 0, ne = 0;
                     math::vec3f vpos(0);
@@ -102,7 +101,6 @@ DCEL DCEL::subdivision()
                 n++;
             }
 
-            vpos += favg;
             vpos *= 1.f / n;
             vpos += (n - 3) * vert[v].co;
             vpos *= 1.f / n;
@@ -117,6 +115,7 @@ DCEL DCEL::subdivision()
     std::unordered_map<uint32_t, uint32_t> tte2_lut;
     std::unordered_map<uint32_t, uint32_t> te3_lut;
     for (uint32_t f = 0; f < face_lut.size(); f++) {
+        auto vf = face_lut[f];
         auto e0 = face[f].first, e = e0;
 
         auto lve = edge_lut.at(e);
@@ -126,7 +125,7 @@ DCEL DCEL::subdivision()
         te3_lut.emplace(e, lte3);
         that.edge[lte0].twin = lte1;
         that.edge[lte1].twin = lte0;
-        that.edge[lte0].origin = face_lut[f];
+        that.edge[lte0].origin = vf;
         that.edge[lte1].origin = lve;
         that.edge[lte3].origin = lve;
 
@@ -154,7 +153,7 @@ DCEL DCEL::subdivision()
             te3_lut.emplace(e, te3);
             that.edge[te0].twin = te1;
             that.edge[te1].twin = te0;
-            that.edge[te0].origin = face_lut[f];
+            that.edge[te0].origin = vf;
             that.edge[te1].origin = ve;
             that.edge[te3].origin = ve;
 
@@ -204,7 +203,7 @@ DCEL DCEL::subdivision()
         }
     }
 
-    for (auto const &[et, te2]: tte2_lut) {
+    for (auto const &[_, te2]: tte2_lut) {
         auto te3 = add(that.edge);
         that.edge[te3].next = kInvalid;
         that.edge[te3].face = kInvalid;

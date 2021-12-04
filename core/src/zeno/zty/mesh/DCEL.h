@@ -14,7 +14,7 @@ struct Mesh;
 
 struct DCEL
 {
-    static constexpr uint32_t kInvalid = 0x7fffffff;
+    static constexpr uint32_t kInvalid = 0xffffffff;
 
     struct Vert
     {
