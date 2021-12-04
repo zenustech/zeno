@@ -72,7 +72,7 @@ DCEL DCEL::subdivision()
             for (auto it = eqr.first; it != eqr.second; ++it) {
                 auto e = it->second;
                 vpos += e->origin->co + e->twin->origin->co;
-                if (e->face) {
+                [[likely]] if (e->face) {
                     favg += face_lut.at(e->face)->co;
                 } else {
                     uint32_t n = 0, ne = 0;
@@ -106,6 +106,8 @@ DCEL DCEL::subdivision()
         vert_lut.emplace(&v, vv);
     }
 
+    std::unordered_map<Edge const *, Edge const *> tte2_lut;
+    std::unordered_map<Edge const *, Edge const *> te3_lut;
     for (auto const &[f, vf]: face_lut) {
         auto e0 = f->first, e = e0;
 
@@ -113,6 +115,7 @@ DCEL DCEL::subdivision()
         auto lte0 = &that.edge.emplace_back();
         auto lte1 = &that.edge.emplace_back();
         auto lte3 = &that.edge.emplace_back();
+        te3_lut.emplace(e, lte3);
         lte0->twin = lte1;
         lte1->twin = lte0;
         lte0->origin = const_cast<Vert *>(vf);
@@ -128,6 +131,7 @@ DCEL DCEL::subdivision()
         lte3->face = ltf;
 
         auto lte2 = &that.edge.emplace_back();
+        tte2_lut.emplace(e->twin, lte2);
         lte2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
         // lte2->face = lltf;
         lte2->next = lte1;
@@ -143,6 +147,7 @@ DCEL DCEL::subdivision()
             auto te0 = &that.edge.emplace_back();
             auto te1 = &that.edge.emplace_back();
             auto te3 = &that.edge.emplace_back();
+            te3_lut.emplace(e, te3);
             te0->twin = te1;
             te1->twin = te0;
             te0->origin = const_cast<Vert *>(vf);
@@ -158,6 +163,7 @@ DCEL DCEL::subdivision()
             te3->face = tf;
 
             auto te2 = &that.edge.emplace_back();
+            tte2_lut.emplace(e->twin, te2);
             te2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
             te2->face = ltf;
             te2->next = te1;
@@ -177,6 +183,11 @@ DCEL DCEL::subdivision()
         olte1->next = lte0;
         olte2->face = ltf;
         lte3->next = olte2;
+    }
+
+    for (auto const &[e, te3]: te3_lut) {
+        if (auto it = tte2_lut.find(e); it != tte2_lut.end()) {
+        }
     }
 
     return that;
