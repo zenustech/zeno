@@ -16,7 +16,7 @@ int main()
 
     {
         zty::DCEL dcel1(mesh1);
-        mesh1 = (zty::Mesh)dcel1;
+        mesh1 = (zty::Mesh)dcel1.subdivision();
     }
 
 

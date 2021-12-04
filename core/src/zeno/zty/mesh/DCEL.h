@@ -49,7 +49,7 @@ struct DCEL
     explicit DCEL(Mesh const &mesh);
     explicit operator Mesh() const;
 
-    void subdivision();
+    DCEL subdivision();
 };
 
 
