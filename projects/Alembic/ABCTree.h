@@ -25,8 +25,8 @@ struct ABCTree : IObjectClone<ABCTree> {
             for (auto const &ch: children)
                 if (!ch->visitPrims(func))
                     return false;
-            return true;
         }
+        return true;
     }
 };
 
