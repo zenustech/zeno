@@ -13,9 +13,9 @@ namespace zty {
 DCEL DCEL::subdivision()
 {
     DCEL that;
-    std::unordered_map<Vert const *, Vert const *> vert_lut;
-    std::unordered_map<Edge const *, Vert const *> edge_lut;
-    std::unordered_map<Face const *, Vert const *> face_lut;
+    std::unordered_map<Vert const *, Vert *> vert_lut;
+    std::unordered_map<Edge const *, Vert *> edge_lut;
+    std::unordered_map<Face const *, Vert *> face_lut;
 
     for (auto const &f: face) {
         auto e = f.first;
@@ -106,8 +106,8 @@ DCEL DCEL::subdivision()
         vert_lut.emplace(&v, vv);
     }
 
-    std::unordered_map<Edge const *, Edge const *> tte2_lut;
-    std::unordered_map<Edge const *, Edge const *> te3_lut;
+    std::unordered_map<Edge const *, Edge *> tte2_lut;
+    std::unordered_map<Edge const *, Edge *> te3_lut;
     for (auto const &[f, vf]: face_lut) {
         auto e0 = f->first, e = e0;
 
@@ -118,9 +118,9 @@ DCEL DCEL::subdivision()
         te3_lut.emplace(e, lte3);
         lte0->twin = lte1;
         lte1->twin = lte0;
-        lte0->origin = const_cast<Vert *>(vf);
-        lte1->origin = const_cast<Vert *>(lve);
-        lte3->origin = const_cast<Vert *>(lve);
+        lte0->origin = vf;
+        lte1->origin = lve;
+        lte3->origin = lve;
 
         auto ltf = &that.face.emplace_back();
         ltf->first = lte0;
@@ -132,7 +132,7 @@ DCEL DCEL::subdivision()
 
         auto lte2 = &that.edge.emplace_back();
         tte2_lut.emplace(e->twin, lte2);
-        lte2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
+        lte2->origin = vert_lut.at(e->origin);
         // lte2->face = lltf;
         lte2->next = lte1;
         // llte3->next = lte2;
@@ -150,9 +150,9 @@ DCEL DCEL::subdivision()
             te3_lut.emplace(e, te3);
             te0->twin = te1;
             te1->twin = te0;
-            te0->origin = const_cast<Vert *>(vf);
-            te1->origin = const_cast<Vert *>(ve);
-            te3->origin = const_cast<Vert *>(ve);
+            te0->origin = vf;
+            te1->origin = ve;
+            te3->origin = ve;
 
             auto tf = &that.face.emplace_back();
             tf->first = te0;
@@ -164,7 +164,7 @@ DCEL DCEL::subdivision()
 
             auto te2 = &that.edge.emplace_back();
             tte2_lut.emplace(e->twin, te2);
-            te2->origin = const_cast<Vert *>(vert_lut.at(e->origin));
+            te2->origin = vert_lut.at(e->origin);
             te2->face = ltf;
             te2->next = te1;
             lte3->next = te2;
@@ -187,6 +187,9 @@ DCEL DCEL::subdivision()
 
     for (auto const &[e, te3]: te3_lut) {
         if (auto it = tte2_lut.find(e); it != tte2_lut.end()) {
+            auto te2 = it->second;
+            te2->twin = te3;
+            te3->twin = te2;
         }
     }
 
