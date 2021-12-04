@@ -37,7 +37,7 @@ DCEL DCEL::subdivision()
         favg *= 1.f / fnum;
 
         auto vf = add(that.vert);
-        vert[vf].co = favg;
+        that.vert[vf].co = favg;
         face_lut.emplace(f, vf);
     }
 
@@ -51,8 +51,8 @@ DCEL DCEL::subdivision()
 
         math::vec3f epos;
         if (edge[e].face && edge[edge[e].twin].face) {
-            auto f0 = vert[face_lut.at(edge[e].face)].co;
-            auto f1 = vert[face_lut.at(edge[edge[e].twin].face)].co;
+            auto f0 = that.vert[face_lut.at(edge[e].face)].co;
+            auto f1 = that.vert[face_lut.at(edge[edge[e].twin].face)].co;
             epos = (f0 + f1 + e0 + e1) * 0.25f;
         } else {
             epos = (e0 + e1) * 0.5f;
@@ -62,7 +62,7 @@ DCEL DCEL::subdivision()
         vert_leaving.emplace(edge[edge[e].twin].origin, edge[e].twin);
 
         auto ve = add(that.vert);
-        vert[ve].co = epos;
+        that.vert[ve].co = epos;
         edge_lut.emplace(e, ve);
         edge_lut.emplace(edge[e].twin, ve);
     }
@@ -80,7 +80,7 @@ DCEL DCEL::subdivision()
                 auto e = it->second;
                 vpos += vert[edge[e].origin].co + vert[edge[edge[e].twin].origin].co;
                 [[likely]] if (edge[e].face != kInvalid) {
-                    favg += vert[face_lut.at(edge[e].face)].co;
+                    favg += that.vert[face_lut.at(edge[e].face)].co;
                 } else {
                     uint32_t n = 0, ne = 0;
                     math::vec3f vpos(0);
@@ -109,7 +109,7 @@ DCEL DCEL::subdivision()
         }();
 
         auto vv = add(that.vert);
-        vert[vv].co = vpos;
+        that.vert[vv].co = vpos;
         vert_lut.emplace(v, vv);
     }
 
@@ -123,22 +123,22 @@ DCEL DCEL::subdivision()
         auto lte1 = add(that.edge);
         auto lte3 = add(that.edge);
         te3_lut.emplace(e, lte3);
-        edge[lte0].twin = lte1;
-        edge[lte1].twin = lte0;
-        edge[lte0].origin = vf;
-        edge[lte1].origin = lve;
-        edge[lte3].origin = lve;
+        that.edge[lte0].twin = lte1;
+        that.edge[lte1].twin = lte0;
+        that.edge[lte0].origin = vf;
+        that.edge[lte1].origin = lve;
+        that.edge[lte3].origin = lve;
 
         auto ltf = add(that.face);
-        face[ltf].first = lte0;
-        edge[lte0].face = ltf;
-        edge[lte0].next = lte3;
-        edge[lte3].face = ltf;
+        that.face[ltf].first = lte0;
+        that.edge[lte0].face = ltf;
+        that.edge[lte0].next = lte3;
+        that.edge[lte3].face = ltf;
 
         auto lte2 = add(that.edge);
         tte2_lut.emplace(edge[e].twin, lte2);
-        edge[lte2].origin = vert_lut.at(edge[e].origin);
-        edge[lte2].next = lte1;
+        that.edge[lte2].origin = vert_lut.at(edge[e].origin);
+        that.edge[lte2].next = lte1;
 
         auto olte1 = lte1;
         auto olte2 = lte2;
@@ -151,26 +151,26 @@ DCEL DCEL::subdivision()
             auto te1 = add(that.edge);
             auto te3 = add(that.edge);
             te3_lut.emplace(e, te3);
-            edge[te0].twin = te1;
-            edge[te1].twin = te0;
-            edge[te0].origin = vf;
-            edge[te1].origin = ve;
-            edge[te3].origin = ve;
+            that.edge[te0].twin = te1;
+            that.edge[te1].twin = te0;
+            that.edge[te0].origin = vf;
+            that.edge[te1].origin = ve;
+            that.edge[te3].origin = ve;
 
             auto tf = add(that.face);
-            face[tf].first = te0;
-            edge[te0].face = tf;
-            edge[te1].face = ltf;
-            edge[te0].next = te3;
-            edge[te1].next = lte0;
-            edge[te3].face = tf;
+            that.face[tf].first = te0;
+            that.edge[te0].face = tf;
+            that.edge[te1].face = ltf;
+            that.edge[te0].next = te3;
+            that.edge[te1].next = lte0;
+            that.edge[te3].face = tf;
 
             auto te2 = add(that.edge);
             tte2_lut.emplace(edge[e].twin, te2);
-            edge[te2].origin = vert_lut.at(edge[e].origin);
-            edge[te2].face = ltf;
-            edge[te2].next = te1;
-            edge[lte3].next = te2;
+            that.edge[te2].origin = vert_lut.at(edge[e].origin);
+            that.edge[te2].face = ltf;
+            that.edge[te2].next = te1;
+            that.edge[lte3].next = te2;
 
             lve = ve;
             lte0 = te0;
@@ -182,33 +182,33 @@ DCEL DCEL::subdivision()
             e = edge[e].next;
         }
 
-        edge[olte1].face = ltf;
-        edge[olte1].next = lte0;
-        edge[olte2].face = ltf;
-        edge[lte3].next = olte2;
+        that.edge[olte1].face = ltf;
+        that.edge[olte1].next = lte0;
+        that.edge[olte2].face = ltf;
+        that.edge[lte3].next = olte2;
     }
 
     for (auto const &[e, te3]: te3_lut) {
         if (auto it = tte2_lut.find(e); it != tte2_lut.end()) {
             auto te2 = it->second;
-            edge[te2].twin = te3;
-            edge[te3].twin = te2;
+            that.edge[te2].twin = te3;
+            that.edge[te3].twin = te2;
             tte2_lut.erase(it);
         } else {
             auto te2 = add(that.edge);
-            edge[te2].next = kInvalid;
-            edge[te2].face = kInvalid;
-            edge[te2].twin = te3;
-            edge[te3].twin = te2;
+            that.edge[te2].next = kInvalid;
+            that.edge[te2].face = kInvalid;
+            that.edge[te2].twin = te3;
+            that.edge[te3].twin = te2;
         }
     }
 
     for (auto const &[et, te2]: tte2_lut) {
         auto te3 = add(that.edge);
-        edge[te3].next = kInvalid;
-        edge[te3].face = kInvalid;
-        edge[te3].twin = te2;
-        edge[te2].twin = te3;
+        that.edge[te3].next = kInvalid;
+        that.edge[te3].face = kInvalid;
+        that.edge[te3].twin = te2;
+        that.edge[te2].twin = te3;
     }
 
     return that;

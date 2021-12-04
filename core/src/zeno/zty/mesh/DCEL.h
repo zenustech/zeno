@@ -23,15 +23,15 @@ struct DCEL
 
     struct Edge
     {
-        uint32_t origin;    // Vert
-        uint32_t twin;      // Edge
-        uint32_t next;      // Edge
-        uint32_t face;      // Face
+        uint32_t origin = kInvalid;    // Vert
+        uint32_t twin = kInvalid;      // Edge
+        uint32_t next = kInvalid;      // Edge
+        uint32_t face = kInvalid;      // Face
     };
 
     struct Face
     {
-        uint32_t first;     // Vert
+        uint32_t first = kInvalid;     // Vert
     };
 
     std::vector<Vert> vert;
