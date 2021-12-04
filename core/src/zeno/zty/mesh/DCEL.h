@@ -2,7 +2,7 @@
 
 
 #include <zeno/math/vec.h>
-#include <list>
+#include <vector>
 
 
 ZENO_NAMESPACE_BEGIN
@@ -14,9 +14,7 @@ struct Mesh;
 
 struct DCEL
 {
-    struct Vert;
-    struct Edge;
-    struct Face;
+    static constexpr uint32_t kInvalid = 0x7fffffff;
 
     struct Vert
     {
@@ -25,20 +23,20 @@ struct DCEL
 
     struct Edge
     {
-        Vert *origin;
-        Edge *twin;
-        Edge *next;
-        Face *face;
+        uint32_t origin;    // Vert
+        uint32_t twin;      // Edge
+        uint32_t next;      // Edge
+        uint32_t face;      // Face
     };
 
     struct Face
     {
-        Edge *first;
+        uint32_t first;     // Vert
     };
 
-    std::list<Vert> vert;
-    std::list<Edge> edge;
-    std::list<Face> face;
+    std::vector<Vert> vert;
+    std::vector<Edge> edge;
+    std::vector<Face> face;
 
     DCEL() noexcept;
     DCEL(DCEL const &that);

@@ -13,23 +13,19 @@ DCEL::operator Mesh() const
 {
     Mesh mesh;
 
-    std::unordered_map<Vert const *, uint32_t> vert_lut;
-    uint32_t nvert = 0;
-    for (auto const &v: vert) {
-        vert_lut.emplace(&v, nvert);
-        mesh.vert.push_back(v.co);
-        nvert++;
+    for (uint32_t v = 0; v < vert.size(); v++) {
+        mesh.vert.push_back(vert[v].co);
     }
 
-    for (auto const &f: face) {
-        auto e = f.first;
+    for (uint32_t f = 0; f < face.size(); f++) {
+        auto e = face[f].first;
         uint32_t npoly = 0;
         do {
             npoly++;
-            auto l = vert_lut.at(e->origin);
+            auto l = edge[e].origin;
             mesh.loop.push_back(l);
-            e = e->next;
-        } while (e != f.first);
+            e = edge[e].next;
+        } while (e != face[f].first);
         mesh.poly.push_back(npoly);
     }
 
@@ -37,14 +33,18 @@ DCEL::operator Mesh() const
 }
 
 
+static uint32_t add(auto &a) {
+    auto ret = static_cast<uint32_t>(a.size());
+    a.emplace_back();
+    return ret;
+}
+
+
 DCEL::DCEL(Mesh const &mesh)
 {
-    std::vector<Vert *> vert_lut;
-    vert_lut.reserve(mesh.vert.size());
     for (auto const &pos: mesh.vert) {
-        auto v = &vert.emplace_back();
-        v->co = pos;
-        vert_lut.push_back(v);
+        auto v = add(vert);
+        vert[v].co = pos;
     }
 
     struct MyHash {
@@ -53,42 +53,43 @@ DCEL::DCEL(Mesh const &mesh)
         }
     };
 
-    std::unordered_map<std::pair<uint32_t, uint32_t>, Edge *, MyHash> edge_lut;
+    std::unordered_map<std::pair<uint32_t, uint32_t>, uint32_t, MyHash> edge_lut;
 
     size_t l0 = 0;
     for (auto const &nl: mesh.poly) {
         if (nl < 3) continue;
 
-        auto f = &face.emplace_back();
-        auto e0 = &edge.emplace_back(), e1 = e0;
-        auto v0 = vert_lut.at(mesh.loop[l0 + nl - 1]);
-        f->first = e0;
-        e0->face = f;
-        e0->origin = v0;
-        bool succ = edge_lut.emplace(
+        uint32_t f = add(face);
+        uint32_t e0 = add(edge), e1 = e0;
+        auto v0 = mesh.loop[l0 + nl - 1];
+        face[f].first = e0;
+        edge[e0].face = f;
+        edge[e0].origin = v0;
+
+        [[unlikely]] if (!edge_lut.emplace(
             std::make_pair(
                 mesh.loop[l0 + nl - 1],
                 mesh.loop[l0]),
-            e0).second;
-        [[unlikely]] if (!succ)
+            e0).second)
             throw std::runtime_error("overlap edge");
 
         for (size_t l = l0 + 1; l < l0 + nl; l++) {
-            auto e = &edge.emplace_back();
-            auto v = vert_lut.at(mesh.loop[l - 1]);
-            e->face = f;
-            e->origin = v;
-            bool succ = edge_lut.emplace(
+            auto e = add(edge);
+            auto v = mesh.loop[l - 1];
+            edge[e].face = f;
+            edge[e].origin = v;
+
+            [[unlikely]] if (!edge_lut.emplace(
                 std::make_pair(
                     mesh.loop[l - 1],
                     mesh.loop[l]),
-                e).second;
-            [[unlikely]] if (!succ)
+                e).second)
                 throw std::runtime_error("overlap edge");
-            e1->next = e;
+
+            edge[e1].next = e;
             e1 = e;
         }
-        e1->next = e0;
+        edge[e1].next = e0;
 
         l0 += nl;
     }
@@ -97,14 +98,14 @@ DCEL::DCEL(Mesh const &mesh)
         std::pair ik(k.second, k.first);
         auto it = edge_lut.find(ik);
         if (it != edge_lut.end()) {
-            e->twin = it->second;
+            edge[e].twin = it->second;
         } else {
-            auto e1 = &edge.emplace_back();
-            e1->origin = vert_lut.at(k.second);
-            e1->next = nullptr;  // should inf-face have loop ptr?
-            e1->face = nullptr;
-            e1->twin = e;
-            e->twin = e1;
+            auto e1 = add(edge);
+            edge[e1].origin = k.second;
+            edge[e1].next = kInvalid;
+            edge[e1].face = kInvalid;
+            edge[e1].twin = e;
+            edge[e].twin = e1;
         }
     }
 }
