@@ -190,7 +190,22 @@ DCEL DCEL::subdivision()
             auto te2 = it->second;
             te2->twin = te3;
             te3->twin = te2;
+            tte2_lut.erase(it);
+        } else {
+            auto te2 = &that.edge.emplace_back();
+            te2->next = nullptr;
+            te2->face = nullptr;
+            te2->twin = te3;
+            te3->twin = te2;
         }
+    }
+
+    for (auto const &[et, te2]: tte2_lut) {
+        auto te3 = &that.edge.emplace_back();
+        te3->next = nullptr;
+        te3->face = nullptr;
+        te3->twin = te2;
+        te2->twin = te3;
     }
 
     return that;
