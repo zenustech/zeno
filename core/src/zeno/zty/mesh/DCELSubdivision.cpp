@@ -53,21 +53,22 @@ DCEL DCEL::subdivision()
 
     for (auto const &v: vert) {
         auto [it0, it1] = vert_leaving.equal_range(&v);
-        auto favg = face_lut.at(it0->second->face)->co;
 
         uint32_t n = 0;
         math::vec3f vpos(0);
         for (auto it = it0; it != it1; ++it) {
             auto e = it->second;
-            auto epos_x2 = e->origin->co + e->twin->origin->co;
-            vpos += epos_x2 + favg;
+            auto eavg_x2 = e->origin->co + e->twin->origin->co;
+            auto favg = face_lut.at(e->face)->co;
+            vpos += eavg_x2 + favg;
             n++;
         }
 
+        vpos *= 1.f / n;
         vpos += (n - 3) * v.co;
         vpos *= 1.f / n;
 
-        if (0) if (!vert_lut.contains(&v)) {
+        if (!vert_lut.contains(&v)) {
             auto vv = &ret.vert.emplace_back();
             vv->co = vpos;
             vert_lut.emplace(&v, vv);
