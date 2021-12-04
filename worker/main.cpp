@@ -1,6 +1,7 @@
-#include <zeno/zty/mesh/MeshBevel.h>
 #include <zeno/zty/mesh/MeshTriangulate.h>
+#include <zeno/zty/mesh/MeshSubdivision.h>
 #include <zeno/zty/mesh/MeshIO.h>
+#include <zeno/zty/mesh/DCEL.h>
 #include <fstream>
 
 int main()
@@ -10,11 +11,12 @@ int main()
         std::ifstream ifs("models/cube.obj");
         if (!ifs) throw std::runtime_error("mesh1 file read fail");
         readMeshFromOBJ(ifs, mesh1);
+        meshSubdivisionSimple(mesh1);
     }
 
     {
-        zty::MeshBevel bevel;
-        bevel(mesh1);
+        zty::DCEL dcel1(mesh1);
+        mesh1 = (zty::Mesh)dcel1;
     }
 
 

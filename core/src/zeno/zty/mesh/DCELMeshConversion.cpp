@@ -9,6 +9,34 @@ ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
+DCEL::operator Mesh() const
+{
+    Mesh mesh;
+
+    std::unordered_map<Vert const *, uint32_t> vert_lut;
+    uint32_t nvert = 0;
+    for (auto const &v: vert) {
+        vert_lut.emplace(&v, nvert);
+        mesh.vert.emplace_back(v.co[0], v.co[1], v.co[2]);
+        nvert++;
+    }
+
+    for (auto const &f: face) {
+        auto e = f.first;
+        uint32_t npoly = 0;
+        do {
+            npoly++;
+            auto l = vert_lut.at(e->origin);
+            mesh.loop.push_back(l);
+            e = e->next;
+        } while (e != f.first);
+        mesh.poly.push_back(npoly);
+    }
+
+    return mesh;
+}
+
+
 DCEL::DCEL(Mesh const &mesh)
 {
     std::vector<Vert *> vert_lut;
@@ -22,7 +50,7 @@ DCEL::DCEL(Mesh const &mesh)
     }
 
     struct MyHash {
-        size_t operator()(std::pair<uint32_t, uint32_t> const &p) const {
+        inline size_t operator()(std::pair<uint32_t, uint32_t> const &p) const {
             return std::hash<uint32_t>{}(p.first) ^ std::hash<uint32_t>{}(p.second);
         }
     };

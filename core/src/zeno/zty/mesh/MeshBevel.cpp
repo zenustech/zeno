@@ -72,11 +72,14 @@ void MeshBevel::operator()(Mesh &mesh) const {
         start += npoly;
     }
 
-    for (size_t i = 0; i < alter.size(); i++) {
-        auto [ax, ay, az, aw] = alter[i];
-        [[unlikely]] if (!aw) continue;
-        auto apos = math::vec3f(ax, ay, az) / aw;
-        mesh.vert[i] = lerp(mesh.vert[i], apos, smo * 0.5f);
+    if (smo) {
+        // TODO: WIP!
+        for (size_t i = 0; i < alter.size(); i++) {
+            auto [ax, ay, az, aw] = alter[i];
+            [[unlikely]] if (!aw) continue;
+            auto apos = math::vec3f(ax, ay, az) / aw;
+            mesh.vert[i] = lerp(mesh.vert[i], apos, smo * 0.5f);
+        }
     }
 
     mesh.vert.insert(mesh.vert.end(), new_vert.begin(), new_vert.end());

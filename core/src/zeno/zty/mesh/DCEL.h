@@ -21,7 +21,7 @@ struct DCEL
     struct Vert
     {
         Edge *leaving;
-        float co[3];
+        math::vec3f co;
     };
 
     struct Edge
@@ -48,6 +48,9 @@ struct DCEL
     DCEL &operator=(DCEL &&that) noexcept;
 
     explicit DCEL(Mesh const &mesh);
+    explicit operator Mesh() const;
+
+    void subdivision();
 };
 
 

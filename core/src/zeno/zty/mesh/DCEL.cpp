@@ -9,8 +9,12 @@ namespace zty {
 
 DCEL::DCEL() noexcept = default;
 DCEL::DCEL(DCEL &&that) noexcept = default;
-DCEL &DCEL::operator=(DCEL const &that) = default;
 DCEL &DCEL::operator=(DCEL &&that) noexcept = default;
+
+
+DCEL &DCEL::operator=(DCEL const &that) {
+    return this->operator=(DCEL(that));
+}
 
 
 DCEL::DCEL(DCEL const &that)
