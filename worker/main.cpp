@@ -17,8 +17,6 @@ int main()
     {
         zty::DCEL dcel1(mesh1);
         dcel1 = dcel1.subdivision();
-        dcel1 = dcel1.subdivision();
-        dcel1 = dcel1.subdivision();
         mesh1 = (zty::Mesh)dcel1;
     }
 

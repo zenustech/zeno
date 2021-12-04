@@ -125,17 +125,13 @@ DCEL DCEL::subdivision()
         auto ltf = &that.face.emplace_back();
         ltf->first = lte0;
         lte0->face = ltf;
-        // lte1->face = lltf;
         lte0->next = lte3;
-        // lte1->next = llte0;
         lte3->face = ltf;
 
         auto lte2 = &that.edge.emplace_back();
         tte2_lut.emplace(e->twin, lte2);
         lte2->origin = vert_lut.at(e->origin);
-        // lte2->face = lltf;
         lte2->next = lte1;
-        // llte3->next = lte2;
 
         auto olte1 = lte1;
         auto olte2 = lte2;
