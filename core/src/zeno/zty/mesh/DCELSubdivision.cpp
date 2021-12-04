@@ -36,14 +36,22 @@ DCEL DCEL::subdivision()
 
     std::unordered_multimap<Vert const *, Edge const *> vert_leaving;
     for (auto const &e: edge) {
-        auto f0 = face_lut.at(e.face)->co;
-        auto f1 = face_lut.at(e.twin->face)->co;
-        auto e0 = e.origin->co;
-        auto e1 = e.twin->origin->co;
-        auto epos = (f0 + f1 + e0 + e1) * 0.25f;
-        vert_leaving.emplace(e.origin, &e);
-
         if (!edge_lut.contains(&e)) {
+            auto e0 = e.origin->co;
+            auto e1 = e.twin->origin->co;
+
+            math::vec3f epos;
+            if (e.face && e.twin->face) {
+                auto f0 = face_lut.at(e.face)->co;
+                auto f1 = face_lut.at(e.twin->face)->co;
+                epos = (f0 + f1 + e0 + e1) * 0.25f;
+            } else {
+                epos = (e0 + e1) * 0.5f;
+            }
+
+            vert_leaving.emplace(e.origin, &e);
+            vert_leaving.emplace(e.twin->origin, e.twin);
+
             auto ve = &that.vert.emplace_back();
             ve->co = epos;
             edge_lut.emplace(&e, ve);
