@@ -62,7 +62,6 @@ void Executor::sortexec(Node *root) {
         });
     }
 
-    std::set<Node *> visited;
     for (auto *node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);

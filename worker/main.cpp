@@ -9,7 +9,8 @@ int main()
         ;
     sub.subnetOut->setInput(0, n, 0);
     dop::Executor exec;
-    exec.resolve(dop::Input{.node = n, .sockid = 0});
+    sub.apply();
+    //exec.resolve(dop::Input{.node = &sub, .sockid = 0});
 
     return 0;
 }
