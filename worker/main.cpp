@@ -1,32 +1,12 @@
-#include <zeno/zty/mesh/MeshTriangulate.h>
-#include <zeno/zty/mesh/MeshSubdivision.h>
-#include <zeno/zty/mesh/MeshIO.h>
-#include <zeno/zty/mesh/DCEL.h>
+#include <zeno/dop/dop.h>
 #include <fstream>
 
 int main()
 {
-    zty::Mesh mesh1;
-    {
-        std::ifstream ifs("/home/bate/zeno/models/cube.obj");
-        if (!ifs) throw std::runtime_error("mesh1 file read fail");
-        readMeshFromOBJ(ifs, mesh1);
-        meshSubdivisionSimple(mesh1);
-    }
-
-    {
-        zty::DCEL dcel1(mesh1);
-        dcel1 = dcel1.subdivision();
-        dcel1 = dcel1.subdivision();
-        mesh1 = (zty::Mesh)dcel1;
-    }
-
-
-    {
-        std::ofstream ofs("/tmp/a.obj");
-        if (!ofs) throw std::runtime_error("mesh1 file write fail");
-        writeMeshToOBJ(ofs, mesh1);
-    }
+    dop::SubnetNode sub;
+    auto n = sub.addNode(dop::descriptor_table().at("SleepFor"));
+    n->inputs.at(0).value = ztd::make_any(1000);
+    n->apply();
 
     return 0;
 }

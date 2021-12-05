@@ -13,9 +13,14 @@ SubnetNode::SubnetNode()
 {
 }
 
-
 SubnetNode::~SubnetNode() = default;
 
+Node *SubnetNode::addNode(Descriptor const &desc) {
+    auto node = desc.create();
+    auto node_ptr = node.get();
+    subNodes.insert(std::move(node));
+    return node_ptr;
+}
 
 void SubnetNode::apply() {
     subnetIn->outputs.resize(inputs.size());
@@ -31,7 +36,6 @@ void SubnetNode::apply() {
     }
 }
 
-
 ZENO_DOP_DEFCLASS(SubnetNode, {{
     "misc", "a custom subnet to combine many nodes into one",
 }, {
@@ -43,9 +47,7 @@ SubnetIn::SubnetIn(SubnetNode *subnet)
     : subnet(subnet)
 {}
 
-
 SubnetIn::~SubnetIn() = default;
-
 
 void SubnetIn::apply() {
 }
@@ -55,9 +57,7 @@ SubnetOut::SubnetOut(SubnetNode *subnet)
     : subnet(subnet)
 {}
 
-
 SubnetOut::~SubnetOut() = default;
-
 
 void SubnetOut::apply() {
 }

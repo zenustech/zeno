@@ -74,7 +74,7 @@ void Executor::sortexec(Node *root) {
 
 
 void Executor::touch(Input const &input) {
-    if (!input.node) {
+    if (input.node) {
         visited.insert(input.node);
         current_node = input.node;
         input.node->preapply(this);

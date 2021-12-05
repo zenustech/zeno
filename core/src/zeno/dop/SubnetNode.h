@@ -1,7 +1,6 @@
 #pragma once
 
 #include <zeno/dop/Node.h>
-#include <zeno/dop/SceneGraph.h>
 
 ZENO_NAMESPACE_BEGIN
 namespace dop {
@@ -9,6 +8,7 @@ namespace dop {
 
 struct SubnetIn;
 struct SubnetOut;
+struct Descriptor;
 
 
 struct SubnetNode : Node {
@@ -19,6 +19,7 @@ struct SubnetNode : Node {
     SubnetNode();
     ~SubnetNode() override;
     void apply() override;
+    Node *addNode(Descriptor const &desc);
 };
 
 
