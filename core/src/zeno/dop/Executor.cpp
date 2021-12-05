@@ -86,7 +86,7 @@ ztd::any_ptr Executor::resolve(Input const &input) {
     if (input.node) {
         touch(input);
         sortexec(input.node);
-        return input.node->outputs.at(input.sockid);
+        return input.node->getOutput(input.sockid);
     } else {
         return input.value;
     }
@@ -95,7 +95,7 @@ ztd::any_ptr Executor::resolve(Input const &input) {
 
 ztd::any_ptr Executor::getval(Input const &input) {
     if (input.node) {
-        return input.node->outputs.at(input.sockid);
+        return input.node->getOutput(input.sockid);
     } else {
         return input.value;
     }

@@ -23,11 +23,8 @@ Node *SubnetNode::addNode(Descriptor const &desc) {
 }
 
 void SubnetNode::apply() {
-    subnetIn->outputs.resize(inputs.size());
-    subnetOut->inputs.resize(outputs.size());
-
     for (int i = 0; i < inputs.size(); i++) {
-        subnetIn->outputs[i] = get_input(i);
+        subnetIn->set_output(i, get_input(i));
     }
 
     Executor exec;

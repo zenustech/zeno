@@ -13,8 +13,8 @@ struct Descriptor;
 
 struct SubnetNode : Node {
     std::set<std::unique_ptr<Node>> subNodes;
-    std::unique_ptr<SubnetIn> subnetIn;
-    std::unique_ptr<SubnetOut> subnetOut;
+    std::unique_ptr<SubnetIn> const subnetIn;
+    std::unique_ptr<SubnetOut> const subnetOut;
 
     SubnetNode();
     ~SubnetNode() override;
@@ -24,7 +24,7 @@ struct SubnetNode : Node {
 
 
 struct SubnetIn : Node {
-    SubnetNode *subnet{};
+    SubnetNode *const subnet;
 
     explicit SubnetIn(SubnetNode *subnet);
     ~SubnetIn() override;
@@ -33,7 +33,7 @@ struct SubnetIn : Node {
 
 
 struct SubnetOut : Node {
-    SubnetNode *subnet{};
+    SubnetNode *const subnet;
 
     explicit SubnetOut(SubnetNode *subnet);
     ~SubnetOut() override;

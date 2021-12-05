@@ -15,8 +15,8 @@ ztd::map<std::string, Descriptor> &descriptor_table() {
 std::unique_ptr<Node> Descriptor::create() const {
     auto node = factory();
     node->desc = const_cast<Descriptor *>(this);
-    node->inputs.resize(inputs.size());
-    node->outputs.resize(outputs.size());
+    //node->inputs.resize(inputs.size());
+    //node->outputs.resize(outputs.size());
     return node;
 }
 

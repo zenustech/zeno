@@ -25,6 +25,22 @@ struct vector : std::vector<T> {
         }
         return this->operator[](i);
     }
+
+    T &touch(size_t i) {
+        auto n = this->size();
+        [[unlikely]] if (i >= n) {
+            this->resize(i + 1);
+        }
+        return this->operator[](i);
+    }
+
+    T touch(size_t i) const {
+        auto n = this->size();
+        [[unlikely]] if (i >= n) {
+            return T{};
+        }
+        return this->operator[](i);
+    }
 };
 
 }

@@ -39,6 +39,10 @@ struct Node {
     [[nodiscard]] ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
 
+    Node *setInput(int idx, ztd::any_ptr val);
+    Node *setInput(int idx, Node *node, int sockid);
+    [[nodiscard]] ztd::any_ptr getOutput(int idx) const;
+
     virtual void preapply(Executor *exec);
     virtual void apply() = 0;
 };
