@@ -7,6 +7,16 @@
 ZENO_NAMESPACE_BEGIN
 namespace dop {
 
+SubnetNode::SubnetNode()
+    : subnetIn(std::make_unique<SubnetIn>(this))
+    , subnetOut(std::make_unique<SubnetOut>(this))
+{
+}
+
+
+SubnetNode::~SubnetNode() = default;
+
+
 void SubnetNode::apply() {
     subnetIn->outputs.resize(inputs.size());
     subnetOut->inputs.resize(outputs.size());
@@ -21,6 +31,7 @@ void SubnetNode::apply() {
     }
 }
 
+
 ZENO_DOP_DEFCLASS(SubnetNode, {{
     "misc", "a custom subnet to combine many nodes into one",
 }, {
@@ -28,8 +39,24 @@ ZENO_DOP_DEFCLASS(SubnetNode, {{
 }});
 
 
+SubnetIn::SubnetIn(SubnetNode *subnet)
+    : subnet(subnet)
+{}
+
+
+SubnetIn::~SubnetIn() = default;
+
+
 void SubnetIn::apply() {
 }
+
+
+SubnetOut::SubnetOut(SubnetNode *subnet)
+    : subnet(subnet)
+{}
+
+
+SubnetOut::~SubnetOut() = default;
 
 
 void SubnetOut::apply() {
