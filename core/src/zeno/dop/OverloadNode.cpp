@@ -9,7 +9,6 @@ namespace dop {
 
 void OverloadNode::apply() {
     FuncContext ctx;
-    FuncSignature sig;
 
     ctx.inputs.reserve(inputs.size());
     for (int i = 0; i < inputs.size(); i++) {

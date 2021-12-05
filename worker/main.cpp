@@ -8,7 +8,7 @@ int main()
 {
     zty::Mesh mesh1;
     {
-        std::ifstream ifs("/tmp/cube.obj");
+        std::ifstream ifs("/home/bate/zeno/models/cube.obj");
         if (!ifs) throw std::runtime_error("mesh1 file read fail");
         readMeshFromOBJ(ifs, mesh1);
         meshSubdivisionSimple(mesh1);

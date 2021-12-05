@@ -2,8 +2,8 @@
 
 
 #define ZENO_DOP_DEFCLASS(Class, ...) \
-    static int _zeno_dop_defclass_##Class = ( \
-ZENO_NAMESPACE::dop::add_descriptor(#Class, std::make_unique<Class>, __VA_ARGS__), \
+static int _zeno_dop_defclass_##Class = ( \
+    ZENO_NAMESPACE::dop::add_descriptor(#Class, std::make_unique<Class>, __VA_ARGS__), \
     1);
 
 
