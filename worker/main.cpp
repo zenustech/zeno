@@ -3,15 +3,14 @@
 
 int main()
 {
-    dop::SubnetNode sub;
-    auto n = sub.addNode(dop::descriptor_table().at("TwiceInt"))
-        ->linkInput(0, sub.subnetIn.get(), 0)
-        ;
-    sub.subnetOut->linkInput(0, n, 0);
+    dop::SubnetNode subnet;
+    auto twiceInt = subnet.addNode(dop::descriptor_table().at("TwiceInt"));
+    twiceInt->linkInput(0, subnet.subnetIn.get(), 0);
+    subnet.subnetOut->linkInput(0, twiceInt, 0);
 
-    sub.setInput(0, ztd::make_any(42));
-    sub.apply();
-    std::cout << value_cast<int>(sub.getOutput(0)) << std::endl;
+    subnet.setInput(0, ztd::make_any(42));
+    subnet.apply();
+    std::cout << value_cast<int>(subnet.getOutput(0)) << std::endl;
 
     return 0;
 }
