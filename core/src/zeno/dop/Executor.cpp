@@ -62,6 +62,7 @@ void Executor::sortexec(Node *root) {
         });
     }
 
+    std::set<Node *> visited;
     for (auto *node: nodes) {
         if (!visited.contains(node)) {
             visited.insert(node);
@@ -75,7 +76,7 @@ void Executor::sortexec(Node *root) {
 
 void Executor::touch(Input const &input) {
     if (input.node) {
-        visited.insert(input.node);
+        touched.insert(input.node);
         current_node = input.node;
         input.node->preapply(this);
     }

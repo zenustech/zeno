@@ -12,7 +12,7 @@ namespace dop {
 
 
 struct Executor {
-    std::set<Node *> visited;
+    std::set<Node *> touched;
     Node *current_node{};
 
     ztd::any_ptr resolve(Input const &input);

@@ -35,8 +35,8 @@ ztd::any_ptr Node::getOutput(int idx) const {
 
 
 void Node::preapply(Executor *exec) {
-    for (auto node: inputs) {
-        exec->touch(node);
+    for (auto const &input: inputs) {
+        exec->touch(input);
     }
 }
 

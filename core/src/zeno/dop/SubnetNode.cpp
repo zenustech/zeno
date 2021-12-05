@@ -28,8 +28,8 @@ void SubnetNode::apply() {
     }
 
     Executor exec;
-    for (int i = 0; i < outputs.size(); i++) {
-        outputs[i] = exec.evaluate(subnetOut->inputs[i]);
+    for (int i = 0; i < subnetOut->inputs.size(); i++) {
+        set_output(i, exec.resolve(subnetOut->inputs[i]));
     }
 }
 

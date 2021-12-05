@@ -8,7 +8,8 @@ int main()
         ->setInput(0, ztd::make_any(42))
         ;
     sub.subnetOut->setInput(0, n, 0);
-    sub.apply();
+    dop::Executor exec;
+    exec.resolve(dop::Input{.node = n, .sockid = 0});
 
     return 0;
 }

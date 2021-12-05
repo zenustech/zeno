@@ -62,10 +62,10 @@ struct ForEnd : dop::Node {
     virtual void preapply(dop::Executor *exec) override {
         auto fordata = value_cast<ForData>(exec->resolve(inputs.at(0)));
         for (int i = 0; i < fordata.times; i++) {
-            auto copied_visited = exec->visited;
-            std::swap(copied_visited, exec->visited);
+            auto copied_touched = exec->touched;
+            std::swap(copied_touched, exec->touched);
             exec->resolve(inputs.at(1));
-            std::swap(copied_visited, exec->visited);
+            std::swap(copied_touched, exec->touched);
         }
     }
 
@@ -84,10 +84,10 @@ ZENO_DOP_DEFCLASS(ForEnd, {{
 #if 0
 struct ListForeach : dop::Node {
     void preapply(std::vector<dop::Node *> &tolink, Executor *exec) override {
-        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), visited));
+        auto cond = ztd::zany_cast<int>(resolve(inputs.at(0), touched));
         for (int i = 0; i < cond; i++) {
-            auto tmp_visited = visited;
-            resolve(inputs.at(1), tmp_visited);
+            auto tmp_touched = touched;
+            resolve(inputs.at(1), tmp_touched);
         }
     }
 
