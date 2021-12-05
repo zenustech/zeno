@@ -40,7 +40,7 @@ struct Node {
     void set_output(int idx, ztd::any_ptr val);
 
     Node *setInput(int idx, ztd::any_ptr val);
-    Node *setInput(int idx, Node *node, int sockid);
+    Node *linkInput(int idx, Node *node, int sockid);
     [[nodiscard]] ztd::any_ptr getOutput(int idx) const;
 
     virtual void preapply(Executor *exec);

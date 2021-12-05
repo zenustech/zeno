@@ -22,7 +22,7 @@ Node *Node::setInput(int idx, ztd::any_ptr val) {
 }
 
 
-Node *Node::setInput(int idx, Node *node, int sockid) {
+Node *Node::linkInput(int idx, Node *node, int sockid) {
     inputs.touch(idx) = Input{.node = node, .sockid = sockid};
     return this;
 }
