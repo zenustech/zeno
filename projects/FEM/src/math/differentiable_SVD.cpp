@@ -17,6 +17,10 @@ int DiffSVD::SVD_Decomposition(const Mat3x3d& F,Mat3x3d& U, Vec3d& Sigma,Mat3x3d
         U.col(2) *= L_det;
     else if(U_det > 0 && V_det < 0)
         V.col(2) *= L_det;
+    else if(U_det < 0 && V_det < 0){
+        U.col(2) *= -1;
+        V.col(2) *= -1;
+    }
 
     Sigma(2) *= L_det;
 
