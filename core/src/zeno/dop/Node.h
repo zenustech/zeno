@@ -34,7 +34,13 @@ struct Node {
     float ypos = 0;
     Descriptor const *desc = nullptr;
 
-    virtual ~Node() = default;
+    Node();
+    virtual ~Node();
+
+    Node(Node &&) = delete;
+    Node &operator=(Node &&) = delete;
+    Node(Node const &) = delete;
+    Node &operator=(Node const &) = delete;
 
     [[nodiscard]] ztd::any_ptr get_input(int idx) const;
     void set_output(int idx, ztd::any_ptr val);
