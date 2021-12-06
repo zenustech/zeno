@@ -8,15 +8,19 @@ ZENO_NAMESPACE_BEGIN
 namespace dop {
 
 SubnetNode::SubnetNode()
-    : subnetIn(std::make_unique<SubnetIn>(this))
-    , subnetOut(std::make_unique<SubnetOut>(this))
+    : subnetIn(std::make_unique<SubnetIn>())
+    , subnetOut(std::make_unique<SubnetOut>())
 {
+    subnetIn->subnet = this;
+    subnetOut->subnet = this;
 }
 
 SubnetNode::~SubnetNode() = default;
 
 Node *SubnetNode::addNode(Descriptor const &desc) {
     auto node = desc.create();
+    node->subnet = this;
+
     auto node_ptr = node.get();
     subNodes.insert(std::move(node));
     return node_ptr;

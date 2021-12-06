@@ -24,8 +24,6 @@ struct SubnetNode : Node {
 
 
 struct SubnetIn : Node {
-    SubnetNode *const subnet;
-
     explicit SubnetIn(SubnetNode *subnet);
     ~SubnetIn() override;
     void apply() override;
@@ -33,8 +31,6 @@ struct SubnetIn : Node {
 
 
 struct SubnetOut : Node {
-    SubnetNode *const subnet;
-
     explicit SubnetOut(SubnetNode *subnet);
     ~SubnetOut() override;
     void apply() override;

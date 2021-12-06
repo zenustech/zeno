@@ -14,6 +14,7 @@ namespace dop {
 
 
 struct Node;
+struct SubnetNode;
 struct Descriptor;
 struct Executor;
 
@@ -28,6 +29,8 @@ struct Input {
 struct Node {
     ztd::vector<Input> inputs;
     ztd::vector<ztd::any_ptr> outputs;
+
+    SubnetNode *subnet = nullptr;
     std::string name;
 
     float xpos = 0;
