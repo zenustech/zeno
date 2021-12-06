@@ -135,37 +135,38 @@ struct ZenoBoundary : IObject {
   using levelset_t = typename ZenoLevelSet::levelset_t;
   using category_e = typename ZenoLevelSet::category_e;
 
-  auto &getLevelSet() noexcept { return *levelset; }
-  const auto &getLevelSet() const noexcept { return *levelset; }
-  template <typename LS> auto getBoundary() noexcept {
+  auto &getSdfField() noexcept { return *levelset; }
+  const auto &getSdfField() const noexcept { return *levelset; }
+  auto &getVelocityField() noexcept { return *velocityField; }
+  const auto &getVelocityField() const noexcept { return *velocityField; }
+  bool hasVelocityField() const noexcept { return velocityField != nullptr; }
+
+  template <typename LS> auto getLevelSetView(LS &&ls) noexcept {
+    using LsT = zs::remove_cvref_t<LS>;
+    if constexpr (zs::is_same_v<LsT, spls_t>) {
+      return zs::proxy<zs::execspace_e::cuda>(FWD(ls));
+    } else
+      return FWD(ls);
+  }
+
+  template <typename LsView> auto getBoundary(LsView &&lsv) noexcept {
     using namespace zs;
-    if constexpr (zs::is_same_v<LS, spls_t>) {
-      auto ret = zs::Collider{
-          proxy<execspace_e::cuda>(std::get<LS>(getLevelSet())), type};
-      ret.s = s;
-      ret.dsdt = dsdt;
-      ret.R = R;
-      ret.omega = omega;
-      ret.b = b;
-      ret.dbdt = dbdt;
-      return ret;
-    } else {
-      auto ret = Collider{std::get<LS>(getLevelSet()), type};
-      ret.s = s;
-      ret.dsdt = dsdt;
-      ret.R = R;
-      ret.omega = omega;
-      ret.b = b;
-      ret.dbdt = dbdt;
-      return ret;
-    }
+
+    auto ret = Collider{lsv, type};
+    ret.s = s;
+    ret.dsdt = dsdt;
+    ret.R = R;
+    ret.omega = omega;
+    ret.b = b;
+    ret.dbdt = dbdt;
+    return ret;
   }
 #if 0
   template <typename LS> auto getBoundary() const noexcept {
     using namespace zs;
     if constexpr (zs::is_same_v<LS, spls_t>) {
       auto ret =
-          Collider{proxy<execspace_e::cuda>(std::get<LS>(getLevelSet())), type};
+          Collider{proxy<execspace_e::cuda>(std::get<LS>(getSdfField())), type};
       ret.s = s;
       ret.dsdt = dsdt;
       ret.R = R;
@@ -174,7 +175,7 @@ struct ZenoBoundary : IObject {
       ret.dbdt = dbdt;
       return ret;
     } else {
-      auto ret = Collider{std::get<LS>(getLevelSet()), type};
+      auto ret = Collider{std::get<LS>(getSdfField()), type};
       ret.s = s;
       ret.dsdt = dsdt;
       ret.R = R;
@@ -187,6 +188,7 @@ struct ZenoBoundary : IObject {
 #endif
 
   levelset_t *levelset{nullptr};
+  levelset_t *velocityField{nullptr};
   zs::collider_e type{zs::collider_e::Sticky};
   /** scale **/
   float s{1};

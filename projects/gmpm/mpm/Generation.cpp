@@ -10,16 +10,20 @@ struct ToZSLevelSet : INode {
     fmt::print(fg(fmt::color::green), "begin executing ToZSLevelSet\n");
     auto ls = IObject::make<ZenoLevelSet>();
 
-    if (has_input<VDBFloatGrid>("VDBFloatGrid")) {
+    if (has_input<VDBFloatGrid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
-      zs::OpenVDBStruct gridPtr =
-          get_input<VDBFloatGrid>("VDBFloatGrid")->m_grid;
-      ls->getLevelSet() = zs::convertFloatGridToSparseLevelSet(
+      zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
+      ls->getLevelSet() = zs::convert_floatgrid_to_sparse_levelset(
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
+    } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
+      // pass in FloatGrid::Ptr
+      zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
+      ls->getLevelSet() = zs::convert_vec3fgrid_to_sparse_levelset(
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::loadFloatGridFromVdbFile(path);
-      ls->getLevelSet() = zs::convertFloatGridToSparseLevelSet(
+      ls->getLevelSet() = zs::convert_floatgrid_to_sparse_levelset(
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
     }
 
@@ -28,7 +32,7 @@ struct ToZSLevelSet : INode {
   }
 };
 ZENDEFNODE(ToZSLevelSet, {
-                             {"VDBFloatGrid", "VDBFloat3Grid"},
+                             {"VDBGrid"},
                              {"ZSLevelSet"},
                              {{"string", "path", ""}},
                              {"MPM"},

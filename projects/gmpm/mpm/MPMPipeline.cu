@@ -216,14 +216,14 @@ ZENDEFNODE(UpdateZSGrid, {
                          });
 
 struct ApplyBoundaryOnZSGrid : INode {
-  template <typename LS>
+  template <typename LsView>
   constexpr void
-  projectBoundary(zs::CudaExecutionPolicy &cudaPol, LS &ls,
+  projectBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
                   ZenoBoundary &boundary,
                   const typename ZenoPartition::table_t &partition,
                   typename ZenoGrid::grid_t &grid) {
     using namespace zs;
-    auto collider = boundary.getBoundary<LS>();
+    auto collider = boundary.getBoundary(lsv);
     cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
             [grid = proxy<execspace_e::cuda>({}, grid),
              table = proxy<execspace_e::cuda>(partition),
@@ -253,9 +253,33 @@ struct ApplyBoundaryOnZSGrid : INode {
     if (has_input<ZenoBoundary>("ZSBoundary")) {
       auto boundary = get_input<ZenoBoundary>("ZSBoundary");
       auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
-      match([&](auto &ls) {
-        projectBoundary(cudaPol, ls, *boundary, partition, grid);
-      })(boundary->getLevelSet());
+#if 0
+      match([&](auto &sdf) {
+        auto sdfLs = boundary->getLevelSetView(sdf);
+        if (boundary->hasVelocityField()) {
+          match([&](auto &vel) mutable {
+            auto velLs = boundary->getLevelSetView(vel);
+            auto ls =
+                SdfVelField<RM_CVREF_T(sdfLs), RM_CVREF_T(velLs)>{sdfLs, velLs};
+            projectBoundary(cudaPol, ls, *boundary, partition, grid);
+          })(boundary->getVelocityField());
+        } else
+          projectBoundary(cudaPol, sdfLs, *boundary, partition, grid);
+      })(boundary->getSdfField());
+#else
+      if (boundary->hasVelocityField()) {
+        match([&](auto &sdf, auto &vel) {
+          auto ls = SdfVelField{boundary->getLevelSetView(sdf),
+                                boundary->getLevelSetView(vel)};
+          projectBoundary(cudaPol, ls, *boundary, partition, grid);
+        })(boundary->getSdfField(), boundary->getVelocityField());
+      } else {
+        match([&](auto &sdf) {
+          projectBoundary(cudaPol, boundary->getLevelSetView(sdf), *boundary,
+                          partition, grid);
+        })(boundary->getSdfField());
+      }
+#endif
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
