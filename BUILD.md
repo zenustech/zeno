@@ -28,7 +28,7 @@ Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y git cmake g++
+sudo apt-get install -y git cmake make g++
 sudo apt-get install -y qt5-default
 ```
 
@@ -37,7 +37,7 @@ sudo apt-get install -y qt5-default
 ### Arch Linux
 
 ```bash
-sudo pacman -S git cmake g++
+sudo pacman -S git cmake make g++
 sudo pacman -S qt5
 ```
 
@@ -120,6 +120,7 @@ build/zeno
 - [VCPKG user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
 - [CMake documentation](https://cmake.org/cmake/help/latest/)
 - [Git documentation](https://git-scm.com/doc)
+- [GitHub documentation](https://docs.github.com/en)
 - [Qt5 documentation](https://doc.qt.io/qt-5/)
 - [C++ references](https://en.cppreference.com/w/)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
