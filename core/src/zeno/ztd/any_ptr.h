@@ -18,14 +18,14 @@ inline namespace _any_ptr_h {
 namespace details {
 
 template <size_t N, class T>
-using numeric_auto_vec = std::conditional_t<N == 0,
+using _numeric_auto_vec = std::conditional_t<N == 0,
       T, math::vec<std::max(N, (size_t)1), T>>;
 
 template <size_t N = 0>
 using numeric_variant = std::variant
-    < numeric_auto_vec<N, bool>
-    , numeric_auto_vec<N, int32_t>
-    , numeric_auto_vec<N, float>
+    < _numeric_auto_vec<N, bool>
+    , _numeric_auto_vec<N, int>
+    , _numeric_auto_vec<N, float>
     >;
 
 struct no_deleter {
