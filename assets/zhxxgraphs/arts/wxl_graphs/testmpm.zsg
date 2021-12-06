@@ -764,33 +764,8 @@
       "path": ""
      },
      "uipos": [
-      1044.6495268924305,
-      114.77527390438249
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "8767248e-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       "635b6174-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3897.787755229084,
-      256.7610417704183
+      1074.450851395742,
+      115.6030884739189
      ],
      "options": [
       "ONCE"
@@ -810,7 +785,7 @@
        null
       ],
       "ZSBoundary": [
-       "8767248e-ToZSBoundary",
+       "5180e944-ToZSBoundary",
        "ZSBoundary",
        null
       ],
@@ -863,17 +838,67 @@
      },
      "params": {},
      "uipos": [
-      1401.8924302788844,
-      135.70717131474103
+      1414.827032927891,
+      101.75383936109866
      ],
      "options": []
+    },
+    "5180e944-ToZSBoundary": {
+     "name": "ToZSBoundary",
+     "inputs": {
+      "ZSLevelSet": [
+       "635b6174-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "translation_rate": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       null
+      ],
+      "scale_rate": [
+       null,
+       null,
+       null
+      ],
+      "ypr_angles": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "sticky"
+     },
+     "uipos": [
+      3864.923944536422,
+      259.92084023178796
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": 2867.703495461471,
-    "y": -1053.2250937014167,
-    "width": 1907.3486328125,
-    "height": 1907.3486328125
+    "x": 481.80265176032526,
+    "y": -882.6217648022965,
+    "width": 1525.87890625,
+    "height": 1525.87890625
    }
   }
  },
@@ -932,6 +957,46 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "AddMuscleFibers": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "AddMuscleFibers2": {
@@ -2629,6 +2694,42 @@
     "openvdb"
    ]
   },
+  "ComputeVonMises": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "by_log1p(base10)",
+     "1"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "ConfigConstitutiveModel": {
    "inputs": [
     [
@@ -2815,6 +2916,81 @@
     "FLIPSolver"
    ]
   },
+  "DeformFiberWithFE": {
+   "inputs": [
+    [
+     "",
+     "restFibers",
+     ""
+    ],
+    [
+     "",
+     "restShape",
+     ""
+    ],
+    [
+     "",
+     "deformedShape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "deformedFiber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "DeformPrimitiveWithFE": {
+   "inputs": [
+    [
+     "",
+     "bindMesh",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "DelUserData": {
    "inputs": [
     [
@@ -2984,6 +3160,71 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "DoTimeStep": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "muscleForce",
+     ""
+    ],
+    [
+     "",
+     "dampForce",
+     ""
+    ],
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "epsilon",
+     ""
+    ],
+    [
+     "",
+     "CT",
+     ""
+    ],
+    [
+     "",
+     "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "curentFrame",
+     ""
+    ],
+    [
+     "",
+     "depa",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "EmptyDict": {
@@ -3571,6 +3812,76 @@
     "list"
    ]
   },
+  "FEMMAddFibers": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "inMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "FEMMeshToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primitive",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FLIPApplyBoundary": {
    "inputs": [
     [
@@ -4012,6 +4323,41 @@
     "FLIPSolver"
    ]
   },
+  "FiberParticleToFEMFiber": {
+   "inputs": [
+    [
+     "",
+     "fp",
+     ""
+    ],
+    [
+     "",
+     "femMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fiberOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FiberParticleToFEMFiber2": {
    "inputs": [
     [
@@ -4034,6 +4380,41 @@
     [
      "",
      "fiberOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "FiberToFiberSegements": {
+   "inputs": [
+    [
+     "",
+     "fibers",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fseg",
      ""
     ],
     [
@@ -5662,6 +6043,36 @@
     "list"
    ]
   },
+  "LoadMatertialHandlesFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "handleFile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outHandles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MPMStepping": {
    "inputs": [
     [
@@ -6122,6 +6533,31 @@
     "numeric"
    ]
   },
+  "MakeDampingForceModel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DampForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeDict": {
    "inputs": [
     [
@@ -6164,6 +6600,112 @@
     [
      "",
      "integrator",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeFEMIntegrator": {
+   "inputs": [
+    [
+     "",
+     "Mesh",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMIntegrator",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum BackwardEuler QuasiStatic",
+     "integType",
+     "BackwardEuler"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeFEMMeshFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "NodeFile",
+     ""
+    ],
+    [
+     "readpath",
+     "EleFile",
+     ""
+    ],
+    [
+     "readpath",
+     "BouFile",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "YoungModulus",
+     ""
+    ],
+    [
+     "",
+     "PossonRatio",
+     ""
+    ],
+    [
+     "",
+     "Damp",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMesh",
      ""
     ],
     [
@@ -6395,6 +6937,31 @@
     "visualize"
    ]
   },
+  "MakeIdentityMatrix": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeIdentityMatrix2": {
    "inputs": [
     [
@@ -6514,6 +7081,42 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MakeMuscleForceModel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MuscleForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum HyperElastic Fiberic",
+     "ForceModel",
+     "HyperElastic"
+    ],
+    [
+     "float",
+     "aniso_strength",
+     "20"
+    ]
+   ],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeMutable": {
@@ -8974,6 +9577,36 @@
     "openvdb"
    ]
   },
+  "PrimitieveOut": {
+   "inputs": [
+    [
+     "",
+     "pin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pout",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "PrimitiveAddAttr": {
    "inputs": [
     [
@@ -11022,6 +11655,41 @@
     "GPUMPM"
    ]
   },
+  "RetrieveRigidTransform": {
+   "inputs": [
+    [
+     "",
+     "refObj",
+     ""
+    ],
+    [
+     "",
+     "newObj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "T",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "RigidGetPressureForce": {
    "inputs": [
     [
@@ -11957,6 +12625,76 @@
     "frame"
    ]
   },
+  "SetInitialDeformation": {
+   "inputs": [
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "deform",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetMaterialFromHandles": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "handles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetRandomSeed": {
    "inputs": [
     [
@@ -11992,6 +12730,41 @@
     "numeric"
    ]
   },
+  "SetUniformActivation": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "uniform_act",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetUniformActivation2": {
    "inputs": [
     [
@@ -12014,6 +12787,76 @@
     [
      "",
      "actMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetUniformFiberDirection": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "dir",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMMeshOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetUniformMuscleAnisotropicWeight": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "weight",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "aniMesh",
      ""
     ],
     [
@@ -12442,6 +13285,47 @@
    "params": [],
    "categories": [
     "FLIP"
+   ]
+  },
+  "StepZSBoundary": {
+   "inputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dt",
+     "0"
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "StringEqual": {
@@ -12954,6 +13838,31 @@
     ],
     [
      "",
+     "translation",
+     ""
+    ],
+    [
+     "",
+     "translation_rate",
+     ""
+    ],
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "scale_rate",
+     ""
+    ],
+    [
+     "",
+     "ypr_angles",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -12990,7 +13899,7 @@
     ],
     [
      "",
-     "VDBVecGrid",
+     "VDBFloat3Grid",
      ""
     ],
     [
@@ -13175,6 +14084,46 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "TransformFEMMesh": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "translate",
+     ""
+    ],
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "TransformMesh": {
@@ -14551,6 +15500,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSLevelSetToVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
    "categories": [
     "MPM"
    ]
