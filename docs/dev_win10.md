@@ -45,7 +45,7 @@ vcpkg install openblas:x64-windows
 vcpkg install lapack:x64-windows
 
 @rem (Optional) Install Alembic for the extension Alembic:
-vcpkg install Alembic[hdf5]:x64-windows
+vcpkg install alembic[hdf5]:x64-windows
 ```
 
 > Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.
