@@ -20,18 +20,21 @@ struct SubnetNode : Node {
     ~SubnetNode() override;
     void apply() override;
     Node *addNode(Descriptor const &desc);
+
+private:
+    std::string _allocateNodeName(std::string const &base);
 };
 
 
 struct SubnetIn : Node {
-    explicit SubnetIn(SubnetNode *subnet);
+    SubnetIn();
     ~SubnetIn() override;
     void apply() override;
 };
 
 
 struct SubnetOut : Node {
-    explicit SubnetOut(SubnetNode *subnet);
+    SubnetOut();
     ~SubnetOut() override;
     void apply() override;
 };
