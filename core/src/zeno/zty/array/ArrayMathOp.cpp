@@ -182,9 +182,9 @@ Array arrayMathOp(std::string const &type, Array const &arr1) {
     return std::visit([&] (auto const &op) {
         return std::visit([&] (auto const &arr1) -> Array {
             size_t n = arr1.size();
-            std::vector<decltype(op(arr1[0]))> arr(n);
+            std::vector<decltype(op(arr1[0]))> arr(arr1.size());
             #pragma omp parallel for
-            for (size_t i = 0; i < n; i++) {
+            for (size_t i = 0; i < arr.size(); i++) {
                 arr[i] = op(arr1[i]);
             }
             return arr;
@@ -197,11 +197,10 @@ Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2)
     auto op = op2::from_string(type);
     return std::visit([&] (auto const &op) {
         return std::visit([&] (auto const &arr1, auto const &arr2) -> Array {
-            size_t n = std::min(arr1.size(), arr2.size());
-            std::vector<decltype(op(arr1[0], arr2[0]))> arr(n);
+            std::vector<decltype(op(arr1[0], arr2[0]))> arr(std::max(arr1.size(), arr2.size()));
             #pragma omp parallel for
-            for (size_t i = 0; i < n; i++) {
-                arr[i] = op(arr1[std::min(i, n - 1)], arr2[std::min(i, n - 1)]);
+            for (size_t i = 0; i < arr.size(); i++) {
+                arr[i] = op(arr1[std::min(i, arr1.size() - 1)], arr2[std::min(i, arr2.size() - 1)]);
             }
             return arr;
         }, arr1, arr2);
@@ -213,11 +212,10 @@ Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2,
     auto op = op3::from_string(type);
     return std::visit([&] (auto const &op) {
         return std::visit([&] (auto const &arr1, auto const &arr2, auto const &arr3) -> Array {
-            size_t n = std::min({arr1.size(), arr2.size(), arr3.size()});
-            std::vector<decltype(op(arr1[0], arr2[0], arr3[0]))> arr(n);
+            std::vector<decltype(op(arr1[0], arr2[0], arr3[0]))> arr(std::max({arr1.size(), arr2.size(), arr3.size()}));
             #pragma omp parallel for
-            for (size_t i = 0; i < n; i++) {
-                arr[i] = op(arr1[std::min(i, n - 1)], arr2[std::min(i, n - 1)], arr3[std::min(i, n - 1)]);
+            for (size_t i = 0; i < arr.size(); i++) {
+                arr[i] = op(arr1[std::min(i, arr1.size() - 1)], arr2[std::min(i, arr2.size() - 1)], arr3[std::min(i, arr3.size() - 1)]);
             }
             return arr;
         }, arr1, arr2, arr3);
