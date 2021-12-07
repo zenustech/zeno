@@ -11,6 +11,7 @@ namespace zty {
 
 Array arrayMathOp(std::string const &type, Array const &arr1);
 Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2);
+Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2, Array const &arr3);
 
 
 }

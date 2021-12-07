@@ -59,6 +59,11 @@ constexpr auto vec_wise(vec<N, T1> const &t1, vec<N, T2> const &t2, Func &&func)
     return t0;
 }
 
+template <is_not_vec T1, is_not_vec T2, is_not_vec T3, class Func>
+constexpr auto vec_wise(T1 const &t1, T2 const &t2, T3 const &t3, Func &&func) {
+    return func(t1, t2, t3);
+}
+
 template <size_t N, is_not_vec T1, is_not_vec T2, is_not_vec T3, class Func>
 constexpr auto vec_wise(vec<N, T1> const &t1, T2 const &t2, T3 const &t3, Func &&func) {
     using T0 = std::invoke_result_t<Func, T1, T2, T3>;

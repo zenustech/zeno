@@ -16,7 +16,7 @@ namespace op1 {
 
 #define _OP(name, ...) \
     struct name { \
-        decltype(auto) operator()(auto &&a) const { \
+        auto operator()(auto const &a) const { \
             return __VA_ARGS__; \
         } \
     };
@@ -83,7 +83,7 @@ namespace op2 {
 
 #define _OP(name, ...) \
     struct name { \
-        decltype(auto) operator()(auto &&a, auto &&b) const { \
+        auto operator()(auto const &a, auto const &b) const { \
             return __VA_ARGS__; \
         } \
     };
@@ -131,6 +131,49 @@ namespace op2 {
 }
 
 
+namespace op3 {
+
+#define _OP(name, ...) \
+    struct name { \
+        auto operator()(auto const &a, auto const &b, auto const &c) const { \
+            return __VA_ARGS__; \
+        } \
+    };
+
+    _OP(identl, a)
+    _OP(identm, b)
+    _OP(identr, c)
+    _OP(clamp, math::clamp(a, b, c))
+    _OP(lerp, math::lerp(a, b, c))
+    _OP(fma, math::fma(a, b, c))
+
+#undef _OP
+
+    using variant = std::variant
+        < identl
+        , identm
+        , identr
+        , clamp
+        , lerp
+        , fma
+        >;
+
+    static constexpr const char *type_list[] = {
+        "identl",
+        "identm",
+        "identr",
+        "clamp",
+        "lerp",
+        "fma",
+    };
+
+    variant from_string(std::string const &type) {
+        size_t index = ztd::find_index(type_list, type);
+        return ztd::variant_from_index<variant>(index);
+    }
+}
+
+
 }
 
 
@@ -138,8 +181,8 @@ Array arrayMathOp(std::string const &type, Array const &arr1) {
     auto op = op1::from_string(type);
     return std::visit([&] (auto const &op) {
         return std::visit([&] (auto const &arr1) -> Array {
-            auto n = arr1.size();
-            std::vector<std::decay_t<decltype(op(arr1[0]))>> arrout(n);
+            size_t n = arr1.size();
+            std::vector<decltype(op(arr1[0]))> arrout(n);
             #pragma omp parallel for
             for (size_t i = 0; i < n; i++) {
                 arrout[i] = op(arr1[i]);
@@ -154,14 +197,30 @@ Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2)
     auto op = op2::from_string(type);
     return std::visit([&] (auto const &op) {
         return std::visit([&] (auto const &arr1, auto const &arr2) -> Array {
-            auto n = std::min(arr1.size(), arr2.size());
-            std::vector<std::decay_t<decltype(op(arr1[0], arr2[0]))>> arrout(n);
+            size_t n = std::min(arr1.size(), arr2.size());
+            std::vector<decltype(op(arr1[0], arr2[0]))> arrout(n);
             #pragma omp parallel for
             for (size_t i = 0; i < n; i++) {
                 arrout[i] = op(arr1[std::min(i, n - 1)], arr2[std::min(i, n - 1)]);
             }
             return arrout;
         }, arr1, arr2);
+    }, op);
+}
+
+
+Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2, Array const &arr3) {
+    auto op = op3::from_string(type);
+    return std::visit([&] (auto const &op) {
+        return std::visit([&] (auto const &arr1, auto const &arr2, auto const &arr3) -> Array {
+            size_t n = std::min({arr1.size(), arr2.size(), arr3.size()});
+            std::vector<decltype(op(arr1[0], arr2[0], arr3[0]))> arrout(n);
+            #pragma omp parallel for
+            for (size_t i = 0; i < n; i++) {
+                arrout[i] = op(arr1[std::min(i, n - 1)], arr2[std::min(i, n - 1)], arr3[std::min(i, n - 1)]);
+            }
+            return arrout;
+        }, arr1, arr2, arr3);
     }, op);
 }
 
