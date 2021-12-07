@@ -10,34 +10,38 @@ ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
-struct Array {
-    std::variant
+using Array = std::variant
     < std::vector<float>
     , std::vector<uint32_t>
     , std::vector<math::vec3f>
-    > arr;
+    >;
 
-    template <class T>
-    inline std::vector<T> &get() {
-        return std::get<std::vector<T>>(arr);
-    }
 
-    template <class T>
-    inline std::vector<T> const &get() const {
-        return std::get<std::vector<T>>(arr);
-    }
-};
+template <class T>
+inline std::vector<T> &arrayGet(Array &arr) {
+    return std::get<std::vector<T>>(arr);
+}
+
+template <class T>
+inline std::vector<T> const &arrayGet(Array const &arr) {
+    return std::get<std::vector<T>>(arr);
+}
+
+template <class T>
+inline std::vector<T> arrayGet(Array &&arr) {
+    return std::get<std::vector<T>>(std::move(arr));
+}
 
 
 auto arrayVectorApply(auto const &func, auto &&...arrs) {
     return std::visit([&] (auto &&...arrs) {
-        func(arrs.arr...);
-    }, std::forward<decltype(arrs)>(arrs.arr)...);
+        func(arrs...);
+    }, std::forward<decltype(arrs)>(arrs)...);
 }
 
 
 void arraySerialApply(auto const &func, auto &&...arrs) {
-    arrayVisit([&] (auto &&...arrs) {
+    arrayVectorApply([&] (auto &&...arrs) {
         for (size_t i = 0; i < std::max({arrs.size()...}); i++) {
             func(arrs[i % arrs.size()]...);
         }
@@ -46,7 +50,7 @@ void arraySerialApply(auto const &func, auto &&...arrs) {
 
 
 void arrayParallelApply(auto const &func, auto &&...arrs) {
-    arrayVisit([&] (auto &&...arrs) {
+    arrayVectorApply([&] (auto &&...arrs) {
 #pragma omp parallel for
         for (size_t i = 0; i < std::max({arrs.size()...}); i++) {
             func(arrs[i % arrs.size()]...);
