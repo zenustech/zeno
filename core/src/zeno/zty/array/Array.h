@@ -33,32 +33,6 @@ inline std::vector<T> arrayGet(Array &&arr) {
 }
 
 
-auto arrayVectorApply(auto const &func, auto &&...arrs) {
-    return std::visit([&] (auto &&...arrs) {
-        func(arrs...);
-    }, std::forward<decltype(arrs)>(arrs)...);
-}
-
-
-void arraySerialApply(auto const &func, auto &&...arrs) {
-    arrayVectorApply([&] (auto &&...arrs) {
-        for (size_t i = 0; i < std::max({arrs.size()...}); i++) {
-            func(arrs[i % arrs.size()]...);
-        }
-    }, std::forward<decltype(arrs)>(arrs)...);
-}
-
-
-void arrayParallelApply(auto const &func, auto &&...arrs) {
-    arrayVectorApply([&] (auto &&...arrs) {
-#pragma omp parallel for
-        for (size_t i = 0; i < std::max({arrs.size()...}); i++) {
-            func(arrs[i % arrs.size()]...);
-        }
-    }, std::forward<decltype(arrs)>(arrs)...);
-}
-
-
 
 }
 ZENO_NAMESPACE_END

@@ -80,18 +80,34 @@ namespace op2 {
 }
 
 
-Array arrayMathOp(std::string const &type, Array const &arr0) {
+Array arrayMathOp(std::string const &type, Array const &arr1) {
     auto op = op1::from_string(type);
-    std::visit([&] (auto const &op) {
-        arrayParallelApply(op, arr0);
+    return std::visit([&] (auto const &op) {
+        return std::visit([&] (auto const &arr1) -> Array {
+            auto n = arr1.size();
+            std::vector<std::decay_t<decltype(op(arr1[0]))>> arrout(n);
+            #pragma omp parallel for
+            for (size_t i = 0; i < n; i++) {
+                arrout[i] = op(arr1[i]);
+            }
+            return arrout;
+        }, arr1);
     }, op);
 }
 
 
-Array arrayMathOp(std::string const &type, Array const &arr0, Array const &arr1) {
+Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2) {
     auto op = op2::from_string(type);
-    std::visit([&] (auto const &op) {
-        arrayParallelApply(op, arr0, arr1);
+    return std::visit([&] (auto const &op) {
+        return std::visit([&] (auto const &arr1, auto const &arr2) -> Array {
+            auto n = std::min(arr1.size(), arr2.size());
+            std::vector<std::decay_t<decltype(op(arr1[0], arr2[0]))>> arrout(n);
+            #pragma omp parallel for
+            for (size_t i = 0; i < n; i++) {
+                arrout[i] = op(arr1[std::min(i, n - 1)], arr2[std::min(i, n - 1)]);
+            }
+            return arrout;
+        }, arr1, arr2);
     }, op);
 }
 
