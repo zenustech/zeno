@@ -470,4 +470,49 @@ ZENDEFNODE(ZSGridToZSParticle,
                {"MPM"},
            });
 
+struct TransformZSLevelSet : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing TransformZSLevelSet\n");
+    auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto &ls = zsls->getLevelSet();
+
+    using namespace zs;
+    // translation
+    if (has_input("translation")) {
+      auto b = get_input<NumericObject>("translation")->get<vec3f>();
+      match(
+          [&b](SparseLevelSet<3> &ls) {
+            ls.translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+            fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
+            getchar();
+          },
+          [](...) {})(ls);
+    }
+    // scale
+    if (has_input("scaling")) {
+      auto s = get_input<NumericObject>("scaling")->get<float>();
+      match([&s](SparseLevelSet<3> &ls) { ls.scale(s); }, [](...) {})(ls);
+    }
+    // rotation
+    if (has_input("eulerXYZ")) {
+      auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
+      auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
+                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+      match([&rot](SparseLevelSet<3> &ls) { ls.rotate(rot.transpose()); },
+            [](...) {})(ls);
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing TransformZSLevelSet\n");
+    set_output("ZSLevelSet", zsls);
+  }
+};
+// refer to nodes/prim/TransformPrimitive.cpp
+ZENDEFNODE(TransformZSLevelSet,
+           {
+               {"ZSLevelSet", "translation", "eulerXYZ", "scaling"},
+               {"ZSLevelSet"},
+               {},
+               {"MPM"},
+           });
+
 } // namespace zeno

@@ -22,9 +22,15 @@ struct ToZSLevelSet : INode {
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
     } else {
       auto path = get_param<std::string>("path");
+#if 0
       auto gridPtr = zs::loadFloatGridFromVdbFile(path);
       ls->getLevelSet() = zs::convert_floatgrid_to_sparse_levelset(
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
+#else
+      auto gridPtr = zs::loadVec3fGridFromVdbFile(path);
+      ls->getLevelSet() = zs::convert_vec3fgrid_to_sparse_levelset(
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
+#endif
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");
@@ -60,7 +66,7 @@ struct ZSLevelSetToVDBGrid : INode {
 ZENDEFNODE(ZSLevelSetToVDBGrid, {
                                     {"ZSLevelSet"},
                                     {"VDBFloatGrid"},
-                                    {{"string", "path", ""}},
+                                    {},
                                     {"MPM"},
                                 });
 
