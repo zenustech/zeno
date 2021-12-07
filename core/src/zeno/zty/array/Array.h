@@ -33,6 +33,5 @@ inline std::vector<T> arrayGet(Array &&arr) {
 }
 
 
-
 }
 ZENO_NAMESPACE_END
