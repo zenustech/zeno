@@ -9,6 +9,9 @@ ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
+namespace {
+
+
 namespace op1 {
 
 #define _OP(name, ...) \
@@ -20,26 +23,53 @@ namespace op1 {
 
     _OP(ident, a)
     _OP(neg, -a)
+    _OP(abs, math::abs(a))
+    _OP(floor, math::floor(a))
+    _OP(ceil, math::ceil(a))
+    _OP(sqrt, math::sqrt(a))
+    _OP(exp, math::exp(a))
+    _OP(log, math::log(a))
     _OP(sin, math::sin(a))
     _OP(cos, math::cos(a))
     _OP(tan, math::tan(a))
+    _OP(asin, math::asin(a))
+    _OP(acos, math::acos(a))
+    _OP(atan, math::atan(a))
 
 #undef _OP
 
     using variant = std::variant
         < ident
         , neg
+        , abs
+        , floor
+        , ceil
+        , sqrt
+        , exp
+        , log
         , sin
         , cos
         , tan
+        , asin
+        , acos
+        , atan
         >;
 
     static constexpr const char *type_list[] = {
         "ident",
         "neg",
+        "abs",
+        "floor",
+        "ceil",
+        "sqrt",
+        "exp",
+        "log",
         "sin",
         "cos",
         "tan",
+        "asin",
+        "acos",
+        "atan",
     };
 
     variant from_string(std::string const &type) {
@@ -60,23 +90,47 @@ namespace op2 {
 
     _OP(identl, a)
     _OP(identr, b)
+    _OP(add, a + b)
+    _OP(sub, a - b)
+    _OP(mul, a * b)
+    _OP(div, a / b)
+    _OP(pow, math::pow(a, b))
+    _OP(atan2, math::atan2(a, b))
+    _OP(min, math::min(a, b))
+    _OP(max, math::max(a, b))
+    _OP(fmod, math::fmod(a, b))
 
 #undef _OP
 
     using variant = std::variant
         < identl
         , identr
+        , add
+        , pow
+        , atan2
+        , min
+        , max
+        , fmod
         >;
 
     static constexpr const char *type_list[] = {
         "identl",
         "identr",
+        "add",
+        "pow",
+        "atan2",
+        "min",
+        "max",
+        "fmod",
     };
 
     variant from_string(std::string const &type) {
         size_t index = ztd::find_index(type_list, type);
         return ztd::variant_from_index<variant>(index);
     }
+}
+
+
 }
 
 

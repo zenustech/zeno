@@ -12,7 +12,7 @@ namespace zty {
 
 using Array = std::variant
     < std::vector<float>
-    , std::vector<uint32_t>
+    , std::vector<int>
     , std::vector<math::vec3f>
     >;
 
