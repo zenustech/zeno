@@ -11,27 +11,71 @@ ZENO_NAMESPACE_BEGIN
 namespace zty {
 
 
-using Array = std::variant
+struct Array {
+    using variant_type = std::variant
     < std::vector<float>
     , std::vector<int>
     , std::vector<math::vec3f>
     >;
+    
+    variant_type m_data;
 
+    Array() = default;
+    Array(Array &&) = default;
+    Array(Array const &) = default;
+    Array &operator=(Array &&) = default;
+    Array &operator=(Array const &) = default;
+    ~Array() = default;
 
-template <class T>
-inline std::vector<T> &arrayGet(Array &arr) {
-    return std::get<std::vector<T>>(arr);
-}
+    template <class T>
+        requires (std::is_constructible_v<variant_type, std::vector<T>>)
+    Array(std::initializer_list<T> const &t)
+        : m_data(std::vector<T>(t))
+    {}
 
-template <class T>
-inline std::vector<T> const &arrayGet(Array const &arr) {
-    return std::get<std::vector<T>>(arr);
-}
+    template <class T>
+        requires (std::is_constructible_v<variant_type, T>)
+    Array(T &&t)
+        : m_data(std::forward<T>(t))
+    {}
 
-template <class T>
-inline std::vector<T> arrayGet(Array &&arr) {
-    return std::get<std::vector<T>>(std::move(arr));
-}
+    inline auto &get() & {
+        return m_data;
+    }
+
+    inline auto const &get() const & {
+        return m_data;
+    }
+
+    inline auto &&get() && {
+        return std::move(m_data);
+    }
+
+    template <class T>
+    inline std::vector<T> &get() & {
+        return std::get<std::vector<T>>(m_data);
+    }
+
+    template <class T>
+    inline std::vector<T> const &get() const & {
+        return std::get<std::vector<T>>(m_data);
+    }
+
+    template <class T>
+    inline std::vector<T> get() && {
+        return std::get<std::vector<T>>(std::move(m_data));
+    }
+
+    template <class T>
+    inline std::vector<T> &emplace(std::vector<T> init) {
+        return m_data.emplace<std::vector<T>>(std::move(init));
+    }
+
+    template <class T>
+    inline std::vector<T> &emplace() {
+        return m_data.emplace<std::vector<T>>();
+    }
+};
 
 
 Array arrayMathOp(std::string const &type, Array const &arr1);

@@ -89,7 +89,7 @@ Array arrayMathOp(std::string const &type, Array const &arr1) {
                 arr[i] = op(arr1[i]);
             }
             return arr;
-        }, arr1);
+        }, arr1.get());
     }, op);
 }
 

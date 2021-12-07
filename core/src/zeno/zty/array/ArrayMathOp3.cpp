@@ -65,7 +65,7 @@ Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2,
                 arr[i] = op(arr1[std::min(i, arr1.size() - 1)], arr2[std::min(i, arr2.size() - 1)], arr3[std::min(i, arr3.size() - 1)]);
             }
             return arr;
-        }, arr1, arr2, arr3);
+        }, arr1.get(), arr2.get(), arr3.get());
     }, op);
 }
 
