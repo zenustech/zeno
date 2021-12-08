@@ -219,7 +219,7 @@ struct ApplyBoundaryOnZSGrid : INode {
   template <typename LsView>
   constexpr void
   projectBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
-                  ZenoBoundary &boundary,
+                  const ZenoBoundary &boundary,
                   const typename ZenoPartition::table_t &partition,
                   typename ZenoGrid::grid_t &grid) {
     using namespace zs;
@@ -268,13 +268,13 @@ struct ApplyBoundaryOnZSGrid : INode {
       })(boundary->getSdfField());
 #else
       if (boundary->hasVelocityField()) {
-        match([&](auto &sdf, auto &vel) {
+        match([&](const auto &sdf, const auto &vel) {
           auto ls = SdfVelField{boundary->getLevelSetView(sdf),
                                 boundary->getLevelSetView(vel)};
           projectBoundary(cudaPol, ls, *boundary, partition, grid);
         })(boundary->getSdfField(), boundary->getVelocityField());
       } else {
-        match([&](auto &sdf) {
+        match([&](const auto &sdf) {
           projectBoundary(cudaPol, boundary->getLevelSetView(sdf), *boundary,
                           partition, grid);
         })(boundary->getSdfField());
@@ -483,8 +483,8 @@ struct TransformZSLevelSet : INode {
       match(
           [&b](SparseLevelSet<3> &ls) {
             ls.translate(zs::vec<float, 3>{b[0], b[1], b[2]});
-            fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
-            getchar();
+            // fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
+            // getchar();
           },
           [](...) {})(ls);
     }

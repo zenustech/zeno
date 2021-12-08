@@ -141,7 +141,7 @@ struct ZenoBoundary : IObject {
   const auto &getVelocityField() const noexcept { return *velocityField; }
   bool hasVelocityField() const noexcept { return velocityField != nullptr; }
 
-  template <typename LS> auto getLevelSetView(LS &&ls) noexcept {
+  template <typename LS> auto getLevelSetView(LS &&ls) const noexcept {
     using LsT = zs::remove_cvref_t<LS>;
     if constexpr (zs::is_same_v<LsT, spls_t>) {
       return zs::proxy<zs::execspace_e::cuda>(FWD(ls));
@@ -149,9 +149,8 @@ struct ZenoBoundary : IObject {
       return FWD(ls);
   }
 
-  template <typename LsView> auto getBoundary(LsView &&lsv) noexcept {
+  template <typename LsView> auto getBoundary(LsView &&lsv) const noexcept {
     using namespace zs;
-
     auto ret = Collider{lsv, type};
     ret.s = s;
     ret.dsdt = dsdt;
@@ -161,31 +160,6 @@ struct ZenoBoundary : IObject {
     ret.dbdt = dbdt;
     return ret;
   }
-#if 0
-  template <typename LS> auto getBoundary() const noexcept {
-    using namespace zs;
-    if constexpr (zs::is_same_v<LS, spls_t>) {
-      auto ret =
-          Collider{proxy<execspace_e::cuda>(std::get<LS>(getSdfField())), type};
-      ret.s = s;
-      ret.dsdt = dsdt;
-      ret.R = R;
-      ret.omega = omega;
-      ret.b = b;
-      ret.dbdt = dbdt;
-      return ret;
-    } else {
-      auto ret = Collider{std::get<LS>(getSdfField()), type};
-      ret.s = s;
-      ret.dsdt = dsdt;
-      ret.R = R;
-      ret.omega = omega;
-      ret.b = b;
-      ret.dbdt = dbdt;
-      return ret;
-    }
-  }
-#endif
 
   levelset_t *levelset{nullptr};
   levelset_t *velocityField{nullptr};
