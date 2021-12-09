@@ -86,4 +86,51 @@ struct NodeParam
 	BodyParam body;
 };
 
+struct DistanceParam
+{
+    int paramsVPadding = 10;        //the first param to background's top.
+    int paramsVSpacing = 16;
+    int paramsBottomPadding = 10;   //the dist from last param to next item(socket).
+    int paramsLPadding = 16;
+    int paramsToTopSocket = 16;
+};
+
+struct NodeUtilParam
+{
+    //header
+    QRectF rcHeaderBg;//set left corner as origin, always (0,0).
+    ImageElement headerBg;
+
+    QRectF rcMute, rcView, rcPrep;
+    ImageElement mute, view, prep;
+
+    QRectF rcCollasped;
+    ImageElement collaspe;
+
+    QPointF namePos;
+    TextElement name;
+
+    //body
+    QRectF rcBodyBg;
+    ImageElement bodyBg;
+
+    QSizeF szSocket;
+    ImageElement socket;
+
+    qreal socketHOffset;
+    qreal socketToText;
+    qreal socketVMargin;
+
+    QBrush nameClr;
+    QFont nameFont;
+
+    QBrush socketClr;
+    QFont socketFont;
+
+    QBrush paramClr;
+    QFont paramFont;
+
+    DistanceParam distParam;
+};
+
 #endif

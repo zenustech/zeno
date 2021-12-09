@@ -3,14 +3,24 @@
 
 #include <QtWidgets>
 
+class ZenoGraphsWidget;
+
 class ZNodesEditWidget : public QWidget
 {
     Q_OBJECT
 public:
     ZNodesEditWidget(QWidget* parent = nullptr);
 
+public slots:
+    void openFileDialog();
+
 private:
     void initMenu(QMenuBar* pMenu);
+
+    ZenoGraphsWidget* m_pGraphsWidget;
+    QComboBox* m_pComboSubGraph;
+    QPushButton* m_pNewBtn;
+    QPushButton* m_pDeleteBtn;
 };
 
 

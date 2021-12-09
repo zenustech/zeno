@@ -339,3 +339,51 @@ void ZtfUtil::exportZtf(NodeParam param, const QString &output)
     f.write(qsXml.toUtf8());
 	f.close();
 }
+
+
+NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
+{
+    NodeUtilParam param;
+
+    QPoint base = nodeParam.header.backboard.rc.topLeft();
+
+    //header
+    param.headerBg = nodeParam.header.backboard.image;
+    param.rcHeaderBg = nodeParam.header.backboard.rc.translated(-base);
+    
+    param.mute = nodeParam.header.status.mute;
+    param.view = nodeParam.header.status.view;
+    param.prep = nodeParam.header.status.prep;
+    param.rcMute = nodeParam.header.status.mute.rc.translated(-base);
+    param.rcView = nodeParam.header.status.view.rc.translated(-base);
+    param.rcPrep = nodeParam.header.status.prep.rc.translated(-base);
+
+    param.collaspe = nodeParam.header.control.elements[0];
+    param.rcCollasped = nodeParam.header.control.elements[0].rc.translated(-base);
+
+    param.name = nodeParam.header.name.text;
+    param.namePos = param.name.rc.topLeft() - base;
+
+    //body
+    param.bodyBg = nodeParam.body.backboard.image;
+    param.rcBodyBg = nodeParam.body.backboard.rc.translated(-base);
+    
+    param.socket = nodeParam.body.leftTopSocket.image;
+    param.szSocket = QSizeF(nodeParam.body.leftTopSocket.image.rc.width(), nodeParam.body.leftTopSocket.image.rc.height());
+
+    param.socketHOffset = std::abs(nodeParam.body.leftTopSocket.image.rc.left() - 
+                        nodeParam.body.backboard.rc.left());
+    param.socketToText = std::abs(nodeParam.body.leftTopSocket.image.rc.right() -
+                                  nodeParam.body.leftTopSocket.text.rc.left());
+    param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() -
+                                  nodeParam.body.leftBottomSocket.image.rc.top());
+    //todo: font read/write
+    param.nameFont = QFont("Consolas", 13);
+    param.socketFont = QFont("Consolas", 11);
+    param.paramFont = QFont("Consolas", 11);
+    param.nameClr = QColor(255, 255, 255);
+    param.socketClr = QColor(255, 255, 255);
+    param.paramClr = QColor(255, 255, 255);
+
+    return param;
+}

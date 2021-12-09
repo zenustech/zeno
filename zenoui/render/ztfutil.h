@@ -6,7 +6,7 @@
 
 using namespace rapidxml;
 
-typedef rapidxml::xml_node<> *XML_NODE;
+typedef rapidxml::xml_node<>* XML_NODE;
 typedef rapidxml::xml_document<>& XMLDOC_REF;
 
 class ZtfUtil
@@ -14,6 +14,7 @@ class ZtfUtil
 public:
 	static ZtfUtil& GetInstance();
 	NodeParam loadZtf(const QString& filename);
+    NodeUtilParam toUtilParam(const NodeParam& nodeParam);
     void exportZtf(NodeParam param /*, LineParam param2, BackgroundParam param3*/, const QString& output);
 
 private:

@@ -1,7 +1,7 @@
 #ifndef __ZENONODE_H__
 #define __ZENONODE_H__
 
-#include "renderparam.h"
+#include <render/renderparam.h>
 #include "resizableitemimpl.h"
 #include "common.h"
 

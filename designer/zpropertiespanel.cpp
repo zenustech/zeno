@@ -109,7 +109,7 @@ ImageGroupBox::ImageGroupBox(QWidget* parent)
     pGbImageLayout->addLayout(pSelected);
 
     connect(pBtn1, &QPushButton::clicked, this, [=]() {
-        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "Svg Files (*.svg)\nJPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp))");
         if (original.isEmpty())
             return;
         QFileInfo f(original);
@@ -120,7 +120,7 @@ ImageGroupBox::ImageGroupBox(QWidget* parent)
     });
 
     connect(pBtn2, &QPushButton::clicked, this, [=]() {
-        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "Svg Files (*.svg)\nJPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp))");
         if (original.isEmpty())
             return;
         QFileInfo f(original);
@@ -131,7 +131,7 @@ ImageGroupBox::ImageGroupBox(QWidget* parent)
     });
 
     connect(pBtn3, &QPushButton::clicked, this, [=]() {
-        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "JPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp)\nSvg Files (*.svg)");
+        QString original = QFileDialog::getOpenFileName(this, tr("Select an image"), ".", "Svg Files (*.svg)\nJPEG (*.jpg *jpeg)\nGIF (*.gif)\nPNG (*.png)\nBitmap Files (*.bmp))");
         if (original.isEmpty())
             return;
         QFileInfo f(original);

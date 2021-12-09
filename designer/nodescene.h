@@ -2,7 +2,7 @@
 #define __NODES_SCENE_H__
 
 #include <rapidxml/rapidxml_print.hpp>
-#include "renderparam.h"
+#include <render/renderparam.h>
 
 class TimelineItem;
 class DragPointItem;
