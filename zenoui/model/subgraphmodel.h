@@ -4,6 +4,7 @@
 #include <QModelIndex>
 #include <QString>
 #include <QObject>
+#include <memory>
 
 struct PlainNodeItem
 {
