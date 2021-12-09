@@ -19,6 +19,7 @@ protected:
 
 public slots:
     void onNewNodeCreated();    //todo: category.
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 
 private:
     NodeUtilParam m_nodeParams;

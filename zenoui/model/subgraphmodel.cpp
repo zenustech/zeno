@@ -189,7 +189,10 @@ bool SubGraphModel::insertRows(int row, int count, const QModelIndex& parent)
 
 bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    return removeRow(row, parent);
+    beginRemoveRows(parent, row, row);
+    bool ret = removeRow(row, parent);
+    endRemoveRows();
+    return ret;
 }
 
 

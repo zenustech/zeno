@@ -1,13 +1,18 @@
 #include "zenonode.h"
 #include "../model/modelrole.h"
+#include "../model/subgraphmodel.h"
 #include "../render/common_id.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
-    : QGraphicsItem(parent)
+    : _base(parent)
     , m_renderParams(params)
 {
     setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
+}
+
+ZenoNode::~ZenoNode()
+{
 }
 
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -155,9 +160,19 @@ void ZenoNode::initSockets(int& y)
 
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
 {
-    if (change == QGraphicsItem::ItemSelectedHasChanged) {
+    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    {
         bool bSelected = isSelected();
         m_headerBg->toggle(bSelected);
+    } 
+    else if (change == QGraphicsItem::ItemPositionHasChanged)
+    {
+        QPointF pos = this->scenePos();
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+        if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
+        {
+            pGraphModel->setData(m_index, pos, ROLE_OBJPOS);
+        }
     }
     return value;
 }

@@ -26,6 +26,9 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         pNode->setPos(pos);
         addItem(pNode);
     }
+
+    connect(m_subgraphModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)),
+        this, SLOT(void onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
 }
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -38,6 +41,11 @@ void ZenoSubGraphScene::onNewNodeCreated()
 
 }
 
+void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    //model to scene.
+}
+
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Delete)
@@ -46,7 +54,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
         {
             ZenoNode *pNode = qgraphicsitem_cast<ZenoNode*>(item);
             const QPersistentModelIndex &index = pNode->index();
-            m_subgraphModel->removeRow(index.row());
+            m_subgraphModel->removeRows(index.row(), 1);
             removeItem(pNode);
             delete pNode;
         }
