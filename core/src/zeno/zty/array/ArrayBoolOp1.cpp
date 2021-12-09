@@ -14,7 +14,11 @@ namespace op {
 
 #define _OP(name, ...) \
     struct name { \
-        bool operator()(auto const &a, auto const &b) const { \
+        template <class A, class B> \
+            requires (requires (A const &a, B const &b) { \
+                bool{(__VA_ARGS__)}; \
+            }) \
+        bool operator()(A const &a, B const &b) const { \
             return __VA_ARGS__; \
         } \
     };
