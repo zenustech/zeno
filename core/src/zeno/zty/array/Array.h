@@ -77,10 +77,17 @@ struct Array {
     }
 };
 
+using BoolArray = std::vector<bool>;
+
 
 Array arrayMathOp(std::string const &type, Array const &arr1);
 Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2);
 Array arrayMathOp(std::string const &type, Array const &arr1, Array const &arr2, Array const &arr3);
+BoolArray arrayBoolOp(std::string const &type, Array const &arr1, Array const &arr2);
+BoolArray arrayBoolOp(std::string const &type, BoolArray const &arr1, BoolArray const &arr2);
+BoolArray arrayBoolNotOp(BoolArray const &arr1);
+Array arraySelectOp(BoolArray const &arr1, Array const &arr2, Array const &arr3);
+Array arraySelectOp(BoolArray const &arr1, Array const &arr2);
 
 
 }
