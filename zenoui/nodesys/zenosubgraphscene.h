@@ -5,6 +5,7 @@
 #include "../render/ztfutil.h"
 
 class SubGraphModel;
+class ZenoNode;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -12,6 +13,7 @@ class ZenoSubGraphScene : public QGraphicsScene
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     void initModel(SubGraphModel* pModel);
+    QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
 
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
@@ -24,6 +26,7 @@ public slots:
 private:
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
+    std::map<QString, ZenoNode*> m_nodes;
 };
 
 #endif

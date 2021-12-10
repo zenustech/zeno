@@ -73,6 +73,8 @@ SubGraphModel* ZsgReader::_parseSubGraph(const rapidjson::Value &subgraph)
         const QJsonObject& inputsObj = _parseInputs(inputs);
         pItem->setData(inputsObj, ROLE_INPUTS);
 
+        pItem->setData(QJsonObject(), ROLE_OUTPUTS);
+
         const rapidjson::Value& params = objValue["params"];
         const QJsonObject& paramsObj = _parseParams(params);
         pItem->setData(paramsObj, ROLE_PARAMETERS);
@@ -106,13 +108,11 @@ SubGraphModel* ZsgReader::_parseSubGraph(const rapidjson::Value &subgraph)
             arr[0] = id;
             arr[1] = key;
             outputs[fromId].insert(portName, arr);
-        }
-        for (auto it : outputs)
-        {
-            const QString &nodeid = it.first;
-            const QJsonObject &obj = it.second;
-            const QModelIndex &fromIndex = pModel->index(nodeid);
-            pModel->setData(fromIndex, obj, ROLE_OUTPUTS);
+
+            const QModelIndex &fromIndex = pModel->index(fromId);
+            QJsonObject outputsParam = pModel->data(fromIndex, ROLE_OUTPUTS).toJsonObject();
+            outputsParam.insert(portName, arr);
+            pModel->setData(fromIndex, outputsParam, ROLE_OUTPUTS);
         }
     }
     return pModel;
@@ -126,23 +126,25 @@ QJsonObject ZsgReader::_parseInputs(const rapidjson::Value& inputs)
         QJsonObject jsonPort;
         const QString& name = node.name.GetString();
         const auto& arr = node.value.GetArray();
-        
+
         QJsonArray jsonArr;
         RAPIDJSON_ASSERT(arr.Size() == 3);
-        const QString& objId = arr[0].IsNull() ? "" : arr[0].GetString();
-        const QString& outPort = arr[1].IsNull() ? "" : arr[1].GetString();
+
+        auto objId = arr[0].IsNull() ? QJsonValue(QJsonValue::Null) : arr[0].GetString();
+        auto outputPort = arr[1].IsNull() ? QJsonValue(QJsonValue::Null) : arr[1].GetString();
+
         jsonArr.append(objId);
-        jsonArr.append(outPort);
+        jsonArr.append(outputPort);
 
         rapidjson::Type type = arr[2].GetType();
         if (type == rapidjson::kNullType) {
-            jsonArr.append("");
+            jsonArr.append(QJsonValue(QJsonValue::Null));
         } else if (type == rapidjson::kStringType) {
             jsonArr.append(arr[2].GetString());
         } else if (type == rapidjson::kNumberType) {
             jsonArr.append(arr[2].GetFloat());
         } else {
-            jsonArr.append("");
+            jsonArr.append(QJsonValue(QJsonValue::Null));
         }
 
         jsonInputs.insert(name, jsonArr);

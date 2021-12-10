@@ -12,15 +12,13 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, m_menu(nullptr)
 {
     setBackgroundBrush(QBrush(QColor(60, 59, 63), Qt::SolidPattern));
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);	//it's easy but not efficient
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::NoAnchor);
     viewport()->installEventFilter(this);
     setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);
-    bool ret = connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), 
-		this, SLOT(onCustomContextMenu(const QPoint&)));
-    int j;
-    j = 0;
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)
