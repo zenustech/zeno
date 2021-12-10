@@ -15,7 +15,8 @@ Array arraySelectOp(BoolArray const &arr1, Array const &arr2, Array const &arr3)
         std::vector<T> arr(arr1.size() && arr2.size() && arr3.size() ? std::max({arr1.size(), arr2.size(), arr3.size()}) : 0);
         #pragma omp parallel for
         for (size_t i = 0; i < arr.size(); i++) {
-            arr[i] = arr1[std::min(i, arr1.size() - 1)] ? T{arr2[std::min(i, arr2.size() - 1)]} : T{arr3[std::min(i, arr3.size() - 1)]};
+            arr[i] = arr1[std::min(i, arr1.size() - 1)] ? static_cast<T>(arr2[std::min(i, arr2.size() - 1)])
+                : static_cast<T>(arr3[std::min(i, arr3.size() - 1)]);
         }
         return arr;
     }, arr2.get(), arr3.get());
@@ -26,7 +27,7 @@ Array arraySelectOp(BoolArray const &arr1, Array const &arr2) {
     return std::visit([&] (auto const &arr2) -> Array {
         std::vector<std::decay_t<decltype(arr2[0])>> arr;
         for (size_t i = 0; i < arr1.size(); i++) {
-            if (arr1[i])
+            if (bool{arr1[i]})
                 arr.push_back(arr2[i]);
         }
         return arr;

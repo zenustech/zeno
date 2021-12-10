@@ -21,31 +21,35 @@ namespace op {
 
     _OP(identl, a)
     _OP(identr, b)
-    _OP(notl, !a)
-    _OP(notr, !b)
-    _OP(logic_and, a && b)
-    _OP(logic_or, a || b)
-    _OP(logic_ne, a != b)
-    _OP(logic_eq, a == b)
+    _OP(logicnotl, !a)
+    _OP(logicnotr, !b)
+    _OP(logicand, a && b)
+    _OP(logicor, a || b)
+    _OP(logicxor, a != b)
+    _OP(logicnor, a == b)
 
 #undef _OP
 
     using variant = std::variant
         < identl
         , identr
-        , logic_and
-        , logic_or
-        , logic_ne
-        , logic_eq
+        , logicnotl
+        , logicnotr
+        , logicand
+        , logicor
+        , logicxor
+        , logicnor
         >;
 
     static constexpr const char *type_list[] = {
         "identl",
         "identr",
-        "logic_and",
-        "logic_or",
-        "logic_ne",
-        "logic_eq",
+        "logicnotl",
+        "logicnotr",
+        "logicand",
+        "logicor",
+        "logicxor",
+        "logicnor",
     };
 
     variant from_string(std::string const &type) {
@@ -72,7 +76,7 @@ BoolArray arrayBoolOp(std::string const &type, BoolArray const &arr1, BoolArray 
 
 
 BoolArray arrayBoolNotOp(BoolArray const &arr1) {
-    return arrayBoolOp("notl", arr1, BoolArray{false});
+    return arrayBoolOp("logicnotl", arr1, BoolArray{false});
 }
 
 
