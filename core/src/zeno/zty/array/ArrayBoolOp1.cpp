@@ -14,12 +14,14 @@ namespace op {
 
 #define _OP(name, ...) \
     struct name { \
-        template <class A, class B> \
-            requires (requires (A const &a, B const &b) { \
+        bool operator()(auto const &a, auto const &b) const { \
+            if constexpr (requires { \
                 bool{(__VA_ARGS__)}; \
-            }) \
-        bool operator()(A const &a, B const &b) const { \
-            return __VA_ARGS__; \
+            }) { \
+                return __VA_ARGS__; \
+            } else { \
+                return {}; \
+            } \
         } \
     };
 

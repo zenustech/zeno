@@ -15,7 +15,13 @@ namespace op {
 #define _OP(name, ...) \
     struct name { \
         auto operator()(auto const &a, auto const &b, auto const &c) const { \
-            return __VA_ARGS__; \
+            if constexpr (requires { \
+                (__VA_ARGS__); \
+            }) { \
+                return __VA_ARGS__; \
+            } else { \
+                return int{}; \
+            } \
         } \
     };
 

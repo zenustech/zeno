@@ -76,5 +76,15 @@ BoolArray arrayBoolNotOp(BoolArray const &arr1) {
 }
 
 
+Array arrayFromBoolOp(BoolArray const &arr1) {
+    std::vector<int> arr(arr1.size());
+    #pragma omp parallel for
+    for (size_t i = 0; i < arr.size(); i++) {
+        arr[i] = arr1[i] ? 1 : 0;
+    }
+    return arr;
+}
+
+
 }
 ZENO_NAMESPACE_END

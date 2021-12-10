@@ -15,7 +15,13 @@ namespace op {
 #define _OP(name, ...) \
     struct name { \
         auto operator()(auto const &a, auto const &b) const { \
-            return __VA_ARGS__; \
+            if constexpr (requires { \
+                (__VA_ARGS__); \
+            }) { \
+                return __VA_ARGS__; \
+            } else { \
+                return int{}; \
+            } \
         } \
     };
 
@@ -25,6 +31,7 @@ namespace op {
     _OP(sub, a - b)
     _OP(mul, a * b)
     _OP(div, a / b)
+    _OP(mod, a % b)
     _OP(pow, math::pow(a, b))
     _OP(atan2, math::atan2(a, b))
     _OP(min, math::min(a, b))
@@ -37,6 +44,10 @@ namespace op {
         < identl
         , identr
         , add
+        , sub
+        , mul
+        , div
+        , mod
         , pow
         , atan2
         , min
@@ -48,6 +59,10 @@ namespace op {
         "identl",
         "identr",
         "add",
+        "sub",
+        "mul",
+        "div",
+        "mod",
         "pow",
         "atan2",
         "min",
