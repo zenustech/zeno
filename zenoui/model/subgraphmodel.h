@@ -57,6 +57,7 @@ public:
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
     QModelIndex indexFromItem(PlainNodeItem* pItem) const;
     void appendItem(NODEITEM_PTR pItem);
+    void removeNode(const QString& id);
     bool insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
     void setName(const QString& name);
     QString name() const;

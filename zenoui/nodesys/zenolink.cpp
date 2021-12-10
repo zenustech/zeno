@@ -1,9 +1,14 @@
 #include "zenolink.h"
 #include "zenosubgraphscene.h"
+#include "nodesys_common.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
     : _base(parent)
+{
+}
+
+ZenoLink::~ZenoLink()
 {
 }
 
@@ -37,6 +42,11 @@ QPainterPath ZenoLink::shape() const
     return path;
 }
 
+int ZenoLink::type() const
+{
+    return Type;
+}
+
 void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
     painter->save();
@@ -51,27 +61,27 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoLinkFull::ZenoLinkFull(ZenoSubGraphScene *pScene, const QString &fromId, const QString &fromPort, const QString &toId, const QString &toPort)
+ZenoLinkFull::ZenoLinkFull()
     : ZenoLink(nullptr)
-    , m_scene(pScene)
-    , m_fromNodeid(fromId)
-    , m_fromPort(fromPort)
-    , m_toNodeid(toId)
-    , m_toPort(toPort)
 {
     setZValue(-10);
+    setFlag(QGraphicsItem::ItemIsSelectable);
+}
+
+void ZenoLinkFull::updatePos(const QPointF& srcPos, const QPointF& dstPos)
+{
+    m_srcPos = srcPos;
+    m_dstPos = dstPos;
 }
 
 QPointF ZenoLinkFull::getSrcPos() const
 {
-    QPointF pos = m_scene->getSocketPos(false, m_fromNodeid, m_fromPort);
-    return pos;
+    return m_srcPos;
 }
 
 QPointF ZenoLinkFull::getDstPos() const
 {
-    QPointF pos = m_scene->getSocketPos(true, m_toNodeid, m_toPort);
-    return pos;
+    return m_dstPos;
 }
 
 void ZenoLinkFull::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -79,3 +89,7 @@ void ZenoLinkFull::mousePressEvent(QGraphicsSceneMouseEvent *event)
     ZenoLink::mousePressEvent(event);
 }
 
+int ZenoLinkFull::type() const
+{
+    return Type;
+}

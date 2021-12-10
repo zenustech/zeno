@@ -93,6 +93,9 @@ void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 		m_dragMove = true;
 		m_startPos = event->pos();
 	}
+    if (event->button() == Qt::LeftButton) {
+        setDragMode(QGraphicsView::RubberBandDrag);
+    }
 	QGraphicsView::mousePressEvent(event);
 }
 
@@ -121,6 +124,7 @@ void ZenoSubGraphView::mouseMoveEvent(QMouseEvent* mouse_event)
 void ZenoSubGraphView::mouseReleaseEvent(QMouseEvent* event)
 {
 	m_dragMove = false;
+    setDragMode(QGraphicsView::NoDrag);
 	QGraphicsView::mouseReleaseEvent(event);
 }
 

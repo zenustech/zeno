@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "../render/renderparam.h"
 #include "zenosvgitem.h"
+#include "nodesys_common.h"
 
 class ZenoNode : public QGraphicsObject
 {
@@ -15,6 +16,10 @@ public:
     ~ZenoNode();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     QRectF boundingRect() const override;
+
+    enum { Type = ZTYPE_NODE };
+    int type() const override;
+
     void init(const QModelIndex& index);
     void initParams(int& y);
     void initSockets(int& y);
@@ -26,6 +31,7 @@ public:
     QString nodeName() const;
     QPointF nodePos() const;
     QJsonObject inputParams() const;
+    QJsonObject outputParams() const;
 
 signals:
     void nodePositionChange(const QString&);

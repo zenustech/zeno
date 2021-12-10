@@ -25,6 +25,11 @@ QRectF ZenoNode::boundingRect() const
     return childrenBoundingRect();
 }
 
+int ZenoNode::type() const
+{
+    return Type;
+}
+
 void ZenoNode::init(const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
@@ -198,6 +203,12 @@ QJsonObject ZenoNode::inputParams() const
 {
     Q_ASSERT(m_index.isValid());
     return m_index.data(ROLE_INPUTS).toJsonObject();
+}
+
+QJsonObject ZenoNode::outputParams() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_OUTPUTS).toJsonObject();
 }
 
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
