@@ -1,7 +1,7 @@
 #include "framework.h"
 #include "nodescene.h"
 #include "nodetemplate.h"
-#include "ztfutil.h"
+#include <render/ztfutil.h>
 #include "resizableitemimpl.h"
 #include "componentitem.h"
 #include "timelineitem.h"

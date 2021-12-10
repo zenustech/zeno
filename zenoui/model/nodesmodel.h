@@ -1,18 +1,18 @@
-#ifndef __NODE_ITEM_MODEL_H__
-#define __NODE_ITEM_MODEL_H__
+#ifndef __ZENO_NODES_MODEL_H__
+#define __ZENO_NODES_MODEL_H__
 
 #include <QModelIndex>
 #include <QString>
 #include <QObject>
 #include "nodeitem.h"
 
-class NodeItemModel : public QAbstractItemModel
+class NodesModel : public QAbstractItemModel
 {
     Q_OBJECT
     typedef QAbstractItemModel _base;
 public:
-	explicit NodeItemModel(QObject* parent = nullptr);
-	~NodeItemModel();
+	explicit NodesModel(QObject* parent = nullptr);
+	~NodesModel();
 
 	//QAbstractItemModel
 	QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
@@ -38,14 +38,17 @@ public:
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     QHash<int, QByteArray> roleNames() const override;
 
+
 	//NodeItemModel
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
-    NodeItem* itemFromIndex(const QModelIndex &index) const;
+    SP_NODE_ITEM itemFromIndex(const QModelIndex &index) const;
+    void appendItem(SP_NODE_ITEM pItem);
+    bool insertRow(int row, SP_NODE_ITEM pItem, const QModelIndex &parent = QModelIndex());
+    bool removeRow(int row, const QModelIndex &parent = QModelIndex());
+    SP_NODE_ITEM rootItem() const;
 
 private:
-	//std::map<QString, NodeItem> datas;
-    std::unordered_map<QString, QString> m_name2Id;
-    std::unordered_map<QString, NodeItem*> m_idMapprer;
+    SP_NODE_ITEM m_rootItem;
 };
 
 #endif

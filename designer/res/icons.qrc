@@ -1,5 +1,13 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+	<file>icons/body_bg.svg</file>
+	<file>icons/collaspe.svg</file>
+	<file>icons/header_back_board_blue.svg</file>
+	<file>icons/header_back_board_blue_hovered.svg</file>
+	<file>icons/mute.svg</file>
+	<file>icons/prep.svg</file>
+	<file>icons/socket.svg</file>
+	<file>icons/view.svg</file>
 	<file>icons/eye.svg</file>
     <file>icons/eye_off.svg</file>
     <file>icons/locked.svg</file>

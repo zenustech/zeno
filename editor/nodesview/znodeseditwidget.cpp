@@ -1,38 +1,63 @@
 #include "znodeseditwidget.h"
 #include "znodeswebview.h"
 #include "znodesgraphicsview.h"
+#include <nodesys/zenographswidget.h>
+#include <io/zsgreader.h>
+#include <model/graphsmodel.h>
 #include <QMenuBar>
 
 
 ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     : QWidget(parent)
+    , m_pGraphsWidget(nullptr)
+    , m_pComboSubGraph(nullptr)
+    , m_pNewBtn(nullptr)
+    , m_pDeleteBtn(nullptr)
 {
-    QVBoxLayout* pLayout = new QVBoxLayout;
+    QVBoxLayout *pLayout = new QVBoxLayout;
 
     QMenuBar* pMenu = new QMenuBar;
 	pMenu->setMinimumHeight(26);
 	initMenu(pMenu);
     pLayout->addWidget(pMenu);
 
-    QPushButton* pBtn = new QPushButton;
-    pBtn->setText(tr("reload"));
     QHBoxLayout* pHLayout = new QHBoxLayout;
-    pHLayout->addWidget(pBtn);
-    pHLayout->addStretch();
+	{
+        m_pComboSubGraph = new QComboBox;
+        pHLayout->addWidget(m_pComboSubGraph);
 
+        m_pNewBtn = new QPushButton("New");
+        pHLayout->addWidget(m_pNewBtn);
+
+		m_pDeleteBtn = new QPushButton("Delete");
+        pHLayout->addWidget(m_pDeleteBtn);
+		pHLayout->addStretch();
+	}
     pLayout->addLayout(pHLayout);
 
-    ZNodesWebEngineView* pView = new ZNodesWebEngineView;
-	QTabWidget* pTab = new QTabWidget;
-	pTab->addTab(pView, "webview");
-
-	ZNodesGraphicsView* pGraphicsView = new ZNodesGraphicsView;
-	pTab->addTab(pGraphicsView, "native");
-    pLayout->addWidget(pTab);
+	m_pGraphsWidget = new ZenoGraphsWidget;
+    pLayout->addWidget(m_pGraphsWidget);
 
     setLayout(pLayout);
+}
 
-    connect(pBtn, SIGNAL(clicked()), pView, SLOT(reload()));
+void ZNodesEditWidget::openFileDialog()
+{
+    const QString &initialPath = ".";
+    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
+    fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
+    fileDialog.setFileMode(QFileDialog::ExistingFile);
+    fileDialog.setDirectory(initialPath);
+    if (fileDialog.exec() != QDialog::Accepted)
+        return;
+
+    QString filePath = fileDialog.selectedFiles().first();
+    GraphsModel *pModel = ZsgReader::getInstance().loadZsgFile(filePath);
+    m_pGraphsWidget->setGraphsModel(pModel);
+    m_pComboSubGraph->setModel(pModel);
+
+    connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), pModel, SLOT(onCurrentIndexChanged(int)));
+    connect(pModel, SIGNAL(itemSelected(int)), m_pComboSubGraph, SLOT(setCurrentIndex(int)));
 }
 
 void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
@@ -47,6 +72,7 @@ void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
 		pAction = new QAction(tr("Open"), pFile);
 		pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(tr("Ctrl+O")));
+        connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
 		pFile->addAction(pAction);
 
 		pAction = new QAction(tr("Save"), pFile);

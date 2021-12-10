@@ -2,7 +2,7 @@
 #include "nodeswidget.h"
 #include "nodesview.h"
 #include "nodescene.h"
-#include "ztfutil.h"
+#include <render/ztfutil.h>
 #include <comctrl/zobjectbutton.h>
 
 

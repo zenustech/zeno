@@ -1,0 +1,178 @@
+#include "zenonode.h"
+#include "../model/modelrole.h"
+#include "../model/subgraphmodel.h"
+#include "../render/common_id.h"
+
+
+ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
+    : _base(parent)
+    , m_renderParams(params)
+{
+    setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
+}
+
+ZenoNode::~ZenoNode()
+{
+}
+
+void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    return;
+}
+
+QRectF ZenoNode::boundingRect() const
+{
+    return childrenBoundingRect();
+}
+
+void ZenoNode::init(const QModelIndex& index)
+{
+    m_index = QPersistentModelIndex(index);
+
+    m_nameItem = new QGraphicsTextItem(this);
+    const QString& name = m_index.data(ROLE_OBJNAME).toString();
+    m_nameItem->setPlainText(name);
+    m_nameItem->setPos(m_renderParams.namePos);
+    m_nameItem->setZValue(ZVALUE_ELEMENT);
+    m_nameItem->setFont(m_renderParams.nameFont);
+    m_nameItem->setDefaultTextColor(m_renderParams.nameClr.color());
+
+    QRectF rc = m_renderParams.rcHeaderBg;
+    m_headerBg = new ZenoImageItem(m_renderParams.headerBg, QSizeF(rc.width(), rc.height()), this);
+    m_headerBg->setPos(rc.topLeft());
+    m_headerBg->setZValue(ZVALUE_BACKGROUND);
+
+    rc = m_renderParams.rcMute;
+    m_mute = new ZenoImageItem(m_renderParams.mute, QSizeF(rc.width(), rc.height()), this);
+    m_mute->setPos(rc.topLeft());
+    m_mute->setZValue(ZVALUE_ELEMENT);
+
+    rc = m_renderParams.rcView;
+    m_view = new ZenoImageItem(m_renderParams.view, QSizeF(rc.width(), rc.height()), this);
+    m_view->setPos(rc.topLeft());
+    m_view->setZValue(ZVALUE_ELEMENT);
+
+    rc = m_renderParams.rcPrep;
+    m_prep = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
+    m_prep->setPos(rc.topLeft());
+    m_prep->setZValue(ZVALUE_ELEMENT);
+
+    rc = m_renderParams.rcCollasped;
+    m_collaspe = new ZenoImageItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()), this);
+    m_collaspe->setPos(rc.topLeft());
+    m_collaspe->setZValue(ZVALUE_ELEMENT);
+
+    rc = m_renderParams.rcBodyBg;
+    m_bodyBg = new ZenoImageItem(m_renderParams.bodyBg, QSizeF(rc.width(), rc.height()), this);
+    m_bodyBg->setPos(rc.topLeft());
+    m_bodyBg->setZValue(ZVALUE_ELEMENT);
+
+    int x = m_bodyBg->pos().x(), y = m_bodyBg->pos().y();
+
+    y += m_renderParams.distParam.paramsVPadding;
+    initParams(y);
+    initSockets(y);
+
+    //needs to adjust body background height
+    rc = m_renderParams.rcBodyBg;
+    m_bodyBg->resize(QSizeF(rc.width(), y - m_renderParams.rcHeaderBg.height()));
+
+    //todo: border
+}
+
+void ZenoNode::initParams(int &y)
+{
+    int x = m_bodyBg->pos().x() + m_renderParams.distParam.paramsLPadding;
+
+    const QJsonObject &params = m_index.data(ROLE_PARAMETERS).toJsonObject();
+    for (auto key : params.keys())
+    {
+        QJsonValue val = params.value(key);
+        QString value;
+        if (val.isString())
+        {
+            value = val.toString();
+        }
+        else if (val.isDouble())
+        {
+            //todo
+            value = QString::number(val.toDouble());
+        }
+        //temp text item to show parameter.
+        QString showText = key + ":\t" + value;
+        QGraphicsTextItem *pParamItem = new QGraphicsTextItem(showText, this);
+        pParamItem->setPos(x, y);
+        pParamItem->setZValue(ZVALUE_ELEMENT);
+        pParamItem->setFont(m_renderParams.paramFont);
+        pParamItem->setDefaultTextColor(m_renderParams.paramClr.color());
+
+        y += m_renderParams.distParam.paramsVSpacing;
+    }
+    y += m_renderParams.distParam.paramsBottomPadding;
+    if (!params.keys().isEmpty())
+        y += m_renderParams.distParam.paramsToTopSocket;
+}
+
+void ZenoNode::initSockets(int& y)
+{
+    int x = m_bodyBg->pos().x() - m_renderParams.socketHOffset;
+    const QJsonObject &inputs = m_index.data(ROLE_INPUTS).toJsonObject();
+    for (auto key : inputs.keys())
+    {
+        const QString &name = key;
+        ZenoImageItem *socket = new ZenoImageItem(m_renderParams.socket, m_renderParams.szSocket, this);
+        QGraphicsTextItem *socketName = new QGraphicsTextItem(name, this);
+        socket->setPos(QPointF(x, y));
+        socket->setZValue(ZVALUE_ELEMENT);
+
+        int x_sockettext = x + m_renderParams.socketToText + m_renderParams.szSocket.width();
+        static const int textYOffset = 5;//text offset exists
+        socketName->setPos(QPointF(x_sockettext, y - textYOffset));
+        socketName->setZValue(ZVALUE_ELEMENT);
+        socketName->setFont(m_renderParams.socketFont);
+        socketName->setDefaultTextColor(m_renderParams.socketClr.color());
+        y += m_renderParams.szSocket.height() + m_renderParams.socketVMargin;
+    }
+
+    x = m_bodyBg->pos().x() + m_renderParams.rcBodyBg.width() - m_renderParams.socketHOffset;
+    const QJsonObject &outputs = m_index.data(ROLE_OUTPUTS).toJsonObject();
+    for (auto key : outputs.keys())
+    {
+        const QString &name = key;
+        ZenoImageItem *socket = new ZenoImageItem(m_renderParams.socket, m_renderParams.szSocket, this);
+        QGraphicsTextItem *socketName = new QGraphicsTextItem(name, this);
+
+        socket->setPos(QPointF(x, y));
+        socket->setZValue(ZVALUE_ELEMENT);
+
+        socketName->setZValue(ZVALUE_ELEMENT);
+        socketName->setFont(m_renderParams.socketFont);
+        socketName->setDefaultTextColor(m_renderParams.socketClr.color());
+        QFontMetrics fontMetrics(m_renderParams.socketFont);
+        int textWidth = fontMetrics.horizontalAdvance(name);
+        int x_sockettext = x - m_renderParams.socketToText - textWidth;
+        static const int textYOffset = 5;
+        socketName->setPos(QPointF(x_sockettext, y - textYOffset));
+
+        y += m_renderParams.szSocket.height() + m_renderParams.socketVMargin;
+    }
+}
+
+QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    {
+        bool bSelected = isSelected();
+        m_headerBg->toggle(bSelected);
+    } 
+    else if (change == QGraphicsItem::ItemPositionHasChanged)
+    {
+        QPointF pos = this->scenePos();
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+        if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
+        {
+            pGraphModel->setData(m_index, pos, ROLE_OBJPOS);
+        }
+    }
+    return value;
+}

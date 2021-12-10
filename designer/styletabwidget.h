@@ -1,7 +1,7 @@
 #ifndef __STYLE_TABWIDGET_H__
 #define __STYLE_TABWIDGET_H__
 
-#include "renderparam.h"
+#include <render/renderparam.h>
 #include "common.h"
 
 class LayerWidget;

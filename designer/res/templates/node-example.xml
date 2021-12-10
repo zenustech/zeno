@@ -1,0 +1,43 @@
+<node>
+	<header>
+		<component id="name" x="75" y="75" w="116" h="22">
+			<text id="" x="75" y="75" w="116" h="22" font-family="Consolas">ReadVDBGrid</text>
+		</component>
+		<component id="status" x="32" y="24" w="208" h="48">
+			<image id="mute" x="48" y="32" w="32" h="32" normal=":/icons/mute.svg" hovered="" selected=""/>
+			<image id="view" x="96" y="32" w="32" h="32" normal=":/icons/view.svg" hovered="" selected=""/>
+			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/prep.svg" hovered="" selected=""/>
+		</component>
+		<component id="control" x="32" y="72" w="32" h="32">
+			<image id="collapse" x="40.0714" y="80.2143" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=""/>
+		</component>
+		<component id="display" x="194" y="34" w="32" h="32">
+			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
+		</component>
+		<component id="header-backboard" x="32" y="72" w="208" h="32">
+			<image id="header-backboard-image" x="32" y="72" w="208" h="32" normal=":/icons/header_back_board_blue.svg" hovered=":/icons/header_back_board_blue_hovered.svg" selected=":/icons/header_back_board_blue_hovered.svg"/>
+		</component>
+	</header>
+	<body>
+		<component id="topleftsocket" x="0" y="128" w="128" h="32">
+			<image id="ltsocket-image" x="24" y="137" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<text id="ltsocket-text" x="53" y="135" w="27" h="17" font-family="SimSun">SRC</text>
+		</component>
+		<component id="bottomleftsocket" x="0" y="168" w="128" h="32">
+			<image id="lbsocket-image" x="24" y="176" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<text id="lbsocket-text" x="53" y="176" w="32" h="15" font-family="SimSun">COND</text>
+		</component>
+		<component id="toprightsocket" x="136" y="128" w="136" h="32">
+			<image id="rtsocket-image" x="232" y="137" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<text id="rtsocket-text" x="186" y="135" w="31" h="18" font-family="SimSun">data</text>
+		</component>
+		<component id="bottomrightsocket" x="136" y="168" w="136" h="32">
+			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<text id="rbsocket-text" x="180" y="173" w="43" h="18" font-family="SimSun">Output</text>
+		</component>
+		<component id="body-backboard" x="32" y="104" w="208" h="128">
+			<image id="body-backboard-image" x="32" y="104" w="208" h="128" normal=":/icons/body_bg.svg" hovered="" selected=""/>
+		</component>
+	</body>
+</node>
+

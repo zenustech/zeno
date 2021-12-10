@@ -13,7 +13,7 @@
 #define COMPONENT_BODY_BG   "body-backboard"
 #define COMPONENT_PARAMETERS "parameters"
 
-#define ELEMENT_NAME "nodename"
+#define ELEMENT_NAME "node-name"
 #define ELEMENT_MUTE "mute"
 #define ELEMENT_ONCE "once"
 #define ELEMENT_VIEW "view"
@@ -30,6 +30,22 @@
 #define ELEMENT_LBSOCKET_TEXT   "lbsocket-text"
 #define ELEMENT_RBSOCKET_IMAGE  "rbsocket-image"
 #define ELEMENT_RBSOCKET_TEXT   "rbsocket-text"
+
+#define ZVALUE_GRID_BACKGROUND -100
+#define ZVALUE_GRID_SMALL -11
+#define ZVALUE_GRID_BIG -10
+
+#define ZVALUE_CORE_ITEM -9
+
+#define ZVALUE_LOCKED_BG -8
+#define ZVALUE_LOCKED_CP -7
+#define ZVALUE_LOCKED_ELEM -6
+
+#define ZVALUE_BACKGROUND 0
+#define ZVALUE_COMPONENT 5
+#define ZVALUE_ELEMENT 10
+
+#define ZVALUE_SELECTED 100
 
 
 #endif
