@@ -25,6 +25,11 @@ QRectF ZenoNode::boundingRect() const
     return childrenBoundingRect();
 }
 
+int ZenoNode::type() const
+{
+    return Type;
+}
+
 void ZenoNode::init(const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
@@ -122,6 +127,7 @@ void ZenoNode::initSockets(int& y)
         const QString &name = key;
         ZenoImageItem *socket = new ZenoImageItem(m_renderParams.socket, m_renderParams.szSocket, this);
         QGraphicsTextItem *socketName = new QGraphicsTextItem(name, this);
+        m_inSocks.insert(std::make_pair(name, socket));
         socket->setPos(QPointF(x, y));
         socket->setZValue(ZVALUE_ELEMENT);
 
@@ -141,6 +147,7 @@ void ZenoNode::initSockets(int& y)
         const QString &name = key;
         ZenoImageItem *socket = new ZenoImageItem(m_renderParams.socket, m_renderParams.szSocket, this);
         QGraphicsTextItem *socketName = new QGraphicsTextItem(name, this);
+        m_outSocks.insert(std::make_pair(name, socket));
 
         socket->setPos(QPointF(x, y));
         socket->setZValue(ZVALUE_ELEMENT);
@@ -158,13 +165,63 @@ void ZenoNode::initSockets(int& y)
     }
 }
 
+QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
+{
+    QString id = nodeId();
+    if (bInput) {
+        auto itPort = m_inSocks.find(portName);
+        Q_ASSERT(itPort != m_inSocks.end());
+        QPointF pos = itPort->second->sceneBoundingRect().center();
+        return pos;
+    } else {
+        auto itPort = m_outSocks.find(portName);
+        Q_ASSERT(itPort != m_outSocks.end());
+        QPointF pos = itPort->second->sceneBoundingRect().center();
+        return pos;
+    }
+}
+
+QString ZenoNode::nodeId() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_OBJID).toString();
+}
+
+QString ZenoNode::nodeName() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_OBJNAME).toString();
+}
+
+QPointF ZenoNode::nodePos() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_OBJPOS).toPointF();
+}
+
+QJsonObject ZenoNode::inputParams() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_INPUTS).toJsonObject();
+}
+
+QJsonObject ZenoNode::outputParams() const
+{
+    Q_ASSERT(m_index.isValid());
+    return m_index.data(ROLE_OUTPUTS).toJsonObject();
+}
+
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == QGraphicsItem::ItemSelectedHasChanged)
     {
         bool bSelected = isSelected();
         m_headerBg->toggle(bSelected);
-    } 
+    }
+    else if (change == QGraphicsItem::ItemPositionChange)
+    {
+        emit nodePositionChange(nodeId());
+    }
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
         QPointF pos = this->scenePos();

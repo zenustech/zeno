@@ -47,6 +47,11 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
     m_key2Row.insert(std::make_pair(id, nRow));
 }
 
+void SubGraphModel::removeNode(const QString &id) {
+    //remove node by id and update params from other node.
+    //removeRows(index.row(), 1);
+}
+
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const
 {
     return QModelIndex();
@@ -75,6 +80,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
         return false;
 
     pItem->setData(value, role);
+    emit dataChanged(index, index, QVector<int>{role});
     return true;
 }
 
@@ -179,6 +185,7 @@ bool SubGraphModel::removeRow(int row, const QModelIndex &parent)
     m_row2Key.erase(rowCount() - 1);
     m_key2Row.erase(id);
     m_nodes.erase(id);
+    //emit rowsRemoved(parent, row, row);
     return true;
 }
 
