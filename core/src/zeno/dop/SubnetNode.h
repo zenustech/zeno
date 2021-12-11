@@ -20,6 +20,7 @@ struct SubnetNode : Node {
     ~SubnetNode() override;
     void apply() override;
     Node *addNode(Descriptor const &desc);
+    std::vector<Node *> visibleNodes();
 
 private:
     std::string _allocateNodeName(std::string const &base);

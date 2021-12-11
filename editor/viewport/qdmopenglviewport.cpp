@@ -6,7 +6,7 @@
 #include <QWheelEvent>
 #include <zeno/zmt/log.h>
 #include <zeno/dop/Executor.h>
-#include <zeno/dop/SceneGraph.h>
+#include <zeno/dop/SubnetNode.h>
 
 ZENO_NAMESPACE_BEGIN
 
@@ -108,11 +108,11 @@ void QDMOpenGLViewport::updateScene()
     ZENO_DEBUG("updateScene");
 
     dop::Executor exec;
-    dop::SceneGraph graph;
-    Interceptor::toDopGraph(m_rootScene, &graph);
+    dop::SubnetNode subnet;
+    Interceptor::toDopGraph(m_rootScene, &subnet);
 
     m_renderables.clear();
-    for (auto *node: graph.visibleNodes()) {
+    for (auto *node: subnet.visibleNodes()) {
         auto val = exec.evaluate({.node = node, .sockid = 0});
         m_renderables.emplace(node->name, makeRenderableFromAny(val));
     }

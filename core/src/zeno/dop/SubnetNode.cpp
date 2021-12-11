@@ -63,6 +63,14 @@ void SubnetNode::apply() {
     }
 }
 
+std::vector<Node *> SubnetNode::visibleNodes() {
+    std::vector<Node *> res;
+    for (auto const &node: subNodes) {
+        res.push_back(node.get());
+    }
+    return res;
+}
+
 ZENO_DOP_DEFCLASS(SubnetNode, {{
     "misc", "a custom subnet to combine many nodes into one",
 }, {
