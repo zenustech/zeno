@@ -86,36 +86,55 @@ SubGraphModel* ZsgReader::_parseSubGraph(const rapidjson::Value &subgraph)
         pModel->appendItem(pItem);
     }
 
+    _parseOutputs(pModel);
+    return pModel;
+}
+
+void ZsgReader::_parseOutputs(SubGraphModel* pModel)
+{
     //init output ports for each node.
     int n = pModel->rowCount();
     for (int r = 0; r < n; r++)
     {
         const QModelIndex &idx = pModel->index(r, 0);
-        const QString& id = idx.data(ROLE_OBJID).toString();
-        const QJsonObject& inputs = idx.data(ROLE_INPUTS).toJsonObject();
-        std::map<QString, QJsonObject> outputs;
-        foreach (const QString& key, inputs.keys())
+        const QString &inputId = idx.data(ROLE_OBJID).toString();
+        const QJsonObject &inputs = idx.data(ROLE_INPUTS).toJsonObject();
+        foreach (const QString &inputPort, inputs.keys())
         {
-            QJsonValue val = inputs.value(key);
+            QJsonValue val = inputs.value(inputPort);
             Q_ASSERT(val.type() == rapidjson::kArrayType);
             QJsonArray arr = val.toArray();
             Q_ASSERT(arr.size() == 3);
-            const QString& fromId = arr[0].isString() ? arr[0].toString() : 0;
-            const QString& portName = arr[1].isString() ? arr[1].toString() : 0;
-            if (fromId.isEmpty() || portName.isEmpty())
+            const QString &outputId = arr[0].isString() ? arr[0].toString() : 0;
+            const QString &outputPort = arr[1].isString() ? arr[1].toString() : 0;
+            if (outputId.isEmpty() || outputPort.isEmpty())
                 continue;
 
-            arr[0] = id;
-            arr[1] = key;
-            outputs[fromId].insert(portName, arr);
-
-            const QModelIndex &fromIndex = pModel->index(fromId);
+            const QModelIndex &fromIndex = pModel->index(outputId);
+            
+            /* output format :
+            {
+                "port1" : {
+                    "node1": "port_in_node1",
+                    "node2": "port_in_node2",
+                },
+                "port2" : {
+                    ...
+                }
+            }
+            */
+            
             QJsonObject outputsParam = pModel->data(fromIndex, ROLE_OUTPUTS).toJsonObject();
-            outputsParam.insert(portName, arr);
+            val = outputsParam.take(outputPort);
+            QJsonObject outputInfo;
+            if (!val.isNull()) {
+                outputInfo = val.toObject();
+            } 
+            outputInfo.insert(inputId, inputPort);
+            outputsParam.insert(outputPort, outputInfo);
             pModel->setData(fromIndex, outputsParam, ROLE_OUTPUTS);
         }
     }
-    return pModel;
 }
 
 QJsonObject ZsgReader::_parseInputs(const rapidjson::Value& inputs)

@@ -21,6 +21,7 @@ private:
     void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
     QJsonObject _parseInputs(const rapidjson::Value &inputs);
     QJsonObject _parseParams(const rapidjson::Value &params);
+    void _parseOutputs(SubGraphModel* pModel);
 };
 
 #endif

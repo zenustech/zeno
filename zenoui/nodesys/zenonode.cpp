@@ -142,12 +142,11 @@ void ZenoNode::initSockets(int& y)
 
     x = m_bodyBg->pos().x() + m_renderParams.rcBodyBg.width() - m_renderParams.socketHOffset;
     const QJsonObject &outputs = m_index.data(ROLE_OUTPUTS).toJsonObject();
-    for (auto key : outputs.keys())
+    for (auto outputPort : outputs.keys())
     {
-        const QString &name = key;
         ZenoImageItem *socket = new ZenoImageItem(m_renderParams.socket, m_renderParams.szSocket, this);
-        QGraphicsTextItem *socketName = new QGraphicsTextItem(name, this);
-        m_outSocks.insert(std::make_pair(name, socket));
+        QGraphicsTextItem *socketName = new QGraphicsTextItem(outputPort, this);
+        m_outSocks.insert(std::make_pair(outputPort, socket));
 
         socket->setPos(QPointF(x, y));
         socket->setZValue(ZVALUE_ELEMENT);
@@ -156,7 +155,7 @@ void ZenoNode::initSockets(int& y)
         socketName->setFont(m_renderParams.socketFont);
         socketName->setDefaultTextColor(m_renderParams.socketClr.color());
         QFontMetrics fontMetrics(m_renderParams.socketFont);
-        int textWidth = fontMetrics.horizontalAdvance(name);
+        int textWidth = fontMetrics.horizontalAdvance(outputPort);
         int x_sockettext = x - m_renderParams.socketToText - textWidth;
         static const int textYOffset = 5;
         socketName->setPos(QPointF(x_sockettext, y - textYOffset));

@@ -61,8 +61,9 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoLinkFull::ZenoLinkFull()
+ZenoLinkFull::ZenoLinkFull(const EdgeInfo& info)
     : ZenoLink(nullptr)
+    , m_linkInfo(info)
 {
     setZValue(-10);
     setFlag(QGraphicsItem::ItemIsSelectable);
@@ -72,6 +73,16 @@ void ZenoLinkFull::updatePos(const QPointF& srcPos, const QPointF& dstPos)
 {
     m_srcPos = srcPos;
     m_dstPos = dstPos;
+}
+
+void ZenoLinkFull::updateLink(const EdgeInfo& info)
+{
+    m_linkInfo = info;
+}
+
+EdgeInfo ZenoLinkFull::linkInfo() const
+{
+    return m_linkInfo;
 }
 
 QPointF ZenoLinkFull::getSrcPos() const
