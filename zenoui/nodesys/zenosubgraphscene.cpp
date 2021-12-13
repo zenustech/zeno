@@ -26,13 +26,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         const QModelIndex& idx = m_subgraphModel->index(r, 0);
         ZenoNode* pNode = new ZenoNode(m_nodeParams);
         pNode->init(idx);
-        pNode->show();
-        QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
-        const QString& id = idx.data(ROLE_OBJID).toString();
-        pNode->setPos(pos);
         addItem(pNode);
-        pNode->updateSocketPos();
-        m_nodes.insert(std::make_pair(id, pNode));
+        m_nodes.insert(std::make_pair(pNode->nodeId(), pNode));
     }
 
     for (auto it : m_nodes)
@@ -127,15 +122,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
             inPort = info2.name;
             inPos = info2.pos;
         }
-
-        EdgeInfo info(outId, inId, outPort, inPort);
-        ZenoFullLink *pEdge = new ZenoFullLink(info);
-        pEdge->updatePos(outPos, inPos);
-        addItem(pEdge);
-        m_links.insert(std::make_pair(info, pEdge));
-
-        //todo: update model.
-        //actually should update model, and create new link by model!
+        m_subgraphModel->addLink(outId, outPort, inId, inPort);
 
         removeItem(m_tempLink);
         delete m_tempLink;
@@ -194,13 +181,17 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 }
 
-
-
 void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
 {
     if (bAdd)
     {
-        //todo
+        EdgeInfo info(outputId, inputId, outputPort, inputPort);
+        ZenoFullLink *pEdge = new ZenoFullLink(info);
+        const QPointF &outPos = m_nodes[outputId]->getPortPos(false, outputPort);
+        const QPointF &inPos = m_nodes[inputId]->getPortPos(true, inputPort);
+        pEdge->updatePos(outPos, inPos);
+        addItem(pEdge);
+        m_links.insert(std::make_pair(info, pEdge));
     }
     else
     {

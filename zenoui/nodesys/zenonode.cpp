@@ -95,6 +95,10 @@ void ZenoNode::init(const QModelIndex& index)
     m_bodyBg->resize(QSizeF(width, y - m_renderParams.headerBg.rc.height()));
 
     //todo: border
+
+    QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
+    const QString &id = m_index.data(ROLE_OBJID).toString();
+    setPos(pos);
 }
 
 void ZenoNode::initParams(int &y, int& width)
@@ -185,16 +189,6 @@ void ZenoNode::initSockets(int& y, int& width)
         socketName->setPos(QPointF(x_sockettext, y - textYOffset));
 
         y += m_renderParams.szSocket.height() + m_renderParams.socketVMargin;
-    }
-}
-
-void ZenoNode::updateSocketPos()
-{
-    for (auto sockitem : m_inSocks) {
-        sockitem.second->updatePos();
-    }
-    for (auto sockitem : m_outSocks) {
-        sockitem.second->updatePos();
     }
 }
 

@@ -26,9 +26,8 @@ public:
     void init(const QModelIndex& index);
     void initParams(int& y, int& width);
     void initSockets(int& y, int& width);
-    void updateSocketPos();
+
     QPersistentModelIndex index() { return m_index; }
-   
     QPointF getPortPos(bool bInput, const QString& portName);
 
     QString nodeId() const;

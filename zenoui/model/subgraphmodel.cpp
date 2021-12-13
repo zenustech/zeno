@@ -120,6 +120,38 @@ void SubGraphModel::removeNode(const QModelIndex& index)
     removeRows(index.row(), 1);
 }
 
+void SubGraphModel::addLink(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock)
+{
+    const QModelIndex &outIdx = this->index(outNode);
+    QJsonObject outputs = outIdx.data(ROLE_OUTPUTS).toJsonObject();
+    /* output format :
+    *  outputs:
+       {
+           "port1" : {
+                "node1": "port_in_node1",
+                "node2": "port_in_node2",
+           },
+           "port2" : {
+                    ...
+           }
+       }
+    */
+    QJsonObject outputInfo = outputs.value(outSock).toObject();
+    outputInfo.insert(inNode, inSock);
+    outputs[outSock] = outputInfo;
+    setData(outIdx, outputs, ROLE_OUTPUTS);
+
+    const QModelIndex &inIdx = this->index(inNode);
+    QJsonObject inputs = inIdx.data(ROLE_INPUTS).toJsonObject();
+    QJsonArray arr = inputs[inSock].toArray();
+    arr[0] = QJsonValue(outNode);
+    arr[1] = QJsonValue(outSock);
+    inputs[inSock] = arr;
+    setData(inIdx, inputs, ROLE_INPUTS);
+
+    emit linkChanged(true, outNode, outSock, inNode, inSock);
+}
+
 void SubGraphModel::removeLink(const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
 {
     const QModelIndex& outIdx = this->index(outputId);

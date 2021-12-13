@@ -12,8 +12,7 @@ public:
     ZenoSocketItem(SOCKET_INFO info, const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
-    SOCKET_INFO getSocketInfo() const;
-    void updatePos();
+    SOCKET_INFO getSocketInfo();
 
 private:
     SOCKET_INFO m_info;

@@ -11,12 +11,8 @@ int ZenoSocketItem::type() const
     return Type;
 }
 
-SOCKET_INFO ZenoSocketItem::getSocketInfo() const
-{
-    return m_info;
-}
-
-void ZenoSocketItem::updatePos()
+SOCKET_INFO ZenoSocketItem::getSocketInfo()
 {
     m_info.pos = sceneBoundingRect().center();
+    return m_info;
 }
