@@ -44,6 +44,8 @@ class ColorWidget : public QWidget
 public:
     ColorWidget(QWidget* parent = nullptr);
     QSize sizeHint() const override;
+    QColor color() const { return m_color; }
+    void setColor(QColor clr) { m_color = clr; }
 
 protected:
     void paintEvent(QPaintEvent* event);
@@ -94,6 +96,28 @@ private:
     ValueInputWidget *m_pY;
 };
 
+class ShapeGroupBox : public QGroupBox
+{
+    Q_OBJECT
+public:
+    ShapeGroupBox(QWidget *parent = nullptr);
+    bool getValue(int& lt, int& rt, int& lb, int& rb, QColor& normal, QColor& hovered, QColor& selected);
+    void setValue(int lt, int rt, int lb, int rb, QColor normal, QColor hovered, QColor selected);
+
+signals:
+    void valueChanged();
+
+private:
+    ValueInputWidget *m_lt;
+    ValueInputWidget *m_rt;
+    ValueInputWidget *m_lb;
+    ValueInputWidget *m_rb;
+
+    ColorWidget *m_normal;
+    ColorWidget *m_hovered;
+    ColorWidget *m_selected;
+};
+
 class ZPagePropPanel : public QWidget
 {
     Q_OBJECT
@@ -122,6 +146,7 @@ private:
     TransformGroupBox *m_pGbTransform;
     ImageGroupBox *m_pGbImage;
     TextGroupBox* m_pGbText;
+    ShapeGroupBox* m_pGbShape;
 };
 
 class ZElementPropPanel : public QWidget

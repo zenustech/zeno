@@ -43,9 +43,11 @@ private:
 	void setComponentPxElem(QStandardItem *pParentItem, ResizableItemImpl *pComponentObj, const ImageElement &imgElem, const QString &showName);
     void addImageElement(QStandardItem *pParentItem, const ImageElement &imgElem, ResizableItemImpl *pComponentObj, const QString &showName);
     void addTextElement(QStandardItem *pParentItem, const TextElement &textElem, ResizableItemImpl *pComponentObj, const QString &showName);
+    void setupBackground(QStandardItem *pParentItem, ResizableItemImpl *pComponentObj, const BackgroundComponent& bg, const QString& showName);
     SocketComponent _exportSocket(QString id);
     BodyParam _exportBodyParam();
-    BackgroundComponent _exportBackground(QString id);
+    ImageComponent _exportImageComponent(QString id);
+    BackgroundComponent _exportBackgroundComponent(QString id);
     HeaderParam _exportHeaderParam();
     ImageElement _exportImageElement(QString id);
     TextElement _exportTextElement(QString id);

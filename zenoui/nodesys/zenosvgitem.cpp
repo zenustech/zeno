@@ -55,6 +55,19 @@ ZenoImageItem::ZenoImageItem(const ImageElement& elem, const QSizeF& sz, QGraphi
     m_svg->setSize(m_size);
 }
 
+ZenoImageItem::ZenoImageItem(const QString &normal, const QString &hovered, const QString &selected, const QSizeF &sz, QGraphicsItem *parent)
+    : m_svg(nullptr)
+    , _base(parent)
+    , m_normal(normal)
+    , m_hovered(hovered)
+    , m_selected(selected)
+    , m_size(sz)
+{
+    setAcceptHoverEvents(true);
+    m_svg = new ZenoSvgItem(m_normal, this);
+    m_svg->setSize(m_size);
+}
+
 QRectF ZenoImageItem::boundingRect() const
 {
     return m_svg->boundingRect();

@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "../render/renderparam.h"
 #include "zenosvgitem.h"
+#include "zenobackgrounditem.h"
 #include "nodesys_common.h"
 
 class ZenoNode : public QGraphicsObject
@@ -21,8 +22,8 @@ public:
     int type() const override;
 
     void init(const QModelIndex& index);
-    void initParams(int& y);
-    void initSockets(int& y);
+    void initParams(int& y, int& width);
+    void initSockets(int& y, int& width);
     QPersistentModelIndex index() { return m_index; }
    
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -46,12 +47,12 @@ private:
     std::map<QString, ZenoImageItem*> m_outSocks;
 
     QGraphicsTextItem* m_nameItem;
-    ZenoImageItem *m_headerBg;
+    ZenoBackgroundItem *m_headerBg;
     ZenoImageItem *m_mute;
     ZenoImageItem *m_view;
     ZenoImageItem *m_prep;
     ZenoImageItem *m_collaspe;
-    ZenoImageItem *m_bodyBg;
+    ZenoBackgroundItem *m_bodyBg;
 };
 
 #endif

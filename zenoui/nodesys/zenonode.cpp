@@ -42,9 +42,10 @@ void ZenoNode::init(const QModelIndex& index)
     m_nameItem->setFont(m_renderParams.nameFont);
     m_nameItem->setDefaultTextColor(m_renderParams.nameClr.color());
 
-    QRectF rc = m_renderParams.rcHeaderBg;
-    m_headerBg = new ZenoImageItem(m_renderParams.headerBg, QSizeF(rc.width(), rc.height()), this);
-    m_headerBg->setPos(rc.topLeft());
+    QRectF rc;
+
+    m_headerBg = new ZenoBackgroundItem(m_renderParams.headerBg, this);
+    m_headerBg->setPos(m_renderParams.headerBg.rc.topLeft());
     m_headerBg->setZValue(ZVALUE_BACKGROUND);
 
     rc = m_renderParams.rcMute;
@@ -67,25 +68,28 @@ void ZenoNode::init(const QModelIndex& index)
     m_collaspe->setPos(rc.topLeft());
     m_collaspe->setZValue(ZVALUE_ELEMENT);
 
-    rc = m_renderParams.rcBodyBg;
-    m_bodyBg = new ZenoImageItem(m_renderParams.bodyBg, QSizeF(rc.width(), rc.height()), this);
-    m_bodyBg->setPos(rc.topLeft());
+    m_bodyBg = new ZenoBackgroundItem(m_renderParams.bodyBg, this);
+    m_bodyBg->setPos(m_renderParams.bodyBg.rc.topLeft());
     m_bodyBg->setZValue(ZVALUE_ELEMENT);
 
     int x = m_bodyBg->pos().x(), y = m_bodyBg->pos().y();
 
     y += m_renderParams.distParam.paramsVPadding;
-    initParams(y);
-    initSockets(y);
+
+    int width = m_renderParams.headerBg.rc.width();
+
+    initParams(y, width);
+    initSockets(y, width);
 
     //needs to adjust body background height
-    rc = m_renderParams.rcBodyBg;
-    m_bodyBg->resize(QSizeF(rc.width(), y - m_renderParams.rcHeaderBg.height()));
+    rc = m_renderParams.bodyBg.rc;
+    m_headerBg->resize(QSizeF(width, m_renderParams.headerBg.rc.height()));
+    m_bodyBg->resize(QSizeF(width, y - m_renderParams.headerBg.rc.height()));
 
     //todo: border
 }
 
-void ZenoNode::initParams(int &y)
+void ZenoNode::initParams(int &y, int& width)
 {
     int x = m_bodyBg->pos().x() + m_renderParams.distParam.paramsLPadding;
 
@@ -111,6 +115,9 @@ void ZenoNode::initParams(int &y)
         pParamItem->setFont(m_renderParams.paramFont);
         pParamItem->setDefaultTextColor(m_renderParams.paramClr.color());
 
+        QFontMetrics metrics(m_renderParams.paramFont);
+        width = std::max(width, x + metrics.horizontalAdvance(showText));
+
         y += m_renderParams.distParam.paramsVSpacing;
     }
     y += m_renderParams.distParam.paramsBottomPadding;
@@ -118,7 +125,7 @@ void ZenoNode::initParams(int &y)
         y += m_renderParams.distParam.paramsToTopSocket;
 }
 
-void ZenoNode::initSockets(int& y)
+void ZenoNode::initSockets(int& y, int& width)
 {
     int x = m_bodyBg->pos().x() - m_renderParams.socketHOffset;
     const QJsonObject &inputs = m_index.data(ROLE_INPUTS).toJsonObject();
@@ -140,7 +147,7 @@ void ZenoNode::initSockets(int& y)
         y += m_renderParams.szSocket.height() + m_renderParams.socketVMargin;
     }
 
-    x = m_bodyBg->pos().x() + m_renderParams.rcBodyBg.width() - m_renderParams.socketHOffset;
+    x = m_bodyBg->pos().x() + m_renderParams.bodyBg.rc.width() - m_renderParams.socketHOffset;
     const QJsonObject &outputs = m_index.data(ROLE_OUTPUTS).toJsonObject();
     for (auto outputPort : outputs.keys())
     {

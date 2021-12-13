@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
 	<file>templates/node-example.xml</file>
+    <file>templates/node-example2.xml</file>
 </qresource>
 </RCC>

@@ -294,6 +294,67 @@ bool TransformGroupBox::getValue(qreal& x, qreal& y, qreal& w, qreal& h)
     return true;
 }
 
+ShapeGroupBox::ShapeGroupBox(QWidget* parent)
+    : QGroupBox(parent)
+{
+    setTitle("Shape");
+
+    QGridLayout *pLayout = new QGridLayout;
+
+    m_lt = new ValueInputWidget("lt:");
+    m_rt = new ValueInputWidget("rt:");
+    m_lb = new ValueInputWidget("lb:");
+    m_rb = new ValueInputWidget("rb:");
+    m_normal = new ColorWidget;
+    m_hovered = new ColorWidget;
+    m_selected = new ColorWidget;
+
+    pLayout->addWidget(m_lt, 0, 0);
+    pLayout->addWidget(m_rt, 0, 1);
+    pLayout->addWidget(m_lb, 1, 0);
+    pLayout->addWidget(m_rb, 1, 1);
+    pLayout->addWidget(new QLabel("normal:"), 2, 0);
+    pLayout->addWidget(m_normal, 2, 1);
+    pLayout->addWidget(new QLabel("hovered:"), 3, 0);
+    pLayout->addWidget(m_hovered, 3, 1);
+    pLayout->addWidget(new QLabel("selected:"), 4, 0);
+    pLayout->addWidget(m_selected, 4, 1);
+
+
+    connect(m_lt, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_rt, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_lb, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_rb, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+    connect(m_normal, SIGNAL(colorChanged(QColor)), this, SIGNAL(valueChanged()));
+    connect(m_hovered, SIGNAL(colorChanged(QColor)), this, SIGNAL(valueChanged()));
+    connect(m_selected, SIGNAL(colorChanged(QColor)), this, SIGNAL(valueChanged()));
+    setLayout(pLayout);
+}
+
+bool ShapeGroupBox::getValue(int& lt, int& rt, int& lb, int& rb, QColor& normal, QColor& hovered, QColor& selected)
+{
+    bool bOK;
+    lt = m_lt->value(bOK);
+    rt = m_rt->value(bOK);
+    lb = m_lb->value(bOK);
+    rb = m_rb->value(bOK);
+    normal = m_normal->color();
+    hovered = m_hovered->color();
+    selected = m_selected->color();
+    return true;
+}
+
+void ShapeGroupBox::setValue(int lt, int rt, int lb, int rb, QColor normal, QColor hovered, QColor selected)
+{
+    m_lt->setValue(lt);
+    m_rt->setValue(rt);
+    m_lb->setValue(lb);
+    m_rb->setValue(rb);
+    m_normal->setColor(normal);
+    m_hovered->setColor(hovered);
+    m_selected->setColor(selected);
+}
+
 
 ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
     : QWidget(parent)
@@ -309,11 +370,15 @@ ZComponentPropPanel::ZComponentPropPanel(QWidget* parent)
     m_pGbText = new TextGroupBox;
     pVBoxLayout->addWidget(m_pGbText);
 
+    m_pGbShape = new ShapeGroupBox;
+    pVBoxLayout->addWidget(m_pGbShape);
+
     pVBoxLayout->addStretch();
 
     m_pGbText->setVisible(false);
     m_pGbImage->setVisible(false);
     m_pGbTransform->setVisible(false);
+    m_pGbShape->setVisible(false);
 
     setLayout(pVBoxLayout);
 }
@@ -376,6 +441,25 @@ void ZComponentPropPanel::initModel()
             QStandardItem *pItem = model->itemFromIndex(lst[0]);
             pItem->setData(text, NODETEXT_ROLE);
         });
+
+        connect(m_pGbShape, &ShapeGroupBox::valueChanged, this, [=]() {
+            QModelIndexList lst = selection->selectedIndexes();
+            if (lst.empty())
+                return;
+
+            QModelIndex idx = lst[0];
+            int lt = 0, rt = 0, lb = 0, rb = 0;
+            QColor normal, hovered, selected;
+            m_pGbShape->getValue(lt, rt, lb, rb, normal, hovered, selected);
+
+            model->setData(idx, lt, NODE_LTRADIUS_ROLE);
+            model->setData(idx, rt, NODE_RTRADIUS_ROLE);
+            model->setData(idx, lb, NODE_LBRADIUS_ROLE);
+            model->setData(idx, rb, NODE_RBRADIUS_ROLE);
+            model->setData(idx, normal, NODECOLOR_NORMAL_ROLE);
+            model->setData(idx, hovered, NODECOLOR_HOVERD_ROLE);
+            model->setData(idx, selected, NODECOLOR_SELECTED_ROLE);
+        });
     }
     else
     {
@@ -420,8 +504,20 @@ void ZComponentPropPanel::onSelectionChanged(const QItemSelection& selected, con
         m_pGbTransform->setValue(rc.left(), rc.top(), rc.width(), rc.height());
 
         NODE_CONTENT content = (NODE_CONTENT) idx.data(NODECONTENT_ROLE).toInt();
-        m_pGbImage->setVisible(content == NC_IMAGE);
+        m_pGbImage->setVisible(content == NC_IMAGE || content == NC_BACKGROUND);
         m_pGbText->setVisible(content == NC_TEXT);
+        m_pGbShape->setVisible(content == NC_BACKGROUND);
+
+        if (content == NC_BACKGROUND)
+        {
+            m_pGbShape->setValue(idx.data(NODE_LTRADIUS_ROLE).toInt(),
+                                 idx.data(NODE_RTRADIUS_ROLE).toInt(),
+                                 idx.data(NODE_LBRADIUS_ROLE).toInt(),
+                                 idx.data(NODE_RBRADIUS_ROLE).toInt(),
+                                 qvariant_cast<QColor>(idx.data(NODECOLOR_NORMAL_ROLE)),
+                                 qvariant_cast<QColor>(idx.data(NODECOLOR_HOVERD_ROLE)),
+                                 qvariant_cast<QColor>(idx.data(NODECOLOR_SELECTED_ROLE)));
+        }
     }
     else {
         m_pGbImage->setVisible(false);

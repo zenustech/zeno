@@ -30,11 +30,22 @@ struct Component
     QRect rc;
 };
 
-struct BackgroundComponent
+struct ImageComponent
 {
     QString id;
     ImageElement image;
     QRect rc;
+};
+
+struct BackgroundComponent
+{
+    QString id;
+    ImageElement imageElem;
+    QRect rc;
+
+    QColor clr_normal, clr_hovered, clr_selected;
+    int lt_radius, rt_radius, lb_radius, rb_radius;
+    bool bApplyImage;
 };
 
 struct SocketComponent
@@ -66,7 +77,7 @@ struct HeaderParam
     TextComponent name;
     StatusComponent status;
 	Component control;
-    BackgroundComponent display;
+    ImageComponent display;
     BackgroundComponent backboard;
 };
 
@@ -98,8 +109,9 @@ struct DistanceParam
 struct NodeUtilParam
 {
     //header
-    QRectF rcHeaderBg;//set left corner as origin, always (0,0).
-    ImageElement headerBg;
+    //QRectF rcHeaderBg;
+    //set left corner of header background as origin, always (0,0).
+    BackgroundComponent headerBg;
 
     QRectF rcMute, rcView, rcPrep;
     ImageElement mute, view, prep;
@@ -111,8 +123,8 @@ struct NodeUtilParam
     TextElement name;
 
     //body
-    QRectF rcBodyBg;
-    ImageElement bodyBg;
+    //QRectF rcBodyBg;
+    BackgroundComponent bodyBg;
 
     QSizeF szSocket;
     ImageElement socket;

@@ -10,7 +10,7 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     , m_subgraphModel(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
-    m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
+    m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example2.xml"));
     // bsp tree index causes crash when removeItem and delete item. for safety, disable it.
     // https://stackoverflow.com/questions/38458830/crash-after-qgraphicssceneremoveitem-with-custom-item-class
     setItemIndexMethod(QGraphicsScene::NoIndex);

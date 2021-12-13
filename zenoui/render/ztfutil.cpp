@@ -34,30 +34,33 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
 			HeaderParam header;
 			for (auto component = child->first_node(); component != nullptr; component = component->next_sibling())
 			{
-				Component comp = _parseComponent(component);
-                if (comp.id == COMPONENT_STATUS)
-				{
-                    header.status.id = comp.id;
-					header.status.mute = comp.elements[0];
-                    header.status.view = comp.elements[1];
-                    header.status.prep = comp.elements[2];
-                    header.status.rc = comp.rc;
-				} else if (comp.id == COMPONENT_CONTROL)
-				{
-					header.control = comp;
-                } else if (comp.id == COMPONENT_DISPLAY) {
-                    header.display.id = comp.id;
-					header.display.image = comp.elements[0];
-                    header.display.rc = comp.rc;
-                } else if (comp.id == COMPONENT_HEADER_BG) {
-                    header.backboard.id = comp.id;
-                    header.backboard.image = comp.elements[0];
-                    header.backboard.rc = comp.rc;
-                } else if (comp.id == COMPONENT_NAME) {
-                    header.name.id = comp.id;
-                    header.name.text = comp.text;
-                    header.name.rc = comp.rc;
-				}
+                QString componentName = component->name();
+                if (componentName == "background")
+                {
+                    BackgroundComponent comp = _parseBackground(component);
+                    header.backboard = comp;
+                }
+                else
+                {
+                    Component comp = _parseComponent(component);
+                    if (comp.id == COMPONENT_STATUS) {
+                        header.status.id = comp.id;
+                        header.status.mute = comp.elements[0];
+                        header.status.view = comp.elements[1];
+                        header.status.prep = comp.elements[2];
+                        header.status.rc = comp.rc;
+                    } else if (comp.id == COMPONENT_CONTROL) {
+                        header.control = comp;
+                    } else if (comp.id == COMPONENT_DISPLAY) {
+                        header.display.id = comp.id;
+                        header.display.image = comp.elements[0];
+                        header.display.rc = comp.rc;
+                    } else if (comp.id == COMPONENT_NAME) {
+                        header.name.id = comp.id;
+                        header.name.text = comp.text;
+                        header.name.rc = comp.rc;
+                    }
+                }
 			}
 			param.header = header;
 		}
@@ -66,35 +69,39 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
 			BodyParam body;
 			for (auto component = child->first_node(); component != nullptr; component = component->next_sibling())
 			{
-				Component comp = _parseComponent(component);
-                if (comp.id == COMPONENT_BODY_BG)
-				{
-                    body.backboard.image = comp.elements[0];
-                    body.backboard.rc = comp.rc;
-                    body.backboard.id = comp.id;
-                } else if (comp.id == COMPONENT_LTSOCKET) {
-                    body.leftTopSocket.image = comp.elements[0];
-                    body.leftTopSocket.text = comp.text;
-                    body.leftTopSocket.rc = comp.rc;
-                    body.leftTopSocket.id = comp.id;
-                } else if (comp.id == COMPONENT_LBSOCKET) {
-					body.leftBottomSocket.image = comp.elements[0];
-                    body.leftBottomSocket.text = comp.text;
-                    body.leftBottomSocket.rc = comp.rc;
-                    body.leftBottomSocket.id = comp.id;
-                } else if (comp.id == COMPONENT_RTSOCKET) {
-                    body.rightTopSocket.image = comp.elements[0];
-                    body.rightTopSocket.text = comp.text;
-                    body.rightTopSocket.rc = comp.rc;
-                    body.rightTopSocket.id = comp.id;
-                } else if (comp.id == COMPONENT_RBSOCKET) {
-                    body.rightBottomSocket.image = comp.elements[0];
-                    body.rightBottomSocket.text = comp.text;
-                    body.rightBottomSocket.rc = comp.rc;
-                    body.rightBottomSocket.id = comp.id;
-                } else if (comp.id == COMPONENT_PARAMETERS) {
-					//TODO
-				}
+                QString componentName = component->name();
+                if (componentName == "background")
+                {
+                    BackgroundComponent comp = _parseBackground(component);
+                    body.backboard = comp;
+                }
+                else
+                {
+                    Component comp = _parseComponent(component);
+                    if (comp.id == COMPONENT_LTSOCKET) {
+                        body.leftTopSocket.image = comp.elements[0];
+                        body.leftTopSocket.text = comp.text;
+                        body.leftTopSocket.rc = comp.rc;
+                        body.leftTopSocket.id = comp.id;
+                    } else if (comp.id == COMPONENT_LBSOCKET) {
+                        body.leftBottomSocket.image = comp.elements[0];
+                        body.leftBottomSocket.text = comp.text;
+                        body.leftBottomSocket.rc = comp.rc;
+                        body.leftBottomSocket.id = comp.id;
+                    } else if (comp.id == COMPONENT_RTSOCKET) {
+                        body.rightTopSocket.image = comp.elements[0];
+                        body.rightTopSocket.text = comp.text;
+                        body.rightTopSocket.rc = comp.rc;
+                        body.rightTopSocket.id = comp.id;
+                    } else if (comp.id == COMPONENT_RBSOCKET) {
+                        body.rightBottomSocket.image = comp.elements[0];
+                        body.rightBottomSocket.text = comp.text;
+                        body.rightBottomSocket.rc = comp.rc;
+                        body.rightBottomSocket.id = comp.id;
+                    } else if (comp.id == COMPONENT_PARAMETERS) {
+                        //TODO
+                    }
+                }
 			}
 			param.body = body;
 		}
@@ -120,6 +127,55 @@ Component ZtfUtil::_parseComponent(rapidxml::xml_node<>* node)
 		comp.elements.append(_parseImage(child));
 	}
 	return comp;
+}
+
+BackgroundComponent ZtfUtil::_parseBackground(rapidxml::xml_node<>* node)
+{
+    BackgroundComponent comp;
+    if (!node)
+        return comp;
+
+    comp.bApplyImage = false;
+    qreal x, y, w, h;
+    if (auto attr = node->first_attribute("id")) comp.id = QString(attr->value());
+    if (auto attr = node->first_attribute("x")) x = QString(attr->value()).toInt();
+    if (auto attr = node->first_attribute("y")) y = QString(attr->value()).toInt();
+    if (auto attr = node->first_attribute("w")) w = QString(attr->value()).toFloat();
+    if (auto attr = node->first_attribute("h")) h = QString(attr->value()).toFloat();
+    comp.rc = QRect(x, y, w, h);
+
+    if (auto attr = node->first_attribute("radius"))
+    {
+        QStringList rxs = QString(attr->value()).split(" ");
+        if (rxs.size() == 4)
+        {
+            comp.lt_radius = rxs[0].mid(0, rxs[0].indexOf("px")).toInt();
+            comp.rt_radius = rxs[1].mid(0, rxs[1].indexOf("px")).toInt();
+            comp.lb_radius = rxs[2].mid(0, rxs[2].indexOf("px")).toInt();
+            comp.rb_radius = rxs[3].mid(0, rxs[3].indexOf("px")).toInt();
+        }
+    }
+    if (auto attr = node->first_attribute("normal-clr"))
+    {
+        comp.clr_normal = QColor(attr->value());
+    }
+    if (auto attr = node->first_attribute("hoverd-clr"))
+    {
+        comp.clr_hovered = QColor(attr->value());
+    }
+    if (auto attr = node->first_attribute("selected-clr"))
+    {
+        comp.clr_selected = QColor(attr->value());
+    }
+    //todo: gradient
+
+    auto img = node->first_node("image");
+    comp.imageElem = _parseImage(img);
+    if (!comp.imageElem.image.isEmpty())
+    {
+        comp.bApplyImage = true;
+    }
+    return comp;
 }
 
 TextElement ZtfUtil::_parseText(rapidxml::xml_node<>* node)
@@ -206,6 +262,22 @@ XML_NODE ZtfUtil::_exportImage(XMLDOC_REF doc, ImageElement imageElem)
     return imgNode;
 }
 
+XML_NODE ZtfUtil::_exportBackground(XMLDOC_REF doc, BackgroundComponent bg)
+{
+    XML_NODE node = doc.allocate_node(rapidxml::node_element, "background", "");
+    node->append_attribute(doc.allocate_attribute("id", qsToString(bg.id)));
+    _exportRc(doc, node, bg.rc);
+
+    node->append_attribute(doc.allocate_attribute("radius", qsToString(QString("%1px %2px %3px %4px").arg(bg.lt_radius).arg(bg.rt_radius).arg(bg.lb_radius).arg(bg.rb_radius))));
+    node->append_attribute(doc.allocate_attribute("normal-clr", qsToString(bg.clr_normal.name())));
+    node->append_attribute(doc.allocate_attribute("hoverd-clr", qsToString(bg.clr_hovered.name())));
+    node->append_attribute(doc.allocate_attribute("selected-clr", qsToString(bg.clr_selected.name())));
+    {
+        node->append_node(_exportImage(doc, bg.imageElem));
+    }
+    return node;
+}
+
 XML_NODE ZtfUtil::_exportText(XMLDOC_REF doc, TextElement textElem)
 {
     XML_NODE textNode = doc.allocate_node(rapidxml::node_element, "text", qsToString(textElem.text));
@@ -251,12 +323,7 @@ XML_NODE ZtfUtil::_exportHeader(rapidxml::xml_document<> &doc, HeaderParam heade
         display->append_node(_exportImage(doc, headerParam.display.image));
     }
 
-    XML_NODE header_bg = doc.allocate_node(rapidxml::node_element, "component", "");
-    header_bg->append_attribute(doc.allocate_attribute("id", qsToString(headerParam.backboard.id)));
-    _exportRc(doc, header_bg, headerParam.backboard.rc);
-    {
-        header_bg->append_node(_exportImage(doc, headerParam.backboard.image));
-    }
+    XML_NODE header_bg = _exportBackground(doc, headerParam.backboard);
 
 	header->append_node(node_name);
     header->append_node(status);
@@ -303,12 +370,7 @@ XML_NODE ZtfUtil::_exportBody(rapidxml::xml_document<> &doc, BodyParam bodyParam
         rbsocket->append_node(_exportText(doc, bodyParam.rightBottomSocket.text));
     }
 
-    XML_NODE body_bg = doc.allocate_node(rapidxml::node_element, "component", "");
-    body_bg->append_attribute(doc.allocate_attribute("id", qsToString(bodyParam.backboard.id)));
-    _exportRc(doc, body_bg, bodyParam.backboard.rc);
-    {
-        body_bg->append_node(_exportImage(doc, bodyParam.backboard.image));
-    }
+    XML_NODE body_bg = _exportBackground(doc, bodyParam.backboard);
 
     //TODO: paramters
 
@@ -348,9 +410,9 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     QPoint base = nodeParam.header.backboard.rc.topLeft();
 
     //header
-    param.headerBg = nodeParam.header.backboard.image;
-    param.rcHeaderBg = nodeParam.header.backboard.rc.translated(-base);
-    
+    param.headerBg = nodeParam.header.backboard;
+    param.headerBg.rc = nodeParam.header.backboard.rc.translated(-base);
+
     param.mute = nodeParam.header.status.mute;
     param.view = nodeParam.header.status.view;
     param.prep = nodeParam.header.status.prep;
@@ -365,9 +427,9 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.namePos = param.name.rc.topLeft() - base;
 
     //body
-    param.bodyBg = nodeParam.body.backboard.image;
-    param.rcBodyBg = nodeParam.body.backboard.rc.translated(-base);
-    
+    param.bodyBg = nodeParam.body.backboard;
+    param.bodyBg.rc = nodeParam.body.backboard.rc.translated(-base);
+
     param.socket = nodeParam.body.leftTopSocket.image;
     param.szSocket = QSizeF(nodeParam.body.leftTopSocket.image.rc.width(), nodeParam.body.leftTopSocket.image.rc.height());
 

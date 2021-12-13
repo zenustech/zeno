@@ -20,6 +20,7 @@ public:
 private:
 	ZtfUtil();
 	Component _parseComponent(rapidxml::xml_node<>*);
+    BackgroundComponent _parseBackground(rapidxml::xml_node<>*);
 	TextElement _parseText(rapidxml::xml_node<>*);
 	ImageElement _parseImage(rapidxml::xml_node<>*);
 
@@ -28,6 +29,7 @@ private:
 	XML_NODE _exportHeader(rapidxml::xml_document<> &doc, HeaderParam headerParam);
     XML_NODE _exportBody(rapidxml::xml_document<> &doc, BodyParam headerParam);
     XML_NODE _exportText(XMLDOC_REF doc, TextElement textElem);
+    XML_NODE _exportBackground(XMLDOC_REF doc, BackgroundComponent bg);
     XML_NODE _exportImage(XMLDOC_REF doc, ImageElement imageElem);
 
 	void _exportRc(rapidxml::xml_document<>& doc, XML_NODE node, QRect rc);

@@ -14,9 +14,9 @@
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
 		</component>
-		<component id="header-backboard" x="32" y="72" w="208" h="32">
-			<image id="header-backboard-image" x="32" y="72" w="208" h="32" normal=":/icons/header_back_board_blue.svg" hovered="" selected=":/icons/header_back_board_blue_hovered.svg"/>
-		</component>
+		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="10px 10px 0px 0px" normal-clr="#27497C" hoverd-clr="#27497C" selected-clr="#821EA8">
+			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
+		</background>
 	</header>
 	<body>
 		<component id="topleftsocket" x="0" y="128" w="128" h="32">
@@ -35,9 +35,9 @@
 			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
 			<text id="rbsocket-text" x="180" y="173" w="43" h="18" font-family="SimSun">Output</text>
 		</component>
-		<component id="body-backboard" x="32" y="104" w="208" h="128">
-			<image id="body-backboard-image" x="32" y="104" w="208" h="128" normal=":/icons/body_bg.svg" hovered="" selected=""/>
-		</component>
+		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 10px 10px" normal-clr="#323232" hoverd-clr="#323232" selected-clr="#323232">
+			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
+		</background>
 	</body>
 </node>
 

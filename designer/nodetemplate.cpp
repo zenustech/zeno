@@ -92,10 +92,34 @@ void NodeTemplate::setComponentPxElem(QStandardItem *pParentItem, ResizableItemI
     pItem->setData(imgElem.image, NODEPATH_ROLE);
     pItem->setData(imgElem.imageHovered, NODEHOVERPATH_ROLE);
     pItem->setData(imgElem.imageOn, NODESELECTEDPATH_ROLE);
-    QString path = m_param.header.backboard.image.image;
+    QString path = m_param.header.backboard.imageElem.image;
     QSizeF sz(imgElem.rc.width(), imgElem.rc.height());
     ResizableImageItem *pPxItem = new ResizableImageItem(imgElem.image, imgElem.imageHovered, imgElem.imageOn, sz);
     pComponentObj->setCoreItem(pPxItem);
+}
+
+void NodeTemplate::setupBackground(QStandardItem* pParentItem, ResizableItemImpl* pComponentObj, const BackgroundComponent& bg, const QString& showName)
+{
+    pComponentObj->setContent(NC_BACKGROUND);
+    QString id = pComponentObj->getId();
+    QStandardItem *pItem = initModelItemFromGvItem(pComponentObj, id, showName);
+    pParentItem->appendRow(pItem);
+
+    pItem->setData(bg.clr_normal, NODECOLOR_NORMAL_ROLE);
+    pItem->setData(bg.clr_hovered, NODECOLOR_HOVERD_ROLE);
+    pItem->setData(bg.clr_selected, NODECOLOR_SELECTED_ROLE);
+    pItem->setData(bg.lt_radius, NODE_LTRADIUS_ROLE);
+    pItem->setData(bg.rt_radius, NODE_RTRADIUS_ROLE);
+    pItem->setData(bg.lb_radius, NODE_LBRADIUS_ROLE);
+    pItem->setData(bg.rb_radius, NODE_RBRADIUS_ROLE);
+    pItem->setData(bg.imageElem.image, NODEPATH_ROLE);
+    pItem->setData(bg.imageElem.imageHovered, NODEHOVERPATH_ROLE);
+    pItem->setData(bg.imageElem.imageOn, NODESELECTEDPATH_ROLE);
+
+    QSizeF sz(bg.rc.width(), bg.rc.height());
+    ResizableRectItem *pRcItem = new ResizableRectItem(bg);
+    pRcItem->setColors(bg.clr_normal, bg.clr_hovered, bg.clr_selected);
+    pComponentObj->setCoreItem(pRcItem);
 }
 
 void NodeTemplate::setComonentTxtElem(QStandardItem* pParentItem, ResizableItemImpl* pComponentObj, const TextElement& textElem, const QString& showName)
@@ -177,14 +201,13 @@ void NodeTemplate::initStyleModel(const NodeParam& param)
 
     id = m_param.header.backboard.id;
     m_component_header_backboard = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, m_param.header.backboard.rc, this);
-    setComponentPxElem(headerItem, m_component_header_backboard, m_param.header.backboard.image, "Back-board");
+    setupBackground(headerItem, m_component_header_backboard, m_param.header.backboard, "Back-board");
     m_objs.insert(std::make_pair(id, m_component_header_backboard));
 
     id = m_param.header.display.id;
     m_component_display = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, m_param.header.display.rc, this);
     setComponentPxElem(headerItem, m_component_display, m_param.header.display.image, "Display");
     m_objs.insert(std::make_pair(id, m_component_display));
-
 
     id = m_param.header.control.id;
     m_component_control = new ResizableItemImpl(NT_COMPONENT, id, m_param.header.control.rc, this);
@@ -247,7 +270,7 @@ void NodeTemplate::initStyleModel(const NodeParam& param)
 
     id = m_param.body.backboard.id;
     m_component_body_backboard = new ResizableItemImpl(NT_COMPONENT_AS_ELEMENT, id, QRectF(m_param.body.backboard.rc), this);
-    setComponentPxElem(bodyItem, m_component_body_backboard, m_param.body.backboard.image, "Back-board");
+    setupBackground(bodyItem, m_component_body_backboard, m_param.body.backboard, "Back-board");
     m_objs.insert(std::make_pair(id, m_component_body_backboard));
 
     RAII_BLOCKSIGNAL batch(m_model);
@@ -276,7 +299,7 @@ BodyParam NodeTemplate::_exportBodyParam()
     param.leftBottomSocket = _exportSocket(COMPONENT_LBSOCKET);
     param.rightTopSocket = _exportSocket(COMPONENT_RTSOCKET);
     param.rightBottomSocket = _exportSocket(COMPONENT_RBSOCKET);
-    param.backboard = _exportBackground(COMPONENT_BODY_BG);
+    param.backboard = _exportBackgroundComponent(COMPONENT_BODY_BG);
     return param;
 }
     
@@ -285,10 +308,9 @@ HeaderParam NodeTemplate::_exportHeaderParam()
     HeaderParam param;
     param.status = _exportStatusComponent(COMPONENT_STATUS);
     param.control = _exportControlComponent(COMPONENT_CONTROL);
-    param.display = _exportBackground(COMPONENT_DISPLAY);
+    param.display = _exportImageComponent(COMPONENT_DISPLAY);
     param.name = _exportNameComponent(COMPONENT_NAME);
-    param.backboard = _exportBackground(COMPONENT_HEADER_BG);
-
+    param.backboard = _exportBackgroundComponent(COMPONENT_HEADER_BG);
     return param;
 }
 
@@ -357,9 +379,35 @@ TextElement NodeTemplate::_exportTextElement(QString id) {
     return elem;
 }
 
-BackgroundComponent NodeTemplate::_exportBackground(QString id)
+BackgroundComponent NodeTemplate::_exportBackgroundComponent(QString id)
 {
     BackgroundComponent comp;
+    QStandardItem *pItem = getItemFromId(id);
+    comp.id = id;
+    comp.rc = pItem->data(NODEPOS_ROLE).toRect();
+
+    ImageElement elem;
+    elem.id = ELEMENT_BODY_BG;
+    elem.rc = pItem->data(NODEPOS_ROLE).toRectF();
+    elem.image = pItem->data(NODEPATH_ROLE).toString();
+    elem.imageHovered = pItem->data(NODEHOVERPATH_ROLE).toString();
+    elem.imageOn = pItem->data(NODESELECTEDPATH_ROLE).toString();
+
+    comp.clr_normal = qvariant_cast<QColor>(pItem->data(NODECOLOR_NORMAL_ROLE));
+    comp.clr_hovered = qvariant_cast<QColor>(pItem->data(NODECOLOR_HOVERD_ROLE));
+    comp.clr_selected = qvariant_cast<QColor>(pItem->data(NODECOLOR_SELECTED_ROLE));
+
+    comp.lt_radius = pItem->data(NODE_LTRADIUS_ROLE).toInt();
+    comp.rt_radius = pItem->data(NODE_RTRADIUS_ROLE).toInt();
+    comp.lb_radius = pItem->data(NODE_LBRADIUS_ROLE).toInt();
+    comp.rb_radius = pItem->data(NODE_RBRADIUS_ROLE).toInt();
+
+    return comp;
+}
+
+ImageComponent NodeTemplate::_exportImageComponent(QString id)
+{
+    ImageComponent comp;
     QStandardItem *pItem = getItemFromId(id);
     comp.id = id;
     comp.rc = pItem->data(NODEPOS_ROLE).toRect();
@@ -534,6 +582,16 @@ void NodeTemplate::onDataChanged(const QModelIndex &topLeft, const QModelIndex &
                     pixmapItem->resetImage(normal, hovered, selected, sz);
                 }
             }
+            if (gvItem->getContent() == NC_BACKGROUND)
+            {
+                QSizeF sz = QSizeF(gvItem->width(), gvItem->height());
+                QString normal = topLeft.data(NODEPATH_ROLE).toString();
+                QString hovered = topLeft.data(NODEHOVERPATH_ROLE).toString();
+                QString selected = topLeft.data(NODESELECTEDPATH_ROLE).toString();
+                ResizableCoreItem* pCoreItem = gvItem->coreItem();
+                auto rectItem = qgraphicsitem_cast<ResizableRectItem *>(pCoreItem);
+                //todo...
+            }
         }
     } 
     else if (roles.contains(NODEFONT_ROLE) || roles.contains(NODEFONTCOLOR_ROLE))
@@ -574,6 +632,30 @@ void NodeTemplate::onDataChanged(const QModelIndex &topLeft, const QModelIndex &
                     pCoreItem->setText(text);
                 }
             }
+            else if (gvItem->getContent() == NC_BACKGROUND)
+            {
+                ResizableRectItem *pCoreItem = qgraphicsitem_cast<ResizableRectItem *>(gvItem->coreItem());
+            }
+        }
+    }
+    else if (roles.contains(NODECOLOR_NORMAL_ROLE) || roles.contains(NODECOLOR_HOVERD_ROLE) || roles.contains(NODECOLOR_SELECTED_ROLE)
+        || roles.contains(NODE_LTRADIUS_ROLE) || roles.contains(NODE_RTRADIUS_ROLE) 
+        || roles.contains(NODE_LBRADIUS_ROLE) || roles.contains(NODE_RBRADIUS_ROLE))
+    {
+        QString id = topLeft.data(NODEID_ROLE).toString();
+        auto it = m_objs.find(id);
+        if (it != m_objs.end()) {
+            ResizableItemImpl *gvItem = it->second;
+            int ltradius = topLeft.data(NODE_LTRADIUS_ROLE).toInt();
+            int rtradius = topLeft.data(NODE_RTRADIUS_ROLE).toInt();
+            int lbradius = topLeft.data(NODE_LBRADIUS_ROLE).toInt();
+            int rbradius = topLeft.data(NODE_RBRADIUS_ROLE).toInt();
+            QColor normal = qvariant_cast<QColor>(topLeft.data(NODECOLOR_NORMAL_ROLE));
+            QColor hovered = qvariant_cast<QColor>(topLeft.data(NODECOLOR_HOVERD_ROLE));
+            QColor selected = qvariant_cast<QColor>(topLeft.data(NODECOLOR_SELECTED_ROLE));
+            ResizableRectItem *pCoreItem = qgraphicsitem_cast<ResizableRectItem *>(gvItem->coreItem());
+            pCoreItem->setColors(normal, hovered, selected);
+            pCoreItem->setRadius(ltradius, rtradius, lbradius, rbradius);
         }
     }
     emit markDirty();
