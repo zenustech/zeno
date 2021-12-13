@@ -2,6 +2,7 @@
 #define __RESIZE_COREITEM_H__
 
 #include "framework.h"
+#include <nodesys/zenosvgitem.h>
 
 class ResizableCoreItem : public QGraphicsItem
 {
@@ -59,12 +60,22 @@ private:
 class ResizableRectItem : public ResizableCoreItem
 {
 public:
-	ResizableRectItem(QRectF rc, QGraphicsItem* parent = nullptr);
+    ResizableRectItem(const BackgroundComponent &comp, QGraphicsItem *parent = nullptr);
 	QRectF boundingRect() const override;
 	void resize(QSizeF sz) override;
+    void setColors(const QColor& clrNormal, const QColor& clrHovered, const QColor& clrSelected);
+    void setRadius(int lt, int rt, int lb, int rb);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
 private:
-	QGraphicsRectItem* m_rectItem;
+    QPainterPath shape() const override;
+    std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize) const;
+
+    int lt_radius, rt_radius, lb_radius, rb_radius;
+    QColor m_clrNormal, m_clrHovered, m_clrSelected;
+    QRectF m_rect;
+    ZenoImageItem* m_img;
+    bool m_bFixRadius;
 };
 
 class ResizableEclipseItem : public ResizableCoreItem

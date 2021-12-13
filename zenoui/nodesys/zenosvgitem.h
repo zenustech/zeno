@@ -28,6 +28,7 @@ class ZenoImageItem : public QGraphicsObject
     typedef QGraphicsObject _base;
 public:
     ZenoImageItem(const ImageElement &elem, const QSizeF& sz, QGraphicsItem *parent = 0);
+    ZenoImageItem(const QString &normal, const QString &hovered, const QString &selected, const QSizeF &sz, QGraphicsItem *parent = 0);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     void resize(QSizeF sz);

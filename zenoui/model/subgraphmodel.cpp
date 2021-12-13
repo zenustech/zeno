@@ -1,5 +1,7 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
+#include <QJsonObject>
+#include <QJsonArray>
 
 
 SubGraphModel::SubGraphModel(QObject *parent)
@@ -47,9 +49,106 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
     m_key2Row.insert(std::make_pair(id, nRow));
 }
 
-void SubGraphModel::removeNode(const QString &id) {
+void SubGraphModel::removeNode(const QModelIndex& index)
+{
     //remove node by id and update params from other node.
-    //removeRows(index.row(), 1);
+    PlainNodeItem* pItem = itemFromIndex(index);
+    if (!pItem)
+        return;
+
+    QString inputId = index.data(ROLE_OBJID).toString();
+
+    auto iter = pItem->m_datas.find(ROLE_INPUTS);
+    if (iter != pItem->m_datas.end())
+    {
+        // in this loop, input refers to current node, output refers to the node output data to this node.
+        const QJsonObject& inputs = iter->second.toJsonObject();
+        for (QString inputPort : inputs.keys())
+        {
+            const QJsonArray &arr = inputs.value(inputPort).toArray();
+            if (arr[0].isNull())
+                continue;
+            const QString &outputId = arr[0].toString();
+            const QString &outputPort = arr[1].toString();
+
+            const QModelIndex &fromIndex = this->index(outputId);
+            NODEITEM_PTR outputItem = m_nodes[outputId];
+            QJsonObject outputs = outputItem->data(ROLE_OUTPUTS).toJsonObject();
+            for (auto outputPort : outputs.keys())
+            {
+                QJsonObject inputObj = outputs.value(outputPort).toObject();
+                inputObj.remove(inputId);
+                outputs[outputPort] = inputObj;
+                emit linkChanged(false, outputId, outputPort, inputId, inputPort);//not only modify core data but emit signal to ui.
+            }
+            setData(fromIndex, outputs, ROLE_OUTPUTS);
+        }
+    }
+
+    /* output format :
+    "outputs" :
+            {
+                "port1" : {
+                    "node1": "port_in_node1",
+                    "node2": "port_in_node2",
+                },
+                "port2" : {
+                    ...
+                }
+            }
+    */
+
+    // in this loop, output refers to current node's output, input refers to what output points to.
+    const QJsonObject outputs = index.data(ROLE_OUTPUTS).toJsonObject();
+    for (auto outputPort : outputs.keys())
+    {
+        QJsonObject outputInfo = outputs.value(outputPort).toObject();
+        for (auto otherInputId : outputInfo.keys())
+        {
+            const QString& inputPort = outputInfo.value(otherInputId).toString();
+            const QModelIndex& otherIndex = this->index(otherInputId);
+            QJsonObject inputs = otherIndex.data(ROLE_INPUTS).toJsonObject();
+            QJsonArray arr = inputs[inputPort].toArray();
+            arr[0] = QJsonValue(QJsonValue::Null);
+            arr[1] = QJsonValue(QJsonValue::Null);
+            inputs[inputPort] = arr;
+            setData(otherIndex, inputs, ROLE_INPUTS);
+            emit linkChanged(false, inputId, outputPort, otherInputId, inputPort);//not only modify core data but emit signal to ui.
+        }
+    }
+
+    removeRows(index.row(), 1);
+}
+
+void SubGraphModel::removeLink(const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
+{
+    const QModelIndex& outIdx = this->index(outputId);
+    QJsonObject outputs = outIdx.data(ROLE_OUTPUTS).toJsonObject();
+    /* output format :
+    *  outputs:
+       {
+           "port1" : {
+                "node1": "port_in_node1",
+                "node2": "port_in_node2",
+           },
+           "port2" : {
+                    ...
+           }
+       }
+    */
+    QJsonObject outputInfo = outputs.value(outputPort).toObject();
+    //todo: more port in the same input node?
+    outputInfo.remove(inputId);
+    outputs[outputPort] = outputInfo;
+    setData(outIdx, outputs, ROLE_OUTPUTS);
+
+    const QModelIndex& inIdx = this->index(inputId);
+    QJsonObject inputs = inIdx.data(ROLE_INPUTS).toJsonObject();
+    QJsonArray arr = inputs[inputPort].toArray();
+    arr[0] = QJsonValue(QJsonValue::Null);
+    arr[1] = QJsonValue(QJsonValue::Null);
+
+    emit linkChanged(false, outputId, outputPort, inputId, inputPort);
 }
 
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const

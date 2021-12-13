@@ -25,6 +25,7 @@ public slots:
     void onNewNodeCreated();    //todo: category.
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
+    void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
 
 private:
     void updateNodePos(ZenoNode *pNode, QPointF newPos);
