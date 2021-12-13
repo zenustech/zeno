@@ -6,6 +6,8 @@
 #include "zenosvgitem.h"
 #include "zenobackgrounditem.h"
 #include "nodesys_common.h"
+#include "zenosocketitem.h"
+
 
 class ZenoNode : public QGraphicsObject
 {
@@ -24,6 +26,7 @@ public:
     void init(const QModelIndex& index);
     void initParams(int& y, int& width);
     void initSockets(int& y, int& width);
+    void updateSocketPos();
     QPersistentModelIndex index() { return m_index; }
    
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -36,15 +39,18 @@ public:
 
 signals:
     void nodePositionChange(const QString&);
+    void socketClicked(const QString& id, bool bInput, const QString& name);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
+    bool sceneEvent(QEvent* event) override;
 
 private:
     QPersistentModelIndex m_index;
     NodeUtilParam m_renderParams;
-    std::map<QString, ZenoImageItem*> m_inSocks;
-    std::map<QString, ZenoImageItem*> m_outSocks;
+    std::map<QString, ZenoSocketItem *> m_inSocks;
+    std::map<QString, ZenoSocketItem *> m_outSocks;
 
     QGraphicsTextItem* m_nameItem;
     ZenoBackgroundItem *m_headerBg;

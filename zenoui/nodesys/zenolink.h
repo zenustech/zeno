@@ -33,10 +33,32 @@ private:
     mutable QPainterPath lastPath;
 };
 
-class ZenoLinkFull : public ZenoLink
+class ZenoTempLink : public ZenoLink
 {
+    Q_OBJECT
 public:
-    ZenoLinkFull(const EdgeInfo& info);
+    ZenoTempLink(SOCKET_INFO sockInfo);
+    virtual QPointF getSrcPos() const override;
+    virtual QPointF getDstPos() const override;
+    void setFloatingPos(QPointF pos);
+    void getFixedInfo(SOCKET_INFO& info);
+
+protected:
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+
+    enum { Type = ZTYPE_TEMPLINK };
+    int type() const override;
+
+private:
+    QPointF m_floatingPos;
+    SOCKET_INFO m_info;
+};
+
+class ZenoFullLink : public ZenoLink
+{
+    Q_OBJECT
+public:
+    ZenoFullLink(const EdgeInfo& info);
 
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;

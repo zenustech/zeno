@@ -18,6 +18,7 @@ struct PlainNodeItem
             return QVariant();
         return it->second;
     }
+
     std::map<int, QVariant> m_datas;
 };
 

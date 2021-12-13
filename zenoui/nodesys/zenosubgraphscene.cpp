@@ -8,6 +8,7 @@
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_subgraphModel(nullptr)
+    , m_tempLink(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -30,6 +31,7 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         const QString& id = idx.data(ROLE_OBJID).toString();
         pNode->setPos(pos);
         addItem(pNode);
+        pNode->updateSocketPos();
         m_nodes.insert(std::make_pair(id, pNode));
     }
 
@@ -52,7 +54,7 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
                 const QPointF& fromPos = fromNode->getPortPos(false, outputPort);
 
                 EdgeInfo info(fromId, id, outputPort, inputPort);
-                ZenoLinkFull *pEdge = new ZenoLinkFull(info);
+                ZenoFullLink *pEdge = new ZenoFullLink(info);
                 pEdge->updatePos(fromPos, node->getPortPos(true, inputPort));
                 addItem(pEdge);
                 m_links.insert(std::make_pair(info, pEdge));
@@ -74,6 +76,90 @@ QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, cons
     Q_ASSERT(it != m_nodes.end());
     QPointF pos = it->second->getPortPos(bInput, portName);
     return pos;
+}
+
+bool ZenoSubGraphScene::_enableLink(const QString &outputNode, const QString &outputSocket, const QString& inputNode, const QString& inputSocket)
+{
+    return false;
+}
+
+void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    QList<QGraphicsItem *> items = this->items(event->scenePos());
+    ZenoSocketItem* pSocket = nullptr;
+    for (auto item : items)
+    {
+        if (pSocket = qgraphicsitem_cast<ZenoSocketItem*>(item))
+            break;
+    }
+
+    //
+    if (!m_tempLink && pSocket)
+    {
+        SOCKET_INFO info = pSocket->getSocketInfo();
+        QPointF wtf = pSocket->scenePos();
+        m_tempLink = new ZenoTempLink(info);
+        addItem(m_tempLink);
+        return;
+    }
+    else if (m_tempLink && pSocket)
+    {
+        SOCKET_INFO info1, info2;
+        m_tempLink->getFixedInfo(info1);
+        info2 = pSocket->getSocketInfo();
+        if (info1.binsock == info2.binsock)
+            return;
+
+        QString outId, outPort, inId, inPort;
+        QPointF outPos, inPos;
+        if (info1.binsock) {
+            outId = info2.nodeid;
+            outPort = info2.name;
+            outPos = info2.pos;
+            inId = info1.nodeid;
+            inPort = info1.name;
+            inPos = info1.pos;
+        } else {
+            outId = info1.nodeid;
+            outPort = info1.name;
+            outPos = info1.pos;
+            inId = info2.nodeid;
+            inPort = info2.name;
+            inPos = info2.pos;
+        }
+
+        EdgeInfo info(outId, inId, outPort, inPort);
+        ZenoFullLink *pEdge = new ZenoFullLink(info);
+        pEdge->updatePos(outPos, inPos);
+        addItem(pEdge);
+        m_links.insert(std::make_pair(info, pEdge));
+
+        //todo: update model.
+        //actually should update model, and create new link by model!
+
+        removeItem(m_tempLink);
+        delete m_tempLink;
+        m_tempLink = nullptr;
+        return;
+    }
+    else if (m_tempLink)
+    {
+        removeItem(m_tempLink);
+        delete m_tempLink;
+        m_tempLink = nullptr;
+        return;
+    }
+
+    QGraphicsScene::mousePressEvent(event);
+}
+
+void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+    if (m_tempLink) {
+        QPointF pos = event->scenePos();
+        m_tempLink->setFloatingPos(pos);
+    }
+    QGraphicsScene::mouseMoveEvent(event);
 }
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -108,6 +194,8 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 }
 
+
+
 void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
 {
     if (bAdd)
@@ -117,7 +205,7 @@ void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const 
     else
     {
         EdgeInfo info(outputId, inputId, outputPort, inputPort);
-        ZenoLinkFull *pLink = m_links[info];
+        ZenoFullLink *pLink = m_links[info];
         removeItem(pLink);
         delete pLink;
         m_links.erase(info);
@@ -154,7 +242,8 @@ void ZenoSubGraphScene::updateNodePos(ZenoNode* pNode, QPointF newPos)
         const QPointF& inputPos = pNode->getPortPos(true, inputPort);
 
         EdgeInfo info(outputId, id, outputPort, inputPort);
-        ZenoLinkFull* pLink = m_links[info];
+        ZenoFullLink* pLink = m_links[info];
+        Q_ASSERT(pLink);
         pLink->updatePos(outputPos, inputPos);
     }
 
@@ -181,7 +270,7 @@ void ZenoSubGraphScene::updateNodePos(ZenoNode* pNode, QPointF newPos)
             const QPointF &inputPos = m_nodes[inputId]->getPortPos(true, inputPort);
 
             EdgeInfo info(id, inputId, outputPort, inputPort);
-            ZenoLinkFull* pLink = m_links[info];
+            ZenoFullLink* pLink = m_links[info];
             pLink->updatePos(outputPos, inputPos);
         }
     }
@@ -191,19 +280,24 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Delete)
     {
-        for (auto item : this->selectedItems())
+        QList<QGraphicsItem*> selItems = this->selectedItems();
+        QList<ZenoNode *> nodes;
+        QList<ZenoFullLink *> links;
+        for (auto item : selItems)
         {
-            if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
-            {
-                const QPersistentModelIndex &index = pNode->index();
-                m_subgraphModel->removeNode(index);
+            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+                nodes.append(pNode);
+            } else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item)) {
+                links.append(pLink);
             }
-            else if (ZenoLinkFull* pLink = qgraphicsitem_cast<ZenoLinkFull*>(item))
-            {
-                //todo: directly update model.
-                const EdgeInfo& info = pLink->linkInfo();
-                m_subgraphModel->removeLink(info.srcNode, info.srcPort, info.dstNode, info.dstPort);
-            }
+        }
+        for (auto item : links) {
+            const EdgeInfo &info = item->linkInfo();
+            m_subgraphModel->removeLink(info.srcNode, info.srcPort, info.dstNode, info.dstPort);
+        }
+        for (auto item : nodes) {
+            const QPersistentModelIndex &index = item->index();
+            m_subgraphModel->removeNode(index);
         }
     }
     QGraphicsScene::keyPressEvent(event);

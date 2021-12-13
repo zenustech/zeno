@@ -34,10 +34,15 @@ public:
     void resize(QSizeF sz);
     void toggle(bool bSelected);
 
+signals:
+    void clicked();
+    void toggled(bool);
+
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
     QString m_normal;

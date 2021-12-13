@@ -96,6 +96,12 @@ void ZenoImageItem::toggle(bool bSelected)
     }
 }
 
+void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    _base::mousePressEvent(event);
+    emit clicked();
+}
+
 void ZenoImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
     if (!m_hovered.isEmpty())

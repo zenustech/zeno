@@ -147,6 +147,8 @@ void SubGraphModel::removeLink(const QString& outputId, const QString& outputPor
     QJsonArray arr = inputs[inputPort].toArray();
     arr[0] = QJsonValue(QJsonValue::Null);
     arr[1] = QJsonValue(QJsonValue::Null);
+    inputs[inputPort] = arr;
+    setData(inIdx, inputs, ROLE_INPUTS);
 
     emit linkChanged(false, outputId, outputPort, inputId, inputPort);
 }

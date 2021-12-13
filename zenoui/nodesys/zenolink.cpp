@@ -61,7 +61,47 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoLinkFull::ZenoLinkFull(const EdgeInfo& info)
+ZenoTempLink::ZenoTempLink(SOCKET_INFO sockInfo)
+    : ZenoLink(nullptr)
+    , m_info(sockInfo)
+    , m_floatingPos(sockInfo.pos)
+{
+}
+
+QPointF ZenoTempLink::getSrcPos() const
+{
+    return m_info.binsock ? m_floatingPos : m_info.pos;
+}
+
+QPointF ZenoTempLink::getDstPos() const
+{
+    return m_info.binsock ? m_info.pos : m_floatingPos;
+}
+
+void ZenoTempLink::setFloatingPos(QPointF pos)
+{
+    m_floatingPos = pos;
+    update();
+}
+
+void ZenoTempLink::getFixedInfo(SOCKET_INFO& info)
+{
+    info = m_info;
+}
+
+int ZenoTempLink::type() const
+{
+    return Type;
+}
+
+void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    ZenoLink::mouseMoveEvent(event);
+    m_floatingPos = this->scenePos();
+}
+
+
+ZenoFullLink::ZenoFullLink(const EdgeInfo& info)
     : ZenoLink(nullptr)
     , m_linkInfo(info)
 {
@@ -69,38 +109,38 @@ ZenoLinkFull::ZenoLinkFull(const EdgeInfo& info)
     setFlag(QGraphicsItem::ItemIsSelectable);
 }
 
-void ZenoLinkFull::updatePos(const QPointF& srcPos, const QPointF& dstPos)
+void ZenoFullLink::updatePos(const QPointF& srcPos, const QPointF& dstPos)
 {
     m_srcPos = srcPos;
     m_dstPos = dstPos;
 }
 
-void ZenoLinkFull::updateLink(const EdgeInfo& info)
+void ZenoFullLink::updateLink(const EdgeInfo& info)
 {
     m_linkInfo = info;
 }
 
-EdgeInfo ZenoLinkFull::linkInfo() const
+EdgeInfo ZenoFullLink::linkInfo() const
 {
     return m_linkInfo;
 }
 
-QPointF ZenoLinkFull::getSrcPos() const
+QPointF ZenoFullLink::getSrcPos() const
 {
     return m_srcPos;
 }
 
-QPointF ZenoLinkFull::getDstPos() const
+QPointF ZenoFullLink::getDstPos() const
 {
     return m_dstPos;
 }
 
-void ZenoLinkFull::mousePressEvent(QGraphicsSceneMouseEvent *event)
+void ZenoFullLink::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     ZenoLink::mousePressEvent(event);
 }
 
-int ZenoLinkFull::type() const
+int ZenoFullLink::type() const
 {
     return Type;
 }

@@ -7,7 +7,8 @@
 
 class SubGraphModel;
 class ZenoNode;
-class ZenoLinkFull;
+class ZenoFullLink;
+class ZenoTempLink;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -18,6 +19,8 @@ public:
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
 
 protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event);
 
@@ -29,11 +32,14 @@ public slots:
 
 private:
     void updateNodePos(ZenoNode *pNode, QPointF newPos);
+    bool _enableLink(const QString &outputNode, const QString &outputSocket,
+                     const QString &inputNode, const QString &inputSocket);
 
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
     std::map<QString, ZenoNode*> m_nodes;
-    std::map<EdgeInfo, ZenoLinkFull*/*, cmpEdge*/> m_links;
+    std::map<EdgeInfo, ZenoFullLink*/*, cmpEdge*/> m_links;
+    ZenoTempLink* m_tempLink;
 };
 
 #endif
