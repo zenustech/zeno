@@ -200,6 +200,7 @@ class NodeEditor(QWidget):
         self.initDescriptors()
         self.scene.reloadNodes()
         self.edit_graphname.setCurrentText(name)
+        self.view.check_scene_rect()
 
     def on_new_graph(self):
         name = self.edit_graphname.currentText()
