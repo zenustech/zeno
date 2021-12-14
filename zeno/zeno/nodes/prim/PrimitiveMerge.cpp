@@ -8,14 +8,11 @@
 
 namespace zeno {
 
-
-struct PrimitiveMerge : zeno::INode {
-  virtual void apply() override {
-    auto list = get_input<ListObject>("listPrim");
+std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list) {
     auto outprim = std::make_shared<PrimitiveObject>();
 
     size_t len = 0;
-    int id = 0;
+    size_t poly_len = 0;
 
     //fix pyb
     for (auto const &prim: list->get<std::shared_ptr<PrimitiveObject>>()) {
@@ -48,10 +45,27 @@ struct PrimitiveMerge : zeno::INode {
         for (auto const &idx: prim->quads) {
             outprim->quads.push_back(idx + len);
         }
+        for (auto const &idx: prim->loops) {
+            outprim->loops.push_back(idx + len);
+        }
+        size_t sub_poly_len = 0;
+        for (auto const &poly: prim->polys) {
+            sub_poly_len = std::max(sub_poly_len, (size_t)(poly.first + poly.second));
+            outprim->polys.emplace_back(poly.first + poly_len, poly.second);
+        }
+        poly_len += sub_poly_len;
         len += prim->size();
         //fix pyb
         outprim->resize(len);
     }
+
+    return outprim;
+}
+
+struct PrimitiveMerge : zeno::INode {
+  virtual void apply() override {
+    auto list = get_input<ListObject>("listPrim");
+    auto outprim = primitive_merge(list);
 
     set_output("prim", std::move(outprim));
   }
