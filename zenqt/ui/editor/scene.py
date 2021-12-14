@@ -402,6 +402,29 @@ class QDMGraphicsView(QGraphicsView):
         self.node_editor = parent
 
         self._last_mouse_pos = None
+        self._last_mouse_move_pos = None
+
+        self.initShortcuts()
+
+    def initShortcuts(self):
+        self.msgNumericOperator = QShortcut(QKeySequence(Qt.Key_O), self)
+        self.msgNumericOperator.activated.connect(lambda: self.opNumericOperator())
+
+        self.msgView = QShortcut(QKeySequence(Qt.Key_D), self)
+        self.msgView.activated.connect(lambda: self.opView())
+    
+    def opView(self):
+        itemList = self.scene().selectedItems()
+        for n in itemList:
+            if isinstance(n, QDMGraphicsNode):
+                n.options['VIEW'].setChecked(not n.options['VIEW'].checked)
+
+    def opNumericOperator(self):
+        if self._last_mouse_move_pos:
+            self.lastContextMenuPos = self.mapToScene(self._last_mouse_move_pos)
+            act = QAction()
+            act.setText('NumericOperator')
+            self.menuTriggered(act)
 
     def setScene(self, scene):
         super().setScene(scene)
@@ -570,6 +593,7 @@ class QDMGraphicsView(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        self._last_mouse_move_pos = event.pos()
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
             edge = self.dragingEdge
