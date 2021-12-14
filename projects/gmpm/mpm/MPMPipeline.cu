@@ -269,8 +269,8 @@ struct ApplyBoundaryOnZSGrid : INode {
 #else
       if (boundary->hasVelocityField()) {
         match([&](const auto &sdf, const auto &vel) {
-          auto ls = SdfVelField{boundary->getLevelSetView(sdf),
-                                boundary->getLevelSetView(vel)};
+          auto ls = SdfVelFieldView{boundary->getLevelSetView(sdf),
+                                    boundary->getLevelSetView(vel)};
           projectBoundary(cudaPol, ls, *boundary, partition, grid);
         })(boundary->getSdfField(), boundary->getVelocityField());
       } else {

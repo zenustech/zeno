@@ -100,8 +100,14 @@ struct ZenoLevelSet : IObject {
       zs::AnalyticLevelSet<zs::analytic_geometry_e::Cuboid, float, 3>;
   using sphere_t =
       zs::AnalyticLevelSet<zs::analytic_geometry_e::Sphere, float, 3>;
-  using levelset_t = zs::variant<spls_t, plane_t, cuboid_t, sphere_t>;
-  enum category_e { LevelSet, Plane, Cuboid, Sphere };
+  using cylinder_t =
+      zs::AnalyticLevelSet<zs::analytic_geometry_e::Cylinder, float, 3>;
+
+  // using sdf_vel_t = LevelSetRefs<float, 3>;
+
+  using levelset_t =
+      zs::variant<spls_t, plane_t, cuboid_t, sphere_t, cylinder_t/*, sdf_vel_t*/>;
+  enum category_e { LevelSet, Plane, Cuboid, Sphere, Cylinder, SdfVel };
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
@@ -132,6 +138,9 @@ struct ZenoBoundary : IObject {
   using plane_t = typename ZenoLevelSet::plane_t;
   using cuboid_t = typename ZenoLevelSet::cuboid_t;
   using sphere_t = typename ZenoLevelSet::sphere_t;
+  using cylinder_t = typename ZenoLevelSet::cylinder_t;
+  // using sdf_vel_t = typename ZenoLevelSet::sdf_vel_t;
+
   using levelset_t = typename ZenoLevelSet::levelset_t;
   using category_e = typename ZenoLevelSet::category_e;
 
