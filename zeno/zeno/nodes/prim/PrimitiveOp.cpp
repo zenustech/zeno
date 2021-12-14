@@ -162,7 +162,15 @@ struct PrimitiveMix : INode {
     virtual void apply() override{
         auto primA = get_input<PrimitiveObject>("primA");
         auto primB = get_input<PrimitiveObject>("primB");
-        auto primOut = get_input<PrimitiveObject>("primOut");
+
+        std::shared_ptr<zeno::PrimitiveObject> primOut;
+        if(has_input("primOut"))
+        {
+            primOut = get_input<PrimitiveObject>("primOut");
+        }
+        else {
+            primOut = std::make_shared<zeno::PrimitiveObject>(*primA);
+        }
         auto attrA = std::get<std::string>(get_param("attrA"));
         auto attrB = std::get<std::string>(get_param("attrB"));
         auto attrOut = std::get<std::string>(get_param("attrOut"));
@@ -176,7 +184,7 @@ struct PrimitiveMix : INode {
             }
           }
     }); }); });
-        set_output("primOut", get_input("primOut"));
+        set_output("primOut", primOut);
     }
 };
 ZENDEFNODE(PrimitiveMix,

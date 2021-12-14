@@ -291,7 +291,6 @@ namespace zeno {
             auto outprim = std::make_unique<PrimitiveObject>();
             std::vector<zeno::vec3f> new_pos_attr;
             std::unordered_map<int32_t, int32_t> point_map;
-            printf("0000000000000\n");
             for(auto key:refprim->attr_keys())
             {
                 if (key != "pos")
@@ -303,7 +302,6 @@ namespace zeno {
                 // using T = std::decay_t<decltype(refprim->attr(key)[0])>;
                 // outprim->add_attr<T>(key);
             }
-            printf("111111111111\n");
             std::vector<bool> is_above_arr(ref_pos_attr.size());
             for (int32_t i = 0; i < ref_pos_attr.size(); ++i)
             {

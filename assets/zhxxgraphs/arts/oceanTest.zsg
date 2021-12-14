@@ -8,7 +8,7 @@
       "WaveExponent": [
        null,
        null,
-       10
+       8
       ],
       "depth": [
        null,
@@ -43,7 +43,7 @@
       "speed": [
        null,
        null,
-       100.0
+       300.0
       ],
       "timeshift": [
        null,
@@ -53,7 +53,7 @@
       "amp": [
        null,
        null,
-       1.0
+       2.0
       ],
       "SRC": [
        null,
@@ -63,98 +63,11 @@
      },
      "params": {},
      "uipos": [
-      -11928.753855494298,
-      -5036.9450046600605
+      -11958.295021536691,
+      -5464.9135463699595
      ],
      "options": [
       "ONCE"
-     ]
-    },
-    "41979b0e-OceanCompute": {
-     "name": "OceanCompute",
-     "inputs": {
-      "grid": [
-       "8f7c26e6-Make2DGridPrimitive",
-       "prim",
-       null
-      ],
-      "time": [
-       "69844817-GetTime",
-       "time",
-       null
-      ],
-      "ocean_FFT": [
-       "2476e33b-MakeCuOcean",
-       "gpuOcean",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -11042.776133804613,
-      -5072.062768747418
-     ],
-     "options": []
-    },
-    "69844817-GetTime": {
-     "name": "GetTime",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -11510.89975832808,
-      -5276.678520695156
-     ],
-     "options": []
-    },
-    "a32f6668-PrimitiveColorByHeatmap": {
-     "name": "PrimitiveColorByHeatmap",
-     "inputs": {
-      "prim": [
-       "dd211958-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "heatmap": [
-       "e1557c4b-MakeHeatmap",
-       "heatmap",
-       null
-      ],
-      "min": [
-       "0eaf6242-PrimitiveReduction",
-       "result",
-       0.0
-      ],
-      "max": [
-       "51d15323-x",
-       "result",
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "attrName": "speed"
-     },
-     "uipos": [
-      -9783.138972326693,
-      -5021.560819850065
-     ],
-     "options": [
-      "VIEW"
      ]
     },
     "8f7c26e6-Make2DGridPrimitive": {
@@ -163,12 +76,12 @@
       "nx": [
        null,
        null,
-       2048
+       512
       ],
       "ny": [
        null,
        null,
-       2048
+       512
       ],
       "sizeX": [
        null,
@@ -202,17 +115,32 @@
       "hasFaces": true
      },
      "uipos": [
-      -11915.711700844384,
-      -5430.677020506632
+      -12332.22692501589,
+      -5179.098368559089
      ],
      "options": []
     },
-    "7c2b7f2f-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
+    "4f351bc4-OceanVolume": {
+     "name": "OceanVolume",
      "inputs": {
-      "prim": [
-       "41979b0e-OceanCompute",
-       "OceanData",
+      "OceanSpectrum": [
+       "2476e33b-MakeCuOcean",
+       "gpuOcean",
+       null
+      ],
+      "depth": [
+       "1e79d136-NumericFloat",
+       "value",
+       0.0
+      ],
+      "OceanGrid": [
+       "8f7c26e6-Make2DGridPrimitive",
+       "prim",
+       null
+      ],
+      "dx": [
+       "6883d9e6-NumericFloat",
+       "value",
        null
       ],
       "SRC": [
@@ -223,23 +151,59 @@
      },
      "params": {},
      "uipos": [
-      -10798.016012746046,
-      -5103.1073286291
+      -11332.029221879482,
+      -5408.073317518973
      ],
      "options": []
     },
-    "dd211958-ParticlesWrangle": {
+    "1e79d136-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 200.0
+     },
+     "uipos": [
+      -12102.274486664273,
+      -4925.765874872694
+     ],
+     "options": []
+    },
+    "6883d9e6-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 5.0
+     },
+     "uipos": [
+      -11680.518617021267,
+      -4785.5718085106355
+     ],
+     "options": []
+    },
+    "251a251b-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "7c2b7f2f-PrimitiveCalcNormal",
-       "prim",
+       "4f351bc4-OceanVolume",
+       "oceanSurface",
        null
       ],
       "zfxCode": [
-       "0ffa055c-MakeMultilineString",
-       "value",
-       "@speed = @pos.x"
+       null,
+       null,
+       ""
       ],
       "params": [
        null,
@@ -254,30 +218,14 @@
      },
      "params": {},
      "uipos": [
-      -10479.407514450864,
-      -5147.182080924857
+      -11051.225663783152,
+      -5158.5550170032075
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
-    "0ffa055c-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "@speed = @pos.y"
-     },
-     "uipos": [
-      -10857.803468208085,
-      -5254.0462427745615
-     ],
-     "options": []
-    },
-    "e1557c4b-MakeHeatmap": {
+    "8bf56642-MakeHeatmap": {
      "name": "MakeHeatmap",
      "inputs": {
       "SRC": [
@@ -288,11 +236,11 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "4\n0 0 0 0.35571365051134135\n0.5 0 0 1\n0.7824874547417894 0 1 0.49545829892650844\n1 1 1 1"
+      "_RAMPS": "5\n0 0 0.5295480715920569 1\n0.28675916580185823 0 1 1\n0.5126124845400427 0 1 0\n0.7551781982571191 1 1 0\n1 1 0.24299503859659097 0"
      },
      "uipos": [
-      -10504.046242774555,
-      -4848.5549132947945
+      -9656.416350410333,
+      -4601.672908097002
      ],
      "options": [],
      "color_ramps": [
@@ -300,41 +248,2617 @@
        0,
        [
         0,
-        0,
-        0.35571365051134135
-       ]
-      ],
-      [
-       0.5,
-       [
-        0,
-        0,
+        0.5295480715920569,
         1
        ]
       ],
       [
-       0.7824874547417894,
+       0.28675916580185823,
        [
         0,
         1,
-        0.49545829892650844
+        1
+       ]
+      ],
+      [
+       0.5126124845400427,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       0.7551781982571191,
+       [
+        1,
+        1,
+        0
        ]
       ],
       [
        1,
        [
         1,
-        1,
-        1
+        0.24299503859659097,
+        0
        ]
       ]
      ]
     },
-    "0eaf6242-PrimitiveReduction": {
+    "35d042fd-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+     },
+     "uipos": [
+      -10685.735902379114,
+      -4218.20735561277
+     ],
+     "options": []
+    },
+    "b538bba2-Curvemap": {
+     "name": "Curvemap",
+     "inputs": {
+      "curvemap": [
+       "f1f98cc8-MakeCurvemap",
+       "curvemap",
+       null
+      ],
+      "value": [
+       "066ebe09-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10397.441513633967,
+      -4171.211074888318
+     ],
+     "options": []
+    },
+    "f1f98cc8-MakeCurvemap": {
+     "name": "MakeCurvemap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "input_min": 0.0,
+      "input_max": 200.0,
+      "output_min": -1000.0,
+      "output_max": 1000.0,
+      "_POINTS": "2 0 0 1 1",
+      "_HANDLERS": "0 0 0.16666666666666666 0.16666666666666666 -0.16666666666666666 -0.16666666666666666 0 0"
+     },
+     "uipos": [
+      -10873.468357100977,
+      -4336.961398303581
+     ],
+     "options": [],
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       1
+      ]
+     ],
+     "handlers": [
+      [
+       [
+        0,
+        0
+       ],
+       [
+        0.16666666666666666,
+        0.16666666666666666
+       ]
+      ],
+      [
+       [
+        -0.16666666666666666,
+        -0.16666666666666666
+       ],
+       [
+        0,
+        0
+       ]
+      ]
+     ]
+    },
+    "066ebe09-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10690.53659772194,
+      -4115.624076181978
+     ],
+     "options": []
+    },
+    "ed26a88d-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "35d042fd-NumericVec3",
+       "vec3",
+       null
+      ],
+      "rhs": [
+       "b538bba2-Curvemap",
+       "res",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -9950.724178575758,
+      -4207.595292223375
+     ],
+     "options": []
+    },
+    "a1854c02-VolumeTrail": {
+     "name": "VolumeTrail",
+     "inputs": {
+      "dt": [
+       "2db8d974-NumericFloat",
+       "value",
+       null
+      ],
+      "maxLen": [
+       null,
+       null,
+       null
+      ],
+      "vecField": [
+       "4f351bc4-OceanVolume",
+       "velField",
+       null
+      ],
+      "steps": [
+       "94122d0d-x",
+       "value",
+       null
+      ],
+      "ny": [
+       "5c3c3bad-NumericInt",
+       "value",
+       null
+      ],
+      "nx": [
+       "5c3c3bad-NumericInt",
+       "value",
+       null
+      ],
+      "size": [
+       "1f3c68d8-NumericFloat",
+       "value",
+       null
+      ],
+      "dir": [
+       "bbac5b70-x",
+       "value",
+       null
+      ],
+      "center": [
+       "ed26a88d-NumericOperator",
+       "ret",
+       null
+      ],
+      "heatmap": [
+       "8bf56642-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9043.415143603957,
+      -4771.5396066840785
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "5c3c3bad-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 256
+     },
+     "uipos": [
+      -9603.508044954726,
+      -4939.396274660409
+     ],
+     "options": []
+    },
+    "bbac5b70-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      -9572.46017949547,
+      -4759.57738720892
+     ],
+     "options": []
+    },
+    "1f3c68d8-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2000.0
+     },
+     "uipos": [
+      -9843.482171733502,
+      -4841.078034039453
+     ],
+     "options": []
+    },
+    "2db8d974-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.1
+     },
+     "uipos": [
+      -9593.158756468301,
+      -5098.516585139064
+     ],
+     "options": []
+    },
+    "94122d0d-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 5
+     },
+     "uipos": [
+      -9829.25190006468,
+      -4979.499767545277
+     ],
+     "options": []
+    },
+    "0ecd9118-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 5
+     },
+     "uipos": [
+      -10235.914163725181,
+      -5743.376055047552
+     ],
+     "options": []
+    },
+    "de9f80d4-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      -9979.122443155971,
+      -5523.453674711195
+     ],
+     "options": []
+    },
+    "53889c52-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 256
+     },
+     "uipos": [
+      -10010.170308615227,
+      -5703.272562162684
+     ],
+     "options": []
+    },
+    "16ed8cf9-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2000.0
+     },
+     "uipos": [
+      -10250.144435394002,
+      -5604.954321541728
+     ],
+     "options": []
+    },
+    "ccfbd145-x": {
+     "name": "VolumeTrail",
+     "inputs": {
+      "dt": [
+       "dd7efd3a-x",
+       "value",
+       null
+      ],
+      "maxLen": [
+       null,
+       null,
+       null
+      ],
+      "vecField": [
+       "4f351bc4-OceanVolume",
+       "velField",
+       null
+      ],
+      "steps": [
+       "0ecd9118-x",
+       "value",
+       null
+      ],
+      "ny": [
+       "53889c52-x",
+       "value",
+       null
+      ],
+      "nx": [
+       "53889c52-x",
+       "value",
+       null
+      ],
+      "size": [
+       "16ed8cf9-x",
+       "value",
+       null
+      ],
+      "dir": [
+       "de9f80d4-x",
+       "value",
+       null
+      ],
+      "center": [
+       "1c3604b3-NumericVec3",
+       "vec3",
+       null
+      ],
+      "heatmap": [
+       "b0b23843-x",
+       "heatmap",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9394.97665159695,
+      -5562.966272020107
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "b0b23843-x": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "5\n0 0 0.5295480715920569 1\n0.28675916580185823 0 1 1\n0.5126124845400427 0 1 0\n0.7551781982571191 1 1 0\n1 1 0.24299503859659097 0"
+     },
+     "uipos": [
+      -10063.078614070833,
+      -5365.5491955992775
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0.5295480715920569,
+        1
+       ]
+      ],
+      [
+       0.28675916580185823,
+       [
+        0,
+        1,
+        1
+       ]
+      ],
+      [
+       0.5126124845400427,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       0.7551781982571191,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        0.24299503859659097,
+        0
+       ]
+      ]
+     ]
+    },
+    "dd7efd3a-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.1
+     },
+     "uipos": [
+      -9999.821020128802,
+      -5862.392872641339
+     ],
+     "options": []
+    },
+    "1c3604b3-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -9832.834734799475,
+      -5276.72218628719
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -11291.038272618936,
+    "y": -5561.984415321622,
+    "width": 781.2499999999995,
+    "height": 781.2499999999995
+   }
+  },
+  "OceanVolume": {
+   "nodes": {
+    "c8a939e4-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Ocean"
+     },
+     "uipos": [
+      -12303.227170212753,
+      -4816.537340425528
+     ],
+     "options": []
+    },
+    "d89e1ce0-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "OceanSpectrum",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -10825.268812075086,
+      -3847.414104263575
+     ],
+     "options": []
+    },
+    "a62eeadc-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "depth",
+      "type": "float",
+      "defl": "0"
+     },
+     "uipos": [
+      -12338.416340425532,
+      -4423.89855319149
+     ],
+     "options": []
+    },
+    "ce199056-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "2e4b633d-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       "d702529d-PortalIn",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10927.368512611263,
+      -4096.666873764005
+     ],
+     "options": []
+    },
+    "bdfdfed9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "a62eeadc-x",
+       "port",
+       null
+      ],
+      "rhs": [
+       "d5d779be-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "div"
+     },
+     "uipos": [
+      -11808.495319148939,
+      -4256.5974468085105
+     ],
+     "options": []
+    },
+    "d5d779be-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 10.0
+     },
+     "uipos": [
+      -12183.88340887947,
+      -4055.213781288706
+     ],
+     "options": []
+    },
+    "d702529d-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "bdfdfed9-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "spacing"
+     },
+     "uipos": [
+      -11478.24068085106,
+      -3978.191659574468
+     ],
+     "options": []
+    },
+    "2e4b633d-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 11
+     },
+     "uipos": [
+      -11218.99642553191,
+      -4339.362382978723
+     ],
+     "options": []
+    },
+    "c1d52c6e-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "ce199056-BeginFor",
+       "index",
+       null
+      ],
+      "rhs": [
+       "0c1452bf-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "ce199056-BeginFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -10396.016680851064,
+      -4144.3656170212735
+     ],
+     "options": []
+    },
+    "0c1452bf-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "spacing"
+     },
+     "uipos": [
+      -10747.848170212761,
+      -4260.622978723405
+     ],
+     "options": []
+    },
+    "eae8bb1f-OceanCompute": {
+     "name": "OceanCompute",
+     "inputs": {
+      "grid": [
+       "248a8f3f-x",
+       "port",
+       null
+      ],
+      "time": [
+       "278db924-GetTime",
+       "time",
+       null
+      ],
+      "depth": [
+       "c1d52c6e-NumericOperator",
+       "ret",
+       null
+      ],
+      "dt": [
+       "112d9406-GetFrameTime",
+       "time",
+       null
+      ],
+      "ocean_FFT": [
+       "d89e1ce0-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "c1d52c6e-NumericOperator",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9943.70352378299,
+      -4213.03833768407
+     ],
+     "options": []
+    },
+    "248a8f3f-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "OceanGrid",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -11104.214918609447,
+      -3896.876331507531
+     ],
+     "options": []
+    },
+    "278db924-GetTime": {
+     "name": "GetTime",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10515.411561916817,
+      -3895.5071298890753
+     ],
+     "options": []
+    },
+    "112d9406-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10523.2178650739,
+      -3652.398331342384
+     ],
+     "options": []
+    },
+    "3c508153-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "eae8bb1f-OceanCompute",
+       "OceanData",
+       null
+      ],
+      "list": [
+       null,
+       null,
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "ce199056-BeginFor",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "eae8bb1f-OceanCompute",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -9594.00830268829,
+      -4140.742528962088
+     ],
+     "options": []
+    },
+    "e2ae7c43-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "3c508153-EndForEach",
+       "list",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "3c508153-EndForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9022.987098758946,
+      -4068.5782892738052
+     ],
+     "options": []
+    },
+    "93dc3394-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "9e7590a1-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "list": [
+       null,
+       null,
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "e2ae7c43-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "9e7590a1-ParticlesWrangle",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -8143.560475983595,
+      -4144.771024018056
+     ],
+     "options": []
+    },
+    "9e7590a1-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "e2ae7c43-BeginForEach",
+       "object",
+       null
+      ],
+      "zfxCode": [
+       "c7b1e75b-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "e2ae7c43-BeginForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -8590.56026287596,
+      -4109.895924691442
+     ],
+     "options": []
+    },
+    "c7b1e75b-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@pos = @mapPos\n@vel = @mapVel"
+     },
+     "uipos": [
+      -8956.61434053432,
+      -4247.274964381576
+     ],
+     "options": []
+    },
+    "3cc096c1-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "93dc3394-EndForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -7769.672982913541,
+      -3682.075645979795
+     ],
+     "options": []
+    },
+    "fc4c0215-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "3cc096c1-SubInput",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       "3cc096c1-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": ""
+     },
+     "uipos": [
+      -7450.049624656637,
+      -3769.6507844871726
+     ],
+     "options": []
+    },
+    "44ee5153-ListGetItem": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "93dc3394-EndForEach",
+       "list",
+       null
+      ],
+      "index": [
+       "9a8f8cae-BeginFor",
+       "index",
+       null
+      ],
+      "SRC": [
+       "9a8f8cae-BeginFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5184.261148936168,
+      -4101.738378989358
+     ],
+     "options": []
+    },
+    "9a8f8cae-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       null,
+       null,
+       10
+      ],
+      "SRC": [
+       "b724c57f-PortalIn",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5461.4795084087955,
+      -3929.8881741780383
+     ],
+     "options": []
+    },
+    "4d220118-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "93dc3394-EndForEach",
+       "list",
+       null
+      ],
+      "index": [
+       "d8b2791b-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "d8b2791b-NumericOperator",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4401.915955817304,
+      -3655.074893026324
+     ],
+     "options": []
+    },
+    "d8b2791b-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "9a8f8cae-BeginFor",
+       "index",
+       null
+      ],
+      "rhs": [
+       "5373697c-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       "44ee5153-ListGetItem",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -4744.964914893614,
+      -3889.280868351059
+     ],
+     "options": []
+    },
+    "5373697c-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -5054.556110293771,
+      -3865.1523189306954
+     ],
+     "options": []
+    },
+    "81406cdf-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "22ea105c-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "4d220118-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4005.059112202615,
+      -3748.0500579781346
+     ],
+     "options": []
+    },
+    "3a3a64d8-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "94e71b29-x",
+       "primOut",
+       null
+      ],
+      "list": [
+       null,
+       null,
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "81406cdf-BeginFor",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "94e71b29-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -2438.100466455607,
+      -3950.478255343005
+     ],
+     "options": []
+    },
+    "bfe073cb-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       null,
+       null,
+       null
+      ],
+      "list": [
+       "3a3a64d8-EndForEach",
+       "list",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "9a8f8cae-BeginFor",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "3a3a64d8-EndForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -1975.9557404119867,
+      -4065.7942083037788
+     ],
+     "options": []
+    },
+    "8b0c6618-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "fc4c0215-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "velField"
+     },
+     "uipos": [
+      -7143.560327162108,
+      -3483.8602827600093
+     ],
+     "options": []
+    },
+    "2b4873a9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7d17d04e-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       "3cc096c1-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "fc4c0215-MakeVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "div"
+     },
+     "uipos": [
+      -6939.280622002874,
+      -3766.2770892499607
+     ],
+     "options": []
+    },
+    "7d17d04e-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "spacing"
+     },
+     "uipos": [
+      -7281.08263513198,
+      -3942.102105312159
+     ],
+     "options": []
+    },
+    "1e0b4554-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "cac484a0-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "cac484a0-NumericOperator",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "layers"
+     },
+     "uipos": [
+      -6294.473100004648,
+      -3829.6604986265597
+     ],
+     "options": []
+    },
+    "22ea105c-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "layers"
+     },
+     "uipos": [
+      -4344.197249406391,
+      -3855.0043931281652
+     ],
+     "options": []
+    },
+    "8be2b31a-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "fa8fef7c-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       "81406cdf-BeginFor",
+       "index",
+       null
+      ],
+      "SRC": [
+       "81406cdf-BeginFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -3533.4533600260675,
+      -3893.559651752869
+     ],
+     "options": []
+    },
+    "cac484a0-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "d1880bce-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "d1880bce-NumericOperator",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "toint"
+     },
+     "uipos": [
+      -6537.832029424074,
+      -3788.683534615198
+     ],
+     "options": []
+    },
+    "b724c57f-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "ac4ba6c6-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "ac4ba6c6-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "layerscoef"
+     },
+     "uipos": [
+      -5694.795798687078,
+      -3640.7104427580352
+     ],
+     "options": []
+    },
+    "d1880bce-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "2b4873a9-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       "2b4873a9-NumericOperator",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -6702.029688532974,
+      -3498.125573816278
+     ],
+     "options": []
+    },
+    "35762df2-PrimitiveMix": {
+     "name": "PrimitiveMix",
+     "inputs": {
+      "primA": [
+       "44ee5153-ListGetItem",
+       "object",
+       null
+      ],
+      "primB": [
+       "4d220118-x",
+       "object",
+       null
+      ],
+      "primOut": [
+       null,
+       null,
+       null
+      ],
+      "coef": [
+       "8be2b31a-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrA": "pos",
+      "attrB": "pos",
+      "attrOut": "pos"
+     },
+     "uipos": [
+      -3138.6558959501112,
+      -3818.4845427888336
+     ],
+     "options": []
+    },
+    "94e71b29-x": {
+     "name": "PrimitiveMix",
+     "inputs": {
+      "primA": [
+       "44ee5153-ListGetItem",
+       "object",
+       null
+      ],
+      "primB": [
+       "4d220118-x",
+       "object",
+       null
+      ],
+      "primOut": [
+       "35762df2-PrimitiveMix",
+       "primOut",
+       null
+      ],
+      "coef": [
+       "8be2b31a-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "35762df2-PrimitiveMix",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "attrA": "vel",
+      "attrB": "vel",
+      "attrOut": "vel"
+     },
+     "uipos": [
+      -2808.6557093844176,
+      -3867.2043271021216
+     ],
+     "options": []
+    },
+    "0288d602-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bfe073cb-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "layers",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -951.9700417011906,
+      -4181.729062218341
+     ],
+     "options": []
+    },
+    "ac4ba6c6-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       null,
+       null,
+       1.0
+      ],
+      "rhs": [
+       "ce9594d2-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "1e0b4554-PortalIn",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "op_type": "div"
+     },
+     "uipos": [
+      -5942.61881838073,
+      -3605.9781181619155
+     ],
+     "options": []
+    },
+    "ce9594d2-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "cac484a0-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      -6210.065645514209,
+      -3575.341794310713
+     ],
+     "options": []
+    },
+    "fa8fef7c-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "layerscoef"
+     },
+     "uipos": [
+      -3842.206166024545,
+      -4064.788312577942
+     ],
+     "options": []
+    },
+    "ee8caa4e-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "130fcb2b-x",
+       "OceanData",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "oceanSurface",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -9011.619577907488,
+      -3601.1590121239296
+     ],
+     "options": []
+    },
+    "130fcb2b-x": {
+     "name": "OceanCompute",
+     "inputs": {
+      "grid": [
+       "248a8f3f-x",
+       "port",
+       null
+      ],
+      "time": [
+       "278db924-GetTime",
+       "time",
+       null
+      ],
+      "depth": [
+       "cc9a039b-NumericFloat",
+       "value",
+       null
+      ],
+      "dt": [
+       "112d9406-GetFrameTime",
+       "time",
+       null
+      ],
+      "ocean_FFT": [
+       "d89e1ce0-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9815.461029754171,
+      -3702.193640362212
+     ],
+     "options": []
+    },
+    "cc9a039b-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      -10233.42414489,
+      -3758.89734540749
+     ],
+     "options": []
+    },
+    "bb130736-FLIP_P2G": {
+     "name": "FLIP_P2G",
+     "inputs": {
+      "Dx": [
+       "3cc096c1-SubInput",
+       "port",
+       null
+      ],
+      "Particles": [
+       "eb449d04-PrimToVDBPointDataGrid",
+       "Particles",
+       null
+      ],
+      "Velocity": [
+       "5757f8ed-PortalOut",
+       "port",
+       null
+      ],
+      "PostP2GVelocity": [
+       "5757f8ed-PortalOut",
+       "port",
+       null
+      ],
+      "VelocityWeights": [
+       "1dd9f62b-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "LiquidSDF": [
+       "3e43d652-x",
+       "data",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "3e43d652-x",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.01
+     },
+     "uipos": [
+      -196.5369459249663,
+      -3794.581493402307
+     ],
+     "options": []
+    },
+    "5757f8ed-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "velField"
+     },
+     "uipos": [
+      -1270.2413164294878,
+      -3660.092357050432
+     ],
+     "options": []
+    },
+    "eb449d04-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
+     "inputs": {
+      "ParticleGeo": [
+       "3c56d943-PrimitiveMerge",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "3cc096c1-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1363.610659767133,
+      -3888.7575679171828
+     ],
+     "options": []
+    },
+    "3c56d943-PrimitiveMerge": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "bfe073cb-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1809.2708926261218,
+      -3723.4951617076113
+     ],
+     "options": []
+    },
+    "1dd9f62b-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "3cc096c1-SubInput",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": ""
+     },
+     "uipos": [
+      -908.551617076321,
+      -3606.7932729624613
+     ],
+     "options": []
+    },
+    "3e43d652-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "3cc096c1-SubInput",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "Centered",
+      "name": ""
+     },
+     "uipos": [
+      -744.8556791720526,
+      -3433.698525226371
+     ],
+     "options": []
+    },
+    "06843629-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "5757f8ed-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "bb130736-FLIP_P2G",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "velField",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      255.77490297541897,
+      -3697.109961190147
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -379.2145177971738,
+    "y": -3935.5959095052094,
+    "width": 994.5087999999956,
+    "height": 387.4815999999978
+   }
+  },
+  "VolumeTrail": {
+   "nodes": {
+    "88e06100-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Visualization"
+     },
+     "uipos": [
+      285.19999999999993,
+      76.0
+     ],
+     "options": []
+    },
+    "28572572-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      306.00000000000006,
+      251.06250000000006
+     ],
+     "options": []
+    },
+    "23514a7d-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "maxLen",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -105.64628476714095,
+      342.4802312419147
+     ],
+     "options": []
+    },
+    "b8dfa887-PrimitiveGetSize": {
+     "name": "PrimitiveGetSize",
+     "inputs": {
+      "prim": [
+       "ef1bda4f-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      149.06250000000017,
+      664.1875
+     ],
+     "options": []
+    },
+    "7ea13b64-TraceOneStep": {
+     "name": "TraceOneStep",
+     "inputs": {
+      "prim": [
+       "ef1bda4f-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "dt": [
+       "28572572-SubInput",
+       "port",
+       null
+      ],
+      "size": [
+       "b8dfa887-PrimitiveGetSize",
+       "size",
+       null
+      ],
+      "steps": [
+       "f0cb99ed-SubInput",
+       "port",
+       null
+      ],
+      "maxlength": [
+       null,
+       null,
+       null
+      ],
+      "vecField": [
+       "66b0a261-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "1a42c441-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      969.7500000000002,
+      244.7500000000001
+     ],
+     "options": []
+    },
+    "66b0a261-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "vecField",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      281.81250000000006,
+      459.75
+     ],
+     "options": []
+    },
+    "dfc07716-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "68cd912e-PrimitiveColorByHeatmap",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VolumeTrails",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2881.390624999999,
+      407.31250000000017
+     ],
+     "options": []
+    },
+    "f0cb99ed-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "steps",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      416.0000000000002,
+      76.3875000000001
+     ],
+     "options": []
+    },
+    "374c102a-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "041cd441-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      -871.8499999999997,
+      77.15000000000006
+     ],
+     "options": []
+    },
+    "ef1bda4f-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "374c102a-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "length",
+      "type": "float"
+     },
+     "uipos": [
+      -465.82812499999983,
+      143.45312500000028
+     ],
+     "options": []
+    },
+    "1a42c441-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "b8dfa887-PrimitiveGetSize",
+       "size",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      766.4874999999994,
+      717.7249999999996
+     ],
+     "options": []
+    },
+    "041cd441-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "4f95e8a6-x",
+       "AxesAlignedPoints",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      -1193.5749999999996,
+      78.0374999999998
+     ],
+     "options": []
+    },
+    "4f95e8a6-x": {
+     "name": "AxesAlignedPoints",
+     "inputs": {
+      "center": [
+       "9e95de9c-x",
+       "port",
+       null
+      ],
+      "size": [
+       "747cf058-x",
+       "port",
+       null
+      ],
+      "nx": [
+       "6ca981d6-x",
+       "port",
+       null
+      ],
+      "ny": [
+       "a0a41f2c-x",
+       "port",
+       null
+      ],
+      "dir": [
+       "7e7675ca-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1729.7205692108669,
+      21.44663648124191
+     ],
+     "options": []
+    },
+    "a0a41f2c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "ny",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2567.312622070313,
+      -206.92346191406253
+     ],
+     "options": []
+    },
+    "6ca981d6-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "nx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2369.5092585515545,
+      -416.35740434614536
+     ],
+     "options": []
+    },
+    "747cf058-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "size",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2654.700122070312,
+      50.80153808593735
+     ],
+     "options": []
+    },
+    "7e7675ca-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dir",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2541.749877929688,
+      210.86096191406256
+     ],
+     "options": []
+    },
+    "9e95de9c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "center",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2521.875,
+      -54.6875
+     ],
+     "options": []
+    },
+    "df812255-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Visualization"
+     },
+     "uipos": [
+      -2256.2499999999986,
+      -585.9374999999995
+     ],
+     "options": []
+    },
+    "5400e73a-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@speed = length(@vel)"
+     },
+     "uipos": [
+      1591.7202148437505,
+      45.772998046875045
+     ],
+     "options": []
+    },
+    "041f8a1b-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": ""
+     },
+     "uipos": [
+      1554.9744750976568,
+      477.1585205078124
+     ],
+     "options": [],
+     "socket_keys": []
+    },
+    "b3730f0d-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "0ebcf8f7-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "5400e73a-x",
+       "value",
+       ""
+      ],
+      "params": [
+       "041f8a1b-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1930.23291015625,
+      288.7477294921874
+     ],
+     "options": []
+    },
+    "0ebcf8f7-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "7ea13b64-TraceOneStep",
+       "prim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "speed",
+      "type": "float"
+     },
+     "uipos": [
+      1269.9999999999984,
+      269.9999999999997
+     ],
+     "options": []
+    },
+    "68cd912e-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "b3730f0d-x",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "397460cb-SubInput",
+       "port",
+       null
+      ],
+      "min": [
+       "da2baddd-PrimitiveReduction",
+       "result",
+       0.0
+      ],
+      "max": [
+       "87fec147-x",
+       "result",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      2609.649999999998,
+      316.49999999999966
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "da2baddd-PrimitiveReduction": {
      "name": "PrimitiveReduction",
      "inputs": {
       "prim": [
-       "dd211958-ParticlesWrangle",
+       "b3730f0d-x",
        "prim",
        null
       ],
@@ -349,16 +2873,16 @@
       "op": "min"
      },
      "uipos": [
-      -10129.3352601156,
-      -5215.3179190751425
+      2228.7499999999986,
+      171.25
      ],
      "options": []
     },
-    "51d15323-x": {
+    "87fec147-x": {
      "name": "PrimitiveReduction",
      "inputs": {
       "prim": [
-       "dd211958-ParticlesWrangle",
+       "b3730f0d-x",
        "prim",
        null
       ],
@@ -373,17 +2897,1446 @@
       "op": "max"
      },
      "uipos": [
-      -10093.208092485544,
-      -5001.445086705198
+      2229.9999999999986,
+      516.2499999999995
+     ],
+     "options": []
+    },
+    "397460cb-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "heatmap",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1824.9999999999982,
+      612.3499999999995
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -11682.026299982765,
-    "y": -5246.712585047949,
-    "width": 499.9999999999997,
-    "height": 499.9999999999997
+    "x": 132.23758755021663,
+    "y": 160.78369404568951,
+    "width": 614.3999999999996,
+    "height": 511.9999999999997
+   }
+  },
+  "SlicePlaneForPrimitive": {
+   "nodes": {
+    "ad47c4af-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "bitangent",
+       null
+      ],
+      "rhs": [
+       "c2dd3175-x",
+       "Y",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      939.1993370056147,
+      387.3151779174808
+     ],
+     "options": []
+    },
+    "b29108d4-x": {
+     "name": "PlaneProjectPrimitive2DAABB",
+     "inputs": {
+      "origin": [
+       "4c1e34b1-x",
+       "port",
+       null
+      ],
+      "normal": [
+       "338a4c53-x",
+       "normal",
+       null
+      ],
+      "tangent": [
+       "338a4c53-x",
+       "tangent",
+       null
+      ],
+      "bitangent": [
+       "338a4c53-x",
+       "bitangent",
+       null
+      ],
+      "prim": [
+       "7287ecce-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      439.46496200561467,
+      -300.1691970825191
+     ],
+     "options": []
+    },
+    "d0365d37-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "bitangent",
+       null
+      ],
+      "rhs": [
+       "e534fac3-x",
+       "Y",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      939.9493370056147,
+      -68.18482208251919
+     ],
+     "options": []
+    },
+    "c2dd3175-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "d94df16d-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      682.1993370056151,
+      195.31517791748092
+     ],
+     "options": []
+    },
+    "4c1e34b1-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      166.5118370056157,
+      -125.30982208251953
+     ],
+     "options": []
+    },
+    "2c8234d6-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "57fdf449-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "d0365d37-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      1176.343672517597,
+      -115.68482208251919
+     ],
+     "options": []
+    },
+    "c91f467c-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "2c8234d6-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "4c1e34b1-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      1446.3346855894927,
+      72.50403957325409
+     ],
+     "options": []
+    },
+    "57fdf449-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "tangent",
+       null
+      ],
+      "rhs": [
+       "e534fac3-x",
+       "X",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      942.9493370056147,
+      -303.4348220825191
+     ],
+     "options": []
+    },
+    "e534fac3-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "b29108d4-x",
+       "boundMin2D",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      701.1993370056147,
+      -398.43482208251896
+     ],
+     "options": []
+    },
+    "9d105929-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "tangent",
+       null
+      ],
+      "rhs": [
+       "c2dd3175-x",
+       "X",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      937.1993370056147,
+      165.31517791748092
+     ],
+     "options": []
+    },
+    "13ddcebc-x": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "516794b7-SubInput",
+       "port",
+       2
+      ],
+      "ny": [
+       null,
+       null,
+       0
+      ],
+      "sizeX": [
+       "9d105929-x",
+       "ret",
+       null
+      ],
+      "sizeY": [
+       "ad47c4af-x",
+       "ret",
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       1.0
+      ],
+      "origin": [
+       "c91f467c-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "Direction": "XY",
+      "isCentered": false,
+      "hasFaces": true
+     },
+     "uipos": [
+      1694.918278488458,
+      -185.96831775075202
+     ],
+     "options": []
+    },
+    "eee1f980-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mathematica"
+     },
+     "uipos": [
+      -68.55066299438533,
+      28.815177917480696
+     ],
+     "options": []
+    },
+    "d94df16d-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b29108d4-x",
+       "boundMax2D",
+       null
+      ],
+      "rhs": [
+       "b29108d4-x",
+       "boundMin2D",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      692.2891807556147,
+      -158.0481033325193
+     ],
+     "options": []
+    },
+    "338a4c53-x": {
+     "name": "MakeOrthonormalBase",
+     "inputs": {
+      "normal": [
+       "e0abc473-SubInput",
+       "port",
+       null
+      ],
+      "tangent": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      174.15246200561478,
+      -405.7629470825194
+     ],
+     "options": []
+    },
+    "750c7369-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "dd3a81c6-PrimitiveClearConnect",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "primPlane",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2275.329337005614,
+      87.01517791748046
+     ],
+     "options": []
+    },
+    "e0abc473-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "normal",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -89.84292984008744,
+      -535.575477600097
+     ],
+     "options": []
+    },
+    "7287ecce-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "primIn",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -72.71792984008721,
+      -284.5754776000971
+     ],
+     "options": []
+    },
+    "dd3a81c6-PrimitiveClearConnect": {
+     "name": "PrimitiveClearConnect",
+     "inputs": {
+      "prim": [
+       "13ddcebc-x",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1962.4320701599127,
+      43.97452239990281
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "516794b7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "resolution",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1412.0,
+      -208.0
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 1380.6434718954258,
+    "y": -341.1782832244,
+    "width": 767.9999999999998,
+    "height": 639.9999999999998
+   }
+  },
+  "VdbSlice": {
+   "nodes": {
+    "9cc9d518-x": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       "0b388123-x",
+       "bmin",
+       null
+      ],
+      "boundMax": [
+       "0b388123-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "edges"
+     },
+     "uipos": [
+      -319.15644775390604,
+      -237.89221252441362
+     ],
+     "options": []
+    },
+    "7a2aaf6c-x": {
+     "name": "SlicePlaneForPrimitive",
+     "inputs": {
+      "origin": [
+       "39620337-x",
+       "port",
+       null
+      ],
+      "normal": [
+       "99c0a7fa-x",
+       "port",
+       null
+      ],
+      "primIn": [
+       "9cc9d518-x",
+       "prim",
+       null
+      ],
+      "resolution": [
+       "98b29670-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      232.8583877995643,
+      -329.9150326797386
+     ],
+     "options": []
+    },
+    "0b388123-x": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "876fa589-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -622.7878540039057,
+      -179.5541656494138
+     ],
+     "options": []
+    },
+    "876fa589-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "vdbGrid",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -876.0,
+      -242.39999999999998
+     ],
+     "options": []
+    },
+    "9835f6db-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "e7348324-SampleVDBToPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "slicePrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      948.0,
+      -183.0
+     ],
+     "options": []
+    },
+    "da10d330-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "visualization"
+     },
+     "uipos": [
+      86.0,
+      -39.0
+     ],
+     "options": []
+    },
+    "e7348324-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "7a2aaf6c-x",
+       "primPlane",
+       null
+      ],
+      "vdbGrid": [
+       "876fa589-SubInput",
+       "port",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       "5b4a2f1f-SubInput",
+       "port",
+       "sdf"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      705.0,
+      -160.0
+     ],
+     "options": []
+    },
+    "5b4a2f1f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "channelName",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      452.0,
+      -30.0
+     ],
+     "options": []
+    },
+    "39620337-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -231.46187363834423,
+      -520.5337690631809
+     ],
+     "options": []
+    },
+    "99c0a7fa-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "normal",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -303.9106753812636,
+      -138.38344226579517
+     ],
+     "options": []
+    },
+    "98b29670-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "resolution",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      48.594771241830074,
+      -573.1111111111111
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -214.9619172113279,
+    "y": -439.7831808278868,
+    "width": 768.0,
+    "height": 640.0
+   }
+  },
+  "AxesAlignedPoints": {
+   "nodes": {
+    "811e381f-x": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "3d1519e7-SubInput",
+       "port",
+       2
+      ],
+      "ny": [
+       "c5d2c17a-x",
+       "port",
+       0
+      ],
+      "sizeX": [
+       "945b5f90-NumericVec3",
+       "vec3",
+       null
+      ],
+      "sizeY": [
+       "0cd339cc-x",
+       "vec3",
+       null
+      ],
+      "scale": [
+       "c81cebb4-x",
+       "port",
+       1.0
+      ],
+      "origin": [
+       "c61dc9bf-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "Direction": "XY",
+      "isCentered": true,
+      "hasFaces": false
+     },
+     "uipos": [
+      1651.2939453124998,
+      -200.0256347656249
+     ],
+     "options": []
+    },
+    "f30d62de-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "center",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1628.083251953125,
+      365.61157226562506
+     ],
+     "options": []
+    },
+    "c81cebb4-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "size",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1089.6494628906246,
+      -31.504736328124977
+     ],
+     "options": []
+    },
+    "e7503bc9-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Visualization"
+     },
+     "uipos": [
+      -1584.0119628906243,
+      -508.29223632812483
+     ],
+     "options": []
+    },
+    "c61dc9bf-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -768.5119628906245,
+      -68.917236328125
+     ],
+     "options": []
+    },
+    "3d1519e7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "nx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -870.4494628906245,
+      -439.1047363281249
+     ],
+     "options": []
+    },
+    "c5d2c17a-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "ny",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -894.4494628906245,
+      -311.1047363281249
+     ],
+     "options": []
+    },
+    "945b5f90-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -862.4494628906245,
+      -324.1047363281249
+     ],
+     "options": []
+    },
+    "0cd339cc-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -931.4494628906245,
+      -297.1047363281249
+     ],
+     "options": []
+    },
+    "448ccddc-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "811e381f-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       "f30d62de-x",
+       "port",
+       null
+      ],
+      "eulerXYZ": [
+       "3f1dcd49-IfElse",
+       "result",
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2238.4375,
+      414.3749999999999
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "a641c9d9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port",
+       null
+      ],
+      "rhs": [
+       "8533deed-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      1375.0,
+      797.5
+     ],
+     "options": []
+    },
+    "3f1dcd49-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "651e34f7-NumericVec3",
+       "vec3",
+       null
+      ],
+      "false": [
+       "de83958d-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "a641c9d9-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1838.75,
+      697.5
+     ],
+     "options": []
+    },
+    "651e34f7-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      1332.5,
+      455.0
+     ],
+     "options": []
+    },
+    "8533deed-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      968.75,
+      1047.5
+     ],
+     "options": []
+    },
+    "de83958d-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "cd0aa90f-x",
+       "vec3",
+       null
+      ],
+      "false": [
+       "95a6c7ef-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "c865ee0e-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1062.5,
+      606.25
+     ],
+     "options": []
+    },
+    "c865ee0e-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port",
+       null
+      ],
+      "rhs": [
+       "24fbda58-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      571.25,
+      718.75
+     ],
+     "options": []
+    },
+    "24fbda58-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      85.0,
+      908.75
+     ],
+     "options": []
+    },
+    "cd0aa90f-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.57079632679,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      670.0,
+      456.25
+     ],
+     "options": []
+    },
+    "95a6c7ef-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d078f909-x",
+       "vec3",
+       null
+      ],
+      "false": [
+       "83756fbe-x",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "fa9b1dee-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      382.5,
+      532.5
+     ],
+     "options": []
+    },
+    "fa9b1dee-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port",
+       null
+      ],
+      "rhs": [
+       "3d0887b1-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      22.5,
+      558.75
+     ],
+     "options": []
+    },
+    "bac9b3e9-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dir",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1128.2617187499995,
+      189.49218750000023
+     ],
+     "options": []
+    },
+    "3d0887b1-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      -463.75,
+      748.75
+     ],
+     "options": []
+    },
+    "d078f909-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.57079632679,
+      "z": 0.0
+     },
+     "uipos": [
+      -248.75,
+      345.0
+     ],
+     "options": []
+    },
+    "83756fbe-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -317.5,
+      457.5
+     ],
+     "options": []
+    },
+    "47de09c3-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "448ccddc-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "AxesAlignedPoints",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2952.093505859375,
+      496.314697265625
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 1102.2803470501076,
+    "y": -263.94013169498874,
+    "width": 767.999999999999,
+    "height": 639.9999999999991
    }
   }
  },
@@ -628,6 +4581,46 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "ApplyBoundaryOnZSGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "AssembleSolvePPE": {
@@ -2360,6 +6353,123 @@
     "CompressibleFlow"
    ]
   },
+  "ComputeVonMises": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "by_log1p(base10)",
+     "1"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ConfigConstitutiveModel": {
+   "inputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "ppc",
+     ""
+    ],
+    [
+     "",
+     "density",
+     ""
+    ],
+    [
+     "",
+     "E",
+     ""
+    ],
+    [
+     "",
+     "nu",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "ppc",
+     "8"
+    ],
+    [
+     "float",
+     "density",
+     "1000"
+    ],
+    [
+     "string",
+     "type",
+     "fcr"
+    ],
+    [
+     "float",
+     "E",
+     "10000"
+    ],
+    [
+     "float",
+     "nu",
+     "0.4"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "CopyAllUserData": {
    "inputs": [
     [
@@ -2393,6 +6503,41 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "Curvemap": {
+   "inputs": [
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
    ]
   },
   "CutCellWeight": {
@@ -2855,6 +7000,11 @@
     ],
     [
      "",
+     "list",
+     ""
+    ],
+    [
+     "",
      "accumate",
      ""
     ],
@@ -3018,6 +7168,47 @@
    ],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ExpandZSPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "offset",
+     "0"
+    ],
+    [
+     "int",
+     "extent",
+     "2"
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "ExplicitTimeStepping": {
@@ -4369,383 +8560,6 @@
     "FLIPSolver"
    ]
   },
-  "GLBindFramebufferTexture": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLClearColor": {
-   "inputs": [
-    [
-     "",
-     "color",
-     ""
-    ],
-    [
-     "",
-     "alpha",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateProgram": {
-   "inputs": [
-    [
-     "",
-     "shaderList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "program",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateShader": {
-   "inputs": [
-    [
-     "",
-     "source",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "type",
-     "vertex"
-    ]
-   ],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLDrawArrayTriangles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLGetFramebufferTexture": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLNoFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUTMainLoop": {
-   "inputs": [
-    [
-     "",
-     "drawFunc",
-     ""
-    ],
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "interval",
-     "17 0"
-    ]
-   ],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseProgram": {
-   "inputs": [
-    [
-     "",
-     "program",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseTexture": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "index",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
   "GenerateSpectrum": {
    "inputs": [
     [
@@ -5647,6 +9461,46 @@
     "FEM"
    ]
   },
+  "MPMStepping": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "Make2DGridPrimitive": {
    "inputs": [
     [
@@ -6066,6 +9920,52 @@
     "primitive"
    ]
   },
+  "MakeCurvemap": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "input_min",
+     "0"
+    ],
+    [
+     "float",
+     "input_max",
+     "1"
+    ],
+    [
+     "float",
+     "output_min",
+     "0"
+    ],
+    [
+     "float",
+     "output_max",
+     "1"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "MakeDampingForceModel": {
    "inputs": [
     [
@@ -6342,31 +10242,6 @@
     "FLIP"
    ]
   },
-  "MakeFullscreenRect": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
   "MakeGCTest": {
    "inputs": [
     [
@@ -6583,61 +10458,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "MakeMPMMehser": {
-   "inputs": [
-    [
-     "",
-     "pathPreFix",
-     ""
-    ],
-    [
-     "",
-     "tet_path",
-     ""
-    ],
-    [
-     "",
-     "smooth_iter",
-     ""
-    ],
-    [
-     "",
-     "start",
-     ""
-    ],
-    [
-     "",
-     "end",
-     ""
-    ],
-    [
-     "",
-     "edge_stretch",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MPMMehser",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -6872,31 +10692,6 @@
    ],
    "categories": [
     "string"
-   ]
-  },
-  "MakeSimpleTriangle": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
    ]
   },
   "MakeSmallList": {
@@ -7149,6 +10944,67 @@
     "string"
    ]
   },
+  "MakeZSGrid": {
+   "inputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.1"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "MakeZSPartition": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "MarkMovingSolidCellsByVDB": {
    "inputs": [
     [
@@ -7338,41 +11194,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MesherProcessFrame": {
-   "inputs": [
-    [
-     "",
-     "Mesher",
-     ""
-    ],
-    [
-     "",
-     "frameNumber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FramePrimitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -8025,6 +11846,16 @@
     ],
     [
      "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
      "ocean_FFT",
      ""
     ],
@@ -8557,444 +12388,6 @@
    "params": [],
    "categories": [
     "zenofx"
-   ]
-  },
-  "PassToyApplyShader": {
-   "inputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "uniforms",
-     ""
-    ],
-    [
-     "",
-     "textureIn",
-     ""
-    ],
-    [
-     "",
-     "textureOut",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "textureOut",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyDownscaleResolution": {
-   "inputs": [
-    [
-     "",
-     "scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetResolution": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetTextureInteger": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "id",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetTextureResolution": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyImageTextureFromVoidPtr": {
-   "inputs": [
-    [
-     "",
-     "voidPtr",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyImageTextureFromVoidPtrAndRes": {
-   "inputs": [
-    [
-     "",
-     "voidPtr",
-     ""
-    ],
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyLoadImageTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeShader": {
-   "inputs": [
-    [
-     "",
-     "source",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeTexture": {
-   "inputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "format",
-     "rgb16f"
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeTexturePair": {
-   "inputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "format",
-     "rgb16f"
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyScreenTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyTexturePairSwap": {
-   "inputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "oldTexture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyUpscaleResolution": {
-   "inputs": [
-    [
-     "",
-     "scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -11125,6 +14518,31 @@
     "numeric"
    ]
   },
+  "PrintString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
   "PushOutLiquidSDF": {
    "inputs": [
     [
@@ -11332,6 +14750,36 @@
    ],
    "categories": [
     "particles"
+   ]
+  },
+  "ReadPlyPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ReadVDBGrid": {
@@ -13137,6 +16585,47 @@
     "FLIP"
    ]
   },
+  "StepZSBoundary": {
+   "inputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dt",
+     "0"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "StringEqual": {
    "inputs": [
     [
@@ -13159,6 +16648,36 @@
     [
      "bool",
      "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "StringFormat": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
      ""
     ],
     [
@@ -13606,6 +17125,143 @@
    "params": [],
    "categories": [
     "ZensimGeometry"
+   ]
+  },
+  "ToZSBoundary": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "translation",
+     ""
+    ],
+    [
+     "",
+     "translation_rate",
+     ""
+    ],
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "scale_rate",
+     ""
+    ],
+    [
+     "",
+     "ypr_angles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "sticky"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ToZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "VDBFloat3Grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ToZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ToZensimLevelSet": {
@@ -14112,6 +17768,62 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "UpdateZSGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Accel",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "MaxVelSqr",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "gravity",
+     "-9.8"
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "VDBAddPerlinNoise": {
@@ -15034,6 +18746,36 @@
     "particles"
    ]
   },
+  "WritePlyPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "WriteVDBGrid": {
    "inputs": [
     [
@@ -15063,6 +18805,148 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "WriteZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSGridFromZSPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSGridToZSParticle": {
+   "inputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSLevelSetToVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "ZSParticleNeighborWrangle": {
@@ -15115,6 +18999,81 @@
     "GPUMPM"
    ]
   },
+  "ZSParticleToZSGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSParticlesToPrimitiveObject": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "ZSParticlesWrangle": {
    "inputs": [
     [
@@ -15153,6 +19112,46 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZSPartitionForZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ZensimBoundary": {
@@ -15225,6 +19224,286 @@
    "categories": [
     "CompressibleFlow"
    ]
+  },
+  "OceanVolume": {
+   "inputs": [
+    [
+     "",
+     "OceanSpectrum",
+     ""
+    ],
+    [
+     "float",
+     "depth",
+     "0"
+    ],
+    [
+     "",
+     "OceanGrid",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "layers",
+     ""
+    ],
+    [
+     "",
+     "oceanSurface",
+     ""
+    ],
+    [
+     "",
+     "velField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ],
+   "is_subgraph": true
+  },
+  "VolumeTrail": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "maxLen",
+     ""
+    ],
+    [
+     "",
+     "vecField",
+     ""
+    ],
+    [
+     "",
+     "steps",
+     ""
+    ],
+    [
+     "",
+     "ny",
+     ""
+    ],
+    [
+     "",
+     "nx",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "dir",
+     ""
+    ],
+    [
+     "",
+     "center",
+     ""
+    ],
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VolumeTrails",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Visualization"
+   ],
+   "is_subgraph": true
+  },
+  "SlicePlaneForPrimitive": {
+   "inputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "normal",
+     ""
+    ],
+    [
+     "",
+     "primIn",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPlane",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ],
+   "is_subgraph": true
+  },
+  "VdbSlice": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "channelName",
+     ""
+    ],
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "normal",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "slicePrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualization"
+   ],
+   "is_subgraph": true
+  },
+  "AxesAlignedPoints": {
+   "inputs": [
+    [
+     "",
+     "center",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "nx",
+     ""
+    ],
+    [
+     "",
+     "ny",
+     ""
+    ],
+    [
+     "",
+     "dir",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "AxesAlignedPoints",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Visualization"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
