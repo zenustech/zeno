@@ -216,14 +216,14 @@ ZENDEFNODE(UpdateZSGrid, {
                          });
 
 struct ApplyBoundaryOnZSGrid : INode {
-  template <typename LS>
+  template <typename LsView>
   constexpr void
-  projectBoundary(zs::CudaExecutionPolicy &cudaPol, LS &ls,
-                  ZenoBoundary &boundary,
+  projectBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
+                  const ZenoBoundary &boundary,
                   const typename ZenoPartition::table_t &partition,
                   typename ZenoGrid::grid_t &grid) {
     using namespace zs;
-    auto collider = boundary.getBoundary<LS>();
+    auto collider = boundary.getBoundary(lsv);
     cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
             [grid = proxy<execspace_e::cuda>({}, grid),
              table = proxy<execspace_e::cuda>(partition),
@@ -253,9 +253,33 @@ struct ApplyBoundaryOnZSGrid : INode {
     if (has_input<ZenoBoundary>("ZSBoundary")) {
       auto boundary = get_input<ZenoBoundary>("ZSBoundary");
       auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
-      match([&](auto &ls) {
-        projectBoundary(cudaPol, ls, *boundary, partition, grid);
-      })(boundary->getLevelSet());
+#if 0
+      match([&](auto &sdf) {
+        auto sdfLs = boundary->getLevelSetView(sdf);
+        if (boundary->hasVelocityField()) {
+          match([&](auto &vel) mutable {
+            auto velLs = boundary->getLevelSetView(vel);
+            auto ls =
+                SdfVelField<RM_CVREF_T(sdfLs), RM_CVREF_T(velLs)>{sdfLs, velLs};
+            projectBoundary(cudaPol, ls, *boundary, partition, grid);
+          })(boundary->getVelocityField());
+        } else
+          projectBoundary(cudaPol, sdfLs, *boundary, partition, grid);
+      })(boundary->getSdfField());
+#else
+      if (boundary->hasVelocityField()) {
+        match([&](const auto &sdf, const auto &vel) {
+          auto ls = SdfVelField{boundary->getLevelSetView(sdf),
+                                boundary->getLevelSetView(vel)};
+          projectBoundary(cudaPol, ls, *boundary, partition, grid);
+        })(boundary->getSdfField(), boundary->getVelocityField());
+      } else {
+        match([&](const auto &sdf) {
+          projectBoundary(cudaPol, boundary->getLevelSetView(sdf), *boundary,
+                          partition, grid);
+        })(boundary->getSdfField());
+      }
+#endif
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
@@ -442,6 +466,51 @@ ZENDEFNODE(ZSGridToZSParticle,
            {
                {"ZSGrid", "ZSPartition", "ZSParticles", "dt"},
                {},
+               {},
+               {"MPM"},
+           });
+
+struct TransformZSLevelSet : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing TransformZSLevelSet\n");
+    auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto &ls = zsls->getLevelSet();
+
+    using namespace zs;
+    // translation
+    if (has_input("translation")) {
+      auto b = get_input<NumericObject>("translation")->get<vec3f>();
+      match(
+          [&b](SparseLevelSet<3> &ls) {
+            ls.translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+            // fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
+            // getchar();
+          },
+          [](...) {})(ls);
+    }
+    // scale
+    if (has_input("scaling")) {
+      auto s = get_input<NumericObject>("scaling")->get<float>();
+      match([&s](SparseLevelSet<3> &ls) { ls.scale(s); }, [](...) {})(ls);
+    }
+    // rotation
+    if (has_input("eulerXYZ")) {
+      auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
+      auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
+                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+      match([&rot](SparseLevelSet<3> &ls) { ls.rotate(rot.transpose()); },
+            [](...) {})(ls);
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing TransformZSLevelSet\n");
+    set_output("ZSLevelSet", zsls);
+  }
+};
+// refer to nodes/prim/TransformPrimitive.cpp
+ZENDEFNODE(TransformZSLevelSet,
+           {
+               {"ZSLevelSet", "translation", "eulerXYZ", "scaling"},
+               {"ZSLevelSet"},
                {},
                {"MPM"},
            });

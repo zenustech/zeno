@@ -133,7 +133,7 @@ struct ReadAlembic : INode {
 };
 
 ZENDEFNODE(ReadAlembic, {
-    {{"string", "path"}},
+    {{"readpath", "path"}},
     {{"ABCTree", "abctree"}},
     {},
     {"alembic"},

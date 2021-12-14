@@ -122,7 +122,7 @@ struct ZenoFEMMesh : zeno::IObject {
           M(d, i) = vert[d];
         M(3, i) = 1;
       }
-      _elmVolume[elm_id] = gcem::abs(zs::determinant(M)) / 6;
+      _elmVolume[elm_id] = zs::math::abs(zs::determinant(M)) / 6;
       _elmMass[elm_id] = _elmVolume[elm_id] * _elmDensity[elm_id];
 
       mat3 Dm{};
