@@ -40,13 +40,10 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
             const INPUT_SOCKET& inSock = inputs[inputSock];
             for (QString outId : inSock.outNodes.keys())
             {
-                for (QString outSockName : inSock.outNodes[outId].keys())
+                for (QString outSock : inSock.outNodes[outId].keys())
                 {
-                    const SOCKET_INFO &outSock = inSock.outNodes[outId][outSockName];
-
-                    const QPointF &outSockPos = m_nodes[outId]->getPortPos(false, outSockName);
-
-                    EdgeInfo info(outId, id, outSockName, inputSock);
+                    const QPointF &outSockPos = m_nodes[outId]->getPortPos(false, outSock);
+                    EdgeInfo info(outId, id, outSock, inputSock);
                     ZenoFullLink *pEdge = new ZenoFullLink(info);
                     pEdge->updatePos(outSockPos, node->getPortPos(true, inputSock));
                     addItem(pEdge);
@@ -87,7 +84,6 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
             break;
     }
 
-    //
     if (!m_tempLink && pSocket)
     {
         SOCKET_INFO info = pSocket->getSocketInfo();
@@ -244,7 +240,6 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
     for (QString outputPort : outputs.keys())
     {
         const QPointF &outputPos = pNode->getPortPos(false, outputPort);
-
         for (QString inNode : outputs[outputPort].inNodes.keys())
         {
             const SOCKETS_INFO& sockets = outputs[outputPort].inNodes[inNode];

@@ -1,8 +1,6 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
 #include "modeldata.h"
-#include <QJsonObject>
-#include <QJsonArray>
 
 
 SubGraphModel::SubGraphModel(QObject *parent)
@@ -101,31 +99,14 @@ void SubGraphModel::removeNode(const QModelIndex& index)
 void SubGraphModel::addLink(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock)
 {
     const QModelIndex &outIdx = this->index(outNode);
-    QJsonObject outputs = outIdx.data(ROLE_OUTPUTS).toJsonObject();
-    /* output format :
-    *  outputs:
-       {
-           "port1" : {
-                "node1": "port_in_node1",
-                "node2": "port_in_node2",
-           },
-           "port2" : {
-                    ...
-           }
-       }
-    */
-    QJsonObject outputInfo = outputs.value(outSock).toObject();
-    outputInfo.insert(inNode, inSock);
-    outputs[outSock] = outputInfo;
-    setData(outIdx, outputs, ROLE_OUTPUTS);
+    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    outputs[outSock].inNodes[inNode][inSock] = SOCKET_INFO(inNode, inSock);
+    setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
     const QModelIndex &inIdx = this->index(inNode);
-    QJsonObject inputs = inIdx.data(ROLE_INPUTS).toJsonObject();
-    QJsonArray arr = inputs[inSock].toArray();
-    arr[0] = QJsonValue(outNode);
-    arr[1] = QJsonValue(outSock);
-    inputs[inSock] = arr;
-    setData(inIdx, inputs, ROLE_INPUTS);
+    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    inputs[inSock].outNodes[outNode][outSock] = SOCKET_INFO(outNode, outSock);
+    setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
     emit linkChanged(true, outNode, outSock, inNode, inSock);
 }
@@ -133,32 +114,14 @@ void SubGraphModel::addLink(const QString& outNode, const QString& outSock, cons
 void SubGraphModel::removeLink(const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
 {
     const QModelIndex& outIdx = this->index(outputId);
-    QJsonObject outputs = outIdx.data(ROLE_OUTPUTS).toJsonObject();
-    /* output format :
-    *  outputs:
-       {
-           "port1" : {
-                "node1": "port_in_node1",
-                "node2": "port_in_node2",
-           },
-           "port2" : {
-                    ...
-           }
-       }
-    */
-    QJsonObject outputInfo = outputs.value(outputPort).toObject();
-    //todo: more port in the same input node?
-    outputInfo.remove(inputId);
-    outputs[outputPort] = outputInfo;
-    setData(outIdx, outputs, ROLE_OUTPUTS);
+    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    outputs[outputPort].inNodes[inputId].remove(inputPort);
+    setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
     const QModelIndex& inIdx = this->index(inputId);
-    QJsonObject inputs = inIdx.data(ROLE_INPUTS).toJsonObject();
-    QJsonArray arr = inputs[inputPort].toArray();
-    arr[0] = QJsonValue(QJsonValue::Null);
-    arr[1] = QJsonValue(QJsonValue::Null);
-    inputs[inputPort] = arr;
-    setData(inIdx, inputs, ROLE_INPUTS);
+    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    inputs[inputPort].outNodes[outputId].remove(outputPort);
+    setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
     emit linkChanged(false, outputId, outputPort, inputId, inputPort);
 }
