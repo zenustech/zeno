@@ -85,8 +85,49 @@ ZENDEFNODE(LoadTFGPrimitiveFromFile, {
     {"Skinning"},
 });
 
+struct MakeEmptyBones : zeno::INode {
+    virtual void apply() override {
+        auto root = get_input<zeno::NumericObject>("root")->get<zeno::vec3f>();
+        auto res = std::make_shared<zeno::PrimitiveObject>();
 
-struct RetrieveTFGByFromPrim : zeno::INode {}
+        res->resize(1);
+        res->verts[0] = root;
+        
+        set_output("bones",std::move(res));
+    }
+};
+
+ZENDEFNODE(MakeEmptyBones, {
+    {"root"},
+    {"bones"},
+    {},
+    {"Skinning"},
+});
+
+struct AddBone : zeno::INode {
+    virtual void apply() override {
+        auto bones = get_input<zeno::PrimitiveObject>("bones");
+        auto node = get_input<zeno::NumericObject>("node")->get<zeno::vec3f>();
+        auto connect_to = get_input<zeno::NumericObject>("conn_to")->get<int>();
+
+        int idx = bones->size();
+
+        bones->verts.emplace_back(node);
+        bones->lines.emplace_back(connect_to,idx);
+
+        set_output("bones_out",bones);
+    }
+};
+
+ZENDEFNODE(AddBone, {
+    {"bones","node","conn_to"},
+    {"bones_out"},
+    {},
+    {"Skinning"},
+});
+
+
+// struct RetrieveTFGByFromPrim : zeno::INode {}
 
 struct ReadMesh : zeno::INode {
     virtual void apply() override {
@@ -154,8 +195,22 @@ struct GenerateSkinningWeight : zeno::INode {
         C.resize(tfg->size(),3);
         BE.resize(tfg->lines.size(),3);
 
-        for(size_t i = 0;i < tfg->size();++i)
-            C.row(i) << tfg->verts[i][0],tfg->verts[i][1],tfg->verts[i][2];
+        // do some vertices alignment here
+        for(size_t i = 0;i < tfg->size();++i){
+            Eigen::Vector3d tfg_vert;tfg_vert << tfg->verts[i][0],tfg->verts[i][1],tfg->verts[i][2];
+            Eigen::Vector3d align_vert = tfg_vert;
+
+            double min_dist = 1e18;
+            for(size_t j = 0;j < mesh->size();++j){
+                Eigen::Vector3d mvert;mvert << mesh->verts[j][0],mesh->verts[j][1],mesh->verts[j][2];
+                double dist = (mvert - tfg_vert).norm();
+                if(dist < min_dist){
+                    min_dist = dist;
+                    align_vert = mvert;
+                }
+            }
+            C.row(i) = align_vert;
+        }
         for(size_t i = 0;i < tfg->lines.size();++i)
             BE.row(i) << tfg->lines[i][0],tfg->lines[i][1];
 
