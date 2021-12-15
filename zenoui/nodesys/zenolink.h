@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "nodesys_common.h"
+#include "../model/modeldata.h"
 
 class ZenoSubGraphScene;
 

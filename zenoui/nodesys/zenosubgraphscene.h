@@ -31,7 +31,7 @@ public slots:
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
 
 private:
-    void updateNodePos(ZenoNode *pNode, QPointF newPos);
+    void updateLinkPos(ZenoNode *pNode, QPointF newPos);
     bool _enableLink(const QString &outputNode, const QString &outputSocket,
                      const QString &inputNode, const QString &inputSocket);
 

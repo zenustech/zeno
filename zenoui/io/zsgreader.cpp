@@ -69,11 +69,9 @@ SubGraphModel* ZsgReader::_parseSubGraph(const rapidjson::Value &subgraph)
         const QString &name = nameValue.GetString();
         pItem->setData(nameValue.GetString(), ROLE_OBJNAME);
 
-        const rapidjson::Value& inputs = objValue["inputs"];
-        const QJsonObject& inputsObj = _parseInputs(inputs);
-        pItem->setData(inputsObj, ROLE_INPUTS);
-
-        pItem->setData(QJsonObject(), ROLE_OUTPUTS);
+        const INPUT_SOCKETS &inputs = _parseInputs(objValue["inputs"]);
+        pItem->setData(QVariant::fromValue(inputs), ROLE_INPUTS);
+        pItem->setData(QVariant::fromValue(OUTPUT_SOCKETS()), ROLE_OUTPUTS);
 
         const rapidjson::Value& params = objValue["params"];
         const QJsonObject& paramsObj = _parseParams(params);
@@ -97,78 +95,77 @@ void ZsgReader::_parseOutputs(SubGraphModel* pModel)
     for (int r = 0; r < n; r++)
     {
         const QModelIndex &idx = pModel->index(r, 0);
-        const QString &inputId = idx.data(ROLE_OBJID).toString();
-        const QJsonObject &inputs = idx.data(ROLE_INPUTS).toJsonObject();
-        foreach (const QString &inputPort, inputs.keys())
+        const QString &inNode = idx.data(ROLE_OBJID).toString();
+        INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        foreach (const QString& inSockName, inputs.keys())
         {
-            QJsonValue val = inputs.value(inputPort);
-            Q_ASSERT(val.type() == rapidjson::kArrayType);
-            QJsonArray arr = val.toArray();
-            Q_ASSERT(arr.size() == 3);
-            const QString &outputId = arr[0].isString() ? arr[0].toString() : 0;
-            const QString &outputPort = arr[1].isString() ? arr[1].toString() : 0;
-            if (outputId.isEmpty() || outputPort.isEmpty())
-                continue;
-
-            const QModelIndex &fromIndex = pModel->index(outputId);
-            
-            /* output format :
+            const INPUT_SOCKET& inSocket = inputs[inSockName];
+            for (const QString& outNode : inSocket.outNodes.keys())
             {
-                "port1" : {
-                    "node1": "port_in_node1",
-                    "node2": "port_in_node2",
-                },
-                "port2" : {
-                    ...
+                for (const QString& outSock : inSocket.outNodes[outNode].keys())
+                {
+                    const QModelIndex &outIdx = pModel->index(outNode);
+                    OUTPUT_SOCKETS outputs = pModel->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>(); 
+                    if (outputs.find(outSock) == outputs.end())
+                        outputs.insert(outSock, OUTPUT_SOCKET());
+                    auto itOutSock =  outputs.find(outSock);
+                    itOutSock->info.name = outSock;
+                    itOutSock->info.nodeid = outNode;
+
+                    auto itInNode = itOutSock->inNodes.find(inNode);
+                    if (itInNode == itOutSock->inNodes.end())
+                        itInNode = itOutSock->inNodes.insert(inNode, SOCKETS_INFO());
+
+                    auto itInSock = itInNode->find(inSockName);
+                    if (itInSock == itInNode->end())
+                        itInSock = itInNode->insert(inSockName, SOCKET_INFO());
+
+                    itInSock->name = inSockName;
+                    itInSock->nodeid = inNode;
+                    pModel->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
                 }
             }
-            */
-            
-            QJsonObject outputsParam = pModel->data(fromIndex, ROLE_OUTPUTS).toJsonObject();
-            val = outputsParam.take(outputPort);
-            QJsonObject outputInfo;
-            if (!val.isNull()) {
-                outputInfo = val.toObject();
-            } 
-            outputInfo.insert(inputId, inputPort);
-            outputsParam.insert(outputPort, outputInfo);
-            pModel->setData(fromIndex, outputsParam, ROLE_OUTPUTS);
         }
     }
 }
 
-QJsonObject ZsgReader::_parseInputs(const rapidjson::Value& inputs)
+INPUT_SOCKETS ZsgReader::_parseInputs(const rapidjson::Value& inputs)
 {
-    QJsonObject jsonInputs;
-    for (const auto &node : inputs.GetObject())
+    INPUT_SOCKETS inputSockets;
+    for (const auto &inSockInfo : inputs.GetObject())
     {
-        QJsonObject jsonPort;
-        const QString& name = node.name.GetString();
-        const auto& arr = node.value.GetArray();
+        INPUT_SOCKET inputSocket;
+        inputSocket.info.name = inSockInfo.name.GetString();
 
-        QJsonArray jsonArr;
+        const auto& arr = inSockInfo.value.GetArray();
         RAPIDJSON_ASSERT(arr.Size() == 3);
 
-        auto objId = arr[0].IsNull() ? QJsonValue(QJsonValue::Null) : arr[0].GetString();
-        auto outputPort = arr[1].IsNull() ? QJsonValue(QJsonValue::Null) : arr[1].GetString();
+        //only consider one input source, as the form of tuple.
+        //for each port. only one port currently.
+        if (!arr[0].IsNull())
+        {
+            const QString &outId = arr[0].GetString();
+            if (!arr[1].IsNull())
+            {
+                const QString socketName = arr[1].GetString();
+                SOCKET_INFO info;
+                info.name = socketName;
+                info.nodeid = outId;
+                SOCKETS_INFO outputSocket;
+                outputSocket.insert(socketName, info);
+                inputSocket.outNodes.insert(outId, outputSocket);
+            }
 
-        jsonArr.append(objId);
-        jsonArr.append(outputPort);
-
-        rapidjson::Type type = arr[2].GetType();
-        if (type == rapidjson::kNullType) {
-            jsonArr.append(QJsonValue(QJsonValue::Null));
-        } else if (type == rapidjson::kStringType) {
-            jsonArr.append(arr[2].GetString());
-        } else if (type == rapidjson::kNumberType) {
-            jsonArr.append(arr[2].GetFloat());
-        } else {
-            jsonArr.append(QJsonValue(QJsonValue::Null));
+            //to ask: default value type else
+            if (arr[2].GetType() == rapidjson::kStringType) {
+                inputSocket.defaultValue = arr[2].GetString();
+            } else if (arr[2].GetType() == rapidjson::kNumberType) {
+                inputSocket.defaultValue = arr[2].GetFloat();
+            }
         }
-
-        jsonInputs.insert(name, jsonArr);
+        inputSockets.insert(inputSocket.info.name, inputSocket);
     }
-    return jsonInputs;
+    return inputSockets;
 }
 
 QJsonObject ZsgReader::_parseParams(const rapidjson::Value& params)

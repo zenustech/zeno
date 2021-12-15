@@ -34,25 +34,24 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
     {
         ZenoNode *node = it.second;
         const QString& id = node->nodeId();
-        const QJsonObject& inputs = node->inputParams();
-        for (QString inputPort : inputs.keys())
+        const INPUT_SOCKETS& inputs = node->inputParams();
+        for (QString inputSock : inputs.keys())
         {
-            const QJsonValue& fromSocket = inputs.value(inputPort);
-            Q_ASSERT(fromSocket.isArray());
-            const QJsonArray& arr = fromSocket.toArray();
-            Q_ASSERT(arr.size() == 3);
-            if (!arr[0].isNull())
+            const INPUT_SOCKET& inSock = inputs[inputSock];
+            for (QString outId : inSock.outNodes.keys())
             {
-                const QString &fromId = arr[0].toString();
-                const QString &outputPort = arr[1].toString();
-                ZenoNode* fromNode = m_nodes[fromId];
-                const QPointF& fromPos = fromNode->getPortPos(false, outputPort);
+                for (QString outSockName : inSock.outNodes[outId].keys())
+                {
+                    const SOCKET_INFO &outSock = inSock.outNodes[outId][outSockName];
 
-                EdgeInfo info(fromId, id, outputPort, inputPort);
-                ZenoFullLink *pEdge = new ZenoFullLink(info);
-                pEdge->updatePos(fromPos, node->getPortPos(true, inputPort));
-                addItem(pEdge);
-                m_links.insert(std::make_pair(info, pEdge));
+                    const QPointF &outSockPos = m_nodes[outId]->getPortPos(false, outSockName);
+
+                    EdgeInfo info(outId, id, outSockName, inputSock);
+                    ZenoFullLink *pEdge = new ZenoFullLink(info);
+                    pEdge->updatePos(outSockPos, node->getPortPos(true, inputSock));
+                    addItem(pEdge);
+                    m_links.insert(std::make_pair(info, pEdge));
+                }
             }
         }
     }
@@ -171,7 +170,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
             if (role == ROLE_OBJPOS)
             {
                 QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
-                updateNodePos(m_nodes[id], pos);
+                updateLinkPos(m_nodes[id], pos);
             }
             if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
             {
@@ -217,52 +216,46 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex &parent, int fi
     }
 }
 
-void ZenoSubGraphScene::updateNodePos(ZenoNode* pNode, QPointF newPos)
+void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 {
     pNode->setPos(newPos);
-    const QString& id = pNode->nodeId();
-    const QJsonObject& inputs = pNode->inputParams();
-    const QJsonObject& outputs = pNode->outputParams();
-    for (QString inputPort : inputs.keys())
+    const QString& currNode = pNode->nodeId();
+    const INPUT_SOCKETS& inputs = pNode->inputParams();
+    for (QString inSock : inputs.keys())
     {
-        const QJsonArray &arr = inputs.value(inputPort).toArray();
-        if (arr[0].isNull()) continue;
-        const QString &outputId = arr[0].toString();
-        const QString &outputPort = arr[1].toString();
-        const QPointF& outputPos = m_nodes[outputId]->getPortPos(false, outputPort);
-        const QPointF& inputPos = pNode->getPortPos(true, inputPort);
+        const auto& outNodes = inputs[inSock].outNodes;
+        for (QString outNode : outNodes.keys())
+        {
+            for (QString outSock : outNodes[outNode].keys())
+            {
+                const SOCKET_INFO& socketinfo = outNodes[outNode][outSock];
+                const QPointF &outputPos = m_nodes[outNode]->getPortPos(false, outSock);
+                const QPointF &inputPos = pNode->getPortPos(true, inSock);
 
-        EdgeInfo info(outputId, id, outputPort, inputPort);
-        ZenoFullLink* pLink = m_links[info];
-        Q_ASSERT(pLink);
-        pLink->updatePos(outputPos, inputPos);
+                EdgeInfo info(outNode, currNode, outSock, inSock);
+                ZenoFullLink *pLink = m_links[info];
+                Q_ASSERT(pLink);
+                pLink->updatePos(outputPos, inputPos);
+            }
+        }
     }
 
-    /* output format :
-       {
-           "port1" : {
-                "node1": "port_in_node1",
-                "node2": "port_in_node2",
-           },
-           "port2" : {
-                    ...
-           }
-       }
-    */
+    const OUTPUT_SOCKETS &outputs = pNode->outputParams();
     for (QString outputPort : outputs.keys())
     {
         const QPointF &outputPos = pNode->getPortPos(false, outputPort);
-        const QJsonObject &inputObj = outputs.value(outputPort).toObject();
-        if (inputObj.isEmpty()) continue;
 
-        for (auto inputId : inputObj.keys())
+        for (QString inNode : outputs[outputPort].inNodes.keys())
         {
-            const QString &inputPort = inputObj.value(inputId).toString();
-            const QPointF &inputPos = m_nodes[inputId]->getPortPos(true, inputPort);
+            const SOCKETS_INFO& sockets = outputs[outputPort].inNodes[inNode];
+            for (QString inSock : sockets.keys())
+            {
+                QPointF sockPos = m_nodes[inNode]->getPortPos(true, inSock);
 
-            EdgeInfo info(id, inputId, outputPort, inputPort);
-            ZenoFullLink* pLink = m_links[info];
-            pLink->updatePos(outputPos, inputPos);
+                EdgeInfo info(currNode, inNode, outputPort, inSock);
+                ZenoFullLink *pLink = m_links[info];
+                pLink->updatePos(outputPos, sockPos);
+            }
         }
     }
 }

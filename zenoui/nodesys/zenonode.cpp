@@ -141,7 +141,7 @@ void ZenoNode::initSockets(int& y, int& width)
 {
     const QString nodeid = nodeId();
     int x = m_bodyBg->pos().x() - m_renderParams.socketHOffset;
-    const QJsonObject &inputs = m_index.data(ROLE_INPUTS).toJsonObject();
+    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     for (auto key : inputs.keys())
     {
         QPointF pos(x, y);
@@ -166,7 +166,7 @@ void ZenoNode::initSockets(int& y, int& width)
     }
 
     x = m_bodyBg->pos().x() + m_renderParams.bodyBg.rc.width() - m_renderParams.socketHOffset;
-    const QJsonObject &outputs = m_index.data(ROLE_OUTPUTS).toJsonObject();
+    OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
     for (auto outputPort : outputs.keys())
     {
         QPointF pos(x, y);
@@ -226,16 +226,16 @@ QPointF ZenoNode::nodePos() const
     return m_index.data(ROLE_OBJPOS).toPointF();
 }
 
-QJsonObject ZenoNode::inputParams() const
+INPUT_SOCKETS ZenoNode::inputParams() const
 {
     Q_ASSERT(m_index.isValid());
-    return m_index.data(ROLE_INPUTS).toJsonObject();
+    return m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 }
 
-QJsonObject ZenoNode::outputParams() const
+OUTPUT_SOCKETS ZenoNode::outputParams() const
 {
     Q_ASSERT(m_index.isValid());
-    return m_index.data(ROLE_OUTPUTS).toJsonObject();
+    return m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 }
 
 bool ZenoNode::sceneEventFilter(QGraphicsItem* watched, QEvent* event)

@@ -5,6 +5,7 @@
 #include "../model/nodeitem.h"
 #include "../model/graphsmodel.h"
 #include "../model/subgraphmodel.h"
+#include "../model/modeldata.h"
 
 class NodeItem;
 class NodesModel;
@@ -19,7 +20,7 @@ private:
     ZsgReader();
     SubGraphModel* _parseSubGraph(const rapidjson::Value &subgraph);
     void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
-    QJsonObject _parseInputs(const rapidjson::Value &inputs);
+    INPUT_SOCKETS _parseInputs(const rapidjson::Value &inputs);
     QJsonObject _parseParams(const rapidjson::Value &params);
     void _parseOutputs(SubGraphModel* pModel);
 };

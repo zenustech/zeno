@@ -7,6 +7,7 @@
 #include "zenobackgrounditem.h"
 #include "nodesys_common.h"
 #include "zenosocketitem.h"
+#include "../model/modeldata.h"
 
 
 class ZenoNode : public QGraphicsObject
@@ -33,8 +34,8 @@ public:
     QString nodeId() const;
     QString nodeName() const;
     QPointF nodePos() const;
-    QJsonObject inputParams() const;
-    QJsonObject outputParams() const;
+    INPUT_SOCKETS inputParams() const;
+    OUTPUT_SOCKETS outputParams() const;
 
 signals:
     void nodePositionChange(const QString&);

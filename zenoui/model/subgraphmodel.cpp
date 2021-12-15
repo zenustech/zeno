@@ -1,5 +1,6 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
+#include "modeldata.h"
 #include <QJsonObject>
 #include <QJsonArray>
 
@@ -56,64 +57,41 @@ void SubGraphModel::removeNode(const QModelIndex& index)
     if (!pItem)
         return;
 
-    QString inputId = index.data(ROLE_OBJID).toString();
+    QString currNode = index.data(ROLE_OBJID).toString();
 
-    auto iter = pItem->m_datas.find(ROLE_INPUTS);
-    if (iter != pItem->m_datas.end())
+    INPUT_SOCKETS inputs = pItem->m_datas[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    for (QString inSock : inputs.keys())
     {
-        // in this loop, input refers to current node, output refers to the node output data to this node.
-        const QJsonObject& inputs = iter->second.toJsonObject();
-        for (QString inputPort : inputs.keys())
+        for (QString outNode : inputs[inSock].outNodes.keys())
         {
-            const QJsonArray &arr = inputs.value(inputPort).toArray();
-            if (arr[0].isNull())
-                continue;
-            const QString &outputId = arr[0].toString();
-            const QString &outputPort = arr[1].toString();
-
-            const QModelIndex &fromIndex = this->index(outputId);
-            NODEITEM_PTR outputItem = m_nodes[outputId];
-            QJsonObject outputs = outputItem->data(ROLE_OUTPUTS).toJsonObject();
-            for (auto outputPort : outputs.keys())
+            SOCKETS_INFO outSocks = inputs[inSock].outNodes[outNode];
+            for (QString outSock : outSocks.keys())
             {
-                QJsonObject inputObj = outputs.value(outputPort).toObject();
-                inputObj.remove(inputId);
-                outputs[outputPort] = inputObj;
-                emit linkChanged(false, outputId, outputPort, inputId, inputPort);//not only modify core data but emit signal to ui.
+                const QModelIndex& outIdx = this->index(outNode);
+                NODEITEM_PTR outputItem = m_nodes[outNode];
+                OUTPUT_SOCKETS outputs = outputItem->data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+                outputs[outSock].inNodes.remove(currNode);
+                setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+                emit linkChanged(false, outNode, outSock, currNode, inSock);   //not only modify core data but emit signal to ui.
             }
-            setData(fromIndex, outputs, ROLE_OUTPUTS);
         }
     }
 
-    /* output format :
-    "outputs" :
-            {
-                "port1" : {
-                    "node1": "port_in_node1",
-                    "node2": "port_in_node2",
-                },
-                "port2" : {
-                    ...
-                }
-            }
-    */
-
     // in this loop, output refers to current node's output, input refers to what output points to.
-    const QJsonObject outputs = index.data(ROLE_OUTPUTS).toJsonObject();
-    for (auto outputPort : outputs.keys())
+    const OUTPUT_SOCKETS& outputs = index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    for (QString outSock : outputs.keys())
     {
-        QJsonObject outputInfo = outputs.value(outputPort).toObject();
-        for (auto otherInputId : outputInfo.keys())
+        for (QString inNode : outputs[outSock].inNodes.keys())
         {
-            const QString& inputPort = outputInfo.value(otherInputId).toString();
-            const QModelIndex& otherIndex = this->index(otherInputId);
-            QJsonObject inputs = otherIndex.data(ROLE_INPUTS).toJsonObject();
-            QJsonArray arr = inputs[inputPort].toArray();
-            arr[0] = QJsonValue(QJsonValue::Null);
-            arr[1] = QJsonValue(QJsonValue::Null);
-            inputs[inputPort] = arr;
-            setData(otherIndex, inputs, ROLE_INPUTS);
-            emit linkChanged(false, inputId, outputPort, otherInputId, inputPort);//not only modify core data but emit signal to ui.
+            SOCKETS_INFO sockets = outputs[outSock].inNodes[inNode];
+            for (QString inSock : sockets.keys())
+            {
+                const QModelIndex &inIdx = this->index(inNode);
+                INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                inputs[inSock].outNodes.remove(currNode);
+                setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+                emit linkChanged(false, currNode, outSock, inNode, inSock);
+            }
         }
     }
 

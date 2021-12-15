@@ -37,13 +37,6 @@ struct EdgeInfo {
     }
 };
 
-struct SOCKET_INFO {
-    QString nodeid;
-    QString name;
-    QPointF pos;
-    bool binsock;
-};
-
 struct cmpEdge {
     bool operator()(const EdgeInfo &lhs, const EdgeInfo &rhs) const {
         return lhs.srcNode < rhs.srcNode && lhs.dstNode < rhs.dstNode &&
