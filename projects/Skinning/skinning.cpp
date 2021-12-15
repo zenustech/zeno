@@ -61,9 +61,9 @@ struct BlendPoses : zeno::INode {
             res->posesFrame[i] =  poses1->posesFrame[i].slerp(1-w,poses2->posesFrame[i]);
         }
 
-        std::cout << "OUT_POSES : " << std::endl;
-        for(size_t i = 0;i < res->posesFrame.size();++i)
-            std::cout << "P<" << i << "> : " << res->posesFrame[i] << std::endl;
+        // std::cout << "OUT_POSES : " << std::endl;
+        // for(size_t i = 0;i < res->posesFrame.size();++i)
+        //     std::cout << "P<" << i << "> : " << res->posesFrame[i] << std::endl;
 
         set_output("bp",std::move(res));
     }
