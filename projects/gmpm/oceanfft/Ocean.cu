@@ -11,7 +11,7 @@
 #include <vector_functions.h>
 #include <vector_types.h>
 #include <cufft.h>
-#include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/resource/Resource.h"
 #include "zensim/math/Vec.h"
@@ -23,10 +23,6 @@
 
 namespace zeno {
 
-struct ZpcInitializer  {
-  ZpcInitializer() { printf("Initializing Zpc...\n"); (void)zs::Cuda::instance(); printf("Initialized Zpc successfully!\n"); }
-};
-static ZpcInitializer g_zpc_initializer{};
 //---------------
         //---------------
 
@@ -154,6 +150,21 @@ static ZpcInitializer g_zpc_initializer{};
 
 
 
+template <typename F>
+__global__ void computeLambda(size_t n, F f) {
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n)
+        f(i);
+}
+
+
+template <typename F>
+void launch_lambda_kernel(size_t n, F&& f) {
+    dim3 block(64, 1, 1);
+    dim3 grid(cuda_iDivUp(n, block.x), 1, 1);
+    computeLambda<<<grid, block>>>(n, FWD(f));
+    cudaDeviceSynchronize();
+}
 
 
 
@@ -853,10 +864,9 @@ struct OceanCuCompute : zeno::INode {
     backup_device_data(CalOcean->curDx, CalOcean->Dx);
     backup_device_data(CalOcean->curDz, CalOcean->Dz);
 
-    auto cudaExec = cuda_exec().device(0);
     constexpr auto space = execspace_e::cuda;
 
-    cudaExec(range(CalOcean->meshSize * CalOcean->meshSize), [
+    launch_lambda_kernel(CalOcean->meshSize * CalOcean->meshSize, [
         curHf = proxy<space>(CalOcean->curHf),
         curDx = proxy<space>(CalOcean->curDx),
         curDz = proxy<space>(CalOcean->curDz),
@@ -896,7 +906,7 @@ struct OceanCuCompute : zeno::INode {
     CalOcean->d_repos.resize(repos.size());
     CalOcean->d_revel.resize(revel.size());
 
-    cudaExec(range(pos.size()), [
+    launch_lambda_kernel(pos.size(), [
         depth, dt_inv,
         meshSize = CalOcean->meshSize,
         choppyness = CalOcean->choppyness,
