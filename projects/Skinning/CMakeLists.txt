@@ -10,7 +10,11 @@ if(NOT OpenMP_CXX_FOUND)
 endif(NOT OpenMP_CXX_FOUND)
 
 set(SKINNING_SOURCE_FILES
-    skinning_nodesys.cpp
+    bone_animation.cpp
+    bone_system.cpp
+    igl_file_reader.cpp
+    skinning_bbw.cpp
+    skinning.cpp
 )
 
 add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})
