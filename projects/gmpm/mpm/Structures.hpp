@@ -79,7 +79,8 @@ struct ZenoPartition : IObject {
 };
 
 struct ZenoIndexBuckets : IObject {
-  using buckets_t = zs::IndexBuckets<3, int, int>;
+  using buckets_t = zs::IndexBuckets<3, int, int, zs::grid_e::collocated,
+                                     zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return ibs; }
   const auto &get() const noexcept { return ibs; }
   buckets_t ibs;
@@ -105,8 +106,8 @@ struct ZenoLevelSet : IObject {
 
   // using sdf_vel_t = LevelSetRefs<float, 3>;
 
-  using levelset_t =
-      zs::variant<spls_t, plane_t, cuboid_t, sphere_t, cylinder_t/*, sdf_vel_t*/>;
+  using levelset_t = zs::variant<spls_t, plane_t, cuboid_t, sphere_t,
+                                 cylinder_t /*, sdf_vel_t*/>;
   enum category_e { LevelSet, Plane, Cuboid, Sphere, Cylinder, SdfVel };
 
   auto &getLevelSet() noexcept { return levelset; }
