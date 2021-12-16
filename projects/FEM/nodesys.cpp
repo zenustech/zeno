@@ -2159,7 +2159,7 @@ struct SolveEquaUsingNRSolver : zeno::INode {
                 }
 
                 stop_error *= epsilon;
-                stop_error *= sqrt(mesh->_mesh->size());
+                stop_error *= sqrt((double)mesh->_mesh->size());
 
                 std::cout << "STOP_ERROR : " << stop_error << std::endl;                
             }
@@ -2701,7 +2701,7 @@ struct GetEffectiveStress : zeno::INode {
 
 
             dynamic_cast<ElasticModel*>(force_model->_forceModel.get())->ComputePrincipalStress(attrbs,s,ps);
-            FEM_Scaler vm = pow(ps[0] - ps[1],2) + pow(ps[1] - ps[2],2) + pow(ps[0] - ps[2],2);
+            FEM_Scaler vm = pow(ps[0] - ps[1], 2.0) + pow(ps[1] - ps[2], 2.0) + pow(ps[0] - ps[2], 2.0);
             vm = vm / 2;
             vm = sqrt(vm);
 
