@@ -13,6 +13,10 @@ GraphsModel::GraphsModel(QObject *parent)
             this, SLOT(onSelectionChanged(const QItemSelection&, const QItemSelection&)));
 }
 
+GraphsModel::~GraphsModel()
+{
+}
+
 SubGraphModel* GraphsModel::subGraph(const QString& name)
 {
     const QModelIndexList& lst = this->match(QModelIndex(), ROLE_OBJNAME, name, 1, Qt::MatchExactly);
@@ -38,6 +42,16 @@ SubGraphModel* GraphsModel::subGraph(int idx)
 int GraphsModel::graphCounts() const
 {
     return this->rowCount();
+}
+
+NODES_PARAMS GraphsModel::getNodesTemplate() const
+{
+    return m_nodesDict;
+}
+
+void GraphsModel::setNodesTemplate(const NODES_PARAMS &nodesParams)
+{
+    m_nodesDict = nodesParams;
 }
 
 void GraphsModel::onCurrentIndexChanged(int row)
