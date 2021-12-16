@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.16)
+set(CMAKE_CXX_STANDARD 17)
+project(zeno_SKINNING)
+
+find_package(Eigen3 REQUIRED NO_MODULE)
+
+find_package(OpenMP)
+if(NOT OpenMP_CXX_FOUND)
+
+endif(NOT OpenMP_CXX_FOUND)
+
+set(SKINNING_SOURCE_FILES
+    skinning_nodesys.cpp
+)
+
+add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})
+target_link_libraries(zeno_SKINNING PRIVATE Eigen3::Eigen)
+target_link_libraries(zeno_SKINNING PUBLIC OpenMP::OpenMP_CXX)
+
+target_link_libraries(zeno_SKINNING PRIVATE igl::core igl::cgal)
+
+target_link_libraries(zeno_SKINNING PUBLIC zeno)
+target_link_libraries(zeno_SKINNING PRIVATE zeno_nodep)
+target_include_directories(zeno_SKINNING PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_SKINNING PRIVATE ../zenvdb/include)

@@ -7,6 +7,9 @@ if (ZENO_ENABLE_OPENMP)
     if (TARGET OpenMP::OpenMP_CXX)
         message("found package: OpenMP::OpenMP_CXX")
         target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
+        target_compile_options(zeno # MSVC, GNU, Clang, Intel
+            PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
+        )
     endif()
 endif()
 if (ZENO_VISUALIZATION)

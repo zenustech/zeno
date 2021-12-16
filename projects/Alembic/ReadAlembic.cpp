@@ -4,6 +4,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
@@ -18,9 +19,10 @@ namespace {
 
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh) {
     auto prim = std::make_shared<PrimitiveObject>();
+    int i = zeno::state.frameid;
+    i = std::min((int)i, (int)mesh.getNumSamples() - 1);
 
-    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp;
-    mesh.get(mesamp);
+    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)i));
 
     if (auto marr = mesamp.getPositions()) {
         log_info("[alembic] totally {} positions", marr->size());
