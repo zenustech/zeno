@@ -94,7 +94,7 @@ struct MakeZSBuckets : zeno::INode {
     fmt::print("done building index buckets with {} entries, {} buckets\n",
                ibs.numEntries(), ibs.numBuckets());
 
-    set_output("MakeZSBuckets", std::move(out));
+    set_output("ZSIndexBuckets", std::move(out));
   }
 };
 
