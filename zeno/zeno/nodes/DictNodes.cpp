@@ -3,7 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
-
+#include <iostream>
 namespace {
 
 struct DictSize : zeno::INode {
@@ -125,7 +125,7 @@ struct ExtractDict : zeno::INode {
             auto it = dict->lut.find(key);
             if (it == dict->lut.end())
                 continue;
-            auto obj = it->second;
+            auto obj = dict->lut.at(key);
             set_output2(key, std::move(obj));
         }
     }
