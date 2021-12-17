@@ -101,15 +101,15 @@ ZENDEFNODE(FuncCall, {
 });
 
 
-struct TaskObject : zeno::IObject {
-    std::shared_ptr<zeno::FunctionObject> f;
-    std::shared_ptr<zeno::DictObject > data;
-    void run()
-    {
-        auto args = get_input<zeno::DictObject>("args")->lut;
-        func->call(args);
-    }
-};
+// struct TaskObject : zeno::IObject {
+//     std::shared_ptr<zeno::FunctionObject> f;
+//     std::shared_ptr<zeno::DictObject > data;
+//     void run()
+//     {
+//         auto args = get_input<zeno::DictObject>("args")->lut;
+//         func->call(args);
+//     }
+// };
 
 // struct MakeTask : zeno::INode {
 //     virtual void apply() override {
