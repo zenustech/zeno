@@ -1,3 +1,4 @@
+#include "../Utils.hpp"
 #include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
@@ -22,16 +23,7 @@ struct ZSPartitionForZSParticles : INode {
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     using namespace zs;
     std::size_t cnt = 0;
@@ -353,16 +345,7 @@ struct ZSParticleToZSGrid : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSParticleToZSGrid\n");
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
     auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
@@ -402,16 +385,7 @@ struct ZSGridToZSParticle : INode {
     auto &grid = get_input<ZenoGrid>("ZSGrid")->get();
     auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     auto stepDt = get_input<NumericObject>("dt")->get<float>();
 
