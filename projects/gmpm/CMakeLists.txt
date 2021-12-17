@@ -41,7 +41,7 @@ target_include_directories(zeno_mpm PRIVATE ../zenvdb/include)
 if (NOT MSVC)
 target_sources(zeno_mpm PRIVATE 
   mpm/PW.cu
-#  mpm/PNW.cu
+  mpm/PNW.cu
 )
 endif()
 
