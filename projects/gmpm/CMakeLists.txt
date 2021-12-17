@@ -38,6 +38,12 @@ target_link_libraries(zeno_mpm PRIVATE zeno_nodep)
 target_link_libraries(zeno_mpm PUBLIC zeno ZFX)
 target_include_directories(zeno_mpm PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_mpm PRIVATE ../zenvdb/include)
+if (NOT MSVC)
+target_sources(zeno_mpm PRIVATE 
+  mpm/PW.cu
+#  mpm/PNW.cu
+)
+endif()
 
 add_library(zeno_gmpm SHARED)
 
