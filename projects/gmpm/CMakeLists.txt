@@ -42,6 +42,7 @@ if (NOT MSVC)
 target_sources(zeno_mpm PRIVATE 
   mpm/PW.cu
   mpm/PNW.cu
+  mpm/PPW.cu
 )
 endif()
 
