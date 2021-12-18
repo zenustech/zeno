@@ -8,6 +8,7 @@ struct TextElement
     QString id;
 	QFont font;
 	QBrush fill;
+    QBrush background;
 	QString text;	//only used to template
     QRectF rc;
 };

@@ -21,6 +21,8 @@ struct PARAM_INFO {
     QVariant value;
     PARAM_CONTROL control;
     bool bEnableConnect;     //enable connection with other out socket.
+
+    PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}
 };
 typedef QMap<QString, PARAM_INFO> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)

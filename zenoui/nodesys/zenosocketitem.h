@@ -14,9 +14,14 @@ public:
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
     SOCKET_INFO getSocketInfo();
+    void setOffsetToName(const QPointF& offsetToName);
+
+public slots:
+    void socketNamePosition(const QPointF& nameScenePos);
 
 private:
     SOCKET_INFO m_info;
+    QPointF m_offsetToName;
 };
 
 #endif

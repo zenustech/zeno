@@ -127,11 +127,20 @@ EdgeInfo ZenoFullLink::linkInfo() const
 
 QPointF ZenoFullLink::getSrcPos() const
 {
+    // optimize: mark dirty and update when dirty toggled.
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+    if (pScene) {
+        return pScene->getSocketPos(false, m_linkInfo.srcNode, m_linkInfo.srcPort);
+    }
     return m_srcPos;
 }
 
 QPointF ZenoFullLink::getDstPos() const
 {
+    ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(scene());
+    if (pScene) {
+        return pScene->getSocketPos(true, m_linkInfo.dstNode, m_linkInfo.dstPort);
+    }
     return m_dstPos;
 }
 

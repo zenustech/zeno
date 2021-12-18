@@ -32,6 +32,7 @@ public:
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     void resize(QSizeF sz);
+    QSizeF size() const { return m_size; }
     void toggle(bool bSelected);
 
 signals:

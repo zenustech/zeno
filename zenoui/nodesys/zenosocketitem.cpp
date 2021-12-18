@@ -16,3 +16,14 @@ SOCKET_INFO ZenoSocketItem::getSocketInfo()
     m_info.pos = sceneBoundingRect().center();
     return m_info;
 }
+
+void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
+{
+    m_offsetToName = offsetToName;
+}
+
+void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
+{
+    QPointF namePos = mapFromScene(nameScenePos);
+    setPos(namePos + m_offsetToName);
+}

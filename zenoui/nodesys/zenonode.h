@@ -7,14 +7,14 @@
 #include "zenobackgrounditem.h"
 #include "nodesys_common.h"
 #include "zenosocketitem.h"
+#include "zenoparamwidget.h"
 #include "../model/modeldata.h"
 
 
-class ZenoNode : public QGraphicsObject
+class ZenoNode : public QGraphicsWidget
 {
     Q_OBJECT
-    typedef QGraphicsObject _base;
-
+    typedef QGraphicsWidget _base;
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
     ~ZenoNode();
@@ -25,8 +25,8 @@ public:
     int type() const override;
 
     void init(const QModelIndex& index);
-    void initParams(int& y, int& width);
-    void initSockets(int& y, int& width);
+    QGraphicsGridLayout* initParams();
+    QGraphicsGridLayout* initSockets();
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -47,10 +47,17 @@ protected:
     bool sceneEvent(QEvent* event) override;
 
 private:
+    ZenoBackgroundWidget* initBodyWidget();
+    ZenoBackgroundWidget* initHeaderBgWidget();
+    void initIndependentWidgets();
+    void _updateSocketItemPos();
+
     QPersistentModelIndex m_index;
     NodeUtilParam m_renderParams;
     std::map<QString, ZenoSocketItem *> m_inSocks;
     std::map<QString, ZenoSocketItem *> m_outSocks;
+    QMap<QString, ZenoTextLayoutItem*> m_inSockNames;
+    QMap<QString, ZenoTextLayoutItem*> m_outSockNames;
 
     QGraphicsTextItem* m_nameItem;
     ZenoBackgroundItem *m_headerBg;
@@ -59,6 +66,12 @@ private:
     ZenoImageItem *m_prep;
     ZenoImageItem *m_collaspe;
     ZenoBackgroundItem *m_bodyBg;
+    QGraphicsWidget* m_paramsWidget;
+
+    ZenoBackgroundWidget *m_bodyWidget;
+    ZenoBackgroundWidget *m_headerWidget;
+
+    bool m_bInitSockets;
 };
 
 #endif

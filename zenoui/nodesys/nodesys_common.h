@@ -8,6 +8,7 @@ enum ZenoGVItemType {
     ZTYPE_TEMPLINK,
     ZTYPE_SOCKET,
     ZTYPE_IMAGE,
+    ZTYPE_PARAMWIDGET
 };
 
 struct EdgeInfo {
