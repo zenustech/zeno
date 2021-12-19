@@ -53,7 +53,6 @@ private:
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
     bool m_bFixRadius;
     bool m_bSelected;
-    QRectF m_rect;
 };
 
 #endif

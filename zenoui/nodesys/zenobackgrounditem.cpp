@@ -156,7 +156,6 @@ void ZenoBackgroundItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 ///////////////////////////////////////////////////////////////////////////
 ZenoBackgroundWidget::ZenoBackgroundWidget(const BackgroundComponent &comp, QGraphicsItem *parent, Qt::WindowFlags wFlags)
     : QGraphicsWidget(parent, wFlags)
-    , m_rect(QRectF(0, 0, comp.rc.width(), comp.rc.height()))
     , lt_radius(comp.lt_radius)
     , rt_radius(comp.rt_radius)
     , lb_radius(comp.lb_radius)
@@ -192,19 +191,8 @@ void ZenoBackgroundWidget::setRadius(int lt, int rt, int lb, int rb)
 
 QSizeF ZenoBackgroundWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    QSizeF sz;
-    switch (which)
-    {
-        case Qt::MinimumSize:
-            return m_rect.size();
-        case Qt::PreferredSize:
-            return m_rect.size();
-        case Qt::MaximumSize:
-            return QSize(1000, m_rect.height());
-        default:
-            //return m_rect.size();
-            return _base::size();
-    }
+    QSizeF sz = layout()->effectiveSizeHint(which, constraint);
+    return sz;
 }
 
 void ZenoBackgroundWidget::setGeometry(const QRectF& rect)
@@ -214,16 +202,6 @@ void ZenoBackgroundWidget::setGeometry(const QRectF& rect)
 
 void ZenoBackgroundWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    QRectF rc = this->rect();
-    rc = boundingRect();
-    QSizeF sz = this->size();
-
-    QRectF frame(QPointF(0, 0), geometry().size());
-
-    QGraphicsLayout *pLayout = layout();
-    QRectF rcc = pLayout->geometry();
-
-    //_base::paint(painter, option, widget);
     QPainterPath path = shape();
     if (m_bSelected) {
         painter->fillPath(path, m_clrSelected);
@@ -242,7 +220,6 @@ QPainterPath ZenoBackgroundWidget::shape() const
     QGraphicsLayout *pLayout = layout();
     //it's complicated to position the shape... 
     QRectF rcc = pLayout->geometry();
-    rcc.setWidth(geometry().width());
 
     QPainterPath path;
     QRectF r = rcc.normalized();

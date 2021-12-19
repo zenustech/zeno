@@ -19,22 +19,24 @@ int ZenoParamWidget::type() const
 
 void ZenoParamWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    QSizeF sz = this->sizeHint(Qt::PreferredSize);
-    sz = sizeHint(Qt::MinimumSize);
-    sz = sizeHint(Qt::MaximumSize);
     QGraphicsProxyWidget::paint(painter, option, widget);
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
     m_pLineEdit = new QLineEdit;
     m_pLineEdit->setText(text);
-    
+    //todo: parameterize.
+    m_pLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_pLineEdit->setFixedWidth(128);    //todo: dpi scaled.
     setWidget(m_pLineEdit);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoParamLabel::ZenoParamLabel(const QString &text, const QFont &font, const QBrush &fill, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
@@ -55,6 +57,58 @@ void ZenoParamLabel::setAlignment(Qt::Alignment alignment)
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////
+ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, QGraphicsItem *parent)
+    : ZenoParamWidget(parent)
+{
+    m_combobox = new QComboBox;
+    m_combobox->addItems(items);
+    m_combobox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_combobox->setFixedWidth(128);//todo: dpi scaled.
+    setWidget(m_combobox);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+ZenoParamPushButton::ZenoParamPushButton(const QString &name, QGraphicsItem *parent)
+    : ZenoParamWidget(parent)
+{
+    QPushButton* pBtn = new QPushButton(name);
+    setWidget(pBtn);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *parent)
+    : ZenoParamWidget(parent)
+    , m_path(filename)
+{
+    QLineEdit *plineEdit = new QLineEdit(filename);
+    QPushButton *openBtn = new QPushButton("...");
+    QWidget* pWidget = new QWidget;
+    QHBoxLayout *pLayout = new QHBoxLayout;
+    plineEdit->setReadOnly(true);
+    pLayout->addWidget(plineEdit);
+    pLayout->addWidget(openBtn);
+    pLayout->setMargin(0);
+    pWidget->setLayout(pLayout);
+    pWidget->setAutoFillBackground(true);
+    setWidget(pWidget);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, QGraphicsItem *parent)
+    : ZenoParamWidget(parent)
+    , m_value(value)
+{
+    QTextEdit* pTextEdit = new QTextEdit;
+    pTextEdit->setText(value);
+    setWidget(pTextEdit);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)
@@ -105,34 +159,38 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-ZenoSvgLayoutItem::ZenoSvgLayoutItem(ZenoSocketItem* item, QGraphicsLayoutItem* parent, bool isLayout)
-    : QGraphicsLayoutItem(parent, isLayout)
-    , m_item(item)
+ZenoSvgLayoutItem::ZenoSvgLayoutItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
+    : QGraphicsLayoutItem()
+    , ZenoImageItem(elem, sz, parent)
 {
-    setGraphicsItem(m_item);
+    setGraphicsItem(this);
 }
 
 QSizeF ZenoSvgLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    QSizeF sz = m_item->size();
-    switch (which) {
+    switch (which)
+    {
         case Qt::MinimumSize:
-            return sz;
         case Qt::PreferredSize:
-            return sz;
         case Qt::MaximumSize:
-            return sz;
+            return ZenoImageItem::boundingRect().size();
         default:
-            //return m_rect.size();
-            return sz;
+            break;
     }
+    return constraint;
+}
+
+QRectF ZenoSvgLayoutItem::boundingRect() const
+{
+    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
+    return rc;
 }
 
 void ZenoSvgLayoutItem::setGeometry(const QRectF &rect)
 {
-    if (m_item)
-        m_item->setPos(rect.topLeft());
+    prepareGeometryChange();
     QGraphicsLayoutItem::setGeometry(rect);
+    setPos(rect.topLeft());
 }
 
 void ZenoSvgLayoutItem::updateGeometry()
@@ -141,74 +199,26 @@ void ZenoSvgLayoutItem::updateGeometry()
 }
 
 
-//////////////////////////////////////////////////////////////////////
-LayoutItem::LayoutItem(QGraphicsItem *parent)
-    : QGraphicsLayoutItem()
-    , QGraphicsItem(parent)
-    , m_pix(QPixmap(QLatin1String(":/icons/checked.png")))
+/////////////////////////////////////////////////////////////////////////
+SpacerLayoutItem::SpacerLayoutItem(QSizeF sz, bool bHorizontal, QGraphicsLayoutItem *parent, bool isLayout)
+    : QGraphicsLayoutItem(parent, isLayout)
+    , m_sz(sz)
 {
-    setGraphicsItem(this);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 }
 
-void LayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+QSizeF SpacerLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    Q_UNUSED(widget);
-    Q_UNUSED(option);
-
-    QRectF frame(QPointF(0, 0), geometry().size());
-    const QSize pmSize = m_pix.size();
-    QGradientStops stops;
-
-    // paint a background rect (with gradient)
-    QLinearGradient gradient(frame.topLeft(), frame.topLeft() + QPointF(200, 200));
-    stops << QGradientStop(0.0, QColor(60, 60, 60));
-    stops << QGradientStop(frame.height() / 2 / frame.height(), QColor(102, 176, 54));
-
-    //stops << QGradientStop(((frame.height() + h)/2 )/frame.height(), QColor(157, 195,  55));
-    stops << QGradientStop(1.0, QColor(215, 215, 215));
-    gradient.setStops(stops);
-    painter->setBrush(QBrush(gradient));
-    painter->drawRoundedRect(frame, 10.0, 10.0);
-
-    // paint a rect around the pixmap (with gradient)
-    QPointF pixpos = frame.center() - (QPointF(pmSize.width(), pmSize.height()) / 2);
-    QRectF innerFrame(pixpos, pmSize);
-    innerFrame.adjust(-4, -4, 4, 4);
-    gradient.setStart(innerFrame.topLeft());
-    gradient.setFinalStop(innerFrame.bottomRight());
-    stops.clear();
-    stops << QGradientStop(0.0, QColor(215, 255, 200));
-    stops << QGradientStop(0.5, QColor(102, 176, 54));
-    stops << QGradientStop(1.0, QColor(0, 0, 0));
-    gradient.setStops(stops);
-    painter->setBrush(QBrush(gradient));
-    painter->drawRoundedRect(innerFrame, 10.0, 10.0);
-    painter->drawPixmap(pixpos, m_pix);
-}
-
-QRectF LayoutItem::boundingRect() const
-{
-    return QRectF(QPointF(0, 0), geometry().size());
-}
-
-void LayoutItem::setGeometry(const QRectF &geom)
-{
-    prepareGeometryChange();
-    QGraphicsLayoutItem::setGeometry(geom);
-    setPos(geom.topLeft());
-}
-
-QSizeF LayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
-{
-    switch (which) {
+    switch (which)
+    {
         case Qt::MinimumSize:
         case Qt::PreferredSize:
-            // Do not allow a size smaller than the pixmap with two frames around it.
-            return m_pix.size() + QSize(12, 12);
+            return m_sz;
         case Qt::MaximumSize:
-            return QSizeF(1000, 1000);
+            return m_sz;
+            QSizeF(1000, 1000);
         default:
-            break;
+            return m_sz;
     }
     return constraint;
 }

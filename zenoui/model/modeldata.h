@@ -20,6 +20,7 @@ struct PARAM_INFO {
     QVariant defaultValue;
     QVariant value;
     PARAM_CONTROL control;
+    QString typeDesc;
     bool bEnableConnect;     //enable connection with other out socket.
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}

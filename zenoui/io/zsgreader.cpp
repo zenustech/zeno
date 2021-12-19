@@ -112,6 +112,8 @@ PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
         return CONTROL_READPATH;
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
+    } else if (type.startsWith("enum ")) {
+        return CONTROL_ENUM;
     } else {
         return CONTROL_NONE;
     }
@@ -179,6 +181,7 @@ void ZsgReader::_parseNodes(const rapidjson::Value& descs, NODES_PARAMS& nodesDi
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
                 paramInfo.name = socketName;
+                paramInfo.typeDesc = socketType;
                 paramInfo.defaultValue = _parseDefaultValue(socketDefl);
 
                 pack.params.insert(socketName, paramInfo);

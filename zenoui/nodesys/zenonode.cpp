@@ -126,11 +126,6 @@ void ZenoNode::initIndependentWidgets()
     m_prep = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
     m_prep->setPos(rc.topLeft());
     m_prep->setZValue(ZVALUE_ELEMENT);
-
-    rc = m_renderParams.rcCollasped;
-    m_collaspe = new ZenoImageItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()), this);
-    m_collaspe->setPos(rc.topLeft());
-    m_collaspe->setZValue(ZVALUE_ELEMENT);
 }
 
 ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
@@ -139,10 +134,27 @@ ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
     const QString &name = m_index.data(ROLE_OBJNAME).toString();
-    ZenoParamLabel *pNameItem = new ZenoParamLabel(name, m_renderParams.nameFont, m_renderParams.nameClr);
-    pNameItem->setAlignment(Qt::AlignCenter);
+    ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color());
+    pNameItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    QFontMetrics metrics(m_renderParams.nameFont);
+    int textWidth = metrics.horizontalAdvance(name);
+    int horizontalPadding = 20;
+
+    QRectF rc = m_renderParams.rcCollasped;
+
+    ZenoSvgLayoutItem *collaspeItem = new ZenoSvgLayoutItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()));
+    collaspeItem->setZValue(ZVALUE_ELEMENT);
+    collaspeItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 6), true));
+    pHLayout->addItem(collaspeItem);
+    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 3), true));
     pHLayout->addItem(pNameItem);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
+    pHLayout->addItem(new SpacerLayoutItem(QSizeF(40, 0), true));
+
+    pHLayout->setContentsMargins(0, 5, 0, 5);
+    pHLayout->setSpacing(0);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -180,35 +192,71 @@ QGraphicsGridLayout* ZenoNode::initParams()
     if (n > 0)
     {
         pParamsLayout = new QGraphicsGridLayout;
-        for (auto paramName : params.keys()) {
+        for (auto paramName : params.keys())
+        {
             const PARAM_INFO &param = params[paramName];
             if (param.bEnableConnect)
                 continue;
 
             QVariant val = param.value;
             QString value;
-            if (val.type() == QVariant::String) {
+            if (val.type() == QVariant::String)
+            {
                 value = val.toString();
-            } else if (val.type() == QVariant::Double) {
+            }
+            else if (val.type() == QVariant::Double)
+            {
                 value = QString::number(val.toDouble());
             }
 
-            switch (param.control) {
+            ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+            pParamsLayout->addItem(pNameItem, r, 0);
+
+            switch (param.control)
+            {
                 case CONTROL_STRING:
                 case CONTROL_INT:
                 case CONTROL_FLOAT:
-                case CONTROL_BOOL: {
-                    ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+                case CONTROL_BOOL:
+                {
                     ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(value);
-                    pParamsLayout->addItem(pNameItem, r, 0);
                     pParamsLayout->addItem(pLineEdit, r, 1);
                     break;
                 }
-                default: {
-                    ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-                    ZenoParamNameItem *pValueItem = new ZenoParamNameItem(value);
-                    pParamsLayout->addItem(pNameItem, r, 0);
+                case CONTROL_ENUM:
+                {
+                    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+                    ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items);
+                    pParamsLayout->addItem(pComboBox, r, 1);
+                    break;
+                }
+                case CONTROL_READPATH:
+                {
+                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value);
+                    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...");
+                    pParamsLayout->addItem(pFileWidget, r, 1);
+                    pParamsLayout->addItem(pBtn, r, 2);
+                    break;
+                }
+                case CONTROL_WRITEPATH:
+                {
+                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value);
+                    ZenoParamPushButton *pBtn = new ZenoParamPushButton("...");
+                    pParamsLayout->addItem(pFileWidget, r, 1);
+                    pParamsLayout->addItem(pBtn, r, 2);
+                    break;
+                }
+                case CONTROL_MULTILINE_STRING:
+                {
+                    ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value);
+                    pParamsLayout->addItem(pMultiStrEdit, r, 1);
+                    break;
+                }
+                default:
+                {
+                    ZenoTextLayoutItem *pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
                     pParamsLayout->addItem(pValueItem, r, 1);
+                    break;
                 }
             }
             r++;
