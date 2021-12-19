@@ -31,6 +31,11 @@ struct ZSParticleNeighborWrangler : INode {
   }
   void apply() override {
     using namespace zs;
+
+    auto &currentContext = Cuda::context(0);
+    currentContext.setContext();
+    auto cudaPol = cuda_exec().device(0).sync(true);
+
     auto code = get_input<StringObject>("zfxCode")->get();
 
     /// parObjPtr
@@ -44,9 +49,12 @@ struct ZSParticleNeighborWrangler : INode {
     // auto parObjPtr = get_input<ZenoParticles>("ZSParticles");
 
     /// parNeighborPtr
+    auto neighborParObjPtrs =
+        RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSNeighborParticles");
     std::shared_ptr<ZenoParticles> parNeighborPtr{};
-    if (has_input<ZenoParticles>("ZSNeighborParticles"))
-      parNeighborPtr = get_input<ZenoParticles>("ZSNeighborParticles");
+    if (neighborParObjPtrs.size() > 0)
+      parNeighborPtr =
+          std::shared_ptr<ZenoParticles>(neighborParObjPtrs[0], [](void *) {});
     else if (!has_input("ZSNeighborParticles"))
       parNeighborPtr = std::make_shared<ZenoParticles>(*parObjPtr); // copy-ctor
     else
@@ -56,7 +64,15 @@ struct ZSParticleNeighborWrangler : INode {
     const auto neighborProps = neighborPars.getPropertyTags();
 
     /// ibs (TODO: generate based on neighborPars, when this input is absent)
-    auto ibsPtr = get_input<ZenoIndexBuckets>("ZSIndexBuckets");
+    std::shared_ptr<ZenoIndexBuckets> ibsPtr{};
+    if (has_input<ZenoIndexBuckets>("ZSIndexBuckets"))
+      ibsPtr = get_input<ZenoIndexBuckets>("ZSIndexBuckets");
+    else if (has_input<NumericObject>("ZSIndexBuckets"))
+      spatial_hashing(cudaPol, neighborPars,
+                      get_input<NumericObject>("ZSIndexBuckets")->get<float>(),
+                      ibsPtr->get());
+    else
+      ;
     const auto &ibs = ibsPtr->get();
 
     zfx::Options opts(zfx::Options::for_cuda);
@@ -107,10 +123,6 @@ struct ZSParticleNeighborWrangler : INode {
       def_sym("@", name.asString(), nchns);
     for (auto &&[name, nchns] : neighborProps)
       def_sym("@@", name.asString(), nchns);
-
-    auto &currentContext = Cuda::context(0);
-    currentContext.setContext();
-    auto cudaPol = cuda_exec().device(0).sync(true);
 
     auto prog = compiler.compile(code, opts);
     auto jitCode = assembler.assemble(prog->assembly);
