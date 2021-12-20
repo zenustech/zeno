@@ -219,20 +219,20 @@ QGraphicsGridLayout* ZenoNode::initParams()
                 case CONTROL_FLOAT:
                 case CONTROL_BOOL:
                 {
-                    ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(value);
+                    ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
                     pParamsLayout->addItem(pLineEdit, r, 1);
                     break;
                 }
                 case CONTROL_ENUM:
                 {
                     QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-                    ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items);
+                    ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
                     pParamsLayout->addItem(pComboBox, r, 1);
                     break;
                 }
                 case CONTROL_READPATH:
                 {
-                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value);
+                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
                     ZenoParamPushButton* pBtn = new ZenoParamPushButton("...");
                     pParamsLayout->addItem(pFileWidget, r, 1);
                     pParamsLayout->addItem(pBtn, r, 2);
@@ -240,7 +240,7 @@ QGraphicsGridLayout* ZenoNode::initParams()
                 }
                 case CONTROL_WRITEPATH:
                 {
-                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value);
+                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
                     ZenoParamPushButton *pBtn = new ZenoParamPushButton("...");
                     pParamsLayout->addItem(pFileWidget, r, 1);
                     pParamsLayout->addItem(pBtn, r, 2);

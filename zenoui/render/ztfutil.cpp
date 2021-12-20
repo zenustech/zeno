@@ -439,13 +439,30 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
                                   nodeParam.body.leftTopSocket.text.rc.left());
     param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() -
                                   nodeParam.body.leftBottomSocket.image.rc.top());
-    //todo: font read/write
+    //todo: parameterized.
     param.nameFont = QFont("Consolas", 13);
     param.socketFont = QFont("Consolas", 11);
     param.paramFont = QFont("Consolas", 11);
     param.nameClr = QColor(255, 255, 255);
     param.socketClr = QColor(255, 255, 255);
     param.paramClr = QColor(255, 255, 255);
+
+    param.lineEditParam.font = QFont("Consolas", 10);
+    QPalette palette;
+    palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
+    palette.setColor(QPalette::Text, Qt::white);
+    param.lineEditParam.palette = palette;
+    param.lineEditParam.margins = QMargins(8, 0, 0, 0);
+
+    param.comboboxParam.font = QFont("Consolas", 10);
+    param.comboboxParam.textColor = QColor(255, 255, 255);
+    param.comboboxParam.itemBgNormal = nodeParam.body.backboard.clr_normal;
+    param.comboboxParam.itemBgHovered = QColor(179, 102, 0);
+    param.comboboxParam.itemBgSelected = QColor(179, 102, 0);
+    palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
+    palette.setColor(QPalette::Window, nodeParam.body.backboard.clr_normal);
+    palette.setColor(QPalette::Text, Qt::white);
+    param.comboboxParam.palette = palette;
 
     return param;
 }

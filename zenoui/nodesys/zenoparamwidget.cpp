@@ -23,12 +23,23 @@ void ZenoParamWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+ZenoGvLineEdit::ZenoGvLineEdit(QWidget* parent)
+    : QLineEdit(parent)
+{
+    setAutoFillBackground(false);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
-ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, QGraphicsItem *parent)
+ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_pLineEdit = new QLineEdit;
+    m_pLineEdit = new ZenoGvLineEdit;
     m_pLineEdit->setText(text);
+    m_pLineEdit->setTextMargins(param.margins);
+    m_pLineEdit->setPalette(param.palette);
+    m_pLineEdit->setFont(param.font);
     //todo: parameterize.
     m_pLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     m_pLineEdit->setFixedWidth(128);    //todo: dpi scaled.
@@ -58,13 +69,65 @@ void ZenoParamLabel::setAlignment(Qt::Alignment alignment)
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, QGraphicsItem *parent)
+ZComboBoxItemDelegate::ZComboBoxItemDelegate(ComboBoxParam param, QObject *parent)
+    : QStyledItemDelegate(parent)
+    , m_param(param)
+{
+}
+
+void ZComboBoxItemDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const
+{
+    QStyledItemDelegate::initStyleOption(option, index);
+
+    option->backgroundBrush.setStyle(Qt::SolidPattern);
+    if (option->state & QStyle::State_Selected)
+    {
+        option->backgroundBrush.setColor(m_param.itemBgSelected);
+    }
+    else if (option->state & QStyle::State_MouseOver)
+    {
+        option->backgroundBrush.setColor(m_param.itemBgHovered);
+    }
+    else
+    {
+        option->backgroundBrush.setColor(m_param.itemBgNormal);
+    }
+}
+
+void ZComboBoxItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    QStyleOptionViewItem opt = option;
+    initStyleOption(&opt, index);
+    painter->fillRect(opt.rect, opt.backgroundBrush);
+    painter->drawText(opt.rect, opt.text);
+}
+
+QSize ZComboBoxItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    int w = ((QWidget *) parent())->width();
+    return QSize(w, 24);
+}
+
+
+ZenoGvComboBox::ZenoGvComboBox(QWidget *parent)
+    : QComboBox(parent)
+{
+}
+
+void ZenoGvComboBox::paintEvent(QPaintEvent *e)
+{
+    QComboBox::paintEvent(e);
+}
+
+ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new QComboBox;
+    m_combobox = new ZenoGvComboBox;
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_combobox->setPalette(param.palette);
     m_combobox->setFixedWidth(128);//todo: dpi scaled.
+    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
     setWidget(m_combobox);
 }
 
@@ -74,6 +137,13 @@ ZenoParamPushButton::ZenoParamPushButton(const QString &name, QGraphicsItem *par
     : ZenoParamWidget(parent)
 {
     QPushButton* pBtn = new QPushButton(name);
+    //temp code:
+    pBtn->setFixedWidth(20);
+    QPalette palette;
+    palette.setColor(QPalette::Base, QColor(50, 50, 50));
+    palette.setColor(QPalette::Window, QColor(50, 50, 50));
+    palette.setColor(QPalette::Text, Qt::white);
+    pBtn->setPalette(palette);
     setWidget(pBtn);
 }
 

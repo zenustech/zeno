@@ -21,14 +21,24 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 };
 
+class ZenoGvLineEdit : public QLineEdit
+{
+    Q_OBJECT
+public:
+    ZenoGvLineEdit(QWidget* parent = nullptr);
+};
+
+/// <summary>
+/// lineEdit
+/// </summary>
 class ZenoParamLineEdit : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamLineEdit(const QString& text, QGraphicsItem* parent = nullptr);
+    ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent = nullptr);
 
 private:
-    QLineEdit* m_pLineEdit;
+    ZenoGvLineEdit *m_pLineEdit;
 };
 
 class ZenoParamLabel : public ZenoParamWidget
@@ -42,14 +52,39 @@ private:
     QLabel* m_label;
 };
 
+class ZComboBoxItemDelegate : public QStyledItemDelegate {
+    Q_OBJECT
+public:
+    ZComboBoxItemDelegate(ComboBoxParam param, QObject *parent = nullptr);
+    // painting
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+protected:
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const;
+
+private:
+    ComboBoxParam m_param;
+};
+
+class ZenoGvComboBox : public QComboBox
+{
+    Q_OBJECT
+public:
+    ZenoGvComboBox(QWidget *parent = nullptr);
+
+protected:
+    void paintEvent(QPaintEvent *e) override;
+};
+
 class ZenoParamComboBox : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamComboBox(const QStringList& items, QGraphicsItem *parent = nullptr);
+    ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
 
 private:
-    QComboBox* m_combobox;
+    ZenoGvComboBox *m_combobox;
 };
 
 class ZenoParamPushButton : public ZenoParamWidget

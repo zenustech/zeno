@@ -107,6 +107,23 @@ struct DistanceParam
     int paramsToTopSocket = 16;
 };
 
+struct LineEditParam
+{
+    QFont font;
+    QPalette palette;
+    QMargins margins;
+};
+
+struct ComboBoxParam
+{
+    QFont font;
+    QColor itemBgNormal;
+    QColor itemBgHovered;
+    QColor itemBgSelected;
+    QColor textColor;
+    QPalette palette;   //for lineedit part.
+};
+
 struct NodeUtilParam
 {
     //header
@@ -144,6 +161,8 @@ struct NodeUtilParam
     QFont paramFont;
 
     DistanceParam distParam;
+    LineEditParam lineEditParam;
+    ComboBoxParam comboboxParam;
 };
 
 #endif
