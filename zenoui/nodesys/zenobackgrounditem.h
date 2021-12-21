@@ -34,7 +34,7 @@ class ZenoBackgroundWidget : public QGraphicsWidget
     typedef QGraphicsWidget _base;
     Q_OBJECT
 public:
-    ZenoBackgroundWidget(const BackgroundComponent &comp, QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
+    ZenoBackgroundWidget(QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     QRectF boundingRect() const override;
     void setGeometry(const QRectF &rect) override;
     void setColors(const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected);

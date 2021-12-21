@@ -9,7 +9,7 @@
 			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/prep.svg" hovered="" selected=""/>
 		</component>
 		<component id="control" x="32" y="72" w="32" h="32">
-			<image id="collapse" x="40.0714" y="80.2143" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=""/>
+			<image id="collapse" x="40.0714" y="80.2143" w="16" h="16" normal=":/icons/collaspe.svg" hovered=":/icons/collaspe-hovered.svg" selected=":/icons/collaspe-hovered.svg"/>
 		</component>
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>

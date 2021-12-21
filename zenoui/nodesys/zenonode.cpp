@@ -9,12 +9,11 @@
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(parent)
     , m_renderParams(params)
-    , m_paramsWidget(nullptr)
-    , m_headerBg(nullptr)
-    , m_bodyBg(nullptr)
     , m_bInitSockets(false)
     , m_bodyWidget(nullptr)
     , m_headerWidget(nullptr)
+    , m_bCollasped(false)
+    , m_collaspedWidget(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
 }
@@ -81,19 +80,15 @@ void ZenoNode::init(const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
 
-    //better to calculate the width by layout item without manually calculate it.
-    int width = m_renderParams.headerBg.rc.width();
-    const QString &name = m_index.data(ROLE_OBJNAME).toString();
-    QFontMetrics metrics(m_renderParams.paramFont);
-    width = std::max(width, m_renderParams.namePos.toPoint().x() + metrics.horizontalAdvance(name) + m_renderParams.namePos.toPoint().x());
-    m_renderParams.headerBg.rc.setWidth(width);
-    m_renderParams.bodyBg.rc.setWidth(width);
+    m_collaspedWidget = initCollaspedWidget();
+    m_collaspedWidget->setVisible(m_bCollasped);
 
     m_headerWidget = initHeaderBgWidget();
     initIndependentWidgets();
     m_bodyWidget = initBodyWidget();
 
     QGraphicsLinearLayout* pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
+    pMainLayout->addItem(m_collaspedWidget);
     pMainLayout->addItem(m_headerWidget);
     pMainLayout->addItem(m_bodyWidget);
     pMainLayout->setContentsMargins(0, 0, 0, 0);
@@ -128,9 +123,41 @@ void ZenoNode::initIndependentWidgets()
     m_prep->setZValue(ZVALUE_ELEMENT);
 }
 
+ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
+{
+    ZenoBackgroundWidget *widget = new ZenoBackgroundWidget(this);
+    widget->setRadius(10, 10, 10, 10);
+    const auto &headerBg = m_renderParams.headerBg;
+    widget->setColors(headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+
+    QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+
+    QRectF rc = m_renderParams.rcCollasped;
+    ZenoSvgLayoutItem *collaspeItem = new ZenoSvgLayoutItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()));
+    collaspeItem->setZValue(ZVALUE_ELEMENT);
+    collaspeItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    connect(collaspeItem, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
+    pHLayout->addItem(collaspeItem);
+    
+    const QString &name = m_index.data(ROLE_OBJNAME).toString();
+    QFont font = m_renderParams.nameFont;
+    font.setPointSize(font.pointSize() + 4);
+    ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, font, m_renderParams.nameClr.color());
+    pNameItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    pHLayout->addItem(pNameItem);
+    widget->setLayout(pHLayout);
+    return widget;
+}
+
 ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
 {
-    ZenoBackgroundWidget *headerWidget = new ZenoBackgroundWidget(m_renderParams.headerBg, this);
+    ZenoBackgroundWidget* headerWidget = new ZenoBackgroundWidget(this);
+
+    const auto &headerBg = m_renderParams.headerBg;
+    headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
+    headerWidget->setColors(headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
     const QString &name = m_index.data(ROLE_OBJNAME).toString();
@@ -146,6 +173,7 @@ ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
     ZenoSvgLayoutItem *collaspeItem = new ZenoSvgLayoutItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()));
     collaspeItem->setZValue(ZVALUE_ELEMENT);
     collaspeItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    connect(collaspeItem, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
 
     pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 6), true));
     pHLayout->addItem(collaspeItem);
@@ -163,7 +191,12 @@ ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
 
 ZenoBackgroundWidget* ZenoNode::initBodyWidget()
 {
-    ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(m_renderParams.bodyBg, this);
+    ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
+
+    const auto &bodyBg = m_renderParams.bodyBg;
+    bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
+    bodyWidget->setColors(bodyBg.clr_normal, bodyBg.clr_hovered, bodyBg.clr_selected);
+
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
 
     if (QGraphicsGridLayout *pParamsLayout = initParams())
@@ -309,17 +342,33 @@ QGraphicsGridLayout* ZenoNode::initSockets()
 
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 {
-    QString id = nodeId();
-    if (bInput) {
-        auto itPort = m_inSocks.find(portName);
-        Q_ASSERT(itPort != m_inSocks.end());
-        QPointF pos = itPort->second->sceneBoundingRect().center();
-        return pos;
-    } else {
-        auto itPort = m_outSocks.find(portName);
-        Q_ASSERT(itPort != m_outSocks.end());
-        QPointF pos = itPort->second->sceneBoundingRect().center();
-        return pos;
+    if (m_bCollasped)
+    {
+        m_collaspedWidget->show();
+        QRectF rc = m_collaspedWidget->sceneBoundingRect();
+        if (bInput)
+        {
+            return QPointF(rc.left(), rc.center().y());
+        }
+        else
+        {
+            return QPointF(rc.right(), rc.center().y());
+        }
+    }
+    else
+    {
+        QString id = nodeId();
+        if (bInput) {
+            auto itPort = m_inSocks.find(portName);
+            Q_ASSERT(itPort != m_inSocks.end());
+            QPointF pos = itPort->second->sceneBoundingRect().center();
+            return pos;
+        } else {
+            auto itPort = m_outSocks.find(portName);
+            Q_ASSERT(itPort != m_outSocks.end());
+            QPointF pos = itPort->second->sceneBoundingRect().center();
+            return pos;
+        }
     }
 }
 
@@ -368,15 +417,55 @@ bool ZenoNode::sceneEvent(QEvent *event)
     return _base::sceneEvent(event);
 }
 
+void ZenoNode::onCollaspeBtnClicked()
+{
+    collaspe(!m_bCollasped);
+    m_bCollasped = !m_bCollasped;
+}
+
+void ZenoNode::collaspe(bool collasped)
+{
+    if (collasped)
+    {
+        m_headerWidget->hide();
+        m_bodyWidget->hide();
+        for (auto p : m_inSocks) {
+            p.second->hide();
+        }
+        for (auto p : m_outSocks) {
+            p.second->hide();
+        }
+        m_mute->hide();
+        m_view->hide();
+        m_prep->hide();
+
+        m_collaspedWidget->show();
+    }
+    else
+    {
+        m_bodyWidget->show();
+        for (auto p : m_inSocks) {
+            p.second->show();
+        }
+        for (auto p : m_outSocks) {
+            p.second->show();
+        }
+        m_mute->show();
+        m_view->show();
+        m_prep->show();
+        m_headerWidget->show();
+        m_collaspedWidget->hide();
+    }
+    update();
+}
+
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == QGraphicsItem::ItemSelectedHasChanged)
     {
         bool bSelected = isSelected();
-        if (m_headerBg)
-            m_headerBg->toggle(bSelected);
-        if (m_headerWidget)
-            m_headerWidget->toggle(bSelected);
+        m_headerWidget->toggle(bSelected);
+        m_collaspedWidget->toggle(bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {

@@ -41,6 +41,10 @@ signals:
     void nodePositionChange(const QString&);
     void socketClicked(const QString& id, bool bInput, const QString& name);
 
+public slots:
+    void onCollaspeBtnClicked();
+    void collaspe(bool);
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
@@ -49,29 +53,29 @@ protected:
 private:
     ZenoBackgroundWidget* initBodyWidget();
     ZenoBackgroundWidget* initHeaderBgWidget();
+    ZenoBackgroundWidget* initCollaspedWidget();
     void initIndependentWidgets();
     void _updateSocketItemPos();
 
     QPersistentModelIndex m_index;
     NodeUtilParam m_renderParams;
-    std::map<QString, ZenoSocketItem *> m_inSocks;
-    std::map<QString, ZenoSocketItem *> m_outSocks;
+    std::map<QString, ZenoSocketItem*> m_inSocks;
+    std::map<QString, ZenoSocketItem*> m_outSocks;
     QMap<QString, ZenoTextLayoutItem*> m_inSockNames;
     QMap<QString, ZenoTextLayoutItem*> m_outSockNames;
 
     QGraphicsTextItem* m_nameItem;
-    ZenoBackgroundItem *m_headerBg;
     ZenoImageItem *m_mute;
     ZenoImageItem *m_view;
     ZenoImageItem *m_prep;
     ZenoImageItem *m_collaspe;
-    ZenoBackgroundItem *m_bodyBg;
-    QGraphicsWidget* m_paramsWidget;
 
+    ZenoBackgroundWidget* m_collaspedWidget;
     ZenoBackgroundWidget *m_bodyWidget;
     ZenoBackgroundWidget *m_headerWidget;
 
     bool m_bInitSockets;
+    bool m_bCollasped;
 };
 
 #endif

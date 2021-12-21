@@ -2,6 +2,7 @@
 <qresource>
 	<file>icons/body_bg.svg</file>
 	<file>icons/collaspe.svg</file>
+	<file>icons/collaspe-hovered.svg</file>
 	<file>icons/header_back_board_blue.svg</file>
 	<file>icons/header_back_board_blue_hovered.svg</file>
 	<file>icons/mute.svg</file>

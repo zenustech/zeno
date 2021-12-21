@@ -154,16 +154,15 @@ void ZenoBackgroundItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoBackgroundWidget::ZenoBackgroundWidget(const BackgroundComponent &comp, QGraphicsItem *parent, Qt::WindowFlags wFlags)
+ZenoBackgroundWidget::ZenoBackgroundWidget(QGraphicsItem *parent, Qt::WindowFlags wFlags)
     : QGraphicsWidget(parent, wFlags)
-    , lt_radius(comp.lt_radius)
-    , rt_radius(comp.rt_radius)
-    , lb_radius(comp.lb_radius)
-    , rb_radius(comp.rb_radius)
+    , lt_radius(0)
+    , rt_radius(0)
+    , lb_radius(0)
+    , rb_radius(0)
     , m_bFixRadius(true)
     , m_bSelected(false)
 {
-    setColors(comp.clr_normal, comp.clr_hovered, comp.clr_selected);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 

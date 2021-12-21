@@ -215,12 +215,13 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
+    QRectF rc = QGraphicsTextItem::boundingRect();
     switch (which) {
         case Qt::MinimumSize:
         case Qt::PreferredSize:
-            return QGraphicsTextItem::boundingRect().size();
+            return rc.size();
         case Qt::MaximumSize:
-            return QSizeF(1000, 1000);
+            return QSizeF(1000, rc.height());
         default:
             break;
     }
