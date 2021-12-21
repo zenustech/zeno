@@ -5,6 +5,7 @@
 #include "../model/modelrole.h"
 #include "nodesys_common.h"
 #include "zenosocketitem.h"
+#include "../comctrl/zcombobox.h"
 
 
 class ZenoParamWidget : public QGraphicsProxyWidget
@@ -26,6 +27,9 @@ class ZenoGvLineEdit : public QLineEdit
     Q_OBJECT
 public:
     ZenoGvLineEdit(QWidget* parent = nullptr);
+
+protected:
+    void paintEvent(QPaintEvent *e);
 };
 
 /// <summary>
@@ -84,7 +88,7 @@ public:
     ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
 
 private:
-    ZenoGvComboBox *m_combobox;
+    ZComboBox *m_combobox;
 };
 
 class ZenoParamPushButton : public ZenoParamWidget

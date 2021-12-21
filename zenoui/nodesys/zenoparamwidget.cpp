@@ -30,6 +30,11 @@ ZenoGvLineEdit::ZenoGvLineEdit(QWidget* parent)
     setAutoFillBackground(false);
 }
 
+void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
+{
+    QLineEdit::paintEvent(e);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent)
@@ -99,7 +104,8 @@ void ZComboBoxItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem 
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
     painter->fillRect(opt.rect, opt.backgroundBrush);
-    painter->drawText(opt.rect, opt.text);
+    painter->setPen(QPen(m_param.textColor));
+    painter->drawText(opt.rect.adjusted(5,0,0,0), opt.text);
 }
 
 QSize ZComboBoxItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -122,11 +128,9 @@ void ZenoGvComboBox::paintEvent(QPaintEvent *e)
 ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new ZenoGvComboBox;
+    m_combobox = new ZComboBox;
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    m_combobox->setPalette(param.palette);
-    m_combobox->setFixedWidth(128);//todo: dpi scaled.
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
     setWidget(m_combobox);
 }
@@ -216,7 +220,8 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
     QRectF rc = QGraphicsTextItem::boundingRect();
-    switch (which) {
+    switch (which)
+    {
         case Qt::MinimumSize:
         case Qt::PreferredSize:
             return rc.size();

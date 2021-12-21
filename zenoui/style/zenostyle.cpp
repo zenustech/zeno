@@ -2,6 +2,8 @@
 #include "zstyleoption.h"
 #include "../comctrl/ztoolbutton.h"
 #include "../comctrl/zobjectbutton.h"
+#include "../nodesys/zenoparamwidget.h"
+#include <QScreen>
 
 
 ZenoStyle::ZenoStyle()
@@ -14,26 +16,110 @@ ZenoStyle::~ZenoStyle()
 
 }
 
+qreal ZenoStyle::dpiScaled(qreal value)
+{
+    static qreal scale = -1;
+    if (scale < 0)
+    {
+        QScreen *screen = qobject_cast<QApplication *>(QApplication::instance())->primaryScreen();
+        qreal dpi = screen->logicalDotsPerInch();
+        scale = dpi / 96.0;
+    }
+    return value * scale;
+}
+
+QSize ZenoStyle::dpiScaledSize(const QSize &value)
+{
+    return QSize(ZenoStyle::dpiScaled(value.width()), ZenoStyle::dpiScaled(value.height()));
+}
+
 void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, QPainter* painter, const QWidget* w) const
 {
-    switch (pe)
-    {
-        case PE_FrameTabWidget:
-        {
-            if (const QStyleOptionTabWidgetFrame* tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option))
-            {
+    switch (pe) {
+        case PE_FrameTabWidget: {
+            if (const QStyleOptionTabWidgetFrame *tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame *>(option)) {
                 QStyleOptionTabWidgetFrame frameOpt = *tab;
                 frameOpt.rect = w->rect();
                 painter->fillRect(frameOpt.rect, QColor(58, 58, 58));
                 return;
             }
         }
+        case PE_ComboBoxLineEdit: {
+            if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option)) {
+                QRect r = option->rect;
+                bool hasFocus = option->state & (State_MouseOver | State_HasFocus);
+
+                painter->save();
+                painter->setRenderHint(QPainter::Antialiasing, true);
+                //  ### highdpi painter bug.
+                painter->translate(0.5, 0.5);
+
+                QPalette pal = editOption->palette;
+
+                QColor bgClrNormal = pal.color(QPalette::Inactive, QPalette::Window);
+                QColor bgClrActive = pal.color(QPalette::Active, QPalette::Window);
+                if (hasFocus) {
+                    painter->fillRect(r.adjusted(0, 0, -1, -1), bgClrActive);
+                } else {
+                    painter->fillRect(r.adjusted(0, 0, -1, -1), bgClrNormal);
+                }
+
+                // Draw Outline
+                QColor bdrClrNormal = pal.color(QPalette::Inactive, QPalette::WindowText);
+                QColor bdrClrActive = pal.color(QPalette::Active, QPalette::WindowText);
+                if (hasFocus) {
+                    painter->setPen(bdrClrActive);
+                } else {
+                    painter->setPen(bdrClrNormal);
+                }
+                painter->drawRect(r.adjusted(0, 0, -1, -1));
+
+                // Draw inner shadow
+                //p->setPen(d->topShadow());
+                //p->drawLine(QPoint(r.left() + 2, r.top() + 1), QPoint(r.right() - 2, r.top() + 1));
+                painter->restore();
+                return;
+            }
+            return base::drawPrimitive(pe, option, painter, w);
+        }
+        case PE_ComboBoxDropdownButton:
+        {
+            if (const QStyleOptionButton *btn = qstyleoption_cast<const QStyleOptionButton *>(option))
+            {
+                State flags = option->state;
+                static const qreal margin_offset = dpiScaled(1.0);
+                if (flags & (State_Sunken | State_On)) {
+                    painter->setPen(QPen(QColor(26, 112, 185), 1));
+                    painter->setBrush(QColor(202, 224, 243));
+                    //可能要dpiScaled
+                    painter->drawRect(option->rect.adjusted(0, 0, -margin_offset, -margin_offset));
+                } else if (flags & State_MouseOver) {
+                    painter->setPen(QPen(QColor(26, 112, 185), 1));
+                    painter->setBrush(QColor(228, 239, 249));
+                    painter->drawRect(option->rect.adjusted(0, 0, -margin_offset, -margin_offset));
+                }
+                return;
+            }
+            break;
+        }
         case PE_FrameMenu:
         {
             painter->fillRect(option->rect, QColor(51, 51, 51));
             return;
         }
-        break;
+        case PE_FrameLineEdit:
+        {
+            if (qobject_cast<const ZenoGvLineEdit *>(w))
+            {
+                QPen oldPen = painter->pen();
+                painter->setPen(QPen(option->palette.shadow().color(), 1));
+                painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
+                painter->setPen(oldPen);
+                return;
+            }
+            break;
+        }
+
     }
     return base::drawPrimitive(pe, option, painter, w);
 }
@@ -231,12 +317,42 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
             return;
         }
     }
+    else if (CE_ZenoComboBoxLabel == element)
+    {
+        if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(opt))
+        {
+            QRect editRect = proxy()->subControlRect(CC_ComboBox, cb, SC_ComboBoxEditField, w);
+            p->save();
+            editRect.adjust(cb->textMargin, 0, 0, 0);
+            p->setClipRect(editRect);
+            p->setFont(QFont("Microsoft YaHei", 10));
+            if (!cb->currentIcon.isNull()) {
+                //todo
+            }
+            if (!cb->currentText.isEmpty() && !cb->editable) {
+                drawItemText(p, editRect.adjusted(1, 0, -1, 0),
+                             visualAlignment(cb->direction, Qt::AlignLeft | Qt::AlignVCenter),
+                             cb->palette, cb->state & State_Enabled, cb->currentText, QPalette::ButtonText);
+            }
+            p->restore();
+        }
+    }
     return base::drawControl(element, opt, p, w);
 }
 
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const
 {
-    if ((decltype(CC_ZenoToolButton))(std::underlying_type_t<SubControl>)cc == CC_ZenoToolButton)
+    if (cc == CC_ZenoComboBox && sc == SC_ComboBoxArrow)
+    {
+        if (const QStyleOptionComboBox* cb = qstyleoption_cast<const QStyleOptionComboBox*>(option))
+        {
+            static const int arrowRcWidth = 18;
+            const int xpos = cb->rect.x() + cb->rect.width() - dpiScaled(arrowRcWidth);
+            QRect rc(xpos, cb->rect.y(), dpiScaled(arrowRcWidth), cb->rect.height());
+            return rc;
+        }
+    }
+    else if ((decltype(CC_ZenoToolButton))(std::underlying_type_t<SubControl>)cc == CC_ZenoToolButton)
     {
         const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
         Q_ASSERT(opt);
@@ -348,7 +464,15 @@ void ZenoStyle::drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* option
 
 void ZenoStyle::drawDropdownArrow(QPainter* painter, QRect downArrowRect) const
 {
-    //todo
+    QRectF arrowRect;
+    arrowRect.setWidth(dpiScaled(16));
+    arrowRect.setHeight(dpiScaled(16));
+    arrowRect.moveTo(downArrowRect.x() + (downArrowRect.width() - arrowRect.width()) / 2.0,
+                     downArrowRect.y() + (downArrowRect.height() - arrowRect.height()) / 2.0);
+
+    QPointF bottomPoint = QPointF(arrowRect.center().x(), arrowRect.bottom());
+    QPixmap px = QIcon(":/icons/downarrow.png").pixmap(ZenoStyle::dpiScaledSize(QSize(16, 16)));
+    painter->drawPixmap(arrowRect.topLeft(), px);
 }
 
 void ZenoStyle::drawNewItemMenu(const QStyleOptionMenuItem* menuitem, QPainter* p, const QWidget* w) const
@@ -571,7 +695,66 @@ void ZenoStyle::drawComplexControl(ComplexControl control, const QStyleOptionCom
     switch (control)
     {
     case CC_ZenoComboBox:
-        return base::drawComplexControl(control, option, painter, widget);
+        {
+            if (const ZStyleOptionComboBox *cmb = qstyleoption_cast<const ZStyleOptionComboBox*>(option))
+            {
+                QStyleOptionFrame editorOption;
+                editorOption.QStyleOption::operator=(*cmb);
+                editorOption.rect = option->rect;
+                editorOption.state = (cmb->state & (State_Enabled | State_MouseOver | State_HasFocus) |         State_KeyboardFocusChange);
+
+                QPalette palette;
+                palette.setColor(QPalette::Active, QPalette::Window, cmb->clrBgHovered);
+                palette.setColor(QPalette::Inactive, QPalette::Window, cmb->clrBackground);
+                //border
+                palette.setColor(QPalette::WindowText, cmb->bdrNormal);
+
+                editorOption.palette = palette;
+
+                painter->save();
+                proxy()->drawPrimitive(static_cast<PrimitiveElement>(PE_ComboBoxLineEdit), &editorOption, painter, widget);
+
+                painter->restore();
+                painter->save();
+
+                QStyleOptionComboBox comboBoxCopy = *cmb;
+                QRect downArrowRect = proxy()->subControlRect(
+                        static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoComboBox),
+                        &comboBoxCopy, SC_ComboBoxArrow, widget);
+                painter->setClipRect(downArrowRect);
+
+                QStyleOptionButton buttonOption;
+                buttonOption.rect = downArrowRect;
+                if (cmb->activeSubControls == SC_ComboBoxArrow) {
+                    buttonOption.state = cmb->state;
+                }
+
+                //draw arrow button
+                State flags = option->state;
+                static const qreal margin_offset = 0;//dpiScaled(1.0);
+                if (flags & (State_Sunken | State_On))
+                {
+                    painter->setPen(QPen(QColor(158, 158, 158), 2));
+                    painter->setBrush(Qt::NoBrush);
+                    //painter->setBrush(QColor(202, 224, 243));
+                    //可能要dpiScaled
+                    painter->drawRect(downArrowRect.adjusted(0, 0, -margin_offset, -margin_offset));
+                }
+                else if (flags & State_MouseOver)
+                {
+                    painter->setPen(QPen(QColor(158, 158, 158), 2));
+                    painter->setBrush(Qt::NoBrush);
+                    painter->drawRect(downArrowRect.adjusted(0, 0, -margin_offset, -margin_offset));
+                }
+
+                painter->restore();
+
+                painter->setPen(QPen(QColor(0, 0, 0), 1));
+                drawDropdownArrow(painter, downArrowRect);
+                return;
+            }
+            return base::drawComplexControl(control, option, painter, widget);
+        }
     case CC_ZenoToolButton:
         if (const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option))
         {

@@ -15,3 +15,16 @@ ZStyleOptionToolButton::ZStyleOptionToolButton()
 {
     this->type = Type;
 }
+
+
+ZStyleOptionComboBox::ZStyleOptionComboBox()
+    : QStyleOptionComboBox()
+    , textMargin(0)
+{
+}
+
+ZStyleOptionComboBox::ZStyleOptionComboBox(const QStyleOptionComboBox &opt)
+    : QStyleOptionComboBox(opt)
+    , textMargin(0)
+{
+}

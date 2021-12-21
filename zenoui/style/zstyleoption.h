@@ -44,5 +44,29 @@ public:
     ZStyleOptionToolButton(const ZStyleOptionToolButton& other) { *this = other; }
 };
 
+class ZStyleOptionComboBox : public QStyleOptionComboBox
+{
+public:
+    ZStyleOptionComboBox();
+    ZStyleOptionComboBox(const QStyleOptionComboBox &opt);
+
+    //border
+    QColor bdrNormal, bdrHoverd, bdrSelected;
+
+    //line edit text
+    QColor clrText;
+
+    //background
+    QColor clrBackground;
+    QColor clrBgHovered;
+
+    //arrow button
+    QColor btnNormal, btnHovered, btnDown;
+
+    //item
+    QColor itemNormal, itemHovered, itemText;
+
+    int textMargin;
+};
 
 #endif

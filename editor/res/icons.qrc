@@ -51,5 +51,6 @@
     <file>icons/magnet_point.png</file>
     <file>icons/checked.png</file>
     <file>icons/zenus.png</file>
+	<file>icons/downarrow.png</file>
 </qresource>
 </RCC>

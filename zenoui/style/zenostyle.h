@@ -28,9 +28,21 @@ public:
         PM_ButtonRightMargin,
         PM_ButtonBottomMargin
     };
+    enum ZenoPrimitiveElement
+    {
+        PE_ComboBoxDropdownButton = PE_CustomBase + 1,
+        PE_ComboBoxLineEdit,
+    };
+
+    enum ZenoControlElement {
+        CE_ZenoComboBoxLabel = CE_CustomBase + 1,
+    };
 
     ZenoStyle();
     ~ZenoStyle();
+
+    static qreal dpiScaled(qreal value);
+    static QSize dpiScaledSize(const QSize &value);
 
     void drawComplexControl(ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget = nullptr) const override;
     void drawPrimitive(PrimitiveElement pe, const QStyleOption* opt, QPainter* p,
