@@ -30,6 +30,7 @@ public:
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
+    void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
 
     QString nodeId() const;
     QString nodeName() const;

@@ -115,12 +115,18 @@ void SubGraphModel::removeLink(const QString& outputId, const QString& outputPor
 {
     const QModelIndex& outIdx = this->index(outputId);
     OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    outputs[outputPort].inNodes[inputId].remove(inputPort);
+    auto &delInItem = outputs[outputPort].inNodes[inputId];
+    delInItem.remove(inputPort);
+    if (delInItem.isEmpty())
+        outputs[outputPort].inNodes.remove(inputId);
     setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
     const QModelIndex& inIdx = this->index(inputId);
     INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    inputs[inputPort].outNodes[outputId].remove(outputPort);
+    auto &delOutItem= inputs[inputPort].outNodes[outputId];
+    delOutItem.remove(outputPort);
+    if (delOutItem.isEmpty())
+        inputs[inputPort].outNodes.remove(outputId);
     setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
     emit linkChanged(false, outputId, outputPort, inputId, inputPort);

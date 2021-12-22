@@ -42,14 +42,18 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
             {
                 for (QString outSock : inSock.outNodes[outId].keys())
                 {
-                    const QPointF &outSockPos = m_nodes[outId]->getPortPos(false, outSock);
+                    ZenoNode* outNode = m_nodes[outId];
+                    const QPointF &outSockPos = outNode->getPortPos(false, outSock);
                     EdgeInfo info(outId, id, outSock, inputSock);
                     ZenoFullLink *pEdge = new ZenoFullLink(info);
                     pEdge->updatePos(outSockPos, node->getPortPos(true, inputSock));
                     addItem(pEdge);
                     m_links.insert(std::make_pair(info, pEdge));
+                    outNode->toggleSocket(false, outSock, true);
                 }
             }
+            if (!inSock.outNodes.isEmpty())
+                node->toggleSocket(true, inputSock, true);
         }
     }
 
@@ -90,6 +94,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
         QPointF wtf = pSocket->scenePos();
         m_tempLink = new ZenoTempLink(info);
         addItem(m_tempLink);
+        pSocket->toggle(true);
         return;
     }
     else if (m_tempLink && pSocket)
@@ -126,6 +131,10 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
     }
     else if (m_tempLink)
     {
+        SOCKET_INFO info;
+        m_tempLink->getFixedInfo(info);
+        m_nodes[info.nodeid]->toggleSocket(info.binsock, info.name, false);
+
         removeItem(m_tempLink);
         delete m_tempLink;
         m_tempLink = nullptr;
@@ -176,25 +185,42 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 }
 
-void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
+void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputSock, const QString& inputId, const QString& inputSock)
 {
     if (bAdd)
     {
-        EdgeInfo info(outputId, inputId, outputPort, inputPort);
+        EdgeInfo info(outputId, inputId, outputSock, inputSock);
         ZenoFullLink *pEdge = new ZenoFullLink(info);
-        const QPointF &outPos = m_nodes[outputId]->getPortPos(false, outputPort);
-        const QPointF &inPos = m_nodes[inputId]->getPortPos(true, inputPort);
+        const QPointF &outPos = m_nodes[outputId]->getPortPos(false, outputSock);
+        const QPointF &inPos = m_nodes[inputId]->getPortPos(true, inputSock);
         pEdge->updatePos(outPos, inPos);
         addItem(pEdge);
+
         m_links.insert(std::make_pair(info, pEdge));
+        m_nodes[inputId]->toggleSocket(true, inputSock, true);
+        m_nodes[outputId]->toggleSocket(false, outputSock, true);
     }
     else
     {
-        EdgeInfo info(outputId, inputId, outputPort, inputPort);
+        EdgeInfo info(outputId, inputId, outputSock, inputSock);
         ZenoFullLink *pLink = m_links[info];
         removeItem(pLink);
         delete pLink;
+
         m_links.erase(info);
+
+        auto const& inSocks = m_nodes[inputId]->inputParams();
+        const auto inSock = inSocks[inputSock];
+        if (inSock.outNodes.isEmpty())
+        {
+            m_nodes[inputId]->toggleSocket(true, inputSock, false);
+        }
+        
+        auto const &outSocks = m_nodes[outputId]->outputParams();
+        if (outSocks.find(outputSock).value().inNodes.isEmpty())
+        {
+            m_nodes[outputId]->toggleSocket(false, outputSock, false);
+        }
     }
 }
 

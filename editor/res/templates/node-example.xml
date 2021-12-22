@@ -9,7 +9,7 @@
 			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/prep.svg" hovered="" selected=""/>
 		</component>
 		<component id="control" x="32" y="72" w="32" h="32">
-			<image id="collapse" x="40.0714" y="80.2143" w="16" h="16" normal=":/icons/collaspe.svg" hovered=":/icons/collaspe-hovered.svg" selected=":/icons/collaspe-hovered.svg"/>
+			<image id="collapse" x="47" y="86" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=":/icons/uncollaspe.svg"/>
 		</component>
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
@@ -20,19 +20,19 @@
 	</header>
 	<body>
 		<component id="topleftsocket" x="0" y="128" w="128" h="32">
-			<image id="ltsocket-image" x="24" y="137" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<image id="ltsocket-image" x="24" y="137" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="ltsocket-text" x="53" y="135" w="27" h="17" font-family="SimSun">SRC</text>
 		</component>
 		<component id="bottomleftsocket" x="0" y="168" w="128" h="32">
-			<image id="lbsocket-image" x="24" y="176" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<image id="lbsocket-image" x="24" y="176" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="lbsocket-text" x="53" y="176" w="32" h="15" font-family="SimSun">COND</text>
 		</component>
 		<component id="toprightsocket" x="136" y="128" w="136" h="32">
-			<image id="rtsocket-image" x="232" y="137" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<image id="rtsocket-image" x="232" y="137" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="rtsocket-text" x="186" y="135" w="31" h="18" font-family="SimSun">data</text>
 		</component>
 		<component id="bottomrightsocket" x="136" y="168" w="136" h="32">
-			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket.svg" hovered="" selected=""/>
+			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="rbsocket-text" x="180" y="173" w="43" h="18" font-family="SimSun">Output</text>
 		</component>
 		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 10px 10px" normal-clr="#323232" hoverd-clr="#323232" selected-clr="#323232">

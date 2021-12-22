@@ -121,6 +121,12 @@ void ZenoNode::initIndependentWidgets()
     m_prep = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
     m_prep->setPos(rc.topLeft());
     m_prep->setZValue(ZVALUE_ELEMENT);
+
+    rc = m_renderParams.rcCollasped;
+    m_collaspe = new ZenoImageItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()), this);
+    m_collaspe->setPos(rc.topLeft());
+    m_collaspe->setZValue(ZVALUE_ELEMENT);
+    connect(m_collaspe, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
 }
 
 ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
@@ -132,20 +138,21 @@ ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
 
     QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
-    QRectF rc = m_renderParams.rcCollasped;
-    ZenoSvgLayoutItem *collaspeItem = new ZenoSvgLayoutItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()));
-    collaspeItem->setZValue(ZVALUE_ELEMENT);
-    collaspeItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    connect(collaspeItem, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
-    pHLayout->addItem(collaspeItem);
-    
     const QString &name = m_index.data(ROLE_OBJNAME).toString();
     QFont font = m_renderParams.nameFont;
     font.setPointSize(font.pointSize() + 4);
     ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, font, m_renderParams.nameClr.color());
     pNameItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
+    int horizontalPadding = 20;
+
+    pHLayout->addStretch();
+    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 6), true));
     pHLayout->addItem(pNameItem);
+    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 6), true));
+    pHLayout->setAlignment(pNameItem, Qt::AlignCenter);
+    pHLayout->addStretch();
+
     widget->setLayout(pHLayout);
     return widget;
 }
@@ -175,11 +182,10 @@ ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
     collaspeItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     connect(collaspeItem, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
 
-    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 6), true));
-    pHLayout->addItem(collaspeItem);
-    pHLayout->addItem(new SpacerLayoutItem(QSizeF(horizontalPadding, 3), true));
+    pHLayout->addStretch();
     pHLayout->addItem(pNameItem);
-    pHLayout->addItem(new SpacerLayoutItem(QSizeF(40, 0), true));
+    pHLayout->setAlignment(pNameItem, Qt::AlignCenter);
+    pHLayout->addStretch();
 
     pHLayout->setContentsMargins(0, 5, 0, 5);
     pHLayout->setSpacing(0);
@@ -340,6 +346,19 @@ QGraphicsGridLayout* ZenoNode::initSockets()
     return pSocketsLayout;
 }
 
+void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected)
+{
+    if (bInput) {
+        auto itPort = m_inSocks.find(sockName);
+        Q_ASSERT(itPort != m_inSocks.end());
+        itPort->second->toggle(bSelected);
+    } else {
+        auto itPort = m_outSocks.find(sockName);
+        Q_ASSERT(itPort != m_outSocks.end());
+        itPort->second->toggle(bSelected);
+    }
+}
+
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 {
     if (m_bCollasped)
@@ -440,6 +459,7 @@ void ZenoNode::collaspe(bool collasped)
         m_prep->hide();
 
         m_collaspedWidget->show();
+        m_collaspe->toggle(true);
     }
     else
     {
@@ -455,6 +475,7 @@ void ZenoNode::collaspe(bool collasped)
         m_prep->show();
         m_headerWidget->show();
         m_collaspedWidget->hide();
+        m_collaspe->toggle(false);
     }
     update();
 }
