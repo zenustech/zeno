@@ -30,14 +30,14 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
 
     GraphsModel* pModel = new GraphsModel;
 
-    NODES_PARAMS nodesTemplate;
-    _parseNodes(doc["descs"], nodesTemplate);
-    pModel->setNodesTemplate(nodesTemplate);
+    NODE_DESCS nodesDescs;
+    _parseDescs(doc["descs"], nodesDescs);
+    pModel->setDescriptors(nodesDescs);
 
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
-        SubGraphModel* subGraphModel = _parseSubGraph(nodesTemplate, subgraph.value);
+        SubGraphModel *subGraphModel = _parseSubGraph(pModel, subgraph.value);
         subGraphModel->setName(graphName);
 
         QStandardItem *pItem = new QStandardItem;
@@ -55,12 +55,12 @@ void ZsgReader::_parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph
 
 }
 
-SubGraphModel* ZsgReader::_parseSubGraph(const NODES_PARAMS& nodesTemplate, const rapidjson::Value& subgraph)
+SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph)
 {
     //todo: should consider descript info. some info of outsock without connection show in descript info.
-
-    SubGraphModel* pModel = new SubGraphModel;
+    SubGraphModel *pModel = new SubGraphModel(pGraphsModel);
     const auto& nodes = subgraph["nodes"];
+    const NODE_DESCS& descriptors = pModel->descriptors();
     if (nodes.IsNull())
         return nullptr;
 
@@ -74,16 +74,23 @@ SubGraphModel* ZsgReader::_parseSubGraph(const NODES_PARAMS& nodesTemplate, cons
         const auto &objValue = node.value;
         const rapidjson::Value& nameValue = objValue["name"];
         const QString &name = nameValue.GetString();
+
+        if (descriptors.find(name) == descriptors.end())
+        {
+            qDebug() << QString("no node class named [%1]").arg(name);
+            continue;
+        }
+
         pItem->setData(nameValue.GetString(), ROLE_OBJNAME);
 
-        INPUT_SOCKETS inputs = nodesTemplate[name].inputs;
+        INPUT_SOCKETS inputs = descriptors[name].inputs;
         _parseInputs(inputs, objValue["inputs"]);
         pItem->setData(QVariant::fromValue(inputs), ROLE_INPUTS);
 
-        OUTPUT_SOCKETS outputs = nodesTemplate[name].outputs;
+        OUTPUT_SOCKETS outputs = descriptors[name].outputs;
         pItem->setData(QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
-        PARAMS_INFO params = nodesTemplate[name].params;
+        PARAMS_INFO params = descriptors[name].params;
         _parseParams(params, objValue["params"]);
         pItem->setData(QVariant::fromValue(params), ROLE_PARAMETERS);
 
@@ -112,6 +119,8 @@ PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
         return CONTROL_READPATH;
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
+    } else if (type == "_RAMPS") {
+        return CONTROL_HEAPMAP;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
     } else {
@@ -133,7 +142,7 @@ QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
     return var;
 }
 
-void ZsgReader::_parseNodes(const rapidjson::Value& descs, NODES_PARAMS& nodesDict)
+void ZsgReader::_parseDescs(const rapidjson::Value& descs, NODE_DESCS& nodeDescs)
 {
     for (const auto& node : descs.GetObject())
     {
@@ -144,7 +153,7 @@ void ZsgReader::_parseNodes(const rapidjson::Value& descs, NODES_PARAMS& nodesDi
         auto params = objValue["params"].GetArray();
         auto categories = objValue["categories"].GetArray();
 
-        NODE_PARAMS_PACK pack;
+        NODE_DESC pack;
 
         for (int i = 0; i < inputs.Size(); i++)
         {
@@ -210,7 +219,7 @@ void ZsgReader::_parseNodes(const rapidjson::Value& descs, NODES_PARAMS& nodesDi
             
             }
         }
-        nodesDict.insert(name, pack);
+        nodeDescs.insert(name, pack);
     }
 }
 
@@ -275,6 +284,7 @@ void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonPa
 {
     for (const auto &jsonParam : jsonParams.GetObject())
     {
+        //if some param not exists in desc params, should include it?
         const QString& name = jsonParam.name.GetString();
         rapidjson::Type type = jsonParam.value.GetType();
 

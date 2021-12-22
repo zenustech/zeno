@@ -1,6 +1,7 @@
 #include "znodeseditwidget.h"
 #include "znodeswebview.h"
 #include "znodesgraphicsview.h"
+#include <util/uihelper.h>
 #include <nodesys/zenographswidget.h>
 #include <io/zsgreader.h>
 #include <model/graphsmodel.h>
@@ -53,6 +54,7 @@ void ZNodesEditWidget::openFileDialog()
 
     QString filePath = fileDialog.selectedFiles().first();
     GraphsModel *pModel = ZsgReader::getInstance().loadZsgFile(filePath);
+    pModel->initDescriptors();
     m_pGraphsWidget->setGraphsModel(pModel);
     m_pComboSubGraph->setModel(pModel);
 

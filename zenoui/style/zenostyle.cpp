@@ -111,10 +111,20 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
         {
             if (qobject_cast<const ZenoGvLineEdit *>(w))
             {
-                QPen oldPen = painter->pen();
-                painter->setPen(QPen(option->palette.shadow().color(), 1));
-                painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
-                painter->setPen(oldPen);
+                painter->save();
+                QPalette pal = option->palette;
+                State flags = option->state;
+                if (flags & (State_HasFocus | State_MouseOver))
+                {
+                    painter->setPen(QPen(option->palette.color(QPalette::Active, QPalette::WindowText), 1));
+                    painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
+                }
+                else
+                {
+                    painter->setPen(QPen(option->palette.color(QPalette::Inactive, QPalette::WindowText), 1));
+                    painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
+                }
+                painter->restore();
                 return;
             }
             break;
@@ -713,6 +723,7 @@ void ZenoStyle::drawComplexControl(ComplexControl control, const QStyleOptionCom
 
                 painter->save();
                 proxy()->drawPrimitive(static_cast<PrimitiveElement>(PE_ComboBoxLineEdit), &editorOption, painter, widget);
+                //drawPrimitive(PE_FrameLineEdit, &editorOption, painter, widget);
 
                 painter->restore();
                 painter->save();

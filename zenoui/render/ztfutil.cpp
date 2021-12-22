@@ -450,6 +450,8 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.lineEditParam.font = QFont("Consolas", 10);
     QPalette palette;
     palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
+    palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
+    palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
     palette.setColor(QPalette::Text, Qt::white);
     param.lineEditParam.palette = palette;
     param.lineEditParam.margins = QMargins(8, 0, 0, 0);
@@ -459,6 +461,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.comboboxParam.itemBgNormal = nodeParam.body.backboard.clr_normal;
     param.comboboxParam.itemBgHovered = QColor(179, 102, 0);
     param.comboboxParam.itemBgSelected = QColor(179, 102, 0);
+    param.comboboxParam.margins = QMargins(8, 0, 0, 0);
     palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
     palette.setColor(QPalette::Window, nodeParam.body.backboard.clr_normal);
     palette.setColor(QPalette::Text, Qt::white);

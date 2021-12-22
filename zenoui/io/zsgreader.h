@@ -18,10 +18,10 @@ public:
 
 private:
     ZsgReader();
-    SubGraphModel* _parseSubGraph(const NODES_PARAMS& pGraphs, const rapidjson::Value &subgraph);
+    SubGraphModel* _parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph);
     void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
     void _parseInputs(INPUT_SOCKETS& inputSocks, const rapidjson::Value& inputs);
-    void _parseNodes(const rapidjson::Value& inputs, NODES_PARAMS& nodesDict);
+    void _parseDescs(const rapidjson::Value& inputs, NODE_DESCS& nodesDict);
     void _parseParams(PARAMS_INFO &params, const rapidjson::Value &jsonParams);
     void _parseOutputConnections(SubGraphModel* pModel);
     QVariant _parseDefaultValue(const QString& val);

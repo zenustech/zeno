@@ -77,6 +77,7 @@ private:
 
     bool m_bInitSockets;
     bool m_bCollasped;
+    bool m_bHeapMap;
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "../model/modelrole.h"
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"
+#include "../util/uihelper.h"
 
 
 ZenoGraphsWidget::ZenoGraphsWidget(QWidget* parent)
@@ -34,6 +35,14 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
         pView->setModel(pSubModel);
         addWidget(pView);
         m_views.insert(std::pair(pSubModel->name(), pView));
+    }
+}
+
+void ZenoGraphsWidget::initDescriptors()
+{
+    if (m_descs.isEmpty())
+    {
+        m_descs = UiHelper::loadDescsFromTempFile();
     }
 }
 

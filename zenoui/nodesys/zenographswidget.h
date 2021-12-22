@@ -12,6 +12,7 @@ class ZenoGraphsWidget : public QStackedWidget
 public:
     ZenoGraphsWidget(QWidget* parent = nullptr);
     void setGraphsModel(GraphsModel* pModel);
+    void initDescriptors();
 
 public slots:
 	void onRowsRemoved(const QModelIndex &parent, int first, int last);
@@ -20,6 +21,7 @@ public slots:
 private:
 	std::map<QString, ZenoSubGraphView*> m_views;
     GraphsModel* m_model;
+    NODE_DESCS m_descs;     //system loaded descs.
 };
 
 #endif

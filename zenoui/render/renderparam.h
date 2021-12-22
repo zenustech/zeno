@@ -121,6 +121,7 @@ struct ComboBoxParam
     QColor itemBgHovered;
     QColor itemBgSelected;
     QColor textColor;
+    QMargins margins;
     QPalette palette;   //for lineedit part.
 };
 

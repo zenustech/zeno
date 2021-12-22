@@ -13,6 +13,7 @@ enum PARAM_CONTROL {
     CONTROL_WRITEPATH,
     CONTROL_READPATH,
     CONTROL_MULTILINE_STRING,
+    CONTROL_HEAPMAP,
 };
 
 struct PARAM_INFO {
@@ -66,12 +67,14 @@ typedef QMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
 Q_DECLARE_METATYPE(OUTPUT_SOCKETS)
 
 
-struct NODE_PARAMS_PACK {
+struct NODE_DESC {
     INPUT_SOCKETS inputs;
     PARAMS_INFO params;
     OUTPUT_SOCKETS outputs;
+    QStringList categories;
+    bool is_subgraph = false;
 };
-typedef QMap<QString, NODE_PARAMS_PACK> NODES_PARAMS;
+typedef QMap<QString, NODE_DESC> NODE_DESCS;
 
 
 #endif

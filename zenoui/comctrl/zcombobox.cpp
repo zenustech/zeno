@@ -30,8 +30,11 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
     *option = opt;
 
     option->bdrNormal = QColor(122, 122, 122);
-    option->bdrHoverd = QColor(122, 122, 122);
+    option->bdrHoverd = QColor(228, 228, 228);
     option->bdrSelected = QColor(122, 122, 122);
+
+    option->palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
+    option->palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
 
     option->clrBackground = QColor(50, 50, 50);
     option->clrBgHovered = QColor(50, 50, 50);
@@ -42,7 +45,6 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
     option->btnHovered = QColor(50, 50, 50);
 
     option->textMargin = 5;
-
     option->palette.setColor(QPalette::ButtonText, option->clrText);
 }
 
@@ -54,6 +56,5 @@ void ZComboBox::paintEvent(QPaintEvent* event)
     ZStyleOptionComboBox opt;
     initStyleOption(&opt);
     painter.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoComboBox), opt);
-    //painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
     painter.drawControl(static_cast<QStyle::ControlElement>(ZenoStyle::CE_ZenoComboBoxLabel), opt);
 }

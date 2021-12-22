@@ -1,15 +1,21 @@
+#include "graphsmodel.h"
 #include "subgraphmodel.h"
 #include "modelrole.h"
 #include "modeldata.h"
 
 
-SubGraphModel::SubGraphModel(QObject *parent)
+SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(parent)
+    , m_pGraphsModel(pGraphsModel)
 {
 }
 
 SubGraphModel::~SubGraphModel()
 {
+}
+
+NODE_DESCS SubGraphModel::descriptors() {
+    return m_pGraphsModel->descriptors();
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const

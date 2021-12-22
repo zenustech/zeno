@@ -1,6 +1,7 @@
 #include "zenoparamwidget.h"
 #include "zenosocketitem.h"
 #include "../render/common_id.h"
+#include "../style/zenostyle.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -85,11 +86,7 @@ void ZComboBoxItemDelegate::initStyleOption(QStyleOptionViewItem* option, const 
     QStyledItemDelegate::initStyleOption(option, index);
 
     option->backgroundBrush.setStyle(Qt::SolidPattern);
-    if (option->state & QStyle::State_Selected)
-    {
-        option->backgroundBrush.setColor(m_param.itemBgSelected);
-    }
-    else if (option->state & QStyle::State_MouseOver)
+    if (option->state & QStyle::State_MouseOver)
     {
         option->backgroundBrush.setColor(m_param.itemBgHovered);
     }
@@ -105,7 +102,7 @@ void ZComboBoxItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem 
     initStyleOption(&opt, index);
     painter->fillRect(opt.rect, opt.backgroundBrush);
     painter->setPen(QPen(m_param.textColor));
-    painter->drawText(opt.rect.adjusted(5,0,0,0), opt.text);
+    painter->drawText(opt.rect.adjusted(m_param.margins.left(), 0, 0, 0), opt.text);
 }
 
 QSize ZComboBoxItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const

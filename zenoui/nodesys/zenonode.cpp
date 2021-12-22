@@ -14,6 +14,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_headerWidget(nullptr)
     , m_bCollasped(false)
     , m_collaspedWidget(nullptr)
+    , m_bHeapMap(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
 }
@@ -139,6 +140,11 @@ ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
     QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
     const QString &name = m_index.data(ROLE_OBJNAME).toString();
+    if (name == "MakeHeatmap") {
+        int j;
+        j = 0;
+    }
+
     QFont font = m_renderParams.nameFont;
     font.setPointSize(font.pointSize() + 4);
     ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, font, m_renderParams.nameClr.color());
@@ -288,8 +294,13 @@ QGraphicsGridLayout* ZenoNode::initParams()
                 case CONTROL_MULTILINE_STRING:
                 {
                     ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value);
-                    pParamsLayout->addItem(pMultiStrEdit, r, 1);
+                    pParamsLayout->addItem(pMultiStrEdit, ++r, 0);
                     break;
+                }
+                case CONTROL_HEAPMAP:
+                {
+                    m_bHeapMap = true;
+                    //break;
                 }
                 default:
                 {

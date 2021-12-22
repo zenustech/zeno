@@ -6,6 +6,8 @@
 #include <QObject>
 #include <memory>
 
+#include "../model/modeldata.h"
+
 struct PlainNodeItem
 {
     void setData(const QVariant &value, int role) {
@@ -24,12 +26,14 @@ struct PlainNodeItem
 
 typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
 
+class GraphsModel;
+
 class SubGraphModel : public QAbstractItemModel
 {
     Q_OBJECT
     typedef QAbstractItemModel _base;
 public:
-	explicit SubGraphModel(QObject* parent = nullptr);
+	explicit SubGraphModel(GraphsModel* pGraphsModel, QObject* parent = nullptr);
 	~SubGraphModel();
 
 	//QAbstractItemModel
@@ -66,6 +70,7 @@ public:
     bool insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
     void setName(const QString& name);
     QString name() const;
+    NODE_DESCS descriptors();
 
 signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
@@ -80,6 +85,7 @@ private:
     std::map<int, QString> m_row2Key;
     std::unordered_map<QString, QString> m_name2Id;
     std::unordered_map<QString, NODEITEM_PTR> m_nodes;
+    GraphsModel* m_pGraphsModel;
 };
 
 //Q_DECLARE_METATYPE(SubGraphModel*)
