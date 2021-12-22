@@ -518,7 +518,7 @@ struct MakeCuOcean : zeno::INode {
         // create FFT plan
         cufftPlan2d(&(cuOceanObj->fftPlan), cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
 
-        cuOceanObj->d_h0 = zs::Vector<float2>{cuOceanObj->spectrumSize, zs::memsrc_e::device, 0};
+        cuOceanObj->d_h0 = zs::Vector<float2>{(size_t)cuOceanObj->spectrumSize, zs::memsrc_e::device, 0};
         cuOceanObj->d_ht = zs::Vector<float2>{s, zs::memsrc_e::device, 0};
         // cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->spectrumSize);
         // cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize*cuOceanObj->meshSize);

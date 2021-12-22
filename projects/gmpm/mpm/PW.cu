@@ -154,7 +154,8 @@ struct ZSParticlesWrangler : zeno::INode {
             (unsigned short)unitBytes,
             (unsigned short)tileSize,
             (unsigned short)pars.numChannels(),
-            (unsigned short)pars.getChannelOffset(name.substr(1)) + dimid,
+            (unsigned short)pars.getChannelOffset(name.substr(1)) +
+                (unsigned short)dimid,
             (unsigned short)0};
 
 #if 0

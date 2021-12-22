@@ -208,7 +208,8 @@ struct ZSParticleNeighborWrangler : INode {
           (unsigned short)unitBytes,
           (unsigned short)tileSize,
           (unsigned short)targetParPtr->numChannels(),
-          (unsigned short)targetParPtr->getChannelOffset(name) + dimid,
+          (unsigned short)targetParPtr->getChannelOffset(name) +
+              (unsigned short)dimid,
           (unsigned short)isNeighborProperty};
     }
     auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

@@ -198,13 +198,8 @@ struct ToZSBoundary : INode {
       return zs::collider_e::Sticky;
     };
     // pass in FloatGrid::Ptr
-    auto &ls = get_input<ZenoLevelSet>("ZSSdfField")->getLevelSet();
+    auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
     boundary->levelset = &ls;
-
-    if (has_input<ZenoLevelSet>("ZSVelocityField")) {
-      auto &ls = get_input<ZenoLevelSet>("ZSVelocityField")->getLevelSet();
-      boundary->velocityField = &ls;
-    }
 
     boundary->type = queryType();
 
@@ -242,14 +237,13 @@ struct ToZSBoundary : INode {
     set_output("ZSBoundary", boundary);
   }
 };
-ZENDEFNODE(ToZSBoundary,
-           {
-               {"ZSSdfField", "ZSVelocityField", "translation",
-                "translation_rate", "scale", "scale_rate", "ypr_angles"},
-               {"ZSBoundary"},
-               {{"string", "type", "sticky"}},
-               {"MPM"},
-           });
+ZENDEFNODE(ToZSBoundary, {
+                             {"ZSLevelSet", "translation", "translation_rate",
+                              "scale", "scale_rate", "ypr_angles"},
+                             {"ZSBoundary"},
+                             {{"string", "type", "sticky"}},
+                             {"MPM"},
+                         });
 
 struct StepZSBoundary : INode {
   void apply() override {
