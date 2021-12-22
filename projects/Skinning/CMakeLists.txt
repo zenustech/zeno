@@ -5,7 +5,10 @@ project(zeno_SKINNING)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
 if(WIN32)
-    find_package(libigl REQUIRED)
+    if(TARGET igl::core)
+    else()
+        find_package(libigl REQUIRED)
+    endif()
 endif(WIN32)
 
 find_package(OpenMP)
