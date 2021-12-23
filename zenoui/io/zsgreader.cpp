@@ -1,6 +1,7 @@
 #include "../model/nodesmodel.h"
 #include "../model/modelrole.h"
 #include "zsgreader.h"
+#include "../util/uihelper.h"
 
 
 ZsgReader::ZsgReader()
@@ -30,8 +31,7 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
 
     GraphsModel* pModel = new GraphsModel;
 
-    NODE_DESCS nodesDescs;
-    _parseDescs(doc["descs"], nodesDescs);
+    NODE_DESCS nodesDescs = UiHelper::parseDescs(doc["descs"]);
     pModel->setDescriptors(nodesDescs);
 
     for (const auto& subgraph : graph.GetObject())
@@ -97,6 +97,13 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         auto uipos = objValue["uipos"].GetArray();
         pItem->setData(QPointF(uipos[0].GetFloat(), uipos[1].GetFloat()), ROLE_OBJPOS);
 
+        if (objValue.HasMember("color_ramps"))
+        {
+            COLOR_RAMPS colorRamps;
+            _parseColorRamps(colorRamps, objValue["color_ramps"]);
+            pItem->setData(QVariant::fromValue(colorRamps), ROLE_COLORRAMPS);
+        }
+
         pModel->appendItem(pItem);
     }
     _parseOutputConnections(pModel);
@@ -142,87 +149,6 @@ QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
     return var;
 }
 
-void ZsgReader::_parseDescs(const rapidjson::Value& descs, NODE_DESCS& nodeDescs)
-{
-    for (const auto& node : descs.GetObject())
-    {
-        const QString& name = node.name.GetString();
-        const auto& objValue = node.value;
-        auto inputs = objValue["inputs"].GetArray();
-        auto outputs = objValue["outputs"].GetArray();
-        auto params = objValue["params"].GetArray();
-        auto categories = objValue["categories"].GetArray();
-
-        NODE_DESC pack;
-
-        for (int i = 0; i < inputs.Size(); i++)
-        {
-            if (inputs[i].IsArray())
-            {
-                auto input_triple = inputs[i].GetArray();
-                const QString &socketType = input_triple[0].GetString();
-                const QString &socketName = input_triple[1].GetString();
-                const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
-                INPUT_SOCKET inputSocket;
-                inputSocket.info = SOCKET_INFO("", socketName, QPointF(), true);
-                inputSocket.info.type = socketType;
-                inputSocket.info.control = _getControlType(socketType);
-                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
-                pack.inputs.insert(socketName, inputSocket);
-            }
-            else
-            {
-            
-            }
-        }
-
-        for (int i = 0; i < params.Size(); i++)
-        {
-            if (params[i].IsArray())
-            {
-                auto param_triple = params[i].GetArray();
-                const QString &socketType = param_triple[0].GetString();
-                const QString &socketName = param_triple[1].GetString();
-                const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
-                PARAM_INFO paramInfo;
-                paramInfo.bEnableConnect = false;
-                paramInfo.control = ctrlType;
-                paramInfo.name = socketName;
-                paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = _parseDefaultValue(socketDefl);
-
-                pack.params.insert(socketName, paramInfo);
-            }
-        }
-
-        for (int i = 0; i < outputs.Size(); i++)
-        {
-            if (outputs[i].IsArray())
-            {
-                auto output_triple = outputs[i].GetArray();
-                const QString &socketType = output_triple[0].GetString();
-                const QString &socketName = output_triple[1].GetString();
-                const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
-                OUTPUT_SOCKET outputSocket;
-                outputSocket.info = SOCKET_INFO("", socketName, QPointF(), false);
-                outputSocket.info.type = socketType;
-                outputSocket.info.control = _getControlType(socketType);
-                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
-
-                pack.outputs.insert(socketName, outputSocket);
-            }
-            else
-            {
-            
-            }
-        }
-        nodeDescs.insert(name, pack);
-    }
-}
-
 void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
 {
     //init output ports for each node.
@@ -251,17 +177,12 @@ void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
 
 void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value& inputs)
 {
-    for (const auto &inSockInfo : inputs.GetObject())
+    const auto &inputsObj = inputs.GetObject();
+    for (INPUT_SOCKET& inputSocket : inputSockets)
     {
-        const QString& sockName = inSockInfo.name.GetString();
-        INPUT_SOCKET& inputSocket = inputSockets[sockName];
-
-        inputSocket.info.name = sockName;
-        const auto& arr = inSockInfo.value.GetArray();
+        QByteArray bytes = inputSocket.info.name.toUtf8();
+        const auto &arr = inputsObj[bytes.data()].GetArray();
         RAPIDJSON_ASSERT(arr.Size() == 3);
-
-        //only consider one input source, as the form of tuple.
-        //for each port. only one port currently.
         if (!arr[0].IsNull())
         {
             const QString &outId = arr[0].GetString();
@@ -282,24 +203,24 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value
 
 void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonParams)
 {
-    for (const auto &jsonParam : jsonParams.GetObject())
+    const auto &paramsObj = jsonParams.GetObject();
+    for (PARAM_INFO& param : params)
     {
-        //if some param not exists in desc params, should include it?
-        const QString& name = jsonParam.name.GetString();
-        rapidjson::Type type = jsonParam.value.GetType();
-
-        PARAM_INFO &param = params[name];
+        const QString &name = param.name;
+        QByteArray bytes = name.toUtf8();
+        const auto& paramObj = paramsObj[bytes.data()];
+        rapidjson::Type type = paramObj.GetType();
         param.bEnableConnect = false;
         if (type == rapidjson::kNullType)
         {
         }
         else if (type == rapidjson::kStringType)
         {
-            param.value = jsonParam.value.GetString();
+            param.value = paramObj.GetString();
         }
         else if (type == rapidjson::kNumberType)
         {
-            param.value = jsonParam.value.GetDouble();
+            param.value = paramObj.GetDouble();
         }
     }
 
@@ -315,4 +236,27 @@ void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonPa
         params.insert(param.name, param);
     }
     */
+}
+
+void ZsgReader::_parseColorRamps(COLOR_RAMPS& colorRamps, const rapidjson::Value& jsonColorRamps)
+{
+    if (jsonColorRamps.IsNull())
+        return;
+
+    RAPIDJSON_ASSERT(jsonColorRamps.IsArray());
+    const auto& arr = jsonColorRamps.GetArray();
+    for (int i = 0; i < arr.Size(); i++)
+    {
+        const auto& colorRampObj = arr[i];
+        RAPIDJSON_ASSERT(colorRampObj.IsArray());
+        const auto &rampArr = colorRampObj.GetArray();
+        const auto &rgb = rampArr[1].GetArray();
+
+        COLOR_RAMP clrRamp;
+        clrRamp.pos = rampArr[0].GetFloat();
+        clrRamp.r = rgb[0].GetFloat();
+        clrRamp.g = rgb[1].GetFloat();
+        clrRamp.b = rgb[2].GetFloat();
+        colorRamps.push_back(clrRamp);
+    }
 }

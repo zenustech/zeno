@@ -95,6 +95,13 @@ void ZenoNode::init(const QModelIndex& index)
     pMainLayout->setContentsMargins(0, 0, 0, 0);
     pMainLayout->setSpacing(0);
 
+    //heapmap stays at the bottom of node layout.
+    COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
+    if (!ramps.isEmpty())
+    {
+        //todo: heatmap control
+    }
+
     setLayout(pMainLayout);
 
     //todo: border

@@ -21,8 +21,8 @@ private:
     SubGraphModel* _parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph);
     void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
     void _parseInputs(INPUT_SOCKETS& inputSocks, const rapidjson::Value& inputs);
-    void _parseDescs(const rapidjson::Value& inputs, NODE_DESCS& nodesDict);
     void _parseParams(PARAMS_INFO &params, const rapidjson::Value &jsonParams);
+    void _parseColorRamps(COLOR_RAMPS& colorRamps, const rapidjson::Value& jsonColorRamps);
     void _parseOutputConnections(SubGraphModel* pModel);
     QVariant _parseDefaultValue(const QString& val);
     PARAM_CONTROL _getControlType(const QString& type);
