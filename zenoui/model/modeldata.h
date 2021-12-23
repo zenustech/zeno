@@ -70,6 +70,8 @@ struct COLOR_RAMP
 {
     qreal pos, r, g, b;
     COLOR_RAMP() : pos(0), r(0), g(0), b(0) {}
+    COLOR_RAMP(const qreal& pos, const qreal& r, const qreal& g, const qreal& b)
+        : pos(pos), r(r), g(g), b(b) {}
 };
 typedef QVector<COLOR_RAMP> COLOR_RAMPS;
 Q_DECLARE_METATYPE(COLOR_RAMPS)

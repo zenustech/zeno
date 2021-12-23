@@ -4,6 +4,7 @@
 #include "../render/common_id.h"
 #include "zenoparamnameitem.h"
 #include "zenoparamwidget.h"
+#include "zenoheatmapitem.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -94,13 +95,6 @@ void ZenoNode::init(const QModelIndex& index)
     pMainLayout->addItem(m_bodyWidget);
     pMainLayout->setContentsMargins(0, 0, 0, 0);
     pMainLayout->setSpacing(0);
-
-    //heapmap stays at the bottom of node layout.
-    COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
-    if (!ramps.isEmpty())
-    {
-        //todo: heatmap control
-    }
 
     setLayout(pMainLayout);
 
@@ -227,6 +221,14 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget()
     {
         pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
         pVLayout->addItem(pSocketsLayout);
+    }
+
+    //heapmap stays at the bottom of node layout.
+    COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
+    if (!ramps.isEmpty())
+    {
+        ZenoHeatMapItem *pItem = new ZenoHeatMapItem(ramps);
+        pVLayout->addItem(pItem);
     }
 
     bodyWidget->setLayout(pVLayout);
