@@ -151,6 +151,12 @@ struct ZenoLevelSet : IObject {
   decltype(auto) getBasicLevelSet() noexcept {
     return std::get<basic_ls_t>(levelset);
   }
+  decltype(auto) getLevelSetSequence() const noexcept {
+    return std::get<transition_ls_t>(levelset);
+  }
+  decltype(auto) getLevelSetSequence() noexcept {
+    return std::get<transition_ls_t>(levelset);
+  }
   decltype(auto) getSparseLevelSet() const noexcept {
     return std::get<basic_ls_t>(levelset)
         .getLevelSet<typename basic_ls_t::spls_t>();
