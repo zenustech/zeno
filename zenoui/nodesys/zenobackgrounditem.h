@@ -19,7 +19,6 @@ public:
 
 private:
     QPainterPath shape() const override;
-    std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize) const;
 
     int lt_radius, rt_radius, lb_radius, rb_radius;
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
@@ -44,13 +43,16 @@ public:
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
     QPainterPath shape() const override;
-    std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize) const;
 
     int lt_radius, rt_radius, lb_radius, rb_radius;
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
+    QColor m_color;
     bool m_bFixRadius;
     bool m_bSelected;
 };

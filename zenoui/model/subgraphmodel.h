@@ -69,6 +69,8 @@ public:
                 const QString& inNode, const QString& inSock);
     bool insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
     void setName(const QString& name);
+    void setViewRect(const QRectF& rc);
+    QRectF viewRect() const { return m_rect; }
     QString name() const;
     NODE_DESCS descriptors();
 
@@ -86,6 +88,7 @@ private:
     std::unordered_map<QString, QString> m_name2Id;
     std::unordered_map<QString, NODEITEM_PTR> m_nodes;
     GraphsModel* m_pGraphsModel;
+    QRectF m_rect;
 };
 
 //Q_DECLARE_METATYPE(SubGraphModel*)

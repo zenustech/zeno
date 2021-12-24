@@ -1,6 +1,7 @@
 #include "zenolink.h"
 #include "zenosubgraphscene.h"
 #include "nodesys_common.h"
+#include "../render/common_id.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -105,7 +106,7 @@ ZenoFullLink::ZenoFullLink(const EdgeInfo& info)
     : ZenoLink(nullptr)
     , m_linkInfo(info)
 {
-    setZValue(-10);
+    setZValue(ZVALUE_LINK);
     setFlag(QGraphicsItem::ItemIsSelectable);
 }
 

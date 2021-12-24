@@ -294,6 +294,11 @@ void SubGraphModel::setName(const QString& name)
     m_name = name;
 }
 
+void SubGraphModel::setViewRect(const QRectF& rc)
+{
+    m_rect = rc;
+}
+
 QString SubGraphModel::name() const
 {
     return m_name;

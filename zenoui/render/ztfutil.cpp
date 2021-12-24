@@ -447,6 +447,9 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketClr = QColor(255, 255, 255);
     param.paramClr = QColor(255, 255, 255);
 
+    param.boardFont = QFont("Consolas", 17);
+    param.boardTextClr = QColor(255, 255, 255);
+
     param.lineEditParam.font = QFont("Consolas", 10);
     QPalette palette;
     palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);

@@ -120,7 +120,7 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
                 pItem->setData(objValue["special"].GetBool(), ROLE_BLACKBOARD_SPECIAL);
             }
             pItem->setData(objValue.HasMember("title") ? objValue["title"].GetString() : "", ROLE_BLACKBOARD_TITLE);
-            pItem->setData(objValue.HasMember("content") ? objValue["content"].GetString() : "", ROLE_BLACKBOARD_TITLE);
+            pItem->setData(objValue.HasMember("content") ? objValue["content"].GetString() : "", ROLE_BLACKBOARD_CONTENT);
             if (objValue.HasMember("width") && objValue.HasMember("height"))
             {
                 qreal w = objValue["width"].GetFloat();
@@ -135,6 +135,15 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         pModel->appendItem(pItem);
     }
     _parseOutputConnections(pModel);
+
+    //view rect
+    QRectF viewRect;
+    if (subgraph.HasMember("view_rect")) {
+        const auto &obj = subgraph["view_rect"];
+        viewRect = QRectF(obj["x"].GetFloat(), obj["y"].GetFloat(), obj["width"].GetFloat(), obj["height"].GetFloat());
+    }
+    pModel->setViewRect(viewRect);
+
     return pModel;
 }
 

@@ -35,7 +35,7 @@
 			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="rbsocket-text" x="180" y="173" w="43" h="18" font-family="SimSun">Output</text>
 		</component>
-		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 10px 10px" normal-clr="#323232" hoverd-clr="#323232" selected-clr="#323232">
+		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 10px 10px" normal-clr="#323232" hoverd-clr="#3D3B3B" selected-clr="#3D3B3B">
 			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
 		</background>
 	</body>

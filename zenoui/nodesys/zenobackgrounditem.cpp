@@ -1,4 +1,6 @@
 #include "zenobackgrounditem.h"
+#include "../util/uihelper.h"
+
 
 ZenoBackgroundItem::ZenoBackgroundItem(const BackgroundComponent &comp, QGraphicsItem *parent)
     : _base(parent)
@@ -11,7 +13,8 @@ ZenoBackgroundItem::ZenoBackgroundItem(const BackgroundComponent &comp, QGraphic
     , m_img(nullptr)
     , m_bSelected(false)
 {
-    if (!comp.imageElem.image.isEmpty()) {
+    if (!comp.imageElem.image.isEmpty())
+    {
         m_img = new ZenoImageItem(comp.imageElem.image, comp.imageElem.imageHovered, comp.imageElem.imageOn, comp.rc.size(), this);
         m_img->setZValue(100);
         m_img->show();
@@ -45,89 +48,11 @@ void ZenoBackgroundItem::setRadius(int lt, int rt, int lb, int rb) {
     update();
 }
 
-std::pair<qreal, qreal> ZenoBackgroundItem::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize) const {
-    if (AbsoluteSize) {
-        qreal w = r.width() / 2;
-        qreal h = r.height() / 2;
-
-        if (w == 0) {
-            xRadius = 0;
-        } else {
-            xRadius = 100 * qMin(xRadius, w) / w;
-        }
-        if (h == 0) {
-            yRadius = 0;
-        } else {
-            yRadius = 100 * qMin(yRadius, h) / h;
-        }
-    } else {
-        if (xRadius > 100)// fix ranges
-            xRadius = 100;
-
-        if (yRadius > 100)
-            yRadius = 100;
-    }
-
-    qreal w = r.width();
-    qreal h = r.height();
-    qreal rxx2 = w * xRadius / 100;
-    qreal ryy2 = h * yRadius / 100;
-    return std::make_pair(rxx2, ryy2);
-}
-
 QPainterPath ZenoBackgroundItem::shape() const
 {
     QPainterPath path;
     QRectF r = m_rect.normalized();
-
-    if (r.isNull())
-        return path;
-
-    if (lt_radius <= 0 && rt_radius <= 0 && lb_radius <= 0 && rb_radius <= 0) {
-        path.addRect(r);
-        return path;
-    }
-
-    qreal x = r.x();
-    qreal y = r.y();
-    qreal w = r.width();
-    qreal h = r.height();
-
-    auto pair = getRxx2(r, lt_radius, lt_radius, m_bFixRadius);
-    qreal rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.moveTo(x, y);
-    } else {
-        path.arcMoveTo(x, y, rxx2, ryy2, 180);
-        path.arcTo(x, y, rxx2, ryy2, 180, -90);
-    }
-
-    pair = getRxx2(r, rt_radius, rt_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x + w, y);
-    } else {
-        path.arcTo(x + w - rxx2, y, rxx2, ryy2, 90, -90);
-    }
-
-    pair = getRxx2(r, rb_radius, rb_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x + w, y + h);
-    } else {
-        path.arcTo(x + w - rxx2, y + h - rxx2, rxx2, ryy2, 0, -90);
-    }
-
-    pair = getRxx2(r, lb_radius, lb_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x, y + h);
-    } else {
-        path.arcTo(x, y + h - rxx2, rxx2, ryy2, 270, -90);
-    }
-
-    path.closeSubpath();
-    return path;
+    return UiHelper::getRoundPath(r, lt_radius, rt_radius, lb_radius, rb_radius, m_bFixRadius);
 }
 
 void ZenoBackgroundItem::toggle(bool bSelected)
@@ -164,6 +89,7 @@ ZenoBackgroundWidget::ZenoBackgroundWidget(QGraphicsItem *parent, Qt::WindowFlag
     , m_bSelected(false)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setAcceptHoverEvents(true);
 }
 
 QRectF ZenoBackgroundWidget::boundingRect() const
@@ -176,6 +102,7 @@ void ZenoBackgroundWidget::setColors(const QColor& clrNormal, const QColor& clrH
     m_clrNormal = clrNormal;
     m_clrHovered = clrHovered;
     m_clrSelected = clrSelected;
+    m_color = m_clrNormal;
     update();
 }
 
@@ -190,8 +117,7 @@ void ZenoBackgroundWidget::setRadius(int lt, int rt, int lb, int rb)
 
 QSizeF ZenoBackgroundWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    QSizeF sz = layout()->effectiveSizeHint(which, constraint);
-    return sz;
+    return QGraphicsWidget::sizeHint(which, constraint);
 }
 
 void ZenoBackgroundWidget::setGeometry(const QRectF& rect)
@@ -201,105 +127,40 @@ void ZenoBackgroundWidget::setGeometry(const QRectF& rect)
 
 void ZenoBackgroundWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+    painter->setRenderHint(QPainter::Antialiasing, true);
     QPainterPath path = shape();
-    if (m_bSelected) {
-        painter->fillPath(path, m_clrSelected);
-    } else {
-        painter->fillPath(path, m_clrNormal);
-    }
+    painter->fillPath(path, m_color);
 }
 
 void ZenoBackgroundWidget::toggle(bool bSelected)
 {
     m_bSelected = bSelected;
+    m_color = m_bSelected ? m_clrSelected : m_clrNormal;
 }
 
 QPainterPath ZenoBackgroundWidget::shape() const
 {
     QGraphicsLayout *pLayout = layout();
-    //it's complicated to position the shape... 
     QRectF rcc = pLayout->geometry();
-
-    QPainterPath path;
     QRectF r = rcc.normalized();
-
-    if (r.isNull())
-        return path;
-
-    if (lt_radius <= 0 && rt_radius <= 0 && lb_radius <= 0 && rb_radius <= 0) {
-        path.addRect(r);
-        return path;
-    }
-
-    qreal x = r.x();
-    qreal y = r.y();
-    qreal w = r.width();
-    qreal h = r.height();
-
-    auto pair = getRxx2(r, lt_radius, lt_radius, m_bFixRadius);
-    qreal rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.moveTo(x, y);
-    } else {
-        path.arcMoveTo(x, y, rxx2, ryy2, 180);
-        path.arcTo(x, y, rxx2, ryy2, 180, -90);
-    }
-
-    pair = getRxx2(r, rt_radius, rt_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x + w, y);
-    } else {
-        path.arcTo(x + w - rxx2, y, rxx2, ryy2, 90, -90);
-    }
-
-    pair = getRxx2(r, rb_radius, rb_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x + w, y + h);
-    } else {
-        path.arcTo(x + w - rxx2, y + h - rxx2, rxx2, ryy2, 0, -90);
-    }
-
-    pair = getRxx2(r, lb_radius, lb_radius, m_bFixRadius);
-    rxx2 = pair.first, ryy2 = pair.second;
-    if (rxx2 <= 0) {
-        path.lineTo(x, y + h);
-    } else {
-        path.arcTo(x, y + h - rxx2, rxx2, ryy2, 270, -90);
-    }
-
-    path.closeSubpath();
-    return path;
+    return UiHelper::getRoundPath(r, lt_radius, rt_radius, lb_radius, rb_radius, m_bFixRadius);
 }
 
-std::pair<qreal, qreal> ZenoBackgroundWidget::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize) const
+void ZenoBackgroundWidget::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    if (AbsoluteSize) {
-        qreal w = r.width() / 2;
-        qreal h = r.height() / 2;
+    _base::hoverEnterEvent(event);
+    m_color = m_clrHovered;
+    update();
+}
 
-        if (w == 0) {
-            xRadius = 0;
-        } else {
-            xRadius = 100 * qMin(xRadius, w) / w;
-        }
-        if (h == 0) {
-            yRadius = 0;
-        } else {
-            yRadius = 100 * qMin(yRadius, h) / h;
-        }
-    } else {
-        if (xRadius > 100)// fix ranges
-            xRadius = 100;
+void ZenoBackgroundWidget::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
+{
+    _base::hoverMoveEvent(event);
+}
 
-        if (yRadius > 100)
-            yRadius = 100;
-    }
-
-    qreal w = r.width();
-    qreal h = r.height();
-    qreal rxx2 = w * xRadius / 100;
-    qreal ryy2 = h * yRadius / 100;
-    return std::make_pair(rxx2, ryy2);
+void ZenoBackgroundWidget::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    _base::hoverLeaveEvent(event);
+    m_color = isSelected() ? m_clrSelected : m_clrNormal;
+    update();
 }

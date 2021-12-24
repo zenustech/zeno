@@ -5,6 +5,7 @@
 #include "zenoparamnameitem.h"
 #include "zenoparamwidget.h"
 #include "zenoheatmapitem.h"
+#include "util/uihelper.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -16,6 +17,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bCollasped(false)
     , m_collaspedWidget(nullptr)
     , m_bHeapMap(false)
+    , m_pMainLayout(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
 }
@@ -66,6 +68,18 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 {
     //need to init socket icon pos elsewhere.
     _updateSocketItemPos();
+    if (isSelected())
+    {
+        //draw border
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        QPen pen(QColor(238, 136, 68), 3);
+        painter->setPen(pen);
+        QRectF rc = m_pMainLayout->geometry();
+        qreal offset = 1;
+        rc = rc.adjusted(-offset, -offset, offset, offset);
+        QPainterPath path = UiHelper::getRoundPath(rc, m_renderParams.headerBg.lt_radius, m_renderParams.headerBg.rt_radius, m_renderParams.bodyBg.lb_radius, m_renderParams.bodyBg.rb_radius, true);
+        painter->drawPath(path);
+    }
 }
 
 QRectF ZenoNode::boundingRect() const
@@ -93,16 +107,19 @@ void ZenoNode::init(const QModelIndex& index)
     }
     m_bodyWidget = initBodyWidget(type);
 
-    QGraphicsLinearLayout* pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
-    pMainLayout->addItem(m_collaspedWidget);
-    pMainLayout->addItem(m_headerWidget);
-    pMainLayout->addItem(m_bodyWidget);
-    pMainLayout->setContentsMargins(0, 0, 0, 0);
-    pMainLayout->setSpacing(0);
+    m_pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
+    m_pMainLayout->addItem(m_collaspedWidget);
+    m_pMainLayout->addItem(m_headerWidget);
+    m_pMainLayout->addItem(m_bodyWidget);
+    m_pMainLayout->setContentsMargins(0, 0, 0, 0);
+    m_pMainLayout->setSpacing(0);
 
-    setLayout(pMainLayout);
+    setLayout(m_pMainLayout);
 
-    //todo: border
+    if (type == BLACKBOARD_NODE)
+    {
+        setZValue(ZVALUE_BLACKBOARD);
+    }
 
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
     const QString &id = m_index.data(ROLE_OBJID).toString();
@@ -198,6 +215,11 @@ ZenoBackgroundWidget *ZenoNode::initHeaderBgWidget(NODE_TYPE type)
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
+    if (type == BLACKBOARD_NODE)
+    {
+        QColor clr(98, 108, 111);
+        headerWidget->setColors(clr, clr, clr);
+    }
     return headerWidget;
 }
 
@@ -228,22 +250,21 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
             ZenoHeatMapItem *pItem = new ZenoHeatMapItem(ramps);
             pVLayout->addItem(pItem);
         }
+        bodyWidget->setZValue(ZVALUE_ELEMENT);
     }
     else
     {
-        bodyWidget->setColors(QColor(27, 27, 27), QColor(27, 27, 27), QColor(27, 27, 27));
-
-        const QString& content = m_index.data(ROLE_BLACKBOARD_CONTENT).toString();
-        ZenoParamMultilineStr *pStr = new ZenoParamMultilineStr(content);
+        QColor clr(0, 0, 0);
+        bodyWidget->setColors(clr, clr, clr);
         const QSize &sz = m_index.data(ROLE_BLACKBOARD_SIZE).toSize();
-        pStr->setMinimumSize(sz);
-        pStr->setMaximumSize(sz);
+        const QString& content = m_index.data(ROLE_BLACKBOARD_CONTENT).toString();
 
-        pVLayout->addItem(pStr);
+        ZenoBoardTextLayoutItem* pTextItem = new ZenoBoardTextLayoutItem(content, m_renderParams.boardFont, m_renderParams.boardTextClr.color(), sz);
+        //pVLayout->addStretch();
+        pVLayout->addItem(pTextItem);
     }
 
     bodyWidget->setLayout(pVLayout);
-    bodyWidget->setZValue(ZVALUE_ELEMENT);
     return bodyWidget;
 }
 
@@ -454,11 +475,6 @@ OUTPUT_SOCKETS ZenoNode::outputParams() const
 
 bool ZenoNode::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 {
-    if (event->type() == QEvent::MouseButtonPress)
-    {
-        int j;
-        j = 0;
-    }
     return _base::sceneEventFilter(watched, event);
 }
 
@@ -517,6 +533,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         bool bSelected = isSelected();
         m_headerWidget->toggle(bSelected);
+        m_bodyWidget->toggle(bSelected);
         m_collaspedWidget->toggle(bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)

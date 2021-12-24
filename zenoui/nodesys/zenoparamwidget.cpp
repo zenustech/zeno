@@ -231,6 +231,62 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoBoardTextLayoutItem::ZenoBoardTextLayoutItem(const QString &text, const QFont &font, const QColor &color, const QSizeF& sz, QGraphicsItem *parent)
+    : QGraphicsLayoutItem()
+    , QGraphicsTextItem(text, parent)
+    , m_text(text)
+    , m_size(sz)
+{
+    setZValue(ZVALUE_ELEMENT);
+    setFont(font);
+    setDefaultTextColor(color);
+
+    setGraphicsItem(this);
+    setFlags(ItemIsFocusable | ItemIsSelectable | ItemSendsScenePositionChanges);
+    setTextInteractionFlags(Qt::TextEditorInteraction);
+
+    connect(document(), &QTextDocument::contentsChanged, this, [=]() {
+        updateGeometry();
+    });
+}
+
+void ZenoBoardTextLayoutItem::setGeometry(const QRectF& geom)
+{
+    prepareGeometryChange();
+    QGraphicsLayoutItem::setGeometry(geom);
+    setPos(geom.topLeft());
+    //emit geometrySetup(scenePos());
+}
+
+QRectF ZenoBoardTextLayoutItem::boundingRect() const
+{
+    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
+    return rc;
+}
+
+void ZenoBoardTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsTextItem::paint(painter, option, widget);
+}
+
+QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+    return m_size;
+    QRectF rc = QGraphicsTextItem::boundingRect();
+    switch (which) {
+        case Qt::MinimumSize:
+        case Qt::PreferredSize:
+            return rc.size();
+        case Qt::MaximumSize:
+            return QSizeF(1000, 1000);
+        default:
+            break;
+    }
+    return constraint;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoSvgLayoutItem::ZenoSvgLayoutItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
     : QGraphicsLayoutItem()

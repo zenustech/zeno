@@ -75,6 +75,8 @@ private:
     ZenoBackgroundWidget *m_bodyWidget;
     ZenoBackgroundWidget *m_headerWidget;
 
+    QGraphicsLinearLayout *m_pMainLayout;
+
     bool m_bInitSockets;
     bool m_bCollasped;
     bool m_bHeapMap;

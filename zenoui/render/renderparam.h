@@ -161,6 +161,9 @@ struct NodeUtilParam
     QBrush paramClr;
     QFont paramFont;
 
+    QBrush boardTextClr;
+    QFont boardFont;
+
     DistanceParam distParam;
     LineEditParam lineEditParam;
     ComboBoxParam comboboxParam;

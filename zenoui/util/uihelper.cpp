@@ -126,3 +126,86 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_NONE;
     }
 }
+
+std::pair<qreal, qreal> UiHelper::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize)
+{
+    if (AbsoluteSize) {
+        qreal w = r.width() / 2;
+        qreal h = r.height() / 2;
+
+        if (w == 0) {
+            xRadius = 0;
+        } else {
+            xRadius = 100 * qMin(xRadius, w) / w;
+        }
+        if (h == 0) {
+            yRadius = 0;
+        } else {
+            yRadius = 100 * qMin(yRadius, h) / h;
+        }
+    } else {
+        if (xRadius > 100)// fix ranges
+            xRadius = 100;
+
+        if (yRadius > 100)
+            yRadius = 100;
+    }
+
+    qreal w = r.width();
+    qreal h = r.height();
+    qreal rxx2 = w * xRadius / 100;
+    qreal ryy2 = h * yRadius / 100;
+    return std::make_pair(rxx2, ryy2);
+}
+
+QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int lb_radius, int rb_radius, bool bFixRadius) {
+    QPainterPath path;
+    if (r.isNull())
+        return path;
+
+    if (lt_radius <= 0 && rt_radius <= 0 && lb_radius <= 0 && rb_radius <= 0) {
+        path.addRect(r);
+        return path;
+    }
+
+    qreal x = r.x();
+    qreal y = r.y();
+    qreal w = r.width();
+    qreal h = r.height();
+
+    auto pair = getRxx2(r, lt_radius, lt_radius, bFixRadius);
+    qreal rxx2 = pair.first, ryy2 = pair.second;
+    if (rxx2 <= 0) {
+        path.moveTo(x, y);
+    } else {
+        path.arcMoveTo(x, y, rxx2, ryy2, 180);
+        path.arcTo(x, y, rxx2, ryy2, 180, -90);
+    }
+
+    pair = getRxx2(r, rt_radius, rt_radius, bFixRadius);
+    rxx2 = pair.first, ryy2 = pair.second;
+    if (rxx2 <= 0) {
+        path.lineTo(x + w, y);
+    } else {
+        path.arcTo(x + w - rxx2, y, rxx2, ryy2, 90, -90);
+    }
+
+    pair = getRxx2(r, rb_radius, rb_radius, bFixRadius);
+    rxx2 = pair.first, ryy2 = pair.second;
+    if (rxx2 <= 0) {
+        path.lineTo(x + w, y + h);
+    } else {
+        path.arcTo(x + w - rxx2, y + h - rxx2, rxx2, ryy2, 0, -90);
+    }
+
+    pair = getRxx2(r, lb_radius, lb_radius, bFixRadius);
+    rxx2 = pair.first, ryy2 = pair.second;
+    if (rxx2 <= 0) {
+        path.lineTo(x, y + h);
+    } else {
+        path.arcTo(x, y + h - rxx2, rxx2, ryy2, 270, -90);
+    }
+
+    path.closeSubpath();
+    return path;
+}

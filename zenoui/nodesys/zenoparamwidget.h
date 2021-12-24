@@ -139,6 +139,23 @@ private:
     QString m_text;
 };
 
+class ZenoBoardTextLayoutItem : public QGraphicsLayoutItem, public QGraphicsTextItem
+{
+public:
+    ZenoBoardTextLayoutItem(const QString& text, const QFont& font, const QColor& color, const QSizeF& sz, QGraphicsItem* parent = nullptr);
+    void setGeometry(const QRectF &rect) override;
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+
+protected:
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+
+private:
+    QString m_text;
+    QSizeF m_size;
+};
+
+
 class ZenoSvgLayoutItem : public QGraphicsLayoutItem, public ZenoImageItem
 {
 public:

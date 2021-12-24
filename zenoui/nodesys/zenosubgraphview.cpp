@@ -11,8 +11,8 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, m_dragMove(false)
 	, m_menu(nullptr)
 {
-    setBackgroundBrush(QBrush(QColor(60, 59, 63), Qt::SolidPattern));
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);	//it's easy but not efficient
+    setBackgroundBrush(QBrush(QColor(38, 37, 42), Qt::SolidPattern));
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::NoAnchor);
     viewport()->installEventFilter(this);
@@ -45,7 +45,7 @@ void ZenoSubGraphView::gentle_zoom(qreal factor)
 qreal ZenoSubGraphView::_factorStep(qreal factor)
 {
 	if (factor < 2)
-		return 0.1;
+		return 0.2;
 	else if (factor < 3)
 		return 0.25;
 	else if (factor < 4)
