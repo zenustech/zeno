@@ -245,33 +245,35 @@ struct ApplyBoundaryOnZSGrid : INode {
     if (has_input<ZenoBoundary>("ZSBoundary")) {
       auto boundary = get_input<ZenoBoundary>("ZSBoundary");
       auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
-#if 0
-      match([&](auto &sdf) {
-        auto sdfLs = boundary->getLevelSetView(sdf);
-        if (boundary->hasVelocityField()) {
-          match([&](auto &vel) mutable {
-            auto velLs = boundary->getLevelSetView(vel);
-            auto ls =
-                SdfVelField<RM_CVREF_T(sdfLs), RM_CVREF_T(velLs)>{sdfLs, velLs};
-            projectBoundary(cudaPol, ls, *boundary, partition, grid);
-          })(boundary->getVelocityField());
-        } else
-          projectBoundary(cudaPol, sdfLs, *boundary, partition, grid);
-      })(boundary->getSdfField());
-#else
-      if (boundary->hasVelocityField()) {
-        match([&](const auto &sdf, const auto &vel) {
-          auto ls = SdfVelFieldView{boundary->getLevelSetView(sdf),
-                                    boundary->getLevelSetView(vel)};
-          projectBoundary(cudaPol, ls, *boundary, partition, grid);
-        })(boundary->getSdfField(), boundary->getVelocityField());
-      } else {
-        match([&](const auto &sdf) {
-          projectBoundary(cudaPol, boundary->getLevelSetView(sdf), *boundary,
-                          partition, grid);
-        })(boundary->getSdfField());
-      }
-#endif
+
+      using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+      using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
+      using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
+      if (boundary->levelset)
+        match([&](const auto &ls) {
+          if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+            match([&](const auto &lsPtr) {
+              auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+              projectBoundary(cudaPol, lsv, *boundary, partition, grid);
+            })(ls._ls);
+          } else if constexpr (is_same_v<RM_CVREF_T(ls), sdf_vel_ls_t>) {
+            match([&](auto lsv) {
+              projectBoundary(cudaPol, SdfVelFieldView{lsv}, *boundary,
+                              partition, grid);
+            })(ls.template getView<execspace_e::cuda>());
+          } else if constexpr (is_same_v<RM_CVREF_T(ls), transition_ls_t>) {
+            auto [fieldViewSrc, fieldViewDst] =
+                ls.template getView<zs::execspace_e::cuda>();
+            match([&](auto fvSrc, auto fvDst) {
+              if constexpr (is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>)
+                projectBoundary(cudaPol,
+                                TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                                       SdfVelFieldView{fvDst},
+                                                       ls._stepDt, ls._alpha},
+                                *boundary, partition, grid);
+            })(fieldViewSrc, fieldViewDst);
+          }
+        })(*boundary->levelset);
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
@@ -451,29 +453,72 @@ struct TransformZSLevelSet : INode {
     auto &ls = zsls->getLevelSet();
 
     using namespace zs;
+    using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
     // translation
     if (has_input("translation")) {
       auto b = get_input<NumericObject>("translation")->get<vec3f>();
       match(
-          [&b](SparseLevelSet<3> &ls) {
-            ls.translate(zs::vec<float, 3>{b[0], b[1], b[2]});
-            // fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
-            // getchar();
+          [&b](basic_ls_t &basicLs) {
+            match(
+                [b](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
           },
-          [](...) {})(ls);
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
+
     // scale
     if (has_input("scaling")) {
       auto s = get_input<NumericObject>("scaling")->get<float>();
-      match([&s](SparseLevelSet<3> &ls) { ls.scale(s); }, [](...) {})(ls);
+      match(
+          [&s](basic_ls_t &basicLs) {
+            match(
+                [s](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->scale(s);
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
+          },
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
     // rotation
     if (has_input("eulerXYZ")) {
       auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
                                         yprAngles[2], zs::degree_v, zs::ypr_v};
-      match([&rot](SparseLevelSet<3> &ls) { ls.rotate(rot.transpose()); },
-            [](...) {})(ls);
+      match(
+          [&rot](basic_ls_t &basicLs) {
+            match(
+                [rot](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->rotate(rot.transpose());
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
+          },
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing TransformZSLevelSet\n");

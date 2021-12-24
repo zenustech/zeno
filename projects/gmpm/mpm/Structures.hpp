@@ -94,74 +94,87 @@ struct ZenoSparseLevelSet : IObject {
 };
 
 struct ZenoLevelSet : IObject {
-  using spls_t = zs::SparseLevelSet<3>;
-  using plane_t =
-      zs::AnalyticLevelSet<zs::analytic_geometry_e::Plane, float, 3>;
-  using cuboid_t =
-      zs::AnalyticLevelSet<zs::analytic_geometry_e::Cuboid, float, 3>;
-  using sphere_t =
-      zs::AnalyticLevelSet<zs::analytic_geometry_e::Sphere, float, 3>;
-  using cylinder_t =
-      zs::AnalyticLevelSet<zs::analytic_geometry_e::Cylinder, float, 3>;
+#if 0
+  using sdf_vel_t = zs::ConstSdfVelFieldPtr<float, 3>;
+  using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
+  void test() {
+    zs::SparseLevelSetView<zs::execspace_e::cuda,
+                           zs::SparseLevelSet<3, zs::grid_e::collocated>, void>
+        a{};
+    zs::BasicLevelSet<float, 3> x{zs::DummyLevelSet<float, 3>{}};
+    zs::BasicLevelSet<float, 3> y{
+        std::make_shared<zs::DummyLevelSet<float, 3>>()};
+    // zs::name_that_type(typename sdf_vel_t::template sdf_vel_ls_view_t<
+    //                   zs::execspace_e::cuda>{});
+    sdf_vel_t z{y};
+    transition_ls_t zz{};
+    zz.push(x);
+    zz.push(z);
 
-  // using sdf_vel_t = LevelSetRefs<float, 3>;
+#if 1
+#if 1
+    auto [lsvSrc, lsvDst] = zz.getView<zs::execspace_e::cuda>();
+    auto srcStr = zs::get_var_type_str(lsvSrc);
+    auto dstStr = zs::get_var_type_str(lsvDst);
+    zs::match([srcStr, dstStr](auto a, auto b) {
+      fmt::print("lsv src: [{}] ({}), \n\nlsv dst: [{}] ({})\n",
+                 zs::get_var_type_str(a), srcStr, zs::get_var_type_str(b),
+                 dstStr);
+    })(lsvSrc, lsvDst);
+#endif
+#endif
+  }
+#endif
 
-  using levelset_t = zs::variant<spls_t, plane_t, cuboid_t, sphere_t,
-                                 cylinder_t /*, sdf_vel_t*/>;
-  enum category_e { LevelSet, Plane, Cuboid, Sphere, Cylinder, SdfVel };
+  using basic_ls_t = zs::BasicLevelSet<float, 3>;
+  using sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
+  using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
+  using levelset_t = zs::variant<basic_ls_t, sdf_vel_ls_t, transition_ls_t>;
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
 
-  bool holdSparseLevelSet() const noexcept {
-    return std::holds_alternative<spls_t>(levelset);
+  bool holdsBasicLevelSet() const noexcept {
+    return std::holds_alternative<basic_ls_t>(levelset);
   }
-
-  decltype(auto) getSparseLevelSet() noexcept {
-    return std::get<spls_t>(levelset);
+  bool holdsSparseLevelSet() const noexcept {
+    return zs::match([](const auto &ls) {
+      if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
+        return ls.template holdsLevelSet<typename basic_ls_t::spls_t>();
+      else
+        return false;
+    })(levelset);
+  }
+  decltype(auto) getBasicLevelSet() const noexcept {
+    return std::get<basic_ls_t>(levelset);
+  }
+  decltype(auto) getBasicLevelSet() noexcept {
+    return std::get<basic_ls_t>(levelset);
+  }
+  decltype(auto) getLevelSetSequence() const noexcept {
+    return std::get<transition_ls_t>(levelset);
+  }
+  decltype(auto) getLevelSetSequence() noexcept {
+    return std::get<transition_ls_t>(levelset);
   }
   decltype(auto) getSparseLevelSet() const noexcept {
-    return std::get<spls_t>(levelset);
+    return std::get<basic_ls_t>(levelset)
+        .getLevelSet<typename basic_ls_t::spls_t>();
   }
-
-  template <category_e I> auto &getLevelSet() noexcept {
-    return std::get<I>(levelset);
-  }
-  template <category_e I> const auto &getLevelSet() const noexcept {
-    return std::get<I>(levelset);
+  decltype(auto) getSparseLevelSet() noexcept {
+    return std::get<basic_ls_t>(levelset)
+        .getLevelSet<typename basic_ls_t::spls_t>();
   }
 
   levelset_t levelset;
 };
 
 struct ZenoBoundary : IObject {
-  using spls_t = typename ZenoLevelSet::spls_t;
-  using plane_t = typename ZenoLevelSet::plane_t;
-  using cuboid_t = typename ZenoLevelSet::cuboid_t;
-  using sphere_t = typename ZenoLevelSet::sphere_t;
-  using cylinder_t = typename ZenoLevelSet::cylinder_t;
-  // using sdf_vel_t = typename ZenoLevelSet::sdf_vel_t;
-
   using levelset_t = typename ZenoLevelSet::levelset_t;
-  using category_e = typename ZenoLevelSet::category_e;
-
-  auto &getSdfField() noexcept { return *levelset; }
-  const auto &getSdfField() const noexcept { return *levelset; }
-  auto &getVelocityField() noexcept { return *velocityField; }
-  const auto &getVelocityField() const noexcept { return *velocityField; }
-  bool hasVelocityField() const noexcept { return velocityField != nullptr; }
-
-  template <typename LS> auto getLevelSetView(LS &&ls) const noexcept {
-    using LsT = zs::remove_cvref_t<LS>;
-    if constexpr (zs::is_same_v<LsT, spls_t>) {
-      return zs::proxy<zs::execspace_e::cuda>(FWD(ls));
-    } else
-      return FWD(ls);
-  }
 
   template <typename LsView> auto getBoundary(LsView &&lsv) const noexcept {
     using namespace zs;
-    auto ret = Collider{lsv, type};
+    auto ret = Collider{FWD(lsv), type};
     ret.s = s;
     ret.dsdt = dsdt;
     ret.R = R;
@@ -172,7 +185,6 @@ struct ZenoBoundary : IObject {
   }
 
   levelset_t *levelset{nullptr};
-  levelset_t *velocityField{nullptr};
   zs::collider_e type{zs::collider_e::Sticky};
   /** scale **/
   float s{1};

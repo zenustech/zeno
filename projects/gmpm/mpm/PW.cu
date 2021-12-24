@@ -45,40 +45,44 @@ struct ZSParticlesWrangler : zeno::INode {
     std::vector<std::pair<std::string, int>> parnames;
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
-      auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
-      auto dim = std::visit(
-          [&](auto const &v) {
-            using T = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<T, zeno::vec3f>) {
-              parvals.push_back(v[0]);
-              parvals.push_back(v[1]);
-              parvals.push_back(v[2]);
-              parnames.emplace_back(key, 0);
-              parnames.emplace_back(key, 1);
-              parnames.emplace_back(key, 2);
-              return 3;
-            } else if constexpr (std::is_same_v<T, float>) {
-              parvals.push_back(v);
-              parnames.emplace_back(key, 0);
-              return 1;
-            } else {
-              printf("invalid parameter type encountered: `%s`\n",
-                     typeid(T).name());
-              return 0;
-            }
-          },
-          par);
-      opts.define_param(key, dim);
+      // auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
+      if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj);
+          o.has_value()) {
+        auto par = o.value();
+        auto dim = std::visit(
+            [&](auto const &v) {
+              using T = std::decay_t<decltype(v)>;
+              if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                parvals.push_back(v[0]);
+                parvals.push_back(v[1]);
+                parvals.push_back(v[2]);
+                parnames.emplace_back(key, 0);
+                parnames.emplace_back(key, 1);
+                parnames.emplace_back(key, 2);
+                return 3;
+              } else if constexpr (std::is_same_v<T, float>) {
+                parvals.push_back(v);
+                parnames.emplace_back(key, 0);
+                return 1;
+              } else {
+                printf("invalid parameter type encountered: `%s`\n",
+                       typeid(T).name());
+                return 0;
+              }
+            },
+            par);
+        opts.define_param(key, dim);
+      }
     }
+
+    auto &currentContext = Cuda::context(0);
+    currentContext.setContext();
+    auto cudaPol = cuda_exec().device(0).sync(true);
 
     /// symbols
     auto def_sym = [&opts](const std::string &key, int dim) {
       opts.define_symbol('@' + key, dim);
     };
-
-    auto &currentContext = Cuda::context(0);
-    currentContext.setContext();
-    auto cudaPol = cuda_exec().device(0).sync(true);
 
     for (auto &&parObjPtr : parObjPtrs) {
       auto &pars = parObjPtr->getParticles();
@@ -150,7 +154,8 @@ struct ZSParticlesWrangler : zeno::INode {
             (unsigned short)unitBytes,
             (unsigned short)tileSize,
             (unsigned short)pars.numChannels(),
-            (unsigned short)pars.getChannelOffset(name.substr(1)) + dimid,
+            (unsigned short)pars.getChannelOffset(name.substr(1)) +
+                (unsigned short)dimid,
             (unsigned short)0};
 
 #if 0
