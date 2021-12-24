@@ -1,6 +1,7 @@
 #include "zenosubgraphscene.h"
 #include "../model/subgraphmodel.h"
 #include "zenosubgraphview.h"
+#include "zenographswidget.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -152,13 +153,17 @@ void ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 
 void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
 {
-	if (m_menu) {
+    if (m_menu)
+    {
         delete m_menu;
         m_menu = nullptr;
-	}
+    }
     m_menu = new QMenu(this);
-    QAction *pAction = new QAction(tr("new node"));
-    connect(pAction, SIGNAL(triggered()), m_scene, SLOT(onNewNodeCreated()));
-    m_menu->addAction(pAction);
+
+    ZenoGraphsWidget* pWidget = qobject_cast<ZenoGraphsWidget*>(parent());
+    Q_ASSERT(pWidget);
+
+    QList<QAction*> actions = pWidget->getCategoryActions();
+    m_menu->addActions(actions);
     m_menu->exec(QCursor::pos());
 }

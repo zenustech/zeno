@@ -61,6 +61,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         this, SLOT(onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
     connect(m_subgraphModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
+    connect(m_subgraphModel, SIGNAL(rowsInserted(const QModelIndex &, int , int)),
+        this, SLOT(onRowsInserted(const QModelIndex&, int, int)));
     connect(m_subgraphModel, SIGNAL(linkChanged(bool, const QString&, const QString&, const QString&, const QString&)),
         this, SLOT(onLinkChanged(bool, const QString &, const QString &, const QString &, const QString &)));
 }
@@ -236,6 +238,15 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex &parent, int fi
         delete pNode;
         m_nodes.erase(id);
     }
+}
+
+void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int last)
+{
+    QModelIndex idx = m_subgraphModel->index(first, 0);
+    ZenoNode *pNode = new ZenoNode(m_nodeParams);
+    pNode->init(idx);
+    addItem(pNode);
+    m_nodes.insert(std::make_pair(pNode->nodeId(), pNode));
 }
 
 void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)

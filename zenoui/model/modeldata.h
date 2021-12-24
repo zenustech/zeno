@@ -91,5 +91,11 @@ struct NODE_DESC {
 };
 typedef QMap<QString, NODE_DESC> NODE_DESCS;
 
+struct NODE_CATE {
+    QString name;
+    QStringList nodes;
+};
+typedef QMap<QString, NODE_CATE> NODE_CATES;
+
 
 #endif

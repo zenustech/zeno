@@ -13,10 +13,12 @@ public:
     ZenoGraphsWidget(QWidget* parent = nullptr);
     void setGraphsModel(GraphsModel* pModel);
     void initDescriptors();
+    QList<QAction*> getCategoryActions();
 
 public slots:
 	void onRowsRemoved(const QModelIndex &parent, int first, int last);
     void onSwitchGraph(const QString& graphName);
+    void onNewNodeCreated(const QString& descName);
 
 private:
 	std::map<QString, ZenoSubGraphView*> m_views;

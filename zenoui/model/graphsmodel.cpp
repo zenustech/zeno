@@ -40,6 +40,11 @@ SubGraphModel* GraphsModel::subGraph(int idx)
     return nullptr;
 }
 
+SubGraphModel* GraphsModel::currentGraph()
+{
+    return subGraph(m_currentIndex);
+}
+
 int GraphsModel::graphCounts() const
 {
     return this->rowCount();
@@ -135,7 +140,22 @@ NODE_DESCS GraphsModel::descriptors() const
 void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
 {
     m_nodesDesc = nodeDescs;
-    //todo: setdefault cat
+    m_nodesCate.clear();
+    for (auto it = m_nodesDesc.constBegin(); it != m_nodesDesc.constEnd(); it++)
+    {
+        const QString& name = it.key();
+        const NODE_DESC& desc = it.value();
+        for (auto cate : desc.categories)
+        {
+            m_nodesCate[cate].name = cate;
+            m_nodesCate[cate].nodes.push_back(name);
+        }
+    }
+}
+
+NODE_CATES GraphsModel::getCates()
+{
+    return m_nodesCate;
 }
 
 void GraphsModel::onCurrentIndexChanged(int row)

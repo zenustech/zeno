@@ -28,7 +28,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
         auto params = objValue["params"].GetArray();
         auto categories = objValue["categories"].GetArray();
 
-        NODE_DESC pack;
+        NODE_DESC desc;
 
         for (int i = 0; i < inputs.Size(); i++) {
             if (inputs[i].IsArray()) {
@@ -42,7 +42,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 inputSocket.info.type = socketType;
                 inputSocket.info.control = _getControlType(socketType);
                 inputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
-                pack.inputs.insert(socketName, inputSocket);
+                desc.inputs.insert(socketName, inputSocket);
             } else {
             }
         }
@@ -61,7 +61,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 paramInfo.typeDesc = socketType;
                 paramInfo.defaultValue = _parseDefaultValue(socketDefl);
 
-                pack.params.insert(socketName, paramInfo);
+                desc.params.insert(socketName, paramInfo);
             }
         }
 
@@ -78,12 +78,17 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 outputSocket.info.control = _getControlType(socketType);
                 outputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
 
-                pack.outputs.insert(socketName, outputSocket);
+                desc.outputs.insert(socketName, outputSocket);
             } else {
             }
         }
         
-        _descs.insert(name, pack);
+        for (int i = 0; i < categories.Size(); i++)
+        {
+            desc.categories.push_back(categories[i].GetString());
+        }
+
+        _descs.insert(name, desc);
     }
     return _descs;
 }

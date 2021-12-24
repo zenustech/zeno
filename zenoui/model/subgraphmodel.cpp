@@ -42,6 +42,7 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
 {
     if (!pItem)
         return;
+
     const QString &id = pItem->data(ROLE_OBJID).toString();
     const QString &name = pItem->data(ROLE_OBJNAME).toString();
     Q_ASSERT(!id.isEmpty() && !name.isEmpty() &&
@@ -52,6 +53,8 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
     int nRow = m_nodes.size() - 1;
     m_row2Key.insert(std::make_pair(nRow, id));
     m_key2Row.insert(std::make_pair(id, nRow));
+
+    insertRows(nRow, 1);
 }
 
 void SubGraphModel::removeNode(const QModelIndex& index)
@@ -251,6 +254,10 @@ bool SubGraphModel::insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &pa
     m_row2Key[row] = id;
     m_key2Row[id] = row;
     m_name2Id[name] = id;
+
+    QModelIndex idx = createIndex(row, 0, pItem.get());
+    insertRows(row, 1, idx);
+
     return true;
 }
 
@@ -272,11 +279,14 @@ bool SubGraphModel::removeRow(int row, const QModelIndex &parent)
     m_key2Row.erase(id);
     m_nodes.erase(id);
     //emit rowsRemoved(parent, row, row);
+
     return true;
 }
 
 bool SubGraphModel::insertRows(int row, int count, const QModelIndex& parent)
 {
+    beginInsertRows(parent, row, row);
+    endInsertRows();
     return false;
 }
 

@@ -17,11 +17,13 @@ public:
     ~GraphsModel();
     SubGraphModel* subGraph(const QString& id);
     SubGraphModel *subGraph(int idx);
+    SubGraphModel *currentGraph();
     int graphCounts() const;
     NODE_DESCS descriptors() const;
     void setDescriptors(const NODE_DESCS &nodesParams);
     void initDescriptors();
     NODE_DESCS getSubgraphDescs();
+    NODE_CATES getCates();
 
 signals:
     void itemSelected(int);
@@ -35,6 +37,7 @@ private slots:
 private:
     QItemSelectionModel* m_selection;
     NODE_DESCS m_nodesDesc;
+    NODE_CATES m_nodesCate;
     int m_currentIndex;
 };
 

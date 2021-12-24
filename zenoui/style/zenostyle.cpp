@@ -624,6 +624,7 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
             QStyleOptionMenuItem newMI = *menuitem;
             newMI.rect = vSubMenuRect;
             newMI.state = dis ? State_None : State_Enabled;
+            newMI.palette.setColor(QPalette::ButtonText, QColor(214, 214, 214));    //arrow color
             proxy()->drawPrimitive(arrow, &newMI, painter, widget);
         }
     }
