@@ -9,7 +9,7 @@
 using namespace std;
 
 
-ResizableItemImpl::ResizableItemImpl(NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem *parent)
+ResizableItemImpl::ResizableItemImpl(DESIGNER_NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem *parent)
     : QGraphicsObject(parent)
     , m_id(id)
     , m_type(type)

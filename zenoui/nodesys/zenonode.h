@@ -52,8 +52,8 @@ protected:
     bool sceneEvent(QEvent* event) override;
 
 private:
-    ZenoBackgroundWidget* initBodyWidget();
-    ZenoBackgroundWidget* initHeaderBgWidget();
+    ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
+    ZenoBackgroundWidget* initHeaderBgWidget(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
     void initIndependentWidgets();
     void _updateSocketItemPos();

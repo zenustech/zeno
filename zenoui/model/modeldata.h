@@ -16,6 +16,12 @@ enum PARAM_CONTROL {
     CONTROL_HEAPMAP,
 };
 
+enum NODE_TYPE {
+    NORMAL_NODE,
+    HEATMAP_NODE,
+    BLACKBOARD_NODE,
+};
+
 struct PARAM_INFO {
     QString name;
     QVariant defaultValue;

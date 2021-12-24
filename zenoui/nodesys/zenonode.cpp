@@ -82,12 +82,16 @@ void ZenoNode::init(const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
 
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_OBJTYPE).toInt());
+
     m_collaspedWidget = initCollaspedWidget();
     m_collaspedWidget->setVisible(m_bCollasped);
 
-    m_headerWidget = initHeaderBgWidget();
-    initIndependentWidgets();
-    m_bodyWidget = initBodyWidget();
+    m_headerWidget = initHeaderBgWidget(type);
+    if (type != BLACKBOARD_NODE) {
+        initIndependentWidgets();
+    }
+    m_bodyWidget = initBodyWidget(type);
 
     QGraphicsLinearLayout* pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
     pMainLayout->addItem(m_collaspedWidget);
@@ -141,11 +145,6 @@ ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
     QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
     const QString &name = m_index.data(ROLE_OBJNAME).toString();
-    if (name == "MakeHeatmap") {
-        int j;
-        j = 0;
-    }
-
     QFont font = m_renderParams.nameFont;
     font.setPointSize(font.pointSize() + 4);
     ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, font, m_renderParams.nameClr.color());
@@ -164,7 +163,7 @@ ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
     return widget;
 }
 
-ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
+ZenoBackgroundWidget *ZenoNode::initHeaderBgWidget(NODE_TYPE type)
 {
     ZenoBackgroundWidget* headerWidget = new ZenoBackgroundWidget(this);
 
@@ -202,7 +201,7 @@ ZenoBackgroundWidget* ZenoNode::initHeaderBgWidget()
     return headerWidget;
 }
 
-ZenoBackgroundWidget* ZenoNode::initBodyWidget()
+ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
 {
     ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
 
@@ -212,23 +211,35 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget()
 
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
 
-    if (QGraphicsGridLayout *pParamsLayout = initParams())
+    if (type != BLACKBOARD_NODE)
     {
-        pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
-        pVLayout->addItem(pParamsLayout);
-    }
-    if (QGraphicsGridLayout *pSocketsLayout = initSockets())
-    {
-        pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
-        pVLayout->addItem(pSocketsLayout);
-    }
+        if (QGraphicsGridLayout *pParamsLayout = initParams()) {
+            pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
+            pVLayout->addItem(pParamsLayout);
+        }
+        if (QGraphicsGridLayout *pSocketsLayout = initSockets()) {
+            pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
+            pVLayout->addItem(pSocketsLayout);
+        }
 
-    //heapmap stays at the bottom of node layout.
-    COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
-    if (!ramps.isEmpty())
+        //heapmap stays at the bottom of node layout.
+        COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
+        if (!ramps.isEmpty()) {
+            ZenoHeatMapItem *pItem = new ZenoHeatMapItem(ramps);
+            pVLayout->addItem(pItem);
+        }
+    }
+    else
     {
-        ZenoHeatMapItem *pItem = new ZenoHeatMapItem(ramps);
-        pVLayout->addItem(pItem);
+        bodyWidget->setColors(QColor(27, 27, 27), QColor(27, 27, 27), QColor(27, 27, 27));
+
+        const QString& content = m_index.data(ROLE_BLACKBOARD_CONTENT).toString();
+        ZenoParamMultilineStr *pStr = new ZenoParamMultilineStr(content);
+        const QSize &sz = m_index.data(ROLE_BLACKBOARD_SIZE).toSize();
+        pStr->setMinimumSize(sz);
+        pStr->setMaximumSize(sz);
+
+        pVLayout->addItem(pStr);
     }
 
     bodyWidget->setLayout(pVLayout);

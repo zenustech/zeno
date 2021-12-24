@@ -36,7 +36,7 @@ class ResizableItemImpl : public QGraphicsObject
     };
 
 public:
-    ResizableItemImpl(NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem* parent = nullptr);
+    ResizableItemImpl(DESIGNER_NODE_TYPE type, const QString& id, const QRectF& sceneRc, QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     QRectF boundingRect() const override;
     QRectF coreItemSceneRect();
@@ -50,7 +50,7 @@ public:
     void setContent(NODE_CONTENT content) { m_content = content; }
     bool isLocked() const;
     QString getId() const;
-    NODE_TYPE getType() const { return m_type; }
+    DESIGNER_NODE_TYPE getType() const { return m_type; }
     NODE_CONTENT getContent() const { return m_content; }
     void resetZValue();
 
@@ -96,7 +96,7 @@ private:
     qreal m_width;
     qreal m_height;
 
-    NODE_TYPE m_type;
+    DESIGNER_NODE_TYPE m_type;
     NODE_CONTENT m_content;
 
     bool m_showBdr;

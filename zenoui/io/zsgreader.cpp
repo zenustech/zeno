@@ -82,28 +82,56 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         }
 
         pItem->setData(nameValue.GetString(), ROLE_OBJNAME);
+        pItem->setData(NORMAL_NODE, ROLE_OBJTYPE);
 
-        INPUT_SOCKETS inputs = descriptors[name].inputs;
-        _parseInputs(inputs, objValue["inputs"]);
-        pItem->setData(QVariant::fromValue(inputs), ROLE_INPUTS);
+        if (objValue.HasMember("inputs"))
+        {
+            INPUT_SOCKETS inputs = descriptors[name].inputs;
+            _parseInputs(inputs, objValue["inputs"]);
+            pItem->setData(QVariant::fromValue(inputs), ROLE_INPUTS);
+        }
 
         OUTPUT_SOCKETS outputs = descriptors[name].outputs;
         pItem->setData(QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
-        PARAMS_INFO params = descriptors[name].params;
-        _parseParams(params, objValue["params"]);
-        pItem->setData(QVariant::fromValue(params), ROLE_PARAMETERS);
-
-        auto uipos = objValue["uipos"].GetArray();
-        pItem->setData(QPointF(uipos[0].GetFloat(), uipos[1].GetFloat()), ROLE_OBJPOS);
-
+        if (objValue.HasMember("params"))
+        {
+            PARAMS_INFO params = descriptors[name].params;
+            _parseParams(params, objValue["params"]);
+            pItem->setData(QVariant::fromValue(params), ROLE_PARAMETERS);
+        }
+        if (objValue.HasMember("uipos"))
+        {
+            auto uipos = objValue["uipos"].GetArray();
+            pItem->setData(QPointF(uipos[0].GetFloat(), uipos[1].GetFloat()), ROLE_OBJPOS);
+        }
         if (objValue.HasMember("color_ramps"))
         {
             COLOR_RAMPS colorRamps;
             _parseColorRamps(colorRamps, objValue["color_ramps"]);
+            pItem->setData(HEATMAP_NODE, ROLE_OBJTYPE);
             pItem->setData(QVariant::fromValue(colorRamps), ROLE_COLORRAMPS);
         }
-
+        if (name == "Blackboard")
+        {
+            pItem->setData(BLACKBOARD_NODE, ROLE_OBJTYPE);
+            if (objValue.HasMember("special"))
+            {
+                pItem->setData(objValue["special"].GetBool(), ROLE_BLACKBOARD_SPECIAL);
+            }
+            pItem->setData(objValue.HasMember("title") ? objValue["title"].GetString() : "", ROLE_BLACKBOARD_TITLE);
+            pItem->setData(objValue.HasMember("content") ? objValue["content"].GetString() : "", ROLE_BLACKBOARD_TITLE);
+            if (objValue.HasMember("width") && objValue.HasMember("height"))
+            {
+                qreal w = objValue["width"].GetFloat();
+                qreal h = objValue["height"].GetFloat();
+                pItem->setData(QSizeF(w, h), ROLE_BLACKBOARD_SIZE);
+            }
+            if (objValue.HasMember("params"))
+            {
+                //todo
+            }
+        }
         pModel->appendItem(pItem);
     }
     _parseOutputConnections(pModel);
@@ -181,21 +209,26 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value
     for (INPUT_SOCKET& inputSocket : inputSockets)
     {
         QByteArray bytes = inputSocket.info.name.toUtf8();
-        const auto &arr = inputsObj[bytes.data()].GetArray();
-        RAPIDJSON_ASSERT(arr.Size() == 3);
-        if (!arr[0].IsNull())
+        const auto &inputObj = inputsObj[bytes.data()];
+        if (inputObj.IsArray())
         {
-            const QString &outId = arr[0].GetString();
-            if (!arr[1].IsNull())
+            const auto &arr = inputsObj[bytes.data()].GetArray();
+            RAPIDJSON_ASSERT(arr.Size() >= 2);
+            if (!arr[0].IsNull())
             {
-                const QString socketName = arr[1].GetString();
-                inputSocket.outNodes[outId][socketName] = SOCKET_INFO(outId, socketName);
-            }
-            //to ask: default value type else
-            if (arr[2].GetType() == rapidjson::kStringType) {
-                inputSocket.info.defaultValue = arr[2].GetString();
-            } else if (arr[2].GetType() == rapidjson::kNumberType) {
-                inputSocket.info.defaultValue = arr[2].GetFloat();
+                const QString &outId = arr[0].GetString();
+                if (!arr[1].IsNull()) {
+                    const QString socketName = arr[1].GetString();
+                    inputSocket.outNodes[outId][socketName] = SOCKET_INFO(outId, socketName);
+                }
+                //to ask: default value type else
+                if (arr.Size() > 2) {
+                    if (arr[2].GetType() == rapidjson::kStringType) {
+                        inputSocket.info.defaultValue = arr[2].GetString();
+                    } else if (arr[2].GetType() == rapidjson::kNumberType) {
+                        inputSocket.info.defaultValue = arr[2].GetFloat();
+                    }
+                }
             }
         }
     }
@@ -203,26 +236,24 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value
 
 void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonParams)
 {
-    const auto &paramsObj = jsonParams.GetObject();
-    for (PARAM_INFO& param : params)
+    if (jsonParams.IsObject())
     {
-        const QString &name = param.name;
-        QByteArray bytes = name.toUtf8();
-        const auto& paramObj = paramsObj[bytes.data()];
-        rapidjson::Type type = paramObj.GetType();
-        param.bEnableConnect = false;
-        if (type == rapidjson::kNullType)
-        {
-        }
-        else if (type == rapidjson::kStringType)
-        {
-            param.value = paramObj.GetString();
-        }
-        else if (type == rapidjson::kNumberType)
-        {
-            param.value = paramObj.GetDouble();
+        const auto &paramsObj = jsonParams.GetObject();
+        for (PARAM_INFO &param : params) {
+            const QString &name = param.name;
+            QByteArray bytes = name.toUtf8();
+            const auto &paramObj = paramsObj[bytes.data()];
+            rapidjson::Type type = paramObj.GetType();
+            param.bEnableConnect = false;
+            if (type == rapidjson::kNullType) {
+            } else if (type == rapidjson::kStringType) {
+                param.value = paramObj.GetString();
+            } else if (type == rapidjson::kNumberType) {
+                param.value = paramObj.GetDouble();
+            }
         }
     }
+    
 
     //TODO: input data may be part of param in the future and vice versa, 
     /*

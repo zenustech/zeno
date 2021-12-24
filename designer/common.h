@@ -20,7 +20,7 @@ enum NODE_ID
     ELEMENT,
 };
 
-enum NODE_TYPE
+enum DESIGNER_NODE_TYPE
 {
     NT_HIGHLAYER,
     NT_COMPONENT,
