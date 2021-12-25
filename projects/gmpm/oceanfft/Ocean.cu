@@ -254,6 +254,7 @@ struct OceanFFT : zeno::IObject{
     float timeScale;
     float timeShift;
     float speed;
+    float dt;
 
     float choppyness;
     int WaveExponent = 8;
@@ -643,23 +644,24 @@ struct OceanCompute : zeno::INode {
     // execute inverse FFT to convert to spatial domain
     // update heightmap values
     //-----------------------------------------------------------------------------------
+    auto CalOcean = get_input<OceanFFT>("ocean_FFT");
     auto depth = get_input<zeno::NumericObject>("depth")->get<float>();
     auto ingrid = get_input<zeno::PrimitiveObject>("grid");
-    auto t = get_input<zeno::NumericObject>("time")->get<float>();
+    auto t = CalOcean->timeScale*get_input<zeno::NumericObject>("time")->get<float>();
     auto t2 = t;
     float dt_inv = 0;
     if(has_input("dt"))
     {
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        auto dt = CalOcean->timeScale * get_input<zeno::NumericObject>("dt")->get<float>();
         t2 = t + dt;
         dt_inv = 1.0/dt;
     }
 
-    auto CalOcean = get_input<OceanFFT>("ocean_FFT");
+    
 
     
     //--------------------------------------------------------------------------------------------------
-    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + t, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht.data(), CalOcean->d_ht.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx.data(), CalOcean->Dx.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz.data(), CalOcean->Dz.data(), CUFFT_INVERSE);
@@ -675,7 +677,7 @@ struct OceanCompute : zeno::INode {
     cudaMemcpy(CalOcean->g_hDx, CalOcean->Dx.data(), sizeof(float2)*CalOcean->meshSize * CalOcean->meshSize, cudaMemcpyDeviceToHost);
     cudaMemcpy(CalOcean->g_hDz, CalOcean->Dz.data(), sizeof(float2)*CalOcean->meshSize * CalOcean->meshSize, cudaMemcpyDeviceToHost);
 
-    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t2, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + t2, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht.data(), CalOcean->d_ht.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx.data(), CalOcean->Dx.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz.data(), CalOcean->Dz.data(), CUFFT_INVERSE);
@@ -781,6 +783,7 @@ struct OceanCompute : zeno::INode {
     
     //grid->userData.get("h") = std::make_shared<NumericObject>(CalOcean->L_scale * h);
     //grid->userData.get("transform") = std::make_shared<NumericObject>(0.5f * zeno::vec3f(CalOcean->L_scale * CalOcean->patchSize, 0, CalOcean->L_scale * CalOcean->patchSize));
+    grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2-t));
     set_output("OceanData", grid);
     }
 };
@@ -803,23 +806,24 @@ struct OceanCuCompute : zeno::INode {
     // execute inverse FFT to convert to spatial domain
     // update heightmap values
     //-----------------------------------------------------------------------------------
+    auto CalOcean = get_input<OceanFFT>("ocean_FFT");
     auto depth = get_input<zeno::NumericObject>("depth")->get<float>();
     auto ingrid = get_input<zeno::PrimitiveObject>("grid");
-    auto t = get_input<zeno::NumericObject>("time")->get<float>();
+    auto t = CalOcean->timeScale*get_input<zeno::NumericObject>("time")->get<float>();
     auto t2 = t;
     float dt_inv = 0;
     if(has_input("dt"))
     {
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        auto dt = CalOcean->timeScale*get_input<zeno::NumericObject>("dt")->get<float>();
         t2 = t + dt;
         dt_inv = 1.0/dt;
     }
 
-    auto CalOcean = get_input<OceanFFT>("ocean_FFT");
+    
 
     
     //--------------------------------------------------------------------------------------------------
-    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + t, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht.data(), CalOcean->d_ht.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx.data(), CalOcean->Dx.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz.data(), CalOcean->Dz.data(), CUFFT_INVERSE);
@@ -845,7 +849,7 @@ struct OceanCuCompute : zeno::INode {
     backup_device_data(CalOcean->prevDz, CalOcean->Dz);
 
 
-    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + CalOcean->timeScale*t2, CalOcean->patchSize);
+    GenerateSpectrumKernel(CalOcean->d_h0.data(), CalOcean->d_ht.data(), CalOcean->Dx.data(), CalOcean->Dz.data(), CalOcean->g, -depth/CalOcean->L_scale, CalOcean->spectrumW, CalOcean->meshSize, CalOcean->meshSize, CalOcean->timeShift + t2, CalOcean->patchSize);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->d_ht.data(), CalOcean->d_ht.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dx.data(), CalOcean->Dx.data(), CUFFT_INVERSE);
     cufftExecC2C(CalOcean->fftPlan, CalOcean->Dz.data(), CalOcean->Dz.data(), CUFFT_INVERSE);
@@ -961,7 +965,7 @@ struct OceanCuCompute : zeno::INode {
     write_back(mapx, CalOcean->d_mapx);
     write_back(repos, CalOcean->d_repos);
     write_back(revel, CalOcean->d_revel);
-
+    grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2-t));
     set_output("OceanData", grid);
     }
 };
