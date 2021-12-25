@@ -163,7 +163,7 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
     ZenoGraphsWidget* pWidget = qobject_cast<ZenoGraphsWidget*>(parent());
     Q_ASSERT(pWidget);
 
-    QList<QAction*> actions = pWidget->getCategoryActions();
+    QList<QAction*> actions = pWidget->getCategoryActions(mapToScene(pos));
     m_menu->addActions(actions);
     m_menu->exec(QCursor::pos());
 }

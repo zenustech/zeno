@@ -97,8 +97,9 @@ QRectF ZenoBackgroundWidget::boundingRect() const
     return _base::boundingRect();
 }
 
-void ZenoBackgroundWidget::setColors(const QColor& clrNormal, const QColor& clrHovered, const QColor& clrSelected)
+void ZenoBackgroundWidget::setColors(bool bAcceptHovers, const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected)
 {
+    setAcceptHoverEvents(bAcceptHovers);
     m_clrNormal = clrNormal;
     m_clrHovered = clrHovered;
     m_clrSelected = clrSelected;

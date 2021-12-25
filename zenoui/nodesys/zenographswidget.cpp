@@ -46,7 +46,7 @@ void ZenoGraphsWidget::initDescriptors()
     }
 }
 
-QList<QAction *> ZenoGraphsWidget::getCategoryActions()
+QList<QAction*> ZenoGraphsWidget::getCategoryActions(QPointF scenePos)
 {
     NODE_CATES cates = m_model->getCates();
     QList<QAction *> acts;
@@ -67,7 +67,7 @@ QList<QAction *> ZenoGraphsWidget::getCategoryActions()
             QAction* pChildAction = pChildMenu->addAction(name);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, this, [=]() {
-                onNewNodeCreated(name);
+                onNewNodeCreated(name, scenePos);
             });
         }
         pAction->setMenu(pChildMenu);
@@ -76,19 +76,20 @@ QList<QAction *> ZenoGraphsWidget::getCategoryActions()
     return acts;
 }
 
-void ZenoGraphsWidget::onNewNodeCreated(const QString& descName)
+void ZenoGraphsWidget::onNewNodeCreated(const QString& descName, const QPointF& pt)
 {
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC &desc = descs[descName];
 
     NODEITEM_PTR pItem(new PlainNodeItem);
-    const QString &nodeid = "xxx";     //todo: id generation
+    const QString &nodeid = UiHelper::generateUuid(descName);
     pItem->setData(nodeid, ROLE_OBJID);
     pItem->setData(descName, ROLE_OBJNAME);
     pItem->setData(NORMAL_NODE, ROLE_OBJTYPE);
     pItem->setData(QVariant::fromValue(desc.inputs), ROLE_INPUTS);
     pItem->setData(QVariant::fromValue(desc.outputs), ROLE_OUTPUTS);
     pItem->setData(QVariant::fromValue(desc.params), ROLE_PARAMETERS);
+    pItem->setData(pt, ROLE_OBJPOS);
 
     SubGraphModel* pModel = m_model->currentGraph();
     int row = pModel->rowCount();

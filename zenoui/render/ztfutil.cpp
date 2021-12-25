@@ -161,7 +161,9 @@ BackgroundComponent ZtfUtil::_parseBackground(rapidxml::xml_node<>* node)
     }
     if (auto attr = node->first_attribute("hoverd-clr"))
     {
-        comp.clr_hovered = QColor(attr->value());
+        QString val(attr->value());
+        comp.bAcceptHovers = !val.isEmpty();
+        comp.clr_hovered = QColor(val);
     }
     if (auto attr = node->first_attribute("selected-clr"))
     {

@@ -14,7 +14,7 @@
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
 		</component>
-		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="10px 10px 0px 0px" normal-clr="#27497C" hoverd-clr="#27497C" selected-clr="#821EA8">
+		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="10px 10px 0px 0px" normal-clr="#27497C" hoverd-clr="" selected-clr="#821EA8">
 			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
 		</background>
 	</header>

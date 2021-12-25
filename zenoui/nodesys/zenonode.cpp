@@ -157,7 +157,7 @@ ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
     ZenoBackgroundWidget *widget = new ZenoBackgroundWidget(this);
     widget->setRadius(10, 10, 10, 10);
     const auto &headerBg = m_renderParams.headerBg;
-    widget->setColors(headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+    widget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
 
     QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
@@ -186,7 +186,7 @@ ZenoBackgroundWidget *ZenoNode::initHeaderBgWidget(NODE_TYPE type)
 
     const auto &headerBg = m_renderParams.headerBg;
     headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
-    headerWidget->setColors(headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+    headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
 
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
@@ -218,7 +218,7 @@ ZenoBackgroundWidget *ZenoNode::initHeaderBgWidget(NODE_TYPE type)
     if (type == BLACKBOARD_NODE)
     {
         QColor clr(98, 108, 111);
-        headerWidget->setColors(clr, clr, clr);
+        headerWidget->setColors(false, clr, clr, clr);
     }
     return headerWidget;
 }
@@ -229,7 +229,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
 
     const auto &bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
-    bodyWidget->setColors(bodyBg.clr_normal, bodyBg.clr_hovered, bodyBg.clr_selected);
+    bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal, bodyBg.clr_hovered, bodyBg.clr_selected);
 
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
 
@@ -255,7 +255,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
     else
     {
         QColor clr(0, 0, 0);
-        bodyWidget->setColors(clr, clr, clr);
+        bodyWidget->setColors(false, clr, clr, clr);
         const QSize &sz = m_index.data(ROLE_BLACKBOARD_SIZE).toSize();
         const QString& content = m_index.data(ROLE_BLACKBOARD_CONTENT).toString();
 

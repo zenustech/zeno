@@ -36,7 +36,7 @@ public:
     ZenoBackgroundWidget(QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     QRectF boundingRect() const override;
     void setGeometry(const QRectF &rect) override;
-    void setColors(const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected);
+    void setColors(bool bAcceptHovers, const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected);
     void setRadius(int lt, int rt, int lb, int rb);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     void toggle(bool bSelected);

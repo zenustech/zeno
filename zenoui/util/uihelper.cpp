@@ -1,4 +1,5 @@
 #include "uihelper.h"
+#include <QUuid>
 
 
 NODE_DESCS UiHelper::loadDescsFromTempFile()
@@ -105,6 +106,12 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue)
         var = defaultValue;
     }
     return var;
+}
+
+QString UiHelper::generateUuid(const QString& name)
+{
+    QUuid uuid = QUuid::createUuid();
+    return QString::number(uuid.data1, 16) + "-" + name;
 }
 
 PARAM_CONTROL UiHelper::_getControlType(const QString &type)

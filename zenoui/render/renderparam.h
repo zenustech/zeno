@@ -47,6 +47,7 @@ struct BackgroundComponent
     QColor clr_normal, clr_hovered, clr_selected;
     int lt_radius, rt_radius, lb_radius, rb_radius;
     bool bApplyImage;
+    bool bAcceptHovers;
 };
 
 struct SocketComponent

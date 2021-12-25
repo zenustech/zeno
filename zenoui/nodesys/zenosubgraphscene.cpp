@@ -245,12 +245,15 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
     QModelIndex idx = m_subgraphModel->index(first, 0);
     ZenoNode *pNode = new ZenoNode(m_nodeParams);
     pNode->init(idx);
+    QString id = pNode->nodeId();
     addItem(pNode);
-    m_nodes.insert(std::make_pair(pNode->nodeId(), pNode));
+    m_nodes[id] = pNode;
 }
 
 void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 {
+    if (!pNode)
+        return;
     pNode->setPos(newPos);
     const QString& currNode = pNode->nodeId();
     const INPUT_SOCKETS& inputs = pNode->inputParams();
