@@ -8,7 +8,7 @@
       "WaveExponent": [
        null,
        null,
-       8
+       10
       ],
       "depth": [
        null,
@@ -18,7 +18,7 @@
       "chop": [
        null,
        null,
-       0.9
+       0.99
       ],
       "gravity": [
        null,
@@ -33,7 +33,7 @@
       "timeScale": [
        null,
        null,
-       1.0
+       3.0
       ],
       "patchSize": [
        null,
@@ -43,7 +43,7 @@
       "speed": [
        null,
        null,
-       300.0
+       500.0
       ],
       "timeshift": [
        null,
@@ -76,12 +76,12 @@
       "nx": [
        null,
        null,
-       512
+       1024
       ],
       "ny": [
        null,
        null,
-       512
+       1024
       ],
       "sizeX": [
        null,
@@ -356,11 +356,11 @@
       ]
      },
      "params": {
-      "value": 5.0
+      "value": 2.0
      },
      "uipos": [
-      -11848.644578313246,
-      -5939.382530120479
+      -11896.311921112436,
+      -6056.0153901610465
      ],
      "options": []
     },
@@ -382,8 +382,8 @@
       "name": "SimDx"
      },
      "uipos": [
-      -11535.843373493966,
-      -5887.198795180719
+      -11583.510716293153,
+      -6003.831655221287
      ],
      "options": []
     },
@@ -447,8 +447,8 @@
        null
       ],
       "dt": [
-       "3c56cfcc-GetFrameTime",
-       "time",
+       "1c517064-GetUserData",
+       "data",
        null
       ],
       "min_scale": [
@@ -572,8 +572,8 @@
       "value": 0.0
      },
      "uipos": [
-      -8581.758818949915,
-      -4769.3701593179585
+      -8848.718476376103,
+      -4843.3080678146935
      ],
      "options": []
     },
@@ -587,11 +587,11 @@
       ]
      },
      "params": {
-      "value": 20.0
+      "value": 15.0
      },
      "uipos": [
-      -8503.13478687027,
-      -4597.901178860731
+      -8667.801228159435,
+      -4985.465974894087
      ],
      "options": []
     },
@@ -609,8 +609,8 @@
       "_RAMPS": "5\n0 0 0 0.6995192307692307\n0.2552034147493232 0 0.25309065934065933 1\n0.528846153846154 0 0.8025412087912088 1\n0.8155219780219781 0 1 0.6181318681318682\n1 1 1 1"
      },
      "uipos": [
-      -8979.006007371745,
-      -4842.651639775186
+      -9072.396811969445,
+      -4975.55393862576
      ],
      "options": [],
      "color_ramps": [
@@ -763,17 +763,40 @@
       "clearFaces": true
      },
      "uipos": [
-      -11146.90004452359,
-      -5715.021148708813
+      -11150.547904445768,
+      -5692.526012522043
+     ],
+     "options": []
+    },
+    "1c517064-GetUserData": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "b34658e0-PrimitiveFaceToEdges",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "dt"
+     },
+     "uipos": [
+      -10837.183852140073,
+      -5497.3249027237325
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -9867.68734604446,
-    "y": -5157.66837663488,
-    "width": 624.9999999999997,
-    "height": 624.9999999999997
+    "x": -11509.232374865805,
+    "y": -5699.927197323979,
+    "width": 399.9999999999998,
+    "height": 399.9999999999998
    }
   },
   "OceanVolume": {
@@ -1026,8 +1049,8 @@
      },
      "params": {},
      "uipos": [
-      -9943.70352378299,
-      -4213.03833768407
+      -10058.78407172819,
+      -4157.161077410099
      ],
      "options": []
     },
@@ -1239,8 +1262,8 @@
       "value": "@pos = @mapPos\n@vel = @mapVel"
      },
      "uipos": [
-      -8956.61434053432,
-      -4247.274964381576
+      -9019.808861082262,
+      -4563.247567121294
      ],
      "options": []
     },
@@ -1903,8 +1926,8 @@
       "defl": ""
      },
      "uipos": [
-      -9011.619577907488,
-      -3601.1590121239296
+      -9440.365297085556,
+      -3558.2844402061223
      ],
      "options": []
     },
@@ -3723,8 +3746,8 @@
       "name": "SurfaceGeo"
      },
      "uipos": [
-      -9382.925888324664,
-      -3777.573604060829
+      -9456.981967091786,
+      -3776.2743746087735
      ],
      "options": []
     },
@@ -4835,10 +4858,10 @@
     }
    },
    "view_rect": {
-    "x": -10634.310641470758,
-    "y": -4090.835875736353,
-    "width": 1942.399999999948,
-    "height": 756.7999999999763
+    "x": 444.2667500767652,
+    "y": -6355.181945077628,
+    "width": 5927.734374999837,
+    "height": 2309.570312499924
    }
   },
   "VolumeTrail": {
@@ -11362,8 +11385,8 @@
      },
      "params": {},
      "uipos": [
-      3358.154327626351,
-      216.5136639447943
+      3516.228257587439,
+      318.65374176580565
      ],
      "options": []
     },
@@ -11999,10 +12022,10 @@
     }
    },
    "view_rect": {
-    "x": 3395.6211479489484,
-    "y": -151.52388205614318,
-    "width": 959.9999999999973,
-    "height": 799.9999999999978
+    "x": 2766.261156510704,
+    "y": -276.39614353373537,
+    "width": 1499.9999999999957,
+    "height": 1249.9999999999966
    }
   },
   "FLIPMakeEmitter": {
@@ -13284,6 +13307,46 @@
     "cgmesh"
    ]
   },
+  "AddBone": {
+   "inputs": [
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "node",
+     ""
+    ],
+    [
+     "",
+     "conn_to",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "bones_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "AddMuscleFibers2": {
    "inputs": [
     [
@@ -13728,6 +13791,46 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BlendPoses": {
+   "inputs": [
+    [
+     "",
+     "p1",
+     ""
+    ],
+    [
+     "",
+     "p2",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "bp",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "BlendPrimitiveByAttr": {
@@ -15863,6 +15966,62 @@
     "dict"
    ]
   },
+  "DoSkinning": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "pose",
+     ""
+    ],
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "W",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dshape",
+     ""
+    ],
+    [
+     "",
+     "dbones",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum LBS DQS",
+     "algorithm",
+     "LBS"
+    ]
+   ],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "DoStep": {
    "inputs": [
     [
@@ -16032,6 +16191,41 @@
    ],
    "categories": [
     "control"
+   ]
+  },
+  "EnqueueLevelSetSequence": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "EquationOfStateConfig": {
@@ -17439,6 +17633,46 @@
     "FLIPSolver"
    ]
   },
+  "GenerateSkinningWeight": {
+   "inputs": [
+    [
+     "",
+     "skinMesh",
+     ""
+    ],
+    [
+     "",
+     "skinBone",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "W",
+     ""
+    ],
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "GenerateSpectrum": {
    "inputs": [
     [
@@ -18636,6 +18870,36 @@
     "FEM"
    ]
   },
+  "LoadTFGPrimitiveFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "tfg",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "MPMStepping": {
    "inputs": [
     [
@@ -19290,6 +19554,36 @@
    ],
    "categories": [
     "FEM"
+   ]
+  },
+  "MakeEmptyBones": {
+   "inputs": [
+    [
+     "",
+     "root",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "MakeExplicitTimeIntegrator2": {
@@ -19989,6 +20283,36 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MakeRestPoses": {
+   "inputs": [
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "posesFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "MakeSmallList": {
@@ -24224,6 +24548,36 @@
     "particles"
    ]
   },
+  "ReadMesh": {
+   "inputs": [
+    [
+     "readpath",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "ReadMutable": {
    "inputs": [
     [
@@ -24374,6 +24728,41 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ReadPoseFrame": {
+   "inputs": [
+    [
+     "readpath",
+     "dmat_path",
+     ""
+    ],
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "posesFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "ReadStrainTrajFromFile": {
@@ -26934,12 +27323,7 @@
    "inputs": [
     [
      "",
-     "ZSSdfField",
-     ""
-    ],
-    [
-     "",
-     "ZSVelocityField",
+     "ZSLevelSet",
      ""
     ],
     [
@@ -27626,6 +28010,46 @@
    "params": [],
    "categories": [
     "Ocean"
+   ]
+  },
+  "UpdateLevelSetSequence": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "UpdateMutable": {
@@ -28929,6 +29353,101 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZSParticleNeighborWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "ZenoParticles",
+     "ZSNeighborParticles",
+     ""
+    ],
+    [
+     "ZenoIndexBuckets",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSParticleParticleWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "ZenoParticles",
+     "ZSNeighborParticles",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ZSParticleToZSGrid": {
