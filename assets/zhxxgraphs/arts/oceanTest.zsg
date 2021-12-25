@@ -63,8 +63,8 @@
      },
      "params": {},
      "uipos": [
-      -11958.295021536691,
-      -5464.9135463699595
+      -12171.848972008387,
+      -5918.738723256752
      ],
      "options": [
       "ONCE"
@@ -115,8 +115,8 @@
       "hasFaces": true
      },
      "uipos": [
-      -12332.22692501589,
-      -5179.098368559089
+      -12619.667962751737,
+      -5619.472778936445
      ],
      "options": []
     },
@@ -143,6 +143,16 @@
        "value",
        null
       ],
+      "regionalShape": [
+       "3cf47740-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "SimDx": [
+       "ffc19f5b-PortalOut",
+       "port",
+       2.0
+      ],
       "SRC": [
        null,
        null,
@@ -151,8 +161,8 @@
      },
      "params": {},
      "uipos": [
-      -11332.029221879482,
-      -5408.073317518973
+      -11390.907426140453,
+      -5653.463439629744
      ],
      "options": []
     },
@@ -169,8 +179,8 @@
       "value": 200.0
      },
      "uipos": [
-      -12102.274486664273,
-      -4925.765874872694
+      -12379.323869336471,
+      -5571.786721229822
      ],
      "options": []
     },
@@ -187,17 +197,95 @@
       "value": 5.0
      },
      "uipos": [
-      -11792.830929333579,
-      -4815.001237940065
+      -12208.330634522257,
+      -5360.402181336291
      ],
      "options": []
     },
-    "251a251b-ParticlesWrangle": {
+    "3cf47740-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       2.0
+      ],
+      "boundMin": [
+       "10db0641-NumericVec3",
+       "vec3",
+       null
+      ],
+      "boundMax": [
+       "4f5928f3-x",
+       "vec3",
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      -11753.034247840407,
+      -5205.939027335759
+     ],
+     "options": []
+    },
+    "10db0641-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -300.0,
+      "y": -100.0,
+      "z": -300.0
+     },
+     "uipos": [
+      -12008.402122641503,
+      -5148.1426886792415
+     ],
+     "options": []
+    },
+    "4f5928f3-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 300.0,
+      "y": 100.0,
+      "z": 300.0
+     },
+     "uipos": [
+      -12255.122346698106,
+      -5162.698997641508
+     ],
+     "options": []
+    },
+    "c29e68e8-x": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "4f351bc4-OceanVolume",
-       "oceanSurface",
+       "b34658e0-PrimitiveFaceToEdges",
+       "prim",
        null
       ],
       "zfxCode": [
@@ -218,15 +306,48 @@
      },
      "params": {},
      "uipos": [
-      -11051.225663783152,
-      -5158.5550170032075
+      -10913.095012075459,
+      -5772.350965822494
      ],
      "options": [
       "VIEW"
      ]
     },
-    "8bf56642-MakeHeatmap": {
-     "name": "MakeHeatmap",
+    "a717a32b-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
+     "inputs": {
+      "ParticleGeo": [
+       "4f351bc4-OceanVolume",
+       "waveParticles",
+       null
+      ],
+      "Dx": [
+       "7be8090d-x",
+       "port",
+       null
+      ],
+      "vdbPoints": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10667.308732928137,
+      -5090.926896309632
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "78ef6c77-NumericFloat": {
+     "name": "NumericFloat",
      "inputs": {
       "SRC": [
        null,
@@ -235,58 +356,153 @@
       ]
      },
      "params": {
-      "nres": 1024,
-      "_RAMPS": "5\n0 0 0.5295480715920569 1\n0.28675916580185823 0 1 1\n0.5126124845400427 0 1 0\n0.7551781982571191 1 1 0\n1 1 0.24299503859659097 0"
+      "value": 5.0
      },
      "uipos": [
-      -9656.416350410333,
-      -4601.672908097002
+      -11848.644578313246,
+      -5939.382530120479
      ],
-     "options": [],
-     "color_ramps": [
-      [
-       0,
-       [
-        0,
-        0.5295480715920569,
-        1
-       ]
+     "options": []
+    },
+    "c063a8b3-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "78ef6c77-NumericFloat",
+       "value",
+       null
       ],
-      [
-       0.28675916580185823,
-       [
-        0,
-        1,
-        1
-       ]
-      ],
-      [
-       0.5126124845400427,
-       [
-        0,
-        1,
-        0
-       ]
-      ],
-      [
-       0.7551781982571191,
-       [
-        1,
-        1,
-        0
-       ]
-      ],
-      [
-       1,
-       [
-        1,
-        0.24299503859659097,
-        0
-       ]
+      "SRC": [
+       null,
+       null,
+       null
       ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      -11535.843373493966,
+      -5887.198795180719
+     ],
+     "options": []
+    },
+    "ffc19f5b-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      -11775.790662650596,
+      -5448.042168674697
+     ],
+     "options": []
+    },
+    "7be8090d-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      -10933.863179789498,
+      -4992.817301038523
+     ],
+     "options": []
+    },
+    "b0f01247-StepFLIPWorld": {
+     "name": "StepFLIPWorld",
+     "inputs": {
+      "World": [
+       "fd44f8d9-MakeFLIPWorld",
+       "World",
+       null
+      ],
+      "Particles": [
+       "a717a32b-PrimToVDBPointDataGrid",
+       "Particles",
+       null
+      ],
+      "Environ": [
+       "4f351bc4-OceanVolume",
+       "OceanEviron",
+       null
+      ],
+      "gravity": [
+       "4239a45b-NumericVec3",
+       "vec3",
+       null
+      ],
+      "dt": [
+       "3c56cfcc-GetFrameTime",
+       "time",
+       null
+      ],
+      "min_scale": [
+       null,
+       null,
+       null
+      ],
+      "dt_scale": [
+       null,
+       null,
+       null
+      ],
+      "particleApplyForce": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9748.093833481742,
+      -5339.5244909960375
+     ],
+     "options": []
+    },
+    "fd44f8d9-MakeFLIPWorld": {
+     "name": "MakeFLIPWorld",
+     "inputs": {
+      "dx": [
+       "7be8090d-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10554.405120481919,
+      -5470.632530120475
+     ],
+     "options": [
+      "ONCE"
      ]
     },
-    "35d042fd-NumericVec3": {
+    "4239a45b-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
       "SRC": [
@@ -297,543 +513,267 @@
      },
      "params": {
       "x": 0.0,
-      "y": 0.0,
-      "z": 1.0
-     },
-     "uipos": [
-      -10685.735902379114,
-      -4218.20735561277
-     ],
-     "options": []
-    },
-    "b538bba2-Curvemap": {
-     "name": "Curvemap",
-     "inputs": {
-      "curvemap": [
-       "f1f98cc8-MakeCurvemap",
-       "curvemap",
-       null
-      ],
-      "value": [
-       "066ebe09-GetFrameNum",
-       "FrameNum",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -10397.441513633967,
-      -4171.211074888318
-     ],
-     "options": []
-    },
-    "f1f98cc8-MakeCurvemap": {
-     "name": "MakeCurvemap",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "input_min": 0.0,
-      "input_max": 200.0,
-      "output_min": -1000.0,
-      "output_max": 1000.0,
-      "_POINTS": "2 0 0 1 1",
-      "_HANDLERS": "0 0 0.16666666666666666 0.16666666666666666 -0.16666666666666666 -0.16666666666666666 0 0"
-     },
-     "uipos": [
-      -10873.468357100977,
-      -4336.961398303581
-     ],
-     "options": [],
-     "points": [
-      [
-       0,
-       0
-      ],
-      [
-       1,
-       1
-      ]
-     ],
-     "handlers": [
-      [
-       [
-        0,
-        0
-       ],
-       [
-        0.16666666666666666,
-        0.16666666666666666
-       ]
-      ],
-      [
-       [
-        -0.16666666666666666,
-        -0.16666666666666666
-       ],
-       [
-        0,
-        0
-       ]
-      ]
-     ]
-    },
-    "066ebe09-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -10690.53659772194,
-      -4115.624076181978
-     ],
-     "options": []
-    },
-    "ed26a88d-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "35d042fd-NumericVec3",
-       "vec3",
-       null
-      ],
-      "rhs": [
-       "b538bba2-Curvemap",
-       "res",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      -9950.724178575758,
-      -4207.595292223375
-     ],
-     "options": []
-    },
-    "a1854c02-VolumeTrail": {
-     "name": "VolumeTrail",
-     "inputs": {
-      "dt": [
-       "2db8d974-NumericFloat",
-       "value",
-       null
-      ],
-      "maxLen": [
-       null,
-       null,
-       null
-      ],
-      "vecField": [
-       "4f351bc4-OceanVolume",
-       "velField",
-       null
-      ],
-      "steps": [
-       "94122d0d-x",
-       "value",
-       null
-      ],
-      "ny": [
-       "5c3c3bad-NumericInt",
-       "value",
-       null
-      ],
-      "nx": [
-       "5c3c3bad-NumericInt",
-       "value",
-       null
-      ],
-      "size": [
-       "1f3c68d8-NumericFloat",
-       "value",
-       null
-      ],
-      "dir": [
-       "bbac5b70-x",
-       "value",
-       null
-      ],
-      "center": [
-       "ed26a88d-NumericOperator",
-       "ret",
-       null
-      ],
-      "heatmap": [
-       "8bf56642-MakeHeatmap",
-       "heatmap",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -9043.415143603957,
-      -4771.5396066840785
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "5c3c3bad-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 256
-     },
-     "uipos": [
-      -9603.508044954726,
-      -4939.396274660409
-     ],
-     "options": []
-    },
-    "bbac5b70-x": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0
-     },
-     "uipos": [
-      -9572.46017949547,
-      -4759.57738720892
-     ],
-     "options": []
-    },
-    "1f3c68d8-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 2000.0
-     },
-     "uipos": [
-      -9843.482171733502,
-      -4841.078034039453
-     ],
-     "options": []
-    },
-    "2db8d974-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.1
-     },
-     "uipos": [
-      -9593.158756468301,
-      -5098.516585139064
-     ],
-     "options": []
-    },
-    "94122d0d-x": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 5
-     },
-     "uipos": [
-      -9829.25190006468,
-      -4979.499767545277
-     ],
-     "options": []
-    },
-    "0ecd9118-x": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 5
-     },
-     "uipos": [
-      -10235.914163725181,
-      -5743.376055047552
-     ],
-     "options": []
-    },
-    "de9f80d4-x": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 3
-     },
-     "uipos": [
-      -9979.122443155971,
-      -5523.453674711195
-     ],
-     "options": []
-    },
-    "53889c52-x": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 256
-     },
-     "uipos": [
-      -10010.170308615227,
-      -5703.272562162684
-     ],
-     "options": []
-    },
-    "16ed8cf9-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 2000.0
-     },
-     "uipos": [
-      -10250.144435394002,
-      -5604.954321541728
-     ],
-     "options": []
-    },
-    "ccfbd145-x": {
-     "name": "VolumeTrail",
-     "inputs": {
-      "dt": [
-       "dd7efd3a-x",
-       "value",
-       null
-      ],
-      "maxLen": [
-       null,
-       null,
-       null
-      ],
-      "vecField": [
-       "4f351bc4-OceanVolume",
-       "velField",
-       null
-      ],
-      "steps": [
-       "0ecd9118-x",
-       "value",
-       null
-      ],
-      "ny": [
-       "53889c52-x",
-       "value",
-       null
-      ],
-      "nx": [
-       "53889c52-x",
-       "value",
-       null
-      ],
-      "size": [
-       "16ed8cf9-x",
-       "value",
-       null
-      ],
-      "dir": [
-       "de9f80d4-x",
-       "value",
-       null
-      ],
-      "center": [
-       "1c3604b3-NumericVec3",
-       "vec3",
-       null
-      ],
-      "heatmap": [
-       "b0b23843-x",
-       "heatmap",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -9394.97665159695,
-      -5562.966272020107
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "b0b23843-x": {
-     "name": "MakeHeatmap",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "nres": 1024,
-      "_RAMPS": "5\n0 0 0.5295480715920569 1\n0.28675916580185823 0 1 1\n0.5126124845400427 0 1 0\n0.7551781982571191 1 1 0\n1 1 0.24299503859659097 0"
-     },
-     "uipos": [
-      -10063.078614070833,
-      -5365.5491955992775
-     ],
-     "options": [],
-     "color_ramps": [
-      [
-       0,
-       [
-        0,
-        0.5295480715920569,
-        1
-       ]
-      ],
-      [
-       0.28675916580185823,
-       [
-        0,
-        1,
-        1
-       ]
-      ],
-      [
-       0.5126124845400427,
-       [
-        0,
-        1,
-        0
-       ]
-      ],
-      [
-       0.7551781982571191,
-       [
-        1,
-        1,
-        0
-       ]
-      ],
-      [
-       1,
-       [
-        1,
-        0.24299503859659097,
-        0
-       ]
-      ]
-     ]
-    },
-    "dd7efd3a-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.1
-     },
-     "uipos": [
-      -9999.821020128802,
-      -5862.392872641339
-     ],
-     "options": []
-    },
-    "1c3604b3-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
+      "y": -9.8,
       "z": 0.0
      },
      "uipos": [
-      -9832.834734799475,
-      -5276.72218628719
+      -10253.200301204814,
+      -5499.811746987949
+     ],
+     "options": []
+    },
+    "3c56cfcc-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10155.308734939754,
+      -5112.951807228912
+     ],
+     "options": []
+    },
+    "f3e7655a-VDBPointsToPrimitive": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "b0f01247-StepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -9378.76506024096,
+      -5120.481927710842
+     ],
+     "options": []
+    },
+    "c60ab51d-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      -8581.758818949915,
+      -4769.3701593179585
+     ],
+     "options": []
+    },
+    "d0a16969-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 100.0
+     },
+     "uipos": [
+      -8503.13478687027,
+      -4597.901178860731
+     ],
+     "options": []
+    },
+    "e2bab01d-x": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "5\n0 0 0 0.6995192307692307\n0.2552034147493232 0 0.25309065934065933 1\n0.528846153846154 0 0.8025412087912088 1\n0.8155219780219781 0 1 0.6181318681318682\n1 1 1 1"
+     },
+     "uipos": [
+      -8979.006007371745,
+      -4842.651639775186
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0,
+        0.6995192307692307
+       ]
+      ],
+      [
+       0.2552034147493232,
+       [
+        0,
+        0.25309065934065933,
+        1
+       ]
+      ],
+      [
+       0.528846153846154,
+       [
+        0,
+        0.8025412087912088,
+        1
+       ]
+      ],
+      [
+       0.8155219780219781,
+       [
+        0,
+        1,
+        0.6181318681318682
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    "a5d15ab0-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@speed = length(@vel)\n@rad = 0"
+     },
+     "uipos": [
+      -9318.62881010612,
+      -5668.968290165811
+     ],
+     "options": []
+    },
+    "b1ded4cd-x": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "bcf4cacf-x",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "e2bab01d-x",
+       "heatmap",
+       null
+      ],
+      "min": [
+       "c60ab51d-x",
+       "value",
+       0.0
+      ],
+      "max": [
+       "d0a16969-x",
+       "value",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      -8297.521632371745,
+      -5237.026639775185
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "bcf4cacf-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "f3e7655a-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "a5d15ab0-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -8940.236476121745,
+      -5152.456327275186
+     ],
+     "options": []
+    },
+    "b34658e0-PrimitiveFaceToEdges": {
+     "name": "PrimitiveFaceToEdges",
+     "inputs": {
+      "prim": [
+       "4f351bc4-OceanVolume",
+       "oceanSurface",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "clearFaces": true
+     },
+     "uipos": [
+      -11146.90004452359,
+      -5715.021148708813
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -11478.252138821692,
-    "y": -5671.145473168554,
-    "width": 976.5624999999994,
-    "height": 976.5624999999994
+    "x": -10774.91965298141,
+    "y": -5867.6951319691725,
+    "width": 781.2499999999995,
+    "height": 781.2499999999995
    }
   },
   "OceanVolume": {
@@ -1319,8 +1259,8 @@
       "defl": ""
      },
      "uipos": [
-      -7769.672982913541,
-      -3682.075645979795
+      -7860.137551441459,
+      -3673.9412297361405
      ],
      "options": []
     },
@@ -1570,8 +1510,8 @@
       "doConcat": false
      },
      "uipos": [
-      191.4338171142751,
-      -3913.060048646076
+      33.675441479758206,
+      -3946.189307529324
      ],
      "options": []
     },
@@ -1799,7 +1739,7 @@
       "attrOut": "pos"
      },
      "uipos": [
-      -880.5048825679944,
+      -882.4768622634259,
       -3667.8957861341323
      ],
      "options": []
@@ -1864,8 +1804,8 @@
       "defl": ""
      },
      "uipos": [
-      1215.4195158250711,
-      -4046.26721487295
+      2139.4990610027335,
+      -3844.899740761276
      ],
      "options": []
     },
@@ -2027,77 +1967,6 @@
      ],
      "options": []
     },
-    "bb130736-FLIP_P2G": {
-     "name": "FLIP_P2G",
-     "inputs": {
-      "Dx": [
-       "3cc096c1-SubInput",
-       "port",
-       null
-      ],
-      "Particles": [
-       "eb449d04-PrimToVDBPointDataGrid",
-       "Particles",
-       null
-      ],
-      "Velocity": [
-       "5757f8ed-PortalOut",
-       "port",
-       null
-      ],
-      "PostP2GVelocity": [
-       "5757f8ed-PortalOut",
-       "port",
-       null
-      ],
-      "VelocityWeights": [
-       "1dd9f62b-MakeVDBGrid",
-       "data",
-       null
-      ],
-      "LiquidSDF": [
-       "3e43d652-x",
-       "data",
-       null
-      ],
-      "ExtractedLiquidSDF": [
-       "3e43d652-x",
-       "data",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dx": 0.01
-     },
-     "uipos": [
-      1970.8526116012952,
-      -3659.1196460569163
-     ],
-     "options": []
-    },
-    "5757f8ed-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "velField"
-     },
-     "uipos": [
-      897.1482410967737,
-      -3524.630509705041
-     ],
-     "options": []
-    },
     "eb449d04-PrimToVDBPointDataGrid": {
      "name": "PrimToVDBPointDataGrid",
      "inputs": {
@@ -2111,6 +1980,11 @@
        "port",
        null
       ],
+      "vdbPoints": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -2119,8 +1993,8 @@
      },
      "params": {},
      "uipos": [
-      803.7788977591285,
-      -3753.295720571791
+      663.529729840347,
+      -3779.712360571792
      ],
      "options": []
     },
@@ -2140,83 +2014,8 @@
      },
      "params": {},
      "uipos": [
-      499.0243706058447,
-      -3651.668149197055
-     ],
-     "options": []
-    },
-    "1dd9f62b-MakeVDBGrid": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "3cc096c1-SubInput",
-       "port",
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "float3",
-      "structure": "Staggered",
-      "name": ""
-     },
-     "uipos": [
-      1258.8379404499406,
-      -3471.3314256170697
-     ],
-     "options": []
-    },
-    "3e43d652-x": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "3cc096c1-SubInput",
-       "port",
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "float",
-      "structure": "Centered",
-      "name": ""
-     },
-     "uipos": [
-      1422.533878354209,
-      -3298.23667788098
-     ],
-     "options": []
-    },
-    "06843629-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "5757f8ed-PortalOut",
-       "port",
-       null
-      ],
-      "SRC": [
-       "bb130736-FLIP_P2G",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "name": "velField",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      2423.164460501681,
-      -3561.6481138447552
+      314.22620938757143,
+      -3741.7166300092367
      ],
      "options": []
     },
@@ -2241,8 +2040,8 @@
      },
      "params": {},
      "uipos": [
-      -1932.4459033032913,
-      -3879.464467867843
+      -1946.2497611713113,
+      -3879.4644678678433
      ],
      "options": []
     },
@@ -2259,14 +2058,14 @@
        "ret",
        null
       ],
-      "obj1": [
+      "\u5bf9\u8c611\n": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "v\nobj1"
+      "_KEYS": "v\n\u5bf9\u8c611\n"
      },
      "uipos": [
       -2400.4946586186024,
@@ -2275,7 +2074,7 @@
      "options": [],
      "socket_keys": [
       "v",
-      "obj1"
+      "\u5bf9\u8c611\n"
      ]
     },
     "bdf21775-MakeMultilineString": {
@@ -2346,17 +2145,2669 @@
       "op_type": "mul"
      },
      "uipos": [
-      -3379.4642642642425,
+      -3374.5343150256635,
       -3855.5891891891642
+     ],
+     "options": []
+    },
+    "941126fc-PrimitiveFilterByAttr": {
+     "name": "PrimitiveFilterByAttr",
+     "inputs": {
+      "prim": [
+       "a13cbe87-SampleVDBToPrimitive",
+       "prim",
+       null
+      ],
+      "value": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "sdf",
+      "acceptIf": "cmple",
+      "vecSelType": "all"
+     },
+     "uipos": [
+      2297.4401543147087,
+      -4420.3520944162165
+     ],
+     "options": []
+    },
+    "f20baeca-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "regionalShape",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -80.46046903552457,
+      -4366.327861928907
+     ],
+     "options": []
+    },
+    "406452e9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "941126fc-PrimitiveFilterByAttr",
+       "prim",
+       null
+      ],
+      "false": [
+       "6398787f-Clone",
+       "newObject",
+       null
+      ],
+      "cond": [
+       "f20baeca-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2794.3042795050637,
+      -4178.334377220786
+     ],
+     "options": []
+    },
+    "a3b1f467-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "0a9d8094-PrimitiveFilterByAttr",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "waveParticles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      8296.526372988721,
+      -4325.364447209113
+     ],
+     "options": []
+    },
+    "d2b9fe26-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "f20baeca-SubInput",
+       "port",
+       null
+      ],
+      "Dx": [
+       "95afb01f-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      1561.3714950253718,
+      -4505.68187431469
+     ],
+     "options": []
+    },
+    "a13cbe87-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "6398787f-Clone",
+       "newObject",
+       null
+      ],
+      "vdbGrid": [
+       "d2b9fe26-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       null,
+       null,
+       "sdf"
+      ],
+      "SRC": [
+       "6398787f-Clone",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      1994.6895065989734,
+      -4484.886978680179
+     ],
+     "options": []
+    },
+    "6398787f-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "32289e32-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1567.2339441624279,
+      -4212.613893400989
+     ],
+     "options": []
+    },
+    "32289e32-VDBPointsToPrimitive": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "eb449d04-PrimToVDBPointDataGrid",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      994.738658883243,
+      -3817.2461380710442
+     ],
+     "options": []
+    },
+    "25ad525e-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "7e881276-x",
+       "sdf",
+       null
+      ],
+      "false": [
+       "3448303b-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "cond": [
+       "f20baeca-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1389.3089949238502,
+      -4798.319593908604
+     ],
+     "options": []
+    },
+    "7e881276-x": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "f20baeca-SubInput",
+       "port",
+       null
+      ],
+      "Dx": [
+       "8290aa6c-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      973.4677766497409,
+      -4903.278213197941
+     ],
+     "options": []
+    },
+    "f01a0b68-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "3cc096c1-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      -7565.334455228384,
+      -3484.8194144162244
+     ],
+     "options": []
+    },
+    "8290aa6c-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      490.2834517766489,
+      -4936.1116751268755
+     ],
+     "options": []
+    },
+    "95afb01f-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      1208.8235532994854,
+      -4520.7634517766255
+     ],
+     "options": []
+    },
+    "3448303b-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "8290aa6c-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "vertex",
+      "name": ""
+     },
+     "uipos": [
+      863.72710659898,
+      -4733.5400609136805
+     ],
+     "options": []
+    },
+    "f555caa1-VDBErodeSDF": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "568449e6-Clone",
+       "newObject",
+       null
+      ],
+      "depth": [
+       "7fad7759-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2157.3457868020173,
+      -4734.131654822308
+     ],
+     "options": []
+    },
+    "7fad7759-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "8290aa6c-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      1512.902822335016,
+      -4967.022456852764
+     ],
+     "options": []
+    },
+    "568449e6-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "25ad525e-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1730.6093807106504,
+      -4705.143553299465
+     ],
+     "options": []
+    },
+    "e429c1bc-x": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "25ad525e-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1828.0251776649648,
+      -4906.877076142104
+     ],
+     "options": []
+    },
+    "b18cb21b-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "e429c1bc-x",
+       "newObject",
+       null
+      ],
+      "depth": [
+       "ee5b0dbe-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2189.686253807095,
+      -4981.220710659869
+     ],
+     "options": []
+    },
+    "ee5b0dbe-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "8290aa6c-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       -3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      1801.6006497461829,
+      -5171.319553299464
+     ],
+     "options": []
+    },
+    "cf5eb6a3-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "b18cb21b-x",
+       "inoutSDF",
+       null
+      ],
+      "FieldB": [
+       "f555caa1-VDBErodeSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGDifference",
+      "writeBack": true
+     },
+     "uipos": [
+      2630.778672081205,
+      -4862.270895431443
+     ],
+     "options": []
+    },
+    "54f5e7f3-FLIPMakeEnviron": {
+     "name": "FLIPMakeEnviron",
+     "inputs": {
+      "Collider": [
+       "ec035916-MakeDict",
+       "dict",
+       null
+      ],
+      "Emitter": [
+       "11340bf6-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       "8a54ce19-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6277.344413640341,
+      -5136.61805969109
+     ],
+     "options": []
+    },
+    "11340bf6-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       "f8074789-Clone",
+       "newObject",
+       null
+      ],
+      "VelGrid": [
+       "a9c7dabf-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "isEnabled": [
+       "de58e19f-NumericInt",
+       "value",
+       null
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5587.640792347257,
+      -4934.4633866140875
+     ],
+     "options": []
+    },
+    "de58e19f-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      5259.664776364911,
+      -4722.750378970358
+     ],
+     "options": []
+    },
+    "1d37c7b8-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e6bf55e9-x",
+       "sdf",
+       null
+      ],
+      "false": [
+       "c6168d6c-x",
+       "data",
+       null
+      ],
+      "cond": [
+       "f20baeca-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1385.0790984771447,
+      -5453.3915289339575
+     ],
+     "options": []
+    },
+    "e14985c9-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      183.73920812182496,
+      -5452.647106598934
+     ],
+     "options": []
+    },
+    "c6168d6c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "e14985c9-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "vertex",
+      "name": ""
+     },
+     "uipos": [
+      767.4451979695359,
+      -5379.486659898427
+     ],
+     "options": []
+    },
+    "e6bf55e9-x": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "f20baeca-SubInput",
+       "port",
+       null
+      ],
+      "Dx": [
+       "e14985c9-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      755.9091167512624,
+      -5713.885116751213
+     ],
+     "options": []
+    },
+    "9d2e5c66-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "525ea583-Clone",
+       "newObject",
+       null
+      ],
+      "depth": [
+       "2a1fb6cb-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2319.586472284241,
+      -5658.67067126898
+     ],
+     "options": []
+    },
+    "2a1fb6cb-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "8290aa6c-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       -6.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      2003.373612182722,
+      -5663.525685279133
+     ],
+     "options": []
+    },
+    "525ea583-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "1d37c7b8-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1682.4930761421163,
+      -5531.79744162431
+     ],
+     "options": []
+    },
+    "ce5856e1-x": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "9d2e5c66-x",
+       "inoutSDF",
+       null
+      ],
+      "FieldB": [
+       "1d37c7b8-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       "e3ce7e20-Clone",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGDifference",
+      "writeBack": true
+     },
+     "uipos": [
+      2856.728105583727,
+      -5559.957311675072
+     ],
+     "options": []
+    },
+    "ec035916-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "153fe41c-Clone",
+       "newObject",
+       null
+      ],
+      "Vel": [
+       "a9c7dabf-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "\u5bf9\u8c612\n": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\n\u5bf9\u8c612\n"
+     },
+     "uipos": [
+      5678.688360406032,
+      -5348.382377664917
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "\u5bf9\u8c612\n"
+     ]
+    },
+    "7139f2a3-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "54f5e7f3-FLIPMakeEnviron",
+       "Environ",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "OceanEviron",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      6713.310843404634,
+      -5068.927779537408
+     ],
+     "options": []
+    },
+    "a6f4bd90-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      1971.471910659876,
+      -6301.244198984697
+     ],
+     "options": []
+    },
+    "5b787cfb-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "a6f4bd90-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      2305.875297461903,
+      -6319.406131979619
+     ],
+     "options": []
+    },
+    "e3ce7e20-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "9d2e5c66-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2585.0918464974293,
+      -6063.853339289264
+     ],
+     "options": []
+    },
+    "58c9c01b-x": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "e2728dfd-x",
+       "newObject",
+       null
+      ],
+      "vdbGrid": [
+       "e3ce7e20-Clone",
+       "newObject",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       null,
+       null,
+       "sdf"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      3119.346895918742,
+      -6209.23241518774
+     ],
+     "options": []
+    },
+    "e2728dfd-x": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "32289e32-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2803.4156345177316,
+      -5838.785380710588
+     ],
+     "options": []
+    },
+    "c020058c-x": {
+     "name": "PrimitiveFilterByAttr",
+     "inputs": {
+      "prim": [
+       "58c9c01b-x",
+       "prim",
+       null
+      ],
+      "value": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "sdf",
+      "acceptIf": "cmple",
+      "vecSelType": "all"
+     },
+     "uipos": [
+      3455.8668085278728,
+      -6134.185967106519
+     ],
+     "options": []
+    },
+    "b9a032fb-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      3277.6738629835545,
+      -6762.744578970168
+     ],
+     "options": []
+    },
+    "62e45a1d-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      3163.279426768454,
+      -6540.424782079303
+     ],
+     "options": []
+    },
+    "01752cf6-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DX"
+     },
+     "uipos": [
+      4017.7140893794895,
+      -7030.307097751889
+     ],
+     "options": []
+    },
+    "bfdcf34b-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "b9a032fb-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": ""
+     },
+     "uipos": [
+      3760.971628814211,
+      -6863.726067531418
+     ],
+     "options": []
+    },
+    "f019ab02-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "a9c7dabf-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "SRC": [
+       "a9c7dabf-ResampleVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "velField",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5883.988402673041,
+      -6245.732298906323
+     ],
+     "options": []
+    },
+    "19008814-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "62e45a1d-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "Centered",
+      "name": ""
+     },
+     "uipos": [
+      3924.667566718478,
+      -6690.631319795329
+     ],
+     "options": []
+    },
+    "4a924c13-x": {
+     "name": "FLIP_P2G",
+     "inputs": {
+      "Dx": [
+       "01752cf6-x",
+       "port",
+       null
+      ],
+      "Particles": [
+       "7ecceaf2-PrimToVDBPointDataGrid",
+       "Particles",
+       null
+      ],
+      "Velocity": [
+       "9fb0a78b-x",
+       "port",
+       null
+      ],
+      "PostP2GVelocity": [
+       "9fb0a78b-x",
+       "port",
+       null
+      ],
+      "VelocityWeights": [
+       "bfdcf34b-x",
+       "data",
+       null
+      ],
+      "LiquidSDF": [
+       "19008814-x",
+       "data",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "19008814-x",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.01
+     },
+     "uipos": [
+      4896.863335498553,
+      -6340.566308275845
+     ],
+     "options": []
+    },
+    "9fb0a78b-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "velField"
+     },
+     "uipos": [
+      3445.3153304762704,
+      -6380.338552634626
+     ],
+     "options": []
+    },
+    "7ecceaf2-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
+     "inputs": {
+      "ParticleGeo": [
+       "c020058c-x",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "01752cf6-x",
+       "port",
+       null
+      ],
+      "vdbPoints": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4385.682842639533,
+      -6604.159999999904
+     ],
+     "options": []
+    },
+    "a9c7dabf-ResampleVDBGrid": {
+     "name": "ResampleVDBGrid",
+     "inputs": {
+      "resampleTo": [
+       "066ec0bb-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "resampleFrom": [
+       "9fb0a78b-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       "4a924c13-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5253.551106598912,
+      -5983.577989847634
+     ],
+     "options": []
+    },
+    "066ec0bb-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "717cb2ea-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": ""
+     },
+     "uipos": [
+      4537.32808121821,
+      -5973.126497461845
+     ],
+     "options": []
+    },
+    "717cb2ea-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      4124.00113705578,
+      -5922.0522233501715
+     ],
+     "options": []
+    },
+    "a031c26c-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      3407.1372182740697,
+      -5699.415715735965
+     ],
+     "options": []
+    },
+    "d027fd57-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "f20baeca-SubInput",
+       "port",
+       null
+      ],
+      "Dx": [
+       "60df4e9d-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      4598.6000307193535,
+      -5220.108858283073
+     ],
+     "options": []
+    },
+    "da00b92f-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      6109.1756690760185,
+      -4108.4865868019515
+     ],
+     "options": []
+    },
+    "724ee472-FLIPMakeParticles": {
+     "name": "FLIPMakeParticles",
+     "inputs": {
+      "TankSDF": [
+       "87a3c761-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "dx": [
+       "da00b92f-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6594.140125861541,
+      -4434.296849893206
+     ],
+     "options": []
+    },
+    "067c0aa2-VDBPointsToPrimitive": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "724ee472-FLIPMakeParticles",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6757.75564974606,
+      -4232.971502537989
+     ],
+     "options": []
+    },
+    "18e0db55-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "067c0aa2-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "vdbGrid": [
+       "a9c7dabf-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       null,
+       null,
+       "vel"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      7114.072660913565,
+      -4397.533208121739
+     ],
+     "options": []
+    },
+    "466c23a1-GetVDBBound": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "f555caa1-VDBErodeSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4649.79994314711,
+      -4372.066322842546
+     ],
+     "options": []
+    },
+    "8cf2fdce-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       "466c23a1-GetVDBBound",
+       "bmin",
+       null
+      ],
+      "boundMax": [
+       "466c23a1-GetVDBBound",
+       "bmax",
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      5015.457433339997,
+      -4525.967111796857
+     ],
+     "options": []
+    },
+    "8333192f-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "130fcb2b-x",
+       "OceanData",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SurfaceGeo"
+     },
+     "uipos": [
+      -9382.925888324664,
+      -3777.573604060829
+     ],
+     "options": []
+    },
+    "c1460171-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SurfaceGeo"
+     },
+     "uipos": [
+      5437.475187817136,
+      -4336.050578680107
+     ],
+     "options": []
+    },
+    "7a96ac34-PrimitiveMerge": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "ac8ddd23-MakeList",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6030.16601015215,
+      -4444.743634517667
+     ],
+     "options": []
+    },
+    "ac8ddd23-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "8cf2fdce-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "obj1": [
+       "c1460171-PortalOut",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      5723.030172588705,
+      -4472.006253807006
+     ],
+     "options": [],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
+    },
+    "87a3c761-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "7a96ac34-PrimitiveMerge",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "da00b92f-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "cell"
+     },
+     "uipos": [
+      6359.240121827264,
+      -4459.040487309542
+     ],
+     "options": []
+    },
+    "0a9d8094-PrimitiveFilterByAttr": {
+     "name": "PrimitiveFilterByAttr",
+     "inputs": {
+      "prim": [
+       "10e9aee4-SampleVDBToPrimitive",
+       "prim",
+       null
+      ],
+      "value": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "sdf",
+      "acceptIf": "cmple",
+      "vecSelType": "all"
+     },
+     "uipos": [
+      7771.043489136871,
+      -4489.377422944055
+     ],
+     "options": []
+    },
+    "10e9aee4-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "18e0db55-SampleVDBToPrimitive",
+       "prim",
+       null
+      ],
+      "vdbGrid": [
+       "d2b9fe26-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       null,
+       null,
+       "sdf"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      7438.622927918606,
+      -4391.993177664872
+     ],
+     "options": []
+    },
+    "9d086c13-x": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       "3234a1ec-x",
+       "bmin",
+       null
+      ],
+      "boundMax": [
+       "3234a1ec-x",
+       "bmax",
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      3415.0267146395117,
+      -4960.434861482113
+     ],
+     "options": []
+    },
+    "3234a1ec-x": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "cf5eb6a3-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3080.181407187741,
+      -4806.780569989729
+     ],
+     "options": []
+    },
+    "89eec584-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SurfaceGeo"
+     },
+     "uipos": [
+      3102.977837563376,
+      -5033.040639593783
+     ],
+     "options": []
+    },
+    "af7d89ae-x": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "2fe93926-x",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "3a51e852-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      4362.049898477049,
+      -4965.586609136932
+     ],
+     "options": []
+    },
+    "9259fbd1-x": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "9d086c13-x",
+       "prim",
+       null
+      ],
+      "obj1": [
+       "89eec584-x",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      3701.387401015139,
+      -4960.903157360285
+     ],
+     "options": [],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
+    },
+    "2fe93926-x": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "9259fbd1-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4039.8777157359455,
+      -5034.310101522717
+     ],
+     "options": []
+    },
+    "3a51e852-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      3714.4702538070164,
+      -4726.687431471965
+     ],
+     "options": []
+    },
+    "8b9e9bee-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "af7d89ae-x",
+       "sdf",
+       null
+      ],
+      "FieldB": [
+       "e2fd8b29-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGIntersection",
+      "writeBack": false
+     },
+     "uipos": [
+      4682.219289339991,
+      -4902.341522842521
+     ],
+     "options": []
+    },
+    "e53019d8-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "cf5eb6a3-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3439.921380710575,
+      -4669.64791878161
+     ],
+     "options": []
+    },
+    "e2fd8b29-ResampleVDBGrid": {
+     "name": "ResampleVDBGrid",
+     "inputs": {
+      "resampleTo": [
+       "3a60964e-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "resampleFrom": [
+       "e53019d8-Clone",
+       "newObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4304.437279187713,
+      -4731.173685279071
+     ],
+     "options": []
+    },
+    "3a60964e-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "3a51e852-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "vertex",
+      "name": ""
+     },
+     "uipos": [
+      4026.1909441623375,
+      -4838.449380710542
+     ],
+     "options": []
+    },
+    "60df4e9d-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SimDx"
+     },
+     "uipos": [
+      4235.714134185431,
+      -5152.144808548406
+     ],
+     "options": []
+    },
+    "a29d5ba2-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "8b9e9bee-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.025,
+      "allowQuads": false
+     },
+     "uipos": [
+      5167.572791878046,
+      -5028.548223350132
+     ],
+     "options": []
+    },
+    "a7448f95-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "a29d5ba2-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@clr = vec3(0,0,1)"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5859.342721047086,
+      -5029.161104546709
+     ],
+     "options": []
+    },
+    "510bb7c0-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "ed54ee1e-x",
+       "prim",
+       null
+      ],
+      "obj1": [
+       "a7448f95-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "obj2": [
+       "58aa1330-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2\nobj3"
+     },
+     "uipos": [
+      7158.881923274588,
+      -5352.721518810525
+     ],
+     "options": [
+      "VIEW"
+     ],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2",
+      "obj3"
+     ]
+    },
+    "0f6feda4-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "510bb7c0-MakeList",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "regionToShow",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      7497.959796954133,
+      -5338.888527918652
+     ],
+     "options": []
+    },
+    "01247017-x": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "b39c4efb-ResampleVDBGrid",
+       "resampleTo",
+       null
+      ],
+      "FieldB": [
+       "8e1282bd-x",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGIntersection",
+      "writeBack": true
+     },
+     "uipos": [
+      4472.055553299381,
+      -5549.219882233366
+     ],
+     "options": []
+    },
+    "6bce301d-x": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "01247017-x",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.025,
+      "allowQuads": false
+     },
+     "uipos": [
+      4800.291573603945,
+      -5638.678741116612
+     ],
+     "options": []
+    },
+    "ed54ee1e-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "6bce301d-x",
+       "Mesh",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@clr = vec3(1,0,0)"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5110.285108852069,
+      -5648.223492104313
+     ],
+     "options": []
+    },
+    "fd5c3fc0-x": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "aab9596a-x",
+       "prim",
+       null
+      ],
+      "obj1": [
+       "c8128a47-x",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      3699.696600974529,
+      -5292.004735309515
+     ],
+     "options": [],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
+    },
+    "aab9596a-x": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       "3e232aa4-x",
+       "bmin",
+       null
+      ],
+      "boundMax": [
+       "3e232aa4-x",
+       "bmax",
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      3442.6691125684456,
+      -5235.335018111547
+     ],
+     "options": []
+    },
+    "3e232aa4-x": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "ce5856e1-x",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3100.9218761826646,
+      -5202.9574778882
+     ],
+     "options": []
+    },
+    "c8128a47-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "SurfaceGeo"
+     },
+     "uipos": [
+      3244.0090679796167,
+      -5318.047192162307
+     ],
+     "options": []
+    },
+    "33df5e57-x": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "fd5c3fc0-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3954.43553299483,
+      -5278.841746192766
+     ],
+     "options": []
+    },
+    "8e1282bd-x": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "33df5e57-x",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "a031c26c-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      4213.750862944056,
+      -5424.07805076129
+     ],
+     "options": []
+    },
+    "58aa1330-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       "ae9253ec-GetVDBBound",
+       "bmin",
+       null
+      ],
+      "boundMax": [
+       "ae9253ec-GetVDBBound",
+       "bmax",
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "edges"
+     },
+     "uipos": [
+      6785.619257595331,
+      -4735.225426830066
+     ],
+     "options": []
+    },
+    "c8ac5c26-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "ce5856e1-x",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3278.4162436547417,
+      -5556.052791878035
+     ],
+     "options": []
+    },
+    "b39c4efb-ResampleVDBGrid": {
+     "name": "ResampleVDBGrid",
+     "inputs": {
+      "resampleTo": [
+       "553a9a61-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "resampleFrom": [
+       "c8ac5c26-Clone",
+       "newObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3925.4720812181777,
+      -5483.336040609003
+     ],
+     "options": []
+    },
+    "553a9a61-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "a031c26c-x",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "vertex",
+      "name": ""
+     },
+     "uipos": [
+      3644.464974619199,
+      -5639.861928933871
+     ],
+     "options": []
+    },
+    "8a54ce19-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       "41147fb1-Clone",
+       "newObject",
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5273.529862615007,
+      -5233.905303681735
+     ],
+     "options": []
+    },
+    "ae9253ec-GetVDBBound": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "d027fd57-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5647.35886019573,
+      -4661.429741762994
+     ],
+     "options": []
+    },
+    "153fe41c-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "01247017-x",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5139.500908281232,
+      -5433.325307212658
+     ],
+     "options": []
+    },
+    "f8074789-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "8b9e9bee-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4976.14532502211,
+      -4732.864113980267
+     ],
+     "options": []
+    },
+    "41147fb1-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "d027fd57-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4933.689047194863,
+      -5208.64398931418
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -2508.8008973308924,
-    "y": -4361.432823435369,
-    "width": 3034.9999999999827,
-    "height": 1182.499999999992
+    "x": 4972.701156721296,
+    "y": -5486.958908544713,
+    "width": 1942.3999999999512,
+    "height": 756.799999999977
    }
   },
   "VolumeTrail": {
@@ -3564,6 +6015,11 @@
        "bmax",
        null
       ],
+      "OpenTop": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -4440,6 +6896,6232 @@
     "y": -263.94013169498874,
     "width": 767.999999999999,
     "height": 639.9999999999991
+   }
+  },
+  "FLIPSimTemplate": {
+   "nodes": {
+    "153be3e2-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "6d537884-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      9164.908056310183,
+      -1862.2066943081554
+     ],
+     "options": []
+    },
+    "e0dbd827-x": {
+     "name": "ParticleEmitter",
+     "inputs": {
+      "Particles": [
+       "aae92be5-Route",
+       "output",
+       null
+      ],
+      "ShapeSDF": [
+       "0315df70-x",
+       "port",
+       null
+      ],
+      "VelocityVolume": [
+       "ef976013-x",
+       "port",
+       null
+      ],
+      "VelocityInit": [
+       "00c583c5-x",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "8f2de3ef-BeginFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "vz": 0.0
+     },
+     "uipos": [
+      6136.722193527026,
+      -1773.7042041759796
+     ],
+     "options": []
+    },
+    "c4ab5679-x": {
+     "name": "Vec3FieldExtrapolate",
+     "inputs": {
+      "Field": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "67c63057-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "NumIterates": 10
+     },
+     "uipos": [
+      12065.451707277056,
+      -2348.605940130584
+     ],
+     "options": []
+    },
+    "c8c9c7c0-x": {
+     "name": "FieldAddVector",
+     "inputs": {
+      "invec3": [
+       "17db9efc-x",
+       "ret",
+       null
+      ],
+      "Velocity": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "FieldWeight": [
+       "b2fa23b6-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "fd957480-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      11094.033186009883,
+      -1985.43131131255
+     ],
+     "options": []
+    },
+    "180c855e-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "step_dt"
+     },
+     "uipos": [
+      10083.548401168338,
+      -2206.033728304741
+     ],
+     "options": []
+    },
+    "fd957480-x": {
+     "name": "PushOutLiquidSDF",
+     "inputs": {
+      "Dx": [
+       "917aee2a-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "SolidSDF": [
+       "34263d5b-x",
+       "port",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "20127999-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "21fc0b0f-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04
+     },
+     "uipos": [
+      10137.662072906243,
+      -1935.3056002291341
+     ],
+     "options": []
+    },
+    "0a81fcd9-x": {
+     "name": "G2PAdvectorSheetty",
+     "inputs": {
+      "dt": [
+       "b24aabe7-x",
+       "port",
+       null
+      ],
+      "Dx": [
+       "917aee2a-SubInput",
+       "port",
+       null
+      ],
+      "Particles": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "Velocity": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "PostAdvVelocity": [
+       "717a5fc9-x",
+       "port",
+       null
+      ],
+      "SolidSDF": [
+       "34263d5b-x",
+       "port",
+       null
+      ],
+      "SolidVelocity": [
+       "e1acb4ad-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       "8dce9d19-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04,
+      "RK_ORDER": 3,
+      "pic_smoothness": 0.03,
+      "surface_size": 4
+     },
+     "uipos": [
+      4667.184048273277,
+      -1973.319189056894
+     ],
+     "options": []
+    },
+    "21fc0b0f-x": {
+     "name": "CutCellWeight",
+     "inputs": {
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "SolidSDF": [
+       "34263d5b-x",
+       "port",
+       null
+      ],
+      "FaceWeight": [
+       "b2fa23b6-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "a791683e-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      9815.991970405334,
+      -1794.9131350191738
+     ],
+     "options": []
+    },
+    "6d537884-x": {
+     "name": "FLIP_P2G",
+     "inputs": {
+      "Dx": [
+       "917aee2a-SubInput",
+       "port",
+       null
+      ],
+      "Particles": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "Velocity": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "PostP2GVelocity": [
+       "717a5fc9-x",
+       "port",
+       null
+      ],
+      "VelocityWeights": [
+       "fe9d7375-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "20127999-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "180f21cc-FuncCall",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04
+     },
+     "uipos": [
+      8901.752803445272,
+      -1871.1575987490337
+     ],
+     "options": []
+    },
+    "b24aabe7-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "step_dt"
+     },
+     "uipos": [
+      2116.259564647089,
+      -3594.6141289025472
+     ],
+     "options": []
+    },
+    "17db9efc-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4228a885-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "180c855e-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      10689.254730514042,
+      -2130.048358622428
+     ],
+     "options": []
+    },
+    "cb6b02a9-x": {
+     "name": "AssembleSolvePPE",
+     "inputs": {
+      "dt": [
+       "b24aabe7-x",
+       "port",
+       null
+      ],
+      "Dx": [
+       "917aee2a-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "20127999-SubInput",
+       "port",
+       null
+      ],
+      "Divergence": [
+       "c1600ee0-SubInput",
+       "port",
+       null
+      ],
+      "Pressure": [
+       "95c068bc-x",
+       "port",
+       null
+      ],
+      "CellFWeight": [
+       "b2fa23b6-SubInput",
+       "port",
+       null
+      ],
+      "Velocity": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "SolidVelocity": [
+       "e1acb4ad-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       "c8c9c7c0-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04
+     },
+     "uipos": [
+      11420.659400758488,
+      -2219.3761275085135
+     ],
+     "options": []
+    },
+    "3e743ee4-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "1757372f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "step_dt"
+     },
+     "uipos": [
+      2662.439077714089,
+      -1926.5821108370978
+     ],
+     "options": []
+    },
+    "67c63057-x": {
+     "name": "SubtractPressureGradient",
+     "inputs": {
+      "dt": [
+       "b24aabe7-x",
+       "port",
+       null
+      ],
+      "Dx": [
+       "917aee2a-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "SolidSDF": [
+       "34263d5b-x",
+       "port",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "20127999-SubInput",
+       "port",
+       null
+      ],
+      "Pressure": [
+       "95c068bc-x",
+       "port",
+       null
+      ],
+      "CellFWeight": [
+       "b2fa23b6-SubInput",
+       "port",
+       null
+      ],
+      "Velocity": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "SolidVelocity": [
+       "e1acb4ad-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       "cb6b02a9-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04
+     },
+     "uipos": [
+      11765.94018383954,
+      -2430.243226507536
+     ],
+     "options": []
+    },
+    "a791683e-x": {
+     "name": "Vec3FieldExtrapolate",
+     "inputs": {
+      "Field": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "153be3e2-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "NumIterates": 1
+     },
+     "uipos": [
+      9462.265106544246,
+      -1661.7843401583364
+     ],
+     "options": []
+    },
+    "8dce9d19-x": {
+     "name": "FluidReseed",
+     "inputs": {
+      "Particles": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "LiquidSDF": [
+       "d6d4bf69-SubInput",
+       "port",
+       null
+      ],
+      "FluidVel": [
+       "c6e21703-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "717a5fc9-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4190.691543804467,
+      -1812.390142487521
+     ],
+     "options": []
+    },
+    "c6e21703-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Velocity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2095.9892129898058,
+      -3363.350129127501
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "34263d5b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collision",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2091.442046165465,
+      -3013.8120412826524
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "717a5fc9-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "PostAdvVel",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2110.2170095443716,
+      -2250.4693899154654
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "95c068bc-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Pressure",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2081.627287864684,
+      -2405.0251150131216
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "e1acb4ad-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "CollisionVel",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2081.8714284896837,
+      -2623.962492942807
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "0315df70-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5173.272704574561,
+      -1350.7942388219456
+     ],
+     "options": []
+    },
+    "8f2de3ef-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "365f43af-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "aae92be5-Route",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5577.3364941982345,
+      -1756.5815370272712
+     ],
+     "options": []
+    },
+    "365f43af-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "ifEmit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3973.315429687499,
+      -1598.803710937499
+     ],
+     "options": []
+    },
+    "fb648021-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "8f2de3ef-BeginFor",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "b6591b53-PrintMessage",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6789.5769040493105,
+      -1582.5166146945085
+     ],
+     "options": []
+    },
+    "5025569f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2076.5717458724966,
+      -2516.3553762435904
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "fe9d7375-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelocityWeights",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      8566.999801016196,
+      -1385.0662872674438
+     ],
+     "options": []
+    },
+    "917aee2a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1718.4467458724962,
+      -2238.7489309310904
+     ],
+     "options": []
+    },
+    "20127999-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "ExtractedLiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2080.3949880599957,
+      -2708.3597707748395
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "4228a885-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Gravity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      10324.74960455928,
+      -2394.9190933587506
+     ],
+     "options": []
+    },
+    "b2fa23b6-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "CellFWeight",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2093.003325462339,
+      -2813.5938405990587
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "c1600ee0-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Divergence",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      10498.677855825767,
+      -2597.9650909783822
+     ],
+     "options": []
+    },
+    "d6d4bf69-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "LiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2085.4802541732774,
+      -3202.6484060287435
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "8c8b351b-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "c4ab5679-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      12720.551087956197,
+      -2182.0894328988525
+     ],
+     "options": []
+    },
+    "1f2dac31-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIPSolver"
+     },
+     "uipos": [
+      1582.6875,
+      -2777.1875
+     ],
+     "options": []
+    },
+    "1757372f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2135.937499999997,
+      -1889.374999999998
+     ],
+     "options": []
+    },
+    "ef976013-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVelVolume",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5538.139472713863,
+      -1355.1129701327432
+     ],
+     "options": []
+    },
+    "00c583c5-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5783.264472713863,
+      -1460.7379701327436
+     ],
+     "options": []
+    },
+    "aae92be5-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "0a81fcd9-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5156.117717551613,
+      -1558.8034660766941
+     ],
+     "options": []
+    },
+    "b6591b53-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "e0dbd827-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "Emitted new liquid "
+     },
+     "uipos": [
+      6401.373847713863,
+      -1428.1754701327436
+     ],
+     "options": []
+    },
+    "e9460fcf-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "fb648021-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "particleApplyForce",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      7029.447205704134,
+      -1691.8362032522598
+     ],
+     "options": []
+    },
+    "5fab6f25-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "particles": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "ddt": [
+       "b24aabe7-x",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "particles\nddt\nobj2"
+     },
+     "uipos": [
+      7677.439999999991,
+      -1407.4464864864854
+     ],
+     "options": [],
+     "socket_keys": [
+      "particles",
+      "ddt",
+      "obj2"
+     ]
+    },
+    "4bee6edc-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e9460fcf-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "75ae154a-FuncEnd",
+       "function",
+       null
+      ],
+      "cond": [
+       "e9460fcf-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      8046.0108108108,
+      -1706.681081081079
+     ],
+     "options": []
+    },
+    "1b87603f-FuncBegin": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "e9460fcf-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7463.654054054045,
+      -1782.57297297297
+     ],
+     "options": []
+    },
+    "75ae154a-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       null,
+       null,
+       null
+      ],
+      "FUNC": [
+       "1b87603f-FuncBegin",
+       "FUNC",
+       null
+      ],
+      "SRC": [
+       "1b87603f-FuncBegin",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7772.691891891882,
+      -1769.8162162162137
+     ],
+     "options": []
+    },
+    "180f21cc-FuncCall": {
+     "name": "FuncCall",
+     "inputs": {
+      "function": [
+       "4bee6edc-IfElse",
+       "result",
+       null
+      ],
+      "args": [
+       "5fab6f25-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      8333.837837837826,
+      -1551.913513513511
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 4762.480123474374,
+    "y": -1857.202288818855,
+    "width": 1199.999999999997,
+    "height": 999.9999999999981
+   }
+  },
+  "FLIPMakeCollider": {
+   "nodes": {
+    "85b70602-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      204.9375,
+      -51.87499999999994
+     ],
+     "options": []
+    },
+    "4eb2ed2f-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "9c99f5bb-x",
+       "port",
+       null
+      ],
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      576.0,
+      85.0
+     ],
+     "options": []
+    },
+    "55c1f2d9-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "4eb2ed2f-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "FieldB": [
+       "ee2afe3d-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGUnion",
+      "writeBack": false
+     },
+     "uipos": [
+      1032.0,
+      97.0
+     ],
+     "options": []
+    },
+    "759ba26c-SprayParticles": {
+     "name": "SprayParticles",
+     "inputs": {
+      "TrianglePrim": [
+       "9c99f5bb-x",
+       "port",
+       null
+      ],
+      "Dx": [
+       "c2a2c361-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.01,
+      "channel": "vel"
+     },
+     "uipos": [
+      921.0,
+      411.0
+     ],
+     "options": []
+    },
+    "a3b45d2f-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
+     "inputs": {
+      "ParticleGeo": [
+       "91406e3b-ParticlesToPrimitive",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "vdbPoints": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1490.0625000000002,
+      468.2500000000001
+     ],
+     "options": []
+    },
+    "91406e3b-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "pars": [
+       "759ba26c-SprayParticles",
+       "particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1187.0,
+      437.0
+     ],
+     "options": []
+    },
+    "8c90bcdd-FLIP_P2G": {
+     "name": "FLIP_P2G",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "Particles": [
+       "a3b45d2f-PrimToVDBPointDataGrid",
+       "Particles",
+       null
+      ],
+      "Velocity": [
+       "cfb1eb31-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "PostP2GVelocity": [
+       "cfb1eb31-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "VelocityWeights": [
+       "b5118aa1-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "LiquidSDF": [
+       "2b392696-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "2b392696-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "SRC": [
+       "2b392696-MakeVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04
+     },
+     "uipos": [
+      2525.6499999999996,
+      552.75
+     ],
+     "options": []
+    },
+    "cfb1eb31-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       "a3b45d2f-PrimToVDBPointDataGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      1741.2500000000002,
+      301.37500000000006
+     ],
+     "options": []
+    },
+    "b5118aa1-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       "cfb1eb31-MakeVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      1797.0375000000001,
+      655.5124999999998
+     ],
+     "options": []
+    },
+    "2b392696-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       "b5118aa1-MakeVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      2060.0000000000005,
+      874.3999999999999
+     ],
+     "options": []
+    },
+    "c2a2c361-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "rhs": [
+       "5dc137cf-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "div"
+     },
+     "uipos": [
+      610.9374999999999,
+      499.9999999999999
+     ],
+     "options": []
+    },
+    "5dc137cf-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2.0
+     },
+     "uipos": [
+      519.9999999999998,
+      749.9999999999999
+     ],
+     "options": []
+    },
+    "ee2afe3d-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "StaticSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -322.89937499999974,
+      589.5362499999999
+     ],
+     "options": []
+    },
+    "9c99f5bb-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dynamicPrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -332.2993749999999,
+      193.78124999999983
+     ],
+     "options": []
+    },
+    "a5f80ff2-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -424.7475,
+      930.6224999999997
+     ],
+     "options": []
+    },
+    "653f3340-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       "8c90bcdd-FLIP_P2G",
+       "DST",
+       null
+      ],
+      "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n": [
+       "59022a10-IfElse",
+       "result",
+       null
+      ],
+      "Vel": [
+       "cfb1eb31-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n\nVel\nobj2"
+     },
+     "uipos": [
+      2853.0249999999996,
+      814.0925
+     ],
+     "options": [],
+     "socket_keys": [
+      "\u8ddd\u79bb\u573a(\u4f53\u7d20\u7f51\u683c)\n",
+      "Vel",
+      "obj2"
+     ]
+    },
+    "2769efde-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "d300bc9b-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3537.7557547169804,
+      866.6223113207548
+     ],
+     "options": []
+    },
+    "79a370a6-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "a5f80ff2-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      145.0,
+      982.4999999999998
+     ],
+     "options": []
+    },
+    "2634ee9c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      2487.5000000000005,
+      1076.2500000000002
+     ],
+     "options": []
+    },
+    "437d3b5d-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "bd96c5f9-x",
+       "result",
+       null
+      ],
+      "Vel": [
+       "2634ee9c-x",
+       "data",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nobj2"
+     },
+     "uipos": [
+      2823.5,
+      1090.25
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "obj2"
+     ]
+    },
+    "d300bc9b-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "653f3340-x",
+       "dict",
+       null
+      ],
+      "false": [
+       "437d3b5d-x",
+       "dict",
+       null
+      ],
+      "cond": [
+       "9c99f5bb-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3153.75,
+      1005.75
+     ],
+     "options": []
+    },
+    "59022a10-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "55c1f2d9-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "false": [
+       "4eb2ed2f-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1409.5,
+      66.50000000000011
+     ],
+     "options": []
+    },
+    "bd96c5f9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "ee2afe3d-x",
+       "port",
+       null
+      ],
+      "false": [
+       "b2d0343c-x",
+       "data",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1912.0312499999995,
+      1220.390625
+     ],
+     "options": []
+    },
+    "b2d0343c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      1604.9999999999993,
+      1359.9999999999998
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 2394.475471698122,
+    "y": 652.120754716981,
+    "width": 959.9999999999997,
+    "height": 799.9999999999995
+   }
+  },
+  "FLIPMakeParticles": {
+   "nodes": {
+    "84fd5a52-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      228.25,
+      40.0
+     ],
+     "options": []
+    },
+    "2433c6a4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "TankSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      185.5,
+      198.75
+     ],
+     "options": []
+    },
+    "c352b248-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      194.0,
+      465.25
+     ],
+     "options": []
+    },
+    "81412251-ParticleEmitter": {
+     "name": "ParticleEmitter",
+     "inputs": {
+      "Particles": [
+       "b2f5beac-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "ShapeSDF": [
+       "2433c6a4-SubInput",
+       "port",
+       null
+      ],
+      "VelocityVolume": [
+       null,
+       null,
+       null
+      ],
+      "VelocityInit": [
+       null,
+       null,
+       null
+      ],
+      "LiquidSDF": [
+       "d2e54039-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "vz": 0.0
+     },
+     "uipos": [
+      1017.45,
+      282.00000000000006
+     ],
+     "options": []
+    },
+    "b2f5beac-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "c352b248-SubInput",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "points",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      549.75,
+      58.25
+     ],
+     "options": []
+    },
+    "63201162-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bef31978-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1767.45,
+      141.45000000000007
+     ],
+     "options": []
+    },
+    "d2e54039-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "c352b248-SubInput",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      532.4000000000001,
+      386.6500000000001
+     ],
+     "options": []
+    },
+    "bef31978-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "81412251-ParticleEmitter",
+       "Particles",
+       null
+      ],
+      "false": [
+       "b2f5beac-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "cond": [
+       "2433c6a4-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1393.0,
+      145.0
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 589.6895811209438,
+    "y": 140.45987492625363,
+    "width": 614.3999999999999,
+    "height": 511.99999999999983
+   }
+  },
+  "MakeFLIPWorld": {
+   "nodes": {
+    "7cfd688e-x": {
+     "name": "SetFLIPWorld",
+     "inputs": {
+      "Dx": [
+       "7661c89f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.08
+     },
+     "uipos": [
+      238.92999999999995,
+      443.94000000000005
+     ],
+     "options": []
+    },
+    "53641771-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Pressure": [
+       "7cfd688e-x",
+       "Pressure",
+       null
+      ],
+      "Divergence": [
+       "7cfd688e-x",
+       "Divergence",
+       null
+      ],
+      "CellFWeight": [
+       "7cfd688e-x",
+       "CellFWeight",
+       null
+      ],
+      "Velocity": [
+       "7cfd688e-x",
+       "Velocity",
+       null
+      ],
+      "PostAdvVelocity": [
+       "7cfd688e-x",
+       "PostAdvVelocity",
+       null
+      ],
+      "VelocityWeights": [
+       "7cfd688e-x",
+       "VelocityWeights",
+       null
+      ],
+      "LiquidSDF": [
+       "7cfd688e-x",
+       "LiquidSDF",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "7cfd688e-x",
+       "ExtractedLiquidSDF",
+       null
+      ],
+      "Dx": [
+       "7661c89f-SubInput",
+       "port",
+       null
+      ],
+      "obj9": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Pressure\nDivergence\nCellFWeight\nVelocity\nPostAdvVelocity\nVelocityWeights\nLiquidSDF\nExtractedLiquidSDF\nDx\nobj9"
+     },
+     "uipos": [
+      663.0,
+      975.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "Pressure",
+      "Divergence",
+      "CellFWeight",
+      "Velocity",
+      "PostAdvVelocity",
+      "VelocityWeights",
+      "LiquidSDF",
+      "ExtractedLiquidSDF",
+      "Dx",
+      "obj9"
+     ]
+    },
+    "7661c89f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -44.99999999999999,
+      498.7499999999999
+     ],
+     "options": []
+    },
+    "cba0e3cb-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "53641771-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "World",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      937.4999999999998,
+      989.25
+     ],
+     "options": []
+    },
+    "b544125f-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      212.8,
+      1072.8
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -418.0,
+    "y": 471.0,
+    "width": 768.0,
+    "height": 640.0
+   }
+  },
+  "SubstepFLIPWorld": {
+   "nodes": {
+    "56cd53d3-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "9e1f9502-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "bc37655c-ExtractDict",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Pressure\nDivergence\nCellFWeight\nVelocity\nPostAdvVelocity\nVelocityWeights\nLiquidSDF\nExtractedLiquidSDF\nDx\nCollisionSDF"
+     },
+     "uipos": [
+      558.8807714843746,
+      522.9331054687497
+     ],
+     "options": [],
+     "socket_keys": [
+      "Pressure",
+      "Divergence",
+      "CellFWeight",
+      "Velocity",
+      "PostAdvVelocity",
+      "VelocityWeights",
+      "LiquidSDF",
+      "ExtractedLiquidSDF",
+      "Dx",
+      "CollisionSDF"
+     ]
+    },
+    "aad2ade1-x": {
+     "name": "FLIPSimTemplate",
+     "inputs": {
+      "Velocity": [
+       "56cd53d3-x",
+       "Velocity",
+       null
+      ],
+      "Collision": [
+       "bc37655c-ExtractDict",
+       "SDF",
+       null
+      ],
+      "PostAdvVel": [
+       "56cd53d3-x",
+       "PostAdvVelocity",
+       null
+      ],
+      "Pressure": [
+       "56cd53d3-x",
+       "Pressure",
+       null
+      ],
+      "CollisionVel": [
+       "bc37655c-ExtractDict",
+       "Vel",
+       null
+      ],
+      "DynEmitter": [
+       "6d8f3111-x",
+       "result",
+       null
+      ],
+      "ifEmit": [
+       "47a2a9db-IfElse",
+       "result",
+       null
+      ],
+      "Particles": [
+       "0b575c56-SubInput",
+       "port",
+       null
+      ],
+      "VelocityWeights": [
+       "56cd53d3-x",
+       "VelocityWeights",
+       null
+      ],
+      "dx": [
+       "56cd53d3-x",
+       "Dx",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "56cd53d3-x",
+       "ExtractedLiquidSDF",
+       null
+      ],
+      "Gravity": [
+       "56681340-x",
+       "port",
+       null
+      ],
+      "CellFWeight": [
+       "56cd53d3-x",
+       "CellFWeight",
+       null
+      ],
+      "Divergence": [
+       "56cd53d3-x",
+       "Divergence",
+       null
+      ],
+      "LiquidSDF": [
+       "56cd53d3-x",
+       "LiquidSDF",
+       null
+      ],
+      "dt": [
+       "6391edc8-SubInput",
+       "port",
+       null
+      ],
+      "DynEmitterVelVolume": [
+       "77171256-x",
+       "result",
+       null
+      ],
+      "DynEmitterVelInit": [
+       "4866b45e-x",
+       "result",
+       null
+      ],
+      "particleApplyForce": [
+       "180cfc79-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2978.3263692610235,
+      -384.4512984055905
+     ],
+     "options": []
+    },
+    "2dde32d4-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      1457.5404394531242,
+      -260.048095703125
+     ],
+     "options": []
+    },
+    "9e1f9502-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "6391edc8-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "World",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -381.6093749999998,
+      543.7812500000001
+     ],
+     "options": []
+    },
+    "6235b875-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "9e1f9502-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "1e2a4a76-SubOutput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "World",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4628.666357421873,
+      456.05986328125005
+     ],
+     "options": []
+    },
+    "bc677e05-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      861.8750000000001,
+      1124.9999999999998
+     ],
+     "options": []
+    },
+    "1e2a4a76-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "aad2ade1-x",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       "0ac040f9-IfElse",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3938.6164550781245,
+      184.936669921875
+     ],
+     "options": []
+    },
+    "0b575c56-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "56681340-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1261.078124999999,
+      -36.85625000000002
+     ],
+     "options": []
+    },
+    "56681340-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1747.2437499999985,
+      -317.8843749999998
+     ],
+     "options": []
+    },
+    "aeda3189-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "9e1f9502-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -82.06249999999997,
+      783.6281250000002
+     ],
+     "options": []
+    },
+    "6391edc8-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "0b575c56-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -727.0312499999997,
+      302.78906250000017
+     ],
+     "options": []
+    },
+    "bc37655c-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "aeda3189-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nobj2"
+     },
+     "uipos": [
+      265.09375,
+      897.6562500000002
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "obj2"
+     ]
+    },
+    "4813782e-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "56cd53d3-x",
+       "ExtractedLiquidSDF",
+       null
+      ],
+      "SRC": [
+       "6235b875-SubOutput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "LiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5175.084228515625,
+      949.7639160156244
+     ],
+     "options": []
+    },
+    "568b00ff-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      296.1700356188779,
+      -769.8078918076571
+     ],
+     "options": []
+    },
+    "47a2a9db-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "enable",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1786.0,
+      -82.75
+     ],
+     "options": []
+    },
+    "f05fc980-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "568b00ff-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
+     },
+     "uipos": [
+      801.0,
+      -258.25
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "VelGrid",
+      "enable",
+      "VelInit",
+      "obj4"
+     ]
+    },
+    "6d8f3111-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "SDF",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1797.25,
+      -405.25
+     ],
+     "options": []
+    },
+    "77171256-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "VelGrid",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2073.75,
+      -670.5
+     ],
+     "options": []
+    },
+    "4866b45e-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "VelInit",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1766.25,
+      -714.0
+     ],
+     "options": []
+    },
+    "78988311-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2186.672363281249,
+      -1076.170654296875
+     ],
+     "options": []
+    },
+    "c041ebe2-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "78988311-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      2426.2617486642926,
+      -825.8176480409614
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "0ac040f9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e18f0e20-PrimToVDBPointDataGrid",
+       "DST",
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "c041ebe2-x",
+       "enable",
+       null
+      ],
+      "SRC": [
+       "aad2ade1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3745.4472701469276,
+      -462.93503450578834
+     ],
+     "options": []
+    },
+    "277462f9-x": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "e397cbc1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2054.6261268776593,
+      136.7600000000002
+     ],
+     "options": []
+    },
+    "180cfc79-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e397cbc1-x",
+       "port",
+       null
+      ],
+      "false": [
+       "d6fb696a-x",
+       "function",
+       null
+      ],
+      "cond": [
+       "e397cbc1-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2637.890991742522,
+      274.44648648648626
+     ],
+     "options": []
+    },
+    "d6fb696a-x": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       null,
+       null,
+       null
+      ],
+      "FUNC": [
+       "277462f9-x",
+       "FUNC",
+       null
+      ],
+      "SRC": [
+       "277462f9-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2371.231532283065,
+      167.89513513513495
+     ],
+     "options": []
+    },
+    "e397cbc1-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "particleApplyForce",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1617.1760352845045,
+      203.71298593692674
+     ],
+     "options": []
+    },
+    "d679e4b8-VDBPointsToPrimitive": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "0b575c56-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "c041ebe2-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2709.349955476397,
+      -992.8762243989296
+     ],
+     "options": []
+    },
+    "07923b4d-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "d679e4b8-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "vdbGrid": [
+       "c041ebe2-x",
+       "SDF",
+       null
+      ],
+      "sampleBy": [
+       null,
+       null,
+       "pos"
+      ],
+      "primAttr": [
+       null,
+       null,
+       "sdf"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "SampleType": "Clamp"
+     },
+     "uipos": [
+      3030.0979519145067,
+      -966.1620658949221
+     ],
+     "options": []
+    },
+    "56ba70f3-PrimitiveFilterByAttr": {
+     "name": "PrimitiveFilterByAttr",
+     "inputs": {
+      "prim": [
+       "07923b4d-SampleVDBToPrimitive",
+       "prim",
+       null
+      ],
+      "value": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "sdf",
+      "acceptIf": "cmple",
+      "vecSelType": "all"
+     },
+     "uipos": [
+      3305.78806767586,
+      -921.8165627782703
+     ],
+     "options": []
+    },
+    "e18f0e20-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
+     "inputs": {
+      "ParticleGeo": [
+       "56ba70f3-PrimitiveFilterByAttr",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "bce64895-GetVDBVoxelSize",
+       "dx",
+       null
+      ],
+      "vdbPoints": [
+       "0b575c56-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3547.6402493321393,
+      -678.8958147818333
+     ],
+     "options": []
+    },
+    "bce64895-GetVDBVoxelSize": {
+     "name": "GetVDBVoxelSize",
+     "inputs": {
+      "vdbGrid": [
+       "56cd53d3-x",
+       "Velocity",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3095.280498664286,
+      -634.0160284951011
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 1291.053036142133,
+    "y": 17.65447784702505,
+    "width": 959.9999999999973,
+    "height": 799.9999999999983
+   }
+  },
+  "SmoothLiquidSDF": {
+   "nodes": {
+    "696253df-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "6af52a44-x",
+       "SurfaceSDF",
+       null
+      ],
+      "SRC": [
+       "745750ec-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      -668.1749999999996,
+      328.1718750000002
+     ],
+     "options": []
+    },
+    "c7e42109-x": {
+     "name": "VDBSmoothSDF",
+     "inputs": {
+      "inoutSDF": [
+       "696253df-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "width": 1,
+      "iterations": 2,
+      "DEPRECATED": "Use VDBSmooth Instead"
+     },
+     "uipos": [
+      -372.03437499999956,
+      285.6875000000001
+     ],
+     "options": []
+    },
+    "79d4cf37-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "c7e42109-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      -82.05000000000001,
+      290.42187500000006
+     ],
+     "options": []
+    },
+    "44d210b4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "inParticles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2206.405078124999,
+      132.67207031250013
+     ],
+     "options": []
+    },
+    "bc4da704-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "550d7497-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       "9252b563-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "inoutSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3530.890624999999,
+      405.32187500000026
+     ],
+     "options": []
+    },
+    "9a375c1e-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      -224.4687499999999,
+      -246.12499999999983
+     ],
+     "options": []
+    },
+    "30d7a84d-x": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "44d210b4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "8651c115-PrintMessage",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1608.1406249999989,
+      212.62500000000028
+     ],
+     "options": []
+    },
+    "6af52a44-x": {
+     "name": "ParticleToLevelSet",
+     "inputs": {
+      "Particles": [
+       "30d7a84d-x",
+       "prim",
+       null
+      ],
+      "Radius": [
+       "1c6e8690-PortalOut",
+       "port",
+       null
+      ],
+      "Dx": [
+       "ef69bf27-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "f3522abd-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1131.39609375,
+      353.16796875
+     ],
+     "options": []
+    },
+    "550d7497-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "66e53205-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      2953.589062499997,
+      466.4054687499997
+     ],
+     "options": []
+    },
+    "7b7a84ed-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -4210.666992187499,
+      277.4150390625004
+     ],
+     "options": []
+    },
+    "7f1e760a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "pScaleDx",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      -4329.496093749999,
+      -215.52148437499946
+     ],
+     "options": []
+    },
+    "07a4eb29-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "voxelScale",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      -3629.7197423986468,
+      368.4747994087833
+     ],
+     "options": []
+    },
+    "e2be73a2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dropletScale",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      -3364.746093749998,
+      670.7910156249995
+     ],
+     "options": []
+    },
+    "b755a458-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "343c4bcb-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "30ae9964-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -2903.183593749998,
+      351.853515625
+     ],
+     "options": []
+    },
+    "58114a88-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "b755a458-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -2555.468749999998,
+      328.0126953124995
+     ],
+     "options": []
+    },
+    "391bf0d2-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7b7a84ed-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "83972ea7-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -2930.371093749998,
+      101.41601562499977
+     ],
+     "options": []
+    },
+    "d98f363e-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "391bf0d2-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dilate"
+     },
+     "uipos": [
+      -2528.4960937499977,
+      -71.3183593749998
+     ],
+     "options": []
+    },
+    "d0746a53-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "343c4bcb-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "2999e4e9-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -2839.7460937499986,
+      648.2910156249994
+     ],
+     "options": []
+    },
+    "26dead1f-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "d0746a53-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "droplet"
+     },
+     "uipos": [
+      -2554.1210937499977,
+      636.4160156249994
+     ],
+     "options": []
+    },
+    "ef69bf27-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -1615.5468749999989,
+      512.968749999999
+     ],
+     "options": []
+    },
+    "1c6e8690-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dilate"
+     },
+     "uipos": [
+      -1866.9374999999986,
+      388.8124999999996
+     ],
+     "options": []
+    },
+    "c60435c4-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "79d4cf37-x",
+       "inoutSDF",
+       null
+      ],
+      "depth": [
+       "93ad2902-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      804.63203125,
+      312.3984375
+     ],
+     "options": []
+    },
+    "d6f480a9-GetVDBPointsDroplets": {
+     "name": "GetVDBPointsDroplets",
+     "inputs": {
+      "grid": [
+       "44d210b4-SubInput",
+       "port",
+       null
+      ],
+      "sdf": [
+       "c60435c4-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       "b2dd9970-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1568.6162109374993,
+      586.7773437499997
+     ],
+     "options": []
+    },
+    "c435d271-x": {
+     "name": "ParticleToLevelSet",
+     "inputs": {
+      "Particles": [
+       "d6f480a9-GetVDBPointsDroplets",
+       "prim",
+       null
+      ],
+      "Radius": [
+       "d08c94a1-PortalOut",
+       "port",
+       null
+      ],
+      "Dx": [
+       "4271ef0f-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2065.6494140624977,
+      772.6074218749987
+     ],
+     "options": []
+    },
+    "d08c94a1-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "droplet"
+     },
+     "uipos": [
+      1601.2499999999975,
+      791.2499999999992
+     ],
+     "options": []
+    },
+    "4271ef0f-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      1613.7499999999984,
+      968.7499999999986
+     ],
+     "options": []
+    },
+    "66e53205-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "c60435c4-x",
+       "inoutSDF",
+       null
+      ],
+      "FieldB": [
+       "c435d271-x",
+       "SurfaceSDF",
+       null
+      ],
+      "SRC": [
+       "f64b2af0-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGUnion",
+      "writeBack": false
+     },
+     "uipos": [
+      2631.562499999996,
+      560.5273437499993
+     ],
+     "options": []
+    },
+    "93ad2902-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "5690cae8-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       "b3c4ca62-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      153.2031249999999,
+      -3.1250000000000284
+     ],
+     "options": []
+    },
+    "5690cae8-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dilate"
+     },
+     "uipos": [
+      -277.9687499999997,
+      -90.78124999999993
+     ],
+     "options": []
+    },
+    "b3c4ca62-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "droplet"
+     },
+     "uipos": [
+      -237.4999999999998,
+      83.74999999999994
+     ],
+     "options": []
+    },
+    "888abb73-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.75
+     },
+     "uipos": [
+      -3820.0400863717477,
+      616.545219275879
+     ],
+     "options": []
+    },
+    "30ae9964-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "07a4eb29-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "888abb73-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "07a4eb29-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3146.0,
+      481.0
+     ],
+     "options": []
+    },
+    "2999e4e9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e2be73a2-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "02e1b123-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "e2be73a2-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3123.0,
+      759.0
+     ],
+     "options": []
+    },
+    "02e1b123-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -3114.0,
+      971.0
+     ],
+     "options": []
+    },
+    "83972ea7-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d50dce56-x",
+       "port",
+       null
+      ],
+      "false": [
+       "41930a58-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "d50dce56-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3155.061731418919,
+      102.8125
+     ],
+     "options": []
+    },
+    "41930a58-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      -3385.714484797297,
+      -221.5638513513511
+     ],
+     "options": []
+    },
+    "d50dce56-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "influenceScale",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      -3458.6648648648647,
+      -2.7567567567565447
+     ],
+     "options": []
+    },
+    "343c4bcb-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7b7a84ed-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "54a1ebb9-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -3685.125,
+      158.4375
+     ],
+     "options": []
+    },
+    "54a1ebb9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "7f1e760a-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "f8c536e7-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "7f1e760a-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3938.133986486487,
+      5.133986486486435
+     ],
+     "options": []
+    },
+    "f8c536e7-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.5
+     },
+     "uipos": [
+      -4349.566300675674,
+      66.66442567567552
+     ],
+     "options": []
+    },
+    "8651c115-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "44d210b4-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "vdbpoints2prim"
+     },
+     "uipos": [
+      -1864.7656249999998,
+      77.10937499999997
+     ],
+     "options": []
+    },
+    "f3522abd-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "30d7a84d-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "pa2ls"
+     },
+     "uipos": [
+      -1348.2499999999998,
+      134.49999999999997
+     ],
+     "options": []
+    },
+    "745750ec-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "6af52a44-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "resmooth"
+     },
+     "uipos": [
+      -903.0,
+      175.49999999999997
+     ],
+     "options": []
+    },
+    "b2dd9970-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c60435c4-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "getdroplet"
+     },
+     "uipos": [
+      1164.9999999999993,
+      745.3906249999997
+     ],
+     "options": []
+    },
+    "f64b2af0-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c435d271-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "combine"
+     },
+     "uipos": [
+      2351.6249999999995,
+      930.8124999999999
+     ],
+     "options": []
+    },
+    "9252b563-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "550d7497-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "done"
+     },
+     "uipos": [
+      3235.0,
+      669.0
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -4050.91552779195,
+    "y": 191.996239163692,
+    "width": 1199.999999999997,
+    "height": 999.9999999999978
+   }
+  },
+  "StepFLIPWorld": {
+   "nodes": {
+    "81f24abc-CFL_dt": {
+     "name": "CFL_dt",
+     "inputs": {
+      "Velocity": [
+       "ba2840d5-ExtractDict",
+       "Velocity",
+       null
+      ],
+      "Dx": [
+       "ba2840d5-ExtractDict",
+       "Dx",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.0
+     },
+     "uipos": [
+      693.5712890624998,
+      710.2031249999999
+     ],
+     "options": []
+    },
+    "27fbce1b-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "World",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -645.2162109374997,
+      548.2132812500001
+     ],
+     "options": []
+    },
+    "07cae66b-BeginSubstep": {
+     "name": "BeginSubstep",
+     "inputs": {
+      "total_dt": [
+       "2eda0e63-IfElse",
+       "result",
+       null
+      ],
+      "min_scale": [
+       "a010d919-IfElse",
+       "result",
+       0.05
+      ],
+      "SRC": [
+       "27fbce1b-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      92.70019531249989,
+      416.0000000000002
+     ],
+     "options": []
+    },
+    "daa1a5be-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "07cae66b-BeginSubstep",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "1be95b63-SubstepFLIPWorld",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3916.470530346047,
+      420.9086561873889
+     ],
+     "options": []
+    },
+    "ba2840d5-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "27fbce1b-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "07cae66b-BeginSubstep",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Velocity\nDx\nobj2"
+     },
+     "uipos": [
+      340.7949218749999,
+      670.2714843750001
+     ],
+     "options": [],
+     "socket_keys": [
+      "Velocity",
+      "Dx",
+      "obj2"
+     ]
+    },
+    "1be95b63-SubstepFLIPWorld": {
+     "name": "SubstepFLIPWorld",
+     "inputs": {
+      "World": [
+       "27fbce1b-SubInput",
+       "port",
+       null
+      ],
+      "Particles": [
+       "718be7fe-x",
+       "port",
+       null
+      ],
+      "gravity": [
+       "618ac31b-IfElse",
+       "result",
+       null
+      ],
+      "Collider": [
+       "0ba6e113-ExtractDict",
+       "Collider",
+       null
+      ],
+      "dt": [
+       "10847622-SubstepDt",
+       "actual_dt",
+       null
+      ],
+      "Emitter": [
+       "0ba6e113-ExtractDict",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       "0ba6e113-ExtractDict",
+       "Absorber",
+       null
+      ],
+      "particleApplyForce": [
+       "34ea66b2-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3179.3421829902422,
+      203.33581966902966
+     ],
+     "options": []
+    },
+    "10847622-SubstepDt": {
+     "name": "SubstepDt",
+     "inputs": {
+      "FOR": [
+       "07cae66b-BeginSubstep",
+       "FOR",
+       null
+      ],
+      "desired_dt": [
+       "50110ad3-NumericOperator",
+       "ret",
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1401.8066406249993,
+      604.4511718750001
+     ],
+     "options": []
+    },
+    "718be7fe-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      791.5000000000002,
+      278.875
+     ],
+     "options": []
+    },
+    "ff78e97c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       "9dda4863-MakeDict",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Environ",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2176.6977795594926,
+      -21.0241236155948
+     ],
+     "options": []
+    },
+    "f4fa7a7f-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      594.25,
+      -3.25
+     ],
+     "options": []
+    },
+    "bdd9e394-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -605.4560546874995,
+      1019.6718750000002
+     ],
+     "options": []
+    },
+    "ddf13a0d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "1be95b63-SubstepFLIPWorld",
+       "World",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "World",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4461.358032226561,
+      305.4899902343754
+     ],
+     "options": []
+    },
+    "2bddc7a0-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "1be95b63-SubstepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4449.639282226559,
+      572.9114379882808
+     ],
+     "options": []
+    },
+    "90e52dfe-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "min_scale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1388.2802734374995,
+      169.00703125000007
+     ],
+     "options": []
+    },
+    "a010d919-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "90e52dfe-x",
+       "port",
+       null
+      ],
+      "false": [
+       "00074ccc-NumericFloat",
+       "value",
+       null
+      ],
+      "cond": [
+       "90e52dfe-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -630.8677734374999,
+      228.59296875000007
+     ],
+     "options": []
+    },
+    "00074ccc-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.04
+     },
+     "uipos": [
+      -1041.9068359374996,
+      24.137500000000074
+     ],
+     "options": []
+    },
+    "50110ad3-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "81f24abc-CFL_dt",
+       "cfl_dt",
+       null
+      ],
+      "rhs": [
+       "8d111477-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      1090.4541015624995,
+      791.6552734374995
+     ],
+     "options": []
+    },
+    "6f8d477b-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      318.04999999999984,
+      943.6999999999994
+     ],
+     "options": []
+    },
+    "e6688c61-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt_scale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      64.44999999999999,
+      1037.2999999999993
+     ],
+     "options": []
+    },
+    "8d111477-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e6688c61-x",
+       "port",
+       null
+      ],
+      "false": [
+       "6f8d477b-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "e6688c61-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      719.9337890624997,
+      974.8156249999995
+     ],
+     "options": []
+    },
+    "5c363140-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      634.2,
+      1198.1999999999998
+     ],
+     "options": []
+    },
+    "a8aeb5f0-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": -9.8
+     },
+     "uipos": [
+      871.0,
+      -165.5
+     ],
+     "options": []
+    },
+    "618ac31b-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f4fa7a7f-x",
+       "port",
+       null
+      ],
+      "false": [
+       "a8aeb5f0-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "f4fa7a7f-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      866.25,
+      61.75
+     ],
+     "options": []
+    },
+    "2eda0e63-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "bdd9e394-x",
+       "port",
+       null
+      ],
+      "false": [
+       "eec80bf9-NumericFloat",
+       "value",
+       null
+      ],
+      "cond": [
+       "bdd9e394-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -284.5000000000001,
+      1014.2499999999995
+     ],
+     "options": []
+    },
+    "eec80bf9-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.04
+     },
+     "uipos": [
+      -557.46875,
+      842.0546875
+     ],
+     "options": []
+    },
+    "0ba6e113-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "ff78e97c-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
+     },
+     "uipos": [
+      2687.8068359374997,
+      173.55371093749997
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "Absorber",
+      "obj3"
+     ]
+    },
+    "ee79e3ac-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "1be95b63-SubstepFLIPWorld",
+       "LiquidSDF",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "LiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4472.0205078125,
+      52.7763671875
+     ],
+     "options": []
+    },
+    "9dda4863-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       "10847622-SubstepDt",
+       "actual_dt",
+       null
+      ],
+      "portion": [
+       "10847622-SubstepDt",
+       "portion",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion\nobj2"
+     },
+     "uipos": [
+      1832.7019531249998,
+      290.22070312499983
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion",
+      "obj2"
+     ]
+    },
+    "243251b6-x": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "096639af-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2295.366262012792,
+      834.4506756756743
+     ],
+     "options": []
+    },
+    "34ea66b2-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "096639af-x",
+       "port",
+       null
+      ],
+      "false": [
+       "276c3aac-x",
+       "function",
+       null
+      ],
+      "cond": [
+       "096639af-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2878.631126877653,
+      972.1371621621604
+     ],
+     "options": []
+    },
+    "276c3aac-x": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       null,
+       null,
+       null
+      ],
+      "FUNC": [
+       "243251b6-x",
+       "FUNC",
+       null
+      ],
+      "SRC": [
+       "243251b6-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2611.971667418196,
+      865.5858108108091
+     ],
+     "options": []
+    },
+    "096639af-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "particleApplyForce",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1857.9161704196372,
+      901.4036616126009
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 3166.2657229985675,
+    "y": -57.18382162688971,
+    "width": 1199.9999999999966,
+    "height": 999.9999999999973
+   }
+  },
+  "FLIPMakeEmitter": {
+   "nodes": {
+    "fc434429-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "EmitSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -283.20000000000005,
+      475.20000000000005
+     ],
+     "options": []
+    },
+    "8b655143-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelGrid",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      174.0,
+      884.0
+     ],
+     "options": []
+    },
+    "41565939-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "8b655143-x",
+       "port",
+       null
+      ],
+      "false": [
+       "f5929c93-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "8b655143-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      533.8,
+      1022.6000000000004
+     ],
+     "options": []
+    },
+    "7f701e0a-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "07138dd0-IfElse",
+       "result",
+       null
+      ],
+      "VelGrid": [
+       "41565939-IfElse",
+       "result",
+       null
+      ],
+      "enable": [
+       "c34501e9-IfElse",
+       "result",
+       null
+      ],
+      "VelInit": [
+       "8ce42548-x",
+       "result",
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
+     },
+     "uipos": [
+      1272.9750000000001,
+      802.4374999999999
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "VelGrid",
+      "enable",
+      "VelInit",
+      "obj4"
+     ]
+    },
+    "a044787c-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "7f701e0a-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1613.625,
+      751.5625000000002
+     ],
+     "options": []
+    },
+    "cedca491-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      931.0,
+      1560.0
+     ],
+     "options": []
+    },
+    "fcf5f9ea-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      127.90000000000009,
+      1534.1999999999998
+     ],
+     "options": []
+    },
+    "56d82c30-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fcf5f9ea-x",
+       "port",
+       null
+      ],
+      "false": [
+       "fc434429-SubInput",
+       "hasValue",
+       null
+      ],
+      "cond": [
+       "fcf5f9ea-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      536.7,
+      1490.8000000000006
+     ],
+     "options": []
+    },
+    "c34501e9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "cedca491-NumericInt",
+       "value",
+       null
+      ],
+      "false": [
+       "943e8780-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "56d82c30-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      922.0,
+      1316.0
+     ],
+     "options": []
+    },
+    "943e8780-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      936.0,
+      1747.0
+     ],
+     "options": []
+    },
+    "b806e8c9-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      639.0,
+      493.0
+     ],
+     "options": []
+    },
+    "8ce42548-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "b806e8c9-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "842ceb2e-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "b806e8c9-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      887.0,
+      531.0
+     ],
+     "options": []
+    },
+    "842ceb2e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      884.0,
+      301.0
+     ],
+     "options": []
+    },
+    "f5929c93-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      181.0,
+      1131.0
+     ],
+     "options": []
+    },
+    "07138dd0-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fc434429-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "90adaecf-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "fc434429-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      98.75,
+      573.0
+     ],
+     "options": []
+    },
+    "90adaecf-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      92.0,
+      378.0
+     ],
+     "options": []
+    },
+    "5fcfe7d9-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      -254.90722656250006,
+      1000.6042480468745
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 980.4737310511015,
+    "y": 635.8104256719273,
+    "width": 959.9999999999989,
+    "height": 799.9999999999989
+   }
+  },
+  "FLIPMakeEnviron": {
+   "nodes": {
+    "4aa2300e-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Collider": [
+       "b7559c51-x",
+       "result",
+       null
+      ],
+      "Emitter": [
+       "b3b92ecc-IfElse",
+       "result",
+       null
+      ],
+      "Absorber": [
+       "97d26673-x",
+       "result",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
+     },
+     "uipos": [
+      894.2499999999999,
+      491.70000000000005
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "Absorber",
+      "obj3"
+     ]
+    },
+    "c938aa8b-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Environ",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1166.6000000000004,
+      514.0
+     ],
+     "options": []
+    },
+    "275ba771-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      295.421875,
+      277.68750000000034
+     ],
+     "options": []
+    },
+    "331ab8f3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      287.22187499999995,
+      572.6875000000005
+     ],
+     "options": []
+    },
+    "a620d82b-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       null,
+       null,
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      298.0,
+      846.0
+     ],
+     "options": []
+    },
+    "b3b92ecc-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "331ab8f3-x",
+       "port",
+       null
+      ],
+      "false": [
+       "a620d82b-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "cond": [
+       "331ab8f3-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      594.0,
+      687.0
+     ],
+     "options": []
+    },
+    "b7559c51-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "275ba771-x",
+       "port",
+       null
+      ],
+      "false": [
+       "1b92a871-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "cond": [
+       "275ba771-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      582.0,
+      319.5
+     ],
+     "options": []
+    },
+    "97d26673-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "24804fee-x",
+       "port",
+       null
+      ],
+      "false": [
+       "cc9f7d76-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "cond": [
+       "24804fee-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      609.6390624999999,
+      1235.15625
+     ],
+     "options": []
+    },
+    "24804fee-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      302.8609375000001,
+      1120.84375
+     ],
+     "options": []
+    },
+    "cc9f7d76-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      317.6,
+      1384.0
+     ],
+     "options": []
+    },
+    "45c9558b-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      922.4000000000001,
+      811.2
+     ],
+     "options": []
+    },
+    "1b92a871-FLIPMakeCollider": {
+     "name": "FLIPMakeCollider",
+     "inputs": {
+      "StaticSDF": [
+       null,
+       null,
+       null
+      ],
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "fd681807-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      590.0,
+      84.0
+     ],
+     "options": []
+    },
+    "fd681807-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      342.0,
+      69.0
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 664.1377555777171,
+    "y": 421.0992366764699,
+    "width": 959.9999999999998,
+    "height": 799.9999999999998
+   }
+  },
+  "FLIPMakeAbsorber": {
+   "nodes": {
+    "a96c16b7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "AbsorbSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      432.0,
+      171.0
+     ],
+     "options": []
+    },
+    "a1be14d3-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "int",
+      "defl": "0"
+     },
+     "uipos": [
+      397.0,
+      466.0
+     ],
+     "options": []
+    },
+    "a1644e5b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "e88e5141-VDBWrangle",
+       "grid",
+       null
+      ],
+      "enable": [
+       "36dbb2e5-x",
+       "result",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      1200.6596490122072,
+      320.3183345285096
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "c19bb0aa-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a96c16b7-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "57dcc840-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      711.1999999999998,
+      188.0
+     ],
+     "options": []
+    },
+    "57dcc840-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      522.7839715048977,
+      -3.8283170080142384
+     ],
+     "options": []
+    },
+    "36dbb2e5-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a1be14d3-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "cond": [
+       "a1be14d3-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.8,
+      482.4
+     ],
+     "options": []
+    },
+    "a863484d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "a1644e5b-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1475.955162241888,
+      297.8407079646018
+     ],
+     "options": []
+    },
+    "76c43703-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      994.3376697462152,
+      66.10117987533405
+     ],
+     "options": []
+    },
+    "e88e5141-VDBWrangle": {
+     "name": "VDBWrangle",
+     "inputs": {
+      "grid": [
+       "c19bb0aa-IfElse",
+       "result",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      949.8602053108254,
+      317.54479354290487
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 906.907553704552,
+    "y": 75.8218432704269,
+    "width": 614.3999999999997,
+    "height": 511.9999999999997
+   }
+  },
+  "FLIPGetEnvironArgs": {
+   "nodes": {
+    "413fd19e-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "30dbb9d5-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion\nobj2"
+     },
+     "uipos": [
+      578.0,
+      256.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion",
+      "obj2"
+     ]
+    },
+    "76aee235-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "dt",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      944.0,
+      165.0
+     ],
+     "options": []
+    },
+    "d7114ddc-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "portion",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "portion",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      938.0,
+      424.0
+     ],
+     "options": []
+    },
+    "30dbb9d5-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "environArgs",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      307.0,
+      250.0
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1200.0,
+    "height": 1000.0
    }
   }
  },
@@ -6477,6 +15159,41 @@
     "openvdb"
    ]
   },
+  "ComposeSdfVelField": {
+   "inputs": [
+    [
+     "",
+     "ZSSdfField",
+     ""
+    ],
+    [
+     "",
+     "ZSVelField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "CompressibleAdvection": {
    "inputs": [
     [
@@ -7833,7 +16550,8 @@
    "params": [],
    "categories": [
     "subgraph"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPMakeAbsorber": {
    "inputs": [
@@ -7843,9 +16561,9 @@
      ""
     ],
     [
-     "",
+     "int",
      "isEnabled",
-     ""
+     "0"
     ],
     [
      "",
@@ -7868,7 +16586,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPMakeCollider": {
    "inputs": [
@@ -7908,7 +16627,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPMakeEmitter": {
    "inputs": [
@@ -7953,7 +16673,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPMakeEnviron": {
    "inputs": [
@@ -7993,7 +16714,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPMakeParticles": {
    "inputs": [
@@ -8028,7 +16750,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIPSimTemplate": {
    "inputs": [
@@ -8124,6 +16847,11 @@
     ],
     [
      "",
+     "particleApplyForce",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -8143,7 +16871,8 @@
    "params": [],
    "categories": [
     "FLIPSolver"
-   ]
+   ],
+   "is_subgraph": true
   },
   "FLIP_P2G": {
    "inputs": [
@@ -10731,7 +19460,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "MakeGCTest": {
    "inputs": [
@@ -11526,6 +20256,11 @@
      "0.5,0.5,0.5"
     ],
     [
+     "int",
+     "OpenTop",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -11583,6 +20318,46 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MakeZSBuckets": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "MakeZSGrid": {
@@ -12523,6 +21298,56 @@
     "Ocean"
    ]
   },
+  "OceanCuCompute": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ocean_FFT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OceanData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
   "OutputVec2List": {
    "inputs": [
     [
@@ -13299,6 +22124,11 @@
     [
      "float",
      "Dx",
+     ""
+    ],
+    [
+     "",
+     "vdbPoints",
      ""
     ],
     [
@@ -17177,22 +26007,22 @@
      ""
     ],
     [
-     "",
-     "DxScale",
+     "float",
+     "pScaleDx",
      ""
     ],
     [
-     "",
+     "float",
      "voxelScale",
      ""
     ],
     [
-     "",
+     "float",
      "dropletScale",
      ""
     ],
     [
-     "",
+     "float",
      "influenceScale",
      ""
     ],
@@ -17217,7 +26047,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "SolveEquaUsingNRSolver": {
    "inputs": [
@@ -17483,6 +26314,11 @@
     ],
     [
      "",
+     "particleApplyForce",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -17512,7 +26348,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "StepZSBoundary": {
    "inputs": [
@@ -17924,6 +26761,11 @@
     ],
     [
      "",
+     "particleApplyForce",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -17953,7 +26795,8 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
+   ],
+   "is_subgraph": true
   },
   "SubtractPressureGradient": {
    "inputs": [
@@ -20172,6 +29015,46 @@
     "GPUMPM"
    ]
   },
+  "ZSParticlesWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "ZSPartitionForZSParticles": {
    "inputs": [
     [
@@ -20307,6 +29190,16 @@
     ],
     [
      "",
+     "regionalShape",
+     ""
+    ],
+    [
+     "float",
+     "SimDx",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -20324,7 +29217,22 @@
     ],
     [
      "",
+     "waveParticles",
+     ""
+    ],
+    [
+     "",
+     "OceanEviron",
+     ""
+    ],
+    [
+     "",
      "velField",
+     ""
+    ],
+    [
+     "",
+     "regionToShow",
      ""
     ],
     [
