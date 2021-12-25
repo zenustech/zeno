@@ -25,6 +25,7 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     QHBoxLayout* pHLayout = new QHBoxLayout;
 	{
         m_pComboSubGraph = new QComboBox;
+        m_pComboSubGraph->setEditable(true);
         pHLayout->addWidget(m_pComboSubGraph);
 
         m_pNewBtn = new QPushButton("New");
@@ -59,9 +60,11 @@ void ZNodesEditWidget::openFileDialog()
     m_pGraphsWidget->setGraphsModel(pModel);
     m_pComboSubGraph->setModel(pModel);
 
+    connect(m_pNewBtn, &QPushButton::clicked, [=]() {
+        pModel->switchOrNewGraph(m_pComboSubGraph->currentText());
+    });
     connect(m_pDeleteBtn, SIGNAL(clicked()), pModel, SLOT(onRemoveCurrentItem()));
-    connect(pModel, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
-        m_pGraphsWidget, SLOT(onRowsRemoved(const QModelIndex&, int, int)));
+
     connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), pModel, SLOT(onCurrentIndexChanged(int)));
     connect(pModel->selectionModel(), &QItemSelectionModel::currentChanged, 
         [=](const QModelIndex &current, const QModelIndex &previous) {

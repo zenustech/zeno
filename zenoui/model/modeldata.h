@@ -97,5 +97,8 @@ struct NODE_CATE {
 };
 typedef QMap<QString, NODE_CATE> NODE_CATES;
 
+typedef std::map<int, QVariant> NODE_DATA;
+typedef std::map<QString, NODE_DATA> NODES_DATA;
+
 
 #endif

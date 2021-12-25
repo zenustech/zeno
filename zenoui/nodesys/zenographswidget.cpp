@@ -32,6 +32,11 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
         pView->setModel(pSubModel);
         addWidget(pView);
     }
+
+    connect(m_model, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
+        this, SLOT(onRowsRemoved(const QModelIndex&, int, int)));
+    connect(m_model, SIGNAL(rowsInserted(const QModelIndex&, int, int)),
+        this, SLOT(onRowsInserted(const QModelIndex&, int, int)));
 }
 
 QList<QAction*> ZenoGraphsWidget::getCategoryActions(QPointF scenePos)
@@ -87,4 +92,13 @@ void ZenoGraphsWidget::onNewNodeCreated(const QString& descName, const QPointF& 
 void ZenoGraphsWidget::onRowsRemoved(const QModelIndex &parent, int first, int last)
 {
     removeWidget(widget(first));
+}
+
+void ZenoGraphsWidget::onRowsInserted(const QModelIndex &parent, int first, int last)
+{
+    SubGraphModel *pSubModel = m_model->subGraph(first);
+    Q_ASSERT(pSubModel);
+    ZenoSubGraphView *pView = new ZenoSubGraphView;
+    pView->setModel(pSubModel);
+    addWidget(pView);
 }

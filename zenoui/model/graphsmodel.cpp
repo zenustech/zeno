@@ -27,7 +27,7 @@ void GraphsModel::setFilePath(const QString& fn)
 
 SubGraphModel* GraphsModel::subGraph(const QString& name)
 {
-    const QModelIndexList& lst = this->match(QModelIndex(), ROLE_OBJNAME, name, 1, Qt::MatchExactly);
+    const QModelIndexList& lst = this->match(index(0, 0), ROLE_OBJNAME, name, 1, Qt::MatchExactly);
     if (lst.size() > 0)
     {
         SubGraphModel* pModel = static_cast<SubGraphModel*>(lst[0].data(ROLE_GRAPHPTR).value<void*>());
@@ -59,7 +59,34 @@ void GraphsModel::switchSubGraph(const QString& graphName)
     if (lst.size() == 1)
     {
         m_selection->setCurrentIndex(lst[0], QItemSelectionModel::Current);
+        //reloadSubGraph(graphName);
     }
+}
+
+void GraphsModel::switchOrNewGraph(const QString &graphName)
+{
+    QModelIndex startIndex = createIndex(0, 0, nullptr);
+    const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, graphName, 1, Qt::MatchExactly);
+    if (lst.size() == 1)
+    {
+        m_selection->setCurrentIndex(lst[0], QItemSelectionModel::Current);
+    }
+    else
+    {
+        SubGraphModel *subGraphModel = new SubGraphModel(this);
+        subGraphModel->setName(graphName);
+        appendSubGraph(subGraphModel);
+        m_selection->setCurrentIndex(index(rowCount() - 1, 0), QItemSelectionModel::Current);
+    }
+}
+
+void GraphsModel::reloadSubGraph(const QString& graphName)
+{
+    initDescriptors();
+    SubGraphModel *pReloadModel = subGraph(graphName);
+    Q_ASSERT(pReloadModel);
+    NODES_DATA datas = pReloadModel->dumpGraph();
+    pReloadModel->clear();
 }
 
 int GraphsModel::graphCounts() const
@@ -193,7 +220,8 @@ NODE_CATES GraphsModel::getCates()
 
 void GraphsModel::onCurrentIndexChanged(int row)
 {
-    m_selection->setCurrentIndex(index(row, 0), QItemSelectionModel::Current);
+    const QString& graphName = data(index(row, 0), ROLE_OBJNAME).toString();
+    switchSubGraph(graphName);
 }
 
 void GraphsModel::onRemoveCurrentItem()

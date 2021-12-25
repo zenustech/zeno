@@ -8,14 +8,33 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(parent)
     , m_pGraphsModel(pGraphsModel)
 {
+    //to think: should graphsModel be a parent of this.
 }
 
 SubGraphModel::~SubGraphModel()
 {
 }
 
-NODE_DESCS SubGraphModel::descriptors() {
+NODE_DESCS SubGraphModel::descriptors()
+{
     return m_pGraphsModel->descriptors();
+}
+
+NODES_DATA SubGraphModel::dumpGraph()
+{
+    NODES_DATA datas;
+    for (auto node : m_nodes)
+    {
+        datas[node.first] = node.second->m_datas;
+    }
+    return datas;
+}
+
+void SubGraphModel::clear()
+{
+    do {
+        removeRows(0, 1);
+    } while (rowCount() > 0);
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const

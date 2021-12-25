@@ -21,7 +21,7 @@ struct PlainNodeItem
         return it->second;
     }
 
-    std::map<int, QVariant> m_datas;
+    NODE_DATA m_datas;
 };
 
 typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
@@ -73,6 +73,8 @@ public:
     QRectF viewRect() const { return m_rect; }
     QString name() const;
     NODE_DESCS descriptors();
+    NODES_DATA dumpGraph();
+    void clear();
 
 signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,

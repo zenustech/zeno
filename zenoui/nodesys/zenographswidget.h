@@ -16,6 +16,7 @@ public:
 
 public slots:
 	void onRowsRemoved(const QModelIndex &parent, int first, int last);
+    void onRowsInserted(const QModelIndex &parent, int first, int last);
     void onNewNodeCreated(const QString &descName, const QPointF &pt);
 
 private:
