@@ -124,6 +124,10 @@ void ZenoNode::init(const QModelIndex& index)
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
     const QString &id = m_index.data(ROLE_OBJID).toString();
     setPos(pos);
+
+    const SubGraphModel *pModel = qobject_cast<const SubGraphModel *>(m_index.model());
+    Q_ASSERT(pModel);
+    connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }
 
 void ZenoNode::initIndependentWidgets()
@@ -481,6 +485,12 @@ bool ZenoNode::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 bool ZenoNode::sceneEvent(QEvent *event)
 {
     return _base::sceneEvent(event);
+}
+
+void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseDoubleClickEvent(event);
+    emit doubleClicked(nodeName());
 }
 
 void ZenoNode::onCollaspeBtnClicked()

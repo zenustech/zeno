@@ -15,30 +15,30 @@ class GraphsModel : public QStandardItemModel
 public:
     GraphsModel(QObject* parent = nullptr);
     ~GraphsModel();
+    void setFilePath(const QString& fn);
     SubGraphModel* subGraph(const QString& id);
     SubGraphModel *subGraph(int idx);
     SubGraphModel *currentGraph();
+    void switchSubGraph(const QString& graphName);
+    QItemSelectionModel* selectionModel() const;
     int graphCounts() const;
     NODE_DESCS descriptors() const;
+    void appendSubGraph(SubGraphModel* pGraph);
+    void removeGraph(int idx);
     void setDescriptors(const NODE_DESCS &nodesParams);
     void initDescriptors();
     NODE_DESCS getSubgraphDescs();
     NODE_CATES getCates();
 
-signals:
-    void itemSelected(int);
-
 public slots:
     void onCurrentIndexChanged(int);
-
-private slots:
-    void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+    void onRemoveCurrentItem();
 
 private:
     QItemSelectionModel* m_selection;
     NODE_DESCS m_nodesDesc;
     NODE_CATES m_nodesCate;
-    int m_currentIndex;
+    QString m_filePath;
 };
 
 #endif

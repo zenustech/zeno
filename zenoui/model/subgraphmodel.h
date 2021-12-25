@@ -78,6 +78,9 @@ signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
                 const QString& inputId, const QString& inputPort);
 
+public slots:
+    void onDoubleClicked(const QString &nodename);
+
 private:
     PlainNodeItem* itemFromIndex(const QModelIndex &index) const;
     bool removeRow(int row, const QModelIndex &parent = QModelIndex());

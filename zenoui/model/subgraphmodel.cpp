@@ -298,6 +298,10 @@ bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
     return ret;
 }
 
+void SubGraphModel::onDoubleClicked(const QString& nodename)
+{
+    m_pGraphsModel->switchSubGraph(nodename);
+}
 
 void SubGraphModel::setName(const QString& name)
 {

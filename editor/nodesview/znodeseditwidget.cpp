@@ -55,11 +55,19 @@ void ZNodesEditWidget::openFileDialog()
     QString filePath = fileDialog.selectedFiles().first();
     GraphsModel *pModel = ZsgReader::getInstance().loadZsgFile(filePath);
     pModel->initDescriptors();
+
     m_pGraphsWidget->setGraphsModel(pModel);
     m_pComboSubGraph->setModel(pModel);
 
+    connect(m_pDeleteBtn, SIGNAL(clicked()), pModel, SLOT(onRemoveCurrentItem()));
+    connect(pModel, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
+        m_pGraphsWidget, SLOT(onRowsRemoved(const QModelIndex&, int, int)));
     connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), pModel, SLOT(onCurrentIndexChanged(int)));
-    connect(pModel, SIGNAL(itemSelected(int)), m_pComboSubGraph, SLOT(setCurrentIndex(int)));
+    connect(pModel->selectionModel(), &QItemSelectionModel::currentChanged, 
+        [=](const QModelIndex &current, const QModelIndex &previous) {
+            m_pGraphsWidget->setCurrentIndex(current.row());
+            m_pComboSubGraph->setCurrentIndex(current.row());
+    });
 }
 
 void ZNodesEditWidget::initMenu(QMenuBar* pMenu)

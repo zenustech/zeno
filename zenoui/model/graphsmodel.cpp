@@ -7,15 +7,22 @@
 GraphsModel::GraphsModel(QObject *parent)
     : QStandardItemModel(parent)
     , m_selection(nullptr)
-    , m_currentIndex(0)
 {
     m_selection = new QItemSelectionModel(this);
-    connect(m_selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
-            this, SLOT(onSelectionChanged(const QItemSelection&, const QItemSelection&)));
 }
 
 GraphsModel::~GraphsModel()
 {
+}
+
+QItemSelectionModel* GraphsModel::selectionModel() const
+{
+    return m_selection;
+}
+
+void GraphsModel::setFilePath(const QString& fn)
+{
+    m_filePath = fn;
 }
 
 SubGraphModel* GraphsModel::subGraph(const QString& name)
@@ -42,7 +49,17 @@ SubGraphModel* GraphsModel::subGraph(int idx)
 
 SubGraphModel* GraphsModel::currentGraph()
 {
-    return subGraph(m_currentIndex);
+    return subGraph(m_selection->currentIndex().row());
+}
+
+void GraphsModel::switchSubGraph(const QString& graphName)
+{
+    QModelIndex startIndex = createIndex(0, 0, nullptr);
+    const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, graphName, 1, Qt::MatchExactly);
+    if (lst.size() == 1)
+    {
+        m_selection->setCurrentIndex(lst[0], QItemSelectionModel::Current);
+    }
 }
 
 int GraphsModel::graphCounts() const
@@ -153,6 +170,22 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
     }
 }
 
+void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
+{
+    QStandardItem *pItem = new QStandardItem;
+    QString graphName = pGraph->name();
+    QVariant var(QVariant::fromValue(static_cast<void *>(pGraph)));
+    pItem->setText(graphName);
+    pItem->setData(var, ROLE_GRAPHPTR);
+    pItem->setData(graphName, ROLE_OBJNAME);
+    appendRow(pItem);
+}
+
+void GraphsModel::removeGraph(int idx)
+{
+    removeRow(idx);
+}
+
 NODE_CATES GraphsModel::getCates()
 {
     return m_nodesCate;
@@ -160,25 +193,16 @@ NODE_CATES GraphsModel::getCates()
 
 void GraphsModel::onCurrentIndexChanged(int row)
 {
-    if (m_currentIndex == row)
-        return;
-
-    m_currentIndex = row;
-    emit itemSelected(m_currentIndex);
-    //m_selection->select(index(row, 0), QItemSelectionModel::Select);
+    m_selection->setCurrentIndex(index(row, 0), QItemSelectionModel::Current);
 }
 
-void GraphsModel::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+void GraphsModel::onRemoveCurrentItem()
 {
-    QModelIndexList lst = selected.indexes();
-    if (!lst.isEmpty())
-    {
-        QModelIndex idx = lst.at(0);
-        emit itemSelected(idx.row());
-    }
-    lst = deselected.indexes();
-    if (!lst.isEmpty())
-    {
-        QModelIndex idx = lst.at(0);
-    }
+    removeGraph(m_selection->currentIndex().row());
+    //switch to main.
+    QModelIndex startIndex = createIndex(0, 0, nullptr);
+    //to ask: if not main scene?
+    const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, "main", 1, Qt::MatchExactly);
+    if (lst.size() == 1)
+        m_selection->setCurrentIndex(index(lst[0].row(), 0), QItemSelectionModel::Current);
 }

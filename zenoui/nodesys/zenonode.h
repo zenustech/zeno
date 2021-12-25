@@ -41,6 +41,7 @@ public:
 signals:
     void nodePositionChange(const QString&);
     void socketClicked(const QString& id, bool bInput, const QString& name);
+    void doubleClicked(const QString &nodename);
 
 public slots:
     void onCollaspeBtnClicked();
@@ -49,7 +50,8 @@ public slots:
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
-    bool sceneEvent(QEvent* event) override;
+    bool sceneEvent(QEvent *event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);

@@ -30,6 +30,7 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
         return nullptr;
 
     GraphsModel* pModel = new GraphsModel;
+    pModel->setFilePath(fn);
 
     NODE_DESCS nodesDescs = UiHelper::parseDescs(doc["descs"]);
     pModel->setDescriptors(nodesDescs);
@@ -39,13 +40,7 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
         const QString& graphName = subgraph.name.GetString();
         SubGraphModel *subGraphModel = _parseSubGraph(pModel, subgraph.value);
         subGraphModel->setName(graphName);
-
-        QStandardItem *pItem = new QStandardItem;
-        QVariant var(QVariant::fromValue(static_cast<void*>(subGraphModel)));
-        pItem->setText(graphName);
-        pItem->setData(var, ROLE_GRAPHPTR);
-        pItem->setData(graphName, ROLE_OBJNAME);
-        pModel->appendRow(pItem);
+        pModel->appendSubGraph(subGraphModel);
     }
     return pModel;
 }
