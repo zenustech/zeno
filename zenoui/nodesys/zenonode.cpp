@@ -19,7 +19,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bHeapMap(false)
     , m_pMainLayout(nullptr)
 {
-    setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemSendsGeometryChanges);
+    setFlags(ItemIsMovable | ItemIsSelectable);
 }
 
 ZenoNode::~ZenoNode()
@@ -124,6 +124,10 @@ void ZenoNode::init(const QModelIndex& index)
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
     const QString &id = m_index.data(ROLE_OBJID).toString();
     setPos(pos);
+
+    // setPos will send geometry, but it's not supposed to happend during initialization.
+    setFlag(ItemSendsGeometryChanges);
+    setFlag(ItemSendsScenePositionChanges);
 
     const SubGraphModel *pModel = qobject_cast<const SubGraphModel *>(m_index.model());
     Q_ASSERT(pModel);

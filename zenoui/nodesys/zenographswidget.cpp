@@ -24,7 +24,7 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
         removeWidget(widget(0));
     } while (count() > 0);
 
-    for (int i = 0; i < pModel->graphCounts(); i++)
+    for (int i = 0; i < pModel->rowCount(); i++)
     {
         SubGraphModel* pSubModel = pModel->subGraph(i);
         Q_ASSERT(pSubModel);

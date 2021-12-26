@@ -32,9 +32,16 @@ NODES_DATA SubGraphModel::dumpGraph()
 
 void SubGraphModel::clear()
 {
-    do {
-        removeNode(0);
-    } while (rowCount() > 0);
+    m_nodes.clear();
+    m_key2Row.clear();
+    m_name2Id.clear();
+    m_row2Key.clear();
+    emit clearLayout();
+}
+
+void SubGraphModel::reload()
+{
+    emit reloaded();
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -297,7 +304,6 @@ bool SubGraphModel::insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &pa
 
     QModelIndex idx = createIndex(row, 0, pItem.get());
     insertRows(row, 1, idx);
-
     return true;
 }
 

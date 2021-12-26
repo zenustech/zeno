@@ -22,7 +22,7 @@ private:
 
     ZenoGraphsWidget* m_pGraphsWidget;
     QComboBox* m_pComboSubGraph;
-    QPushButton* m_pNewBtn;
+    QPushButton* m_pReloadBtn;
     QPushButton* m_pDeleteBtn;
     QAction* m_pNewSubGraph;
 };

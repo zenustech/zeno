@@ -31,6 +31,10 @@ public slots:
     void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
 
+private slots:
+    void reload();
+    void clearLayout();
+
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
     bool _enableLink(const QString &outputNode, const QString &outputSocket,

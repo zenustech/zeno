@@ -59,11 +59,10 @@ void GraphsModel::switchSubGraph(const QString& graphName)
     if (lst.size() == 1)
     {
         m_selection->setCurrentIndex(lst[0], QItemSelectionModel::Current);
-        //reloadSubGraph(graphName);
     }
 }
 
-void GraphsModel::switchOrNewGraph(const QString &graphName)
+void GraphsModel::newSubgraph(const QString &graphName)
 {
     QModelIndex startIndex = createIndex(0, 0, nullptr);
     const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, graphName, 1, Qt::MatchExactly);
@@ -87,11 +86,22 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     Q_ASSERT(pReloadModel);
     NODES_DATA datas = pReloadModel->dumpGraph();
     pReloadModel->clear();
+    pReloadModel->blockSignals(true);
+    for (auto item : datas)
+    {
+        const QString& nodeid = item.first;
+        NODE_DATA data = item.second;
+        NODEITEM_PTR spItem = std::make_shared<PlainNodeItem>();
+        spItem->m_datas = data;
+        pReloadModel->appendItem(spItem);
+    }
+    pReloadModel->blockSignals(false);
+    pReloadModel->reload();
 }
 
 int GraphsModel::graphCounts() const
 {
-    return this->rowCount();
+    return rowCount();
 }
 
 void GraphsModel::initDescriptors()

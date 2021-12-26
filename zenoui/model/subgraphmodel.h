@@ -76,10 +76,13 @@ public:
     NODE_DESCS descriptors();
     NODES_DATA dumpGraph();
     void clear();
+    void reload();
 
 signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
                 const QString& inputId, const QString& inputPort);
+    void clearLayout();
+    void reloaded();
 
 public slots:
     void onDoubleClicked(const QString &nodename);

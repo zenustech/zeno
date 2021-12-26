@@ -19,6 +19,18 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
 
 void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
 {
+    if (m_subgraphModel) {
+        disconnect(m_subgraphModel, SIGNAL(reloaded()), this, SLOT(reload()));
+        disconnect(m_subgraphModel, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
+        disconnect(m_subgraphModel, SIGNAL(dataChanged(const QModelIndex &, const QModelIndex &, const QVector<int> &)),
+                this, SLOT(onDataChanged(const QModelIndex &, const QModelIndex &, const QVector<int> &)));
+        disconnect(m_subgraphModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)),
+                this, SLOT(onRowsAboutToBeRemoved(const QModelIndex &, int, int)));
+        disconnect(m_subgraphModel, SIGNAL(rowsInserted(const QModelIndex &, int, int)),
+                this, SLOT(onRowsInserted(const QModelIndex &, int, int)));
+        disconnect(m_subgraphModel, SIGNAL(linkChanged(bool, const QString &, const QString &, const QString &, const QString &)),
+                this, SLOT(onLinkChanged(bool, const QString &, const QString &, const QString &, const QString &)));
+    }
     m_subgraphModel = pModel;
     int n = m_subgraphModel->rowCount();
     for (int r = 0; r < n; r++)
@@ -27,7 +39,7 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         ZenoNode* pNode = new ZenoNode(m_nodeParams);
         pNode->init(idx);
         addItem(pNode);
-        m_nodes.insert(std::make_pair(pNode->nodeId(), pNode));
+        m_nodes[pNode->nodeId()] = pNode;
     }
 
     for (auto it : m_nodes)
@@ -57,6 +69,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         }
     }
 
+    connect(m_subgraphModel, SIGNAL(reloaded()), this, SLOT(reload()));
+    connect(m_subgraphModel, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
     connect(m_subgraphModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)),
         this, SLOT(onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
     connect(m_subgraphModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
@@ -73,6 +87,13 @@ QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, cons
     Q_ASSERT(it != m_nodes.end());
     QPointF pos = it->second->getPortPos(bInput, portName);
     return pos;
+}
+
+void ZenoSubGraphScene::reload()
+{
+    clear();
+    Q_ASSERT(m_subgraphModel);
+    initModel(m_subgraphModel);
 }
 
 bool ZenoSubGraphScene::_enableLink(const QString &outputNode, const QString &outputSocket, const QString& inputNode, const QString& inputSocket)
@@ -163,6 +184,13 @@ void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void ZenoSubGraphScene::onNewNodeCreated()
 {
 
+}
+
+void ZenoSubGraphScene::clearLayout()
+{
+    m_nodes.clear();
+    m_links.clear();
+    clear();
 }
 
 void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)

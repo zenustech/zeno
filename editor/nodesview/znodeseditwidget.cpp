@@ -12,7 +12,7 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     : QWidget(parent)
     , m_pGraphsWidget(nullptr)
     , m_pComboSubGraph(nullptr)
-    , m_pNewBtn(nullptr)
+    , m_pReloadBtn(nullptr)
     , m_pDeleteBtn(nullptr)
     , m_pNewSubGraph(nullptr)
 {
@@ -28,8 +28,8 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
         m_pComboSubGraph = new QComboBox;
         pHLayout->addWidget(m_pComboSubGraph);
 
-        m_pNewBtn = new QPushButton("New");
-        pHLayout->addWidget(m_pNewBtn);
+        m_pReloadBtn = new QPushButton("Reload");
+        pHLayout->addWidget(m_pReloadBtn);
 
 		m_pDeleteBtn = new QPushButton("Delete");
         pHLayout->addWidget(m_pDeleteBtn);
@@ -60,8 +60,8 @@ void ZNodesEditWidget::openFileDialog()
     m_pGraphsWidget->setGraphsModel(pModel);
     m_pComboSubGraph->setModel(pModel);
 
-    connect(m_pNewBtn, &QPushButton::clicked, [=]() {
-        pModel->switchOrNewGraph(m_pComboSubGraph->currentText());
+    connect(m_pReloadBtn, &QPushButton::clicked, [=]() {
+        pModel->reloadSubGraph(m_pComboSubGraph->currentText());
     });
     connect(m_pDeleteBtn, SIGNAL(clicked()), pModel, SLOT(onRemoveCurrentItem()));
 
@@ -99,7 +99,7 @@ void ZNodesEditWidget::onSubGraphTriggered()
     if (dialog.exec() == QDialog::Accepted)
     {
         GraphsModel* pModel = m_pGraphsWidget->model();
-        pModel->switchOrNewGraph(pLineEdit->text());
+        pModel->newSubgraph(pLineEdit->text());
     }
 }
 

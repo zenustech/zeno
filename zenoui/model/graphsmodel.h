@@ -20,7 +20,7 @@ public:
     SubGraphModel *subGraph(int idx);
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName);
-    void switchOrNewGraph(const QString& graphName);
+    void newSubgraph(const QString& graphName);
     void reloadSubGraph(const QString& graphName);
     QItemSelectionModel* selectionModel() const;
     int graphCounts() const;
