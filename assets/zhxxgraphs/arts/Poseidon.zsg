@@ -309,9 +309,7 @@
       -10913.095012075459,
       -5772.350965822494
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "a717a32b-PrimToVDBPointDataGrid": {
      "name": "PrimToVDBPointDataGrid",
@@ -342,9 +340,7 @@
       -10667.308732928137,
       -5090.926896309632
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "78ef6c77-NumericFloat": {
      "name": "NumericFloat",
@@ -498,9 +494,7 @@
       -10554.405120481919,
       -5470.632530120475
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "4239a45b-NumericVec3": {
      "name": "NumericVec3",
@@ -710,9 +704,7 @@
       -8297.521632371745,
       -5237.026639775185
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "bcf4cacf-x": {
      "name": "ParticlesWrangle",
@@ -790,13 +782,390 @@
       -5497.3249027237325
      ],
      "options": []
+    },
+    "da9de0d8-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "/home/dilei/Desktop/Prim/Prim.{frame+40}.obj"
+     },
+     "uipos": [
+      -12291.87264976659,
+      -6796.176008169083
+     ],
+     "options": []
+    },
+    "ad385b3f-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       "da9de0d8-MakeString",
+       "value",
+       "/home/dilei/Desktop/Prim/Prim.240.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -12035.062240663894,
+      -6793.724066390037
+     ],
+     "options": []
+    },
+    "4cb93a48-x": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       "1ebb0bc4-x",
+       "value",
+       "/home/dilei/Desktop/Prim/Prim.240.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -12033.757658519184,
+      -6561.014693010888
+     ],
+     "options": []
+    },
+    "1ebb0bc4-x": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "/home/dilei/Desktop/Prim/Prim.{frame+41}.obj"
+     },
+     "uipos": [
+      -12326.226781314825,
+      -6557.63157254927
+     ],
+     "options": []
+    },
+    "23faf4a1-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "ad385b3f-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "b5c4a29b-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -11707.728215767627,
+      -6880.835062240659
+     ],
+     "options": []
+    },
+    "c2de3b73-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "4cb93a48-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "b5c4a29b-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -11704.48651452281,
+      -6592.9719917012435
+     ],
+     "options": []
+    },
+    "b5c4a29b-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 5.0,
+      "y": 5.0,
+      "z": 5.0
+     },
+     "uipos": [
+      -12020.876556016588,
+      -6727.178423236511
+     ],
+     "options": []
+    },
+    "193f3e66-PrimitiveBinaryOp": {
+     "name": "PrimitiveBinaryOp",
+     "inputs": {
+      "primA": [
+       "4895af30-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "primB": [
+       "d1c1d4de-x",
+       "prim",
+       null
+      ],
+      "primOut": [
+       "4895af30-PrimitiveAddAttr",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrA": "pos",
+      "attrB": "pos",
+      "attrOut": "vel",
+      "op": "sub"
+     },
+     "uipos": [
+      -11128.679114799435,
+      -6824.057745504836
+     ],
+     "options": []
+    },
+    "4895af30-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "23faf4a1-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      -11433.480290456424,
+      -6887.966804979247
+     ],
+     "options": []
+    },
+    "d1c1d4de-x": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "c2de3b73-x",
+       "outPrim",
+       null
+      ],
+      "fillValue": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      -11419.865145228207,
+      -6642.245850622404
+     ],
+     "options": []
+    },
+    "b0357cd1-SprayParticles": {
+     "name": "SprayParticles",
+     "inputs": {
+      "TrianglePrim": [
+       "7c0549fb-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10493.359969558604,
+      -6882.926179604259
+     ],
+     "options": []
+    },
+    "d5d39460-InterpMeshBarycentric": {
+     "name": "InterpMeshBarycentric",
+     "inputs": {
+      "MeshPrim": [
+       "7c0549fb-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "Particles": [
+       "b0357cd1-SprayParticles",
+       "particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10174.999999999998,
+      -6760.833333333329
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "7c0549fb-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "193f3e66-PrimitiveBinaryOp",
+       "primOut",
+       null
+      ],
+      "zfxCode": [
+       "40739347-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -10800.833333333328,
+      -6771.666666666662
+     ],
+     "options": []
+    },
+    "40739347-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@vel /= 0.03\n@clr=0.1*@vel"
+     },
+     "uipos": [
+      -10974.16666666666,
+      -7169.999999999996
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -11509.232374865805,
-    "y": -5699.927197323979,
-    "width": 399.9999999999998,
-    "height": 399.9999999999998
+    "x": -10669.321563955118,
+    "y": -7151.594321155791,
+    "width": 319.99999999999983,
+    "height": 319.99999999999983
    }
   },
   "OceanVolume": {
@@ -8290,7 +8659,7 @@
       "Dx": [
        "c2a2c361-NumericOperator",
        "ret",
-       null
+       0.01
       ],
       "SRC": [
        null,
@@ -8298,10 +8667,7 @@
        null
       ]
      },
-     "params": {
-      "dx": 0.01,
-      "channel": "vel"
-     },
+     "params": {},
      "uipos": [
       921.0,
       411.0
@@ -18740,6 +19106,41 @@
     "frame"
    ]
   },
+  "InterpMeshBarycentric": {
+   "inputs": [
+    [
+     "",
+     "MeshPrim",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "KillParticlesInSDF": {
    "inputs": [
     [
@@ -26657,9 +27058,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "Dx",
-     ""
+     "0.01"
     ],
     [
      "",
@@ -26679,20 +27080,9 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01"
-    ],
-    [
-     "string",
-     "channel",
-     "vel"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "FLIPSolver"
+    "primitive"
    ]
   },
   "StepFLIPWorld": {
