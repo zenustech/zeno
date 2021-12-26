@@ -192,12 +192,13 @@ struct InterpMeshBarycentric : INode{
                     points->add_attr<T>(key);
                 }, prim->attr(key));
     }
-#pragma omp parallel for
-  for (int index = 0; index < points->size(); index++) {
+//#pragma omp parallel for
+  tbb::parallel_for((size_t)0, (size_t)(points->size()), (size_t)1, [&](size_t index) 
+  {
       auto tidx = triIndex[index];
       int v0 = tidx[0], v1 = tidx[1], v2 = tidx[2];
       BarycentricInterpPrimitive(points.get(), prim.get(), index, v0, v1, v2, points->verts[index], prim->verts[v0], prim->verts[v1], prim->verts[v2]);
-    }
+  });
 
     set_output("oParticles", get_input("Particles"));
 
