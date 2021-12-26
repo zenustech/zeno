@@ -14,6 +14,9 @@ public:
 public slots:
     void openFileDialog();
 
+private slots:
+    void onSubGraphTriggered();
+
 private:
     void initMenu(QMenuBar* pMenu);
 
@@ -21,6 +24,7 @@ private:
     QComboBox* m_pComboSubGraph;
     QPushButton* m_pNewBtn;
     QPushButton* m_pDeleteBtn;
+    QAction* m_pNewSubGraph;
 };
 
 

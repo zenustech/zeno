@@ -33,7 +33,7 @@ NODES_DATA SubGraphModel::dumpGraph()
 void SubGraphModel::clear()
 {
     do {
-        removeRows(0, 1);
+        removeNode(0);
     } while (rowCount() > 0);
 }
 
@@ -76,7 +76,17 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
     insertRows(nRow, 1);
 }
 
-void SubGraphModel::removeNode(const QModelIndex& index)
+void SubGraphModel::removeNode(const QString& nodeid)
+{
+    removeRows(m_key2Row[nodeid], 0);
+}
+
+void SubGraphModel::removeNode(int row)
+{
+    removeRows(row, 1);
+}
+
+void SubGraphModel::_removeNodeItem(const QModelIndex& index)
 {
     //remove node by id and update params from other node.
     PlainNodeItem* pItem = itemFromIndex(index);
@@ -121,7 +131,18 @@ void SubGraphModel::removeNode(const QModelIndex& index)
         }
     }
 
-    removeRows(index.row(), 1);
+    int row = index.row();
+    auto iterR2K = m_row2Key.find(row);
+    Q_ASSERT(iterR2K != m_row2Key.end());
+    QString id = iterR2K->second;
+    for (int r = row + 1; r < rowCount(); r++) {
+        const QString &key = m_row2Key[r];
+        m_row2Key[r - 1] = key;
+        m_key2Row[key] = r - 1;
+    }
+    m_row2Key.erase(rowCount() - 1);
+    m_key2Row.erase(id);
+    m_nodes.erase(id);
 }
 
 void SubGraphModel::addLink(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock)
@@ -280,28 +301,6 @@ bool SubGraphModel::insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &pa
     return true;
 }
 
-bool SubGraphModel::removeRow(int row, const QModelIndex &parent)
-{
-    //todo
-    if (row < 0 || row >= rowCount()) return false;
-
-    auto iterR2K = m_row2Key.find(row);
-    Q_ASSERT(iterR2K != m_row2Key.end());
-    QString id = iterR2K->second;
-    for (int r = row + 1; r < rowCount(); r++)
-    {
-        const QString &key = m_row2Key[r];
-        m_row2Key[r - 1] = key;
-        m_key2Row[key] = r - 1;
-    }
-    m_row2Key.erase(rowCount() - 1);
-    m_key2Row.erase(id);
-    m_nodes.erase(id);
-    //emit rowsRemoved(parent, row, row);
-
-    return true;
-}
-
 bool SubGraphModel::insertRows(int row, int count, const QModelIndex& parent)
 {
     beginInsertRows(parent, row, row);
@@ -312,9 +311,9 @@ bool SubGraphModel::insertRows(int row, int count, const QModelIndex& parent)
 bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 {
     beginRemoveRows(parent, row, row);
-    bool ret = removeRow(row, parent);
+    _removeNodeItem(index(row, 0));
     endRemoveRows();
-    return ret;
+    return true;
 }
 
 void SubGraphModel::onDoubleClicked(const QString& nodename)

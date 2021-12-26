@@ -62,7 +62,8 @@ public:
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
     QModelIndex indexFromItem(PlainNodeItem* pItem) const;
     void appendItem(NODEITEM_PTR pItem);
-    void removeNode(const QModelIndex& index);
+    void removeNode(const QString& nodeid);
+    void removeNode(int row);
     void removeLink(const QString& outputId, const QString& outputPort,
                 const QString& inputId, const QString& inputPort);
     void addLink(const QString& outNode, const QString& outSock,
@@ -85,7 +86,7 @@ public slots:
 
 private:
     PlainNodeItem* itemFromIndex(const QModelIndex &index) const;
-    bool removeRow(int row, const QModelIndex &parent = QModelIndex());
+    void _removeNodeItem(const QModelIndex &index);
 
     QString m_name;
     std::map<QString, int> m_key2Row;

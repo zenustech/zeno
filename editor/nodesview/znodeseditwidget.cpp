@@ -14,6 +14,7 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     , m_pComboSubGraph(nullptr)
     , m_pNewBtn(nullptr)
     , m_pDeleteBtn(nullptr)
+    , m_pNewSubGraph(nullptr)
 {
     QVBoxLayout *pLayout = new QVBoxLayout;
 
@@ -25,7 +26,6 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     QHBoxLayout* pHLayout = new QHBoxLayout;
 	{
         m_pComboSubGraph = new QComboBox;
-        m_pComboSubGraph->setEditable(true);
         pHLayout->addWidget(m_pComboSubGraph);
 
         m_pNewBtn = new QPushButton("New");
@@ -71,6 +71,36 @@ void ZNodesEditWidget::openFileDialog()
             m_pGraphsWidget->setCurrentIndex(current.row());
             m_pComboSubGraph->setCurrentIndex(current.row());
     });
+
+    //menu
+    connect(m_pNewSubGraph, SIGNAL(triggered()), this, SLOT(onSubGraphTriggered()));
+}
+
+void ZNodesEditWidget::onSubGraphTriggered()
+{
+    QDialog dialog(this);
+    QVBoxLayout* pLayout = new QVBoxLayout;
+    QLineEdit* pLineEdit = new QLineEdit;
+    pLayout->addWidget(pLineEdit);
+
+    QHBoxLayout* pHLayout = new QHBoxLayout;
+    pHLayout->addStretch();
+    QPushButton* pOk = new QPushButton("OK");
+    QPushButton* pCancel = new QPushButton("Cancel");
+    pHLayout->addWidget(pOk);
+    pHLayout->addWidget(pCancel);
+    pLayout->addLayout(pHLayout);
+
+    connect(pOk, SIGNAL(clicked()), &dialog, SLOT(accept()));
+    connect(pCancel, SIGNAL(clicked()), &dialog, SLOT(reject()));
+
+    dialog.setLayout(pLayout);
+    QButtonGroup* pBtnGroup = new QButtonGroup;
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        GraphsModel* pModel = m_pGraphsWidget->model();
+        pModel->switchOrNewGraph(pLineEdit->text());
+    }
 }
 
 void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
@@ -78,8 +108,12 @@ void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
     QMenu* pFile = new QMenu(tr("File"));
 	{
 		QAction* pAction = new QAction(tr("New"), pFile);
-		pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+N")));
+        QMenu *pNewMenu = new QMenu;
+        QAction* pNewGraph = pNewMenu->addAction("New Graph");
+        m_pNewSubGraph = pNewMenu->addAction("New Subgraph");
+        
+        pAction->setMenu(pNewMenu);
+
 		pFile->addAction(pAction);
 
 		pAction = new QAction(tr("Open"), pFile);

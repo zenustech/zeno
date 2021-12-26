@@ -12,6 +12,7 @@ class ZenoGraphsWidget : public QStackedWidget
 public:
     ZenoGraphsWidget(QWidget* parent = nullptr);
     void setGraphsModel(GraphsModel* pModel);
+    GraphsModel* model() const;
     QList<QAction*> getCategoryActions(QPointF scenePos);
 
 public slots:

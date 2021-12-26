@@ -39,6 +39,11 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
         this, SLOT(onRowsInserted(const QModelIndex&, int, int)));
 }
 
+GraphsModel* ZenoGraphsWidget::model() const
+{
+    return m_model;
+}
+
 QList<QAction*> ZenoGraphsWidget::getCategoryActions(QPointF scenePos)
 {
     NODE_CATES cates = m_model->getCates();
