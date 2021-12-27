@@ -20,11 +20,32 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
+
+	m_ctrlz = new QAction("Undo", this);
+    m_ctrlz->setShortcut(QKeySequence::Delete);
+    connect(m_ctrlz, SIGNAL(triggered()), this, SLOT(undo()));
+    m_ctrly = new QAction("Redo", this);
+    m_ctrly->setShortcut(QKeySequence::Redo);
+    connect(m_ctrly, SIGNAL(triggered()), this, SLOT(redo()));
+
+	addAction(m_ctrlz);
+    addAction(m_ctrly);
+}
+
+void ZenoSubGraphView::redo()
+{
+    m_model->redo();
+}
+
+void ZenoSubGraphView::undo()
+{
+    m_model->undo();
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)
 {
     m_scene = new ZenoSubGraphScene(this);
+    m_model = pModel;
     m_scene->initModel(pModel);
     setScene(m_scene);
 }

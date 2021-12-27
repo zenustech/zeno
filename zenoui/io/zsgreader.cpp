@@ -42,6 +42,8 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
         subGraphModel->setName(graphName);
         pModel->appendSubGraph(subGraphModel);
     }
+    pModel->switchSubGraph("main");
+
     return pModel;
 }
 

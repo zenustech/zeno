@@ -333,8 +333,8 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
-        QList<ZenoNode *> nodes;
-        QList<ZenoFullLink *> links;
+        QList<ZenoNode*> nodes;
+        QList<ZenoFullLink*> links;
         for (auto item : selItems)
         {
             if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {

@@ -21,6 +21,8 @@ protected:
 
 private slots:
     void onCustomContextMenu(const QPoint& pos);
+    void redo();
+    void undo();
 
 signals:
     void zoomed(qreal);
@@ -40,8 +42,11 @@ private:
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
 
+    SubGraphModel* m_model; //temp code
     ZenoSubGraphScene* m_scene;
     QMenu* m_menu;
+    QAction *m_ctrlz;
+    QAction *m_ctrly;
 };
 
 #endif

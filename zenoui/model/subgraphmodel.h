@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "../model/modeldata.h"
+#include "command.h"
 
 struct PlainNodeItem
 {
@@ -32,6 +33,8 @@ class SubGraphModel : public QAbstractItemModel
 {
     Q_OBJECT
     typedef QAbstractItemModel _base;
+    friend class AddNodeCommand;
+
 public:
 	explicit SubGraphModel(GraphsModel* pGraphsModel, QObject* parent = nullptr);
 	~SubGraphModel();
@@ -68,7 +71,7 @@ public:
                 const QString& inputId, const QString& inputPort);
     void addLink(const QString& outNode, const QString& outSock,
                 const QString& inNode, const QString& inSock);
-    bool insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
+
     void setName(const QString& name);
     void setViewRect(const QRectF& rc);
     QRectF viewRect() const { return m_rect; }
@@ -77,6 +80,7 @@ public:
     NODES_DATA dumpGraph();
     void clear();
     void reload();
+    QUndoStack* undoStack() const;
 
 signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
@@ -86,20 +90,22 @@ signals:
 
 public slots:
     void onDoubleClicked(const QString &nodename);
+    void undo();
+    void redo();
 
 private:
+    bool _insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
     PlainNodeItem* itemFromIndex(const QModelIndex &index) const;
     void _removeNodeItem(const QModelIndex &index);
 
     QString m_name;
     std::map<QString, int> m_key2Row;
     std::map<int, QString> m_row2Key;
-    std::unordered_map<QString, QString> m_name2Id;
     std::unordered_map<QString, NODEITEM_PTR> m_nodes;
-    GraphsModel* m_pGraphsModel;
+    
     QRectF m_rect;
+    GraphsModel *m_pGraphsModel;
+    QUndoStack* m_stack;
 };
-
-//Q_DECLARE_METATYPE(SubGraphModel*)
 
 #endif

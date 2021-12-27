@@ -7,6 +7,7 @@
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(parent)
     , m_pGraphsModel(pGraphsModel)
+    , m_stack(new QUndoStack(this))
 {
     //to think: should graphsModel be a parent of this.
 }
@@ -34,7 +35,6 @@ void SubGraphModel::clear()
 {
     m_nodes.clear();
     m_key2Row.clear();
-    m_name2Id.clear();
     m_row2Key.clear();
     emit clearLayout();
 }
@@ -42,6 +42,11 @@ void SubGraphModel::clear()
 void SubGraphModel::reload()
 {
     emit reloaded();
+}
+
+QUndoStack* SubGraphModel::undoStack() const
+{
+    return m_stack;
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -75,12 +80,12 @@ void SubGraphModel::appendItem(NODEITEM_PTR pItem)
              m_nodes.find(id) == m_nodes.end());
 
     m_nodes.insert(std::make_pair(id, pItem));
-    m_name2Id.insert(std::make_pair(name, id));
     int nRow = m_nodes.size() - 1;
     m_row2Key.insert(std::make_pair(nRow, id));
     m_key2Row.insert(std::make_pair(id, nRow));
 
     insertRows(nRow, 1);
+    //m_stack->push(new AddNodeCommand(nRow, id, pItem->m_datas, this));
 }
 
 void SubGraphModel::removeNode(const QString& nodeid)
@@ -277,7 +282,7 @@ QModelIndex SubGraphModel::indexFromItem(PlainNodeItem* pItem) const
     return createIndex(itRow->second, 0, pItem);
 }
 
-bool SubGraphModel::insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent)
+bool SubGraphModel::_insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent)
 {
     //TODO: begin/endInsertRows
     if (!pItem)
@@ -300,7 +305,6 @@ bool SubGraphModel::insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &pa
     m_nodes.insert(std::make_pair(id, pItem));
     m_row2Key[row] = id;
     m_key2Row[id] = row;
-    m_name2Id[name] = id;
 
     QModelIndex idx = createIndex(row, 0, pItem.get());
     insertRows(row, 1, idx);
@@ -340,4 +344,14 @@ void SubGraphModel::setViewRect(const QRectF& rc)
 QString SubGraphModel::name() const
 {
     return m_name;
+}
+
+void SubGraphModel::undo()
+{
+    m_stack->undo();
+}
+
+void SubGraphModel::redo()
+{
+    m_stack->redo();
 }
