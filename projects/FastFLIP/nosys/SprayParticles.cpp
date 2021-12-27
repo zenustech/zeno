@@ -57,8 +57,8 @@ T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
   float a1 = area(p, vert2, vert3);
   float a2 = area(p, vert1, vert3);
   float a = area(vert1, vert2, vert3);
-  float w1 = a1 / a;
-  float w2 = a2 / a;
+  float w1 = a1 / (a+1e-7);
+  float w2 = a2 / (a+1e-7);
   float w3 = 1 - w1 - w2;
   return w1 * v1 + w2 * v2 + w3 * v3;
 }
