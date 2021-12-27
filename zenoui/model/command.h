@@ -11,6 +11,7 @@ class AddNodeCommand : public QUndoCommand
 {
 public:
     AddNodeCommand(int row, const QString& id, const NODE_DATA& data, SubGraphModel *pModel);
+    ~AddNodeCommand();
     void redo();
     void undo();
 
@@ -25,6 +26,7 @@ class RemoveNodeCommand : public QUndoCommand
 {
 public:
     RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphModel* pModel);
+    ~RemoveNodeCommand();
     void redo();
     void undo();
 

@@ -11,6 +11,10 @@ AddNodeCommand::AddNodeCommand(int row, const QString& id, const NODE_DATA& data
 {
 }
 
+AddNodeCommand::~AddNodeCommand()
+{
+}
+
 void AddNodeCommand::redo()
 {
     m_model->insertRow(m_row, m_data);
@@ -27,6 +31,10 @@ RemoveNodeCommand::RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphMod
     , m_row(row)
     , m_data(data)
     , m_model(pModel)
+{
+}
+
+RemoveNodeCommand::~RemoveNodeCommand()
 {
 }
 

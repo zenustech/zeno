@@ -355,6 +355,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 links.append(pLink);
             }
         }
+        m_subgraphModel->beginTransaction("remove nodes and links");
         for (auto item : links)
         {
             const EdgeInfo &info = item->linkInfo();
@@ -365,6 +366,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             const QPersistentModelIndex &index = item->index();
             m_subgraphModel->removeNode(index.row(), true);
         }
+        m_subgraphModel->endTransaction();
     }
     QGraphicsScene::keyPressEvent(event);
 }

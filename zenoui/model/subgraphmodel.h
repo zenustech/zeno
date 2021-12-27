@@ -68,6 +68,9 @@ public:
     void removeLink(const EdgeInfo& info, bool enableTransaction = false);
     void addLink(const EdgeInfo& info, bool enableTransaction = false);
 
+    void beginTransaction(const QString& name);
+    void endTransaction();
+
     void setName(const QString& name);
     void setViewRect(const QRectF& rc);
     QRectF viewRect() const { return m_rect; }

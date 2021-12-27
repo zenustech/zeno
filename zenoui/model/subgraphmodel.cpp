@@ -94,8 +94,10 @@ void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
     int row = m_key2Row[nodeid];
     if (enableTransaction)
     {
+        m_stack->beginMacro("remove single node");
         RemoveNodeCommand *pCmd = new RemoveNodeCommand(row, m_nodes[nodeid], this);
         m_stack->push(pCmd);
+        m_stack->endMacro();
     }
     else
     {
@@ -193,8 +195,10 @@ void SubGraphModel::removeLink(const EdgeInfo& info, bool enableTransaction)
 {
     if (enableTransaction)
     {
+        m_stack->beginMacro("remove one link");
         AddRemoveLinkCommand* pCmd = new AddRemoveLinkCommand(info, false, this);
         m_stack->push(pCmd);
+        m_stack->endMacro();
     }
     else
     {
@@ -390,4 +394,14 @@ void SubGraphModel::undo()
 void SubGraphModel::redo()
 {
     m_stack->redo();
+}
+
+void SubGraphModel::beginTransaction(const QString& name)
+{
+    m_stack->beginMacro(name);
+}
+
+void SubGraphModel::endTransaction()
+{
+    m_stack->endMacro();
 }
