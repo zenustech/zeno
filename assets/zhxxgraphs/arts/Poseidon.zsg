@@ -309,7 +309,9 @@
       -10913.095012075459,
       -5772.350965822494
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "a717a32b-PrimToVDBPointDataGrid": {
      "name": "PrimToVDBPointDataGrid",
@@ -704,10 +706,12 @@
       "attrName": "speed"
      },
      "uipos": [
-      -8265.167730927591,
-      -5247.4056841871225
+      -8267.212459780185,
+      -5265.808243860491
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "bcf4cacf-x": {
      "name": "ParticlesWrangle",
@@ -796,7 +800,7 @@
       ]
      },
      "params": {
-      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+60,40),240)}.obj"
+      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+40,40),240)}.obj"
      },
      "uipos": [
       -12321.066761493314,
@@ -856,7 +860,7 @@
       ]
      },
      "params": {
-      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+61,40),240)}.obj"
+      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+41,40),240)}.obj"
      },
      "uipos": [
       -12355.420893041546,
@@ -1020,7 +1024,7 @@
       ]
      },
      "params": {
-      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+61,40),240)}.obj"
+      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+41,40),240)}.obj"
      },
      "uipos": [
       -10402.714935129585,
@@ -1038,7 +1042,7 @@
       ]
      },
      "params": {
-      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+62,40),240)}.obj"
+      "value": "/home/dilei/Desktop/Prim/Prim.{min(max(frame+42,40),240)}.obj"
      },
      "uipos": [
       -10437.069066677817,
@@ -1491,7 +1495,9 @@
       -9279.536355256814,
       -4940.807697579069
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "e392ed15-CachedOnce": {
      "name": "CachedOnce",
@@ -1646,9 +1652,7 @@
       -6870.697890494132,
       -4938.838070561137
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "186fb5cb-NumericVec3": {
      "name": "NumericVec3",
@@ -1752,16 +1756,14 @@
       -7262.876884422107,
       -5135.540986180902
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     }
    },
    "view_rect": {
-    "x": -9595.169766880117,
-    "y": -5358.879404825195,
-    "width": 781.2499999999995,
-    "height": 781.2499999999995
+    "x": -8904.133612942913,
+    "y": -5360.506880003878,
+    "width": 976.5624999999994,
+    "height": 976.5624999999994
    }
   },
   "OceanVolume": {
@@ -5691,7 +5693,7 @@
       "isEnabled": [
        null,
        null,
-       0
+       1
       ],
       "SRC": [
        null,
@@ -5823,10 +5825,10 @@
     }
    },
    "view_rect": {
-    "x": 4631.308938939508,
-    "y": -6215.0490707060135,
-    "width": 3034.999999999917,
-    "height": 1182.4999999999598
+    "x": 4744.739972144709,
+    "y": -5443.576462348039,
+    "width": 1942.3999999999469,
+    "height": 756.799999999974
    }
   },
   "VolumeTrail": {
