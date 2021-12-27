@@ -91,9 +91,7 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     {
         const QString& nodeid = item.first;
         NODE_DATA data = item.second;
-        NODEITEM_PTR spItem = std::make_shared<PlainNodeItem>();
-        spItem->m_datas = data;
-        pReloadModel->appendItem(spItem);
+        pReloadModel->appendItem(data);
     }
     pReloadModel->blockSignals(false);
     pReloadModel->reload();

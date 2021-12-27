@@ -4,6 +4,8 @@
 #include <QtWidgets>
 #include "../render/ztfutil.h"
 #include "nodesys_common.h"
+#include "../model/modeldata.h"
+
 
 class SubGraphModel;
 class ZenoNode;
@@ -17,6 +19,8 @@ public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     void initModel(SubGraphModel* pModel);
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
+    void undo();
+    void redo();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

@@ -24,9 +24,9 @@ NODE_DESCS SubGraphModel::descriptors()
 NODES_DATA SubGraphModel::dumpGraph()
 {
     NODES_DATA datas;
-    for (auto node : m_nodes)
+    for (auto iter = m_nodes.keyValueBegin(); iter != m_nodes.keyValueEnd(); iter++)
     {
-        datas[node.first] = node.second->m_datas;
+        datas[iter->first] = iter->second;
     }
     return datas;
 }
@@ -56,9 +56,11 @@ QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent)
 
     auto itRow = m_row2Key.find(row);
     Q_ASSERT(itRow != m_row2Key.end());
-    auto itItem = m_nodes.find(itRow->second);
+
+    auto itItem = m_nodes.find(itRow.value());
     Q_ASSERT(itItem != m_nodes.end());
-    return createIndex(row, 0, itItem->second.get());
+
+    return createIndex(row, 0, nullptr);
 }
 
 QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
@@ -66,48 +68,56 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
     auto it = m_nodes.find(id);
     if (it == m_nodes.end())
         return QModelIndex();
-    return indexFromItem(it->second.get());
+
+    int row = m_key2Row[id];
+    return createIndex(row, 0, nullptr);
 }
 
-void SubGraphModel::appendItem(NODEITEM_PTR pItem)
+void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction)
 {
-    if (!pItem)
-        return;
-
-    const QString &id = pItem->data(ROLE_OBJID).toString();
-    const QString &name = pItem->data(ROLE_OBJNAME).toString();
-    Q_ASSERT(!id.isEmpty() && !name.isEmpty() &&
-             m_nodes.find(id) == m_nodes.end());
-
-    m_nodes.insert(std::make_pair(id, pItem));
-    int nRow = m_nodes.size() - 1;
-    m_row2Key.insert(std::make_pair(nRow, id));
-    m_key2Row.insert(std::make_pair(id, nRow));
-
-    insertRows(nRow, 1);
-    //m_stack->push(new AddNodeCommand(nRow, id, pItem->m_datas, this));
+    int nRow = m_nodes.size();
+    if (enableTransaction)
+    {
+        QString id = nodeData[ROLE_OBJID].toString();
+        AddNodeCommand *pCmd = new AddNodeCommand(nRow, id, nodeData, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        insertRow(nRow, nodeData);
+    }
 }
 
-void SubGraphModel::removeNode(const QString& nodeid)
+void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
 {
-    removeRows(m_key2Row[nodeid], 0);
+    Q_ASSERT(m_key2Row.find(nodeid) != m_key2Row.end());
+    int row = m_key2Row[nodeid];
+    if (enableTransaction)
+    {
+        RemoveNodeCommand *pCmd = new RemoveNodeCommand(row, m_nodes[nodeid], this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        removeRows(row, 0);
+    }
 }
 
-void SubGraphModel::removeNode(int row)
+void SubGraphModel::removeNode(int row, bool enableTransaction)
 {
-    removeRows(row, 1);
+    removeNode(m_row2Key[row], enableTransaction);
 }
 
-void SubGraphModel::_removeNodeItem(const QModelIndex& index)
+bool SubGraphModel::_removeRow(const QModelIndex& index)
 {
     //remove node by id and update params from other node.
-    PlainNodeItem* pItem = itemFromIndex(index);
-    if (!pItem)
-        return;
+    NODE_DATA nodeData;
+    if (!itemFromIndex(index, nodeData))
+        return false;
 
     QString currNode = index.data(ROLE_OBJID).toString();
 
-    INPUT_SOCKETS inputs = pItem->m_datas[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    const INPUT_SOCKETS& inputs = nodeData[ROLE_INPUTS].value<INPUT_SOCKETS>();
     for (QString inSock : inputs.keys())
     {
         for (QString outNode : inputs[inSock].outNodes.keys())
@@ -115,12 +125,8 @@ void SubGraphModel::_removeNodeItem(const QModelIndex& index)
             SOCKETS_INFO outSocks = inputs[inSock].outNodes[outNode];
             for (QString outSock : outSocks.keys())
             {
-                const QModelIndex& outIdx = this->index(outNode);
-                NODEITEM_PTR outputItem = m_nodes[outNode];
-                OUTPUT_SOCKETS outputs = outputItem->data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-                outputs[outSock].inNodes.remove(currNode);
-                setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-                emit linkChanged(false, outNode, outSock, currNode, inSock);   //not only modify core data but emit signal to ui.
+                EdgeInfo info(outNode, currNode, outSock, inSock);
+                removeLink(info, true);
             }
         }
     }
@@ -134,63 +140,87 @@ void SubGraphModel::_removeNodeItem(const QModelIndex& index)
             SOCKETS_INFO sockets = outputs[outSock].inNodes[inNode];
             for (QString inSock : sockets.keys())
             {
-                const QModelIndex &inIdx = this->index(inNode);
-                INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-                inputs[inSock].outNodes.remove(currNode);
-                setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-                emit linkChanged(false, currNode, outSock, inNode, inSock);
+                EdgeInfo info(currNode, inNode, outSock, inSock);
+                removeLink(info, true);
             }
         }
     }
 
     int row = index.row();
-    auto iterR2K = m_row2Key.find(row);
-    Q_ASSERT(iterR2K != m_row2Key.end());
-    QString id = iterR2K->second;
+    QString id = m_row2Key[row];
+    Q_ASSERT(!id.isEmpty());
     for (int r = row + 1; r < rowCount(); r++) {
         const QString &key = m_row2Key[r];
         m_row2Key[r - 1] = key;
         m_key2Row[key] = r - 1;
     }
-    m_row2Key.erase(rowCount() - 1);
-    m_key2Row.erase(id);
-    m_nodes.erase(id);
+
+    m_row2Key.remove(rowCount() - 1);
+    m_key2Row.remove(id);
+    m_nodes.remove(id);
+    return true;
 }
 
-void SubGraphModel::addLink(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock)
+void SubGraphModel::addLink(const EdgeInfo& info, bool enableTransaction)
 {
-    const QModelIndex &outIdx = this->index(outNode);
+    if (enableTransaction)
+    {
+        AddRemoveLinkCommand *pCmd = new AddRemoveLinkCommand(info, true, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        _addLink(info);
+    }
+}
+
+void SubGraphModel::_addLink(const EdgeInfo& info)
+{
+    const QModelIndex &outIdx = this->index(info.outputNode);
     OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    outputs[outSock].inNodes[inNode][inSock] = SOCKET_INFO(inNode, inSock);
+    outputs[info.outputSock].inNodes[info.inputNode][info.inputSock] = SOCKET_INFO(info.inputNode, info.inputSock);
     setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
-    const QModelIndex &inIdx = this->index(inNode);
+    const QModelIndex &inIdx = this->index(info.inputNode);
     INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    inputs[inSock].outNodes[outNode][outSock] = SOCKET_INFO(outNode, outSock);
+    inputs[info.inputSock].outNodes[info.outputNode][info.outputSock] = SOCKET_INFO(info.outputNode, info.outputSock);
     setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
-    emit linkChanged(true, outNode, outSock, inNode, inSock);
+    emit linkChanged(true, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
 }
 
-void SubGraphModel::removeLink(const QString& outputId, const QString& outputPort, const QString& inputId, const QString& inputPort)
+void SubGraphModel::removeLink(const EdgeInfo& info, bool enableTransaction)
 {
-    const QModelIndex& outIdx = this->index(outputId);
+    if (enableTransaction)
+    {
+        AddRemoveLinkCommand* pCmd = new AddRemoveLinkCommand(info, false, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        _removeLink(info);
+    }
+}
+
+void SubGraphModel::_removeLink(const EdgeInfo &info)
+{
+    const QModelIndex &outIdx = this->index(info.outputNode);
     OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    auto &delInItem = outputs[outputPort].inNodes[inputId];
-    delInItem.remove(inputPort);
+    auto &delInItem = outputs[info.outputSock].inNodes[info.inputNode];
+    delInItem.remove(info.inputSock);
     if (delInItem.isEmpty())
-        outputs[outputPort].inNodes.remove(inputId);
+        outputs[info.outputSock].inNodes.remove(info.inputNode);
     setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 
-    const QModelIndex& inIdx = this->index(inputId);
+    const QModelIndex& inIdx = this->index(info.inputNode);
     INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto &delOutItem= inputs[inputPort].outNodes[outputId];
-    delOutItem.remove(outputPort);
+    auto &delOutItem = inputs[info.inputSock].outNodes[info.outputNode];
+    delOutItem.remove(info.outputSock);
     if (delOutItem.isEmpty())
-        inputs[inputPort].outNodes.remove(outputId);
+        inputs[info.inputSock].outNodes.remove(info.outputNode);
     setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
-    emit linkChanged(false, outputId, outputPort, inputId, inputPort);
+    emit linkChanged(false, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
 }
 
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const
@@ -210,19 +240,25 @@ int SubGraphModel::columnCount(const QModelIndex& parent) const
 
 QVariant SubGraphModel::data(const QModelIndex& index, int role) const
 {
-    PlainNodeItem *pItem = itemFromIndex(index);
-    return pItem->data(role);
+    NODE_DATA nodeData;
+    if (!itemFromIndex(index, nodeData))
+        return QVariant();
+    return nodeData[role];
 }
 
 bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    PlainNodeItem* pItem = itemFromIndex(index);
-    if (!pItem)
+    QString id = m_row2Key[index.row()];
+    if (m_nodes.find(id) != m_nodes.end())
+    {
+        m_nodes[id][role] = value;
+        emit dataChanged(index, index, QVector<int>{role});
+        return true;
+    }
+    else
+    {
         return false;
-
-    pItem->setData(value, role);
-    emit dataChanged(index, index, QVector<int>{role});
-    return true;
+    }
 }
 
 bool SubGraphModel::hasChildren(const QModelIndex& parent) const
@@ -240,19 +276,12 @@ bool SubGraphModel::setHeaderData(int section, Qt::Orientation orientation, cons
     return _base::setHeaderData(section, orientation, value, role);
 }
 
-QMap<int, QVariant> SubGraphModel::itemData(const QModelIndex& index) const
+NODE_DATA SubGraphModel::itemData(const QModelIndex &index) const
 {
-    PlainNodeItem* pItem = itemFromIndex(index);
-    return QMap(pItem->m_datas);
-}
-
-bool SubGraphModel::setItemData(const QModelIndex& index, const QMap<int, QVariant>& roles)
-{
-    PlainNodeItem* pItem = itemFromIndex(index);
-    if (!pItem)
-        return false;
-    pItem->m_datas = roles.toStdMap();
-    return true;
+    NODE_DATA nodeData;
+    if (!itemFromIndex(index, nodeData))
+        return NODE_DATA();
+    return nodeData;
 }
 
 QModelIndexList SubGraphModel::match(const QModelIndex& start, int role, const QVariant& value, int hits, Qt::MatchFlags flags) const
@@ -265,63 +294,70 @@ QHash<int, QByteArray> SubGraphModel::roleNames() const
     return _base::roleNames();
 }
 
-PlainNodeItem* SubGraphModel::itemFromIndex(const QModelIndex &index) const
+bool SubGraphModel::itemFromIndex(const QModelIndex &index, NODE_DATA &retNode) const
 {
-    PlainNodeItem *pItem = reinterpret_cast<PlainNodeItem*>(index.internalPointer());
-    return pItem;
-}
-
-QModelIndex SubGraphModel::indexFromItem(PlainNodeItem* pItem) const
-{
-    const QString& id = pItem->data(ROLE_OBJID).toString();
-    auto it = m_nodes.find(id);
-    if (it == m_nodes.end())
-        return QModelIndex();
-    auto itRow = m_key2Row.find(id);
-    Q_ASSERT(itRow != m_key2Row.end());
-    return createIndex(itRow->second, 0, pItem);
-}
-
-bool SubGraphModel::_insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent)
-{
-    //TODO: begin/endInsertRows
-    if (!pItem)
+    QString id = m_row2Key[index.row()];
+    if (m_nodes.find(id) != m_nodes.end())
+    {
+        retNode = m_nodes[id];
+        return true;
+    }
+    else
+    {
         return false;
+    }
+}
 
-    const QString &id = pItem->data(ROLE_OBJID).toString();
-    const QString &name = pItem->data(ROLE_OBJNAME).toString();
+bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent)
+{
+    //pure insert logic, without transaction and notify stuffs.
+    const QString& id = nodeData[ROLE_OBJID].toString();
+    const QString& name = nodeData[ROLE_OBJNAME].toString();
 
     Q_ASSERT(!id.isEmpty() && !name.isEmpty() && m_nodes.find(id) == m_nodes.end());
-
-    auto itRow = m_row2Key.find(row);
-    Q_ASSERT(itRow != m_row2Key.end());
-    int nRows = rowCount();
-    for (int r = nRows; r >= row; r--) {
-        const QString &key = m_row2Key[r - 1];
-        m_row2Key[r] = key;
-        m_key2Row[key] = r;
+    int nRows = m_nodes.size();
+    if (row == nRows)
+    {
+        //append
+        m_nodes[id] = nodeData;
+        m_row2Key[nRows] = id;
+        m_key2Row[id] = nRows;
+        return true;
     }
-
-    m_nodes.insert(std::make_pair(id, pItem));
-    m_row2Key[row] = id;
-    m_key2Row[id] = row;
-
-    QModelIndex idx = createIndex(row, 0, pItem.get());
-    insertRows(row, 1, idx);
-    return true;
+    else if (row < nRows)
+    {
+        auto itRow = m_row2Key.find(row);
+        Q_ASSERT(itRow != m_row2Key.end());
+        int nRows = rowCount();
+        for (int r = nRows; r > row; r--)
+        {
+            const QString &key = m_row2Key[r - 1];
+            m_row2Key[r] = key;
+            m_key2Row[key] = r;
+        }
+        m_nodes[id] = nodeData;
+        m_row2Key[row] = id;
+        m_key2Row[id] = row;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
-bool SubGraphModel::insertRows(int row, int count, const QModelIndex& parent)
+bool SubGraphModel::insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent)
 {
-    beginInsertRows(parent, row, row);
+    beginInsertRows(QModelIndex(), row, row);
+    bool ret = _insertRow(row, nodeData);
     endInsertRows();
-    return false;
+    return ret;
 }
 
 bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 {
     beginRemoveRows(parent, row, row);
-    _removeNodeItem(index(row, 0));
+    _removeRow(index(row, 0));
     endRemoveRows();
     return true;
 }

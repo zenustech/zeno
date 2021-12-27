@@ -81,6 +81,16 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         this, SLOT(onLinkChanged(bool, const QString &, const QString &, const QString &, const QString &)));
 }
 
+void ZenoSubGraphScene::undo()
+{
+    m_subgraphModel->undo();
+}
+
+void ZenoSubGraphScene::redo()
+{
+    m_subgraphModel->redo();
+}
+
 QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)
 {
     auto it = m_nodes.find(nodeid);
@@ -145,7 +155,9 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
             inPort = info2.name;
             inPos = info2.pos;
         }
-        m_subgraphModel->addLink(outId, outPort, inId, inPort);
+
+        EdgeInfo info(outId, inId, outPort, inPort);
+        m_subgraphModel->addLink(info, true);
 
         removeItem(m_tempLink);
         delete m_tempLink;
@@ -343,14 +355,15 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 links.append(pLink);
             }
         }
-        for (auto item : links) {
+        for (auto item : links)
+        {
             const EdgeInfo &info = item->linkInfo();
-            m_subgraphModel->removeLink(info.srcNode, info.srcPort, info.dstNode, info.dstPort);
+            m_subgraphModel->removeLink(info, true);
         }
         for (auto item : nodes)
         {
             const QPersistentModelIndex &index = item->index();
-            m_subgraphModel->removeNode(index.row());
+            m_subgraphModel->removeNode(index.row(), true);
         }
     }
     QGraphicsScene::keyPressEvent(event);

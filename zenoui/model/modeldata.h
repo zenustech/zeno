@@ -35,6 +35,40 @@ struct PARAM_INFO {
 typedef QMap<QString, PARAM_INFO> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
 
+struct EdgeInfo
+{
+    QString outputNode;
+    QString inputNode;
+    QString outputSock;
+    QString inputSock;
+    EdgeInfo() = default;
+    EdgeInfo(const QString &srcId, const QString &dstId, const QString &srcPort, const QString &dstPort)
+        : outputNode(srcId), inputNode(dstId), outputSock(srcPort), inputSock(dstPort) {}
+    bool operator==(const EdgeInfo &rhs) const {
+        return outputNode == rhs.outputNode && inputNode == rhs.inputNode &&
+               outputSock == rhs.outputSock && inputSock == rhs.inputSock;
+    }
+    bool operator<(const EdgeInfo &rhs) const {
+        if (outputNode != rhs.outputNode) {
+            return outputNode < rhs.outputNode;
+        } else if (inputNode != rhs.inputNode) {
+            return inputNode < rhs.inputNode;
+        } else if (outputSock != rhs.outputSock) {
+            return outputSock < rhs.outputSock;
+        } else if (inputSock != rhs.inputSock) {
+            return inputSock < rhs.inputSock;
+        } else {
+            return 0;
+        }
+    }
+};
+
+struct cmpEdge {
+    bool operator()(const EdgeInfo &lhs, const EdgeInfo &rhs) const {
+        return lhs.outputNode < rhs.outputNode && lhs.inputNode < rhs.inputNode &&
+               lhs.outputSock < rhs.outputSock && lhs.inputSock < rhs.inputSock;
+    }
+};
 
 struct SOCKET_INFO {
     QString nodeid;
@@ -97,7 +131,9 @@ struct NODE_CATE {
 };
 typedef QMap<QString, NODE_CATE> NODE_CATES;
 
-typedef std::map<int, QVariant> NODE_DATA;
+typedef QMap<int, QVariant> NODE_DATA;
+Q_DECLARE_METATYPE(NODE_DATA)
+
 typedef std::map<QString, NODE_DATA> NODES_DATA;
 
 

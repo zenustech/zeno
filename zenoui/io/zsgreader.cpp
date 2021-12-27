@@ -63,10 +63,10 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
 
     for (const auto& node : nodes.GetObject())
     {
-        NODEITEM_PTR pItem(new PlainNodeItem);
+        NODE_DATA nodeData;
 
         const QString& nodeid = node.name.GetString();
-        pItem->setData(nodeid, ROLE_OBJID);
+        nodeData[ROLE_OBJID] = nodeid;
 
         const auto &objValue = node.value;
         const rapidjson::Value& nameValue = objValue["name"];
@@ -78,58 +78,60 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
             continue;
         }
 
-        pItem->setData(nameValue.GetString(), ROLE_OBJNAME);
-        pItem->setData(NORMAL_NODE, ROLE_OBJTYPE);
+        nodeData[ROLE_OBJNAME] = nameValue.GetString();
+        nodeData[ROLE_OBJTYPE] = NORMAL_NODE;
 
         if (objValue.HasMember("inputs"))
         {
             INPUT_SOCKETS inputs = descriptors[name].inputs;
             _parseInputs(inputs, objValue["inputs"]);
-            pItem->setData(QVariant::fromValue(inputs), ROLE_INPUTS);
+            nodeData[ROLE_INPUTS] = QVariant::fromValue(inputs);
         }
 
         OUTPUT_SOCKETS outputs = descriptors[name].outputs;
-        pItem->setData(QVariant::fromValue(outputs), ROLE_OUTPUTS);
+        nodeData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
 
         if (objValue.HasMember("params"))
         {
             PARAMS_INFO params = descriptors[name].params;
             _parseParams(params, objValue["params"]);
-            pItem->setData(QVariant::fromValue(params), ROLE_PARAMETERS);
+            nodeData[ROLE_PARAMETERS] = QVariant::fromValue(params);
         }
         if (objValue.HasMember("uipos"))
         {
             auto uipos = objValue["uipos"].GetArray();
-            pItem->setData(QPointF(uipos[0].GetFloat(), uipos[1].GetFloat()), ROLE_OBJPOS);
+            nodeData[ROLE_OBJPOS] = QPointF(uipos[0].GetFloat(), uipos[1].GetFloat());
         }
         if (objValue.HasMember("color_ramps"))
         {
             COLOR_RAMPS colorRamps;
             _parseColorRamps(colorRamps, objValue["color_ramps"]);
-            pItem->setData(HEATMAP_NODE, ROLE_OBJTYPE);
-            pItem->setData(QVariant::fromValue(colorRamps), ROLE_COLORRAMPS);
+            nodeData[ROLE_OBJTYPE] = HEATMAP_NODE;
+            nodeData[ROLE_COLORRAMPS] = QVariant::fromValue(colorRamps);
         }
         if (name == "Blackboard")
         {
-            pItem->setData(BLACKBOARD_NODE, ROLE_OBJTYPE);
+            nodeData[ROLE_OBJTYPE] = BLACKBOARD_NODE;
             if (objValue.HasMember("special"))
             {
-                pItem->setData(objValue["special"].GetBool(), ROLE_BLACKBOARD_SPECIAL);
+                nodeData[ROLE_BLACKBOARD_SPECIAL] = objValue["special"].GetBool();
             }
-            pItem->setData(objValue.HasMember("title") ? objValue["title"].GetString() : "", ROLE_BLACKBOARD_TITLE);
-            pItem->setData(objValue.HasMember("content") ? objValue["content"].GetString() : "", ROLE_BLACKBOARD_CONTENT);
+
+            nodeData[ROLE_BLACKBOARD_TITLE] = objValue.HasMember("title") ? objValue["title"].GetString() : "";
+            nodeData[ROLE_BLACKBOARD_CONTENT] = objValue.HasMember("content") ? objValue["content"].GetString() : "";
+
             if (objValue.HasMember("width") && objValue.HasMember("height"))
             {
                 qreal w = objValue["width"].GetFloat();
                 qreal h = objValue["height"].GetFloat();
-                pItem->setData(QSizeF(w, h), ROLE_BLACKBOARD_SIZE);
+                nodeData[ROLE_BLACKBOARD_SIZE] = QSizeF(w, h);
             }
             if (objValue.HasMember("params"))
             {
                 //todo
             }
         }
-        pModel->appendItem(pItem);
+        pModel->appendItem(nodeData);
     }
     _parseOutputConnections(pModel);
 

@@ -42,11 +42,8 @@ private:
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
 
-    SubGraphModel* m_model; //temp code
     ZenoSubGraphScene* m_scene;
     QMenu* m_menu;
-    QAction *m_ctrlz;
-    QAction *m_ctrly;
 };
 
 #endif

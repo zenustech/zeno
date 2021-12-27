@@ -137,12 +137,12 @@ void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
 	{
 		QAction* pAction = new QAction(tr("Undo"), pEdit);
 		pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Z")));
+        //pAction->setShortcut(QKeySequence(tr("Ctrl+Z")));
 		pEdit->addAction(pAction);
 
 		pAction = new QAction(tr("Redo"), pEdit);
 		pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Y")));
+        //pAction->setShortcut(QKeySequence(tr("Ctrl+Y")));
 		pEdit->addAction(pAction);
 
 		pAction = new QAction(tr("Copy"), pEdit);

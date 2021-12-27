@@ -79,19 +79,19 @@ void ZenoGraphsWidget::onNewNodeCreated(const QString& descName, const QPointF& 
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC &desc = descs[descName];
 
-    NODEITEM_PTR pItem(new PlainNodeItem);
     const QString &nodeid = UiHelper::generateUuid(descName);
-    pItem->setData(nodeid, ROLE_OBJID);
-    pItem->setData(descName, ROLE_OBJNAME);
-    pItem->setData(NORMAL_NODE, ROLE_OBJTYPE);
-    pItem->setData(QVariant::fromValue(desc.inputs), ROLE_INPUTS);
-    pItem->setData(QVariant::fromValue(desc.outputs), ROLE_OUTPUTS);
-    pItem->setData(QVariant::fromValue(desc.params), ROLE_PARAMETERS);
-    pItem->setData(pt, ROLE_OBJPOS);
+    NODE_DATA node;
+    node[ROLE_OBJID] = nodeid;
+    node[ROLE_OBJNAME] = descName;
+    node[ROLE_OBJTYPE] = NORMAL_NODE;
+    node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
+    node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
+    node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
+    node[ROLE_OBJPOS] = pt;
 
     SubGraphModel* pModel = m_model->currentGraph();
     int row = pModel->rowCount();
-    pModel->appendItem(pItem);
+    pModel->appendItem(node, true);
 }
 
 void ZenoGraphsWidget::onRowsRemoved(const QModelIndex &parent, int first, int last)

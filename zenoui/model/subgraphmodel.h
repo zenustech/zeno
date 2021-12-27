@@ -19,13 +19,13 @@ struct PlainNodeItem
         auto it = m_datas.find(role);
         if (it == m_datas.end())
             return QVariant();
-        return it->second;
+        return it.value();
     }
 
     NODE_DATA m_datas;
 };
 
-typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
+//typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
 
 class GraphsModel;
 
@@ -51,26 +51,22 @@ public:
                         int role = Qt::DisplayRole) const override;
     bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value,
                        int role = Qt::EditRole) override;
-    QMap<int, QVariant> itemData(const QModelIndex &index) const override;
-    bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles) override;
+    NODE_DATA itemData(const QModelIndex &index) const override;
 	QModelIndexList match(const QModelIndex &start, int role,
                           const QVariant &value, int hits = 1,
                           Qt::MatchFlags flags =
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     QHash<int, QByteArray> roleNames() const override;
-    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
-
-	//SubGraphModel
+	
+    //SubGraphModel
+    bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
-    QModelIndex indexFromItem(PlainNodeItem* pItem) const;
-    void appendItem(NODEITEM_PTR pItem);
-    void removeNode(const QString& nodeid);
-    void removeNode(int row);
-    void removeLink(const QString& outputId, const QString& outputPort,
-                const QString& inputId, const QString& inputPort);
-    void addLink(const QString& outNode, const QString& outSock,
-                const QString& inNode, const QString& inSock);
+    void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
+    void removeNode(const QString& nodeid, bool enableTransaction = false);
+    void removeNode(int row, bool enableTransaction = false);
+    void removeLink(const EdgeInfo& info, bool enableTransaction = false);
+    void addLink(const EdgeInfo& info, bool enableTransaction = false);
 
     void setName(const QString& name);
     void setViewRect(const QRectF& rc);
@@ -94,17 +90,19 @@ public slots:
     void redo();
 
 private:
-    bool _insertRow(int row, NODEITEM_PTR pItem, const QModelIndex &parent = QModelIndex());
-    PlainNodeItem* itemFromIndex(const QModelIndex &index) const;
-    void _removeNodeItem(const QModelIndex &index);
+    bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
+    bool itemFromIndex(const QModelIndex &index, NODE_DATA& retNode) const;
+    bool _removeRow(const QModelIndex &index);
+    void _addLink(const EdgeInfo &info);
+    void _removeLink(const EdgeInfo& info);
 
     QString m_name;
-    std::map<QString, int> m_key2Row;
-    std::map<int, QString> m_row2Key;
-    std::unordered_map<QString, NODEITEM_PTR> m_nodes;
+    QMap<QString, int> m_key2Row;
+    QMap<int, QString> m_row2Key;
+    QMap<QString, NODE_DATA> m_nodes; 
     
     QRectF m_rect;
-    GraphsModel *m_pGraphsModel;
+    GraphsModel* m_pGraphsModel;
     QUndoStack* m_stack;
 };
 

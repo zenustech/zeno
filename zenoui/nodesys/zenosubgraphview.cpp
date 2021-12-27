@@ -21,31 +21,30 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
 
-	m_ctrlz = new QAction("Undo", this);
-    m_ctrlz->setShortcut(QKeySequence::Delete);
-    connect(m_ctrlz, SIGNAL(triggered()), this, SLOT(undo()));
-    m_ctrly = new QAction("Redo", this);
-    m_ctrly->setShortcut(QKeySequence::Redo);
-    connect(m_ctrly, SIGNAL(triggered()), this, SLOT(redo()));
+	QAction* ctrlz = new QAction("Undo", this);
+    ctrlz->setShortcut(QKeySequence::Undo);
+    connect(ctrlz, SIGNAL(triggered()), this, SLOT(undo()));
+    addAction(ctrlz);
 
-	addAction(m_ctrlz);
-    addAction(m_ctrly);
+    QAction* ctrly = new QAction("Redo", this);
+    ctrly->setShortcut(QKeySequence::Redo);
+    connect(ctrly, SIGNAL(triggered()), this, SLOT(redo()));
+    addAction(ctrly);
 }
 
 void ZenoSubGraphView::redo()
 {
-    m_model->redo();
+    m_scene->redo();
 }
 
 void ZenoSubGraphView::undo()
 {
-    m_model->undo();
+    m_scene->undo();
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)
 {
     m_scene = new ZenoSubGraphScene(this);
-    m_model = pModel;
     m_scene->initModel(pModel);
     setScene(m_scene);
 }

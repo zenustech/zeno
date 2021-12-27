@@ -21,4 +21,30 @@ private:
     NODE_DATA m_data;
 };
 
+class RemoveNodeCommand : public QUndoCommand
+{
+public:
+    RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphModel* pModel);
+    void redo();
+    void undo();
+
+private:
+    NODE_DATA m_data;
+    int m_row;
+    SubGraphModel* m_model;
+};
+
+class AddRemoveLinkCommand : public QUndoCommand
+{
+public:
+    AddRemoveLinkCommand(EdgeInfo info, bool bAdded, SubGraphModel *pModel);
+    void redo();
+    void undo();
+
+private:
+    EdgeInfo m_info;
+    SubGraphModel* m_model;
+    bool m_bAdded;
+};
+
 #endif
