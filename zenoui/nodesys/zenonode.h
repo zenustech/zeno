@@ -10,6 +10,7 @@
 #include "zenoparamwidget.h"
 #include "../model/modeldata.h"
 
+class SubGraphModel;
 
 class ZenoNode : public QGraphicsWidget
 {
@@ -24,9 +25,7 @@ public:
     enum { Type = ZTYPE_NODE };
     int type() const override;
 
-    void init(const QModelIndex& index);
-    QGraphicsGridLayout* initParams();
-    QGraphicsGridLayout* initSockets();
+    void init(const QModelIndex& index, SubGraphModel* pModel);
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -42,10 +41,12 @@ signals:
     void nodePositionChange(const QString&);
     void socketClicked(const QString& id, bool bInput, const QString& name);
     void doubleClicked(const QString &nodename);
+    void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
 
 public slots:
     void onCollaspeBtnClicked();
     void collaspe(bool);
+    void onParamUpdated(const QString &paramName, const QVariant &val);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -57,6 +58,8 @@ private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
     ZenoBackgroundWidget* initHeaderBgWidget(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
+    QGraphicsGridLayout* initParams();
+    QGraphicsGridLayout* initSockets();
     void initIndependentWidgets();
     void _updateSocketItemPos();
 
@@ -66,6 +69,7 @@ private:
     std::map<QString, ZenoSocketItem*> m_outSocks;
     QMap<QString, ZenoTextLayoutItem*> m_inSockNames;
     QMap<QString, ZenoTextLayoutItem*> m_outSockNames;
+    QMap<QString, ZenoParamWidget*> m_paramControls;
 
     QGraphicsTextItem* m_nameItem;
     ZenoImageItem *m_mute;

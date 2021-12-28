@@ -72,3 +72,45 @@ void AddRemoveLinkCommand::undo()
     else
         m_model->addLink(m_info);
 }
+
+
+UpdateDataCommand::UpdateDataCommand(const QString& nodeid, const QString& paramName, const QVariant& newValue, SubGraphModel* pModel)
+    : QUndoCommand()
+    , m_nodeid(nodeid)
+    , m_name(paramName)
+    , m_newValue(newValue)
+    , m_model(pModel)
+{
+    m_oldValue = m_model->getParamValue(nodeid, paramName);
+}
+
+void UpdateDataCommand::redo()
+{
+    m_model->updateParam(m_nodeid, m_name, m_newValue);
+}
+
+void UpdateDataCommand::undo()
+{
+    m_model->updateParam(m_nodeid, m_name, m_oldValue);
+}
+
+
+UpdateStateCommand::UpdateStateCommand(const QString& nodeid, int role, const QVariant& val, SubGraphModel* pModel)
+    : m_nodeid(nodeid)
+    , m_role(role)
+    , m_value(val)
+    , m_pModel(pModel)
+{
+    QModelIndex idx = m_pModel->index(nodeid);
+    m_oldValue = m_pModel->data(idx, role);
+}
+
+void UpdateStateCommand::redo()
+{
+    m_pModel->updateNodeState(m_nodeid, m_role, m_value);
+}
+
+void UpdateStateCommand::undo()
+{
+    m_pModel->updateNodeState(m_nodeid, m_role, m_oldValue);
+}

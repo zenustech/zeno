@@ -34,6 +34,7 @@ public slots:
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
+    void onParamUpdated(const QString& nodeid, const QString& paramName, const QVariant& val);
 
 private slots:
     void reload();

@@ -40,6 +40,11 @@ class ZenoParamLineEdit : public ZenoParamWidget
     Q_OBJECT
 public:
     ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent = nullptr);
+    QString text() const;
+    void setText(const QString& text);
+
+signals:
+    void editingFinished();
 
 private:
     ZenoGvLineEdit *m_pLineEdit;
@@ -86,6 +91,10 @@ class ZenoParamComboBox : public ZenoParamWidget
     Q_OBJECT
 public:
     ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
+    void setText(const QString& text);
+
+signals:
+    void textActivated(const QString& text);
 
 private:
     ZComboBox *m_combobox;
@@ -115,9 +124,19 @@ class ZenoParamMultilineStr : public ZenoParamWidget
     Q_OBJECT
 public:
     ZenoParamMultilineStr(const QString &value, QGraphicsItem *parent = nullptr);
+    QString text() const;
+    void setText(const QString &text);
+
+protected:
+    bool eventFilter(QObject *object, QEvent *event);
+
+signals:
+    void textChanged();
+    void editingFinished();
 
 private:
     QString m_value;
+    QTextEdit* m_pTextEdit;
 };
 
 

@@ -30,6 +30,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
                 this, SLOT(onRowsInserted(const QModelIndex &, int, int)));
         disconnect(m_subgraphModel, SIGNAL(linkChanged(bool, const QString &, const QString &, const QString &, const QString &)),
                 this, SLOT(onLinkChanged(bool, const QString &, const QString &, const QString &, const QString &)));
+        disconnect(m_subgraphModel, SIGNAL(paramUpdated(const QString&, const QString&, const QVariant&)),
+                this, SLOT(onParamUpdated(const QString&, const QString&, const QVariant&)));
     }
     m_subgraphModel = pModel;
     int n = m_subgraphModel->rowCount();
@@ -37,7 +39,7 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
     {
         const QModelIndex& idx = m_subgraphModel->index(r, 0);
         ZenoNode* pNode = new ZenoNode(m_nodeParams);
-        pNode->init(idx);
+        pNode->init(idx, m_subgraphModel);
         addItem(pNode);
         m_nodes[pNode->nodeId()] = pNode;
     }
@@ -78,7 +80,9 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
     connect(m_subgraphModel, SIGNAL(rowsInserted(const QModelIndex &, int , int)),
         this, SLOT(onRowsInserted(const QModelIndex&, int, int)));
     connect(m_subgraphModel, SIGNAL(linkChanged(bool, const QString&, const QString&, const QString&, const QString&)),
-        this, SLOT(onLinkChanged(bool, const QString &, const QString &, const QString &, const QString &)));
+        this, SLOT(onLinkChanged(bool, const QString&, const QString&, const QString&, const QString&)));
+    connect(m_subgraphModel, SIGNAL(paramUpdated(const QString&, const QString&, const QVariant&)),
+        this, SLOT(onParamUpdated(const QString&, const QString&, const QVariant&)));
 }
 
 void ZenoSubGraphScene::undo()
@@ -227,6 +231,12 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 }
 
+void ZenoSubGraphScene::onParamUpdated(const QString& nodeid, const QString& paramName, const QVariant& val)
+{
+    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    m_nodes[nodeid]->onParamUpdated(paramName, val);
+}
+
 void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputSock, const QString& inputId, const QString& inputSock)
 {
     ZenoNode *pInputNode = m_nodes[inputId];
@@ -289,7 +299,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
 {
     QModelIndex idx = m_subgraphModel->index(first, 0);
     ZenoNode *pNode = new ZenoNode(m_nodeParams);
-    pNode->init(idx);
+    pNode->init(idx, m_subgraphModel);
     QString id = pNode->nodeId();
     addItem(pNode);
     m_nodes[id] = pNode;

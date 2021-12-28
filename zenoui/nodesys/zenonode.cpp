@@ -92,7 +92,7 @@ int ZenoNode::type() const
     return Type;
 }
 
-void ZenoNode::init(const QModelIndex& index)
+void ZenoNode::init(const QModelIndex& index, SubGraphModel* pModel)
 {
     m_index = QPersistentModelIndex(index);
 
@@ -129,9 +129,9 @@ void ZenoNode::init(const QModelIndex& index)
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 
-    const SubGraphModel *pModel = qobject_cast<const SubGraphModel *>(m_index.model());
-    Q_ASSERT(pModel);
     connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
+    connect(this, SIGNAL(paramChanged(const QString &, const QString &, const QVariant &)),
+            pModel, SLOT(onParamValueChanged(const QString&, const QString&, const QVariant&)));
 }
 
 void ZenoNode::initIndependentWidgets()
@@ -243,11 +243,13 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
 
     if (type != BLACKBOARD_NODE)
     {
-        if (QGraphicsGridLayout *pParamsLayout = initParams()) {
+        if (QGraphicsGridLayout *pParamsLayout = initParams())
+        {
             pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
             pVLayout->addItem(pParamsLayout);
         }
-        if (QGraphicsGridLayout *pSocketsLayout = initSockets()) {
+        if (QGraphicsGridLayout *pSocketsLayout = initSockets())
+        {
             pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
             pVLayout->addItem(pSocketsLayout);
         }
@@ -281,6 +283,7 @@ QGraphicsGridLayout* ZenoNode::initParams()
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
     int r = 0, n = names.length();
+    const QString nodeid = nodeId();
 
     QGraphicsGridLayout *pParamsLayout = nullptr;
     if (n > 0)
@@ -313,15 +316,24 @@ QGraphicsGridLayout* ZenoNode::initParams()
                 case CONTROL_FLOAT:
                 case CONTROL_BOOL:
                 {
-                    ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+                    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
                     pParamsLayout->addItem(pLineEdit, r, 1);
+                    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+                        QString textValue = pLineEdit->text();
+                        emit paramChanged(nodeid, paramName, textValue);
+                    });
+                    m_paramControls[paramName] = pLineEdit;
                     break;
                 }
                 case CONTROL_ENUM:
                 {
                     QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-                    ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+                    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
                     pParamsLayout->addItem(pComboBox, r, 1);
+                    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
+                        emit paramChanged(nodeid, paramName, textValue);
+                    });
+                    m_paramControls[paramName] = pComboBox;
                     break;
                 }
                 case CONTROL_READPATH:
@@ -344,6 +356,11 @@ QGraphicsGridLayout* ZenoNode::initParams()
                 {
                     ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value);
                     pParamsLayout->addItem(pMultiStrEdit, ++r, 0);
+                    connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
+                        QString textValue = pMultiStrEdit->text();
+                        emit paramChanged(nodeid, paramName, textValue);
+                    });
+                    m_paramControls[paramName] = pMultiStrEdit;
                     break;
                 }
                 case CONTROL_HEAPMAP:
@@ -362,6 +379,26 @@ QGraphicsGridLayout* ZenoNode::initParams()
         }
     }
     return pParamsLayout;
+}
+
+void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
+{
+    if (m_paramControls.find(paramName) != m_paramControls.end())
+    {
+        ZenoParamWidget* pWidget = m_paramControls[paramName];
+        if (ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget))
+        {
+            plineEdit->setText(val.toString());
+        }
+        else if (ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget))
+        {
+            pComboBox->setText(val.toString());
+        }
+        else if (ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(pWidget))
+        {
+            pTextEdit->setText(val.toString());
+        }
+    }
 }
 
 QGraphicsGridLayout* ZenoNode::initSockets()
@@ -560,7 +597,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
         if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
         {
-            pGraphModel->setData(m_index, pos, ROLE_OBJPOS);
+            pGraphModel->updateNodeState(nodeId(), ROLE_OBJPOS, pos, false);
         }
     }
     return value;

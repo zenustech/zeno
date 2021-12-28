@@ -67,6 +67,10 @@ public:
     void removeNode(int row, bool enableTransaction = false);
     void removeLink(const EdgeInfo& info, bool enableTransaction = false);
     void addLink(const EdgeInfo& info, bool enableTransaction = false);
+    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
+    QVariant getParamValue(const QString& nodeid, const QString& paramName);
+    void setPos(const QString& nodeid, const QPointF& pt);
+    void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);
 
     void beginTransaction(const QString& name);
     void endTransaction();
@@ -84,6 +88,7 @@ public:
 signals:
     void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
                 const QString& inputId, const QString& inputPort);
+    void paramUpdated(const QString& nodeid, const QString& paramName, const QVariant& val);
     void clearLayout();
     void reloaded();
 
@@ -91,6 +96,7 @@ public slots:
     void onDoubleClicked(const QString &nodename);
     void undo();
     void redo();
+    void onParamValueChanged(const QString& nodeid, const QString& paramName, const QVariant &var);
 
 private:
     bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());

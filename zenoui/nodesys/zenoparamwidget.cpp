@@ -50,6 +50,17 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, LineEditParam param, Q
     m_pLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     m_pLineEdit->setFixedWidth(128);    //todo: dpi scaled.
     setWidget(m_pLineEdit);
+    connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+QString ZenoParamLineEdit::text() const
+{
+    return m_pLineEdit->text();
+}
+
+void ZenoParamLineEdit::setText(const QString &text)
+{
+    m_pLineEdit->setText(text);
 }
 
 
@@ -130,6 +141,12 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
     setWidget(m_combobox);
+    connect(m_combobox, SIGNAL(textActivated(const QString&)), this, SIGNAL(textActivated(const QString&)));
+}
+
+void ZenoParamComboBox::setText(const QString& text)
+{
+    m_combobox->setCurrentText(text);
 }
 
 
@@ -172,10 +189,32 @@ ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *par
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_value(value)
+    , m_pTextEdit(nullptr)
 {
-    QTextEdit* pTextEdit = new QTextEdit;
-    pTextEdit->setText(value);
-    setWidget(pTextEdit);
+    m_pTextEdit = new QTextEdit;
+    m_pTextEdit->setText(value);
+    setWidget(m_pTextEdit);
+    connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    m_pTextEdit->installEventFilter(this);
+}
+
+void ZenoParamMultilineStr::setText(const QString& text)
+{
+    m_pTextEdit->setText(text);
+}
+
+QString ZenoParamMultilineStr::text() const
+{
+    return m_pTextEdit->toPlainText();
+}
+
+bool ZenoParamMultilineStr::eventFilter(QObject* object, QEvent* event)
+{
+    if (object == m_pTextEdit && event->type() == QEvent::FocusOut)
+    {
+        emit editingFinished();
+    }
+    return ZenoParamWidget::eventFilter(object, event);
 }
 
 

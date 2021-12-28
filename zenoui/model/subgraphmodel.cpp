@@ -265,6 +265,58 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     }
 }
 
+void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction)
+{
+    auto it = m_nodes.find(nodeid);
+    if (it == m_nodes.end())
+        return;
+
+    if (enableTransaction)
+    {
+        UpdateDataCommand *pCmd = new UpdateDataCommand(nodeid, paramName, var, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        PARAMS_INFO info = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
+        info[paramName].value = var;
+        m_nodes[nodeid][ROLE_PARAMETERS] = QVariant::fromValue(info);
+        const QModelIndex& idx = index(nodeid);
+        emit dataChanged(idx, idx, QVector<int>{ROLE_PARAMETERS});
+        emit paramUpdated(nodeid, paramName, var);
+    }
+}
+
+QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
+{
+    QVariant var;
+    const PARAMS_INFO info = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
+    return info[paramName].value;
+}
+
+void SubGraphModel::updateNodeState(const QString& nodeid, int role, const QVariant& val, bool enableTransaction)
+{
+    auto it = m_nodes.find(nodeid);
+    if (it == m_nodes.end())
+        return;
+    if (enableTransaction)
+    {
+        UpdateStateCommand *pCmd = new UpdateStateCommand(nodeid, role, val, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        m_nodes[nodeid][role] = val;
+        const QModelIndex& idx = index(nodeid);
+        emit dataChanged(idx, idx, QVector<int>{role});
+    }
+}
+
+void SubGraphModel::setPos(const QString& nodeid, const QPointF& pt)
+{
+
+}
+
 bool SubGraphModel::hasChildren(const QModelIndex& parent) const
 {
     return false;
@@ -364,6 +416,13 @@ bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
     _removeRow(index(row, 0));
     endRemoveRows();
     return true;
+}
+
+void SubGraphModel::onParamValueChanged(const QString& nodeid, const QString& paramName, const QVariant& var)
+{
+    blockSignals(true);
+    updateParam(nodeid, paramName, var, true);
+    blockSignals(false);
 }
 
 void SubGraphModel::onDoubleClicked(const QString& nodename)

@@ -3,7 +3,6 @@
 
 #include <QUndoCommand>
 #include "modeldata.h"
-//#include "subgraphmodel.h"
 
 class SubGraphModel;
 
@@ -47,6 +46,36 @@ private:
     EdgeInfo m_info;
     SubGraphModel* m_model;
     bool m_bAdded;
+};
+
+class UpdateDataCommand : public QUndoCommand
+{
+public:
+    UpdateDataCommand(const QString& nodeid, const QString& paramName, const QVariant& newValue, SubGraphModel* pModel);
+    void redo();
+    void undo();
+
+private:
+    QVariant m_newValue;
+    QVariant m_oldValue;
+    QString m_name;
+    QString m_nodeid;
+    SubGraphModel *m_model;
+};
+
+class UpdateStateCommand : public QUndoCommand
+{
+public:
+    UpdateStateCommand(const QString& nodeid, int role, const QVariant& val, SubGraphModel* pModel);
+    void redo();
+    void undo();
+
+private:
+    QString m_nodeid;
+    QVariant m_value;
+    QVariant m_oldValue;
+    int m_role;
+    SubGraphModel* m_pModel;
 };
 
 #endif
