@@ -42,6 +42,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         pNode->init(idx, m_subgraphModel);
         addItem(pNode);
         m_nodes[pNode->nodeId()] = pNode;
+        connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
+                this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
     }
 
     for (auto it : m_nodes)
@@ -303,6 +305,37 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
     QString id = pNode->nodeId();
     addItem(pNode);
     m_nodes[id] = pNode;
+}
+
+void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput)
+{
+    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    if (bInput)
+    {
+        ZenoNode* pInputNode = m_nodes[nodeid];
+        QPointF pos = pInputNode->getPortPos(true, sockName);
+        for (auto itLink : m_links)
+        {
+            const EdgeInfo& info = itLink.first;
+            if (info.inputNode == nodeid && info.inputSock == sockName)
+            {
+                itLink.second->initDstPos(pos);
+            }
+        }
+    }
+    else
+    {
+        ZenoNode* pOutputNode = m_nodes[nodeid];
+        QPointF pos = pOutputNode->getPortPos(false, sockName);
+        for (auto itLink : m_links)
+        {
+            const EdgeInfo &info = itLink.first;
+            if (info.outputNode == nodeid && info.outputSock == sockName)
+            {
+                itLink.second->initSrcPos(pos);
+            }
+        }
+    }
 }
 
 void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)

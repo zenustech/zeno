@@ -39,6 +39,7 @@ public slots:
 private slots:
     void reload();
     void clearLayout();
+    void onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);

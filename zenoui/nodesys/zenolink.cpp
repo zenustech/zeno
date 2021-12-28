@@ -114,11 +114,25 @@ void ZenoFullLink::updatePos(const QPointF& srcPos, const QPointF& dstPos)
 {
     m_srcPos = srcPos;
     m_dstPos = dstPos;
+    update();
+}
+
+void ZenoFullLink::initSrcPos(const QPointF& srcPos)
+{
+    m_srcPos = srcPos;
+    update();
+}
+
+void ZenoFullLink::initDstPos(const QPointF& dstPos)
+{
+    m_dstPos = dstPos;
+    update();
 }
 
 void ZenoFullLink::updateLink(const EdgeInfo& info)
 {
     m_linkInfo = info;
+    update();
 }
 
 EdgeInfo ZenoFullLink::linkInfo() const
@@ -128,20 +142,11 @@ EdgeInfo ZenoFullLink::linkInfo() const
 
 QPointF ZenoFullLink::getSrcPos() const
 {
-    // optimize: mark dirty and update when dirty toggled.
-    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-    if (pScene) {
-        return pScene->getSocketPos(false, m_linkInfo.outputNode, m_linkInfo.outputSock);
-    }
     return m_srcPos;
 }
 
 QPointF ZenoFullLink::getDstPos() const
 {
-    ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(scene());
-    if (pScene) {
-        return pScene->getSocketPos(true, m_linkInfo.inputNode, m_linkInfo.inputSock);
-    }
     return m_dstPos;
 }
 

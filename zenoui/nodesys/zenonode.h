@@ -42,6 +42,7 @@ signals:
     void socketClicked(const QString& id, bool bInput, const QString& name);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
+    void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
 
 public slots:
     void onCollaspeBtnClicked();
@@ -53,6 +54,7 @@ protected:
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
     bool sceneEvent(QEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+    void resizeEvent(QGraphicsSceneResizeEvent *event) override;
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
@@ -61,7 +63,7 @@ private:
     QGraphicsGridLayout* initParams();
     QGraphicsGridLayout* initSockets();
     void initIndependentWidgets();
-    void _updateSocketItemPos();
+    void _initSocketItemPos();
 
     QPersistentModelIndex m_index;
     NodeUtilParam m_renderParams;

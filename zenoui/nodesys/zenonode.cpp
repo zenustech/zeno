@@ -26,9 +26,10 @@ ZenoNode::~ZenoNode()
 {
 }
 
-void ZenoNode::_updateSocketItemPos()
+void ZenoNode::_initSocketItemPos()
 {
     //need to optimizize
+    QString nodeid = nodeId();
     for (auto sockName : m_inSockNames.keys())
     {
         auto sockLabelItem = m_inSockNames[sockName];
@@ -45,6 +46,7 @@ void ZenoNode::_updateSocketItemPos()
         pos.setY(y);
 
         socketItem->setPos(pos);
+        emit socketPosInited(nodeid, sockName, true);
     }
     for (auto sockName : m_outSockNames.keys())
     {
@@ -61,13 +63,12 @@ void ZenoNode::_updateSocketItemPos()
         pos.setY(y);
 
         socketItem->setPos(pos);
+        emit socketPosInited(nodeid, sockName, false);
     }
 }
 
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    //need to init socket icon pos elsewhere.
-    _updateSocketItemPos();
     if (isSelected())
     {
         //draw border
@@ -532,6 +533,12 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
     emit doubleClicked(nodeName());
+}
+
+void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
+{
+    _base::resizeEvent(event);
+    _initSocketItemPos();
 }
 
 void ZenoNode::onCollaspeBtnClicked()

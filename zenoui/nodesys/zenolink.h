@@ -66,6 +66,8 @@ public:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
     void updatePos(const QPointF& srcPos, const QPointF& dstPos);
+    void initSrcPos(const QPointF& srcPos);
+    void initDstPos(const QPointF& dstPos);
     void updateLink(const EdgeInfo& info);
     EdgeInfo linkInfo() const;
 
