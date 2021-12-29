@@ -39,6 +39,7 @@ private:
     qreal _factorStep(qreal factor);
 
     QPointF target_scene_pos, target_viewport_pos, m_startPos;
+    QPoint m_mousePos;
     qreal m_factor;
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;

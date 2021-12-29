@@ -88,6 +88,33 @@ void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction
     }
 }
 
+void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction)
+{
+    m_stack->beginMacro("add nodes");
+    //add nodes.
+    for (auto node : nodes)
+    {
+        appendItem(node, true);
+    }
+
+    for (const NODE_DATA& node : nodes)
+    {
+        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        QString inNode = node[ROLE_OBJID].toString();
+        for (INPUT_SOCKET inSock : inputs)
+        {
+            for (QString outNode : inSock.outNodes.keys())
+            {
+                for (SOCKET_INFO outSock : inSock.outNodes[outNode])
+                {
+                    addLink(EdgeInfo(outNode, inNode, outSock.name, inSock.info.name), true);
+                }
+            }
+        }
+    }
+    m_stack->endMacro();
+}
+
 void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
 {
     Q_ASSERT(m_key2Row.find(nodeid) != m_key2Row.end());

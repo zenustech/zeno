@@ -5,6 +5,7 @@
 #include "../model/modelrole.h"
 #include "../io/zsgreader.h"
 #include "../util/uihelper.h"
+#include "nodesys_common.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -101,31 +102,153 @@ void ZenoSubGraphScene::redo()
 
 void ZenoSubGraphScene::copy()
 {
-    QList<QGraphicsItem *> selItems = this->selectedItems();
-    QList<ZenoNode *> nodes;
+    QList<QGraphicsItem*> selItems = this->selectedItems();
+    if (selItems.isEmpty())
+        return;
+
+    //todo: write json format data to clipboard.
+
+    QMap<EdgeInfo, ZenoFullLink *> selLinks;
+    QMap<QString, ZenoNode*> selNodes;
+
     for (auto item : selItems)
     {
-        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode*>(item))
+        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
         {
-            NODE_DATA data = m_subgraphModel->itemData(pNode->index());
-            QMimeData *pMimeData = new QMimeData;
-            QJsonObject obj;
-            QString strJson = ZsgReader::getInstance().dumpNodeData(data);
-            pMimeData->setText(strJson);
-            QApplication::clipboard()->setMimeData(pMimeData);
+            selNodes.insert(pNode->nodeId(), pNode);
         }
     }
+    for (auto item : selItems)
+    {
+        if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
+        {
+            const EdgeInfo& info = pLink->linkInfo();
+            if (selNodes.find(info.inputNode) == selNodes.end() ||
+                selNodes.find(info.outputNode) == selNodes.end())
+            {
+                continue;
+            }
+            selLinks[info] = pLink;
+        }
+    }
+    if (selNodes.isEmpty())
+    {
+        QApplication::clipboard()->clear();
+    }
+
+    QMap<QString, QString> oldToNew;
+    QMap<QString, NODE_DATA> newNodes;
+    QList<NODE_DATA> vecNodes;
+    for (auto pNode : selNodes)
+    {
+        QString currNode = pNode->nodeId();
+        NODE_DATA data = m_subgraphModel->itemData(pNode->index());
+        QString oldId = data[ROLE_OBJID].toString();
+        const QString &newId = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
+        data[ROLE_OBJID] = newId;
+        oldToNew[oldId] = newId;
+
+        //clear any connections.
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        INPUT_SOCKETS newInputs;
+        for (auto inSock : inputs.keys())
+        {
+            INPUT_SOCKET& socket = inputs[inSock];
+            socket.outNodes.clear();
+        }
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        for (auto outSock : outputs.keys())
+        {
+            OUTPUT_SOCKET& socket = outputs[outSock];
+            socket.inNodes.clear();
+        }
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+        newNodes[newId] = data;
+    }
+
+    for (auto edge : selLinks.keys())
+    {
+        const QString &outOldId = edge.outputNode;
+        const QString &inOldId = edge.inputNode;
+
+        const QString &outId = oldToNew[outOldId];
+        const QString &inId = oldToNew[inOldId];
+
+        const QString& outSock = edge.outputSock;
+        const QString& inSock = edge.inputSock;
+
+        //out link
+        NODE_DATA& outData = newNodes[outId];
+        OUTPUT_SOCKETS outputs = outData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        SOCKET_INFO &newOutSocket = outputs[outSock].inNodes[inId][inSock];
+        
+        NODE_DATA outOldData = m_subgraphModel->itemData(m_subgraphModel->index(outOldId));
+        OUTPUT_SOCKETS oldOutputs = outOldData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        const SOCKET_INFO &oldOutSocket = oldOutputs[outSock].inNodes[inOldId][inSock];
+        newOutSocket = oldOutSocket;
+        newOutSocket.nodeid = inId;
+        outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+        //in link
+        NODE_DATA& inData = newNodes[inId];
+        INPUT_SOCKETS inputs = inData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        SOCKET_INFO &newInSocket = inputs[inSock].outNodes[outId][outSock];
+        
+        NODE_DATA inOldData = m_subgraphModel->itemData(m_subgraphModel->index(inOldId));
+        INPUT_SOCKETS oldInputs = inOldData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        const SOCKET_INFO &oldInSocket = oldInputs[inSock].outNodes[outOldId][outSock];
+        newInSocket = oldInSocket;
+        newInSocket.nodeid = outId;
+        inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
+
+    NODES_MIME_DATA* pNodesData = new NODES_MIME_DATA;
+    for (auto node : newNodes)
+    {
+        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        pNodesData->m_vecNodes.push_back(node);
+    }
+
+    QMimeData *pMimeData = new QMimeData;
+    pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
+    QApplication::clipboard()->setMimeData(pMimeData);
 }
 
-void ZenoSubGraphScene::paste()
+void ZenoSubGraphScene::paste(QPointF pos)
 {
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    if (pMimeData)
+
+    if (QObjectUserData *pUserData = pMimeData->userData(MINETYPE_MULTI_NODES))
     {
-        QString wtf = pMimeData->text();
-        NODE_DATA data = ZsgReader::getInstance().importNodeData(wtf);
-        data[ROLE_OBJID] = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
-        m_subgraphModel->appendItem(data, true);
+        NODES_MIME_DATA* pNodesData = static_cast<NODES_MIME_DATA*>(pUserData);
+        if (pNodesData->m_vecNodes.isEmpty())
+            return;
+
+        QPointF offset = pos - pNodesData->m_vecNodes[0][ROLE_OBJPOS].toPointF();
+
+        m_subgraphModel->beginTransaction("paste nodes");
+        QList<NODE_DATA> datas;
+        for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
+        {
+            NODE_DATA& data = pNodesData->m_vecNodes[i];
+            QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
+            data[ROLE_OBJPOS] = orginalPos + offset;
+        }
+        m_subgraphModel->appendNodes(pNodesData->m_vecNodes, true);
+
+        clearSelection();
+        for (auto node : pNodesData->m_vecNodes)
+        {
+            const QString &id = node[ROLE_OBJID].toString();
+            Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+            m_nodes[id]->setSelected(true);
+        }
+
+        m_subgraphModel->endTransaction();
     }
 }
 

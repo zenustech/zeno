@@ -136,5 +136,4 @@ Q_DECLARE_METATYPE(NODE_DATA)
 
 typedef std::map<QString, NODE_DATA> NODES_DATA;
 
-
 #endif

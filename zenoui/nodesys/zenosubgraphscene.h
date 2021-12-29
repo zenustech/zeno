@@ -22,7 +22,7 @@ public:
     void undo();
     void redo();
     void copy();
-    void paste();
+    void paste(QPointF pos);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

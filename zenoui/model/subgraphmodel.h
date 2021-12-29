@@ -51,7 +51,6 @@ public:
                         int role = Qt::DisplayRole) const override;
     bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value,
                        int role = Qt::EditRole) override;
-    NODE_DATA itemData(const QModelIndex &index) const override;
 	QModelIndexList match(const QModelIndex &start, int role,
                           const QVariant &value, int hits = 1,
                           Qt::MatchFlags flags =
@@ -63,11 +62,13 @@ public:
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
     void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
+    void appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
     void removeLink(const EdgeInfo& info, bool enableTransaction = false);
     void addLink(const EdgeInfo& info, bool enableTransaction = false);
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
+    NODE_DATA itemData(const QModelIndex &index) const override;
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
     void setPos(const QString& nodeid, const QPointF& pt);
     void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);

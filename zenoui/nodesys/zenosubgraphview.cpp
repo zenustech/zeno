@@ -59,7 +59,8 @@ void ZenoSubGraphView::copy()
 
 void ZenoSubGraphView::paste()
 {
-    m_scene->paste();
+    QPointF pos = mapToScene(m_mousePos);
+    m_scene->paste(pos);
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)
@@ -142,20 +143,21 @@ void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 
 void ZenoSubGraphView::mouseMoveEvent(QMouseEvent* mouse_event)
 {
-	QPointF delta = target_viewport_pos - mouse_event->pos();
+    m_mousePos = mouse_event->pos();
+    QPointF delta = target_viewport_pos - m_mousePos;
 	if (qAbs(delta.x()) > 5 || qAbs(delta.y()) > 5)
 	{
-		target_viewport_pos = mouse_event->pos();
-		target_scene_pos = mapToScene(mouse_event->pos());
+        target_viewport_pos = m_mousePos;
+        target_scene_pos = mapToScene(m_mousePos);
 	}
 	if (m_dragMove)
 	{
-		QPointF delta = m_startPos - mouse_event->pos();
+        QPointF delta = m_startPos - m_mousePos;
 		QTransform transform = this->transform();
 		qreal deltaX = delta.x() / transform.m11();
 		qreal deltaY = delta.y() / transform.m22();
 		translate(-deltaX, -deltaY);
-		m_startPos = mouse_event->pos();
+        m_startPos = m_mousePos;
 		emit viewChanged(m_factor);
 		return;
 	}
