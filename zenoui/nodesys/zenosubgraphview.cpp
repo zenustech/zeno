@@ -30,6 +30,16 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     ctrly->setShortcut(QKeySequence::Redo);
     connect(ctrly, SIGNAL(triggered()), this, SLOT(redo()));
     addAction(ctrly);
+
+	QAction *ctrlc = new QAction("Copy", this);
+    ctrlc->setShortcut(QKeySequence::Copy);
+    connect(ctrlc, SIGNAL(triggered()), this, SLOT(copy()));
+    addAction(ctrlc);
+
+	QAction *ctrlv = new QAction("Paste", this);
+    ctrlv->setShortcut(QKeySequence::Paste);
+    connect(ctrlv, SIGNAL(triggered()), this, SLOT(paste()));
+    addAction(ctrlv);
 }
 
 void ZenoSubGraphView::redo()
@@ -40,6 +50,16 @@ void ZenoSubGraphView::redo()
 void ZenoSubGraphView::undo()
 {
     m_scene->undo();
+}
+
+void ZenoSubGraphView::copy()
+{
+    m_scene->copy();
+}
+
+void ZenoSubGraphView::paste()
+{
+    m_scene->paste();
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)

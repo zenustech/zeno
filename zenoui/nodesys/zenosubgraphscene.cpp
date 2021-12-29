@@ -3,6 +3,8 @@
 #include "zenonode.h"
 #include "zenolink.h"
 #include "../model/modelrole.h"
+#include "../io/zsgreader.h"
+#include "../util/uihelper.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -95,6 +97,36 @@ void ZenoSubGraphScene::undo()
 void ZenoSubGraphScene::redo()
 {
     m_subgraphModel->redo();
+}
+
+void ZenoSubGraphScene::copy()
+{
+    QList<QGraphicsItem *> selItems = this->selectedItems();
+    QList<ZenoNode *> nodes;
+    for (auto item : selItems)
+    {
+        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode*>(item))
+        {
+            NODE_DATA data = m_subgraphModel->itemData(pNode->index());
+            QMimeData *pMimeData = new QMimeData;
+            QJsonObject obj;
+            QString strJson = ZsgReader::getInstance().dumpNodeData(data);
+            pMimeData->setText(strJson);
+            QApplication::clipboard()->setMimeData(pMimeData);
+        }
+    }
+}
+
+void ZenoSubGraphScene::paste()
+{
+    const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
+    if (pMimeData)
+    {
+        QString wtf = pMimeData->text();
+        NODE_DATA data = ZsgReader::getInstance().importNodeData(wtf);
+        data[ROLE_OBJID] = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
+        m_subgraphModel->appendItem(data, true);
+    }
 }
 
 QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)

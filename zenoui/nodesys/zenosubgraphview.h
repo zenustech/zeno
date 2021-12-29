@@ -19,10 +19,12 @@ protected:
     void wheelEvent(QWheelEvent *event);
     void contextMenuEvent(QContextMenuEvent *event) override;
 
-private slots:
+public slots:
     void onCustomContextMenu(const QPoint& pos);
     void redo();
     void undo();
+    void copy();
+    void paste();
 
 signals:
     void zoomed(qreal);

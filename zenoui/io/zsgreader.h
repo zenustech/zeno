@@ -15,6 +15,8 @@ class ZsgReader
 public:
     static ZsgReader& getInstance();
     GraphsModel* loadZsgFile(const QString& fn);
+    QString dumpNodeData(const NODE_DATA& data);
+    NODE_DATA importNodeData(const QString json);
 
 private:
     ZsgReader();

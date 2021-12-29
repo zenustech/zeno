@@ -146,6 +146,134 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
     return pModel;
 }
 
+QString ZsgReader::dumpNodeData(const NODE_DATA& data)
+{
+    QString result;
+
+    QJsonObject obj;
+
+    //ROLE_OBJID
+    QString nodeid = data[ROLE_OBJID].toString();
+    obj.insert("id", nodeid);
+
+    //ROLE_OBJNAME
+    QString name = data[ROLE_OBJNAME].toString();
+    obj.insert("name", name);
+
+    //ROLE_INPUTS
+    const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    QJsonObject inputsArr;
+    for (auto inputSocket : inputs)
+    {
+        const QString& inSock = inputSocket.info.name;
+        QJsonArray arr;
+        arr.push_back(QJsonValue::Null);
+        arr.push_back(QJsonValue::Null);
+        arr.push_back(QJsonValue::Null);
+        inputsArr.insert(inSock, arr);
+    }
+    obj.insert("inputs", inputsArr);
+
+    //ROLE_OUTPUTS
+    const OUTPUT_SOCKETS &outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+    QJsonObject outputsArr;
+    for (auto ouputSocket : outputs)
+    {
+        const QString& outSock = ouputSocket.info.name;
+        QJsonArray arr;
+        arr.push_back(QJsonValue::Null);
+        arr.push_back(QJsonValue::Null);
+        arr.push_back(QJsonValue::Null);
+        outputsArr.insert(outSock, arr);
+    }
+    obj.insert("outputs", outputsArr);
+
+    //ROLE_PARAMETERS
+    const PARAMS_INFO &params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+    QJsonObject paramsObj;
+    for (PARAM_INFO paramInfo : params)
+    {
+        //todo: different type.
+        paramsObj.insert(paramInfo.name, paramInfo.value.toString());
+    }
+    obj.insert("params", paramsObj);
+
+    //ROLE_OBJPOS
+    QPointF pos = data[ROLE_OBJPOS].toPointF();
+    QJsonArray posArr;
+    posArr.push_back(pos.x());
+    posArr.push_back(pos.y());
+    obj.insert("uipos", posArr);
+
+    //ROLE_OBJTYPE
+    NODE_TYPE type = (NODE_TYPE)data[ROLE_OBJTYPE].toInt();
+    obj.insert("type", type);
+
+    //ROLE_COLORRAMPS
+
+    //ROLE_BLACKBOARD_SPECIAL
+
+    //ROLE_BLACKBOARD_TITLE
+
+    //ROLE_BLACKBOARD_CONTENT
+
+    //ROLE_BLACKBOARD_SIZE
+
+    QJsonDocument doc(obj);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+    return strJson;
+}
+
+NODE_DATA ZsgReader::importNodeData(const QString json)
+{
+    NODE_DATA data;
+    QJsonObject obj;
+    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+    if (!doc.isNull())
+    {
+        QString nodeid = doc["id"].toString();
+        data[ROLE_OBJID] = nodeid;
+        data[ROLE_OBJNAME] = doc["name"].toString();
+        data[ROLE_OBJTYPE] = doc["type"].toInt();
+        QJsonArray arr = doc["uipos"].toArray();
+        data[ROLE_OBJPOS] = QPointF(arr[0].toDouble(), arr[1].toDouble());
+        
+        QJsonObject inputs = doc["inputs"].toObject();
+        INPUT_SOCKETS inputSockets;
+        for (auto key : inputs.keys())
+        {
+            INPUT_SOCKET socket;
+            socket.info.name = key;
+            socket.info.nodeid = nodeid;
+            inputSockets[key] = socket;
+        }
+        data[ROLE_INPUTS] = QVariant::fromValue(inputSockets);
+
+        OUTPUT_SOCKETS outputSockets;
+        QJsonObject outputs = doc["outputs"].toObject();
+        for (auto key : outputs.keys())
+        {
+            OUTPUT_SOCKET socket;
+            socket.info.name = key;
+            socket.info.nodeid = nodeid;
+            outputSockets[key] = socket;
+        }
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputSockets);
+
+        PARAMS_INFO paramsInfo;
+        QJsonObject params = doc["params"].toObject();
+        for (auto key : params.keys())
+        {
+            PARAM_INFO param;
+            param.name = key;
+            param.value = params[key].toString();
+            paramsInfo.insert(key, param);
+        }
+        data[ROLE_PARAMETERS] = QVariant::fromValue(paramsInfo);
+    }
+    return data;
+}
+
 PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
 {
     if (type == "int") {

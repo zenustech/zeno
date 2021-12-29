@@ -21,6 +21,8 @@ public:
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
     void undo();
     void redo();
+    void copy();
+    void paste();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
