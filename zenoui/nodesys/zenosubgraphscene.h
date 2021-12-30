@@ -25,6 +25,8 @@ public:
     void paste(QPointF pos);
     QRectF _sceneRect() const;
     void _setSceneRect(const QRectF &rc);
+    SubGraphModel* model() const;
+    void select(const QString& id);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

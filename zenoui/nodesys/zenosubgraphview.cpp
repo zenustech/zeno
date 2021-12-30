@@ -2,6 +2,7 @@
 #include "../model/subgraphmodel.h"
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"
+#include "zenosearchbar.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -40,6 +41,11 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     ctrlv->setShortcut(QKeySequence::Paste);
     connect(ctrlv, SIGNAL(triggered()), this, SLOT(paste()));
     addAction(ctrlv);
+
+    QAction *ctrlf = new QAction("Find", this);
+    ctrlf->setShortcut(QKeySequence::Find);
+    connect(ctrlf, SIGNAL(triggered()), this, SLOT(find()));
+    addAction(ctrlf);
 }
 
 void ZenoSubGraphView::redo()
@@ -61,6 +67,25 @@ void ZenoSubGraphView::paste()
 {
     QPointF pos = mapToScene(m_mousePos);
     m_scene->paste(pos);
+}
+
+void ZenoSubGraphView::find()
+{
+    ZenoSearchBar *pSearcher = new ZenoSearchBar(m_scene->model());
+    pSearcher->show();
+    connect(pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
+}
+
+void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
+{
+    QRectF rect = m_scene->_sceneRect();
+    qreal node_scene_center_x = rec.pos.x() + 0;
+    qreal diff_x = node_scene_center_x - rect.center().x();
+    qreal node_scene_center_y = rec.pos.y();
+    qreal diff_y = node_scene_center_y - rect.center().y();
+    m_scene->_setSceneRect(QRectF(rect.x() + diff_x, rect.y() + diff_y, rect.width(), rect.height()));
+    _updateSceneRect();
+    m_scene->select(rec.id);
 }
 
 void ZenoSubGraphView::setModel(SubGraphModel* pModel)

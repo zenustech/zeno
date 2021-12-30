@@ -28,6 +28,8 @@ public slots:
     void undo();
     void copy();
     void paste();
+    void find();
+    void onSearchResult(SEARCH_RECORD rec);
 
 signals:
     void zoomed(qreal);

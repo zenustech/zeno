@@ -106,6 +106,18 @@ void ZenoSubGraphScene::_setSceneRect(const QRectF& rc)
     m_scene_rect = rc;
 }
 
+SubGraphModel* ZenoSubGraphScene::model() const
+{
+    return m_subgraphModel;
+}
+
+void ZenoSubGraphScene::select(const QString& id)
+{
+    clearSelection();
+    Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+    m_nodes[id]->setSelected(true);
+}
+
 void ZenoSubGraphScene::undo()
 {
     m_subgraphModel->undo();

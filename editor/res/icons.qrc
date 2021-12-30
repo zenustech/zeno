@@ -54,5 +54,8 @@
     <file>icons/checked.png</file>
     <file>icons/zenus.png</file>
 	<file>icons/downarrow.png</file>
+	<file>icons/search_arrow.svg</file>
+	<file>icons/search_arrow_backward.svg</file>
+	<file>icons/closebtn.svg</file>
 </qresource>
 </RCC>

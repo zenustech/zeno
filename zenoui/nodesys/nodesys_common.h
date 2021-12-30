@@ -21,6 +21,22 @@ enum MIME_DATA_TYPE {
     MINETYPE_MULTI_NODES = 2099,
 };
 
+enum SEARLCH_ELEMENT {
+    SEARCH_NAME,
+    SEARCH_OBJNAME,
+    SEARCH_PARAM,
+};
+
+enum SEARCH_RANGE {
+    RG_CURRENT_SUBGRAPH,
+    RG_ALLGRAPHS,
+};
+
+struct SEARCH_RECORD {
+    QString id;
+    QPointF pos;
+};
+
 struct NODES_MIME_DATA : public QObjectUserData
 {
     QList<NODE_DATA> m_vecNodes;

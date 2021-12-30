@@ -5,8 +5,12 @@
 #include <kddockwidgets/Config.h>
 #include "tmpwidgets/zmainwindow.h"
 #include "style/zenostyle.h"
+#include <comctrl/ziconbutton.h>
+#include <nodesys/zenosearchbar.h>
 
 //#define TEST_WEBENGINE
+//#define TEST_SEARCHBAR
+//#define TEST_ICONBUTTON
 #define USE_KKDOCK
 
 ZENO_NAMESPACE_BEGIN
@@ -53,6 +57,21 @@ int zenoMain(int argc, char *argv[])
 ZENO_NAMESPACE_END
 
 int main(int argc, char *argv[]) {
+
+#ifdef TEST_SEARCHBAR
+    QApplication app(argc, argv);
+    ZenoSearchBar *searcher = new ZenoSearchBar;
+    searcher->show();
+    return app.exec();
+#endif
+
+#ifdef TEST_ICONBUTTON
+    QApplication app(argc, argv);
+    ZIconButton *pBtn = new ZIconButton(QIcon(":/icons/search_arrow.svg"), QSize(32, 32), QColor(30, 30, 30), QColor(0, 0, 0), false);
+    pBtn->show();
+    return app.exec();
+#endif
+
 #ifdef TEST_WEBENGINE
     #include <QWebEngineView>
 
