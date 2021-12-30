@@ -22,6 +22,30 @@ namespace zeno
         return min + std::rand() % (max - min + 1);
     }
 
+    float lerp(const float low, const float high, const float t)
+    {
+        return (1 - t) * low + t * high;
+    }
+
+    void perlin_noise(float length, int point_num, const float min, const float max, std::vector<float> &result)
+    {
+        std::vector<float> r;
+        for (int i{0}; i < point_num; ++i)
+        {
+            r.push_back(random(min, max));
+        }
+
+        for (int i = 0; i < point_num; ++i)
+        {
+            float len = (i + 1) / float(point_num + 1) * length;
+            int lenI = (int)len;
+            int lenMin = lenI % (int)point_num;
+            float t = len - lenI;
+            int lenMax = (lenMin == point_num - 1) ? 0 : lenMin + 1;
+            result.push_back(lerp(r[lenMin], r[lenMax], t));
+        }
+    }
+
     float degreeToRadian(const float degree)
     {
         return degree * 0.01745329251994329576923690768489;
@@ -96,22 +120,46 @@ namespace zeno
             float _radius;
             bool _hasLeaf;
             std::vector<std::unique_ptr<BranchObj>> _children;
+            std::vector<zeno::vec4f> _turn_points;
 
             BranchObj(const zeno::vec4f &start, const zeno::vec4f &direction,
-                      const float length, const float radius)
+                      const float length, const float radius,
+                      const std::vector<zeno::vec4f> &turn_points)
                 : _start{start}, _direction{direction}, _length{length},
-                  _radius{radius}, _hasLeaf{false}, _children{} {}
+                  _radius{radius}, _hasLeaf{false}, _children{},
+                  _turn_points{turn_points} {}
         }; // BranchObj
 
         std::unique_ptr<BranchObj> _trunk;
         int _tree_level;
+
+        void calculate_turn_points(
+            const zeno::vec4f &start, const zeno::vec4f &direction, const float length,
+            const float radius, const int turn_points_num, std::vector<zeno::vec4f> &turn_points)
+        {
+            std::vector<float> dx{};
+            std::vector<float> dy{};
+            std::vector<float> dz{};
+            perlin_noise(length, turn_points_num, -radius, radius, dx);
+            perlin_noise(length, turn_points_num, -radius, radius, dy);
+            perlin_noise(length, turn_points_num, -radius, radius, dz);
+            for (auto i{0}; i < turn_points_num; ++i)
+            {
+                auto turn_point_pos = start + (i + 1) / static_cast<float>(turn_points_num + 1) * length * direction;
+                turn_point_pos[0] += dx[i];
+                turn_point_pos[1] += dy[i];
+                turn_point_pos[2] += dz[i];
+                turn_points.push_back(turn_point_pos);
+            }
+        }
 
     public:
         TreeObj(
             const zeno::vec4f &start,
             const float offset_radian_min, const float offset_radian_max,
             const float length_min, const float length_max,
-            const float radius_min, const float radius_max)
+            const float radius_min, const float radius_max,
+            const int turn_points_num)
             : _tree_level{0}
         {
             std::srand(std::time(nullptr));
@@ -122,8 +170,12 @@ namespace zeno
             zeno::vec4f up_direction{0.0, 1.0, 0.0, 0.0};
             zeno::vec4f direction{offset_direction(up_direction, offset_radian)};
 
+            std::vector<zeno::vec4f> turn_points{};
+            calculate_turn_points(start, direction, length, radius,
+                                  turn_points_num, turn_points);
+
             _trunk = std::make_unique<BranchObj>(start, direction,
-                                                 length, radius);
+                                                 length, radius, turn_points);
         }
 
         void create_branchs(
@@ -131,7 +183,9 @@ namespace zeno
             const float offset_start_min, const float offset_start_max,
             const float offset_radian_min, const float offset_radian_max,
             const float length_min, const float length_max,
-            const float radius_min, const float radius_max)
+            const float radius_min, const float radius_max,
+            const int turn_points_num)
+
         {
             std::queue<BranchObj *> branch_queue;
             std::queue<int> level_queue;
@@ -166,9 +220,13 @@ namespace zeno
                         auto start{branchObj->_start + offset_start * branchObj->_length * branchObj->_direction};
                         auto direction{offset_direction(branchObj->_direction, offset_radian)};
 
+                        std::vector<zeno::vec4f> turn_points{};
+                        calculate_turn_points(start, direction, length, radius,
+                                              turn_points_num, turn_points);
+
                         branchObj->_children.push_back(
                             std::make_unique<BranchObj>(start, direction,
-                                                        length, radius));
+                                                        length, radius, turn_points));
                     }
                 }
             }
@@ -264,12 +322,21 @@ namespace zeno
                 auto level = level_queue.front();
                 level_queue.pop();
 
+                int pre_pos_size = pos.size();
+
                 const auto &start{branchObj->_start};
-                auto end{branchObj->_start + branchObj->_length * branchObj->_direction};
                 pos.push_back(zeno::vec3f{start[0], start[1], start[2]});
+                for (const auto &turn_point : branchObj->_turn_points)
+                {
+                    pos.push_back(zeno::vec3f{turn_point[0], turn_point[1], turn_point[2]});
+                }
+                const auto end{branchObj->_start + branchObj->_length * branchObj->_direction};
                 pos.push_back(zeno::vec3f{end[0], end[1], end[2]});
-                auto pos_size = pos.size();
-                prim->lines.push_back(zeno::vec2i(pos_size - 2, pos_size - 1));
+
+                for (int pos_index = pre_pos_size; pos_index + 1 < pos.size(); ++pos_index)
+                {
+                    prim->lines.push_back(zeno::vec2i{pos_index, pos_index + 1});
+                }
 
                 if (level < _tree_level)
                 {
@@ -299,6 +366,7 @@ namespace zeno
             auto length_max = get_param<float>("length_max");
             auto radius_min = get_param<float>("radius_min");
             auto radius_max = get_param<float>("radius_max");
+            auto turn_points_num = get_param<int>("turn_points_num");
 
             zeno::vec4f start{start_x, start_y, start_z, 1.0};
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
@@ -308,7 +376,8 @@ namespace zeno
                 start,
                 offset_radian_min, offset_radian_max,
                 length_min, length_max,
-                radius_min, radius_max);
+                radius_min, radius_max,
+                turn_points_num);
             set_output("treeObj", std::move(treeObj));
         }
     }; // struct CreateTree
@@ -330,6 +399,7 @@ namespace zeno
                 {"float", "length_max", "0.0"},
                 {"float", "radius_min", "0.0"},
                 {"float", "radius_max", "0.0"},
+                {"int", "turn_points_num", "0"},
             },
             {
                 "TreeSketch",
@@ -356,6 +426,7 @@ namespace zeno
             auto length_max = get_param<float>("length_max");
             auto radius_min = get_param<float>("radius_min");
             auto radius_max = get_param<float>("radius_max");
+            auto turn_points_num = get_param<int>("turn_points_num");
 
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
             auto offset_radian_max{degreeToRadian(offset_degree_max)};
@@ -365,7 +436,8 @@ namespace zeno
                 offset_start_min, offset_start_max,
                 offset_radian_min, offset_radian_max,
                 length_min, length_max,
-                radius_min, radius_max);
+                radius_min, radius_max,
+                turn_points_num);
             set_output("treeObj", std::move(treeObj));
         }
     }; // struct TreeCreateBranchs
@@ -390,6 +462,7 @@ namespace zeno
                 {"float", "length_max", "0.0"},
                 {"float", "radius_min", "0.0"},
                 {"float", "radius_max", "0.0"},
+                {"int", "turn_points_num", "0"},
             },
             {
                 "TreeSketch",
