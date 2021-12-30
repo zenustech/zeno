@@ -18,6 +18,7 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     // bsp tree index causes crash when removeItem and delete item. for safety, disable it.
     // https://stackoverflow.com/questions/38458830/crash-after-qgraphicssceneremoveitem-with-custom-item-class
     setItemIndexMethod(QGraphicsScene::NoIndex);
+    setSceneRect(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
 }
 
 void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
@@ -76,6 +77,11 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         }
     }
 
+    if (!m_subgraphModel->viewRect().isNull())
+    {
+        m_scene_rect = m_subgraphModel->viewRect();
+    }
+
     connect(m_subgraphModel, SIGNAL(reloaded()), this, SLOT(reload()));
     connect(m_subgraphModel, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
     connect(m_subgraphModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)),
@@ -88,6 +94,16 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         this, SLOT(onLinkChanged(bool, const QString&, const QString&, const QString&, const QString&)));
     connect(m_subgraphModel, SIGNAL(paramUpdated(const QString&, const QString&, const QVariant&)),
         this, SLOT(onParamUpdated(const QString&, const QString&, const QVariant&)));
+}
+
+QRectF ZenoSubGraphScene::_sceneRect() const
+{
+    return m_scene_rect;
+}
+
+void ZenoSubGraphScene::_setSceneRect(const QRectF& rc)
+{
+    m_scene_rect = rc;
 }
 
 void ZenoSubGraphScene::undo()

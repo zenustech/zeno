@@ -7,7 +7,9 @@ class ZenoSubGraphScene;
 
 class ZenoSubGraphView : public QGraphicsView
 {
-	Q_OBJECT
+    Q_OBJECT
+    typedef QGraphicsView _base;
+
 public:
     ZenoSubGraphView(QWidget* parent = nullptr);
     void setModel(SubGraphModel* pModel);
@@ -17,6 +19,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
+    void resizeEvent(QResizeEvent *event);
     void contextMenuEvent(QContextMenuEvent *event) override;
 
 public slots:
@@ -36,10 +39,13 @@ private:
     void zoomIn();
     void zoomOut();
     void resetTransform();
+    void _updateSceneRect();
+    void _scale(qreal sx, qreal sy, QPointF pos);
     qreal _factorStep(qreal factor);
 
     QPointF target_scene_pos, target_viewport_pos, m_startPos;
     QPoint m_mousePos;
+    QPoint _last_mouse_pos;
     qreal m_factor;
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;

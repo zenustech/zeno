@@ -23,6 +23,8 @@ public:
     void redo();
     void copy();
     void paste(QPointF pos);
+    QRectF _sceneRect() const;
+    void _setSceneRect(const QRectF &rc);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -48,6 +50,7 @@ private:
     bool _enableLink(const QString &outputNode, const QString &outputSocket,
                      const QString &inputNode, const QString &inputSocket);
 
+    QRectF m_scene_rect;
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
     std::map<QString, ZenoNode*> m_nodes;

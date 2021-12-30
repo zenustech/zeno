@@ -26,5 +26,7 @@ struct NODES_MIME_DATA : public QObjectUserData
     QList<NODE_DATA> m_vecNodes;
 };
 
+#define SCENE_INIT_WIDTH 64000
+#define SCENE_INIT_HEIGHT 64000
 
 #endif
