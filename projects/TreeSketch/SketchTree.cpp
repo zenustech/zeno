@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <TreeSketchCommon.h>
+#include <TreeSketchMath.h>
 #include <TreeSketchTreeObj.h>
 
 namespace zeno

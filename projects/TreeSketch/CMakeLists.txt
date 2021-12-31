@@ -9,7 +9,7 @@ target_include_directories(zeno_TreeSketch PRIVATE
 )
 
 target_sources(zeno_TreeSketch PRIVATE
-    src/TreeSketchCommon.cpp
+    src/TreeSketchMath.cpp
     src/TreeSketchTreeObj.cpp
 )
 

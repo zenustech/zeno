@@ -1,5 +1,5 @@
-#ifndef __TREE_SKETCH_COMMON_H__
-#define __TREE_SKETCH_COMMON_H__
+#ifndef __TREE_SKETCH_MATH_H__
+#define __TREE_SKETCH_MATH_H__
 
 #include <zeno/utils/vec.h>
 #include <array>

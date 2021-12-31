@@ -1,7 +1,7 @@
 #ifndef __TREE_SKETCH_TREE_OBJ_H__
 #define __TREE_SKETCH_TREE_OBJ_H__
 
-#include <TreeSketchCommon.h>
+#include <TreeSketchMath.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <memory>
 

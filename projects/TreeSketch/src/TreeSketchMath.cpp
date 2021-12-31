@@ -1,4 +1,4 @@
-#include <TreeSketchCommon.h>
+#include <TreeSketchMath.h>
 #include <cmath>
 #include <cstdlib>
 
