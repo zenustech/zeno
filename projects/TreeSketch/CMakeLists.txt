@@ -4,6 +4,15 @@ add_library(zeno_TreeSketch SHARED
     SketchTree.cpp
 )
 
+target_include_directories(zeno_TreeSketch PRIVATE
+    include
+)
+
+target_sources(zeno_TreeSketch PRIVATE
+    src/TreeSketchCommon.cpp
+    src/TreeSketchTreeObj.cpp
+)
+
 target_link_libraries(zeno_TreeSketch PUBLIC
     zeno
 )
