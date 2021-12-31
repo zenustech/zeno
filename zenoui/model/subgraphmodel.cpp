@@ -16,12 +16,23 @@ SubGraphModel::~SubGraphModel()
 {
 }
 
+SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
+    : m_pGraphsModel(nullptr)
+    , m_stack(new QUndoStack(this))
+    , m_key2Row(rhs.m_key2Row)
+    , m_row2Key(rhs.m_row2Key)
+    , m_rect(rhs.m_rect)
+    , m_name(rhs.m_name)
+    , m_nodes(rhs.m_nodes)
+{
+}
+
 NODE_DESCS SubGraphModel::descriptors()
 {
     return m_pGraphsModel->descriptors();
 }
 
-NODES_DATA SubGraphModel::dumpGraph()
+NODES_DATA SubGraphModel::nodes()
 {
     NODES_DATA datas;
     for (auto iter = m_nodes.keyValueBegin(); iter != m_nodes.keyValueEnd(); iter++)
@@ -290,6 +301,13 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     {
         return false;
     }
+}
+
+SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
+{
+    SubGraphModel *pClone = new SubGraphModel(*this);
+    pClone->m_pGraphsModel = parent;
+    return pClone;
 }
 
 void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction)

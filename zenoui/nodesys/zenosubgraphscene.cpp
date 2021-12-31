@@ -45,7 +45,8 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
         ZenoNode* pNode = new ZenoNode(m_nodeParams);
         pNode->init(idx, m_subgraphModel);
         addItem(pNode);
-        m_nodes[pNode->nodeId()] = pNode;
+        const QString& nodeid = pNode->nodeId();
+        m_nodes[nodeid] = pNode;
         connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
                 this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
     }

@@ -57,7 +57,7 @@ public:
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     QHash<int, QByteArray> roleNames() const override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
-	
+
     //SubGraphModel
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
@@ -72,6 +72,8 @@ public:
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
     void setPos(const QString& nodeid, const QPointF& pt);
     void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);
+    SubGraphModel* clone(GraphsModel* parent);
+
 
     void beginTransaction(const QString& name);
     void endTransaction();
@@ -81,7 +83,7 @@ public:
     QRectF viewRect() const { return m_rect; }
     QString name() const;
     NODE_DESCS descriptors();
-    NODES_DATA dumpGraph();
+    NODES_DATA nodes();
     void clear();
     void reload();
     QUndoStack* undoStack() const;
@@ -100,6 +102,8 @@ public slots:
     void onParamValueChanged(const QString& nodeid, const QString& paramName, const QVariant &var);
 
 private:
+    SubGraphModel(const SubGraphModel& rhs);
+
     bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
     bool itemFromIndex(const QModelIndex &index, NODE_DATA& retNode) const;
     bool _removeRow(const QModelIndex &index);

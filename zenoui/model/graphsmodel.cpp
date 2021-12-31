@@ -84,13 +84,11 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     initDescriptors();
     SubGraphModel *pReloadModel = subGraph(graphName);
     Q_ASSERT(pReloadModel);
-    NODES_DATA datas = pReloadModel->dumpGraph();
+    NODES_DATA datas = pReloadModel->nodes();
     pReloadModel->clear();
     pReloadModel->blockSignals(true);
-    for (auto item : datas)
+    for (auto data : datas)
     {
-        const QString& nodeid = item.first;
-        NODE_DATA data = item.second;
         pReloadModel->appendItem(data);
     }
     pReloadModel->blockSignals(false);

@@ -134,6 +134,6 @@ typedef QMap<QString, NODE_CATE> NODE_CATES;
 typedef QMap<int, QVariant> NODE_DATA;
 Q_DECLARE_METATYPE(NODE_DATA)
 
-typedef std::map<QString, NODE_DATA> NODES_DATA;
+typedef QMap<QString, NODE_DATA> NODES_DATA;
 
 #endif

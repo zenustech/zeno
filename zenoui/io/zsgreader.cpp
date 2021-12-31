@@ -61,6 +61,15 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
     if (nodes.IsNull())
         return nullptr;
 
+    QMap<QString, QString> objIdToName;
+    for (const auto &node : nodes.GetObject())
+    {
+        const QString &nodeid = node.name.GetString();
+        const auto &objValue = node.value;
+        const QString &name = objValue["name"].GetString();
+        objIdToName[nodeid] = name;
+    }
+
     for (const auto& node : nodes.GetObject())
     {
         NODE_DATA nodeData;
@@ -84,7 +93,7 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         if (objValue.HasMember("inputs"))
         {
             INPUT_SOCKETS inputs = descriptors[name].inputs;
-            _parseInputs(inputs, objValue["inputs"]);
+            _parseInputs(inputs, descriptors, objIdToName, objValue["inputs"]);
             nodeData[ROLE_INPUTS] = QVariant::fromValue(inputs);
         }
 
@@ -148,6 +157,9 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
 
 QString ZsgReader::dumpNodeData(const NODE_DATA& data)
 {
+    //not compatible with current zeno file format, only used for copy/paste.
+    //but now copy/paste is limited in current process.
+
     QString result;
 
     QJsonObject obj;
@@ -339,7 +351,8 @@ void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
     }
 }
 
-void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value& inputs)
+void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& descriptors,
+    const QMap<QString, QString>& objId2Name, const rapidjson::Value &inputs)
 {
     const auto &inputsObj = inputs.GetObject();
     for (INPUT_SOCKET& inputSocket : inputSockets)
@@ -352,7 +365,14 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const rapidjson::Value
             RAPIDJSON_ASSERT(arr.Size() >= 2);
             if (!arr[0].IsNull())
             {
-                const QString &outId = arr[0].GetString();
+                const QString& outId = arr[0].GetString();
+                //outNode may be lose descriptor and not built and stored in model.
+                const QString& nodeName = objId2Name[outId];
+                if (!nodeName.isEmpty() && descriptors.find(nodeName) == descriptors.end())
+                {
+                    continue;
+                }
+
                 if (!arr[1].IsNull()) {
                     const QString socketName = arr[1].GetString();
                     inputSocket.outNodes[outId][socketName] = SOCKET_INFO(outId, socketName);
