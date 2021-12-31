@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 #include <queue>
-#include <iostream>
 
 namespace zeno
 {
@@ -27,44 +26,12 @@ namespace zeno
         return degree * 0.01745329251994329576923690768489;
     }
 
-    double lerp(const double low, const double high, const double t)
-    {
-        return (1.0 - t) * low + t * high;
-    }
-
     zeno::vec4d lerp(const zeno::vec4d low, const zeno::vec4d high, const double t)
     {
         return (1.0 - t) * low + t * high;
     }
 
     using mat4d = std::array<zeno::vec4d, 4>; // row first
-
-    std::ostream &operator<<(std::ostream &os, const zeno::vec4d &v)
-    {
-        os << "[";
-        for (std::size_t i{0}; i < 4; ++i)
-        {
-            os << v[i] << ' ';
-        }
-        os << "]\n";
-        return os;
-    }
-
-    std::ostream &operator<<(std::ostream &os, const zeno::mat4d &m)
-    {
-        os << "[\n";
-        for (std::size_t row{0}; row < 4; ++row)
-        {
-            os << "    [";
-            for (std::size_t col{0}; col < 4; ++col)
-            {
-                os << m[row][col] << ' ';
-            }
-            os << "]\n";
-        }
-        os << "]\n";
-        return os;
-    }
 
     zeno::mat4d operator*(const zeno::mat4d &lhs_m, const zeno::mat4d &rhs_m)
     {
@@ -410,8 +377,6 @@ namespace zeno
     {
         virtual void apply() override
         {
-            std::cout << "CreateTree::apply() called!\n";
-
             auto start_x = get_input2<double>("start_x");
             auto start_y = get_input2<double>("start_y");
             auto start_z = get_input2<double>("start_z");
@@ -474,8 +439,6 @@ namespace zeno
     {
         virtual void apply() override
         {
-            std::cout << "TreeCreateBranchs::apply() called!\n";
-
             auto treeObj = get_input<TreeObj>("treeObj");
 
             auto num_min = get_input2<int>("num_min");
@@ -543,7 +506,6 @@ namespace zeno
     {
         virtual void apply() override
         {
-            std::cout << "TreeSetLeaves::apply() called!\n";
             auto treeObj = get_input<TreeObj>("treeObj");
             treeObj->set_leaves();
             set_output("treeObj", std::move(treeObj));
@@ -571,8 +533,6 @@ namespace zeno
     {
         virtual void apply() override
         {
-            std::cout << "TreeToPrimitiveLines::apply() called!\n";
-
             auto treeObj = get_input<TreeObj>("treeObj");
 
             auto prim = std::make_shared<zeno::PrimitiveObject>();
