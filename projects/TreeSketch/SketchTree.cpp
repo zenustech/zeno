@@ -110,19 +110,19 @@ namespace zeno
                 (1.0 - c) * axis[0] * axis[0] + c,
                 (1.0 - c) * axis[0] * axis[1] - axis[2] * s,
                 (1.0 - c) * axis[0] * axis[2] + axis[1] * s,
-                0,
+                0.0,
             },
             zeno::vec4d{
                 (1.0 - c) * axis[1] * axis[0] + axis[2] * s,
                 (1.0 - c) * axis[1] * axis[1] + c,
                 (1.0 - c) * axis[1] * axis[2] - axis[0] * s,
-                0,
+                0.0,
             },
             zeno::vec4d{
                 (1.0 - c) * axis[2] * axis[0] - axis[1] * s,
                 (1.0 - c) * axis[2] * axis[1] + axis[0] * s,
                 (1.0 - c) * axis[2] * axis[2] + c,
-                0,
+                0.0,
             },
             zeno::vec4d{0.0, 0.0, 0.0, 1.0},
         };
@@ -146,8 +146,7 @@ namespace zeno
 
     zeno::vec4d random_direction()
     {
-        zeno::vec4d direction{random(-1.0, 1.0), random(-1.0, 1.0), random(-1.0, 1.0), 0.0};
-        return zeno::normalize(direction);
+        return zeno::normalize(zeno::vec4d{random(-1.0, 1.0), random(-1.0, 1.0), random(-1.0, 1.0), 0.0});
     }
 
     zeno::vec4d offset_direction(const zeno::vec4d &old_direction, const double offset_radian)
@@ -181,12 +180,15 @@ namespace zeno
         std::unique_ptr<BranchObj> _trunk;
         int _tree_level;
 
-        void calculate_turn_points(
-            const zeno::vec4d &start, const zeno::vec4d &direction, const double length,
-            const double radius, const int turn_points_num,
-            const double turn_points_offset_min, const double turn_points_offset_max,
-            std::vector<zeno::vec4d> &turn_points)
+        std::vector<zeno::vec4d> calculate_turn_points(
+            const zeno::vec4d &start, const zeno::vec4d &direction, const double length, const double radius,
+            const int turn_points_num_min, const int turn_points_num_max,
+            const double turn_points_offset_min, const double turn_points_offset_max)
         {
+
+            std::vector<zeno::vec4d> turn_points{};
+            auto turn_points_num{random(turn_points_num_min, turn_points_num_max)};
+
             for (auto i{0}; i < turn_points_num; ++i)
             {
                 auto turn_point_offset{random(turn_points_offset_min, turn_points_offset_max)};
@@ -194,15 +196,25 @@ namespace zeno
                 auto turn_point{start + static_cast<double>(i + 1) / static_cast<double>(turn_points_num + 1) * length * direction};
                 auto transform_matrix{transform_new_coord(turn_point, direction)};
 
-                auto XoZ{turn_point_offset * zeno::normalize(zeno::vec3d{random(-1.0, 1.0), 0.0, random(-1.0, 1.0)})};
-                turn_point[0] = XoZ[0];
-                turn_point[1] = XoZ[1];
-                turn_point[2] = XoZ[2];
+                turn_point[0] = random(-1.0, 1.0);
+                turn_point[1] = 0.0;
+                turn_point[2] = random(-1.0, 1.0);
+                turn_point[3] = 0.0;
+
+                turn_point = zeno::normalize(turn_point);
+                turn_point = turn_point_offset * turn_point;
                 turn_point[3] = 1.0;
 
                 turn_point = transform_matrix * turn_point;
                 turn_points.push_back(turn_point);
             }
+
+            return turn_points;
+        }
+
+        zeno::vec4d calculate_child_start(const double offset_start)
+        {
+            return {};
         }
 
     public:
@@ -219,19 +231,17 @@ namespace zeno
             auto offset_radian{random(offset_radian_min, offset_radian_max)};
             auto length{random(length_min, length_max)};
             auto radius{random(radius_min, radius_max)};
-            auto turn_points_num{random(turn_points_num_min, turn_points_num_max)};
 
             zeno::vec4d up_direction{0.0, 1.0, 0.0, 0.0};
-            zeno::vec4d direction{offset_direction(up_direction, offset_radian)};
+            auto direction{offset_direction(up_direction, offset_radian)};
 
-            std::vector<zeno::vec4d> turn_points{};
-            calculate_turn_points(start, direction, length, radius,
-                                  turn_points_num,
-                                  turn_points_offset_min, turn_points_offset_max,
-                                  turn_points);
+            auto turn_points{calculate_turn_points(
+                start, direction, length, radius,
+                turn_points_num_min, turn_points_num_max,
+                turn_points_offset_min, turn_points_offset_max)};
 
-            _trunk = std::make_unique<BranchObj>(start, direction,
-                                                 length, radius, turn_points);
+            _trunk = std::make_unique<BranchObj>(
+                start, direction, length, radius, turn_points);
         }
 
         void create_branchs(
@@ -272,7 +282,6 @@ namespace zeno
                         auto offset_radian{random(offset_radian_min, offset_radian_max)};
                         auto length{random(length_min, length_max)};
                         auto radius{random(radius_min, radius_max)};
-                        auto turn_points_num{random(turn_points_num_min, turn_points_num_max)};
 
                         auto y = branchObj->_length * offset_start;
                         auto branch_turn_points_distance = branchObj->_length / static_cast<double>(branchObj->_turn_points.size() + 1);
@@ -299,18 +308,16 @@ namespace zeno
                         double t = (y - ((low + 1) * branch_turn_points_distance)) / branch_turn_points_distance;
                         auto start{lerp(low_point, high_point, t)};
 
-                        //auto start{branchObj->_start + offset_start * branchObj->_length * branchObj->_direction};
                         auto direction{offset_direction(branchObj->_direction, offset_radian)};
 
-                        std::vector<zeno::vec4d> turn_points{};
-                        calculate_turn_points(start, direction, length, radius,
-                                              turn_points_num,
-                                              turn_points_offset_min, turn_points_offset_max,
-                                              turn_points);
+                        auto turn_points{calculate_turn_points(
+                            start, direction, length, radius,
+                            turn_points_num_min, turn_points_num_max,
+                            turn_points_offset_min, turn_points_offset_max)};
 
                         branchObj->_children.push_back(
-                            std::make_unique<BranchObj>(start, direction,
-                                                        length, radius, turn_points));
+                            std::make_unique<BranchObj>(
+                                start, direction, length, radius, turn_points));
                     }
                 }
             }
@@ -447,8 +454,7 @@ namespace zeno
             {
                 {"treeObj"},
             },
-            {
-            },
+            {},
             {
                 "TreeSketch",
             },
@@ -517,8 +523,7 @@ namespace zeno
             {
                 {"treeObj"},
             },
-            {
-            },
+            {},
             {
                 "TreeSketch",
             },
