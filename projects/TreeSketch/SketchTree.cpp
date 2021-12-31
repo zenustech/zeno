@@ -397,19 +397,19 @@ namespace zeno
         {
             std::cout << "CreateTree::apply() called!\n";
 
-            auto start_x = get_param<float>("start_x");
-            auto start_y = get_param<float>("start_y");
-            auto start_z = get_param<float>("start_z");
-            auto offset_degree_min = get_param<float>("offset_degree_min");
-            auto offset_degree_max = get_param<float>("offset_degree_max");
-            auto length_min = get_param<float>("length_min");
-            auto length_max = get_param<float>("length_max");
-            auto radius_min = get_param<float>("radius_min");
-            auto radius_max = get_param<float>("radius_max");
-            auto turn_points_num_min = get_param<int>("turn_points_num_min");
-            auto turn_points_num_max = get_param<int>("turn_points_num_max");
-            auto turn_points_offset_min = get_param<float>("turn_points_offset_min");
-            auto turn_points_offset_max = get_param<float>("turn_points_offset_max");
+            auto start_x = get_input2<float>("start_x");
+            auto start_y = get_input2<float>("start_y");
+            auto start_z = get_input2<float>("start_z");
+            auto offset_degree_min = get_input2<float>("offset_degree_min");
+            auto offset_degree_max = get_input2<float>("offset_degree_max");
+            auto length_min = get_input2<float>("length_min");
+            auto length_max = get_input2<float>("length_max");
+            auto radius_min = get_input2<float>("radius_min");
+            auto radius_max = get_input2<float>("radius_max");
+            auto turn_points_num_min = get_input2<int>("turn_points_num_min");
+            auto turn_points_num_max = get_input2<int>("turn_points_num_max");
+            auto turn_points_offset_min = get_input2<float>("turn_points_offset_min");
+            auto turn_points_offset_max = get_input2<float>("turn_points_offset_max");
 
             zeno::vec4d start{start_x, start_y, start_z, 1.0};
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
@@ -429,10 +429,6 @@ namespace zeno
     ZENDEFNODE(
         CreateTree,
         {
-            {},
-            {
-                {"treeObj"},
-            },
             {
                 {"float", "start_x", "0.0"},
                 {"float", "start_y", "0.0"},
@@ -449,6 +445,11 @@ namespace zeno
                 {"float", "turn_points_offset_max", "0.0"},
             },
             {
+                {"treeObj"},
+            },
+            {
+            },
+            {
                 "TreeSketch",
             },
         } // CreateTree
@@ -463,20 +464,20 @@ namespace zeno
 
             auto treeObj = get_input<TreeObj>("treeObj");
 
-            auto num_min = get_param<int>("num_min");
-            auto num_max = get_param<int>("num_max");
-            auto offset_start_min = get_param<float>("offset_start_min");
-            auto offset_start_max = get_param<float>("offset_start_max");
-            auto offset_degree_min = get_param<float>("offset_degree_min");
-            auto offset_degree_max = get_param<float>("offset_degree_max");
-            auto length_min = get_param<float>("length_min");
-            auto length_max = get_param<float>("length_max");
-            auto radius_min = get_param<float>("radius_min");
-            auto radius_max = get_param<float>("radius_max");
-            auto turn_points_num_min = get_param<int>("turn_points_num_min");
-            auto turn_points_num_max = get_param<int>("turn_points_num_max");
-            auto turn_points_offset_min = get_param<float>("turn_points_offset_min");
-            auto turn_points_offset_max = get_param<float>("turn_points_offset_max");
+            auto num_min = get_input2<int>("num_min");
+            auto num_max = get_input2<int>("num_max");
+            auto offset_start_min = get_input2<float>("offset_start_min");
+            auto offset_start_max = get_input2<float>("offset_start_max");
+            auto offset_degree_min = get_input2<float>("offset_degree_min");
+            auto offset_degree_max = get_input2<float>("offset_degree_max");
+            auto length_min = get_input2<float>("length_min");
+            auto length_max = get_input2<float>("length_max");
+            auto radius_min = get_input2<float>("radius_min");
+            auto radius_max = get_input2<float>("radius_max");
+            auto turn_points_num_min = get_input2<int>("turn_points_num_min");
+            auto turn_points_num_max = get_input2<int>("turn_points_num_max");
+            auto turn_points_offset_min = get_input2<float>("turn_points_offset_min");
+            auto turn_points_offset_max = get_input2<float>("turn_points_offset_max");
 
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
             auto offset_radian_max{degreeToRadian(offset_degree_max)};
@@ -498,11 +499,6 @@ namespace zeno
         {
             {
                 {"treeObj"},
-            },
-            {
-                {"treeObj"},
-            },
-            {
                 {"int", "num_min", "0"},
                 {"int", "num_max", "0"},
                 {"float", "offset_start_min", "0.0"},
@@ -517,6 +513,11 @@ namespace zeno
                 {"int", "turn_points_num_max", "0"},
                 {"float", "turn_points_offset_min", "0.0"},
                 {"float", "turn_points_offset_max", "0.0"},
+            },
+            {
+                {"treeObj"},
+            },
+            {
             },
             {
                 "TreeSketch",
