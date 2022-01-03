@@ -117,11 +117,11 @@ struct HashGrid : zeno::IObject {
 #endif
                     int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
                     for (int pid: table[key]) {
-                        auto dist = refpos[pid] - pos;
-                        auto dis2 = zeno::dot(dist, dist);
-                        if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
+                        //auto dist = refpos[pid] - pos;
+                        //auto dis2 = zeno::dot(dist, dist);
+                        //if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
                             f(pid);
-                        }
+                        //}
                     }
                 }
             }

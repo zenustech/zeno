@@ -147,6 +147,23 @@ struct CombineVDB : zeno::INode{
         set_output("FieldOut", get_input("FieldA"));
       }
     }
+    if(OpType==std::string("Replace"))
+    {
+      if(targetType == sourceType && targetType==std::string("FloatGrid")){
+        auto target = get_input("FieldA")->as<VDBFloatGrid>();
+        auto source = get_input("FieldB")->as<VDBFloatGrid>();
+        auto srcgrid = source->m_grid->deepCopy();
+        openvdb::tools::compReplace(*(target->m_grid), *(srcgrid));
+        set_output("FieldOut", get_input("FieldA"));
+      }
+      if(targetType == sourceType && targetType==std::string("Vec3fGrid")){
+        auto target = get_input("FieldA")->as<VDBFloat3Grid>();
+        auto source = get_input("FieldB")->as<VDBFloat3Grid>();
+        auto srcgrid = source->m_grid->deepCopy();
+        openvdb::tools::compReplace(*(target->m_grid), *(srcgrid));
+        set_output("FieldOut", get_input("FieldA"));
+      }
+    }
     
   }
 };
@@ -158,7 +175,7 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      }, /* params: */ {
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
-       {"enum CSGUnion CSGIntersection CSGDifference Add", "OpType", "CSGUnion"},
+       {"enum CSGUnion CSGIntersection CSGDifference Add Replace", "OpType", "CSGUnion"},
        {"bool", "writeBack", "0"},
      }, /* category: */ {
      "openvdb",

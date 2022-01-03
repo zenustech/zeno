@@ -452,8 +452,8 @@
        null
       ],
       "min_scale": [
-       null,
-       null,
+       "9866ff8b-NumericFloat",
+       "value",
        null
       ],
       "dt_scale": [
@@ -494,8 +494,8 @@
      },
      "params": {},
      "uipos": [
-      -10727.409513181963,
-      -5420.997575851304
+      -10728.611436258887,
+      -5411.382191235919
      ],
      "options": []
     },
@@ -1194,8 +1194,8 @@
       "name": "meshframe0"
      },
      "uipos": [
-      -11217.401655083988,
-      -5123.129280242506
+      -11299.733385853218,
+      -5056.422549473275
      ],
      "options": []
     },
@@ -1584,8 +1584,8 @@
       "_KEYS": "Vel\nSDF\nobj2"
      },
      "uipos": [
-      -8717.7254144215,
-      -5150.131595595474
+      -8819.888875959961,
+      -4997.637605210858
      ],
      "options": [],
      "socket_keys": [
@@ -1655,8 +1655,8 @@
      },
      "params": {},
      "uipos": [
-      -7866.791055125016,
-      -5027.161602400327
+      -7398.792257048092,
+      -4870.16040047725
      ],
      "options": []
     },
@@ -1762,7 +1762,9 @@
       -8258.970049052994,
       -5223.864518020095
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "79f63fb3-PortalIn": {
      "name": "PortalIn",
@@ -1800,8 +1802,8 @@
       "name": "ColliderProc"
      },
      "uipos": [
-      -11102.505047680577,
-      -5251.01376665153
+      -11219.692547680575,
+      -4973.970497420761
      ],
      "options": []
     },
@@ -2079,13 +2081,31 @@
       -6240.623966032131
      ],
      "options": []
+    },
+    "9866ff8b-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -10994.591346153842,
+      -5307.692307692306
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -12469.699232808243,
-    "y": -8036.040793411993,
-    "width": 3725.290298461912,
-    "height": 3725.290298461912
+    "x": -10295.63976910591,
+    "y": -6327.323895976229,
+    "width": 1525.878906249999,
+    "height": 1525.878906249999
    }
   },
   "OceanVolume": {
@@ -6147,10 +6167,10 @@
     }
    },
    "view_rect": {
-    "x": 2247.137010235925,
-    "y": -7355.420938270386,
-    "width": 11577.606201171557,
-    "height": 4510.8795166014015
+    "x": 4027.1272490673614,
+    "y": -5643.271650076489,
+    "width": 2427.9999999999336,
+    "height": 945.9999999999661
    }
   },
   "VolumeTrail": {
@@ -10139,12 +10159,12 @@
      "name": "CombineVDB",
      "inputs": {
       "FieldA": [
-       "1c41e179-ColliderFromParticles",
+       "c97d2c74-ExtractDict",
        "Vel",
        null
       ],
       "FieldB": [
-       "c97d2c74-ExtractDict",
+       "1c41e179-ColliderFromParticles",
        "Vel",
        null
       ],
@@ -10157,12 +10177,12 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "Add",
+      "OpType": "Replace",
       "writeBack": true
      },
      "uipos": [
-      3189.0156811929332,
-      594.2064036429108
+      3188.054142731394,
+      593.2448651813723
      ],
      "options": []
     },
@@ -10364,10 +10384,10 @@
     }
    },
    "view_rect": {
-    "x": -1567.989938088642,
-    "y": 592.8902640465033,
-    "width": 959.9999999999994,
-    "height": 799.9999999999995
+    "x": 2219.2945678903407,
+    "y": 23.602576034200297,
+    "width": 1499.999999999999,
+    "height": 1249.9999999999993
    }
   },
   "FLIPMakeParticles": {
@@ -12762,8 +12782,8 @@
      },
      "params": {},
      "uipos": [
-      92.70019531249989,
-      416.0000000000002
+      75.39250300480765,
+      415.03846153846183
      ],
      "options": []
     },
@@ -13158,8 +13178,8 @@
       "defl": ""
      },
      "uipos": [
-      64.44999999999999,
-      1037.2999999999993
+      50.988461538461564,
+      1072.8769230769221
      ],
      "options": []
     },
@@ -14351,8 +14371,8 @@
     }
    },
    "view_rect": {
-    "x": 1314.5193517691978,
-    "y": -1913.554042376845,
+    "x": 3454.2789671537976,
+    "y": -164.9963500691576,
     "width": 1499.9999999999936,
     "height": 1249.9999999999957
    }
@@ -16629,36 +16649,6 @@
     "portal"
    ]
   },
-  "BackupField": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "BeginFor": {
    "inputs": [
     [
@@ -18270,7 +18260,7 @@
      "1"
     ],
     [
-     "enum CSGUnion CSGIntersection CSGDifference Add",
+     "enum CSGUnion CSGIntersection CSGDifference Add Replace",
      "OpType",
      "CSGUnion"
     ],
@@ -18317,126 +18307,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "CompressibleAdvection": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
-  "CompressibleMarkDOF": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
-  "CompressibleProjection": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "ComputeVonMises": {
@@ -18785,36 +18655,6 @@
    ],
    "categories": [
     "portal"
-   ]
-  },
-  "DenseFieldToVDB": {
-   "inputs": [
-    [
-     "",
-     "inDenseField",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "VDBField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "DictGetItem": {
@@ -20815,42 +20655,6 @@
     "FEM"
    ]
   },
-  "GetDenseField": {
-   "inputs": [
-    [
-     "",
-     "inSolverData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outDenseField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "FieldName",
-     "p u rho"
-    ]
-   ],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "GetEffectiveStrain": {
    "inputs": [
     [
@@ -21670,41 +21474,6 @@
     "primitive"
    ]
   },
-  "InitField": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "IntegrateFrameTime": {
    "inputs": [
     [
@@ -22258,51 +22027,6 @@
    ],
    "categories": [
     "primitive"
-   ]
-  },
-  "MakeCompressibleFlow": {
-   "inputs": [
-    [
-     "",
-     "bmin",
-     ""
-    ],
-    [
-     "",
-     "bmax",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "q_amb",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CompressibleFlow",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "MakeConstantSpline": {
@@ -23042,6 +22766,61 @@
     "list"
    ]
   },
+  "MakeMPMMehser": {
+   "inputs": [
+    [
+     "",
+     "pathPreFix",
+     ""
+    ],
+    [
+     "",
+     "tet_path",
+     ""
+    ],
+    [
+     "",
+     "smooth_iter",
+     ""
+    ],
+    [
+     "",
+     "start",
+     ""
+    ],
+    [
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "edge_stretch",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MPMMehser",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "MakeMultilineString": {
    "inputs": [
     [
@@ -23594,41 +23373,6 @@
     "openvdb"
    ]
   },
-  "MakeVelocityPressure": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -23812,51 +23556,6 @@
     "MPM"
    ]
   },
-  "MarkMovingSolidCellsByVDB": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SDFVDBField",
-     ""
-    ],
-    [
-     "",
-     "SolidVelVDBField",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "MeshCopy": {
    "inputs": [
     [
@@ -24001,6 +23700,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MesherProcessFrame": {
+   "inputs": [
+    [
+     "",
+     "Mesher",
+     ""
+    ],
+    [
+     "",
+     "frameNumber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePrimitive",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -32729,41 +32463,6 @@
    ],
    "categories": [
     "GPUMPM"
-   ]
-  },
-  "makeCompressibleSim": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "SimParam",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "OceanVolume": {
