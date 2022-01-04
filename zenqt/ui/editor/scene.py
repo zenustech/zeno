@@ -169,6 +169,12 @@ class QDMFindBar(QWidget):
         self.hide()
         self.window.view.setFocus()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
+        super().keyPressEvent(event)
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
