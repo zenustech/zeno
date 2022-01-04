@@ -57,7 +57,6 @@ struct BlendPoses : zeno::INode {
         for(size_t i = 0;i < res->posesFrame.size();++i){
             res->posesFrame[i] =  poses1->posesFrame[i].slerp(1-w,poses2->posesFrame[i]);
         }
-
         set_output("bp",std::move(res));
     }
 };

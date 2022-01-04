@@ -11,6 +11,7 @@ namespace zeno {
 
 struct MakeVisualAABBPrimitive : INode {
     virtual void apply() override {
+        auto topless = get_input<NumericObject>("OpenTop")->get<int>();
         auto dx = get_input<NumericObject>("dx")->get<float>();
         auto a = has_input("boundMin")
             ? get_input<NumericObject>("boundMin")->get<vec3f>()
@@ -23,7 +24,6 @@ struct MakeVisualAABBPrimitive : INode {
 
         auto prim = std::make_shared<PrimitiveObject>();
         auto &pos = prim->add_attr<vec3f>("pos");
-
         prim->resize(8);
         pos[0] = vec3f(a[0], a[1], a[2]);
         pos[1] = vec3f(b[0], a[1], a[2]);
@@ -49,7 +49,7 @@ struct MakeVisualAABBPrimitive : INode {
             prim->lines[10] = vec2i(2, 6);
             prim->lines[11] = vec2i(3, 7);
 
-        } else if (connType == "trifaces") {
+        } else if (connType == "trifaces" && topless==0) {
             prim->tris.resize(12);
             prim->tris[0] = vec3i(0, 1, 4);
             prim->tris[1] = vec3i(1, 5, 4);
@@ -64,7 +64,21 @@ struct MakeVisualAABBPrimitive : INode {
             prim->tris[10] = vec3i(2, 0, 3);
             prim->tris[11] = vec3i(2, 1, 0);
 
-        } else if (connType == "quadfaces") {
+        }else if (connType == "trifaces" && topless==1) {
+            prim->tris.resize(10);
+            prim->tris[0] = vec3i(0, 1, 4);
+            prim->tris[1] = vec3i(1, 5, 4);
+            prim->tris[2] = vec3i(1, 6, 5);
+            prim->tris[3] = vec3i(1, 2, 6);
+            prim->tris[4] = vec3i(3, 0, 4);
+            prim->tris[5] = vec3i(3, 4, 7);
+            prim->tris[6] = vec3i(7, 4, 5);
+            prim->tris[7] = vec3i(7, 5, 6);
+            prim->tris[8] = vec3i(2, 0, 3);
+            prim->tris[9] = vec3i(2, 1, 0);
+
+        }
+        else if (connType == "quadfaces" && topless == 0) {
             prim->quads.resize(6);
             prim->quads[0] = vec4i(0, 1, 5, 4);
             prim->quads[1] = vec4i(1, 2, 6, 5);
@@ -72,6 +86,13 @@ struct MakeVisualAABBPrimitive : INode {
             prim->quads[3] = vec4i(3, 0, 4, 7);
             prim->quads[4] = vec4i(4, 5, 6, 7);
             prim->quads[5] = vec4i(0, 1, 2, 3);
+        }else if (connType == "quadfaces" && topless == 1) {
+            prim->quads.resize(5);
+            prim->quads[0] = vec4i(0, 1, 5, 4);
+            prim->quads[1] = vec4i(1, 2, 6, 5);
+            prim->quads[2] = vec4i(3, 0, 4, 7);
+            prim->quads[3] = vec4i(4, 5, 6, 7);
+            prim->quads[4] = vec4i(0, 1, 2, 3);
         }
 
         set_output("prim", std::move(prim));
@@ -80,7 +101,7 @@ struct MakeVisualAABBPrimitive : INode {
 
 ZENDEFNODE(MakeVisualAABBPrimitive,
         { /* inputs: */ {
-        {"float", "dx", "1"}, {"vec3f","boundMin","-0.5,-0.5,-0.5"}, {"vec3f","boundMax","0.5,0.5,0.5"},
+        {"float", "dx", "1"}, {"vec3f","boundMin","-0.5,-0.5,-0.5"}, {"vec3f","boundMax","0.5,0.5,0.5"}, {"int", "OpenTop", "0"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {

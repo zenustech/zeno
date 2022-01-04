@@ -4,9 +4,5 @@
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
-[submodule "projects/FEM/OpenSim"]
-	path = projects/FEM/OpenSim
-	url = https://github.com/zenustech/opensim-core.git
-[submodule "projects/fTetWild"]
-	path = projects/fTetWild
-	url = https://github.com/wildmeshing/fTetWild.git
+
+

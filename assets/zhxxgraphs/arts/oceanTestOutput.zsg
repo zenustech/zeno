@@ -830,10 +830,10 @@
     }
    },
    "view_rect": {
-    "x": -11926.958534603704,
-    "y": -5926.838738924045,
-    "width": 2384.1857910156236,
-    "height": 2384.1857910156236
+    "x": -11423.85557010932,
+    "y": -5943.929886679167,
+    "width": 1907.3486328124989,
+    "height": 1907.3486328124989
    }
   },
   "OceanVolume": {
@@ -1047,47 +1047,6 @@
      "uipos": [
       -10747.848170212761,
       -4260.622978723405
-     ],
-     "options": []
-    },
-    "eae8bb1f-OceanCompute": {
-     "name": "OceanCompute",
-     "inputs": {
-      "grid": [
-       null,
-       null,
-       null
-      ],
-      "time": [
-       null,
-       null,
-       null
-      ],
-      "depth": [
-       null,
-       null,
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       null
-      ],
-      "ocean_FFT": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -9927.43551708282,
-      -4086.961285757772
      ],
      "options": []
     },
@@ -1996,47 +1955,6 @@
      ],
      "options": []
     },
-    "130fcb2b-x": {
-     "name": "OceanCompute",
-     "inputs": {
-      "grid": [
-       null,
-       null,
-       null
-      ],
-      "time": [
-       null,
-       null,
-       null
-      ],
-      "depth": [
-       null,
-       null,
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       null
-      ],
-      "ocean_FFT": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -9815.461029754171,
-      -3702.193640362212
-     ],
-     "options": []
-    },
     "cc9a039b-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
@@ -2332,8 +2250,8 @@
     }
    },
    "view_rect": {
-    "x": -10960.99372633677,
-    "y": -4431.756883579122,
+    "x": -10916.358382953187,
+    "y": -4195.362411217315,
     "width": 2427.999999999989,
     "height": 945.9999999999945
    }

@@ -84,7 +84,7 @@ struct PrimitiveFilterByAttr : INode {
     auto attrName = get_param<std::string>("attrName");
     auto acceptIf = get_param<std::string>("acceptIf");
     auto vecSelType = get_param<std::string>("vecSelType");
-
+    
     std::vector<int> revamp;
     prim->attr_visit(attrName, [&] (auto const &attr) {
         using T = std::decay_t<decltype(attr[0])>;
@@ -106,7 +106,7 @@ struct PrimitiveFilterByAttr : INode {
         }
     });
     prim->resize(revamp.size());
-
+    
     set_output("prim", get_input("prim"));
   }
 };
