@@ -7,13 +7,11 @@
 
 namespace zeno
 {
-    double random(const double min, const double max);
+    float random(const float min, const float max);
 
-    int random(const int min, const int max);
+    float degreeToRadian(const float degree);
 
-    double degreeToRadian(const double degree);
-
-    zeno::vec4d lerp(const zeno::vec4d low, const zeno::vec4d high, const double t);
+    zeno::vec4d lerp(const zeno::vec4d low, const zeno::vec4d high, const float t);
 
     using mat4d = std::array<zeno::vec4d, 4>; // row first
 
@@ -21,19 +19,19 @@ namespace zeno
 
     zeno::vec4d operator*(const zeno::mat4d &m, const zeno::vec4d &v);
 
-    zeno::mat4d rotate(const double radian, zeno::vec4d axis);
+    zeno::mat4d rotate(const float radian, zeno::vec4d axis);
 
     zeno::mat4d transform_new_coord(const zeno::vec4d &new_origin, const zeno::vec4d &new_up);
 
     zeno::vec4d random_direction();
 
     zeno::vec4d offset_direction(
-        const zeno::vec4d &old_direction, const double offset_radian_min, const double offset_radian_max);
+        const zeno::vec4d &old_direction, const float offset_radian_min, const float offset_radian_max);
 
     std::vector<zeno::vec4d> calculate_turn_points(
-        const zeno::vec4d &start, const zeno::vec4d &direction, const double length, const double radius,
+        const zeno::vec4d &start, const zeno::vec4d &direction, const float length, const float radius,
         const int turn_points_num_min, const int turn_points_num_max,
-        const double turn_points_offset_min, const double turn_points_offset_max);
+        const float turn_points_offset_min, const float turn_points_offset_max);
 }
 
 #endif

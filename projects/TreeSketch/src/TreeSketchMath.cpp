@@ -4,22 +4,22 @@
 
 namespace zeno
 {
-    double random(const double min, const double max)
+    float random(const float min, const float max)
     {
-        return min + static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * (max - min);
+        return min + static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * (max - min);
     }
 
-    int random(const int min, const int max)
-    {
-        return min + std::rand() % (max - min + 1);
-    }
+    // int random(const int min, const int max)
+    // {
+    //     return min + std::rand() % (max - min + 1);
+    // }
 
-    double degreeToRadian(const double degree)
+    float degreeToRadian(const float degree)
     {
         return degree * 0.01745329251994329576923690768489;
     }
 
-    zeno::vec4d lerp(const zeno::vec4d low, const zeno::vec4d high, const double t)
+    zeno::vec4d lerp(const zeno::vec4d low, const zeno::vec4d high, const float t)
     {
         return (1.0 - t) * low + t * high;
     }
@@ -31,7 +31,7 @@ namespace zeno
         {
             for (std::size_t col{0}; col < 4; ++col)
             {
-                double sum{0.0};
+                float sum{0.0};
                 for (std::size_t i{0}; i < 4; ++i)
                 {
                     sum += lhs_m[row][i] * rhs_m[i][col];
@@ -47,7 +47,7 @@ namespace zeno
         zeno::vec4d result{};
         for (std::size_t row{0}; row < 4; ++row)
         {
-            double sum{0};
+            float sum{0};
             for (std::size_t i{0}; i < 4; ++i)
             {
                 sum += m[row][i] * v[i];
@@ -57,7 +57,7 @@ namespace zeno
         return result;
     }
 
-    zeno::mat4d rotate(const double radian, zeno::vec4d axis)
+    zeno::mat4d rotate(const float radian, zeno::vec4d axis)
     {
         auto c{std::cos(radian)};
         auto s{std::sin(radian)};
@@ -107,7 +107,7 @@ namespace zeno
         return zeno::normalize(zeno::vec4d{random(-1.0, 1.0), random(-1.0, 1.0), random(-1.0, 1.0), 0.0});
     }
 
-    zeno::vec4d offset_direction(const zeno::vec4d &old_direction, const double offset_radian_min, const double offset_radian_max)
+    zeno::vec4d offset_direction(const zeno::vec4d &old_direction, const float offset_radian_min, const float offset_radian_max)
     {
         auto offset_radian{random(offset_radian_min, offset_radian_max)};
         auto rotation_axis{random_direction()};
@@ -116,9 +116,9 @@ namespace zeno
     }
 
     std::vector<zeno::vec4d> calculate_turn_points(
-        const zeno::vec4d &start, const zeno::vec4d &direction, const double length, const double radius,
+        const zeno::vec4d &start, const zeno::vec4d &direction, const float length, const float radius,
         const int turn_points_num_min, const int turn_points_num_max,
-        const double turn_points_offset_min, const double turn_points_offset_max)
+        const float turn_points_offset_min, const float turn_points_offset_max)
     {
         std::vector<zeno::vec4d> turn_points{};
         auto turn_points_num{random(turn_points_num_min, turn_points_num_max)};
@@ -127,7 +127,7 @@ namespace zeno
         {
             auto turn_point_offset{random(turn_points_offset_min, turn_points_offset_max)};
 
-            auto turn_point{start + static_cast<double>(i + 1) / static_cast<double>(turn_points_num + 1) * length * direction};
+            auto turn_point{start + static_cast<float>(i + 1) / static_cast<float>(turn_points_num + 1) * length * direction};
             auto transform_matrix{transform_new_coord(turn_point, direction)};
 
             turn_point[0] = random(-1.0, 1.0);

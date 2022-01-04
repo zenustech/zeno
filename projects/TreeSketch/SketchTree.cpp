@@ -9,19 +9,19 @@ namespace zeno
     {
         virtual void apply() override
         {
-            auto start_x = get_input2<double>("start_x");
-            auto start_y = get_input2<double>("start_y");
-            auto start_z = get_input2<double>("start_z");
-            auto offset_degree_min = get_input2<double>("offset_degree_min");
-            auto offset_degree_max = get_input2<double>("offset_degree_max");
-            auto length_min = get_input2<double>("length_min");
-            auto length_max = get_input2<double>("length_max");
-            auto radius_min = get_input2<double>("radius_min");
-            auto radius_max = get_input2<double>("radius_max");
+            auto start_x = get_input2<float>("start_x");
+            auto start_y = get_input2<float>("start_y");
+            auto start_z = get_input2<float>("start_z");
+            auto offset_degree_min = get_input2<float>("offset_degree_min");
+            auto offset_degree_max = get_input2<float>("offset_degree_max");
+            auto length_min = get_input2<float>("length_min");
+            auto length_max = get_input2<float>("length_max");
+            auto radius_min = get_input2<float>("radius_min");
+            auto radius_max = get_input2<float>("radius_max");
             auto turn_points_num_min = get_input2<int>("turn_points_num_min");
             auto turn_points_num_max = get_input2<int>("turn_points_num_max");
-            auto turn_points_offset_min = get_input2<double>("turn_points_offset_min");
-            auto turn_points_offset_max = get_input2<double>("turn_points_offset_max");
+            auto turn_points_offset_min = get_input2<float>("turn_points_offset_min");
+            auto turn_points_offset_max = get_input2<float>("turn_points_offset_max");
 
             zeno::vec4d start{start_x, start_y, start_z, 1.0};
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
@@ -42,19 +42,19 @@ namespace zeno
         CreateTree,
         {
             {
-                {"double", "start_x", "0.0"},
-                {"double", "start_y", "0.0"},
-                {"double", "start_z", "0.0"},
-                {"double", "offset_degree_min", "0.0"},
-                {"double", "offset_degree_max", "0.0"},
-                {"double", "length_min", "0.0"},
-                {"double", "length_max", "0.0"},
-                {"double", "radius_min", "0.0"},
-                {"double", "radius_max", "0.0"},
+                {"float", "start_x", "0.0"},
+                {"float", "start_y", "0.0"},
+                {"float", "start_z", "0.0"},
+                {"float", "offset_degree_min", "0.0"},
+                {"float", "offset_degree_max", "0.0"},
+                {"float", "length_min", "0.0"},
+                {"float", "length_max", "0.0"},
+                {"float", "radius_min", "0.0"},
+                {"float", "radius_max", "0.0"},
                 {"int", "turn_points_num_min", "0"},
                 {"int", "turn_points_num_max", "0"},
-                {"double", "turn_points_offset_min", "0.0"},
-                {"double", "turn_points_offset_max", "0.0"},
+                {"float", "turn_points_offset_min", "0.0"},
+                {"float", "turn_points_offset_max", "0.0"},
             },
             {
                 {"treeObj"},
@@ -75,18 +75,18 @@ namespace zeno
 
             auto num_min = get_input2<int>("num_min");
             auto num_max = get_input2<int>("num_max");
-            auto offset_start_min = get_input2<double>("offset_start_min");
-            auto offset_start_max = get_input2<double>("offset_start_max");
-            auto offset_degree_min = get_input2<double>("offset_degree_min");
-            auto offset_degree_max = get_input2<double>("offset_degree_max");
-            auto length_min = get_input2<double>("length_min");
-            auto length_max = get_input2<double>("length_max");
-            auto radius_min = get_input2<double>("radius_min");
-            auto radius_max = get_input2<double>("radius_max");
+            auto offset_start_min = get_input2<float>("offset_start_min");
+            auto offset_start_max = get_input2<float>("offset_start_max");
+            auto offset_degree_min = get_input2<float>("offset_degree_min");
+            auto offset_degree_max = get_input2<float>("offset_degree_max");
+            auto length_min = get_input2<float>("length_min");
+            auto length_max = get_input2<float>("length_max");
+            auto radius_min = get_input2<float>("radius_min");
+            auto radius_max = get_input2<float>("radius_max");
             auto turn_points_num_min = get_input2<int>("turn_points_num_min");
             auto turn_points_num_max = get_input2<int>("turn_points_num_max");
-            auto turn_points_offset_min = get_input2<double>("turn_points_offset_min");
-            auto turn_points_offset_max = get_input2<double>("turn_points_offset_max");
+            auto turn_points_offset_min = get_input2<float>("turn_points_offset_min");
+            auto turn_points_offset_max = get_input2<float>("turn_points_offset_max");
 
             auto offset_radian_min{degreeToRadian(offset_degree_min)};
             auto offset_radian_max{degreeToRadian(offset_degree_max)};
@@ -110,18 +110,18 @@ namespace zeno
                 {"treeObj"},
                 {"int", "num_min", "0"},
                 {"int", "num_max", "0"},
-                {"double", "offset_start_min", "0.0"},
-                {"double", "offset_start_max", "0.0"},
-                {"double", "offset_degree_min", "0.0"},
-                {"double", "offset_degree_max", "0.0"},
-                {"double", "length_min", "0.0"},
-                {"double", "length_max", "0.0"},
-                {"double", "radius_min", "0.0"},
-                {"double", "radius_max", "0.0"},
+                {"float", "offset_start_min", "0.0"},
+                {"float", "offset_start_max", "0.0"},
+                {"float", "offset_degree_min", "0.0"},
+                {"float", "offset_degree_max", "0.0"},
+                {"float", "length_min", "0.0"},
+                {"float", "length_max", "0.0"},
+                {"float", "radius_min", "0.0"},
+                {"float", "radius_max", "0.0"},
                 {"int", "turn_points_num_min", "0"},
                 {"int", "turn_points_num_max", "0"},
-                {"double", "turn_points_offset_min", "0.0"},
-                {"double", "turn_points_offset_max", "0.0"},
+                {"float", "turn_points_offset_min", "0.0"},
+                {"float", "turn_points_offset_max", "0.0"},
             },
             {
                 {"treeObj"},
