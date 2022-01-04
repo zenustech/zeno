@@ -132,6 +132,29 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
 
             return ir->emplace_back<VectorComposeStmt>(3, retargs);
 
+        } else if (name == "applyAffine"){
+
+            ERROR_IF(args.size() != 5);
+            auto rs0 = make_stm(args[0]);
+            auto rs1 = make_stm(args[1]);
+            auto rs2 = make_stm(args[2]);
+            auto t = make_stm(args[3]);
+            auto v = make_stm(args[4]);
+            if (rs0->dim != 3 || rs1->dim != 3
+                ||rs2->dim !=3 || t->dim !=3 || v->dim !=3 ) {
+                error("`Affine transform` requires five 3-D vectors, got %d-D, %d-D, %d-D,%d-D, %d-D",
+                    rs0->dim, rs1->dim, rs2->dim, t->dim, v->dim);
+            }
+            //return stm_cross(x, y);
+            std::vector<Statement *> retargs;
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_dot(rs0,v)+t[0]));
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_dot(rs1,v)+t[1]));
+            retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                std::vector<int>{0}, stm_dot(rs2,v)+t[2]));
+            
+            return ir->emplace_back<VectorComposeStmt>(3, retargs);;
         } else if (name == "all") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);

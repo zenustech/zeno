@@ -556,6 +556,7 @@ struct deduce_missing_velocity_and_normalize {
 
       // store the weighted version
       vel_leaf.setValueOn(offset, vel);
+      
     } // end for all voxels in this leaf node
   }   // end operator()
 
