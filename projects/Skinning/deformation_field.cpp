@@ -94,14 +94,95 @@ ZENDEFNODE(RetrieveDisplacementField,{
 });
 
 
+// The two input primitive objects should be volumetric mesh, currently only quads is supported
+// Using linear blending for interpolating the nodal affine field from neighbored elements
 struct RetrieveAffineField : zeno::INode {
     virtual void apply() override {
         auto ref_shape = get_input<zeno::PrimitiveObject>("ref_shape");
         auto def_shape = get_input<zeno::PrimitiveObject>("def_shape");
 
+        assert(ref_shape->quads.size() == def_shape.quads.size());
+        assert(ref_shape->size() == def_shape->size());
 
+        size_t nm_quads = ref_shape->quads.size();
+
+        std::vector<Eigen::Matrix4d> nodal_affine;
+        nodal_affine.resize(ref_shape->size(),Eigen::Matrix4d::Zero());
+        std::vector<double> nodal_weight_sum;
+        nodal_weight_sum.resize(ref_shape->size(),0);
+
+        for(size_t i = 0;i < nm_quads;++i){
+            const auto& quad = ref_shape->quads[i];
+            Eigen::Matrix4d ref_pos;
+            Eigen::Matrix4d def_pos;
+
+            std::vector<Eigen::Vector3d> elm_verts(4);
+
+            for(size_t j = 0;j < 4;++j){
+                size_t idx = quad[j];
+                elm_verts[j] = Eigen::Vector3d(ref_shape->verts[idx][0],ref_shape->verts[idx][1],ref_shape->verts[idx][2]);
+                ref_pos.col(j) << elm_verts[j],1.0;
+                def_pos.col(j) << def_shape->verts[idx][0],def_shape->verts[idx][1],def_shape->verts[idx][2],1.0;
+            }
+
+            Eigen::Matrix4d affine = def_pos * ref_pos.inverse();
+            // using the distance from the point to the opposite triangle as the weight
+            for(size_t j = 0;j < 4;++j){
+                double w = Height(elm_verts[j],elm_verts[(j+1)%4],elm_verts[(j+2)%4],elm_verts[(j+3)%4]);
+                nodal_affine[quad[j]] += w * affine;
+                nodal_weight_sum[quad[j]] += w;
+            }
+        }
+
+        for(size_t i = 0;i < nodal_affine.size();++i)
+            nodal_affine[i] /= nodal_weight_sum[i];
+
+        auto affine_field = std::make_shared<zeno::PrimitiveObject>(*ref_shape);
+        auto& affine0 = affine_field->add_attr<zeno::vec3f>("A0");
+        auto& affine1 = affine_field->add_attr<zeno::vec3f>("A1");
+        auto& affine2 = affine_field->add_attr<zeno::vec3f>("A2");
+        auto& affine3 = affine_field->add_attr<zeno::vec3f>("A3");
+        affine_field->resize(ref_shape->size());
+
+        for(size_t i = 0;i < affine_field->size();++i){
+            affine0[i] = zeno::vec3f(nodal_affine[i](0,0),nodal_affine[i](0,1),nodal_affine[i](0,2));
+            affine1[i] = zeno::vec3f(nodal_affine[i](1,0),nodal_affine[i](1,1),nodal_affine[i](1,2));
+            affine2[i] = zeno::vec3f(nodal_affine[i](2,0),nodal_affine[i](2,1),nodal_affine[i](2,2));
+            affine3[i] = zeno::vec3f(nodal_affine[i](0,3),nodal_affine[i](1,3),nodal_affine[i](2,3));
+        }
+
+        // std::cout << "OUTPUT_AFFINE_FIELD " << std::endl;
+        // for(size_t i= 0;i < affine_field->size();++i){
+        //     std::cout << "ID : " <<  i << std::endl;
+        //     std::cout << affine0[i][0] << "\t" << affine0[i][1] << "\t" << affine0[i][2] << std::endl;
+        //     std::cout << affine1[i][0] << "\t" << affine1[i][1] << "\t" << affine1[i][2] << std::endl;
+        //     std::cout << affine2[i][0] << "\t" << affine2[i][1] << "\t" << affine2[i][2] << std::endl;
+        //     std::cout << affine3[i][0] << "\t" << affine3[i][1] << "\t" << affine3[i][2] << std::endl;
+        // }
+
+        set_output("affine_field",affine_field); 
     }
+
+    static double Height(const Eigen::Vector3d& v0,const Eigen::Vector3d& v1,const Eigen::Vector3d&v2,const Eigen::Vector3d& v3){
+        Eigen::Vector3d v30 = v3 - v0;
+        Eigen::Vector3d v20 = v2 - v0;
+        Eigen::Vector3d v10 = v1 - v0;
+
+        Eigen::Vector3d v10xv20 = v10.cross(v20);
+        v10xv20 /= v10xv20.norm();
+
+        return fabs(v30.dot(v10xv20));
+    }
+
 };
+
+ZENDEFNODE(RetrieveAffineField,{
+    {{"ref_shape"},{"def_shape"}},
+    {"affine_field"},
+    {},
+    {"Skinning"},
+});
+
 
 struct AlignPrimitive : zeno::INode {
     virtual void apply() override {
