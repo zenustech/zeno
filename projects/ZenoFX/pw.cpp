@@ -167,4 +167,36 @@ ZENDEFNODE(ParticlesWrangle, {
     {"zenofx"},
 });
 
+
+struct SyncPrimitiveAttributes : zeno::INode {
+    virtual void apply() override {
+        auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
+        auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
+
+        prim1->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+            using T = std::decay_t<decltype(attr[0])>;
+            prim2->add_attr<T>(key);
+        });
+
+        prim2->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+            using T = std::decay_t<decltype(attr[0])>;
+            prim1->add_attr<T>(key);
+        });
+
+        // prim1->resize(prim1->size());
+        // prim2->resize(prim2->size());
+
+        set_output("prim1",prim1);
+        set_output("prim2",prim2);
+    }
+};
+
+ZENDEFNODE(SyncPrimitiveAttributes, {
+    {"prim1", "prim2"},
+    {"prim1", "prim2"},
+    {},
+    {"zenofx"},
+});
+
+
 }

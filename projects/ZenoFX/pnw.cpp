@@ -34,7 +34,7 @@ struct HashGrid : zeno::IObject {
 
     int hash(int x, int y, int z) {
 #ifdef XUBEN
-        return x + y * gridRes[0] + z * gridRes[0] * gridRes[1];
+        return (x%gridRes[0]+gridRes[0])%gridRes[0] + ((y%gridRes[1]+gridRes[1])%gridRes[1]) * gridRes[0] + ((z%gridRes[2]+gridRes[2])%gridRes[2]) * gridRes[0] * gridRes[1];
 #else
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
 #endif
