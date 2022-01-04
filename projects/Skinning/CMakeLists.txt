@@ -15,13 +15,18 @@ set(SKINNING_SOURCE_FILES
     igl_file_reader.cpp
     skinning_bbw.cpp
     skinning.cpp
+    tetrahedralize.cpp
+    laplace_equa.cpp
+    gradient.cpp
+    deformation_field.cpp
 )
 
 add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})
 target_link_libraries(zeno_SKINNING PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_SKINNING PUBLIC OpenMP::OpenMP_CXX)
 
-target_link_libraries(zeno_SKINNING PRIVATE igl::core igl::cgal)
+target_link_libraries(zeno_SKINNING PRIVATE igl::core igl::cgal igl::tetgen)
+# target_link_libraries(zeno_SKINNING PRIVATE libTetWild)
 
 target_link_libraries(zeno_SKINNING PUBLIC zeno)
 target_link_libraries(zeno_SKINNING PRIVATE zeno_nodep)

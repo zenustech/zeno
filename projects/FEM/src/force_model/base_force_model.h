@@ -46,6 +46,10 @@ struct TetAttributes{
     FEM_Scaler _density;
     Vec12d _ext_f;
 
+    // example-based energy term
+    Vec12d _example_pos;
+    Vec12d _example_pos_weight;
+
     ElastoMaterialParam emp;
     PlasticMaterialParam pmp;// trajectory dependent force model
     FEM_Scaler v;

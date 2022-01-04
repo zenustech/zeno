@@ -23,6 +23,8 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/integrator/backward_euler_integrator.cpp
     src/integrator/quasi_static_solver.h
     src/integrator/quasi_static_solver.cpp
+    src/integrator/example_based_quasi_static_solver.cpp
+    src/integrator/example_based_quasi_static_solver.h
     src/bspline/cubicBspline.cpp
     src/bspline/cubicBspline.h
     nodesys.cpp
@@ -38,7 +40,7 @@ target_include_directories(zeno_FEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/force_model
     ${CMAKE_CURRENT_SOURCE_DIR}/src/integrator
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bspline   
-    )
+)
 
 target_link_libraries(zeno_FEM PUBLIC zeno)
 target_link_libraries(zeno_FEM PRIVATE zeno_nodep)
