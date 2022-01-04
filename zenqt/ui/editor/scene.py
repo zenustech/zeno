@@ -121,13 +121,14 @@ class QDMFindBar(QWidget):
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-        self.on_jump()
+        self.on_jump(ns)
 
-    def on_jump(self):
+    def on_jump(self, ns=None):
         self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
 
         text = self.lineEdit.text()
-        ns = self.do_search(text)
+        if ns == None:
+            ns = self.do_search(text)
         n = ns[self.current_index]
 
         view = self.window.view
