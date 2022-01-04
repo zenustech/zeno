@@ -519,6 +519,7 @@ struct ParticlesToSegments : zeno::INode {
         const auto& pvel = particles->attr<zeno::vec3f>(attr_name);
 
         auto segs = std::make_shared<zeno::PrimitiveObject>();
+        auto svel = segs->add_attr<zeno::vec3f>(attr_name);
         segs->resize(particles->size() * 2);
         auto& segLines = segs->lines;
         segLines.resize(particles->size());
@@ -528,6 +529,7 @@ struct ParticlesToSegments : zeno::INode {
             segLines[i] = zeno::vec2i(i,i + particles->size());
             spos[i] = ppos[i];
             spos[i + particles->size()] = spos[i] + dt * pvel[i];
+            svel[i] = svel[i + particles->size()] = pvel[i];
         }
 
         set_output("seg",segs);
