@@ -61,7 +61,7 @@ struct GenerateSkinningWeight : zeno::INode {
         Eigen::VectorXi b;
         // List of boundary conditions of each weight function
         Eigen::MatrixXd bc;
-        igl::boundary_conditions(V,T,C,Eigen::VectorXi(),BE,Eigen::MatrixXi(),b,bc);;
+        igl::boundary_conditions(V,T,C,Eigen::VectorXi(),BE,Eigen::MatrixXi(),b,bc);
 
         // compute BBW weights matrix
         igl::BBWData bbw_data;
