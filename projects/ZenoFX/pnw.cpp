@@ -7,6 +7,12 @@
 #include <zfx/x64.h>
 #include <cassert>
 #include "dbg_printf.h"
+#include <cmath>
+#include <atomic>
+#include <algorithm>
+// #if defined(_OPENMP)
+#include <omp.h>
+// #endif
 
 namespace {
 
@@ -18,6 +24,259 @@ struct Buffer {
     size_t count = 0;
     size_t stride = 0;
     int which = 0;
+};
+
+struct LBvh : zeno::IObject {
+    using TV = zeno::vec3f;
+    using Box = std::pair<TV, TV>;
+    using Ti = int;
+    using Tu = std::make_unsigned_t<Ti>;
+
+    float radius;
+    float radius_sqr;
+    float radius_sqr_min;
+    std::vector<TV> const &refpos;
+    std::vector<Box> sortedBvs;
+    std::vector<Ti> auxIndices, levels, parents, leafIndices;
+
+    LBvh(std::vector<zeno::vec3f> const &refpos_,
+            float radius_, float radius_min)
+        : refpos(refpos_) {
+
+        radius = radius_;
+        radius_sqr = radius * radius;
+        radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
+
+        const Ti numLeaves = refpos.size();
+        const Ti numNodes = numLeaves + numLeaves - 1;
+        sortedBvs.resize(numLeaves);
+        auxIndices.resize(numNodes);
+        levels.resize(numNodes);
+        parents.resize(numNodes);
+        leafIndices.resize(numNodes);
+
+        constexpr int dim = 3;
+        constexpr auto ma = std::numeric_limits<float>().max();
+        constexpr auto mi = std::numeric_limits<float>().lowest();
+        Box wholeBox{TV{ma, ma, ma}, TV{mi, mi, mi}};
+
+        /// whole box
+        // should use reduce here
+        for (Ti i = 0; i != numLeaves; ++i) {
+            const auto &p = refpos[i];
+            for (int d = 0; d != dim; ++d) {
+                if (p[d] < wholeBox.first[d])
+                    wholeBox.first[d] = p[d];
+                if (p[d] > wholeBox.second[d])
+                    wholeBox.second[d] = p[d];
+            }
+        }
+
+        std::vector<std::pair<Tu, Ti>> records(numLeaves);  // <mc, id>
+        /// morton codes 
+        auto getMortonCode = [](const TV &p) -> Tu {
+            auto expand_bits = [](Tu v) -> Tu {  // expands lower 10-bits to 30 bits
+                v = (v * 0x00010001u) & 0xFF0000FFu;
+                v = (v * 0x00000101u) & 0x0F00F00Fu;
+                v = (v * 0x00000011u) & 0xC30C30C3u;
+                v = (v * 0x00000005u) & 0x49249249u;
+                return v;
+            };
+            return (expand_bits((Tu)(p[0] * 1024.f)) << (Tu)2) | (expand_bits((Tu)(p[1] * 1024.f)) << (Tu)1) | expand_bits((Tu)(p[2] * 1024.f));
+        };
+        {
+            const auto lengths = wholeBox.second - wholeBox.first;
+            auto getUniformCoord = [&wholeBox, &lengths](const TV &p) {
+                auto offsets = p - wholeBox.first;
+                for (int d = 0; d != dim; ++d)
+                    offsets[d] = std::clamp(offsets[d], (float)0, lengths[d]) / lengths[d];
+                return offsets;
+            };
+#pragma omp parallel for
+            for (Ti i = 0; i < numLeaves; ++i) {
+                auto uc = getUniformCoord(refpos[i]);
+                records[i] = std::make_pair(getMortonCode(uc), i);
+            }
+        }
+        std::sort(std::begin(records), std::end(records));
+
+        std::vector<Tu> splits(numLeaves);
+        /// 
+        constexpr auto numTotalBits = sizeof(Tu) * 8;
+        auto clz = [](Tu x) {
+            static_assert(std::is_same_v<Tu, unsigned int>, "Tu should be unsigned int");
+#if defined(_MSC_VER) || (defined(_WIN32) && defined(__INTEL_COMPILER))
+            return __lzcnt((unsigned int)x);
+#elif defined(__clang__) || defined(__GNUC__)
+            return __builtin_clz((unsigned int)x);
+#endif
+        };
+#pragma omp parallel for
+        for (Ti i = 0; i < numLeaves; ++i) {
+            if (i != numLeaves - 1)
+                splits[i] = numTotalBits - clz(records[i].first ^ records[i].second);
+            else
+                splits[i] = numTotalBits + 1;
+        }
+
+        ///
+        std::vector<Box> leafBvs(numLeaves);
+        std::vector<Box> trunkBvs(numLeaves - 1);
+        std::vector<Ti> leafLca(numLeaves);
+        std::vector<Ti> leafDepths(numLeaves);
+        std::vector<Ti> trunkR(numLeaves - 1);
+        std::vector<Ti> trunkL(numLeaves - 1);
+        std::vector<Ti> trunkRc(numLeaves - 1);
+        std::vector<Ti> trunkLc(numLeaves - 1);
+
+        std::vector<std::atomic<Tu>> trunkTopoMarks(numLeaves - 1);
+        std::vector<std::atomic<Ti>> trunkBuildFlags(numLeaves - 1);
+#pragma omp parallel for
+        for (Ti i = 0; i < numLeaves - 1; ++i) {
+            trunkTopoMarks[i] = 0;
+            trunkBuildFlags[i] = 0;
+        }
+
+#pragma omp parallel for
+        for (Ti idx = 0; idx < numLeaves; ++idx) {
+            leafBvs[idx] = Box{refpos[records[idx].second], refpos[records[idx].second]};
+
+            leafLca[idx] = -1, leafDepths[idx] = 1;
+            Ti l = idx - 1, r = idx;  ///< (l, r]
+            bool mark{false};
+
+            if (l >= 0) mark = splits[l] < splits[r];  ///< true when right child, false otherwise
+
+            int cur = mark ? l : r;
+            if (mark)
+                trunkRc[cur] = idx, trunkR[cur] = idx, trunkTopoMarks[cur].fetch_or((Tu)0x00000002u);
+            else
+                trunkLc[cur] = idx, trunkL[cur] = idx, trunkTopoMarks[cur].fetch_or((Tu)0x00000001u);
+
+            while (trunkBuildFlags[cur].fetch_add(1) == 1) {
+                {  // refit
+                    int lc = trunkLc[cur], rc = trunkRc[cur];
+                    Box* left{}, *right{};
+                    switch (trunkTopoMarks[cur] & 3) {
+                    case 0:
+                        left = trunkBvs.data(), right = trunkBvs.data();
+                        break;
+                    case 1:
+                        left = leafBvs.data(), right = trunkBvs.data();
+                        break;
+                    case 2:
+                        left = trunkBvs.data(), right = leafBvs.data();
+                        break;
+                    case 3:
+                        left = leafBvs.data(), right = leafBvs.data();
+                        break;
+                    }
+                    const auto& leftBox = left[lc];
+                    const auto& rightBox = right[rc];
+                    Box bv{};
+                    for (int d = 0; d < dim; ++d) {
+                        bv.first[d] = leftBox.first[d] < rightBox.first[d] ? leftBox.first[d] : rightBox.first[d];
+                        bv.second[d] = leftBox.second[d] > rightBox.second[d] ? leftBox.second[d] : rightBox.second[d];
+                    }
+                    trunkBvs[cur] = bv;
+                }
+                trunkTopoMarks[cur] &= 0x00000007;
+
+                l = trunkL[cur] - 1, r = trunkR[cur];
+                leafLca[l + 1] = cur, leafDepths[l + 1]++;
+                atomic_thread_fence(std::memory_order_acquire);
+
+                if (l >= 0)
+                    mark = splits[l] < splits[r];  ///< true when right child, false otherwise
+                else
+                    mark = false;
+
+                if (l + 1 == 0 && r == numLeaves - 1) {
+                    // trunkPar(cur) = -1;
+                    trunkTopoMarks[cur] &= 0xFFFFFFFB;
+                    break;
+                }
+
+                int par = mark ? l : r;
+                // trunkPar(cur) = par;
+                if (mark) {
+                    trunkRc[par] = cur, trunkR[par] = r;
+                    trunkTopoMarks[par].fetch_and(0xFFFFFFFD);
+                    trunkTopoMarks[cur] |= 0x00000004;
+                }
+                else {
+                    trunkLc[par] = cur, trunkL[par] = l + 1;
+                    trunkTopoMarks[par].fetch_and(0xFFFFFFFE);
+                    trunkTopoMarks[cur] &= 0xFFFFFFFB;
+                }
+                cur = par;
+            };
+        }
+
+        std::vector<Ti> leafOffsets(numLeaves);
+        leafOffsets[0] = 0;
+        for (Ti i = 1; i < numLeaves; ++i)
+            leafOffsets[i] = leafOffsets[i - 1] + leafDepths[i - 1];
+        std::vector<Ti> trunkDst(numLeaves - 1);
+        /// compute trunk order
+#pragma omp parallel for
+        for (Ti i = 0; i < numLeaves; ++i) {
+            auto offset = leafOffsets[i];
+            parents[offset] = -1;
+            for (Ti node = leafLca[i], level = leafDepths[i]; --level; node = trunkLc[node]) {
+                levels[offset] = level;
+                parents[offset + 1] = offset;
+                trunkDst[node] = offset++;
+            }
+        }
+
+        // sortedBvs, auxIndices, levels, parents, leafIndices
+        /// reorder trunk
+        // auxIndices here is escapeIndex (for trunk nodes)
+#pragma omp parallel for
+        for (Ti i = 0; i < numLeaves - 1; ++i) {
+            auto dst = trunkDst[i];
+            const auto &bv = trunkBvs[i];
+            auto l = trunkL[i];
+            auto r = trunkR[i];
+            sortedBvs[dst] = bv;
+            const auto rb = r + 1;
+            if (rb < numLeaves) {
+                auto lca = leafLca[rb];  // rb must be in left-branch
+                auto brother = (lca != -1 ? trunkDst[lca] : leafOffsets[rb]);
+                auxIndices[dst] = brother;
+                if (dst > 0 && parents[dst] == dst - 1)  // most likely
+                    parents[brother] = dst - 1;            // setup right-branch brother's parent
+#if 0
+                if (dst < 20 || escapeIndices(dst) >= numLeaves * 2 - 1)
+                    printf("numnodes %d | trunk %d lb on leaf %d (- %d), esc %d, lca[%c] %d, bro %d\n",
+                    (int)numLeaves * 2 - 1, (int)dst, (int)l, (int)r, (int)escapeIndices(dst),
+                    lca != -1 ? 'T' : 'L', (int)lca, (int)brother);
+#endif
+            } else
+                auxIndices[dst] = -1;
+        }
+
+        // sortedBvs, auxIndices, levels, parents, leafIndices
+        /// reorder leaf
+        // auxIndices here is primitiveIndex (for leaf nodes)
+#pragma omp parallel for
+        for (Ti i = 0; i < numLeaves; ++i) {
+            const auto &bv = leafBvs[i];
+            const auto leafDepth = leafDepths[i];
+
+            auto dst = leafOffsets[i] + leafDepth - 1;
+            leafIndices[i] = dst;
+            sortedBvs[dst] = bv;
+            auxIndices[dst] = records[i].second;
+            levels[dst] = 0;
+            if (leafDepth > 1) parents[dst + 1] = dst - 1;  // setup right-branch brother's parent
+#if 0
+            if (dst < 20)
+                printf("%d-th leaf %d, prim index %d\n", (int)idx, (int)dst, (int)sortedIndices(idx));
+#endif
+        }
+    }
 };
 
 struct HashGrid : zeno::IObject {
