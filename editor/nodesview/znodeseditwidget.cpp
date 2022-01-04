@@ -7,6 +7,8 @@
 #include <io/zsgwriter.h>
 #include <model/graphsmodel.h>
 #include <QMenuBar>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
@@ -16,7 +18,6 @@ ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     , m_pReloadBtn(nullptr)
     , m_pDeleteBtn(nullptr)
     , m_pNewSubGraph(nullptr)
-    , m_model(nullptr)
 {
     QVBoxLayout *pLayout = new QVBoxLayout;
 
@@ -64,26 +65,23 @@ void ZNodesEditWidget::openFileDialog()
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
+    //todo: path validation
 
-    if (m_model != nullptr)
-    {
-        //todo: save first
-        m_model = nullptr;
-    }
+    GraphsManagment *pGraphs = zenoApp->graphsManagment();
 
-    m_model = ZsgReader::getInstance().loadZsgFile(filePath);
-    m_model->initDescriptors();
+    GraphsModel *pModel = pGraphs->openZsgFile(filePath);
+    pModel->initDescriptors();
 
-    m_pGraphsWidget->setGraphsModel(m_model);
-    m_pComboSubGraph->setModel(m_model);
+    m_pGraphsWidget->setGraphsModel(pModel);
+    m_pComboSubGraph->setModel(pModel);
 
     connect(m_pReloadBtn, &QPushButton::clicked, [=]() {
-        m_model->reloadSubGraph(m_pComboSubGraph->currentText());
+        pGraphs->currentModel()->reloadSubGraph(m_pComboSubGraph->currentText());
     });
-    connect(m_pDeleteBtn, SIGNAL(clicked()), m_model, SLOT(onRemoveCurrentItem()));
+    connect(m_pDeleteBtn, SIGNAL(clicked()), pModel, SLOT(onRemoveCurrentItem()));
 
-    connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), m_model, SLOT(onCurrentIndexChanged(int)));
-    connect(m_model->selectionModel(), &QItemSelectionModel::currentChanged, 
+    connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), pModel, SLOT(onCurrentIndexChanged(int)));
+    connect(pModel->selectionModel(), &QItemSelectionModel::currentChanged, 
         [=](const QModelIndex &current, const QModelIndex &previous) {
             m_pGraphsWidget->setCurrentIndex(current.row());
             m_pComboSubGraph->setCurrentIndex(current.row());
@@ -98,24 +96,11 @@ void ZNodesEditWidget::importGraph()
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
+    //todo: path validation
 
-    GraphsModel* pModel = ZsgReader::getInstance().loadZsgFile(filePath);
-    m_model->setDescriptors(pModel->descriptors());
-    for (int i = 0; i < pModel->rowCount(); i++)
-    {
-        SubGraphModel *pSubGraphModel = pModel->subGraph(i);
-        QString name = pSubGraphModel->name();
-        if (SubGraphModel* pExist = m_model->subGraph(name))
-        {
-            //todo: reload
-        }
-        else
-        {
-            m_model->appendSubGraph(pSubGraphModel->clone(m_model));
-        }
-    }
-    m_model->switchSubGraph("main");
-    m_model->initDescriptors();
+    GraphsModel *pModel = zenoApp->graphsManagment()->importGraph(filePath);
+    pModel->switchSubGraph("main");
+    pModel->initDescriptors();
 }
 
 void ZNodesEditWidget::exportGraph()
@@ -135,7 +120,7 @@ void ZNodesEditWidget::saveAs()
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty())
     {
-        QString strContent = ZsgWriter::getInstance().dumpProgram(m_model);
+        QString strContent = ZsgWriter::getInstance().dumpProgram(zenoApp->graphsManagment()->currentModel());
         QFile f(path);
         if (!f.open(QIODevice::WriteOnly)) {
             qWarning() << Q_FUNC_INFO << "Failed to open" << path << f.errorString();

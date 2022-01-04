@@ -7,6 +7,7 @@
 #include "style/zenostyle.h"
 #include <comctrl/ziconbutton.h>
 #include <nodesys/zenosearchbar.h>
+#include "zenoapplication.h"
 
 //#define TEST_WEBENGINE
 //#define TEST_SEARCHBAR
@@ -17,7 +18,7 @@ ZENO_NAMESPACE_BEGIN
 
 int zenoMainWithKDDoc(int argc, char* argv[])
 {
-    QApplication a(argc, argv);
+    ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
 
     KDDockWidgets::Config::self().setAbsoluteWidgetMinSize(QSize(54, 54));

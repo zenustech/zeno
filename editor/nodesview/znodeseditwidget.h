@@ -30,8 +30,6 @@ private:
     QPushButton* m_pReloadBtn;
     QPushButton* m_pDeleteBtn;
     QAction* m_pNewSubGraph;
-
-    GraphsModel* m_model;
 };
 
 

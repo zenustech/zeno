@@ -146,9 +146,24 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
 
     //view rect
     QRectF viewRect;
-    if (subgraph.HasMember("view_rect")) {
-        const auto &obj = subgraph["view_rect"];
+    if (subgraph.HasMember("view_rect"))
+    {
+        const auto& obj = subgraph["view_rect"];
+        Q_ASSERT(obj.HasMember("x") && obj.HasMember("y") && obj.HasMember("width") && obj.HasMember("height"));
         viewRect = QRectF(obj["x"].GetFloat(), obj["y"].GetFloat(), obj["width"].GetFloat(), obj["height"].GetFloat());
+    } 
+    else if (subgraph.HasMember("view"))
+    {
+        const auto& obj = subgraph["view"];
+        Q_ASSERT(obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"));
+        qreal scale = obj["scale"].GetFloat();
+        qreal trans_x = obj["trans_x"].GetFloat();
+        qreal trans_y = obj["trans_y"].GetFloat();
+        qreal x = trans_x;
+        qreal y = trans_y;
+        qreal width = 1200. / scale;
+        qreal height = 1000. / scale;
+        viewRect = QRectF(x, y, width, height);
     }
     pModel->setViewRect(viewRect);
 
