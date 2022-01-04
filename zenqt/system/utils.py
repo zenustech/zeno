@@ -135,7 +135,7 @@ def add_line_numbers(script):
     return res
 
 
-def gen_unique_ident(suffix='x'):
+def gen_unique_ident(suffix):
     uid = uuid.uuid1().bytes
     uid = hashlib.md5(uid).hexdigest()[:8]
     return uid + '-' + suffix

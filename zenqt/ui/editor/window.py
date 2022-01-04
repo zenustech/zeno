@@ -525,7 +525,7 @@ ZENDEFNODE(''' + key + ''', {
             nodes = json.loads(self.clipboard.text())
             nid_map = {}
             for nid in nodes:
-                nid_map[nid] = gen_unique_ident()
+                nid_map[nid] = gen_unique_ident(nodes[nid]['name'])
             new_nodes = {}
             pos = self.view.mapToScene(self.view.mapFromGlobal(QCursor.pos()))
             coors = [n['uipos'] for n in nodes.values()]
