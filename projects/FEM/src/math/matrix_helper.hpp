@@ -201,6 +201,17 @@ public:
 
         return fabs(v30.dot(v10xv20));
     }
+
+    // compute the area of triangle using Heron's formula
+    static FEM_Scaler Area(const Vec3d& v0,const Vec3d& v1,const Vec3d&v2) {
+        FEM_Scaler a = (v0 - v1).norm();
+        FEM_Scaler b = (v0 - v2).norm();
+        FEM_Scaler c = (v1 - v2).norm();
+
+        FEM_Scaler s = (a + b + c) / 2;
+
+        return sqrt(s*(s-a)*(s-b)*(s-c));
+    }
 };
 
 

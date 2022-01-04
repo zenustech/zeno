@@ -52,4 +52,30 @@ ZENDEFNODE(AddBone, {
     {"Skinning"},
 });
 
+struct EvalBonesAngle : zeno::INode {
+    virtual void apply() override {
+        auto bones = get_input<zeno::PrimitiveObject>("bones");
+        auto bs_idx = get_input<zeno::NumericObject>("bs_idx")->get<zeno::vec2i>();
+
+        const auto& B1 = bones->lines[bs_idx[0]];
+        const auto& B2 = bones->lines[bs_idx[1]];
+
+        auto B1Dir = bones->verts[B1[1]] - bones->verts[B1[0]];
+        auto B2Dir = bones->verts[B2[1]] - bones->verts[B2[0]];
+
+        float cosAngle = zeno::dot(B1Dir,B2Dir)/zeno::length(B1Dir)/zeno::length(B2Dir);
+        auto res = std::make_shared<zeno::NumericObject>();
+        res->set<float>(zeno::acos(cosAngle));
+
+        set_output("res",std::move(res));
+    }
+};
+
+ZENDEFNODE(EvalBonesAngle, {
+    {"bones","bs_idx"},
+    {"res"},
+    {},
+    {"Skinning"},
+});
+
 };

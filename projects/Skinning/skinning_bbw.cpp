@@ -15,13 +15,11 @@
 namespace{
 using namespace zeno;
 
-
-
-
 struct GenerateSkinningWeight : zeno::INode {
     virtual void apply() override {
         auto mesh = get_input<PrimitiveObject>("skinMesh");
         auto tfg = get_input<PrimitiveObject>("skinBone");
+        auto attr_prefix = get_param<std::string>("attr_prefix");
 
         Eigen::MatrixXd V;
         Eigen::MatrixXi T;
@@ -65,12 +63,7 @@ struct GenerateSkinningWeight : zeno::INode {
         Eigen::MatrixXd bc;
         igl::boundary_conditions(V,T,C,Eigen::VectorXi(),BE,Eigen::MatrixXi(),b,bc);
 
-
-        // std::cout << "OUTPUT B AND BC : " << std::endl;
-        // std::cout << "B : " << std::endl << b << std::endl;
-        // std::cout << "BC : " << std::endl << bc << std::endl;
-
-          // compute BBW weights matrix
+        // compute BBW weights matrix
         igl::BBWData bbw_data;
         // only a few iterations for sake of demo
         bbw_data.active_set_params.max_iter = 8;
@@ -83,19 +76,11 @@ struct GenerateSkinningWeight : zeno::INode {
         }
 
         assert(W.rows() == V.rows() && W.cols() == C.rows());
-
-        auto res = std::make_shared<SkinningWeight>();
-
         igl::normalize_row_sums(W,W);
-
-        res->weight = W;
-
-
-        std::cout << "OUTPUT_W" << std::endl;
 
         // add weight channel
         for(size_t i = 0;i < W.cols();++i){
-            std::string channel_name = "sw_" + std::to_string(i);
+            std::string channel_name = attr_prefix + "_" + std::to_string(i);
             auto& c = mesh->add_attr<float>(channel_name);
             mesh->resize(V.rows());
 
@@ -103,20 +88,15 @@ struct GenerateSkinningWeight : zeno::INode {
                 c[j] = W(j,i);
                 // std::cout << W(j,0) << std::endl;
             }
-
-            // for(size_t i = 0;i < V.rows();++i)
-            //     std::cout << "<" << i << "> : " << mesh->attr<float>(channel_name)[i] << std::endl;
         }
-
-        set_output("W",std::move(res));
         set_output("mesh",mesh);
     }
 };
 
 ZENDEFNODE(GenerateSkinningWeight, {
     {"skinMesh","skinBone"},
-    {"W","mesh"},
-    {},
+    {"mesh"},
+    {{"string","attr_prefix","sw"}},
     {"Skinning"},
 });
 
