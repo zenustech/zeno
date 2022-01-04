@@ -179,6 +179,7 @@ class NodeEditor(QWidget):
             scene.editor = self
             scene.record()
             scene.setContentChanged(False)
+            scene.name = name
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
@@ -238,7 +239,7 @@ class NodeEditor(QWidget):
 
         self.find_bar = QDMFindBar(self)
         self.find_bar.move(400, 40)
-        self.find_bar.resize(300, 30)
+        self.find_bar.resize(320, 30)
         self.find_bar.hide()
 
         self.subgraphHistoryStack = SubgraphHistoryStack(self)
