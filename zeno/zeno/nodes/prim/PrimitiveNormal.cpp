@@ -79,7 +79,7 @@ struct PrimitiveCalcNormal : zeno::INode {
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = zeno::normalize(nrm[i]);
+        nrm[i] = -zeno::normalize(nrm[i]);
     }
 
     set_output("prim", get_input("prim"));
