@@ -125,10 +125,10 @@ struct ImplAssembler {
         };
 
     static auto wrapup_function(std::string name) {
-        name += 'f';
         if (contains({"min", "max", "abs", "mod"}, name)) {
             name = 'f' + name;
         }
+        name += 'f';
         return name;
     }
 

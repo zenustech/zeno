@@ -95,15 +95,26 @@ struct PrimToVDBPointDataGrid : zeno::INode {
         else
             velocitys[i] = {0,0,0};
     }
-    auto data = zeno::IObject::make<VDBPointsGrid>();
-    data->m_grid = particleArrayToGrid(positions, velocitys, dx);
-    set_output("Particles", data);
+    
+    if(has_input("vdbPoints"))
+    {
+        auto input = get_input("vdbPoints"); 
+        auto data = input->as<VDBPointsGrid>();
+        dx = data->m_grid->transformPtr()->voxelSize()[0];
+        data->m_grid = particleArrayToGrid(positions, velocitys, dx);
+        set_output("Particles", std::move(input));
+    }
+    else{
+        auto data = zeno::IObject::make<VDBPointsGrid>();
+        data->m_grid = particleArrayToGrid(positions, velocitys, dx);
+        set_output("Particles", data);
+    }
   }
 };
 
 static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
-        "ParticleGeo", {"float","Dx"},
+        "ParticleGeo", {"float","Dx"}, "vdbPoints",
     }, /* outputs: */ {
         "Particles",
     }, /* params: */ {

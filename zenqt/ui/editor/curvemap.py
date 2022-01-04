@@ -50,9 +50,7 @@ class QDMOneClickButton(QGraphicsItem):
 
     def on_click(self):
         self.setChecked(not self.checked)
-        from .curve_editor import CurveEditor
-        self.curve_editor = CurveEditor(self.node)
-        self.curve_editor.open()
+        self.callback()
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -66,6 +64,11 @@ class QDMOneClickButton(QGraphicsItem):
         h = rect.height()
         self.setPos(x, y)
         self.setWidthHeight(w, h)
+    
+    def callback(self):
+        from .curve_editor import CurveEditor
+        self.curve_editor = CurveEditor(self.node)
+        self.curve_editor.open()
 
 class QDMGraphicsNode_MakeCurvemap(QDMGraphicsNode):
     def __init__(self, parent=None):

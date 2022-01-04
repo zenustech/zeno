@@ -3,6 +3,9 @@
 
 
 // Include files
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
 
 #include "R3Mesh.h"
 #include "lplus.h"

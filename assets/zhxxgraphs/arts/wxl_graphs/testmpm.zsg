@@ -45,8 +45,8 @@
       "nu": 0.4
      },
      "uipos": [
-      1621.1932447397562,
-      -855.2048726467328
+      1603.6201406266457,
+      -862.736202980923
      ],
      "options": [
       "ONCE"
@@ -268,7 +268,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": -10.0,
+      "y": 0.0,
       "z": 0.0
      },
      "uipos": [
@@ -339,19 +339,17 @@
        null
       ],
       "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
+       "3c9a8fec-x",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5009.064480486059,
-      -318.8520385422999
+      5405.681604469798,
+      -292.94756699758454
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "fedd88b0-MakeZSGrid": {
      "name": "MakeZSGrid",
@@ -389,8 +387,8 @@
      },
      "params": {},
      "uipos": [
-      2418.9491604435284,
-      -761.680783028849
+      2592.7722645566387,
+      -715.3882059080264
      ],
      "options": [
       "ONCE"
@@ -415,7 +413,7 @@
        null
       ],
       "SRC": [
-       "b75a278b-ToZSParticles",
+       "9d4a7610-ZSParticlesWrangler",
        "DST",
        null
       ]
@@ -755,7 +753,7 @@
        null
       ],
       "ZSBoundary": [
-       "f30378ba-ToZSBoundary",
+       "625669f6-ToZSBoundary",
        "ZSBoundary",
        null
       ],
@@ -813,111 +811,6 @@
      ],
      "options": []
     },
-    "5180e944-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       null,
-       null,
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3730.727442052978,
-      500.82781456953626
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "f30378ba-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSSdfField": [
-       "1b74c927-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "ZSVelocityField": [
-       null,
-       null,
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3873.913493377484,
-      219.88824503311264
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "1b74c927-ToZSLevelSet": {
      "name": "ToZSLevelSet",
      "inputs": {
@@ -942,13 +835,269 @@
      "options": [
       "ONCE"
      ]
+    },
+    "9d4a7610-ZSParticlesWrangler": {
+     "name": "ZSParticlesWrangler",
+     "inputs": {
+      "ZSParticles": [
+       "b75a278b-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "zfxCode": [
+       "f510eb5f-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "b75a278b-ToZSParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2314.7498977888754,
+      -757.8936890494123
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "f510eb5f-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@vel = vec3{0, -10, 0}"
+     },
+     "uipos": [
+      1947.4481804653028,
+      -1129.879885663293
+     ],
+     "options": []
+    },
+    "d63f477c-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "$tmp = vec3{0.5, 1, 1.5}\n@pos = ($tmp-@vel) * $tmp\n"
+     },
+     "uipos": [
+      1574.6211557150907,
+      -1289.0045352895686
+     ],
+     "options": []
+    },
+    "cb225386-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "c7db4052-ZSParticlesToPrimitiveObject",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "d7e624cd-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       0.0
+      ],
+      "max": [
+       null,
+       null,
+       10.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "wtf"
+     },
+     "uipos": [
+      5733.823202489838,
+      -221.5526549796748
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "d7e624cd-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "3\n0 1 0 0\n0.478870722773161 0 1 0\n1 0 0 1"
+     },
+     "uipos": [
+      5404.42200203252,
+      -114.98983739837398
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.478870722773161,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       1,
+       [
+        0,
+        0,
+        1
+       ]
+      ]
+     ]
+    },
+    "fa55dd7f-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "$mag = @vel.x*@vel.x + @vel.y*@vel.y+@vel.z*@vel.z\n@wtf = sqrt($mag)"
+     },
+     "uipos": [
+      4577.480023041877,
+      -646.1700735483345
+     ],
+     "options": []
+    },
+    "3c9a8fec-x": {
+     "name": "ZSParticlesWrangler",
+     "inputs": {
+      "ZSParticles": [
+       "1dfddf18-PortalOut",
+       "port",
+       null
+      ],
+      "zfxCode": [
+       "fa55dd7f-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "ce8e0002-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5058.865287270164,
+      -219.48821615634904
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "625669f6-ToZSBoundary": {
+     "name": "ToZSBoundary",
+     "inputs": {
+      "ZSLevelSet": [
+       "1b74c927-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "translation_rate": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       null
+      ],
+      "scale_rate": [
+       null,
+       null,
+       null
+      ],
+      "ypr_angles": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "sticky"
+     },
+     "uipos": [
+      4007.1399006622496,
+      112.53104304635767
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": 1307.0881074880815,
-    "y": -1234.9600503543288,
-    "width": 1907.3486328125,
-    "height": 1907.3486328125
+    "x": 1701.1314168742576,
+    "y": -1941.2382914838836,
+    "width": 2980.2322387695312,
+    "height": 2980.2322387695312
    }
   }
  },
@@ -3033,6 +3182,41 @@
     "openvdb"
    ]
   },
+  "ComposeSdfVelField": {
+   "inputs": [
+    [
+     "",
+     "ZSSdfField",
+     ""
+    ],
+    [
+     "",
+     "ZSVelField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "ComputeVonMises": {
    "inputs": [
     [
@@ -3631,6 +3815,11 @@
     [
      "",
      "object",
+     ""
+    ],
+    [
+     "",
+     "list",
      ""
     ],
     [
@@ -7941,6 +8130,46 @@
     "string"
    ]
   },
+  "MakeZSBuckets": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "MakeZSGrid": {
    "inputs": [
     [
@@ -8833,6 +9062,66 @@
     ],
     [
      "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ocean_FFT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OceanData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
+  "OceanCuCompute": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
      "ocean_FFT",
      ""
     ],
@@ -9635,6 +9924,11 @@
     [
      "float",
      "Dx",
+     ""
+    ],
+    [
+     "",
+     "vdbPoints",
      ""
     ],
     [
@@ -14426,12 +14720,7 @@
    "inputs": [
     [
      "",
-     "ZSSdfField",
-     ""
-    ],
-    [
-     "",
-     "ZSVelocityField",
+     "ZSLevelSet",
      ""
     ],
     [
@@ -14812,6 +15101,51 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "TransformZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "translation",
+     ""
+    ],
+    [
+     "",
+     "eulerXYZ",
+     ""
+    ],
+    [
+     "",
+     "scaling",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "TranslateBoundary": {
@@ -16323,13 +16657,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -16382,6 +16710,101 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZSParticleNeighborWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "ZenoParticles",
+     "ZSNeighborParticles",
+     ""
+    ],
+    [
+     "ZenoIndexBuckets",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ZSParticleParticleWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "ZenoParticles",
+     "ZSNeighborParticles",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ZSParticleToZSGrid": {
@@ -16497,6 +16920,46 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "ZSParticlesWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ZSPartitionForZSParticles": {

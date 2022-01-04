@@ -89,25 +89,31 @@ struct ParticleParticleWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
-            auto dim = std::visit([&] (auto const &v) {
-                using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    parvals.push_back(v[0]);
-                    parvals.push_back(v[1]);
-                    parvals.push_back(v[2]);
-                    parnames.emplace_back(key, 0);
-                    parnames.emplace_back(key, 1);
-                    parnames.emplace_back(key, 2);
-                    return 3;
-                } else if constexpr (std::is_same_v<T, float>) {
-                    parvals.push_back(v);
-                    parnames.emplace_back(key, 0);
-                    return 1;
-                } else return 0;
-            }, par);
-            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
-            opts.define_param(key, dim);
+            if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj); o.has_value()) {
+                auto par = o.value();
+                auto dim = std::visit([&] (auto const &v) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parvals.push_back(v[2]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        parnames.emplace_back(key, 2);
+                        return 3;
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        parvals.push_back(v);
+                        parnames.emplace_back(key, 0);
+                        return 1;
+                    } else {
+                        printf("invalid parameter type encountered: `%s`\n",
+                                typeid(T).name());
+                        return 0;
+                    }
+                }, par);
+                dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
+                opts.define_param(key, dim);
+            }
         }
 
         auto prog = compiler.compile(code, opts);
