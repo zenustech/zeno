@@ -105,7 +105,8 @@ class QDMFindBar(QWidget):
                     continue
 
             name = n.name.lower()
-            if text in name:
+            ident = n.ident.lower()
+            if text in name or text in ident:
                 result.append(n)
 
         return result
