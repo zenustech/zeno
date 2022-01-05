@@ -71,6 +71,8 @@ struct LBvh : zeno::IObject {
                     wholeBox.second[d] = p[d];
             }
         }
+        printf("lbvh bounding box: %f, %f, %f - %f, %f, %f\n", wholeBox.first[0], wholeBox.first[1], wholeBox.first[2], wholeBox.second[0], wholeBox.second[1], wholeBox.second[2]);
+        // getchar();
 
         std::vector<std::pair<Tu, Ti>> records(numLeaves);  // <mc, id>
         /// morton codes 
@@ -87,6 +89,7 @@ struct LBvh : zeno::IObject {
         {
             const auto lengths = wholeBox.second - wholeBox.first;
             auto getUniformCoord = [&wholeBox, &lengths](const TV &p) {
+                // https://newbedev.com/constexpr-variable-captured-inside-lambda-loses-its-constexpr-ness
                 constexpr int dim = 3;
                 auto offsets = p - wholeBox.first;
                 for (int d = 0; d != dim; ++d)
@@ -104,7 +107,7 @@ struct LBvh : zeno::IObject {
         std::vector<Tu> splits(numLeaves);
         /// 
         constexpr auto numTotalBits = sizeof(Tu) * 8;
-        auto clz = [](Tu x) {
+        auto clz = [](Tu x) -> Tu {
             static_assert(std::is_same_v<Tu, unsigned int>, "Tu should be unsigned int");
 #if defined(_MSC_VER) || (defined(_WIN32) && defined(__INTEL_COMPILER))
             return __lzcnt((unsigned int)x);
@@ -115,11 +118,10 @@ struct LBvh : zeno::IObject {
 #pragma omp parallel for
         for (Ti i = 0; i < numLeaves; ++i) {
             if (i != numLeaves - 1)
-                splits[i] = numTotalBits - clz(records[i].first ^ records[i].second);
+                splits[i] = numTotalBits - clz(records[i].first ^ records[i+1].first);
             else
                 splits[i] = numTotalBits + 1;
         }
-
         ///
         std::vector<Box> leafBvs(numLeaves);
         std::vector<Box> trunkBvs(numLeaves - 1);
@@ -137,6 +139,13 @@ struct LBvh : zeno::IObject {
             trunkTopoMarks[i] = 0;
             trunkBuildFlags[i] = 0;
         }
+
+#if 0
+        for (Ti i = 0; i != numLeaves; ++i) {
+            const auto pid = records[i].second;
+            printf("prim [%d]: morton code (%x) (%f, %f, %f), original prim id (%d), splits (%d)\n", i, records[i].first, refpos[pid][0], refpos[pid][1], refpos[pid][2], pid, splits[i]);
+        }
+#endif
 
 #pragma omp parallel for
         for (Ti idx = 0; idx < numLeaves; ++idx) {
@@ -236,7 +245,7 @@ struct LBvh : zeno::IObject {
         // auxIndices here is escapeIndex (for trunk nodes)
 #pragma omp parallel for
         for (Ti i = 0; i < numLeaves - 1; ++i) {
-            auto dst = trunkDst[i];
+            const auto dst = trunkDst[i];
             const auto &bv = trunkBvs[i];
             auto l = trunkL[i];
             auto r = trunkR[i];
@@ -435,6 +444,25 @@ struct ParticlesBuildHashGrid : zeno::INode {
 ZENDEFNODE(ParticlesBuildHashGrid, {
     {{"PrimitiveObject", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
     {{"hashgrid", "hashGrid"}},
+    {},
+    {"zenofx"},
+});
+
+struct ParticlesBuildBvh : zeno::INode {
+    virtual void apply() override {
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        float radius = get_input<zeno::NumericObject>("radius")->get<float>();
+        float radiusMin = has_input("radiusMin") ?
+            get_input<zeno::NumericObject>("radiusMin")->get<float>() : -1.f;
+        auto lbvh = std::make_shared<LBvh>(
+                primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
+        set_output("lbvh", std::move(lbvh));
+    }
+};
+
+ZENDEFNODE(ParticlesBuildBvh, {
+    {{"PrimitiveObject", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"LBvh", "lbvh"}},
     {},
     {"zenofx"},
 });
