@@ -2142,7 +2142,7 @@ struct SolveEquaUsingNRSolver : zeno::INode {
 
                 stop_error *= epsilon;
 
-                stop_error *= sqrt(mesh->_mesh->quads.size());
+                stop_error *= std::sqrt(mesh->_mesh->quads.size());
 
 
                 std::cout << "STOP_ERROR : " << stop_error << std::endl;                

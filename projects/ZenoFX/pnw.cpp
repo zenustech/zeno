@@ -87,6 +87,7 @@ struct LBvh : zeno::IObject {
         {
             const auto lengths = wholeBox.second - wholeBox.first;
             auto getUniformCoord = [&wholeBox, &lengths](const TV &p) {
+                constexpr int dim = 3;
                 auto offsets = p - wholeBox.first;
                 for (int d = 0; d != dim; ++d)
                     offsets[d] = std::clamp(offsets[d], (float)0, lengths[d]) / lengths[d];
