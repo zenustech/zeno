@@ -151,7 +151,7 @@ struct LBvh : zeno::IObject {
         for (Ti idx = 0; idx < numLeaves; ++idx) {
             {
                 const auto &pos = refpos[records[idx].second];
-                leafBvs[idx] = Box{pos, pos};
+                leafBvs[idx] = Box{pos - radius, pos + radius};
             }
 
             leafLca[idx] = -1, leafDepths[idx] = 1;
@@ -295,6 +295,38 @@ struct LBvh : zeno::IObject {
             fmt::print("bvh[{}]\t escape indices: {}, parent: {}\n", i, auxIndices[i], parents[i]);
 #endif
     }
+
+    bool intersect(const Box& box, const TV &p) const noexcept {
+        constexpr int dim = 3;
+        for (Ti d = 0; d != dim; ++d)
+            if (p[d] < box.first[d] || p[d] > box.second[d])
+                return false;
+        return true;
+    }
+
+    template <class F>
+    void iter_neighbors(TV const &pos, F const &f) const {
+        const Ti numNodes = sortedBvs.size();
+        Ti node = 0;
+        while (node != -1 && node != numNodes) {
+            Ti level = levels[node];
+            // level and node are always in sync
+            for (; level; --level, ++node)
+                if (!intersect(sortedBvs[node], pos))
+                    break;
+            // leaf node check
+            if (level == 0) {
+                const auto pid = auxIndices[node];
+                const auto dist = refpos[pid] - pos;
+                auto dis2 = zeno::dot(dist, dist);
+                if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
+                    f(pid);
+                }
+                node++;
+            } else  // separate at internal nodes
+                node = auxIndices[node];
+        }
+    }
 };
 
 struct HashGrid : zeno::IObject {
@@ -424,6 +456,37 @@ static void vectors_wrangle
                 ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
         }
         hashgrid->iter_neighbors(pos[i], [&] (int pid) {
+            for (int k = 0; k < chs.size(); k++) {
+                if (chs[k].which)
+                    ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
+            }
+            ctx.execute();
+        });
+        for (int k = 0; k < chs.size(); k++) {
+            if (!chs[k].which)
+                chs[k].base[chs[k].stride * i] = ctx.channel(k)[0];
+        }
+    }
+}
+
+static void bvh_vectors_wrangle
+    ( zfx::x64::Executable *exec
+    , std::vector<Buffer> const &chs
+    , std::vector<Buffer> const &chs2
+    , std::vector<zeno::vec3f> const &pos
+    , LBvh *lbvh
+    ) {
+    if (chs.size() == 0)
+        return;
+
+    #pragma omp parallel for
+    for (int i = 0; i < pos.size(); i++) {
+        auto ctx = exec->make_context();
+        for (int k = 0; k < chs.size(); k++) {
+            if (!chs[k].which)
+                ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+        }
+        lbvh->iter_neighbors(pos[i], [&] (int pid) {
             for (int k = 0; k < chs.size(); k++) {
                 if (chs[k].which)
                     ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
@@ -629,6 +692,167 @@ struct ParticlesNeighborWrangle : zeno::INode {
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
     {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"HashGrid", "hashGrid"},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}},
+    {},
+    {"zenofx"},
+});
+
+
+struct ParticlesNeighborBvhWrangle : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        auto lbvh = get_input<LBvh>("lbvh");
+        auto code = get_input<zeno::StringObject>("zfxCode")->get();
+
+        zfx::Options opts(zfx::Options::for_x64);
+        opts.detect_new_symbols = true;
+        prim->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                else if constexpr (std::is_same_v<T, float>) return 1;
+                else return 0;
+            })(attr);
+            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol('@' + key, dim);
+        });
+        primNei->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                else if constexpr (std::is_same_v<T, float>) return 1;
+                else return 0;
+            })(attr);
+            dbg_printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@@" + key, dim);
+        });
+
+        auto params = has_input("params") ?
+            get_input<zeno::DictObject>("params") :
+            std::make_shared<zeno::DictObject>();
+        std::vector<float> parvals;
+        std::vector<std::pair<std::string, int>> parnames;
+        for (auto const &[key_, obj]: params->lut) {
+            auto key = '$' + key_;
+            if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj); o.has_value()) {
+                auto par = o.value();
+                auto dim = std::visit([&] (auto const &v) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parvals.push_back(v[2]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        parnames.emplace_back(key, 2);
+                        return 3;
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        parvals.push_back(v);
+                        parnames.emplace_back(key, 0);
+                        return 1;
+                    } else {
+                        printf("invalid parameter type encountered: `%s`\n",
+                                typeid(T).name());
+                        return 0;
+                    }
+                }, par);
+                dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
+                opts.define_param(key, dim);
+            }
+        }
+
+        auto prog = compiler.compile(code, opts);
+        auto exec = assembler.assemble(prog->assembly);
+
+        for (auto const &[name, dim]: prog->newsyms) {
+            dbg_printf("auto-defined new attribute: %s with dim %d\n",
+                    name.c_str(), dim);
+            assert(name[0] == '@');
+            if (name[1] == '@') {
+                dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
+                        name.c_str());
+            }
+            auto key = name.substr(1);
+            if (dim == 3) {
+                prim->add_attr<zeno::vec3f>(key);
+            } else if (dim == 1) {
+                prim->add_attr<float>(key);
+            } else {
+                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                    dim);
+                abort();
+            }
+        }
+
+        for (int i = 0; i < prog->params.size(); i++) {
+            auto [name, dimid] = prog->params[i];
+            dbg_printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            assert(name[0] == '$');
+            auto it = std::find(parnames.begin(),
+                parnames.end(), std::pair{name, dimid});
+            auto value = parvals.at(it - parnames.begin());
+            dbg_printf("(valued %f)\n", value);
+            exec->parameter(prog->param_id(name, dimid)) = value;
+        }
+
+        std::vector<Buffer> chs(prog->symbols.size());
+        for (int i = 0; i < chs.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            assert(name[0] == '@');
+            Buffer iob;
+            zeno::PrimitiveObject *primPtr;
+            if (name[1] == '@') {
+                name = name.substr(2);
+                primPtr = primNei.get();
+                iob.which = 1;
+            } else {
+                name = name.substr(1);
+                primPtr = prim.get();
+                iob.which = 0;
+            }
+            prim->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
+                iob.base = (float *)arr.data() + dimid_;
+                iob.count = arr.size();
+                iob.stride = sizeof(arr[0]) / sizeof(float);
+            });
+            chs[i] = iob;
+        }
+        std::vector<Buffer> chs2(prog->symbols.size());
+        for (int i = 0; i < chs2.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            assert(name[0] == '@');
+            Buffer iob;
+            zeno::PrimitiveObject *primPtr;
+            if (name[1] == '@') {
+                name = name.substr(2);
+                primPtr = primNei.get();
+                iob.which = 1;
+            } else {
+                name = name.substr(1);
+                primPtr = prim.get();
+                iob.which = 0;
+            }
+            primNei->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
+                iob.base = (float *)arr.data() + dimid_;
+                iob.count = arr.size();
+                iob.stride = sizeof(arr[0]) / sizeof(float);
+            });
+            chs2[i] = iob;
+        }
+
+        bvh_vectors_wrangle(exec, chs, chs2, prim->attr<zeno::vec3f>("pos"),
+                lbvh.get());
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(ParticlesNeighborBvhWrangle, {
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"LBvh", "lbvh"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},

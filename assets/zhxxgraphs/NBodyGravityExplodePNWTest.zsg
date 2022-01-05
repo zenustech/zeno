@@ -151,8 +151,8 @@
       "value": "dis = @@pos - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel +=  $dt * 0.001 * acc\n"
      },
      "uipos": [
-      433.2509933774837,
-      0.05211920529845315
+      476.71125827814603,
+      49.72099337748386
      ],
      "options": []
     },
@@ -192,7 +192,7 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "5de8d10f-ParticlesNeighborWrangle",
+       "68d6adf0-ParticlesNeighborBvhWrangle",
        "prim",
        null
       ],
@@ -214,8 +214,8 @@
      },
      "params": {},
      "uipos": [
-      1893.4696605960262,
-      298.00256622516576
+      1481.6319122516554,
+      617.7459437086093
      ],
      "options": [
       "VIEW"
@@ -288,8 +288,8 @@
       "_KEYS": "dt"
      },
      "uipos": [
-      412.59897610921496,
-      524.0213310580205
+      626.1751350496121,
+      884.948483375901
      ],
      "options": [],
      "socket_keys": [
@@ -307,57 +307,16 @@
      },
      "params": {},
      "uipos": [
-      111.27303754266211,
-      543.75
-     ],
-     "options": []
-    },
-    "5de8d10f-ParticlesNeighborWrangle": {
-     "name": "ParticlesNeighborWrangle",
-     "inputs": {
-      "prim": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim",
-       null
-      ],
-      "primNei": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim",
-       null
-      ],
-      "hashGrid": [
-       "1b47ca11-ParticlesBuildHashGrid",
-       "hashGrid",
-       null
-      ],
-      "zfxCode": [
-       "0f1821eb-MakeMultilineString",
-       "value",
-       ""
-      ],
-      "params": [
-       "dfa30c9c-MakeDict",
-       "dict",
-       null
-      ],
-      "SRC": [
-       "1b47ca11-ParticlesBuildHashGrid",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1074.0562913907288,
-      586.8625827814571
+      313.2597925095496,
+      901.3658940397348
      ],
      "options": []
     },
     "237f8b83-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      893.698261589404,
-      467.20095198675494
+      891.6287251655626,
+      452.71419701986747
      ],
      "special": true,
      "width": 570.0,
@@ -376,16 +335,16 @@
       ]
      },
      "params": {
-      "value": 0.6
+      "value": 2.0
      },
      "uipos": [
-      306.73634812286707,
-      744.1296928327644
+      358.0608514341253,
+      658.0369776009763
      ],
      "options": []
     },
-    "1b47ca11-ParticlesBuildHashGrid": {
-     "name": "ParticlesBuildHashGrid",
+    "217ac707-ParticlesBuildBvh": {
+     "name": "ParticlesBuildBvh",
      "inputs": {
       "primNei": [
        "fd6a5cdc-PrimitiveRandomizeAttr",
@@ -410,48 +369,58 @@
      },
      "params": {},
      "uipos": [
-      620.7739077368169,
-      690.9915692877964
+      640.6955711920531,
+      639.3812086092714
      ],
      "options": []
     },
-    "217ac707-ParticlesBuildBvh": {
-     "name": "ParticlesBuildBvh",
+    "68d6adf0-ParticlesNeighborBvhWrangle": {
+     "name": "ParticlesNeighborBvhWrangle",
      "inputs": {
-      "primNei": [
-       "5de8d10f-ParticlesNeighborWrangle",
+      "prim": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
        "prim",
        null
       ],
-      "radius": [
-       "d4914fbc-NumericFloat",
-       "value",
+      "primNei": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
+       "prim",
        null
       ],
-      "radiusMin": [
-       null,
-       null,
+      "lbvh": [
+       "217ac707-ParticlesBuildBvh",
+       "lbvh",
+       null
+      ],
+      "zfxCode": [
+       "0f1821eb-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       "dfa30c9c-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
-       "5de8d10f-ParticlesNeighborWrangle",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
-      1545.4968956953644,
-      550.8050496688741
+      998.7582781456949,
+      516.14238410596
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -291.92685525043237,
-    "y": -495.42183530815373,
-    "width": 1874.9999999999989,
-    "height": 1562.499999999999
+    "x": -285.6938020811312,
+    "y": -227.3598192398985,
+    "width": 1499.999999999999,
+    "height": 1249.9999999999993
    }
   }
  },
@@ -7321,6 +7290,56 @@
     [
      "hashgrid",
      "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborBvhWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
