@@ -49,7 +49,7 @@ struct LBvh : zeno::IObject {
 
         const Ti numLeaves = refpos.size();
         const Ti numNodes = numLeaves + numLeaves - 1;
-        sortedBvs.resize(numLeaves);
+        sortedBvs.resize(numNodes);
         auxIndices.resize(numNodes);
         levels.resize(numNodes);
         parents.resize(numNodes);
@@ -71,8 +71,7 @@ struct LBvh : zeno::IObject {
                     wholeBox.second[d] = p[d];
             }
         }
-        printf("lbvh bounding box: %f, %f, %f - %f, %f, %f\n", wholeBox.first[0], wholeBox.first[1], wholeBox.first[2], wholeBox.second[0], wholeBox.second[1], wholeBox.second[2]);
-        // getchar();
+        // printf("lbvh bounding box: %f, %f, %f - %f, %f, %f\n", wholeBox.first[0], wholeBox.first[1], wholeBox.first[2], wholeBox.second[0], wholeBox.second[1], wholeBox.second[2]);
 
         std::vector<std::pair<Tu, Ti>> records(numLeaves);  // <mc, id>
         /// morton codes 
@@ -128,8 +127,6 @@ struct LBvh : zeno::IObject {
         std::vector<Ti> leafLca(numLeaves);
         std::vector<Ti> leafDepths(numLeaves);
         std::vector<Ti> trunkR(numLeaves - 1);
-        std::vector<Ti> trunkL(numLeaves - 1);
-        std::vector<Ti> trunkRc(numLeaves - 1);
         std::vector<Ti> trunkLc(numLeaves - 1);
 
         std::vector<std::atomic<Tu>> trunkTopoMarks(numLeaves - 1);
@@ -147,9 +144,15 @@ struct LBvh : zeno::IObject {
         }
 #endif
 
+        {
+        std::vector<Ti> trunkL(numLeaves - 1);
+        std::vector<Ti> trunkRc(numLeaves - 1);
 #pragma omp parallel for
         for (Ti idx = 0; idx < numLeaves; ++idx) {
-            leafBvs[idx] = Box{refpos[records[idx].second], refpos[records[idx].second]};
+            {
+                const auto &pos = refpos[records[idx].second];
+                leafBvs[idx] = Box{pos, pos};
+            }
 
             leafLca[idx] = -1, leafDepths[idx] = 1;
             Ti l = idx - 1, r = idx;  ///< (l, r]
@@ -166,25 +169,11 @@ struct LBvh : zeno::IObject {
             while (trunkBuildFlags[cur].fetch_add(1) == 1) {
                 {  // refit
                     int lc = trunkLc[cur], rc = trunkRc[cur];
-                    Box* left{}, *right{};
-                    switch (trunkTopoMarks[cur] & 3) {
-                    case 0:
-                        left = trunkBvs.data(), right = trunkBvs.data();
-                        break;
-                    case 1:
-                        left = leafBvs.data(), right = trunkBvs.data();
-                        break;
-                    case 2:
-                        left = trunkBvs.data(), right = leafBvs.data();
-                        break;
-                    case 3:
-                        left = leafBvs.data(), right = leafBvs.data();
-                        break;
-                    }
-                    const auto& leftBox = left[lc];
-                    const auto& rightBox = right[rc];
+                    const auto childMask = trunkTopoMarks[cur] & (Tu)3;
+                    const auto& leftBox = (childMask & 1) ? leafBvs[lc] : trunkBvs[lc];
+                    const auto& rightBox = (childMask & 2) ? leafBvs[rc] : trunkBvs[rc];
                     Box bv{};
-                    for (int d = 0; d < dim; ++d) {
+                    for (int d = 0; d != dim; ++d) {
                         bv.first[d] = leftBox.first[d] < rightBox.first[d] ? leftBox.first[d] : rightBox.first[d];
                         bv.second[d] = leftBox.second[d] > rightBox.second[d] ? leftBox.second[d] : rightBox.second[d];
                     }
@@ -220,15 +209,17 @@ struct LBvh : zeno::IObject {
                     trunkTopoMarks[cur] &= 0xFFFFFFFB;
                 }
                 cur = par;
-            };
+            }
+        }
         }
 
-        std::vector<Ti> leafOffsets(numLeaves);
+        std::vector<Ti> leafOffsets(numLeaves + 1);
         leafOffsets[0] = 0;
-        for (Ti i = 1; i < numLeaves; ++i)
+        for (Ti i = 1; i <= numLeaves; ++i)
             leafOffsets[i] = leafOffsets[i - 1] + leafDepths[i - 1];
         std::vector<Ti> trunkDst(numLeaves - 1);
         /// compute trunk order
+        // [levels], [parents], [trunkDst]
 #pragma omp parallel for
         for (Ti i = 0; i < numLeaves; ++i) {
             auto offset = leafOffsets[i];
@@ -239,15 +230,31 @@ struct LBvh : zeno::IObject {
                 trunkDst[node] = offset++;
             }
         }
+        // only left-branch-node's parents are set so far
+        // levels store the number of node within the left-child-branch from bottom up starting from 0
+#if 0
+        for (Ti i = 0; i != numLeaves; ++i) {
+            const auto pid = records[i].second;
+            fmt::print("leaf {} (pid {}, offset {}, levels {}) morton code: {:x}, lca: {}, depth: {}\n", i, pid, leafOffsets[i], levels[leafOffsets[i + 1] - 1], records[i].first, leafLca[i], leafDepths[i]);
+        }
 
-        // sortedBvs, auxIndices, levels, parents, leafIndices
+        for (Ti i = 0; i != numLeaves - 1; ++i) {
+            fmt::print("trunk {}\t(-> #{})\t[{}, {}];\t chs<{}, {}>;\tmarks[{:x}]\n", i, trunkDst[i], trunkL[i], trunkR[i], trunkLc[i], trunkRc[i], trunkTopoMarks[i]);
+        }
+
+        for (Ti i = 0; i != numNodes; ++i) {
+            fmt::print("bvh[{}]\t parents: {}, levels: {}\n", i, parents[i], levels[i]);
+        }
+#endif
+
         /// reorder trunk
+        // [sortedBvs], [auxIndices], [parents]
         // auxIndices here is escapeIndex (for trunk nodes)
 #pragma omp parallel for
         for (Ti i = 0; i < numLeaves - 1; ++i) {
             const auto dst = trunkDst[i];
             const auto &bv = trunkBvs[i];
-            auto l = trunkL[i];
+            // auto l = trunkL[i];
             auto r = trunkR[i];
             sortedBvs[dst] = bv;
             const auto rb = r + 1;
@@ -255,37 +262,38 @@ struct LBvh : zeno::IObject {
                 auto lca = leafLca[rb];  // rb must be in left-branch
                 auto brother = (lca != -1 ? trunkDst[lca] : leafOffsets[rb]);
                 auxIndices[dst] = brother;
-                if (dst > 0 && parents[dst] == dst - 1)  // most likely
+                if (parents[dst] == dst - 1)
                     parents[brother] = dst - 1;            // setup right-branch brother's parent
-#if 0
-                if (dst < 20 || escapeIndices(dst) >= numLeaves * 2 - 1)
-                    printf("numnodes %d | trunk %d lb on leaf %d (- %d), esc %d, lca[%c] %d, bro %d\n",
-                    (int)numLeaves * 2 - 1, (int)dst, (int)l, (int)r, (int)escapeIndices(dst),
-                    lca != -1 ? 'T' : 'L', (int)lca, (int)brother);
-#endif
             } else
                 auxIndices[dst] = -1;
         }
 
-        // sortedBvs, auxIndices, levels, parents, leafIndices
+#if 0
+        for (Ti i = 0; i != numNodes; ++i) 
+            fmt::print("bvh[{}]\t escape indices: {}, parent: {}\n", i, auxIndices[i], parents[i]);
+#endif
+
         /// reorder leaf
+        // [sortedBvs], [auxIndices], [levels], [parents], [leafIndices]
         // auxIndices here is primitiveIndex (for leaf nodes)
 #pragma omp parallel for
         for (Ti i = 0; i < numLeaves; ++i) {
             const auto &bv = leafBvs[i];
-            const auto leafDepth = leafDepths[i];
+            // const auto leafDepth = leafDepths[i];
 
-            auto dst = leafOffsets[i] + leafDepth - 1;
+            auto dst = leafOffsets[i + 1] - 1;
             leafIndices[i] = dst;
             sortedBvs[dst] = bv;
             auxIndices[dst] = records[i].second;
             levels[dst] = 0;
-            if (leafDepth > 1) parents[dst + 1] = dst - 1;  // setup right-branch brother's parent
-#if 0
-            if (dst < 20)
-                printf("%d-th leaf %d, prim index %d\n", (int)idx, (int)dst, (int)sortedIndices(idx));
-#endif
+            if (parents[dst] == dst - 1) 
+                parents[dst + 1] = dst - 1;  // setup right-branch brother's parent
+            // if (leafDepth > 1) parents[dst + 1] = dst - 1;  // setup right-branch brother's parent
         }
+#if 0
+        for (Ti i = 0; i != numNodes; ++i) 
+            fmt::print("bvh[{}]\t escape indices: {}, parent: {}\n", i, auxIndices[i], parents[i]);
+#endif
     }
 };
 
