@@ -8,11 +8,13 @@
 #include <comctrl/ziconbutton.h>
 #include <nodesys/zenosearchbar.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 //#define TEST_WEBENGINE
 //#define TEST_SEARCHBAR
 //#define TEST_ICONBUTTON
-#define USE_KKDOCK
+//#define USE_KKDOCK
+#define USE_NEWWIN
 
 ZENO_NAMESPACE_BEGIN
 
@@ -24,6 +26,16 @@ int zenoMainWithKDDoc(int argc, char* argv[])
     KDDockWidgets::Config::self().setAbsoluteWidgetMinSize(QSize(54, 54));
 
     ZMainWindow mainWindow;
+    mainWindow.showMaximized();
+    return a.exec();
+}
+
+int zenoMainWithNewWin(int argc, char* argv[])
+{
+    ZenoApplication a(argc, argv);
+    a.setStyle(new ZenoStyle);
+
+    ZenoMainWindow mainWindow;
     mainWindow.showMaximized();
     return a.exec();
 }
@@ -81,6 +93,8 @@ int main(int argc, char *argv[]) {
     view.load(QUrl("https://zenustech.com/"));
     view.show();
     return app.exec();
+#elif defined(USE_NEWWIN)
+    return ZENO_NAMESPACE::zenoMainWithNewWin(argc, argv);
 #elif defined(USE_KKDOCK)
     return ZENO_NAMESPACE::zenoMainWithKDDoc(argc, argv);
 #else
