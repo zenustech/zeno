@@ -53,7 +53,7 @@ struct LBvh : zeno::IObject {
         auxIndices.resize(numNodes);
         levels.resize(numNodes);
         parents.resize(numNodes);
-        leafIndices.resize(numNodes);
+        leafIndices.resize(numLeaves);
 
         constexpr int dim = 3;
         constexpr auto ma = std::numeric_limits<float>().max();
