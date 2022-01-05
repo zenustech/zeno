@@ -4,6 +4,8 @@
 #include "../comctrl/zobjectbutton.h"
 #include "../nodesys/zenoparamwidget.h"
 #include <QScreen>
+#include "../comctrl/zenodockwidget.h"
+#include <QtWidgets/private/qdockwidget_p.h>
 
 
 ZenoStyle::ZenoStyle()
@@ -140,49 +142,49 @@ void ZenoStyle::drawItemText(QPainter* painter, const QRect& rect, int flags, co
     return base::drawItemText(painter, rect, flags, pal, enabled, text, textRole);
 }
 
-void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPainter* p, const QWidget* w) const
+void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     if (CE_MenuBarEmptyArea == element)
     {
-        p->fillRect(opt->rect, QColor(58, 58, 58));
+        painter->fillRect(option->rect, QColor(58, 58, 58));
         return;
     }
     else if (CE_MenuBarItem == element)
     {
-        if (const QStyleOptionMenuItem* mbi = qstyleoption_cast<const QStyleOptionMenuItem*>(opt))
+        if (const QStyleOptionMenuItem* mbi = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
         {
             QStyleOptionMenuItem optItem(*mbi);
-            bool disabled = !(opt->state & State_Enabled);
+            bool disabled = !(option->state & State_Enabled);
             int alignment = Qt::AlignCenter | Qt::TextShowMnemonic | Qt::TextDontClip | Qt::TextSingleLine;
             QPalette::ColorRole textRole = disabled ? QPalette::Text : QPalette::ButtonText;
 
-            if (opt->state & State_Selected)
+            if (option->state & State_Selected)
             {
-                if (opt->state & State_Sunken)
+                if (option->state & State_Sunken)
                 {
-                    p->fillRect(opt->rect, QColor(179, 102, 0));
+                    painter->fillRect(option->rect, QColor(179, 102, 0));
                 }
                 else
                 {
-                    p->fillRect(opt->rect, QColor(71, 71, 71));
+                    painter->fillRect(option->rect, QColor(71, 71, 71));
                 }
             }
             else
             {
-                p->fillRect(opt->rect, QColor(58, 58, 58));
+                painter->fillRect(option->rect, QColor(58, 58, 58));
             }
 
             optItem.palette.setBrush(QPalette::All, textRole, QColor(190, 190, 190));
-            drawItemText(p, optItem.rect, alignment, optItem.palette, optItem.state & State_Enabled, optItem.text, textRole);
+            drawItemText(painter, optItem.rect, alignment, optItem.palette, optItem.state & State_Enabled, optItem.text, textRole);
         }
         return;
     }
     else if (CE_TabBarTabShape == element)
     {
         //base QProxyStyle
-        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(opt))
+        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
         {
-            QRect rect(opt->rect);
+            QRect rect(option->rect);
 
             int rotate = 0;
 
@@ -193,10 +195,10 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
             bool lastTab = tab->position == QStyleOptionTab::End;
             bool firstTab = tab->position == QStyleOptionTab::Beginning;
             bool onlyOne = tab->position == QStyleOptionTab::OnlyOneTab;
-            bool leftAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, w) == Qt::AlignLeft;
-            bool centerAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, w) == Qt::AlignCenter;
-            int borderThickness = proxy()->pixelMetric(PM_DefaultFrameWidth, opt, w);
-            int tabOverlap = proxy()->pixelMetric(PM_TabBarTabOverlap, opt, w);
+            bool leftAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, widget) == Qt::AlignLeft;
+            bool centerAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, widget) == Qt::AlignCenter;
+            int borderThickness = proxy()->pixelMetric(PM_DefaultFrameWidth, option, widget);
+            int tabOverlap = proxy()->pixelMetric(PM_TabBarTabOverlap, option, widget);
 
             if (isDisabled)
             {
@@ -301,53 +303,144 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* opt, QPa
                 }
             }
 
-            p->fillRect(rect, selected ? QColor(69, 69, 69) : QColor(58, 58, 58));
+            painter->fillRect(rect, selected ? QColor(69, 69, 69) : QColor(58, 58, 58));
             QPen pen(QColor(43, 43, 43));
-            p->drawRect(rect);
+            painter->drawRect(rect);
             return;
         }
     }
     else if (CE_TabBarTabLabel == element)
     {
-        if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(opt)) {
+        if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(option)) {
             QStyleOptionTab _tab(*tab);
             _tab.palette.setBrush(QPalette::WindowText, QColor(188,188,188));
-            return base::drawControl(element, &_tab, p, w);
+            return base::drawControl(element, &_tab, painter, widget);
         }
     }
     else if (CE_MenuItem == element)
     {
-        return drawMenuItem(element, opt, p, w);
+        return drawMenuItem(element, option, painter, widget);
     }
     else if (CE_MenuEmptyArea == element)
     {
-        if (const QStyleOptionMenuItem* menuitem = qstyleoption_cast<const QStyleOptionMenuItem*>(opt))
+        if (const QStyleOptionMenuItem* menuitem = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
         {
-            p->fillRect(opt->rect, QColor(58, 58, 58));
+            painter->fillRect(option->rect, QColor(58, 58, 58));
             return;
         }
     }
     else if (CE_ZenoComboBoxLabel == element)
     {
-        if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(opt))
+        if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(option))
         {
-            QRect editRect = proxy()->subControlRect(CC_ComboBox, cb, SC_ComboBoxEditField, w);
-            p->save();
+            QRect editRect = proxy()->subControlRect(CC_ComboBox, cb, SC_ComboBoxEditField, widget);
+            painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
-            p->setClipRect(editRect);
-            p->setFont(QFont("Microsoft YaHei", 10));
+            painter->setClipRect(editRect);
+            painter->setFont(QFont("Microsoft YaHei", 10));
             if (!cb->currentIcon.isNull()) {
                 //todo
             }
             if (!cb->currentText.isEmpty() && !cb->editable) {
-                drawItemText(p, editRect.adjusted(1, 0, -1, 0),
+                drawItemText(painter, editRect.adjusted(1, 0, -1, 0),
                              visualAlignment(cb->direction, Qt::AlignLeft | Qt::AlignVCenter),
                              cb->palette, cb->state & State_Enabled, cb->currentText, QPalette::ButtonText);
             }
-            p->restore();
+            painter->restore();
         }
     }
-    return base::drawControl(element, opt, p, w);
+    else if (CE_DockWidgetTitle == element)
+    {
+        if (const ZenoDockWidget* pCustomDock = qobject_cast<const ZenoDockWidget*>(widget))
+        {
+            if (const QStyleOptionDockWidget* dwOpt = qstyleoption_cast<const QStyleOptionDockWidget*>(option))
+            {
+                QRect rect = option->rect;
+                if (pCustomDock && pCustomDock->isFloating())
+                {
+                    base::drawControl(element, option, painter, widget);
+                    return;
+                }
+
+                //hide all buttons.
+                QDockWidgetLayout *dwLayout = qobject_cast<QDockWidgetLayout*>(pCustomDock->layout());
+                QWidget *pCloseBtn = dwLayout->widgetForRole(QDockWidgetLayout::CloseButton);
+                QWidget *pFloatBtn = dwLayout->widgetForRole(QDockWidgetLayout::FloatButton);
+                if (pCloseBtn)
+                    pCloseBtn->setVisible(false);
+                if (pFloatBtn)
+                    pFloatBtn->setVisible(false);
+
+                const bool verticalTitleBar = dwOpt->verticalTitleBar;
+
+                if (verticalTitleBar)
+                {
+                    rect = rect.transposed();
+
+                    painter->translate(rect.left() - 1, rect.top() + rect.width());
+                    painter->rotate(-90);
+                    painter->translate(-rect.left() + 1, -rect.top());
+                }
+
+                QColor bgClr = option->palette.window().color();
+                bgClr = bgClr.darker(110);
+                QColor bdrClr = option->palette.window().color().darker(130);
+                painter->setBrush(bgClr);
+                painter->setPen(Qt::NoPen);
+                painter->drawRect(rect.adjusted(0, 1, -1, -3));
+
+                int buttonMargin = 4;
+                int mw = proxy()->pixelMetric(QStyle::PM_DockWidgetTitleMargin, dwOpt, widget);
+                int fw = proxy()->pixelMetric(PM_DockWidgetFrameWidth, dwOpt, widget);
+                const QDockWidget *dw = qobject_cast<const QDockWidget *>(widget);
+                bool isFloating = dw && dw->isFloating();
+
+                QRect r = option->rect.adjusted(0, 2, -1, -3);
+                QRect titleRect = r;
+
+                if (dwOpt->closable)
+                {
+                    QSize sz = proxy()->standardIcon(QStyle::SP_TitleBarCloseButton, dwOpt, widget).actualSize(QSize(10, 10));
+                    titleRect.adjust(0, 0, -sz.width() - mw - buttonMargin, 0);
+                }
+
+                if (dwOpt->floatable)
+                {
+                    //QSize sz = proxy()->standardIcon(QStyle::SP_TitleBarMaxButton, dwOpt, widget).actualSize(QSize(10, 10));
+                    //titleRect.adjust(0, 0, -sz.width() - mw - buttonMargin, 0);
+                }
+
+                if (isFloating)
+                {
+                    titleRect.adjust(0, -fw, 0, 0);
+                    if (widget && widget->windowIcon().cacheKey() != QApplication::windowIcon().cacheKey())
+                        titleRect.adjust(titleRect.height() + mw, 0, 0, 0);
+                }
+                else
+                {
+                    titleRect.adjust(mw, 0, 0, 0);
+                    if (!dwOpt->floatable && !dwOpt->closable)
+                        titleRect.adjust(0, 0, -mw, 0);
+                }
+                if (!verticalTitleBar)
+                    titleRect = visualRect(dwOpt->direction, r, titleRect);
+
+                if (!dwOpt->title.isEmpty())
+                {
+                    QString titleText = painter->fontMetrics().elidedText(dwOpt->title, Qt::ElideRight,
+                                                                          verticalTitleBar ? titleRect.height() : titleRect.width());
+                    const int indent = 4;
+                    drawItemText(painter, rect.adjusted(indent + 1, 1, -indent - 1, -1),
+                                 Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic,
+                                 dwOpt->palette,
+                                 dwOpt->state & State_Enabled, titleText,
+                                 QPalette::WindowText);
+                }
+                return;
+            }
+        }
+    }
+    return base::drawControl(element, option, painter, widget);
 }
 
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const

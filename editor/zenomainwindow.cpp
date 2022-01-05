@@ -1,6 +1,7 @@
 #include "zenomainwindow.h"
-#include "dock/zenodockwidget.h"
+#include <comctrl/zenodockwidget.h>
 #include "nodesview/znodeseditwidget.h"
+#include "panel/zenodatapanel.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -23,7 +24,14 @@ void ZenoMainWindow::initDocks()
     m_view->setWidget(new QWidget);
     addDockWidget(Qt::LeftDockWidgetArea, m_view);
 
-    m_editor = new ZenoDockWidget("editor", this);
+    m_data = new ZenoDockWidget("data", this);
+    m_data->setObjectName(QString::fromUtf8("dock_data"));
+    m_data->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    ZenoDataPanel *pDataPanel = new ZenoDataPanel;
+    m_data->setWidget(pDataPanel);
+    addDockWidget(Qt::BottomDockWidgetArea, m_data);
+
+    m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     ZNodesEditWidget* nodesView = new ZNodesEditWidget;
@@ -36,11 +44,9 @@ void ZenoMainWindow::initDocks()
     m_parameter->setWidget(new QWidget);
     addDockWidget(Qt::RightDockWidgetArea, m_parameter);
 
-    m_data = new ZenoDockWidget("data", this);
-    m_data->setObjectName(QString::fromUtf8("dock_data"));
-    m_data->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_data->setWidget(new QWidget);
-    addDockWidget(Qt::LeftDockWidgetArea, m_data);
+
+
+    //tabifyDockWidget(m_parameter, m_data);
 }
 
 void ZenoMainWindow::initMenu()

@@ -71,7 +71,7 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 	auto tabWidget = new QTabWidget;
 	tabWidget->addTab(new ZShapeBar, "Create");
 	tabWidget->addTab(new ZTextureBar, "Texture");
-	tabWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	//tabWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	toolbarDock->setWidget(tabWidget);
 	addDockWidget(toolbarDock, KDDockWidgets::Location_OnTop);
 
@@ -88,7 +88,7 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
 		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarHorizontal);
 	auto toolbar = new ZToolbar;
-	toolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	//toolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	minitoolbar->setWidget(toolbar);
 	addDockWidget(minitoolbar, KDDockWidgets::Location_OnLeft);
 
@@ -97,7 +97,7 @@ ZMainWindow::ZMainWindow(QWidget* parent)
 		KDDockWidgets::DockWidgetBase::LayoutSaverOptions(),
 		KDDockWidgets::DockWidgetBase::TitleBarStyle::TitleStyle_ToolBarVertical);
 	m_timeline = new ZTimeline;
-	m_timeline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	//m_timeline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	timelineDock->setWidget(m_timeline);
 	addDockWidget(timelineDock, KDDockWidgets::Location_OnBottom);
 
