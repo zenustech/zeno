@@ -317,11 +317,12 @@ struct LBvh : zeno::IObject {
             // leaf node check
             if (level == 0) {
                 const auto pid = auxIndices[node];
-                const auto dist = refpos[pid] - pos;
-                auto dis2 = zeno::dot(dist, dist);
-                if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
+                // const auto dist = refpos[pid] - pos;
+                // auto dis2 = zeno::dot(dist, dist);
+                // if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
+                if (intersect(sortedBvs[node], pos))
                     f(pid);
-                }
+                // }
                 node++;
             } else  // separate at internal nodes
                 node = auxIndices[node];
