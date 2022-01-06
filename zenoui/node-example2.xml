@@ -1,0 +1,28 @@
+<node>
+	<header>
+		<component id="name" x="114" y="83" w="120" h="36">
+			<text x="114" y="83" font-family="monospace" font-color="red">Node-name</text>
+		</component>
+		<component id="status" x="140" y="140" w="174" h="178">
+			<image id="" type="svg" x="" y="" w="" h="" normal="once.svg" selected="once_on.svg"/>
+			<image id="" type="pixmap" x="" y="" w="" h="" src="view.png"/>
+			<image id="" type="pixmap" x="" y="" w="" h="" src="prep.jpg"/>
+		</component>
+		<component id="control" x="121" y="230" w="100" h="24">
+			<image id="" />
+		</component>
+		<component id="display" x="313" y="20" w="205" h="210">
+			<image id="" />
+		</component>
+		<component id="backboard" x="121" y="121" w="396" h="109">
+			<image id="" />
+		</component>
+	</header>
+	<body>
+		<component id="socket" x="121" y="379" w="160" h="50">
+			<image id="" type="svg" x="" y="" w="" h="" src="socket.svg"/>
+			<text x="" y="" w="" h="">input</text>
+		</component>
+		<component id="backboard" x="121" y="230" w="396" h="297"/>
+	</body>
+</node>

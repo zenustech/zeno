@@ -1,0 +1,45 @@
+<node>
+    <header>
+        <component id="name" x="114" y="83" w="120" h="36">
+            <text id="nodename" x="0" y="0" font-family="" font-color="">Node-name</text>
+        </component>
+        <component id="status" x="140" y="140" w="174" h="178">
+            <image id="mute" x="0" y="0" w="64" h="64" normal="" hovered ="" selected="" />
+            <image id="once" x="0" y="0" w="64" h="64" normal="" hovered ="" selected="" />
+            <image id="view" x="0" y="0" w="64" h="64" normal="" hovered ="" selected="" />
+            <image id="prep" x="0" y="0" w="64" h="64" normal="" hovered ="" selected="" />
+        </component>
+        <component id="control" x="121" y="230" w="100" h="24">
+            <image id="collapse" x="0" y="0" w="64" h="64" normal="" hovered ="" selected="" />
+        </component>
+        <component id="display" x="313" y="20" w="205" h="210">
+            <image id="display-image" x="0" y="0" w="128" h="128" normal="" hovered ="" selected="" />
+        </component>
+        <component id="header-backboard" x="121" y="121" w="396" h="109">
+            <image id="header-backboard-image" x="0" y="0" w="128" h="128" normal="" hovered ="" selected=""/>
+        </component>
+    </header>
+    <body>
+        <component id="topleftsocket" x="121" y="379" w="160" h="50">
+            <image id="ltsocket-image" x="0" y="0" w="32" h="32" normal="" hovered ="" selected=""/>
+            <text id="ltsocket-text" x="0" y="0" font-family="" font-color="">Primitive</text>
+        </component>
+        <component id="bottomleftsocket" x="121" y="410" w="160" h="50">
+            <image id="lbsocket-image" x="0" y="0" w="32" h="32" normal="" hovered ="" selected=""/>
+            <text id="lbsocket-text" x="0" y="0" font-family="" font-color="">Before Execute</text>
+        </component>
+        <component id="toprightsocket" x="490" y="379" w="160" h="50">
+            <image id="rtsocket-image" x="0" y="0" w="32" h="32" normal="" hovered ="" selected=""/>
+            <text id="rtsocket-text" x="0" y="0" font-family="" font-color="">Primitive</text>
+        </component>
+        <component id="bottomrightsocket" x="490" y="410" w="160" h="50">
+            <image id="rbsocket-image" x="0" y="0" w="32" h="32" normal="" hovered ="" selected=""/>
+            <text id="rbsocket-text" x="0" y="0" font-family="" font-color="">Output</text>
+        </component>
+        <component id="body-backboard" x="121" y="230" w="396" h="297">
+            <image id="body-backboard-image" x="0" y="0" w="300" h="300" normal="" hovered ="" selected=""/>
+        </component>
+        <component id="parameters" x="121" y="150" w="396" h="120">
+        </component>
+    </body>
+</node>

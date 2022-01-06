@@ -29,6 +29,8 @@ option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
 option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
+option(ZENO_BUILD_EDITOR "Build Zeno Editor" ON)
+option(ZENO_BUILD_DESIGNER "Build Zeno Designer" ON)
 
 if (ZENO_ENABLE_PYTHON)
     set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/bin)
@@ -76,6 +78,22 @@ endif()
 if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
+    message(STATUS "Building Zeno UI Library")
+    add_subdirectory(zenoui)
+endif()
+
+if (ZENO_BUILD_EDITOR)
+    message(STATUS "Building Zeno Editor")
+    add_subdirectory(editor)
+endif()
+
+if (ZENO_BUILD_DESIGNER)
+    message(STATUS "Building Zeno Designer")
+    add_subdirectory(designer)
+endif()
+
 
 #if (ZENO_BUILD_LAUNCHER)
 #    add_subdirectory(scripts/launcher)

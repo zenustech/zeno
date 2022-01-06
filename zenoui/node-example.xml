@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<node>
+	<header>
+		<text id="nodename" x="100" y="50" font-family="monospace" fill="red"></text>
+		<!--初步设想可以让text有内容，让designer可预览-->
+		<status>
+			<button id="ONCE">
+				<text x="100" y="20" id="ONCE" font-family="monospace" fill="green" transform="none"></text>
+				<background x="100" y="20" id="skin" type="color/image" fill="none/rgb(255,255,255)" src="/path/to/image" />
+			</button>
+			<button id="Prep">
+				<text></text>
+				<background></background>
+			</button>
+			<button id="Mute">
+				<text></text>
+				<background></background>
+			</button>
+			<button id="View">
+				<text></text>
+				<background></background>
+			</button>
+		</status>
+		<control>
+			<collapse x="100" y="45" w="16" h="16">
+				<image id="collasped" src="/path/to/image"></image>
+				<image id="uncollasped" src="/path/to/image"></image>
+			</collapse>
+		</control>
+		<backboard>
+			<background id="skin" x="100" y="20" type="color/image" fill="none/rgb(255,255,255)" src="/path/to/image" />
+			<background id="title" x="120" y="30" type="color/image" fill="none/rgb(255,255,255)" src="/path/to/image"/>
+		</backboard>
+	</header>
+	<body>
+		<background></background>
+		<parameter>
+			<name>
+			</name>
+			<inputcontrol>
+				<lineedit>
+				</lineedit>
+				<combobox>
+				</combobox>
+				<fileimport>
+				</fileimport>
+				<colorpicker>
+				</colorpicker>
+				<textedit>
+				</textedit>
+			</inputcontrol>
+		</parameter>
+		<socket>
+			<name></name>
+			<primitive></primitive>
+			<numeric></numeric>
+			<vdbscalar></vdbscalar>
+			<vdbvector></vdbvector>
+			<userobject></userobject>
+		</socket>
+	</body>
+</node>

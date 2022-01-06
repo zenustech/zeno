@@ -1,0 +1,72 @@
+{
+    "header": {
+        "nodename": {
+            "x": -5,
+            "y": -33,
+            "font-family": "monospace",
+            "font-size": 12,
+            "fill": "rgb(203,203,203)"
+        },
+        "status": {
+            "ONCE": {
+                "x": 23,
+                "y": 26,
+                "w": 43,
+                "h": 57,
+                "normal": "C:\\editor\\uirender\\once.jpg",
+                "selected": "C:\\editor\\uirender\\once.jpg"
+            },
+            "MUTE": {
+                "x": 83,
+                "y": 26,
+                "w": 43,
+                "h": 57,
+                "normal": "C:\\editor\\uirender\\mute.jpg",
+                "selected": "C:\\editor\\uirender\\mute.jpg"
+            },
+            "VIEW": {
+                "x": 145,
+                "y": 26,
+                "w": 43,
+                "h": 57,
+                "normal": "C:\\editor\\uirender\\view.jpg",
+                "selected": "C:\\editor\\uirender\\view.jpg"
+            },
+            "PREP": {
+                "x": 203,
+                "y": 26,
+                "w": 43,
+                "h": 57,
+                "normal": "C:\\editor\\uirender\\view.jpg",
+                "selected": "C:\\editor\\uirender\\view.jpg"
+            }
+        },
+        "control": {
+            "collapse": {
+                "x": 100,
+                "y": 45,
+                "w": 20,
+                "h": 20,
+                "normal": "/path/to/image",
+                "selected": "/path/to/image"
+            }
+        },
+        "background": {
+            "x": 0,
+            "y": 0,
+            "w": 394,
+            "h": 108,
+            "normal": "C:\\editor\\uirender\\Header_back_board.jpg",
+            "mode": "stretch"
+        },
+        "genshin": {
+            "x": 203,
+            "y": -63,
+            "w": 198,
+            "h": 170,
+            "normal": "C:\\editor\\uirender\\Genshin_0.png"
+        }
+    },
+
+    "body": 3
+}
