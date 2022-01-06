@@ -2,7 +2,7 @@
  "graph": {
   "main": {
    "nodes": {
-    "8096a912-CreateTree": {
+    "abfb224d-CreateTree": {
      "name": "CreateTree",
      "inputs": {
       "SRC": [
@@ -15,28 +15,84 @@
       "start_x": 0.0,
       "start_y": 0.0,
       "start_z": 0.0,
-      "offset_degree_min": -4.0,
-      "offset_degree_max": 4.0,
+      "offset_degree_min": 0.0,
+      "offset_degree_max": 6.0,
       "length_min": 10.0,
-      "length_max": 12.0,
-      "radius_min": 25.0,
-      "radius_max": 30.0
+      "length_max": 15.0,
+      "radius_min": 10.0,
+      "radius_max": 15.0,
+      "turn_points_num": 2
      },
      "uipos": [
-      328.22847682119186,
-      115.13245033112582
+      488.2447628332267,
+      127.58705617373184
      ],
      "options": [
       "ONCE"
      ]
     },
-    "9e4db9df-TreeCreateBranchs": {
+    "ca1baef2-TreeCreateBranchs": {
      "name": "TreeCreateBranchs",
      "inputs": {
       "treeObj": [
-       "8096a912-CreateTree",
+       "abfb224d-CreateTree",
        "treeObj",
        null
+      ],
+      "num_min": [
+       null,
+       null,
+       3
+      ],
+      "num_max": [
+       null,
+       null,
+       5
+      ],
+      "offset_start_min": [
+       null,
+       null,
+       0.5
+      ],
+      "offset_start_max": [
+       null,
+       null,
+       0.8
+      ],
+      "offset_degree_min": [
+       null,
+       null,
+       4.0
+      ],
+      "offset_degree_max": [
+       null,
+       null,
+       6.0
+      ],
+      "length_min": [
+       null,
+       null,
+       10.0
+      ],
+      "length_max": [
+       null,
+       null,
+       15.0
+      ],
+      "radius_min": [
+       null,
+       null,
+       10.0
+      ],
+      "radius_max": [
+       null,
+       null,
+       15.0
+      ],
+      "turn_points_num": [
+       null,
+       null,
+       2
       ],
       "SRC": [
        null,
@@ -44,31 +100,98 @@
        null
       ]
      },
-     "params": {
-      "num_min": 3,
-      "num_max": 5,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -30.0,
-      "offset_degree_max": 30.0,
-      "length_min": 3.0,
-      "length_max": 5.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
+     "params": {},
      "uipos": [
-      623.4837785016288,
-      92.59889682248632
+      794.1557791062455,
+      127.40622856358887
      ],
      "options": [
       "ONCE"
      ]
     },
-    "0d8a4327-TreeToPrimitiveLines": {
+    "98e20a73-TreeCreateBranchs": {
+     "name": "TreeCreateBranchs",
+     "inputs": {
+      "treeObj": [
+       "ca1baef2-TreeCreateBranchs",
+       "treeObj",
+       null
+      ],
+      "num_min": [
+       null,
+       null,
+       3
+      ],
+      "num_max": [
+       null,
+       null,
+       5
+      ],
+      "offset_start_min": [
+       null,
+       null,
+       0.2
+      ],
+      "offset_start_max": [
+       null,
+       null,
+       0.8
+      ],
+      "offset_degree_min": [
+       null,
+       null,
+       4.0
+      ],
+      "offset_degree_max": [
+       null,
+       null,
+       6.0
+      ],
+      "length_min": [
+       null,
+       null,
+       10.0
+      ],
+      "length_max": [
+       null,
+       null,
+       15.0
+      ],
+      "radius_min": [
+       null,
+       null,
+       10.0
+      ],
+      "radius_max": [
+       null,
+       null,
+       15.0
+      ],
+      "turn_points_num": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1111.493875909744,
+      145.81933658640185
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "ea9db80f-TreeToPrimitiveLines": {
      "name": "TreeToPrimitiveLines",
      "inputs": {
       "treeObj": [
-       "7356c902-x",
+       "98e20a73-TreeCreateBranchs",
        "treeObj",
        null
       ],
@@ -80,257 +203,19 @@
      },
      "params": {},
      "uipos": [
-      2957.106552873723,
-      137.66572785767198
+      1401.468818656466,
+      168.63600725896111
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "999e4a13-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "9e4db9df-TreeCreateBranchs",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 3,
-      "num_max": 5,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      907.9077524429966,
-      102.09146579804559
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "1feb28d3-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "999e4a13-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 2,
-      "num_max": 3,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      1178.2425187835418,
-      85.7446583184257
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "88aaf55c-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "1feb28d3-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 1,
-      "num_max": 2,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      1451.5447298747752,
-      75.64868694096594
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "27aba2fe-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "88aaf55c-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 3,
-      "num_max": 5,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      1690.4353202146676,
-      78.49262254025035
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "88c76105-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "27aba2fe-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 1,
-      "num_max": 2,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      1999.0285714285694,
-      76.88571428571419
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "b107c30f-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "88c76105-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 1,
-      "num_max": 1,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      2268.7199999999966,
-      69.78857142857134
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "7356c902-x": {
-     "name": "TreeCreateBranchs",
-     "inputs": {
-      "treeObj": [
-       "b107c30f-x",
-       "treeObj",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "num_min": 1,
-      "num_max": 2,
-      "offset_start_min": 0.5,
-      "offset_start_max": 0.8,
-      "offset_degree_min": -40.0,
-      "offset_degree_max": 40.0,
-      "length_min": 6.0,
-      "length_max": 8.0,
-      "radius_min": 32.5,
-      "radius_max": 45.0
-     },
-     "uipos": [
-      2618.845714285711,
-      81.61714285714277
-     ],
-     "options": [
-      "ONCE"
-     ]
     }
    },
    "view_rect": {
-    "x": 23.674222843170583,
-    "y": -173.88379004655152,
-    "width": 3609.3749999999977,
-    "height": 1212.8906249999982
+    "x": 704.5374986785616,
+    "y": 58.99576279696862,
+    "width": 959.9999999999975,
+    "height": 487.99999999999926
    }
   }
  },
@@ -962,6 +847,11 @@
      "float",
      "radius_max",
      "0.0"
+    ],
+    [
+     "int",
+     "turn_points_num",
+     "0"
     ]
    ],
    "categories": [
@@ -6510,6 +6400,61 @@
      ""
     ],
     [
+     "int",
+     "num_min",
+     "-1"
+    ],
+    [
+     "int",
+     "num_max",
+     "-1"
+    ],
+    [
+     "float",
+     "offset_start_min",
+     "-1.0"
+    ],
+    [
+     "float",
+     "offset_start_max",
+     "-1.0"
+    ],
+    [
+     "float",
+     "offset_degree_min",
+     "-1.0"
+    ],
+    [
+     "float",
+     "offset_degree_max",
+     "-1.0"
+    ],
+    [
+     "float",
+     "length_min",
+     "-1.0"
+    ],
+    [
+     "float",
+     "length_max",
+     "-1.0"
+    ],
+    [
+     "float",
+     "radius_min",
+     "-1.0"
+    ],
+    [
+     "float",
+     "radius_max",
+     "-1.0"
+    ],
+    [
+     "int",
+     "turn_points_num",
+     "-1"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -6527,58 +6472,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "int",
-     "num_min",
-     "0"
-    ],
-    [
-     "int",
-     "num_max",
-     "0"
-    ],
-    [
-     "float",
-     "offset_start_min",
-     "0.0"
-    ],
-    [
-     "float",
-     "offset_start_max",
-     "0.0"
-    ],
-    [
-     "float",
-     "offset_degree_min",
-     "0.0"
-    ],
-    [
-     "float",
-     "offset_degree_max",
-     "0.0"
-    ],
-    [
-     "float",
-     "length_min",
-     "0.0"
-    ],
-    [
-     "float",
-     "length_max",
-     "0.0"
-    ],
-    [
-     "float",
-     "radius_min",
-     "0.0"
-    ],
-    [
-     "float",
-     "radius_max",
-     "0.0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "TreeSketch"
    ]
