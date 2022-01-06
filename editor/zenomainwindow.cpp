@@ -4,6 +4,8 @@
 #include "panel/zenodatapanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
+#include "viewport/viewportwidget.h"
+#include "viewport/zenovis.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -106,10 +108,11 @@ void ZenoMainWindow::initDocks()
     m_toolbar->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_toolbar->setWidget(new ZToolbar);
 
-    m_view = new ZenoDockWidget("view", this);
-    m_view->setObjectName(QString::fromUtf8("dock_view"));
-    m_view->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_view->setWidget(new QWidget);
+    m_viewDock = new ZenoDockWidget("view", this);
+    m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
+    m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    DisplayWidget* view = new DisplayWidget;
+    m_viewDock->setWidget(view);
 
     m_parameter = new ZenoDockWidget("parameter", this);
     m_parameter->setObjectName(QString::fromUtf8("dock_parameter"));
@@ -126,21 +129,30 @@ void ZenoMainWindow::initDocks()
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_editor->setWidget(new ZNodesEditWidget);
 
-    m_timeline = new ZenoDockWidget(this);
-    m_timeline->setObjectName(QString::fromUtf8("dock_timeline"));
-    m_timeline->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    m_timeline->setWidget(new ZTimeline);
+    m_timelineDock = new ZenoDockWidget(this);
+    m_timelineDock->setObjectName(QString::fromUtf8("dock_timeline"));
+    m_timelineDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    ZTimeline* pTimeline = new ZTimeline;
+    m_timelineDock->setWidget(pTimeline);
+
+	connect(&Zenvis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
+	connect(pTimeline, SIGNAL(playForward(bool)), &Zenvis::GetInstance(), SLOT(startPlay(bool)));
+	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenvis::GetInstance(), SLOT(setCurrentFrameId(int)));
+
+    QTimer* pTimer = new QTimer;
+    connect(pTimer, SIGNAL(timeout()), view, SLOT(updateFrame()));
+    pTimer->start(16);
 }
 
 void ZenoMainWindow::houdiniStyleLayout()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_shapeBar);
     splitDockWidget(m_shapeBar, m_toolbar, Qt::Vertical);
-    splitDockWidget(m_toolbar, m_timeline, Qt::Vertical);
+    splitDockWidget(m_toolbar, m_timelineDock, Qt::Vertical);
 
-    splitDockWidget(m_toolbar, m_view, Qt::Horizontal);
-    splitDockWidget(m_view, m_editor, Qt::Horizontal);
-    splitDockWidget(m_view, m_data, Qt::Vertical);
+    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
+    splitDockWidget(m_viewDock, m_editor, Qt::Horizontal);
+    splitDockWidget(m_viewDock, m_data, Qt::Vertical);
     splitDockWidget(m_data, m_parameter, Qt::Horizontal);
 
     writeHoudiniStyleLayout();
@@ -149,10 +161,10 @@ void ZenoMainWindow::houdiniStyleLayout()
 void ZenoMainWindow::arrangeDocks2()
 {
     addDockWidget(Qt::LeftDockWidgetArea, m_toolbar);
-    splitDockWidget(m_toolbar, m_view, Qt::Horizontal);
-    splitDockWidget(m_view, m_parameter, Qt::Horizontal);
+    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
+    splitDockWidget(m_viewDock, m_parameter, Qt::Horizontal);
 
-    splitDockWidget(m_view, m_timeline, Qt::Vertical);
+    splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
     splitDockWidget(m_parameter, m_data, Qt::Vertical);
     splitDockWidget(m_data, m_editor, Qt::Vertical);
     writeSettings2();
@@ -162,9 +174,9 @@ void ZenoMainWindow::arrangeDocks3()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_parameter);
     addDockWidget(Qt::LeftDockWidgetArea, m_toolbar);
-    addDockWidget(Qt::BottomDockWidgetArea, m_timeline);
-    splitDockWidget(m_toolbar, m_view, Qt::Horizontal);
-    splitDockWidget(m_view, m_data, Qt::Vertical);
+    addDockWidget(Qt::BottomDockWidgetArea, m_timelineDock);
+    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
+    splitDockWidget(m_viewDock, m_data, Qt::Vertical);
     splitDockWidget(m_data, m_editor, Qt::Vertical);
     writeHoudiniStyleLayout();
 }

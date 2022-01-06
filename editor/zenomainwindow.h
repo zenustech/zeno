@@ -23,13 +23,13 @@ private:
     void readHoudiniStyleLayout();
     void readSettings2();
 
-    ZenoDockWidget *m_view;
+    ZenoDockWidget *m_viewDock;
     ZenoDockWidget *m_editor;
     ZenoDockWidget *m_data;
     ZenoDockWidget *m_parameter;
     ZenoDockWidget *m_toolbar;
     ZenoDockWidget *m_shapeBar;
-    ZenoDockWidget *m_timeline;
+    ZenoDockWidget *m_timelineDock;
 };
 
 #endif

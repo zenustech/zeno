@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
@@ -14,7 +14,7 @@ if (ZENO_WITH_BACKWARD)
     add_backward(zeno_editor)
 endif()
 
-target_link_libraries(zeno_editor PRIVATE Qt5::Widgets)
-target_link_libraries(zeno_editor PRIVATE zenoui)
+target_link_libraries(zeno_editor PRIVATE Qt5::Widgets Qt5::OpenGL)
+target_link_libraries(zeno_editor PRIVATE zenoui zenvis glad zeno)
 
 target_include_directories(zeno_editor PRIVATE . ../zenoui)
