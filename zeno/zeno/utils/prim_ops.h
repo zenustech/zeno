@@ -6,7 +6,7 @@
 
 namespace zeno {
 
-std::shared_ptr<PrimitiveObject>
+ZENO_API std::shared_ptr<PrimitiveObject>
 primitive_merge(std::shared_ptr<ListObject> list);
 
 }
