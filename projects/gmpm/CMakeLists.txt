@@ -5,6 +5,7 @@ project(MPM CXX CUDA)
 set(ZS_ENABLE_CUDA ON)
 set(ZS_ENABLE_OPENVDB ON)
 set(ZENSIM_INSTALL OFF)
+# set(ZS_BUILD_SHARED_LIBS ON)
 add_subdirectory(zecomp)
 
 find_package(CUDAToolkit)
