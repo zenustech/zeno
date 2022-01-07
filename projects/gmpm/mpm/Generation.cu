@@ -30,15 +30,24 @@ struct ConfigConstitutiveModel : INode {
     auto typeStr = get_input2<std::string>("type");
     // elastic model
     auto &model = out->getElasticModel();
+
+    // aniso elastic model
+    out->getAnisoElasticModel() = std::monostate{};
+
+    // plastic model
+    out->getPlasticModel() = std::monostate{};
+
     if (typeStr == "fcr")
       model = zs::FixedCorotated<float>{E, nu};
     else if (typeStr == "nhk")
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
-
-    // plastic model
-    out->getPlasticModel() = std::monostate{};
+    else if (typeStr == "sand") {
+      model = zs::StvkWithHencky<float>{E, nu};
+      // out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{};
+    } // metal, soil, cloth
+    // aniso
 
     set_output("ZSModel", out);
   }
@@ -64,16 +73,9 @@ struct ToZSParticles : INode {
     auto inParticles = get_input<PrimitiveObject>("prim");
 
     auto &obj = inParticles->attr<vec3f>("pos");
-    #if 0
     vec3f *velsPtr{nullptr};
-    if (inParticles->has_attr("vel")) {
+    if (inParticles->has_attr("vel"))
       velsPtr = inParticles->attr<vec3f>("vel").data();
-      fmt::print("wtf??");
-      getchar();
-    }
-    #else
-    vec3f *velsPtr{inParticles->attr<vec3f>("vel").data()};
-    #endif
 
     const auto size = obj.size();
 

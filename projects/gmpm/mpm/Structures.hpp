@@ -7,11 +7,14 @@
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
+#include "zensim/physics/constitutive_models/AnisotropicArap.hpp"
 #include "zensim/physics/constitutive_models/EquationOfState.hpp"
 #include "zensim/physics/constitutive_models/FixedCorotated.h"
 #include "zensim/physics/constitutive_models/NeoHookean.hpp"
 #include "zensim/physics/constitutive_models/StvkWithHencky.hpp"
-#include "zensim/physics/plasticity_models/VonMisesCapped.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeCamClay.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeDruckerPrager.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeVonMises.hpp"
 #include "zensim/resource/Resource.h"
 #include <zeno/zeno.h>
 
@@ -20,7 +23,12 @@ namespace zeno {
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
                 zs::StvkWithHencky<float>>;
-using PlasticModel = zs::variant<std::monostate>;
+using AnisoElasticModel =
+    zs::variant<std::monostate, zs::AnisotropicArap<float>>;
+using PlasticModel =
+    zs::variant<std::monostate, zs::NonAssociativeDruckerPrager<float>,
+                zs::NonAssociativeVonMises<float>,
+                zs::NonAssociativeCamClay<float>>;
 
 struct ZenoConstitutiveModel : IObject {
   enum elastic_model_e { Fcr, Nhk, Stvk };
@@ -28,6 +36,10 @@ struct ZenoConstitutiveModel : IObject {
 
   auto &getElasticModel() noexcept { return elasticModel; }
   const auto &getElasticModel() const noexcept { return elasticModel; }
+  auto &getAnisoElasticModel() noexcept { return anisoElasticModel; }
+  const auto &getAnisoElasticModel() const noexcept {
+    return anisoElasticModel;
+  }
   auto &getPlasticModel() noexcept { return plasticModel; }
   const auto &getPlasticModel() const noexcept { return plasticModel; }
 
@@ -44,11 +56,19 @@ struct ZenoConstitutiveModel : IObject {
     return std::get<I>(plasticModel);
   }
 
+  bool hasAnisoModel() const noexcept {
+    return !std::holds_alternative<std::monostate>(anisoElasticModel);
+  }
+  bool hasPlasticModel() const noexcept {
+    return !std::holds_alternative<std::monostate>(plasticModel);
+  }
+
   bool hasF() const noexcept { return elasticModel.index() < 3; }
   bool hasPlasticity() const noexcept { return plasticModel.index() != 0; }
 
   float volume, density;
   ElasticModel elasticModel;
+  AnisoElasticModel anisoElasticModel;
   PlasticModel plasticModel;
 };
 
