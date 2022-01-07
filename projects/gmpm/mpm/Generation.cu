@@ -42,11 +42,6 @@ struct ConfigConstitutiveModel : INode {
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
 
-    else if (typeStr == "sand") {
-      model = zs::StvkWithHencky<float>{E, nu};
-      // out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{};
-    } // metal, soil, cloth
-
     // aniso elastic model
     const auto get_arg = [&params](const char *const tag, auto type) {
       using T = typename RM_CVREF_T(type)::type;
@@ -65,12 +60,15 @@ struct ConfigConstitutiveModel : INode {
     // plastic model
     auto plasticTypeStr = get_input2<std::string>("plasticity");
     if (plasticTypeStr == "nadp") {
+      model = zs::StvkWithHencky<float>{E, nu};
       float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
       out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{fa};
     } else if (plasticTypeStr == "navm") {
+      model = zs::StvkWithHencky<float>{E, nu};
       float ys = get_arg("yield_stress", zs::wrapt<float>{}).value_or(1e5f);
       out->getPlasticModel() = zs::NonAssociativeVonMises<float>{ys};
     } else if (plasticTypeStr == "nacc") { // logjp
+      model = zs::StvkWithHencky<float>{E, nu};
       float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
       float beta = get_arg("beta", zs::wrapt<float>{}).value_or(2.f);
       float xi = get_arg("xi", zs::wrapt<float>{}).value_or(1.f);
