@@ -11,6 +11,14 @@ ZTimeline::ZTimeline(QWidget* parent)
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->setMargin(0);
 
+    QLineEdit* pFrame = new QLineEdit;
+    pFrame->setText("100");
+    pFrame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    QPushButton* pRun = new QPushButton(tr("Run"));
+    pRun->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    QPushButton* pKill = new QPushButton(tr("Kill"));
+    pKill->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+
     ZLabel* plblForward = new ZLabel;
     plblForward->setIcons(QSize(20, 20), ":/icons/playforward.svg", ":/icons/playforward_hover.svg", ":/icons/playforward_on.svg", ":/icons/playforward_on_hover.svg", ":/icons/playforward.svg");
 
@@ -31,6 +39,9 @@ ZTimeline::ZTimeline(QWidget* parent)
 
     m_slider = new ZSlider;
     
+    pLayout->addWidget(pFrame);
+    pLayout->addWidget(pRun);
+    pLayout->addWidget(pKill);
     pLayout->addWidget(plblBackwardFirstFrame);
     pLayout->addWidget(plblBackwardOneFrame);
     pLayout->addWidget(plblBackward);
@@ -43,6 +54,10 @@ ZTimeline::ZTimeline(QWidget* parent)
 
     connect(plblForward, SIGNAL(toggled(bool)), this, SIGNAL(playForward(bool)));
     connect(m_slider, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
+    connect(pRun, &QPushButton::clicked, this, [=]() {
+        int frames = pFrame->text().toInt();
+        emit run(frames);
+    });
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)

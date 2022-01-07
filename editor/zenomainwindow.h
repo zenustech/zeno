@@ -11,6 +11,9 @@ class ZenoMainWindow : public QMainWindow
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
+public slots:
+    void onRunClicked(int nFrames);
+
 private:
     void init();
     void initMenu();

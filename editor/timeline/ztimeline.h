@@ -17,11 +17,13 @@ signals:
     void playForwardOneFrame();
     void playForwardLastFrame();
     int sliderValueChanged(int);
+    void run(int);
 
 public slots:
     void onTimelineUpdate(int frameid);
 
 private:
+    int m_frames;
     ZSlider* m_slider;
 };
 

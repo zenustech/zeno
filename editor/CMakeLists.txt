@@ -17,4 +17,4 @@ endif()
 target_link_libraries(zeno_editor PRIVATE Qt5::Widgets Qt5::OpenGL)
 target_link_libraries(zeno_editor PRIVATE zenoui zenvis glad zeno)
 
-target_include_directories(zeno_editor PRIVATE . ../zenoui)
+target_include_directories(zeno_editor PRIVATE . ../zenoui ../zeno/zeno)

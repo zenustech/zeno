@@ -11,7 +11,7 @@ ZsgWriter& ZsgWriter::getInstance()
     return writer;
 }
 
-QString ZsgWriter::dumpProgram(GraphsModel* pModel)
+QString ZsgWriter::dumpProgramStr(GraphsModel* pModel)
 {
     QJsonObject obj = dumpGraphs(pModel);
     QJsonDocument doc(obj);

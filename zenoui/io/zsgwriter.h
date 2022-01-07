@@ -10,7 +10,7 @@ class ZsgWriter
 {
 public:
     static ZsgWriter& getInstance();
-    QString dumpProgram(GraphsModel *pModel);
+    QString dumpProgramStr(GraphsModel *pModel);
     QString dumpSubGraph(SubGraphModel *pSubModel);
     QJsonObject dumpGraphs(GraphsModel *pMode);
     QJsonObject dumpNode(const NODE_DATA& data);

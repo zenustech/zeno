@@ -6,6 +6,10 @@
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/zenovis.h"
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
+#include <model/graphsmodel.h>
+#include "launch/corelaunch.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -138,6 +142,7 @@ void ZenoMainWindow::initDocks()
 	connect(&Zenvis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
 	connect(pTimeline, SIGNAL(playForward(bool)), &Zenvis::GetInstance(), SLOT(startPlay(bool)));
 	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenvis::GetInstance(), SLOT(setCurrentFrameId(int)));
+    connect(pTimeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
 
     QTimer* pTimer = new QTimer;
     connect(pTimer, SIGNAL(timeout()), view, SLOT(updateFrame()));
@@ -215,4 +220,11 @@ void ZenoMainWindow::readSettings2()
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("state").toByteArray());
     settings.endGroup();
+}
+
+void ZenoMainWindow::onRunClicked(int nFrames)
+{
+    GraphsManagment* pGraphsMgr = zenoApp->graphsManagment();
+    GraphsModel* pModel = pGraphsMgr->currentModel();
+    launchProgram(pModel, nFrames);
 }

@@ -119,7 +119,7 @@ void ZNodesEditWidget::saveAs()
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty())
     {
-        QString strContent = ZsgWriter::getInstance().dumpProgram(zenoApp->graphsManagment()->currentModel());
+        QString strContent = ZsgWriter::getInstance().dumpProgramStr(zenoApp->graphsManagment()->currentModel());
         QFile f(path);
         if (!f.open(QIODevice::WriteOnly)) {
             qWarning() << Q_FUNC_INFO << "Failed to open" << path << f.errorString();
