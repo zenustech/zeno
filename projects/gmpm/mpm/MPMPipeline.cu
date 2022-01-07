@@ -165,7 +165,7 @@ struct UpdateZSGrid : INode {
     auto stepDt = get_input<NumericObject>("dt")->get<float>();
 
     using namespace zs;
-    auto gravity = get_param<float>("gravity");
+    auto gravity = get_input2<float>("gravity");
     auto accel = zs::vec<float, 3>::zeros();
     if (has_input("Accel")) {
       auto tmp = get_input<NumericObject>("Accel")->get<vec3f>();
@@ -201,9 +201,9 @@ struct UpdateZSGrid : INode {
 };
 
 ZENDEFNODE(UpdateZSGrid, {
-                             {"ZSPartition", "ZSGrid", "dt", "Accel"},
+                             {{"float", "gravity", "-9.8"},"ZSPartition", "ZSGrid", "dt", "Accel"},
                              {"ZSGrid", "MaxVelSqr"},
-                             {{"float", "gravity", "-9.8"}},
+                             {},
                              {"MPM"},
                          });
 
@@ -435,13 +435,14 @@ struct ZSGridToZSParticle : INode {
               });
     }
     fmt::print(fg(fmt::color::cyan), "done executing ZSGridToZSParticle\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
   }
 };
 
 ZENDEFNODE(ZSGridToZSParticle,
            {
                {"ZSGrid", "ZSPartition", "ZSParticles", "dt"},
-               {},
+               {"ZSParticles"},
                {},
                {"MPM"},
            });

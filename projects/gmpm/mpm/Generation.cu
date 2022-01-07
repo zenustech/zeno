@@ -15,31 +15,19 @@ struct ConfigConstitutiveModel : INode {
   void apply() override {
     auto out = std::make_shared<ZenoConstitutiveModel>();
 
-    float dx = get_param<float>("dx");
-    if (has_input<NumericObject>("dx"))
-      dx = get_input<NumericObject>("dx")->get<float>();
+    float dx = get_input2<float>("dx");
 
-    float ppc = get_param<float>("ppc");
-    if (has_input<NumericObject>("ppc"))
-      ppc = get_input<NumericObject>("ppc")->get<float>();
     // volume
-    out->volume = dx * dx * dx / ppc;
+    out->volume = dx * dx * dx / get_input2<float>("ppc");
 
-    float density = get_param<float>("density");
-    if (has_input<NumericObject>("density"))
-      density = get_input<NumericObject>("density")->get<float>();
     // density
-    out->density = density;
+    out->density = get_input2<float>("density");
 
-    float E = get_param<float>("E");
-    if (has_input<NumericObject>("E"))
-      E = get_input<NumericObject>("E")->get<float>();
+    float E = get_input2<float>("E");
 
-    float nu = get_param<float>("nu");
-    if (has_input<NumericObject>("nu"))
-      nu = get_input<NumericObject>("nu")->get<float>();
+    float nu = get_input2<float>("nu");
 
-    auto typeStr = get_param<std::string>("type");
+    auto typeStr = get_input2<std::string>("type");
     // elastic model
     auto &model = out->getElasticModel();
     if (typeStr == "fcr")
@@ -57,14 +45,14 @@ struct ConfigConstitutiveModel : INode {
 };
 
 ZENDEFNODE(ConfigConstitutiveModel, {
-                                        {"dx", "ppc", "density", "E", "nu"},
-                                        {"ZSModel"},
                                         {{"float", "dx", "0.1"},
                                          {"float", "ppc", "8"},
                                          {"float", "density", "1000"},
                                          {"string", "type", "fcr"},
                                          {"float", "E", "10000"},
                                          {"float", "nu", "0.4"}},
+                                        {"ZSModel"},
+                                        {},
                                         {"MPM"},
                                     });
 
@@ -76,7 +64,16 @@ struct ToZSParticles : INode {
     auto inParticles = get_input<PrimitiveObject>("prim");
 
     auto &obj = inParticles->attr<vec3f>("pos");
-    auto &vels = inParticles->attr<vec3f>("vel");
+    #if 0
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel")) {
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+      fmt::print("wtf??");
+      getchar();
+    }
+    #else
+    vec3f *velsPtr{inParticles->attr<vec3f>("vel").data()};
+    #endif
 
     const auto size = obj.size();
 
@@ -112,13 +109,17 @@ struct ToZSParticles : INode {
       auto ompExec = zs::omp_exec();
       ompExec(zs::range(size),
               [pars = proxy<execspace_e::host>({}, pars), hasPlasticity, hasF,
-               &inParticles, &model, &obj, &vels](size_t pi) mutable {
+               &inParticles, &model, &obj, &velsPtr](size_t pi) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
                 pars("mass", pi) = model->volume * model->density;
                 pars.tuple<3>("pos", pi) = obj[pi];
-                pars.tuple<3>("vel", pi) = vels[pi];
                 pars.tuple<9>("C", pi) = mat3::zeros();
+
+                if (velsPtr != nullptr)
+                  pars.tuple<3>("vel", pi) = velsPtr[pi];
+                else
+                  pars.tuple<3>("vel", pi) = vec3::zeros();
                 if (hasF)
                   pars.tuple<9>("F", pi) = mat3::identity();
                 else
@@ -161,9 +162,7 @@ ZENDEFNODE(MakeZSPartition, {
 
 struct MakeZSGrid : INode {
   void apply() override {
-    auto dx = get_param<float>("dx");
-    if (has_input("dx"))
-      dx = get_input<NumericObject>("dx")->get<float>();
+    auto dx = get_input2<float>("dx");
 
     auto grid = IObject::make<ZenoGrid>();
     grid->get() = typename ZenoGrid::grid_t{
@@ -176,9 +175,9 @@ struct MakeZSGrid : INode {
   }
 };
 ZENDEFNODE(MakeZSGrid, {
-                           {"dx"},
-                           {"ZSGrid"},
                            {{"float", "dx", "0.1"}},
+                           {"ZSGrid"},
+                           {},
                            {"MPM"},
                        });
 
