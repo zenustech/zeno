@@ -32,7 +32,8 @@ using PlasticModel =
 
 struct ZenoConstitutiveModel : IObject {
   enum elastic_model_e { Fcr, Nhk, Stvk };
-  enum plastic_model_e { None, VonMises, DruckerPrager, Camclay };
+  enum aniso_plastic_model_e { None_, Arap };
+  enum plastic_model_e { None, DruckerPrager, VonMises, CamClay };
 
   auto &getElasticModel() noexcept { return elasticModel; }
   const auto &getElasticModel() const noexcept { return elasticModel; }
@@ -64,7 +65,8 @@ struct ZenoConstitutiveModel : IObject {
   }
 
   bool hasF() const noexcept { return elasticModel.index() < 3; }
-  bool hasPlasticity() const noexcept { return plasticModel.index() != 0; }
+  bool hasLogJp() const noexcept { return plasticModel.index() == CamClay; }
+  bool hasOrientation() const noexcept { return anisoElasticModel.index() != 0; }
 
   float volume, density;
   ElasticModel elasticModel;

@@ -6,6 +6,7 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
+#include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
@@ -23,6 +24,9 @@ struct ConfigConstitutiveModel : INode {
     // density
     out->density = get_input2<float>("density");
 
+    // constitutive models
+    auto params = has_input("params") ? get_input<DictObject>("params")
+                                      : std::make_shared<DictObject>();
     float E = get_input2<float>("E");
 
     float nu = get_input2<float>("nu");
@@ -31,39 +35,69 @@ struct ConfigConstitutiveModel : INode {
     // elastic model
     auto &model = out->getElasticModel();
 
-    // aniso elastic model
-    out->getAnisoElasticModel() = std::monostate{};
-
-    // plastic model
-    out->getPlasticModel() = std::monostate{};
-
     if (typeStr == "fcr")
       model = zs::FixedCorotated<float>{E, nu};
     else if (typeStr == "nhk")
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
+
     else if (typeStr == "sand") {
       model = zs::StvkWithHencky<float>{E, nu};
       // out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{};
     } // metal, soil, cloth
-    // aniso
+
+    // aniso elastic model
+    const auto get_arg = [&params](const char *const tag, auto type) {
+      using T = typename RM_CVREF_T(type)::type;
+      std::optional<T> ret{};
+      if (auto it = params->lut.find(tag); it != params->lut.end())
+        ret = safe_any_cast<T>(it->second);
+      return ret;
+    };
+    auto anisoTypeStr = get_input2<std::string>("aniso");
+    if (anisoTypeStr == "arap") { // a (fiber direction)
+      float strength = get_arg("strength", zs::wrapt<float>{}).value_or(10.f);
+      out->getAnisoElasticModel() = zs::AnisotropicArap<float>{E, nu, strength};
+    } else
+      out->getAnisoElasticModel() = std::monostate{};
+
+    // plastic model
+    auto plasticTypeStr = get_input2<std::string>("plasticity");
+    if (plasticTypeStr == "nadp") {
+      float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
+      out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{fa};
+    } else if (plasticTypeStr == "navm") {
+      float ys = get_arg("yield_stress", zs::wrapt<float>{}).value_or(1e5f);
+      out->getPlasticModel() = zs::NonAssociativeVonMises<float>{ys};
+    } else if (plasticTypeStr == "nacc") { // logjp
+      float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
+      float beta = get_arg("beta", zs::wrapt<float>{}).value_or(2.f);
+      float xi = get_arg("xi", zs::wrapt<float>{}).value_or(1.f);
+      out->getPlasticModel() =
+          zs::NonAssociativeCamClay<float>{fa, beta, xi, 3, true};
+    } else
+      out->getPlasticModel() = std::monostate{};
 
     set_output("ZSModel", out);
   }
 };
 
-ZENDEFNODE(ConfigConstitutiveModel, {
-                                        {{"float", "dx", "0.1"},
-                                         {"float", "ppc", "8"},
-                                         {"float", "density", "1000"},
-                                         {"string", "type", "fcr"},
-                                         {"float", "E", "10000"},
-                                         {"float", "nu", "0.4"}},
-                                        {"ZSModel"},
-                                        {},
-                                        {"MPM"},
-                                    });
+ZENDEFNODE(ConfigConstitutiveModel,
+           {
+               {{"float", "dx", "0.1"},
+                {"float", "ppc", "8"},
+                {"float", "density", "1000"},
+                {"string", "type", "fcr"},
+                {"string", "aniso", "none"},
+                {"string", "plasticity", "none"},
+                {"float", "E", "10000"},
+                {"float", "nu", "0.4"},
+                {"DictObject:NumericObject", "params"}},
+               {"ZSModel"},
+               {},
+               {"MPM"},
+           });
 
 struct ToZSParticles : INode {
   void apply() override {
@@ -89,7 +123,8 @@ struct ToZSParticles : INode {
     std::vector<zs::PropertyTag> tags{
         {"mass", 1}, {"pos", 3}, {"vel", 3}, {"C", 9}, {"vms", 1}};
 
-    const bool hasPlasticity = model->hasPlasticity();
+    const bool hasLogJp = model->hasLogJp();
+    const bool hasOrientation = model->hasOrientation();
     const bool hasF = model->hasF();
 
     if (hasF)
@@ -97,10 +132,13 @@ struct ToZSParticles : INode {
     else
       tags.emplace_back(zs::PropertyTag{"J", 1});
 
-    if (hasPlasticity)
+    if (hasOrientation)
+      tags.emplace_back(zs::PropertyTag{"a", 3});
+
+    if (hasLogJp)
       tags.emplace_back(zs::PropertyTag{"logJp", 1});
 
-    fmt::print("{} particles of these tags\n", size);
+    fmt::print("pending {} particles with these attributes\n", size);
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
@@ -109,28 +147,33 @@ struct ToZSParticles : INode {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
 
       auto ompExec = zs::omp_exec();
-      ompExec(zs::range(size),
-              [pars = proxy<execspace_e::host>({}, pars), hasPlasticity, hasF,
-               &inParticles, &model, &obj, &velsPtr](size_t pi) mutable {
-                using vec3 = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-                pars("mass", pi) = model->volume * model->density;
-                pars.tuple<3>("pos", pi) = obj[pi];
-                pars.tuple<9>("C", pi) = mat3::zeros();
+      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
+                                hasLogJp, hasOrientation, hasF, &inParticles,
+                                &model, &obj, &velsPtr](size_t pi) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+        pars("mass", pi) = model->volume * model->density;
+        pars.tuple<3>("pos", pi) = obj[pi];
+        pars.tuple<9>("C", pi) = mat3::zeros();
 
-                if (velsPtr != nullptr)
-                  pars.tuple<3>("vel", pi) = velsPtr[pi];
-                else
-                  pars.tuple<3>("vel", pi) = vec3::zeros();
-                if (hasF)
-                  pars.tuple<9>("F", pi) = mat3::identity();
-                else
-                  pars("J", pi) = 1.;
+        if (velsPtr != nullptr)
+          pars.tuple<3>("vel", pi) = velsPtr[pi];
+        else
+          pars.tuple<3>("vel", pi) = vec3::zeros();
 
-                if (hasPlasticity)
-                  pars("logJp", pi) = 0;
-                pars("vms", pi) = 0; // vms
-              });
+        if (hasF)
+          pars.tuple<9>("F", pi) = mat3::identity();
+        else
+          pars("J", pi) = 1.;
+
+        if (hasOrientation)
+          pars.tuple<3>("a", pi) = vec3::zeros(); // need further initialization
+
+        if (hasLogJp)
+          pars("logJp", pi) = -0.04;
+
+        pars("vms", pi) = 0; // vms
+      });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
