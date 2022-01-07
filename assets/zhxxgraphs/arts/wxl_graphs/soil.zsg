@@ -18,7 +18,7 @@
       "density": [
        null,
        null,
-       400.0
+       2200.0
       ],
       "type": [
        null,
@@ -33,7 +33,7 @@
       "plasticity": [
        null,
        null,
-       "nadp"
+       "nacc"
       ],
       "E": [
        null,
@@ -908,9 +908,19 @@
        null,
        null
       ],
-      "obj1": [
+      "beta": [
+       "acba505f-x",
+       "value",
+       null
+      ],
+      "obj3": [
        null,
        null,
+       null
+      ],
+      "xi": [
+       "d2daa8ac-x",
+       "value",
        null
       ],
       "friction_angle": [
@@ -920,7 +930,7 @@
       ]
      },
      "params": {
-      "_KEYS": "friction_angle\nobj1"
+      "_KEYS": "friction_angle\nbeta\nxi\nobj3"
      },
      "uipos": [
       1181.099079702803,
@@ -929,7 +939,9 @@
      "options": [],
      "socket_keys": [
       "friction_angle",
-      "obj1"
+      "beta",
+      "xi",
+      "obj3"
      ]
     },
     "5ef66621-NumericFloat": {
@@ -942,7 +954,7 @@
       ]
      },
      "params": {
-      "value": 10.0
+      "value": 20.0
      },
      "uipos": [
       900.6076388888889,
@@ -970,11 +982,47 @@
       -267.4632352941176
      ],
      "options": []
+    },
+    "acba505f-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2.0
+     },
+     "uipos": [
+      684.6487766377272,
+      -871.5432029165258
+     ],
+     "options": []
+    },
+    "d2daa8ac-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      878.5714285714284,
+      -751.0204081632654
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1433.013638405665,
-    "y": -1456.179035702204,
+    "x": 1438.6727059750558,
+    "y": -1488.9016359577058,
     "width": 2384.185791015625,
     "height": 2384.185791015625
    }

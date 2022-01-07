@@ -200,12 +200,14 @@ struct UpdateZSGrid : INode {
   }
 };
 
-ZENDEFNODE(UpdateZSGrid, {
-                             {{"float", "gravity", "-9.8"},"ZSPartition", "ZSGrid", "dt", "Accel"},
-                             {"ZSGrid", "MaxVelSqr"},
-                             {},
-                             {"MPM"},
-                         });
+ZENDEFNODE(
+    UpdateZSGrid,
+    {
+        {{"float", "gravity", "-9.8"}, "ZSPartition", "ZSGrid", "dt", "Accel"},
+        {"ZSGrid", "MaxVelSqr"},
+        {},
+        {"MPM"},
+    });
 
 struct ApplyBoundaryOnZSGrid : INode {
   template <typename LsView>
@@ -446,6 +448,67 @@ ZENDEFNODE(ZSGridToZSParticle,
                {},
                {"MPM"},
            });
+
+struct ZSReturnMapping : INode {
+  template <typename PM>
+  void returnMapping(zs::CudaExecutionPolicy &cudaPol,
+                     typename ZenoParticles::particles_t &pars,
+                     const zs::StvkWithHencky<float> &elasticModel,
+                     const PM &plasticModel) const {
+    using namespace zs;
+    cudaPol(range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             elasticModel = elasticModel,
+             plasticModel = plasticModel] __device__(size_t pi) mutable {
+              auto FeHat = pars.pack<3, 3>("F", pi);
+              if constexpr (is_same_v<zs::NonAssociativeCamClay<float>,
+                                      RM_CVREF_T(plasticModel)>) {
+                auto logJp = pars("logJp", pi);
+                if (plasticModel.project_strain(FeHat, elasticModel, logJp)) {
+                  pars("logJp", pi) = logJp;
+                  pars.tuple<9>("F", pi) = FeHat;
+                }
+              } else { // vm, dp
+                if (plasticModel.project_strain(FeHat, elasticModel))
+                  pars.tuple<9>("F", pi) = FeHat;
+              }
+            });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ZSReturnMapping\n");
+
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+
+    using namespace zs;
+    auto cudaPol = cuda_exec().device(0);
+
+    for (auto &&parObjPtr : parObjPtrs) {
+      auto &pars = parObjPtr->getParticles();
+      if (parObjPtr->getModel().hasPlasticity()) {
+        match(
+            [this, &cudaPol,
+             &pars](const zs::StvkWithHencky<float> &elasticModel,
+                    const auto &plasticModel)
+                -> std::enable_if_t<
+                    !is_same_v<RM_CVREF_T(plasticModel), std::monostate>> {
+              returnMapping(cudaPol, pars, elasticModel, plasticModel);
+            },
+            [](...) {})(parObjPtr->getModel().getElasticModel(),
+                        parObjPtr->getModel().getPlasticModel());
+      }
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ZSReturnMapping\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(ZSReturnMapping, {
+                                {"ZSParticles"},
+                                {"ZSParticles"},
+                                {},
+                                {"MPM"},
+                            });
 
 struct TransformZSLevelSet : INode {
   void apply() override {

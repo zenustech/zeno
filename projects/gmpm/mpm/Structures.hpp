@@ -66,7 +66,10 @@ struct ZenoConstitutiveModel : IObject {
 
   bool hasF() const noexcept { return elasticModel.index() < 3; }
   bool hasLogJp() const noexcept { return plasticModel.index() == CamClay; }
-  bool hasOrientation() const noexcept { return anisoElasticModel.index() != 0; }
+  bool hasOrientation() const noexcept {
+    return anisoElasticModel.index() != None;
+  }
+  bool hasPlasticity() const noexcept { return plasticModel.index() != None; }
 
   float volume, density;
   ElasticModel elasticModel;
