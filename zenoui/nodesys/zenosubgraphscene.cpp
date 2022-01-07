@@ -402,6 +402,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     {
         QModelIndex idx = m_subgraphModel->index(r, 0);
         QString id = idx.data(ROLE_OBJID).toString();
+        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
         for (int role : roles)
         {
             if (role == ROLE_OBJPOS)
@@ -412,6 +413,16 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
             if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
             {
                 //it's diffcult to detect which link has changed.
+            }
+            if (role == ROLE_OPTIONS)
+            {
+                int options = idx.data(ROLE_OPTIONS).toInt();
+                m_nodes[id]->onOptionsUpdated(options);
+            }
+            if (role == ROLE_COLLASPED)
+            {
+                bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
+                m_nodes[id]->onCollaspeUpdated(bCollasped);
             }
         }
     }

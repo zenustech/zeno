@@ -10,6 +10,10 @@ QString g_iopath;
 
 void launchProgram(GraphsModel* pModel, int nframes)
 {
+    //todo
+    LoadLibrary("C:\\zeno2\\zenqt\\bin\\zeno_ZenoFX.dll");
+    LoadLibrary("C:\\zeno2\\zenqt\\bin\\zeno_oldzenbase.dll");
+
     cleanIOPath();
 
     QTemporaryDir dir("zenvis-");
@@ -31,9 +35,14 @@ void launchProgram(GraphsModel* pModel, int nframes)
         QByteArray bytes = g_iopath.toLatin1();
         zeno::state.setIOPath(bytes.data());
 
-        QList<QStringList> ret = serializeScene(pModel);
+        QJsonArray ret;
+        serializeScene(pModel, ret);
 
-        std::string strs = zeno::dumpDescriptors();
+		QJsonDocument doc(ret);
+		QString strJson(doc.toJson(QJsonDocument::Compact));
+        bytes = strJson.toUtf8();
+
+        zeno::loadScene(bytes.data());
     }
 }
 

@@ -332,6 +332,29 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     }
 }
 
+void SubGraphModel::updateOptions(const QString& nodeid, int options)
+{
+    QModelIndex idx = index(nodeid);
+    Q_ASSERT(idx.isValid());
+    int oldOptions = this->data(idx, ROLE_OPTIONS).toInt();
+
+    //todo: transaction.
+    setData(idx, options, ROLE_OPTIONS);
+    emit optionsChanged(nodeid, oldOptions, options);
+}
+
+void SubGraphModel::updateCollasped(const QString& nodeid, bool collaspe)
+{
+    QModelIndex idx = index(nodeid);
+    Q_ASSERT(idx.isValid());
+    bool bCollasped = data(idx, ROLE_COLLASPED).toBool();
+    if (bCollasped == collaspe)
+        return;
+
+    setData(idx, collaspe, ROLE_COLLASPED);
+    emit collaspedChanged(nodeid, collaspe);
+}
+
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
 {
     QVariant var;

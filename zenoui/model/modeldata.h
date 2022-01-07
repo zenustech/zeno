@@ -22,6 +22,13 @@ enum NODE_TYPE {
     BLACKBOARD_NODE,
 };
 
+enum NODE_OPTION {
+    OPT_ONCE,       //discarded, only for compatible.
+    OPT_MUTE,
+    OPT_VIEW,
+    OPT_PREP
+};
+
 struct PARAM_INFO {
     QString name;
     QVariant defaultValue;

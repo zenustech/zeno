@@ -89,6 +89,7 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
 
         nodeData[ROLE_OBJNAME] = nameValue.GetString();
         nodeData[ROLE_OBJTYPE] = NORMAL_NODE;
+        nodeData[ROLE_COLLASPED] = false;
 
         if (objValue.HasMember("inputs"))
         {
@@ -110,6 +111,41 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         {
             auto uipos = objValue["uipos"].GetArray();
             nodeData[ROLE_OBJPOS] = QPointF(uipos[0].GetFloat(), uipos[1].GetFloat());
+        }
+        if (objValue.HasMember("options"))
+        {
+            auto optionsArr = objValue["options"].GetArray();
+            for (int i = 0; i < optionsArr.Size(); i++)
+            {
+                Q_ASSERT(optionsArr[i].IsString());
+                const QString& optName = optionsArr[i].GetString();
+                int opts = 0;
+                if (optName == "ONCE")
+                {
+                    opts |= OPT_ONCE;
+                }
+                else if (optName == "PREP")
+                {
+                    opts |= OPT_PREP;
+                }
+                else if (optName == "VIEW")
+                {
+                    opts |= OPT_VIEW;
+                }
+                else if (optName == "MUTE")
+                {
+                    opts |= OPT_MUTE;
+                }
+                else if (optName == "collapsed")
+                {
+                    nodeData[ROLE_COLLASPED] = true;
+                }
+                else
+                {
+                    Q_ASSERT(false);
+                }
+                nodeData[ROLE_OPTIONS] = opts;
+            }
         }
         if (objValue.HasMember("color_ramps"))
         {
@@ -399,6 +435,35 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& desc
                     } else if (arr[2].GetType() == rapidjson::kNumberType) {
                         inputSocket.info.defaultValue = arr[2].GetFloat();
                     }
+                    else if (arr[2].GetType() == rapidjson::kTrueType) {
+                        inputSocket.info.defaultValue = arr[2].GetBool();
+                    }
+                    else if (arr[2].GetType() == rapidjson::kFalseType) {
+                        inputSocket.info.defaultValue = arr[2].GetBool();
+                    }
+                }
+            }
+            else
+            {
+                if (arr.Size() > 2) {
+					if (arr[2].GetType() == rapidjson::kStringType) {
+						inputSocket.info.defaultValue = arr[2].GetString();
+					}
+					else if (arr[2].GetType() == rapidjson::kNumberType) {
+						inputSocket.info.defaultValue = arr[2].GetFloat();
+                        QVariant::Type varType = inputSocket.info.defaultValue.type();
+                        if (varType == QMetaType::Float)
+                        {
+                            int j;
+                            j = 0;
+                        }
+					}
+					else if (arr[2].GetType() == rapidjson::kTrueType) {
+						inputSocket.info.defaultValue = arr[2].GetBool();
+					}
+					else if (arr[2].GetType() == rapidjson::kFalseType) {
+						inputSocket.info.defaultValue = arr[2].GetBool();
+					}
                 }
             }
         }
@@ -421,7 +486,13 @@ void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonPa
                 param.value = paramObj.GetString();
             } else if (type == rapidjson::kNumberType) {
                 param.value = paramObj.GetDouble();
-            }
+			}
+			else if (type == rapidjson::kTrueType) {
+                param.value = paramObj.GetBool();
+			}
+			else if (type == rapidjson::kFalseType) {
+                param.value = paramObj.GetBool();
+			}
         }
     }
     

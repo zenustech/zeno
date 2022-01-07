@@ -6,8 +6,8 @@
 class GraphsModel;
 class SubGraphModel;
 
-QList<QStringList> serializeScene(GraphsModel* pModel);
-QList<QStringList> serializeGraphs(GraphsModel* pModel);
-QList<QStringList> serializeGraph(SubGraphModel* pModel);
+void serializeScene(GraphsModel* pModel, QJsonArray& ret);
+QJsonArray serializeGraphs(GraphsModel* pModel);
+void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonArray& ret);
 
 #endif

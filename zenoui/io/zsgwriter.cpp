@@ -128,8 +128,24 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
     QPointF pos = data[ROLE_OBJPOS].toPointF();
     obj.insert("uipos", QJsonArray({pos.x(), pos.y()}));
 
-    QJsonObject options;
-    //todo: option
+    QJsonArray options;
+    int opts = data[ROLE_OPTIONS].toInt();
+    if (opts & OPT_ONCE) {
+        options.push_back("ONCE");
+    }
+    if (opts & OPT_MUTE) {
+        options.push_back("MUTE");
+    }
+    if (opts & OPT_PREP) {
+        options.push_back("PREP");
+    }
+    if (opts & OPT_VIEW) {
+        options.push_back("VIEW");
+    }
+	if (data[ROLE_COLLASPED].toBool())
+	{
+		options.push_back("collapsed");
+	}
     obj.insert("options", options);
 
     return obj;

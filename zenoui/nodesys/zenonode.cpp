@@ -14,7 +14,6 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bInitSockets(false)
     , m_bodyWidget(nullptr)
     , m_headerWidget(nullptr)
-    , m_bCollasped(false)
     , m_collaspedWidget(nullptr)
     , m_bHeapMap(false)
     , m_pMainLayout(nullptr)
@@ -100,7 +99,7 @@ void ZenoNode::init(const QModelIndex& index, SubGraphModel* pModel)
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_OBJTYPE).toInt());
 
     m_collaspedWidget = initCollaspedWidget();
-    m_collaspedWidget->setVisible(m_bCollasped);
+    m_collaspedWidget->setVisible(false);
 
     m_headerWidget = initHeaderBgWidget(type);
     if (type != BLACKBOARD_NODE) {
@@ -126,12 +125,16 @@ void ZenoNode::init(const QModelIndex& index, SubGraphModel* pModel)
     const QString &id = m_index.data(ROLE_OBJID).toString();
     setPos(pos);
 
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    if (bCollasped)
+        onCollaspeUpdated(true);
+
     // setPos will send geometry, but it's not supposed to happend during initialization.
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 
     connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
-    connect(this, SIGNAL(paramChanged(const QString &, const QString &, const QVariant &)),
+    connect(this, SIGNAL(paramChanged(const QString&, const QString&, const QVariant&)),
             pModel, SLOT(onParamValueChanged(const QString&, const QString&, const QVariant&)));
 }
 
@@ -459,7 +462,8 @@ void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected
 
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 {
-    if (m_bCollasped)
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    if (bCollasped)
     {
         m_collaspedWidget->show();
         QRectF rc = m_collaspedWidget->sceneBoundingRect();
@@ -543,11 +547,15 @@ void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-    collaspe(!m_bCollasped);
-    m_bCollasped = !m_bCollasped;
+	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+    SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+    Q_ASSERT(pGraphModel);
+
+    bool bCollasped = pGraphModel->data(m_index, ROLE_COLLASPED).toBool();
+    pGraphModel->setData(m_index, !bCollasped, ROLE_COLLASPED);
 }
 
-void ZenoNode::collaspe(bool collasped)
+void ZenoNode::onCollaspeUpdated(bool collasped)
 {
     if (collasped)
     {
@@ -583,6 +591,11 @@ void ZenoNode::collaspe(bool collasped)
         m_collaspe->toggle(false);
     }
     update();
+}
+
+void ZenoNode::onOptionsUpdated(int options)
+{
+    //todo
 }
 
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)

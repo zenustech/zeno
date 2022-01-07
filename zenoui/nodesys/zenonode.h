@@ -46,7 +46,8 @@ signals:
 
 public slots:
     void onCollaspeBtnClicked();
-    void collaspe(bool);
+    void onCollaspeUpdated(bool);
+    void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
 
 protected:
@@ -86,7 +87,6 @@ private:
     QGraphicsLinearLayout *m_pMainLayout;
 
     bool m_bInitSockets;
-    bool m_bCollasped;
     bool m_bHeapMap;
 };
 

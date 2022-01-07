@@ -2,6 +2,7 @@
 #include "graphsmodel.h"
 #include "modelrole.h"
 #include "../util/uihelper.h"
+#include <zeno.h>
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -102,14 +103,81 @@ int GraphsModel::graphCounts() const
 
 void GraphsModel::initDescriptors()
 {
-    NODE_DESCS descs = UiHelper::loadDescsFromTempFile();
-    NODE_DESCS subgDescs = getSubgraphDescs();
-    descs.insert(subgDescs);
+    //NODE_DESCS descs2 = UiHelper::loadDescsFromTempFile();
+ //   NODE_DESCS subgDescs = getSubgraphDescs();
+ //   descs.insert(subgDescs);
+	//NODE_DESC blackBoard;
+	//blackBoard.categories.push_back("layout");
+	//descs["Blackboard"] = blackBoard;
 
-    NODE_DESC blackBoard;
-    blackBoard.categories.push_back("layout");
-    descs["Blackboard"] = blackBoard;
+    NODE_DESCS descs;
+    QString strDescs = QString::fromStdString(zeno::dumpDescriptors());
+    QStringList L = strDescs.split("\n");
+    for (int i = 0; i < L.size(); i++)
+    {
+        QString line = L[i];
+        if (line.startsWith("DESC@"))
+        {
+            line = line.trimmed();
+            int idx1 = line.indexOf("@");
+            int idx2 = line.indexOf("@", idx1 + 1);
+            Q_ASSERT(idx1 != -1 && idx2 != -1);
+            QString wtf = line.mid(0, idx1);
+            QString z_name = line.mid(idx1 + 1, idx2 - idx1 - 1);
+            QString rest = line.mid(idx2 + 1);
+            Q_ASSERT(rest.startsWith("{") && rest.endsWith("}"));
+            auto _L = rest.mid(1, rest.length() - 2).split("}{");
+            QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
+            QStringList z_categories = categories.split('%', Qt::SkipEmptyParts);
+            QJsonArray z_inputs;
 
+            NODE_DESC desc;
+            for (QString input : inputs.split("%", Qt::SkipEmptyParts))
+            {
+                QString type, name, defl;
+                auto _arr = input.split('@');
+                Q_ASSERT(_arr.size() == 3);
+                type = _arr[0];
+                name = _arr[1];
+                defl = _arr[2];
+                INPUT_SOCKET socket;
+                socket.info.type = type;
+                socket.info.name = name;
+                socket.info.defaultValue = UiHelper::_parseDefaultValue(defl);
+                desc.inputs[name] = socket;
+            }
+            for (QString output : outputs.split("%", Qt::SkipEmptyParts))
+            {
+                QString type, name, defl;
+				auto _arr = output.split('@');
+				Q_ASSERT(_arr.size() == 3);
+				type = _arr[0];
+				name = _arr[1];
+				defl = _arr[2];
+                OUTPUT_SOCKET socket;
+				socket.info.type = type;
+				socket.info.name = name;
+				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl);
+                desc.outputs[name] = socket;
+            }
+            for (QString param : params.split("%", Qt::SkipEmptyParts))
+            {
+                QString type, name, defl;
+                auto _arr = param.split('@');
+				type = _arr[0];
+				name = _arr[1];
+				defl = _arr[2];
+                PARAM_INFO paramInfo;
+                paramInfo.name = name;
+                paramInfo.typeDesc = type;
+                paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl);
+                desc.params[name] = paramInfo;
+            }
+            desc.categories = z_categories;
+
+            descs.insert(z_name, desc);
+        }
+    }
     setDescriptors(descs);
 }
 
