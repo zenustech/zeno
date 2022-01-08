@@ -6,7 +6,7 @@ import numpy as np
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-# from PySide2.QtOpenGL import *
+from PySide2.QtOpenGL import *
 
 from . import zenvis
 from .dialog import RecordVideoDialog
@@ -107,9 +107,9 @@ class CameraControl:
         self.fov = f[6]
         self.ortho_mode = f[7]
 
-class ViewportWidget(QOpenGLWidget):
+class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
-        fmt = QSurfaceFormat()
+        fmt = QGLFormat()
         nsamples = os.environ.get('ZEN_MSAA')
         if not nsamples:
             nsamples = 16
@@ -117,9 +117,8 @@ class ViewportWidget(QOpenGLWidget):
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
         fmt.setVersion(3, 0)
-        fmt.setProfile(QSurfaceFormat.CoreProfile)
-        super().__init__(parent)
-        self.setFormat(fmt)
+        fmt.setProfile(QGLFormat.CoreProfile)
+        super().__init__(fmt, parent)
 
         self.camera = CameraControl()
         zenvis.camera_control = self.camera
@@ -151,7 +150,7 @@ class ViewportWidget(QOpenGLWidget):
                 self.parent_widget.record_video.finish_record()
 
     def on_update(self):
-        self.update()
+        self.updateGL()
 
 @eval('lambda x: x()')
 def _():
