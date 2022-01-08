@@ -1,10 +1,53 @@
 #include "Structures.hpp"
 #include "zensim/Logger.hpp"
+#include "zensim/geometry/PoissonDisk.hpp"
 #include "zensim/geometry/VdbSampler.h"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/VDBGrid.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
+
+struct PoissonDiskSample : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing PoissonDiskSample\n");
+    auto ls = IObject::make<ZenoLevelSet>();
+
+    zs::OpenVDBStruct gridPtr{};
+    if (has_input<VDBFloatGrid>("VDBGrid"))
+      gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
+    else
+      gridPtr =
+          zs::load_floatgrid_from_vdb_file(get_param<std::string>("path"));
+
+    auto spls = zs::convert_floatgrid_to_sparse_levelset(
+        gridPtr, zs::MemoryProperty{zs::memsrc_e::host, -1});
+    auto sampled = zs::sample_from_levelset(
+        zs::proxy<zs::execspace_e::host>(spls), get_input2<float>("dx"),
+        get_input2<float>("ppc"));
+
+    auto prim = std::make_shared<PrimitiveObject>();
+    auto &pos = prim->attr<vec3f>("pos");
+    // auto &vel = prim->add_attr<zeno::vec3f>("vel");
+    prim->resize(sampled.size());
+    auto ompExec = zs::omp_exec();
+    ompExec(zs::range(sampled.size()), [&pos, &sampled](size_t pi) {
+      pos[pi] = sampled[pi];
+      // vel[pi] = ;
+    });
+
+    fmt::print(fg(fmt::color::cyan), "done executing PoissonDiskSample\n");
+    set_output("prim", std::move(prim));
+  }
+};
+ZENDEFNODE(PoissonDiskSample,
+           {
+               {"VDBGrid", {"float", "dx", "0.1"}, {"float", "ppc", "8"}},
+               {"prim"},
+               {{"string", "path", ""}},
+               {"MPM"},
+           });
 
 struct ToZSLevelSet : INode {
   void apply() override {
@@ -25,15 +68,9 @@ struct ToZSLevelSet : INode {
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
     } else {
       auto path = get_param<std::string>("path");
-#if 0
-      auto gridPtr = zs::loadFloatGridFromVdbFile(path);
-      ls->getLevelSet() = zs::convert_floatgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
-#else
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
       ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
           gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
-#endif
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");

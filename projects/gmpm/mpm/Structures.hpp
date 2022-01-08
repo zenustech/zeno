@@ -152,6 +152,7 @@ struct ZenoLevelSet : IObject {
 #endif
 
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
+  using spls_t = typename basic_ls_t::spls_t;
   using sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
   using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
   using levelset_t = zs::variant<basic_ls_t, sdf_vel_ls_t, transition_ls_t>;
