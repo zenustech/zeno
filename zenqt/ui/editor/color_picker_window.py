@@ -1,8 +1,8 @@
 import math, colorsys, sys
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
 
 
 def color_picker_clamp(x, lower, upper):
@@ -583,8 +583,8 @@ class ColorRampBarWidget(QWidget):
 
 
 class ColorPickerWindow(QWidget):
-    updatePanel = pyqtSignal(QColor)
-    updateBar = pyqtSignal(QColor)
+    updatePanel = Signal(QColor)
+    updateBar = Signal(QColor)
 
     def __init__(self, color_ramps):
         super().__init__()
