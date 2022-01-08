@@ -69,7 +69,8 @@ struct ZSParticleNeighborWrangler : INode {
       ibsPtr = get_input<ZenoIndexBuckets>("ZSIndexBuckets");
     else if (has_input<NumericObject>("ZSIndexBuckets"))
       spatial_hashing(cudaPol, neighborPars,
-                      get_input<NumericObject>("ZSIndexBuckets")->get<float>(),
+                      get_input<NumericObject>("ZSIndexBuckets")->get<float>() *
+                          2,
                       ibsPtr->get());
     else
       ;

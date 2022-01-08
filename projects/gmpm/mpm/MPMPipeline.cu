@@ -293,26 +293,27 @@ ZENDEFNODE(ApplyBoundaryOnZSGrid, {
 struct ZSParticleToZSGrid : INode {
   template <typename Model>
   void p2g(zs::CudaExecutionPolicy &cudaPol, const Model &model,
-           const float volume, const typename ZenoParticles::particles_t &pars,
+           const typename ZenoParticles::particles_t &pars,
            const typename ZenoPartition::table_t &partition, const float dt,
            typename ZenoGrid::grid_t &grid) {
     using namespace zs;
-    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
-                                 table = proxy<execspace_e::cuda>(partition),
-                                 grid = proxy<execspace_e::cuda>({}, grid), dt,
-                                 dxinv = 1.f / grid.dx, vol = volume,
-                                 model] __device__(size_t pi) mutable {
-      using grid_t = RM_CVREF_T(grid);
-      const auto Dinv = 4.f * dxinv * dxinv;
-      auto localPos = pars.pack<3>("pos", pi);
-      auto vel = pars.pack<3>("vel", pi);
-      auto mass = pars("mass", pi);
-      auto C = pars.pack<3, 3>("C", pi);
-      auto F = pars.pack<3, 3>("F", pi);
-      auto P = model.first_piola(F);
+    cudaPol(range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             table = proxy<execspace_e::cuda>(partition),
+             grid = proxy<execspace_e::cuda>({}, grid), dt,
+             dxinv = 1.f / grid.dx, model] __device__(size_t pi) mutable {
+              using grid_t = RM_CVREF_T(grid);
+              const auto Dinv = 4.f * dxinv * dxinv;
+              auto localPos = pars.pack<3>("pos", pi);
+              auto vel = pars.pack<3>("vel", pi);
+              auto mass = pars("mass", pi);
+              auto vol = pars("vol", pi);
+              auto C = pars.pack<3, 3>("C", pi);
+              auto F = pars.pack<3, 3>("F", pi);
+              auto P = model.first_piola(F);
 
-      auto contrib = -dt * Dinv * vol * P * F.transpose();
-      auto arena = make_local_arena(grid.dx, localPos);
+              auto contrib = -dt * Dinv * vol * P * F.transpose();
+              auto arena = make_local_arena(grid.dx, localPos);
 
 #if 0
       if (pi == 0) {
@@ -326,25 +327,25 @@ struct ZSParticleToZSGrid : INode {
       }
 #endif
 
-      for (auto loc : arena.range()) {
-        auto coord = arena.coord(loc);
-        auto localIndex = coord & (grid_t::side_length - 1);
-        auto blockno = table.query(coord - localIndex);
-        if (blockno < 0)
-          printf("THE HELL!");
-        auto block = grid.block(blockno);
+              for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto localIndex = coord & (grid_t::side_length - 1);
+                auto blockno = table.query(coord - localIndex);
+                if (blockno < 0)
+                  printf("THE HELL!");
+                auto block = grid.block(blockno);
 
-        auto xixp = arena.diff(loc);
-        auto W = arena.weight(loc);
-        const auto cellid = grid_t::coord_to_cellid(localIndex);
-        atomic_add(exec_cuda, &block("m", cellid), mass * W);
-        auto Cxixp = C * xixp;
-        auto fdt = contrib * xixp;
-        for (int d = 0; d != 3; ++d)
-          atomic_add(exec_cuda, &block("v", d, cellid),
-                     W * (mass * (vel[d] + Cxixp[d]) + fdt[d]));
-      }
-    });
+                auto xixp = arena.diff(loc);
+                auto W = arena.weight(loc);
+                const auto cellid = grid_t::coord_to_cellid(localIndex);
+                atomic_add(exec_cuda, &block("m", cellid), mass * W);
+                auto Cxixp = C * xixp;
+                auto fdt = contrib * xixp;
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &block("v", d, cellid),
+                             W * (mass * (vel[d] + Cxixp[d]) + fdt[d]));
+              }
+            });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSParticleToZSGrid\n");
@@ -366,7 +367,7 @@ struct ZSParticleToZSGrid : INode {
                  pars.size());
 
       match([&](auto &elasticModel) {
-        p2g(cudaPol, elasticModel, model.volume, pars, partition, stepDt, grid);
+        p2g(cudaPol, elasticModel, pars, partition, stepDt, grid);
       })(model.getElasticModel());
     }
 

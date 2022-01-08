@@ -26,8 +26,9 @@ namespace zeno {
 
 template <typename ExecPol, typename TileVectorT, typename IndexBucketsT>
 inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
-                            const typename TileVectorT::value_type radius,
-                            IndexBucketsT &ibs) {
+                            const typename TileVectorT::value_type dx,
+                            IndexBucketsT &ibs, bool init = true,
+                            bool count_only = false) {
   using namespace zs;
   constexpr auto space = ExecPol::exec_tag::value;
 #if ZS_ENABLE_CUDA && defined(__CUDACC__)
@@ -41,22 +42,26 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
 
   auto allocator = tvs.get_allocator();
   auto mloc = allocator.location;
-  ibs._dx = radius + radius;
+  if (init)
+    ibs._dx = dx; // radius + radius;
   /// table
   auto &partition = ibs._table;
   using Partition = RM_CVREF_T(partition);
-  partition = Partition{tvs.size(), tvs.memspace(), tvs.devid()};
+  if (init) {
+    partition = Partition{tvs.size(), tvs.memspace(), tvs.devid()};
 
-  // clean
-  pol(range(partition._tableSize),
-      [table = proxy<space>(partition)] ZS_LAMBDA(size_t i) mutable {
-        table._table.keys[i] =
-            Partition::key_t::uniform(Partition::key_scalar_sentinel_v);
-        table._table.indices[i] = Partition::sentinel_v;
-        table._table.status[i] = -1;
-        if (i == 0)
-          *table._cnt = 0;
-      });
+    // clean
+    pol(range(partition._tableSize),
+        [table = proxy<space>(partition)] ZS_LAMBDA(size_t i) mutable {
+          table._table.keys[i] =
+              Partition::key_t::uniform(Partition::key_scalar_sentinel_v);
+          table._table.indices[i] = Partition::sentinel_v;
+          table._table.status[i] = -1;
+          if (i == 0)
+            *table._cnt = 0;
+        });
+  }
+
   // compute sparsity
   pol(range(tvs.size()),
       [tvs = proxy<space>({}, tvs),
@@ -70,9 +75,19 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
   /// counts
   using index_type = typename IndexBucketsT::index_type;
   auto &counts = ibs._counts;
-  counts = counts.clone(mloc);
-  counts.resize(numCells);
-  zs::memset(mem_device, counts.data(), 0, sizeof(index_type) * numCells);
+  if (init) {
+    counts = counts.clone(mloc);
+    counts.resize(numCells);
+    zs::memset(mem_device, counts.data(), 0, sizeof(index_type) * numCells);
+  } else {
+    auto prevCounts = counts;
+
+    counts.resize(numCells);
+    zs::memset(mem_device, counts.data(), 0, sizeof(index_type) * numCells);
+
+    zs::copy(mem_device, counts.data(), prevCounts.data(),
+             sizeof(index_type) * prevCounts.size());
+  }
 
   auto tmp = counts; // for index distribution later
   pol(range(tvs.size()),
@@ -83,6 +98,10 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
         atomic_add(exec_cuda, (index_type *)&ibs.counts[ibs.table.query(coord)],
                    (index_type)1);
       });
+
+  if (count_only)
+    return;
+
   /// offsets
   auto &offsets = ibs._offsets;
   offsets = offsets.clone(mloc);

@@ -21,7 +21,7 @@ struct MakeZSBuckets : zeno::INode {
 
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
-    spatial_hashing(cudaPol, pars, radius, ibs);
+    spatial_hashing(cudaPol, pars, radius + radius, ibs);
 
     fmt::print("done building index buckets with {} entries, {} buckets\n",
                ibs.numEntries(), ibs.numBuckets());

@@ -118,8 +118,8 @@ struct ToZSParticles : INode {
     // particles
     auto &pars = outParticles->getParticles(); // tilevector
 
-    std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"C", 9}, {"vms", 1}};
+    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
+                                      {"vol", 1},  {"C", 9},   {"vms", 1}};
 
     const bool hasLogJp = model->hasLogJp();
     const bool hasOrientation = model->hasOrientation();
@@ -158,6 +158,8 @@ struct ToZSParticles : INode {
           pars.tuple<3>("vel", pi) = velsPtr[pi];
         else
           pars.tuple<3>("vel", pi) = vec3::zeros();
+
+        pars("vol", pi) = model->volume;
 
         if (hasF)
           pars.tuple<9>("F", pi) = mat3::identity();
