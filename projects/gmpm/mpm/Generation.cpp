@@ -23,19 +23,39 @@ struct PoissonDiskSample : INode {
 
     auto spls = zs::convert_floatgrid_to_sparse_levelset(
         gridPtr, zs::MemoryProperty{zs::memsrc_e::host, -1});
+    auto dx = get_input2<float>("dx");
     auto sampled = zs::sample_from_levelset(
-        zs::proxy<zs::execspace_e::host>(spls), get_input2<float>("dx"),
-        get_input2<float>("ppc"));
+        zs::proxy<zs::execspace_e::host>(spls), dx, get_input2<float>("ppc"));
 
     auto prim = std::make_shared<PrimitiveObject>();
-    auto &pos = prim->attr<vec3f>("pos");
-    // auto &vel = prim->add_attr<zeno::vec3f>("vel");
     prim->resize(sampled.size());
+    auto &pos = prim->attr<vec3f>("pos");
+    auto &vel = prim->add_attr<vec3f>("vel");
+    auto &nrm = prim->add_attr<vec3f>("nrm");
+
+    /// compute default normal
     auto ompExec = zs::omp_exec();
-    ompExec(zs::range(sampled.size()), [&pos, &sampled](size_t pi) {
-      pos[pi] = sampled[pi];
-      // vel[pi] = ;
-    });
+    const auto calcNormal = [spls = proxy<zs::execspace_e::host>(spls),
+                             eps = dx](const vec3f &x_) {
+      zs::vec<float, 3> x{x_[0], x_[1], x_[2]}, diff{};
+      /// compute a local partial derivative
+      for (int i = 0; i != 3; i++) {
+        zs::vec<float, 3> v1 = x;
+        zs::vec<float, 3> v2 = x;
+        v1[i] = x[i] + eps;
+        v2[i] = x[i] - eps;
+        diff[i] = (spls.getSignedDistance(v1) - spls.getSignedDistance(v2)) /
+                  (eps + eps);
+      }
+      auto r = diff.normalized();
+      return vec3f{r[0], r[1], r[2]};
+    };
+    ompExec(zs::range(sampled.size()),
+            [&sampled, &pos, &vel, &nrm, &calcNormal](size_t pi) {
+              pos[pi] = sampled[pi];
+              vel[pi] = vec3f{0, 0, 0};
+              nrm[pi] = calcNormal(pos[pi]);
+            });
 
     fmt::print(fg(fmt::color::cyan), "done executing PoissonDiskSample\n");
     set_output("prim", std::move(prim));

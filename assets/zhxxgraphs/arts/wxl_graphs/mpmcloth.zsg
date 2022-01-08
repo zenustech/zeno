@@ -283,7 +283,7 @@
       "aniso": [
        null,
        null,
-       "none"
+       "arap"
       ],
       "plasticity": [
        null,
@@ -301,8 +301,8 @@
        0.2
       ],
       "params": [
-       null,
-       null,
+       "62483cfa-x",
+       "dict",
        null
       ],
       "SRC": [
@@ -942,7 +942,7 @@
       "plasticity": [
        null,
        null,
-       "none"
+       "nadp"
       ],
       "E": [
        null,
@@ -955,8 +955,8 @@
        0.2
       ],
       "params": [
-       null,
-       null,
+       "2026e921-x",
+       "dict",
        null
       ],
       "SRC": [
@@ -1520,11 +1520,111 @@
      "options": [
       "ONCE"
      ]
+    },
+    "2026e921-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "friction_angle": [
+       "95b012f8-x",
+       "value",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "friction_angle\nobj1"
+     },
+     "uipos": [
+      -581.8186735324359,
+      889.5618494396743
+     ],
+     "options": [],
+     "socket_keys": [
+      "friction_angle",
+      "obj1"
+     ]
+    },
+    "95b012f8-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 35.0
+     },
+     "uipos": [
+      -862.3101143463499,
+      897.5475255603232
+     ],
+     "options": []
+    },
+    "62483cfa-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "strength": [
+       "69eba547-x",
+       "value",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "strength\nobj1"
+     },
+     "uipos": [
+      -521.1953504579412,
+      236.31921804762976
+     ],
+     "options": [],
+     "socket_keys": [
+      "strength",
+      "obj1"
+     ]
+    },
+    "69eba547-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 20.0
+     },
+     "uipos": [
+      -801.6867912718553,
+      244.30489416827857
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1892.2547560999426,
-    "y": -808.7616261725276,
+    "x": -1987.3833241553234,
+    "y": -815.7395840810746,
     "width": 5722.045898437496,
     "height": 2908.706665039058
    }

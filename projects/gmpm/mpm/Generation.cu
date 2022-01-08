@@ -108,6 +108,9 @@ struct ToZSParticles : INode {
     vec3f *velsPtr{nullptr};
     if (inParticles->has_attr("vel"))
       velsPtr = inParticles->attr<vec3f>("vel").data();
+    vec3f *nrmsPtr{nullptr};
+    if (inParticles->has_attr("nrm"))
+      nrmsPtr = inParticles->attr<vec3f>("nrm").data();
 
     const auto size = obj.size();
 
@@ -146,8 +149,8 @@ struct ToZSParticles : INode {
 
       auto ompExec = zs::omp_exec();
       ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
-                                hasLogJp, hasOrientation, hasF, &inParticles,
-                                &model, &obj, &velsPtr](size_t pi) mutable {
+                                hasLogJp, hasOrientation, hasF, &model, &obj,
+                                velsPtr, nrmsPtr](size_t pi) mutable {
         using vec3 = zs::vec<float, 3>;
         using mat3 = zs::vec<float, 3, 3>;
         pars("mass", pi) = model->volume * model->density;
@@ -166,8 +169,20 @@ struct ToZSParticles : INode {
         else
           pars("J", pi) = 1.;
 
-        if (hasOrientation)
-          pars.tuple<3>("a", pi) = vec3::zeros(); // need further initialization
+        if (hasOrientation) {
+          if (nrmsPtr != nullptr) {
+            const auto n_ = nrmsPtr[pi];
+            const auto n = vec3{n_[0], n_[1], n_[2]};
+            constexpr auto up = vec3{0, 1, 0};
+            if (!parallel(n, up)) {
+              auto side = cross(up, n);
+              auto a = cross(side, n);
+              pars.tuple<3>("a", pi) = a;
+            } else
+              pars.tuple<3>("a", pi) = vec3{0, 0, 1};
+          } else
+            pars.tuple<3>("a", pi) = vec3::zeros();
+        }
 
         if (hasLogJp)
           pars("logJp", pi) = -0.04;
