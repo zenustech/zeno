@@ -68,7 +68,13 @@ void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonA
 			name = "Route";
 		}
 
-		if (name == "ParticlesWrangle")
+		//temp code for debug
+		if (name == "MakeDict")
+		{
+			int j;
+			j = 0;
+		}
+		if (ident == "730549a0-Make2DGridPrimitive")
 		{
 			int j;
 			j = 0;
@@ -119,6 +125,13 @@ void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonA
 		{
 			QVariant value = param_info.value;
 			QVariant::Type varType = value.type();
+
+			if (param_info.name == "_KEYS")
+			{
+				int j;
+				j = 0;
+			}
+
 			if (varType == QVariant::Double || varType == QMetaType::Float)
 			{
 				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toFloat()}));

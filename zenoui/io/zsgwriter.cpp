@@ -148,6 +148,12 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 	}
     obj.insert("options", options);
 
+    QJsonArray socketKeys = data[ROLE_SOCKET_KEYS].value<QJsonArray>();
+    if (!socketKeys.isEmpty())
+    {
+        obj.insert("socket_keys", socketKeys);
+    }
+
     return obj;
 }
 

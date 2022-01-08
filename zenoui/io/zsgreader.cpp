@@ -77,6 +77,12 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         const QString& nodeid = node.name.GetString();
         nodeData[ROLE_OBJID] = nodeid;
 
+        if (nodeid == "730549a0-Make2DGridPrimitive")
+        {
+            int j;
+            j = 0;
+        }
+
         const auto &objValue = node.value;
         const rapidjson::Value& nameValue = objValue["name"];
         const QString &name = nameValue.GetString();
@@ -146,6 +152,26 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
                 }
                 nodeData[ROLE_OPTIONS] = opts;
             }
+        }
+        if (objValue.HasMember("socket_keys"))
+        {
+            auto socket_keys = objValue["socket_keys"].GetArray();
+            QJsonArray socketKeys;
+            QStringList _keys;
+            for (int i = 0; i < socket_keys.Size(); i++)
+            {
+                socketKeys.append(socket_keys[i].GetString());
+                _keys.append(socket_keys[i].GetString());
+            }
+            nodeData[ROLE_SOCKET_KEYS] = socketKeys;
+
+            PARAM_INFO info;
+            info.name = "_KEYS";
+            info.value = _keys.join("\n");
+
+            PARAMS_INFO params = nodeData[ROLE_PARAMETERS].value<PARAMS_INFO>();
+            params.insert(info.name, info);
+            nodeData[ROLE_PARAMETERS] = QVariant::fromValue(params);
         }
         if (objValue.HasMember("color_ramps"))
         {
