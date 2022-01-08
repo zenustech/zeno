@@ -4,6 +4,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
@@ -17,12 +18,21 @@
 namespace zeno {
 namespace {
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh) {
-    auto prim = std::make_shared<PrimitiveObject>();
-    int i = zeno::state.frameid;
-    i = std::min((int)i, (int)mesh.getNumSamples() - 1);
+static int clamp(int i, int _min, int _max) {
+    if (i < _min) {
+        return _min;
+    } else if (i > _max) {
+        return _max;
+    } else {
+        return i;
+    }
+}
 
-    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)i));
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid) {
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    frameid = clamp(frameid, 0, (int)mesh.getNumSamples() - 1);
+    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)frameid));
 
     if (auto marr = mesamp.getPositions()) {
         log_info("[alembic] totally {} positions", marr->size());
@@ -65,9 +75,10 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     return prim;
 }
 
-static void traverseABC
-( Alembic::AbcGeom::IObject &obj
-, ABCTree &tree
+static void traverseABC(
+    Alembic::AbcGeom::IObject &obj,
+    ABCTree &tree,
+    int frameid
 ) {
     {
         auto const &md = obj.getMetaData();
@@ -79,7 +90,7 @@ static void traverseABC
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh);
+            tree.prim = foundABCMesh(mesh, frameid);
         }
     }
 
@@ -93,7 +104,7 @@ static void traverseABC
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree);
+        traverseABC(child, *childTree, frameid);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -123,19 +134,29 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 
 struct ReadAlembic : INode {
     virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input<NumericObject>("frameid")->get<int>();
+        } else {
+            frameid = zeno::state.frameid;
+        }
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
             auto archive = readABC(path);
+            double start, _end;
+            GetArchiveStartAndEndTime(archive, start, _end);
+            // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
+            // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree);
+            traverseABC(obj, *abctree, frameid);
         }
         set_output("abctree", std::move(abctree));
     }
 };
 
 ZENDEFNODE(ReadAlembic, {
-    {{"readpath", "path"}},
+    {{"readpath", "path"}, {"frameid"}},
     {{"ABCTree", "abctree"}},
     {},
     {"alembic"},
