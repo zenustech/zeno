@@ -45,7 +45,9 @@ struct ComputeParticleVolume : INode {
                 const auto bucketNo = ibs.table.query(coord);
                 // bucketNo should be > 0
                 const auto cnt = ibs.counts[bucketNo];
-                pars("vol", pi) = cellVol / cnt;
+                const auto vol = cellVol / cnt;
+                pars("vol", pi) = vol;
+                pars("mass", pi) = density * vol;
               });
     }
     set_output("ZSParticles", get_input("ZSParticles"));
