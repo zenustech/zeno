@@ -105,8 +105,8 @@ struct ToZSParticles : INode {
     fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto model = get_input<ZenoConstitutiveModel>("ZSModel");
 
+    // primitive
     auto inParticles = get_input<PrimitiveObject>("prim");
-
     auto &obj = inParticles->attr<vec3f>("pos");
     vec3f *velsPtr{nullptr};
     if (inParticles->has_attr("vel"))
@@ -114,12 +114,112 @@ struct ToZSParticles : INode {
     vec3f *nrmsPtr{nullptr};
     if (inParticles->has_attr("nrm"))
       nrmsPtr = inParticles->attr<vec3f>("nrm").data();
-
-    const auto size = obj.size();
+    auto &quads = inParticles->quads;
+    auto &tris = inParticles->tris;
+    auto &lines = inParticles->lines;
 
     auto outParticles = IObject::make<ZenoParticles>();
+
+    // primitive binding
+    outParticles->prim = inParticles;
     // model
     outParticles->getModel() = *model;
+    // category
+    outParticles->category =
+        static_cast<ZenoParticles::category_e>(get_input2<int>("category"));
+
+    std::size_t size = obj.size();
+    // per vertex (node) vol, pos, vel
+    std::vector<float> eleVol(size, 0);
+
+    std::vector<vec3f> elePos{};
+    std::vector<vec3f> eleVel{};
+
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    if (auto category = outParticles->category;
+        category != ZenoParticles::mpm) {
+      // tet
+      if (quads.size()) {
+        if (category == ZenoParticles::element) {
+          size = quads.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto tetVol = [&obj](vec4i quad) {
+          const auto &p0 = obj[quad[0]];
+          auto s = cross(obj[quad[2]] - p0, obj[quad[1]] - p0);
+          return std::abs(dot(s, obj[quad[3]] - p0)) / 6;
+        };
+        for (std::size_t i = 0; i != quads.size(); ++i) {
+          auto quad = quads[i];
+          auto v = tetVol(quad);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : quad)
+              eleVol[pi] += v / 4;
+          } else if (category == ZenoParticles::element) {
+            eleVol[i] = v;
+            elePos[i] =
+                (obj[quad[0]] + obj[quad[1]] + obj[quad[2]] + obj[quad[3]]) / 4;
+            if (velsPtr)
+              eleVel[i] = (velsPtr[quad[0]] + velsPtr[quad[1]] +
+                           velsPtr[quad[2]] + velsPtr[quad[3]]) /
+                          4;
+          }
+        }
+      }
+      // surface
+      else if (tris.size()) {
+        if (category == ZenoParticles::element) {
+          size = tris.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto triArea = [&obj](vec3i tri) {
+          const auto &p0 = obj[tri[0]];
+          return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
+        };
+        for (std::size_t i = 0; i != tris.size(); ++i) {
+          auto tri = tris[i];
+          auto area = triArea(tri);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : tri)
+              eleVol[pi] += area / 3;
+          } else if (category == ZenoParticles::element) {
+            eleVol[i] = area;
+            elePos[i] = (obj[tri[0]] + obj[tri[1]] + obj[tri[2]]) / 3;
+            if (velsPtr)
+              eleVel[i] =
+                  (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+          }
+        }
+      }
+      // strand
+      else if (lines.size()) {
+        if (category == ZenoParticles::element) {
+          size = lines.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto lineLength = [&obj](vec2i line) {
+          return length(obj[line[1]] - obj[line[0]]);
+        };
+        for (std::size_t i = 0; i != lines.size(); ++i) {
+          auto line = lines[i];
+          auto len = lineLength(line);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : line)
+              eleVol[pi] += len / 2;
+          } else if (category == ZenoParticles::vertex) {
+            eleVol[i] = len;
+            elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
+            if (velsPtr)
+              eleVel[i] = (velsPtr[line[0]] + velsPtr[line[1]]) / 2;
+          }
+        }
+      }
+    }
 
     // particles
     auto &pars = outParticles->getParticles(); // tilevector
@@ -128,13 +228,20 @@ struct ToZSParticles : INode {
                                       {"vol", 1},  {"C", 9},   {"vms", 1}};
 
     const bool hasLogJp = model->hasLogJp();
-    const bool hasOrientation = model->hasOrientation();
+    const bool hasOrientation =
+        model->hasOrientation() ||
+        outParticles->category == ZenoParticles::element;
     const bool hasF = model->hasF();
+    const bool hasDeformation =
+        outParticles->category == ZenoParticles::mpm ||
+        outParticles->category == ZenoParticles::element;
 
-    if (hasF)
-      tags.emplace_back(zs::PropertyTag{"F", 9});
-    else
-      tags.emplace_back(zs::PropertyTag{"J", 1});
+    if (hasDeformation) {
+      if (hasF)
+        tags.emplace_back(zs::PropertyTag{"F", 9});
+      else
+        tags.emplace_back(zs::PropertyTag{"J", 1});
+    }
 
     if (hasOrientation)
       tags.emplace_back(zs::PropertyTag{"a", 3});
@@ -147,51 +254,76 @@ struct ToZSParticles : INode {
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
     {
-      using namespace zs;
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
 
-      auto ompExec = zs::omp_exec();
-      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
-                                hasLogJp, hasOrientation, hasF, &model, &obj,
-                                velsPtr, nrmsPtr](size_t pi) mutable {
-        using vec3 = zs::vec<float, 3>;
-        using mat3 = zs::vec<float, 3, 3>;
-        pars("mass", pi) = model->volume * model->density;
-        pars.tuple<3>("pos", pi) = obj[pi];
-        pars.tuple<9>("C", pi) = mat3::zeros();
+      ompExec(zs::range(size),
+              [pars = proxy<execspace_e::host>({}, pars), hasLogJp,
+               hasOrientation, hasF, hasDeformation, &model, &obj, velsPtr,
+               nrmsPtr, &eleVol, &elePos, &eleVel,
+               category = (int)outParticles->category](size_t pi) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+                float vol{};
+                // vol, pos, vel
+                if (category == ZenoParticles::mpm) {
+                  vol = model->volume;
+                  pars.tuple<3>("pos", pi) = obj[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = velsPtr[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                } else if (category == ZenoParticles::vertex) {
+                  // iter
+                  vol = eleVol[pi]; // different
+                  pars.tuple<3>("pos", pi) = obj[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = velsPtr[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                } else if (category == ZenoParticles::element) {
+                  vol = eleVol[pi];
+                  pars.tuple<3>("pos", pi) = elePos[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = eleVel[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                }
 
-        if (velsPtr != nullptr)
-          pars.tuple<3>("vel", pi) = velsPtr[pi];
-        else
-          pars.tuple<3>("vel", pi) = vec3::zeros();
+                pars("vol", pi) = vol;
+                pars("mass", pi) = vol * model->density;
 
-        pars("vol", pi) = model->volume;
+                // deformation
+                if (hasDeformation) {
+                  if (hasF)
+                    pars.tuple<9>("F", pi) = mat3::identity();
+                  else
+                    pars("J", pi) = 1.;
+                }
 
-        if (hasF)
-          pars.tuple<9>("F", pi) = mat3::identity();
-        else
-          pars("J", pi) = 1.;
+                // apic transfer
+                pars.tuple<9>("C", pi) = mat3::zeros();
 
-        if (hasOrientation) {
-          if (nrmsPtr != nullptr) {
-            const auto n_ = nrmsPtr[pi];
-            const auto n = vec3{n_[0], n_[1], n_[2]};
-            constexpr auto up = vec3{0, 1, 0};
-            if (!parallel(n, up)) {
-              auto side = cross(up, n);
-              auto a = cross(side, n);
-              pars.tuple<3>("a", pi) = a;
-            } else
-              pars.tuple<3>("a", pi) = vec3{0, 0, 1};
-          } else
-            pars.tuple<3>("a", pi) = vec3::zeros();
-        }
+                // orientation
+                if (hasOrientation) {
+                  if (nrmsPtr != nullptr) {
+                    const auto n_ = nrmsPtr[pi];
+                    const auto n = vec3{n_[0], n_[1], n_[2]};
+                    constexpr auto up = vec3{0, 1, 0};
+                    if (!parallel(n, up)) {
+                      auto side = cross(up, n);
+                      auto a = cross(side, n);
+                      pars.tuple<3>("a", pi) = a;
+                    } else
+                      pars.tuple<3>("a", pi) = vec3{0, 0, 1};
+                  } else
+                    pars.tuple<3>("a", pi) = vec3::zeros();
+                }
 
-        if (hasLogJp)
-          pars("logJp", pi) = -0.04;
-
-        pars("vms", pi) = 0; // vms
-      });
+                // plasticity
+                if (hasLogJp)
+                  pars("logJp", pi) = -0.04;
+                pars("vms", pi) = 0; // vms
+              });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
@@ -202,7 +334,7 @@ struct ToZSParticles : INode {
 };
 
 ZENDEFNODE(ToZSParticles, {
-                              {"ZSModel", "prim"},
+                              {"ZSModel", "prim", {"int", "category", "0"}},
                               {"ZSParticles"},
                               {},
                               {"MPM"},

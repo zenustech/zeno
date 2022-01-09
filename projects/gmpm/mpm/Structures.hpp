@@ -16,6 +16,7 @@
 #include "zensim/physics/plasticity_models/NonAssociativeDruckerPrager.hpp"
 #include "zensim/physics/plasticity_models/NonAssociativeVonMises.hpp"
 #include "zensim/resource/Resource.h"
+#include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -78,6 +79,10 @@ struct ZenoConstitutiveModel : IObject {
 };
 
 struct ZenoParticles : IObject {
+  // (i  ) traditional mpm particle,
+  // (ii ) lagrangian mesh vertex particle
+  // (iii) lagrangian mesh element quadrature particle
+  enum category_e : int { mpm, vertex, element };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }
@@ -86,6 +91,8 @@ struct ZenoParticles : IObject {
   const auto &getModel() const noexcept { return model; }
   particles_t particles{};
   ZenoConstitutiveModel model{};
+  category_e category{category_e::mpm};
+  std::shared_ptr<PrimitiveObject> prim;
 };
 
 struct ZenoPartition : IObject {

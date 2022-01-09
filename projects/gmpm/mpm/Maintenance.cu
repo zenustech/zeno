@@ -26,13 +26,16 @@ struct ComputeParticleVolume : INode {
     auto cudaPol = cuda_exec().device(0);
     bool first = true;
 
-    for (auto &&parObjPtr : parObjPtrs) {
-      auto &pars = parObjPtr->getParticles();
-      spatial_hashing(cudaPol, pars, grid.dx, ibs, first, true);
-      first = false;
-    }
+    for (auto &&parObjPtr : parObjPtrs)
+      if (parObjPtr->category == ZenoParticles::mpm) {
+        auto &pars = parObjPtr->getParticles();
+        spatial_hashing(cudaPol, pars, grid.dx, ibs, first, true);
+        first = false;
+      }
 
     for (auto &&parObjPtr : parObjPtrs) {
+      if (parObjPtr->category != ZenoParticles::mpm)
+        continue;
       auto &pars = parObjPtr->getParticles();
       cudaPol(range(pars.size()),
               [pars = proxy<execspace_e::cuda>({}, pars),
