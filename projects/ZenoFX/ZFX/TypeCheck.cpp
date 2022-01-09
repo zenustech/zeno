@@ -147,6 +147,12 @@ struct TypeCheck : Visitor<TypeCheck> {
             }
             stmt->dim = 3;
 
+        } else if (contains({"applyAffine"}, name)) {
+            if (stmt->args.size() != 5) {
+                error("function `%s` takes exactly 5 arguments", name.c_str());
+            }
+            stmt->dim = 3;
+
         } else if (contains({"fmod"}, name)) {
             if (stmt->args.size() != 2) {
                 error("function `%s` takes exactly 2 arguments", name.c_str());

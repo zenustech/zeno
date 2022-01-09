@@ -6,6 +6,7 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
+#include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
@@ -15,58 +16,89 @@ struct ConfigConstitutiveModel : INode {
   void apply() override {
     auto out = std::make_shared<ZenoConstitutiveModel>();
 
-    float dx = get_param<float>("dx");
-    if (has_input<NumericObject>("dx"))
-      dx = get_input<NumericObject>("dx")->get<float>();
+    float dx = get_input2<float>("dx");
 
-    float ppc = get_param<float>("ppc");
-    if (has_input<NumericObject>("ppc"))
-      ppc = get_input<NumericObject>("ppc")->get<float>();
     // volume
-    out->volume = dx * dx * dx / ppc;
+    out->volume = dx * dx * dx / get_input2<float>("ppc");
 
-    float density = get_param<float>("density");
-    if (has_input<NumericObject>("density"))
-      density = get_input<NumericObject>("density")->get<float>();
     // density
-    out->density = density;
+    out->density = get_input2<float>("density");
 
-    float E = get_param<float>("E");
-    if (has_input<NumericObject>("E"))
-      E = get_input<NumericObject>("E")->get<float>();
+    // constitutive models
+    auto params = has_input("params") ? get_input<DictObject>("params")
+                                      : std::make_shared<DictObject>();
+    float E = get_input2<float>("E");
 
-    float nu = get_param<float>("nu");
-    if (has_input<NumericObject>("nu"))
-      nu = get_input<NumericObject>("nu")->get<float>();
+    float nu = get_input2<float>("nu");
 
-    auto typeStr = get_param<std::string>("type");
+    auto typeStr = get_input2<std::string>("type");
     // elastic model
     auto &model = out->getElasticModel();
+
     if (typeStr == "fcr")
       model = zs::FixedCorotated<float>{E, nu};
     else if (typeStr == "nhk")
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized (isotropic) elastic model [{}]\n", typeStr));
+
+    // aniso elastic model
+    const auto get_arg = [&params](const char *const tag, auto type) {
+      using T = typename RM_CVREF_T(type)::type;
+      std::optional<T> ret{};
+      if (auto it = params->lut.find(tag); it != params->lut.end())
+        ret = safe_any_cast<T>(it->second);
+      return ret;
+    };
+    auto anisoTypeStr = get_input2<std::string>("aniso");
+    if (anisoTypeStr == "arap") { // a (fiber direction)
+      float strength = get_arg("strength", zs::wrapt<float>{}).value_or(10.f);
+      out->getAnisoElasticModel() = zs::AnisotropicArap<float>{E, nu, strength};
+    } else
+      out->getAnisoElasticModel() = std::monostate{};
 
     // plastic model
-    out->getPlasticModel() = std::monostate{};
+    auto plasticTypeStr = get_input2<std::string>("plasticity");
+    if (plasticTypeStr == "nadp") {
+      model = zs::StvkWithHencky<float>{E, nu};
+      float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
+      out->getPlasticModel() = zs::NonAssociativeDruckerPrager<float>{fa};
+    } else if (plasticTypeStr == "navm") {
+      model = zs::StvkWithHencky<float>{E, nu};
+      float ys = get_arg("yield_stress", zs::wrapt<float>{}).value_or(1e5f);
+      out->getPlasticModel() = zs::NonAssociativeVonMises<float>{ys};
+    } else if (plasticTypeStr == "nacc") { // logjp
+      model = zs::StvkWithHencky<float>{E, nu};
+      float fa = get_arg("friction_angle", zs::wrapt<float>{}).value_or(35.f);
+      float beta = get_arg("beta", zs::wrapt<float>{}).value_or(2.f);
+      float xi = get_arg("xi", zs::wrapt<float>{}).value_or(1.f);
+      out->getPlasticModel() =
+          zs::NonAssociativeCamClay<float>{fa, beta, xi, 3, true};
+    } else
+      out->getPlasticModel() = std::monostate{};
 
     set_output("ZSModel", out);
   }
 };
 
-ZENDEFNODE(ConfigConstitutiveModel, {
-                                        {"dx", "ppc", "density", "E", "nu"},
-                                        {"ZSModel"},
-                                        {{"float", "dx", "0.1"},
-                                         {"float", "ppc", "8"},
-                                         {"float", "density", "1000"},
-                                         {"string", "type", "fcr"},
-                                         {"float", "E", "10000"},
-                                         {"float", "nu", "0.4"}},
-                                        {"MPM"},
-                                    });
+ZENDEFNODE(ConfigConstitutiveModel,
+           {
+               {{"float", "dx", "0.1"},
+                {"float", "ppc", "8"},
+                {"float", "density", "1000"},
+                {"string", "type", "fcr"},
+                {"string", "aniso", "none"},
+                {"string", "plasticity", "none"},
+                {"float", "E", "10000"},
+                {"float", "nu", "0.4"},
+                {"DictObject:NumericObject", "params"}},
+               {"ZSModel"},
+               {},
+               {"MPM"},
+           });
 
 struct ToZSParticles : INode {
   void apply() override {
@@ -76,7 +108,12 @@ struct ToZSParticles : INode {
     auto inParticles = get_input<PrimitiveObject>("prim");
 
     auto &obj = inParticles->attr<vec3f>("pos");
-    auto &vels = inParticles->attr<vec3f>("vel");
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel"))
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+    vec3f *nrmsPtr{nullptr};
+    if (inParticles->has_attr("nrm"))
+      nrmsPtr = inParticles->attr<vec3f>("nrm").data();
 
     const auto size = obj.size();
 
@@ -87,10 +124,11 @@ struct ToZSParticles : INode {
     // particles
     auto &pars = outParticles->getParticles(); // tilevector
 
-    std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"C", 9}, {"vms", 1}};
+    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
+                                      {"vol", 1},  {"C", 9},   {"vms", 1}};
 
-    const bool hasPlasticity = model->hasPlasticity();
+    const bool hasLogJp = model->hasLogJp();
+    const bool hasOrientation = model->hasOrientation();
     const bool hasF = model->hasF();
 
     if (hasF)
@@ -98,10 +136,13 @@ struct ToZSParticles : INode {
     else
       tags.emplace_back(zs::PropertyTag{"J", 1});
 
-    if (hasPlasticity)
+    if (hasOrientation)
+      tags.emplace_back(zs::PropertyTag{"a", 3});
+
+    if (hasLogJp)
       tags.emplace_back(zs::PropertyTag{"logJp", 1});
 
-    fmt::print("{} particles of these tags\n", size);
+    fmt::print("pending {} particles with these attributes\n", size);
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
@@ -110,24 +151,47 @@ struct ToZSParticles : INode {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
 
       auto ompExec = zs::omp_exec();
-      ompExec(zs::range(size),
-              [pars = proxy<execspace_e::host>({}, pars), hasPlasticity, hasF,
-               &inParticles, &model, &obj, &vels](size_t pi) mutable {
-                using vec3 = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-                pars("mass", pi) = model->volume * model->density;
-                pars.tuple<3>("pos", pi) = obj[pi];
-                pars.tuple<3>("vel", pi) = vels[pi];
-                pars.tuple<9>("C", pi) = mat3::zeros();
-                if (hasF)
-                  pars.tuple<9>("F", pi) = mat3::identity();
-                else
-                  pars("J", pi) = 1.;
+      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
+                                hasLogJp, hasOrientation, hasF, &model, &obj,
+                                velsPtr, nrmsPtr](size_t pi) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+        pars("mass", pi) = model->volume * model->density;
+        pars.tuple<3>("pos", pi) = obj[pi];
+        pars.tuple<9>("C", pi) = mat3::zeros();
 
-                if (hasPlasticity)
-                  pars("logJp", pi) = 0;
-                pars("vms", pi) = 0; // vms
-              });
+        if (velsPtr != nullptr)
+          pars.tuple<3>("vel", pi) = velsPtr[pi];
+        else
+          pars.tuple<3>("vel", pi) = vec3::zeros();
+
+        pars("vol", pi) = model->volume;
+
+        if (hasF)
+          pars.tuple<9>("F", pi) = mat3::identity();
+        else
+          pars("J", pi) = 1.;
+
+        if (hasOrientation) {
+          if (nrmsPtr != nullptr) {
+            const auto n_ = nrmsPtr[pi];
+            const auto n = vec3{n_[0], n_[1], n_[2]};
+            constexpr auto up = vec3{0, 1, 0};
+            if (!parallel(n, up)) {
+              auto side = cross(up, n);
+              auto a = cross(side, n);
+              pars.tuple<3>("a", pi) = a;
+            } else
+              pars.tuple<3>("a", pi) = vec3{0, 0, 1};
+          } else
+            pars.tuple<3>("a", pi) = vec3::zeros();
+        }
+
+        if (hasLogJp)
+          pars("logJp", pi) = -0.04;
+
+        pars("vms", pi) = 0; // vms
+      });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
@@ -161,13 +225,22 @@ ZENDEFNODE(MakeZSPartition, {
 
 struct MakeZSGrid : INode {
   void apply() override {
-    auto dx = get_param<float>("dx");
-    if (has_input("dx"))
-      dx = get_input<NumericObject>("dx")->get<float>();
+    auto dx = get_input2<float>("dx");
+
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"v", 3}};
 
     auto grid = IObject::make<ZenoGrid>();
-    grid->get() = typename ZenoGrid::grid_t{
-        {{"m", 1}, {"v", 3}}, dx, 1, zs::memsrc_e::um, 0};
+    grid->transferScheme = get_input2<std::string>("transfer");
+    // default is "apic"
+    if (grid->transferScheme == "flip")
+      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+    else if (grid->transferScheme == "apic")
+      ;
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized transfer scheme [{}]\n", grid->transferScheme));
+
+    grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::um, 0};
 
     using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
     fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n",
@@ -175,12 +248,13 @@ struct MakeZSGrid : INode {
     set_output("ZSGrid", grid);
   }
 };
-ZENDEFNODE(MakeZSGrid, {
-                           {"dx"},
-                           {"ZSGrid"},
-                           {{"float", "dx", "0.1"}},
-                           {"MPM"},
-                       });
+ZENDEFNODE(MakeZSGrid,
+           {
+               {{"float", "dx", "0.1"}, {"string", "transfer", "apic"}},
+               {"ZSGrid"},
+               {},
+               {"MPM"},
+           });
 
 struct ToZSBoundary : INode {
   void apply() override {
@@ -198,13 +272,8 @@ struct ToZSBoundary : INode {
       return zs::collider_e::Sticky;
     };
     // pass in FloatGrid::Ptr
-    auto &ls = get_input<ZenoLevelSet>("ZSSdfField")->getLevelSet();
+    auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
     boundary->levelset = &ls;
-
-    if (has_input<ZenoLevelSet>("ZSVelocityField")) {
-      auto &ls = get_input<ZenoLevelSet>("ZSVelocityField")->getLevelSet();
-      boundary->velocityField = &ls;
-    }
 
     boundary->type = queryType();
 
@@ -242,14 +311,13 @@ struct ToZSBoundary : INode {
     set_output("ZSBoundary", boundary);
   }
 };
-ZENDEFNODE(ToZSBoundary,
-           {
-               {"ZSSdfField", "ZSVelocityField", "translation",
-                "translation_rate", "scale", "scale_rate", "ypr_angles"},
-               {"ZSBoundary"},
-               {{"string", "type", "sticky"}},
-               {"MPM"},
-           });
+ZENDEFNODE(ToZSBoundary, {
+                             {"ZSLevelSet", "translation", "translation_rate",
+                              "scale", "scale_rate", "ypr_angles"},
+                             {"ZSBoundary"},
+                             {{"string", "type", "sticky"}},
+                             {"MPM"},
+                         });
 
 struct StepZSBoundary : INode {
   void apply() override {

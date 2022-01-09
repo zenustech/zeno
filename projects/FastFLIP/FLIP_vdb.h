@@ -140,7 +140,7 @@ struct FLIP_vdb {
                                  openvdb::Vec3fGrid::Ptr &velocity_weights,
                                  openvdb::FloatGrid::Ptr &liquid_sdf,
                                  openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
-                                 float dx);
+                                 float dx, bool setActive);
   static void calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
                                      openvdb::FloatGrid::Ptr &liquid_sdf,
                                      openvdb::FloatGrid::Ptr &solid_sdf);

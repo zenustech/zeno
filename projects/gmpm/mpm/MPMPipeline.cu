@@ -1,3 +1,4 @@
+#include "../Utils.hpp"
 #include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
@@ -22,16 +23,7 @@ struct ZSPartitionForZSParticles : INode {
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     using namespace zs;
     std::size_t cnt = 0;
@@ -130,10 +122,12 @@ struct ZSGridFromZSPartition : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing ZSGridFromZSPartition\n");
-    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto zspartition = get_input<ZenoPartition>("ZSPartition");
+    auto &partition = zspartition->get();
     auto cnt = partition.size();
 
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
+    zsgrid->partition = zspartition;
     auto &grid = zsgrid->get();
     grid.resize(cnt);
 
@@ -173,7 +167,7 @@ struct UpdateZSGrid : INode {
     auto stepDt = get_input<NumericObject>("dt")->get<float>();
 
     using namespace zs;
-    auto gravity = get_param<float>("gravity");
+    auto gravity = get_input2<float>("gravity");
     auto accel = zs::vec<float, 3>::zeros();
     if (has_input("Accel")) {
       auto tmp = get_input<NumericObject>("Accel")->get<vec3f>();
@@ -185,21 +179,44 @@ struct UpdateZSGrid : INode {
     velSqr[0] = 0;
     auto cudaPol = cuda_exec().device(0);
 
-    cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
-            [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
-             ptr = velSqr.data()] __device__(int bi, int ci) mutable {
-              auto block = grid.block(bi);
-              auto mass = block("m", ci);
-              if (mass != 0.f) {
-                mass = 1.f / mass;
-                auto vel = block.pack<3>("v", ci) * mass;
-                vel += accel * stepDt;
-                block.set("v", ci, vel);
-                /// cfl dt
-                auto velSqr = vel.l2NormSqr();
-                atomic_max(exec_cuda, ptr, velSqr);
-              }
-            });
+    if (zsgrid->transferScheme == "apic")
+      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+              [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
+               ptr = velSqr.data()] __device__(int bi, int ci) mutable {
+                auto block = grid.block(bi);
+                auto mass = block("m", ci);
+                if (mass != 0.f) {
+                  mass = 1.f / mass;
+                  auto vel = block.pack<3>("v", ci) * mass;
+                  vel += accel * stepDt;
+                  block.set("v", ci, vel);
+                  /// cfl dt
+                  auto velSqr = vel.l2NormSqr();
+                  atomic_max(exec_cuda, ptr, velSqr);
+                }
+              });
+    else if (zsgrid->transferScheme == "flip")
+      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+              [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
+               ptr = velSqr.data()] __device__(int bi, int ci) mutable {
+                auto block = grid.block(bi);
+                auto mass = block("m", ci);
+                if (mass != 0.f) {
+                  mass = 1.f / mass;
+
+                  auto vel = block.pack<3>("v", ci) * mass;
+                  vel += accel * stepDt;
+                  block.set("v", ci, vel);
+
+                  auto vdiff = block.pack<3>("vdiff", ci) * mass;
+                  vdiff += accel * stepDt;
+                  block.set("vdiff", ci, vdiff);
+
+                  /// cfl dt
+                  auto velSqr = vel.l2NormSqr();
+                  atomic_max(exec_cuda, ptr, velSqr);
+                }
+              });
 
     maxVelSqr->set<float>(velSqr[0]);
     fmt::print(fg(fmt::color::cyan), "done executing GridUpdate\n");
@@ -208,12 +225,14 @@ struct UpdateZSGrid : INode {
   }
 };
 
-ZENDEFNODE(UpdateZSGrid, {
-                             {"ZSPartition", "ZSGrid", "dt", "Accel"},
-                             {"ZSGrid", "MaxVelSqr"},
-                             {{"float", "gravity", "-9.8"}},
-                             {"MPM"},
-                         });
+ZENDEFNODE(
+    UpdateZSGrid,
+    {
+        {{"float", "gravity", "-9.8"}, "ZSPartition", "ZSGrid", "dt", "Accel"},
+        {"ZSGrid", "MaxVelSqr"},
+        {},
+        {"MPM"},
+    });
 
 struct ApplyBoundaryOnZSGrid : INode {
   template <typename LsView>
@@ -221,23 +240,46 @@ struct ApplyBoundaryOnZSGrid : INode {
   projectBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
                   const ZenoBoundary &boundary,
                   const typename ZenoPartition::table_t &partition,
-                  typename ZenoGrid::grid_t &grid) {
+                  typename ZenoGrid::grid_t &grid,
+                  std::string_view transferScheme) {
     using namespace zs;
     auto collider = boundary.getBoundary(lsv);
-    cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
-            [grid = proxy<execspace_e::cuda>({}, grid),
-             table = proxy<execspace_e::cuda>(partition),
-             boundary = collider] __device__(int bi, int ci) mutable {
-              auto block = grid.block(bi);
-              auto mass = block("m", ci);
-              if (mass != 0.f) {
-                auto vel = block.pack<3>("v", ci);
-                auto pos = (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
-                           grid.dx;
-                boundary.resolveCollision(pos, vel);
-                block.set("v", ci, vel);
-              }
-            });
+    if (transferScheme == "apic")
+      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+              [grid = proxy<execspace_e::cuda>({}, grid),
+               table = proxy<execspace_e::cuda>(partition),
+               boundary = collider] __device__(int bi, int ci) mutable {
+                auto block = grid.block(bi);
+                auto mass = block("m", ci);
+                if (mass != 0.f) {
+                  auto vel = block.pack<3>("v", ci);
+                  auto pos =
+                      (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
+                      grid.dx;
+                  boundary.resolveCollision(pos, vel);
+                  block.set("v", ci, vel);
+                }
+              });
+    else if (transferScheme == "flip")
+      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+              [grid = proxy<execspace_e::cuda>({}, grid),
+               table = proxy<execspace_e::cuda>(partition),
+               boundary = collider] __device__(int bi, int ci) mutable {
+                auto block = grid.block(bi);
+                auto mass = block("m", ci);
+                if (mass != 0.f) {
+                  auto vel = block.pack<3>("v", ci);
+                  auto pos =
+                      (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
+                      grid.dx;
+                  boundary.resolveCollision(pos, vel);
+                  block.set("v", ci, vel);
+
+                  auto vdiff = block.pack<3>("vdiff", ci);
+                  boundary.resolveCollision(pos, vdiff);
+                  block.set("vdiff", ci, vdiff);
+                }
+              });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
@@ -253,33 +295,37 @@ struct ApplyBoundaryOnZSGrid : INode {
     if (has_input<ZenoBoundary>("ZSBoundary")) {
       auto boundary = get_input<ZenoBoundary>("ZSBoundary");
       auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
-#if 0
-      match([&](auto &sdf) {
-        auto sdfLs = boundary->getLevelSetView(sdf);
-        if (boundary->hasVelocityField()) {
-          match([&](auto &vel) mutable {
-            auto velLs = boundary->getLevelSetView(vel);
-            auto ls =
-                SdfVelField<RM_CVREF_T(sdfLs), RM_CVREF_T(velLs)>{sdfLs, velLs};
-            projectBoundary(cudaPol, ls, *boundary, partition, grid);
-          })(boundary->getVelocityField());
-        } else
-          projectBoundary(cudaPol, sdfLs, *boundary, partition, grid);
-      })(boundary->getSdfField());
-#else
-      if (boundary->hasVelocityField()) {
-        match([&](const auto &sdf, const auto &vel) {
-          auto ls = SdfVelFieldView{boundary->getLevelSetView(sdf),
-                                    boundary->getLevelSetView(vel)};
-          projectBoundary(cudaPol, ls, *boundary, partition, grid);
-        })(boundary->getSdfField(), boundary->getVelocityField());
-      } else {
-        match([&](const auto &sdf) {
-          projectBoundary(cudaPol, boundary->getLevelSetView(sdf), *boundary,
-                          partition, grid);
-        })(boundary->getSdfField());
-      }
-#endif
+
+      using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+      using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
+      using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
+      if (boundary->levelset)
+        match([&](const auto &ls) {
+          if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+            match([&](const auto &lsPtr) {
+              auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+              projectBoundary(cudaPol, lsv, *boundary, partition, grid,
+                              zsgrid->transferScheme);
+            })(ls._ls);
+          } else if constexpr (is_same_v<RM_CVREF_T(ls), sdf_vel_ls_t>) {
+            match([&](auto lsv) {
+              projectBoundary(cudaPol, SdfVelFieldView{lsv}, *boundary,
+                              partition, grid, zsgrid->transferScheme);
+            })(ls.template getView<execspace_e::cuda>());
+          } else if constexpr (is_same_v<RM_CVREF_T(ls), transition_ls_t>) {
+            auto [fieldViewSrc, fieldViewDst] =
+                ls.template getView<zs::execspace_e::cuda>();
+            match([&](auto fvSrc, auto fvDst) {
+              if constexpr (is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>)
+                projectBoundary(cudaPol,
+                                TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                                       SdfVelFieldView{fvDst},
+                                                       ls._stepDt, ls._alpha},
+                                *boundary, partition, grid,
+                                zsgrid->transferScheme);
+            })(fieldViewSrc, fieldViewDst);
+          }
+        })(*boundary->levelset);
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");
@@ -295,40 +341,32 @@ ZENDEFNODE(ApplyBoundaryOnZSGrid, {
                                   });
 
 struct ZSParticleToZSGrid : INode {
-  template <typename Model>
-  void p2g(zs::CudaExecutionPolicy &cudaPol, const Model &model,
-           const float volume, const typename ZenoParticles::particles_t &pars,
-           const typename ZenoPartition::table_t &partition, const float dt,
-           typename ZenoGrid::grid_t &grid) {
+  template <typename Model, typename AnisoModel>
+  void p2g_apic(zs::CudaExecutionPolicy &cudaPol, const Model &model,
+                const AnisoModel &anisoModel,
+                const typename ZenoParticles::particles_t &pars,
+                const typename ZenoPartition::table_t &partition,
+                const float dt, typename ZenoGrid::grid_t &grid) {
     using namespace zs;
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  table = proxy<execspace_e::cuda>(partition),
                                  grid = proxy<execspace_e::cuda>({}, grid), dt,
-                                 dxinv = 1.f / grid.dx, vol = volume,
-                                 model] __device__(size_t pi) mutable {
+                                 dxinv = 1.f / grid.dx, model,
+                                 anisoModel] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
       const auto Dinv = 4.f * dxinv * dxinv;
       auto localPos = pars.pack<3>("pos", pi);
       auto vel = pars.pack<3>("vel", pi);
       auto mass = pars("mass", pi);
+      auto vol = pars("vol", pi);
       auto C = pars.pack<3, 3>("C", pi);
       auto F = pars.pack<3, 3>("F", pi);
       auto P = model.first_piola(F);
+      if constexpr (is_same_v<RM_CVREF_T(anisoModel), AnisotropicArap<float>>)
+        P += anisoModel.first_piola(F, pars.pack<3>("a", pi));
 
       auto contrib = -dt * Dinv * vol * P * F.transpose();
       auto arena = make_local_arena(grid.dx, localPos);
-
-#if 0
-      if (pi == 0) {
-        printf("mu: %f, lam: %f\n", model.mu, model.lam);
-        printf("F[%d]: %f, %f, %f; %f, %f, %f; %f, %f, %f\n", (int)pi, F(0, 0),
-               F(0, 1), F(0, 2), F(1, 0), F(1, 1), F(1, 2), F(2, 0), F(2, 1),
-               F(2, 2));
-        printf("P[%d]: %f, %f, %f; %f, %f, %f; %f, %f, %f\n", (int)pi, P(0, 0),
-               P(0, 1), P(0, 2), P(1, 0), P(1, 1), P(1, 2), P(2, 0), P(2, 1),
-               P(2, 2));
-      }
-#endif
 
       for (auto loc : arena.range()) {
         auto coord = arena.coord(loc);
@@ -350,19 +388,58 @@ struct ZSParticleToZSGrid : INode {
       }
     });
   }
+  template <typename Model, typename AnisoModel>
+  void p2g_flip(zs::CudaExecutionPolicy &cudaPol, const Model &model,
+                const AnisoModel &anisoModel,
+                const typename ZenoParticles::particles_t &pars,
+                const typename ZenoPartition::table_t &partition,
+                const float dt, typename ZenoGrid::grid_t &grid) {
+    using namespace zs;
+    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
+                                 table = proxy<execspace_e::cuda>(partition),
+                                 grid = proxy<execspace_e::cuda>({}, grid), dt,
+                                 dxinv = 1.f / grid.dx, model,
+                                 anisoModel] __device__(size_t pi) mutable {
+      using grid_t = RM_CVREF_T(grid);
+      auto localPos = pars.pack<3>("pos", pi);
+      auto vel = pars.pack<3>("vel", pi);
+      auto mass = pars("mass", pi);
+      auto vol = pars("vol", pi);
+      auto F = pars.pack<3, 3>("F", pi);
+      auto P = model.first_piola(F);
+      if constexpr (is_same_v<RM_CVREF_T(anisoModel), AnisotropicArap<float>>)
+        P += anisoModel.first_piola(F, pars.pack<3>("a", pi));
+
+      auto contrib = -dt * vol * P * F.transpose();
+      auto arena = make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
+          grid.dx, localPos);
+
+      for (auto loc : arena.range()) {
+        auto coord = arena.coord(loc);
+        auto localIndex = coord & (grid_t::side_length - 1);
+        auto blockno = table.query(coord - localIndex);
+        if (blockno < 0)
+          printf("THE HELL!");
+        auto block = grid.block(blockno);
+
+        auto massW = arena.weight(loc) * mass;
+        auto Wgrad = arena.weightGradients(loc) * dxinv;
+        const auto cellid = grid_t::coord_to_cellid(localIndex);
+
+        atomic_add(exec_cuda, &block("m", cellid), massW);
+        auto fdt = contrib * Wgrad;
+        for (int d = 0; d != 3; ++d) {
+          atomic_add(exec_cuda, &block("v", d, cellid),
+                     massW * vel[d] + fdt[d]);
+          atomic_add(exec_cuda, &block("vdiff", d, cellid), fdt[d]);
+        }
+      }
+    });
+  }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSParticleToZSGrid\n");
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
     auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
@@ -378,9 +455,14 @@ struct ZSParticleToZSGrid : INode {
       fmt::print("[p2g] dx: {}, dt: {}, npars: {}\n", grid.dx, stepDt,
                  pars.size());
 
-      match([&](auto &elasticModel) {
-        p2g(cudaPol, elasticModel, model.volume, pars, partition, stepDt, grid);
-      })(model.getElasticModel());
+      match([&](auto &elasticModel, auto &anisoElasticModel) {
+        if (zsgrid->transferScheme == "apic")
+          p2g_apic(cudaPol, elasticModel, anisoElasticModel, pars, partition,
+                   stepDt, grid);
+        else if (zsgrid->transferScheme == "flip")
+          p2g_flip(cudaPol, elasticModel, anisoElasticModel, pars, partition,
+                   stepDt, grid);
+      })(model.getElasticModel(), model.getAnisoElasticModel());
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ZSParticleToZSGrid\n");
@@ -399,19 +481,11 @@ ZENDEFNODE(ZSParticleToZSGrid,
 struct ZSGridToZSParticle : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSGridToZSParticle\n");
-    auto &grid = get_input<ZenoGrid>("ZSGrid")->get();
+    auto zsgrid = get_input<ZenoGrid>("ZSGrid");
+    auto &grid = zsgrid->get();
     auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
 
-    std::vector<ZenoParticles *> parObjPtrs{};
-    if (has_input<ZenoParticles>("ZSParticles"))
-      parObjPtrs.push_back(get_input<ZenoParticles>("ZSParticles").get());
-    else if (has_input<ListObject>("ZSParticles")) {
-      auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.get())
-        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
-            ptr != nullptr)
-          parObjPtrs.push_back(ptr);
-    }
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     auto stepDt = get_input<NumericObject>("dt")->get<float>();
 
@@ -420,55 +494,165 @@ struct ZSGridToZSParticle : INode {
     for (auto &&parObjPtr : parObjPtrs) {
       auto &pars = parObjPtr->getParticles();
 
-      cudaPol(range(pars.size()),
-              [pars = proxy<execspace_e::cuda>({}, pars),
-               table = proxy<execspace_e::cuda>(partition),
-               grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
-               dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
-                using grid_t = RM_CVREF_T(grid);
-                const auto Dinv = 4.f * dxinv * dxinv;
-                auto pos = pars.pack<3>("pos", pi);
-                auto vel = zs::vec<float, 3>::zeros();
-                auto C = zs::vec<float, 3, 3>::zeros();
+      if (zsgrid->transferScheme == "apic")
+        cudaPol(range(pars.size()),
+                [pars = proxy<execspace_e::cuda>({}, pars),
+                 table = proxy<execspace_e::cuda>(partition),
+                 grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
+                 dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+                  using grid_t = RM_CVREF_T(grid);
+                  const auto Dinv = 4.f * dxinv * dxinv;
+                  auto pos = pars.pack<3>("pos", pi);
+                  auto vel = zs::vec<float, 3>::zeros();
+                  auto C = zs::vec<float, 3, 3>::zeros();
 
-                auto arena = make_local_arena(grid.dx, pos);
-                for (auto loc : arena.range()) {
-                  auto coord = arena.coord(loc);
-                  auto localIndex = coord & (grid_t::side_length - 1);
-                  auto blockno = table.query(coord - localIndex);
-                  if (blockno < 0)
-                    printf("THE HELL!");
-                  auto block = grid.block(blockno);
-                  auto xixp = arena.diff(loc);
-                  auto W = arena.weight(loc);
-                  auto vi =
-                      block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
+                  auto arena = make_local_arena(grid.dx, pos);
+                  for (auto loc : arena.range()) {
+                    auto coord = arena.coord(loc);
+                    auto localIndex = coord & (grid_t::side_length - 1);
+                    auto blockno = table.query(coord - localIndex);
+                    if (blockno < 0)
+                      printf("THE HELL!");
+                    auto block = grid.block(blockno);
+                    auto xixp = arena.diff(loc);
+                    auto W = arena.weight(loc);
+                    auto vi =
+                        block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
 
-                  vel += vi * W;
-                  C += W * Dinv * dyadic_prod(vi, xixp);
-                }
-                pars.tuple<3>("vel", pi) = vel;
-                pars.tuple<3 * 3>("C", pi) = C;
-                pos += vel * dt;
-                pars.tuple<3>("pos", pi) = pos;
+                    vel += vi * W;
+                    C += W * Dinv * dyadic_prod(vi, xixp);
+                  }
+                  pars.tuple<3>("vel", pi) = vel;
+                  pars.tuple<3 * 3>("C", pi) = C;
+                  pos += vel * dt;
+                  pars.tuple<3>("pos", pi) = pos;
 
-                auto F = pars.pack<3, 3>("F", pi);
-                auto tmp = zs::vec<float, 3, 3>::identity() + C * dt;
-                F = tmp * F;
-                pars.tuple<3 * 3>("F", pi) = F;
-              });
+                  auto F = pars.pack<3, 3>("F", pi);
+                  auto tmp = zs::vec<float, 3, 3>::identity() + C * dt;
+                  F = tmp * F;
+                  pars.tuple<3 * 3>("F", pi) = F;
+                });
+      else if (zsgrid->transferScheme == "flip")
+        cudaPol(
+            range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             table = proxy<execspace_e::cuda>(partition),
+             grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
+             dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+              using grid_t = RM_CVREF_T(grid);
+              auto pos = pars.pack<3>("pos", pi);
+              auto v = zs::vec<float, 3>::zeros();
+              auto vdiff = zs::vec<float, 3>::zeros();
+              auto vGrad = zs::vec<float, 3, 3>::zeros();
+
+              auto arena =
+                  make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
+                      grid.dx, pos);
+              for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto localIndex = coord & (grid_t::side_length - 1);
+                auto blockno = table.query(coord - localIndex);
+                if (blockno < 0)
+                  printf("THE HELL!");
+                auto block = grid.block(blockno);
+                auto W = arena.weight(loc);
+                auto Wgrad = arena.weightGradients(loc) * dxinv;
+
+                auto vi =
+                    block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
+                auto vd =
+                    block.pack<3>("vdiff", grid_t::coord_to_cellid(localIndex));
+                v += vi * W;
+                vdiff += vd * W;
+                vGrad += dyadic_prod(vi, Wgrad);
+              }
+              constexpr float flip = 0.99f;
+              auto vp0 = pars.pack<3>("vel", pi);
+              auto vel = v * (1.f - flip) + (vdiff + vp0) * flip;
+              pars.tuple<3>("vel", pi) = vel;
+              // pos += v * dt; // flip!
+              pos += vel * dt; // asflip!
+              pars.tuple<3>("pos", pi) = pos;
+
+              auto F = pars.pack<3, 3>("F", pi);
+              auto tmp = zs::vec<float, 3, 3>::identity() + vGrad * dt;
+              F = tmp * F;
+              pars.tuple<3 * 3>("F", pi) = F;
+            });
     }
     fmt::print(fg(fmt::color::cyan), "done executing ZSGridToZSParticle\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
   }
 };
 
 ZENDEFNODE(ZSGridToZSParticle,
            {
                {"ZSGrid", "ZSPartition", "ZSParticles", "dt"},
-               {},
+               {"ZSParticles"},
                {},
                {"MPM"},
            });
+
+struct ZSReturnMapping : INode {
+  template <typename PM>
+  void returnMapping(zs::CudaExecutionPolicy &cudaPol,
+                     typename ZenoParticles::particles_t &pars,
+                     const zs::StvkWithHencky<float> &elasticModel,
+                     const PM &plasticModel) const {
+    using namespace zs;
+    cudaPol(range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             elasticModel = elasticModel,
+             plasticModel = plasticModel] __device__(size_t pi) mutable {
+              auto FeHat = pars.pack<3, 3>("F", pi);
+              if constexpr (is_same_v<zs::NonAssociativeCamClay<float>,
+                                      RM_CVREF_T(plasticModel)>) {
+                auto logJp = pars("logJp", pi);
+                if (plasticModel.project_strain(FeHat, elasticModel, logJp)) {
+                  pars("logJp", pi) = logJp;
+                  pars.tuple<9>("F", pi) = FeHat;
+                }
+              } else { // vm, dp
+                if (plasticModel.project_strain(FeHat, elasticModel))
+                  pars.tuple<9>("F", pi) = FeHat;
+              }
+            });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ZSReturnMapping\n");
+
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+
+    using namespace zs;
+    auto cudaPol = cuda_exec().device(0);
+
+    for (auto &&parObjPtr : parObjPtrs) {
+      auto &pars = parObjPtr->getParticles();
+      if (parObjPtr->getModel().hasPlasticity()) {
+        match(
+            [this, &cudaPol,
+             &pars](const zs::StvkWithHencky<float> &elasticModel,
+                    const auto &plasticModel)
+                -> std::enable_if_t<
+                    !is_same_v<RM_CVREF_T(plasticModel), std::monostate>> {
+              returnMapping(cudaPol, pars, elasticModel, plasticModel);
+            },
+            [](...) {})(parObjPtr->getModel().getElasticModel(),
+                        parObjPtr->getModel().getPlasticModel());
+      }
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ZSReturnMapping\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(ZSReturnMapping, {
+                                {"ZSParticles"},
+                                {"ZSParticles"},
+                                {},
+                                {"MPM"},
+                            });
 
 struct TransformZSLevelSet : INode {
   void apply() override {
@@ -477,29 +661,72 @@ struct TransformZSLevelSet : INode {
     auto &ls = zsls->getLevelSet();
 
     using namespace zs;
+    using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
     // translation
     if (has_input("translation")) {
       auto b = get_input<NumericObject>("translation")->get<vec3f>();
       match(
-          [&b](SparseLevelSet<3> &ls) {
-            ls.translate(zs::vec<float, 3>{b[0], b[1], b[2]});
-            // fmt::print("translated {}, {}, {}\n", b[0], b[1], b[2]);
-            // getchar();
+          [&b](basic_ls_t &basicLs) {
+            match(
+                [b](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
           },
-          [](...) {})(ls);
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
+
     // scale
     if (has_input("scaling")) {
       auto s = get_input<NumericObject>("scaling")->get<float>();
-      match([&s](SparseLevelSet<3> &ls) { ls.scale(s); }, [](...) {})(ls);
+      match(
+          [&s](basic_ls_t &basicLs) {
+            match(
+                [s](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->scale(s);
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
+          },
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
     // rotation
     if (has_input("eulerXYZ")) {
       auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
                                         yprAngles[2], zs::degree_v, zs::ypr_v};
-      match([&rot](SparseLevelSet<3> &ls) { ls.rotate(rot.transpose()); },
-            [](...) {})(ls);
+      match(
+          [&rot](basic_ls_t &basicLs) {
+            match(
+                [rot](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                  lsPtr->rotate(rot.transpose());
+                },
+                [](auto &lsPtr) {
+                  auto msg = get_var_type_str(*lsPtr);
+                  throw std::runtime_error(fmt::format(
+                      "levelset of type [{}] cannot be transformed yet.", msg));
+                })(basicLs._ls);
+          },
+          [](auto &ls) {
+            auto msg = get_var_type_str(ls);
+            throw std::runtime_error(
+                fmt::format("levelset of special type [{}] are const-.", msg));
+          })(ls);
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing TransformZSLevelSet\n");

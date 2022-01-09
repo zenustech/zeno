@@ -49,6 +49,44 @@ class QDMEditMenu(QMenu):
             action.setShortcut(shortcut)
             self.addAction(action)
 
+class SubgraphHistoryStack:
+    def __init__(self, node_editor):
+        self.node_editor = node_editor
+        self.stack = ['main']
+        self.pointer = 0
+
+    def bind(self, undo_button, redo_button):
+        self.undo_button = undo_button
+        self.redo_button = redo_button
+
+    def record(self, name):
+        if self.pointer != len(self.stack) - 1:
+            self.stack = self.stack[:self.pointer + 1]
+
+        if self.stack[-1] != name:
+            self.stack.append(name)
+            self.pointer += 1
+
+    def undo(self):
+        if self.pointer == 0:
+            return
+
+        self.pointer -= 1
+        name = self.stack[self.pointer]
+        self.checkout(name)
+
+    def redo(self):
+        if self.pointer == len(self.stack) - 1:
+            return
+
+        self.pointer += 1
+        name = self.stack[self.pointer]
+        self.checkout(name)
+
+    def checkout(self, name):
+        if name in self.node_editor.scenes:
+            self.node_editor.switchScene(name)
+            self.node_editor.edit_graphname.setCurrentText(name)
 
 class NodeEditor(QWidget):
     def __init__(self, parent, window):
@@ -141,6 +179,7 @@ class NodeEditor(QWidget):
             scene.editor = self
             scene.record()
             scene.setContentChanged(False)
+            scene.name = name
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
@@ -190,12 +229,26 @@ class NodeEditor(QWidget):
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
+        self.button_undo = QPushButton('<-', self)
+        self.button_undo.move(20, 80)
+        self.button_undo.resize(60, 30)
+
+        self.button_redo = QPushButton('->', self)
+        self.button_redo.move(90, 80)
+        self.button_redo.resize(60, 30)
+
         self.find_bar = QDMFindBar(self)
         self.find_bar.move(400, 40)
-        self.find_bar.resize(300, 30)
+        self.find_bar.resize(320, 30)
         self.find_bar.hide()
 
+        self.subgraphHistoryStack = SubgraphHistoryStack(self)
+        self.subgraphHistoryStack.bind(self.button_undo, self.button_redo)
+        self.button_undo.clicked.connect(self.subgraphHistoryStack.undo)
+        self.button_redo.clicked.connect(self.subgraphHistoryStack.redo)
+
     def on_switch_graph(self, name):
+        self.subgraphHistoryStack.record(name)
         self.switchScene(name)
         self.initDescriptors()
         self.scene.reloadNodes()
@@ -473,7 +526,7 @@ ZENDEFNODE(''' + key + ''', {
             nodes = json.loads(self.clipboard.text())
             nid_map = {}
             for nid in nodes:
-                nid_map[nid] = gen_unique_ident()
+                nid_map[nid] = gen_unique_ident(nodes[nid]['name'])
             new_nodes = {}
             pos = self.view.mapToScene(self.view.mapFromGlobal(QCursor.pos()))
             coors = [n['uipos'] for n in nodes.values()]

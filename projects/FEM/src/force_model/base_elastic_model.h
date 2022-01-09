@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <limits>
+#include <array>
 
 /**
  * @class <ElasticModel>

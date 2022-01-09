@@ -8,27 +8,32 @@
       "dx": [
        "6353d603-NumericFloat",
        "value",
-       null
+       0.1
       ],
       "ppc": [
        null,
        null,
-       null
+       8.0
       ],
       "density": [
        null,
        null,
-       null
+       1000.0
+      ],
+      "type": [
+       null,
+       null,
+       "fcr"
       ],
       "E": [
        null,
        null,
-       null
+       100000.0
       ],
       "nu": [
        null,
        null,
-       null
+       0.4
       ],
       "SRC": [
        null,
@@ -36,17 +41,10 @@
        null
       ]
      },
-     "params": {
-      "dx": 0.1,
-      "ppc": 8.0,
-      "density": 1000.0,
-      "type": "fcr",
-      "E": 100000.0,
-      "nu": 0.4
-     },
+     "params": {},
      "uipos": [
-      1621.1932447397562,
-      -855.2048726467328
+      1603.6201406266457,
+      -862.736202980923
      ],
      "options": [
       "ONCE"
@@ -268,7 +266,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": -10.0,
+      "y": 0.0,
       "z": 0.0
      },
      "uipos": [
@@ -339,19 +337,17 @@
        null
       ],
       "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
+       "3c9a8fec-x",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5009.064480486059,
-      -318.8520385422999
+      5405.681604469798,
+      -292.94756699758454
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "fedd88b0-MakeZSGrid": {
      "name": "MakeZSGrid",
@@ -359,7 +355,7 @@
       "dx": [
        "6353d603-NumericFloat",
        "value",
-       null
+       0.1
       ],
       "SRC": [
        null,
@@ -367,9 +363,7 @@
        null
       ]
      },
-     "params": {
-      "dx": 0.1
-     },
+     "params": {},
      "uipos": [
       2187.943268814099,
       -201.18806875631964
@@ -389,8 +383,8 @@
      },
      "params": {},
      "uipos": [
-      2418.9491604435284,
-      -761.680783028849
+      2592.7722645566387,
+      -715.3882059080264
      ],
      "options": [
       "ONCE"
@@ -415,7 +409,7 @@
        null
       ],
       "SRC": [
-       "b75a278b-ToZSParticles",
+       "9d4a7610-ZSParticlesWrangler",
        "DST",
        null
       ]
@@ -480,6 +474,11 @@
     "06f98539-UpdateZSGrid": {
      "name": "UpdateZSGrid",
      "inputs": {
+      "gravity": [
+       null,
+       null,
+       -9.8
+      ],
       "ZSPartition": [
        "0af25608-PortalOut",
        "port",
@@ -506,9 +505,7 @@
        null
       ]
      },
-     "params": {
-      "gravity": -9.8
-     },
+     "params": {},
      "uipos": [
       3967.0168732575985,
       -277.8583674122718
@@ -755,7 +752,7 @@
        null
       ],
       "ZSBoundary": [
-       "f30378ba-ToZSBoundary",
+       "625669f6-ToZSBoundary",
        "ZSBoundary",
        null
       ],
@@ -813,111 +810,6 @@
      ],
      "options": []
     },
-    "5180e944-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       null,
-       null,
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3730.727442052978,
-      500.82781456953626
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "f30378ba-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSSdfField": [
-       "1b74c927-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "ZSVelocityField": [
-       null,
-       null,
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3873.913493377484,
-      219.88824503311264
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "1b74c927-ToZSLevelSet": {
      "name": "ToZSLevelSet",
      "inputs": {
@@ -942,13 +834,269 @@
      "options": [
       "ONCE"
      ]
+    },
+    "9d4a7610-ZSParticlesWrangler": {
+     "name": "ZSParticlesWrangler",
+     "inputs": {
+      "ZSParticles": [
+       "b75a278b-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "zfxCode": [
+       "f510eb5f-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "b75a278b-ToZSParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2314.7498977888754,
+      -757.8936890494123
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "f510eb5f-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@vel = vec3{0, -10, 0}"
+     },
+     "uipos": [
+      1947.4481804653028,
+      -1129.879885663293
+     ],
+     "options": []
+    },
+    "d63f477c-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "$tmp = vec3{0.5, 1, 1.5}\n@pos = ($tmp-@vel) * $tmp\n"
+     },
+     "uipos": [
+      1574.6211557150907,
+      -1289.0045352895686
+     ],
+     "options": []
+    },
+    "cb225386-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "c7db4052-ZSParticlesToPrimitiveObject",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "d7e624cd-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       0.0
+      ],
+      "max": [
+       null,
+       null,
+       10.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "wtf"
+     },
+     "uipos": [
+      5733.823202489838,
+      -221.5526549796748
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "d7e624cd-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "3\n0 1 0 0\n0.478870722773161 0 1 0\n1 0 0 1"
+     },
+     "uipos": [
+      5404.42200203252,
+      -114.98983739837398
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.478870722773161,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       1,
+       [
+        0,
+        0,
+        1
+       ]
+      ]
+     ]
+    },
+    "fa55dd7f-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "$mag = @vel.x*@vel.x + @vel.y*@vel.y+@vel.z*@vel.z\n@wtf = sqrt($mag)"
+     },
+     "uipos": [
+      4577.480023041877,
+      -646.1700735483345
+     ],
+     "options": []
+    },
+    "3c9a8fec-x": {
+     "name": "ZSParticlesWrangler",
+     "inputs": {
+      "ZSParticles": [
+       "1dfddf18-PortalOut",
+       "port",
+       null
+      ],
+      "zfxCode": [
+       "fa55dd7f-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "ce8e0002-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5058.865287270164,
+      -219.48821615634904
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "625669f6-ToZSBoundary": {
+     "name": "ToZSBoundary",
+     "inputs": {
+      "ZSLevelSet": [
+       "1b74c927-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "translation_rate": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       null
+      ],
+      "scale_rate": [
+       null,
+       null,
+       null
+      ],
+      "ypr_angles": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "sticky"
+     },
+     "uipos": [
+      4007.1399006622496,
+      112.53104304635767
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": 1307.0881074880815,
-    "y": -1234.9600503543288,
-    "width": 1907.3486328125,
-    "height": 1907.3486328125
+    "x": 1385.098511421953,
+    "y": -1889.429618458915,
+    "width": 2980.2322387695312,
+    "height": 2980.2322387695312
    }
   }
  },
@@ -1118,83 +1266,6 @@
    "params": [],
    "categories": [
     "FEM"
-   ]
-  },
-  "AppendLSysOP": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum rule turnLeft turnRight pitchDown pitchUp thicken rollLeft rollRight narrow setReduction setThickness turn180 drawLeaf drawBranch goForward saveState restoreState",
-     "command",
-     "turnLeft"
-    ],
-    [
-     "string",
-     "param",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
-   ]
-  },
-  "AppendLSysRule": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "ruleName",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
    ]
   },
   "AppendList": {
@@ -1709,931 +1780,6 @@
     "control"
    ]
   },
-  "BulletComposeTransform": {
-   "inputs": [
-    [
-     "",
-     "transFirst",
-     ""
-    ],
-    [
-     "",
-     "transSecond",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletCompoundAddChild": {
-   "inputs": [
-    [
-     "",
-     "compound",
-     ""
-    ],
-    [
-     "",
-     "childShape",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "compound",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletExtractTransform": {
-   "inputs": [
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec4f",
-     "rotation",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletGetObjMotion": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "linearVel",
-     ""
-    ],
-    [
-     "",
-     "angularVel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletGetObjTransform": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeBoxShape": {
-   "inputs": [
-    [
-     "vec3f",
-     "semiSize",
-     "1,1,1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeCompoundShape": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "compound",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeConvexHullShape": {
-   "inputs": [
-    [
-     "",
-     "triMesh",
-     ""
-    ],
-    [
-     "float",
-     "margin",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeConvexMeshShape": {
-   "inputs": [
-    [
-     "",
-     "triMesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeObject": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeSphereShape": {
-   "inputs": [
-    [
-     "float",
-     "radius",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeTransform": {
-   "inputs": [
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "rotation",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletMakeWorld": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletObjectApplyForce": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "vec3f",
-     "ForceImpulse",
-     "0,0,0"
-    ],
-    [
-     "vec3f",
-     "TorqueImpulse",
-     "0,0,0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletSetConstraintBreakThres": {
-   "inputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "float",
-     "threshold",
-     "3.0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletSetObjectDamping": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "float",
-     "dampLin",
-     "0"
-    ],
-    [
-     "float",
-     "dampAug",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletSetObjectFriction": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "float",
-     "friction",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletSetObjectRestitution": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "float",
-     "restitution",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletSetWorldGravity": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "int",
-     "steps",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldAddConstraint": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldAddObject": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldRemoveConstraint": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldRemoveObject": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldSetConsList": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldSetObjList": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "CFL_dt": {
    "inputs": [
     [
@@ -3019,7 +2165,7 @@
      "1"
     ],
     [
-     "enum CSGUnion CSGIntersection CSGDifference",
+     "enum CSGUnion CSGIntersection CSGDifference Add Replace",
      "OpType",
      "CSGUnion"
     ],
@@ -3031,6 +2177,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ComposeSdfVelField": {
+   "inputs": [
+    [
+     "",
+     "ZSSdfField",
+     ""
+    ],
+    [
+     "",
+     "ZSVelField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ComputeVonMises": {
@@ -3072,50 +2253,6 @@
   "ConfigConstitutiveModel": {
    "inputs": [
     [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "ppc",
-     ""
-    ],
-    [
-     "",
-     "density",
-     ""
-    ],
-    [
-     "",
-     "E",
-     ""
-    ],
-    [
-     "",
-     "nu",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
      "float",
      "dx",
      "0.1"
@@ -3144,8 +2281,26 @@
      "float",
      "nu",
      "0.4"
+    ],
+    [
+     "",
+     "SRC",
+     ""
     ]
    ],
+   "outputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -3635,6 +2790,11 @@
     ],
     [
      "",
+     "list",
+     ""
+    ],
+    [
+     "",
      "accumate",
      ""
     ],
@@ -3687,8 +2847,18 @@
     "control"
    ]
   },
-  "EquationOfStateConfig": {
+  "EnqueueLevelSetSequence": {
    "inputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -3698,7 +2868,7 @@
    "outputs": [
     [
      "",
-     "Model",
+     "ZSLevelSetSequence",
      ""
     ],
     [
@@ -3707,35 +2877,9 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "density",
-     "1e3"
-    ],
-    [
-     "float",
-     "volume",
-     "1"
-    ],
-    [
-     "float",
-     "bulk_modulus",
-     "1e4"
-    ],
-    [
-     "float",
-     "gamma",
-     "7"
-    ],
-    [
-     "float",
-     "viscosity",
-     "0.01"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "constitutive_model"
+    "MPM"
    ]
   },
   "ExitProcess": {
@@ -3762,42 +2906,6 @@
    ],
    "categories": [
     "debug"
-   ]
-  },
-  "ExpandPartition": {
-   "inputs": [
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "lo",
-     "0"
-    ],
-    [
-     "int",
-     "hi",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "ExpandZSPartition": {
@@ -4134,36 +3242,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "FEMMeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "femmesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "FLIPApplyBoundary": {
@@ -4697,52 +3775,6 @@
     "subgraph"
    ]
   },
-  "FixedCorotatedConfig": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Model",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "density",
-     "1e3"
-    ],
-    [
-     "float",
-     "volume",
-     "1"
-    ],
-    [
-     "float",
-     "youngs_modulus",
-     "1e4"
-    ],
-    [
-     "float",
-     "poisson_ratio",
-     "0.4"
-    ]
-   ],
-   "categories": [
-    "constitutive_model"
-   ]
-  },
   "FluidReseed": {
    "inputs": [
     [
@@ -4881,51 +3913,6 @@
    "params": [],
    "categories": [
     "functional"
-   ]
-  },
-  "G2P": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "ZSModel",
-     ""
-    ],
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "simulation"
    ]
   },
   "G2PAdvectorSheetty": {
@@ -5190,7 +4177,7 @@
    "inputs": [
     [
      "",
-     "femGeo",
+     "femmesh",
      ""
     ],
     [
@@ -5208,6 +4195,11 @@
     [
      "",
      "frame",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
      ""
     ],
     [
@@ -5752,98 +4744,6 @@
     "openvdb"
    ]
   },
-  "GridFromPartition": {
-   "inputs": [
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "GridUpdate": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "extforce",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MaxVelSqr",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "gravity",
-     "-9.8"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
   "IfElse": {
    "inputs": [
     [
@@ -6074,6 +4974,41 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "InterpMeshBarycentric": {
+   "inputs": [
+    [
+     "",
+     "MeshPrim",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "KillParticlesInSDF": {
@@ -6847,41 +5782,6 @@
     "FEM"
    ]
   },
-  "MakeFEMGeoFromFile": {
-   "inputs": [
-    [
-     "readpath",
-     "NodeFile",
-     ""
-    ],
-    [
-     "readpath",
-     "EleFile",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "geo",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "MakeFEMIntegrator": {
    "inputs": [
     [
@@ -6919,9 +5819,9 @@
    ],
    "params": [
     [
-     "enum BackwardEuler QuasiStatic",
+     "enum BE QS EBQS",
      "integType",
-     "BackwardEuler"
+     "QS"
     ]
    ],
    "categories": [
@@ -7049,47 +5949,6 @@
     "debug"
    ]
   },
-  "MakeGrid": {
-   "inputs": [
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ],
-    [
-     "int",
-     "count",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
   "MakeHeatmap": {
    "inputs": [
     [
@@ -7171,97 +6030,6 @@
     "FEM"
    ]
   },
-  "MakeIndexBuckets": {
-   "inputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radius",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radiusMin",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSIndexBuckets",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "MakeLSysGenerator": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "isPlus",
-     "1"
-    ],
-    [
-     "int",
-     "iterations",
-     "0"
-    ],
-    [
-     "int",
-     "defaultCoefficient",
-     "0"
-    ],
-    [
-     "int",
-     "thickness",
-     "0"
-    ],
-    [
-     "string",
-     "axiom",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
-   ]
-  },
   "MakeList": {
    "inputs": [
     [
@@ -7285,61 +6053,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "MakeMPMMehser": {
-   "inputs": [
-    [
-     "",
-     "pathPreFix",
-     ""
-    ],
-    [
-     "",
-     "tet_path",
-     ""
-    ],
-    [
-     "",
-     "smooth_iter",
-     ""
-    ],
-    [
-     "",
-     "start",
-     ""
-    ],
-    [
-     "",
-     "end",
-     ""
-    ],
-    [
-     "",
-     "edge_stretch",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MPMMehser",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -7491,37 +6204,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "MakePartition": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakePlasticForceModel": {
@@ -7882,6 +6564,11 @@
      "0.5,0.5,0.5"
     ],
     [
+     "int",
+     "OpenTop",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -7941,12 +6628,52 @@
     "string"
    ]
   },
-  "MakeZSGrid": {
+  "MakeZSBuckets": {
    "inputs": [
     [
      "",
-     "dx",
+     "ZSParticles",
      ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "MakeZSGrid": {
+   "inputs": [
+    [
+     "float",
+     "dx",
+     "0.1"
     ],
     [
      "",
@@ -7966,13 +6693,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.1"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -8146,41 +6867,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MesherProcessFrame": {
-   "inputs": [
-    [
-     "",
-     "Mesher",
-     ""
-    ],
-    [
-     "",
-     "frameNumber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FramePrimitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -8833,6 +7519,66 @@
     ],
     [
      "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ocean_FFT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OceanData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Ocean"
+   ]
+  },
+  "OceanCuCompute": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
      "ocean_FFT",
      ""
     ],
@@ -8889,82 +7635,6 @@
     "FEM"
    ]
   },
-  "OutputZensimParticles": {
-   "inputs": [
-    [
-     "",
-     "ZensimParticles",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "ZensimGeometry"
-   ]
-  },
-  "P2G": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "ZSModel",
-     ""
-    ],
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "simulation"
-   ]
-  },
   "PackNumericIntVec2": {
    "inputs": [
     [
@@ -8998,41 +7668,6 @@
    "params": [],
    "categories": [
     "numeric"
-   ]
-  },
-  "PairZensimParticles": {
-   "inputs": [
-    [
-     "",
-     "ZSParticlesA",
-     ""
-    ],
-    [
-     "",
-     "ZSParticlesB",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZensimParticleList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "ZensimGeometry"
    ]
   },
   "ParticleAddDV": {
@@ -9237,6 +7872,46 @@
     "openvdb"
    ]
   },
+  "ParticlesBuildBvh": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -9264,6 +7939,56 @@
     [
      "hashgrid",
      "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborBvhWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
@@ -9635,6 +8360,11 @@
     [
      "float",
      "Dx",
+     ""
+    ],
+    [
+     "",
+     "vdbPoints",
      ""
     ],
     [
@@ -10120,36 +8850,6 @@
    ],
    "categories": [
     "visualize"
-   ]
-  },
-  "PrimitiveConvexDecomposition": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "listPrim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
    ]
   },
   "PrimitiveDuplicate": {
@@ -11211,36 +9911,6 @@
     "primitive"
    ]
   },
-  "PrimitiveToBulletMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "PrimitiveToFEMMesh": {
    "inputs": [
     [
@@ -11610,36 +10280,6 @@
    "params": [],
    "categories": [
     "string"
-   ]
-  },
-  "ProceduralTree": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "LSystem"
    ]
   },
   "PushOutLiquidSDF": {
@@ -12015,41 +10655,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "ResolveBoundaryOnGrid": {
-   "inputs": [
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "ZSBoundary",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "RetrieveRigidTransform": {
@@ -12678,51 +11283,6 @@
     "Rigid"
    ]
   },
-  "RigidVelToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "centroid",
-     ""
-    ],
-    [
-     "",
-     "linearVel",
-     ""
-    ],
-    [
-     "",
-     "angularVel",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "Route": {
    "inputs": [
     [
@@ -12971,6 +11531,41 @@
     [
      "",
      "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetExampleShape": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "examShape",
      ""
     ],
     [
@@ -13659,57 +12254,11 @@
     [
      "float",
      "epsilon",
-     "1e-6"
+     "1e-8"
     ]
    ],
    "categories": [
     "FEM"
-   ]
-  },
-  "SpatialPartitionForParticles": {
-   "inputs": [
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ],
-    [
-     "int",
-     "block_side_length",
-     "4"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "SpdlogErrorMessage": {
@@ -13772,9 +12321,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "Dx",
-     ""
+     "0.01"
     ],
     [
      "",
@@ -13794,20 +12343,9 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01"
-    ],
-    [
-     "string",
-     "channel",
-     "vel"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "FLIPSolver"
+    "primitive"
    ]
   },
   "StepFLIPWorld": {
@@ -14392,11 +12930,16 @@
     "FLIPSolver"
    ]
   },
-  "ToParticleObject": {
+  "SyncPrimitiveAttributes": {
    "inputs": [
     [
      "",
-     "ZSParticles",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
      ""
     ],
     [
@@ -14408,7 +12951,12 @@
    "outputs": [
     [
      "",
-     "pars",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
      ""
     ],
     [
@@ -14419,19 +12967,14 @@
    ],
    "params": [],
    "categories": [
-    "ZensimGeometry"
+    "zenofx"
    ]
   },
   "ToZSBoundary": {
    "inputs": [
     [
      "",
-     "ZSSdfField",
-     ""
-    ],
-    [
-     "",
-     "ZSVelocityField",
+     "ZSLevelSet",
      ""
     ],
     [
@@ -14557,71 +13100,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "ToZensimLevelSet": {
-   "inputs": [
-    [
-     "",
-     "VDBFloatGrid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSLevelSet",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "ToZensimParticles": {
-   "inputs": [
-    [
-     "",
-     "ZSModel",
-     ""
-    ],
-    [
-     "",
-     "ParticleObject",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZensimParticles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "ZensimGeometry"
    ]
   },
   "TraceOneStep": {
@@ -14812,6 +13290,51 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "TransformZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "translation",
+     ""
+    ],
+    [
+     "",
+     "eulerXYZ",
+     ""
+    ],
+    [
+     "",
+     "scaling",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "TranslateBoundary": {
@@ -15075,6 +13598,46 @@
     "Ocean"
    ]
   },
+  "UpdateLevelSetSequence": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSetSequence",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "UpdateMutable": {
    "inputs": [
     [
@@ -15158,6 +13721,11 @@
   "UpdateZSGrid": {
    "inputs": [
     [
+     "float",
+     "gravity",
+     "-9.8"
+    ],
+    [
      "",
      "ZSPartition",
      ""
@@ -15200,13 +13768,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "gravity",
-     "-9.8"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -15830,46 +14392,6 @@
     "visualize"
    ]
   },
-  "VDBWrangle": {
-   "inputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "Vec3FieldExtrapolate": {
    "inputs": [
     [
@@ -16289,6 +14811,11 @@
    "outputs": [
     [
      "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -16323,41 +14850,35 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
   },
-  "ZSParticleNeighborWrangle": {
+  "ZSParticleNeighborWrangler": {
    "inputs": [
     [
-     "",
+     "ZenoParticles",
      "ZSParticles",
      ""
     ],
     [
-     "",
-     "ZSParticlesNeighbor",
+     "ZenoParticles",
+     "ZSNeighborParticles",
      ""
     ],
     [
-     "",
+     "ZenoIndexBuckets",
      "ZSIndexBuckets",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "DictObject:NumericObject",
      "params",
      ""
     ],
@@ -16381,7 +14902,52 @@
    ],
    "params": [],
    "categories": [
-    "GPUMPM"
+    "MPM"
+   ]
+  },
+  "ZSParticleParticleWrangler": {
+   "inputs": [
+    [
+     "ZenoParticles",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "ZenoParticles",
+     "ZSNeighborParticles",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ZSParticleToZSGrid": {
@@ -16459,20 +15025,20 @@
     "MPM"
    ]
   },
-  "ZSParticlesWrangle": {
+  "ZSParticlesWrangler": {
    "inputs": [
     [
-     "",
+     "ZenoParticles",
      "ZSParticles",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "DictObject:NumericObject",
      "params",
      ""
     ],
@@ -16496,7 +15062,7 @@
    ],
    "params": [],
    "categories": [
-    "GPUMPM"
+    "MPM"
    ]
   },
   "ZSPartitionForZSParticles": {
@@ -16537,42 +15103,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "ZensimBoundary": {
-   "inputs": [
-    [
-     "",
-     "ZSLevelSet",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSBoundary",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "type",
-     "sticky"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "Blackboard": {

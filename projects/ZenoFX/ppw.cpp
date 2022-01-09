@@ -24,6 +24,7 @@ struct Buffer {
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
+    , std::vector<Buffer> const &chs2
     , std::vector<zeno::vec3f> const &pos
     , std::vector<zeno::vec3f> const &posj) {
     if (chs.size() == 0)
@@ -39,7 +40,7 @@ static void vectors_wrangle
         for(int pid=0;pid<posj.size();pid++) {
             for (int k = 0; k < chs.size(); k++) {
                 if (chs[k].which)
-                    ctx.channel(k)[0] = chs[k].base[chs[k].stride * pid];
+                    ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
             }
             ctx.execute();
         }
@@ -53,8 +54,8 @@ static void vectors_wrangle
 struct ParticleParticleWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim1");
-        auto primNei = has_input("primNei") ?
-            get_input<zeno::PrimitiveObject>("primNei") :
+        auto primNei = has_input("prim2") ?
+            get_input<zeno::PrimitiveObject>("prim2") :
             std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
@@ -88,25 +89,31 @@ struct ParticleParticleWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
-            auto dim = std::visit([&] (auto const &v) {
-                using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    parvals.push_back(v[0]);
-                    parvals.push_back(v[1]);
-                    parvals.push_back(v[2]);
-                    parnames.emplace_back(key, 0);
-                    parnames.emplace_back(key, 1);
-                    parnames.emplace_back(key, 2);
-                    return 3;
-                } else if constexpr (std::is_same_v<T, float>) {
-                    parvals.push_back(v);
-                    parnames.emplace_back(key, 0);
-                    return 1;
-                } else return 0;
-            }, par);
-            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
-            opts.define_param(key, dim);
+            if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj); o.has_value()) {
+                auto par = o.value();
+                auto dim = std::visit([&] (auto const &v) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parvals.push_back(v[2]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        parnames.emplace_back(key, 2);
+                        return 3;
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        parvals.push_back(v);
+                        parnames.emplace_back(key, 0);
+                        return 1;
+                    } else {
+                        printf("invalid parameter type encountered: `%s`\n",
+                                typeid(T).name());
+                        return 0;
+                    }
+                }, par);
+                dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
+                opts.define_param(key, dim);
+            }
         }
 
         auto prog = compiler.compile(code, opts);
@@ -167,7 +174,31 @@ struct ParticleParticleWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), primNei->attr<zeno::vec3f>("pos"));
+        std::vector<Buffer> chs2(prog->symbols.size());
+        for (int i = 0; i < chs2.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            assert(name[0] == '@');
+            Buffer iob;
+            zeno::PrimitiveObject *primPtr;
+            if (name[1] == '@') {
+                name = name.substr(2);
+                primPtr = primNei.get();
+                iob.which = 1;
+            } else {
+                name = name.substr(1);
+                primPtr = prim.get();
+                iob.which = 0;
+            }
+            primNei->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
+                iob.base = (float *)arr.data() + dimid_;
+                iob.count = arr.size();
+                iob.stride = sizeof(arr[0]) / sizeof(float);
+            });
+            chs2[i] = iob;
+        }
+
+        vectors_wrangle(exec, chs, chs2, prim->attr<zeno::vec3f>("pos"), primNei->attr<zeno::vec3f>("pos"));
 
         set_output("prim", std::move(prim));
     }

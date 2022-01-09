@@ -67,7 +67,7 @@ void UniformCubicBasisSpline::Interpolate(const VecXd& interps,const Vec2d& _int
 }
 
 void UniformCubicBasisSpline::SetCtrlPoints(const VecXd& _ctrlps) {
-    assert(_ctrlsps.size() == ctrlps.size());
+    assert(_ctrlps.size() == ctrlps.size());
 	ctrlps = _ctrlps;
 	poly_bezier_ctrlps = cp2pp_map * ctrlps;
     update_integration_offset();

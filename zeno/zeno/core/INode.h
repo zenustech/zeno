@@ -75,8 +75,8 @@ protected:
     bool has_input(std::string const &id) const {
         if (!has_input(id))
             return false;
-        if (!has_input2<std::shared_ptr<IObject>>(id))
-            return false;
+        // if (!has_input2<std::shared_ptr<IObject>>(id))
+        //     return false;
         auto obj = get_input(id);
         auto p = std::dynamic_pointer_cast<T>(std::move(obj));
         return (bool)p;

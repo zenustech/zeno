@@ -30,10 +30,11 @@ struct FLIP_P2G : zeno::INode {
     auto LiquidSDFGrid = get_input("LiquidSDF")->as<VDBFloatGrid>();
     auto ExtractedLiquidSDFGrid =
         get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
+    bool setActive = false;
     FLIP_vdb::particle_to_grid_collect_style(
         Particles->m_grid, VelGrid->m_grid, PostP2GVelGrid->m_grid,
         VelWeightGrid->m_grid, LiquidSDFGrid->m_grid,
-        ExtractedLiquidSDFGrid->m_grid, dx);
+        ExtractedLiquidSDFGrid->m_grid, dx, false);
   }
 };
 
