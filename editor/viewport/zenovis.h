@@ -30,7 +30,7 @@ signals:
     void frameUpdated(int);
 
 public slots:
-    void startPlay(bool bPlaying) { m_playing = bPlaying; }
+    void startPlay(bool bPlaying);
     int setCurrentFrameId(int frameid);
 
 public:

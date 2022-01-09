@@ -3,6 +3,7 @@
 #include <QTemporaryFile>
 #include <io/zsgwriter.h>
 #include <extra/GlobalState.h>
+#include <extra/Visualization.h>
 #include <zeno.h>
 #include "serialize.h"
 
@@ -33,6 +34,8 @@ void launchProgram(GraphsModel* pModel, int nframes)
         f.close();
 
         QByteArray bytes = g_iopath.toLatin1();
+
+        zeno::state = zeno::GlobalState();
         zeno::state.setIOPath(bytes.data());
 
         QJsonArray ret;
@@ -58,7 +61,7 @@ void launchProgram(GraphsModel* pModel, int nframes)
 
         for (int i = 0; i < nframes; i++)
         {
-            //>>>
+            // BEGIN XINXIN HAPPY >>>>>
             NODES_DATA nodes = pMain->nodes();
             for (NODE_DATA node : nodes)
             {
@@ -75,15 +78,21 @@ void launchProgram(GraphsModel* pModel, int nframes)
                     }
                 }
             }
+            // ENDOF XINXIN HAPPY >>>>>
+
+            zeno::state.frameBegin();
+            while (zeno::state.substepBegin())
+            {
+                zeno::applyNodes(applies);
+                zeno::state.substepEnd();
+            }
+#ifdef ZENO_VISUALIZATION
+            zeno::Visualization::endFrame();
+#endif
+            zeno::state.frameEnd();
         }
 
-        zeno::state.frameBegin();
-        while (zeno::state.substepBegin())
-        {
-            zeno::applyNodes(applies);
-            zeno::state.substepEnd();
-        }
-        zeno::state.frameEnd();
+        //print('EXITING')
     }
 }
 

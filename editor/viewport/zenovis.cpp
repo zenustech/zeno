@@ -2,6 +2,7 @@
 #include "../zenvis/zenvis.h"
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "../launch/corelaunch.h"
 
 
 Zenvis::Zenvis()
@@ -48,6 +49,11 @@ int Zenvis::getCurrentFrameId()
     return zenvis::get_curr_frameid();
 }
 
+void Zenvis::startPlay(bool bPlaying)
+{
+    m_playing = bPlaying;
+}
+
 int Zenvis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
@@ -65,8 +71,8 @@ int Zenvis::setCurrentFrameId(int frameid)
         {
             m_camera_control->setKeyFrame();
             m_camera_control->updatePerspective();
+            emit frameUpdated(frameid);
         }
-        emit frameUpdated(frameid);
     }
     return frameid;
 }
@@ -116,12 +122,13 @@ void Zenvis::_frameUpdate()
     m_frame_files = frame_files;
 }
 
-QString Zenvis::sIoPath = "C:/zeno2/temp";
-
 QList<Zenvis::FRAME_FILE> Zenvis::getFrameFiles(int frameid)
 {
     QList<Zenvis::FRAME_FILE> framefiles;
-    QString dirPath = QString("%1/%2").arg(sIoPath).arg(QString::number(frameid), 6, QLatin1Char('0'));
+    if (g_iopath.isEmpty())
+        return framefiles;
+
+    QString dirPath = QString("%1/%2").arg(g_iopath).arg(QString::number(frameid), 6, QLatin1Char('0'));
     QDir frameDir(dirPath);
     if (!frameDir.exists("done.lock"))
         return framefiles;
@@ -140,13 +147,13 @@ QList<Zenvis::FRAME_FILE> Zenvis::getFrameFiles(int frameid)
 
 int Zenvis::getFrameCount(int* max_frameid)
 {
-    if (sIoPath.isEmpty())
+    if (g_iopath.isEmpty())
         return 0;
 
     int frameid = 0;
     while (!max_frameid || frameid < *max_frameid)
     {
-        QString dirPath = QString("%1/%2").arg(sIoPath).arg(QString::number(frameid), 6, QLatin1Char('0'));
+        QString dirPath = QString("%1/%2").arg(g_iopath).arg(QString::number(frameid), 6, QLatin1Char('0'));
         QString lockfile = QString("%1/done.lock").arg(dirPath);
         if (!QDir(dirPath).exists("done.lock"))
             return frameid;

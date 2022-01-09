@@ -25,7 +25,8 @@ struct Make2DGridPrimitive : INode {
         vec3f o = has_input("origin") ?
             get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
         if (has_input("scale")) {
-            auto scale = get_input<NumericObject>("scale")->get<float>();
+            auto obj = get_input<NumericObject>("scale");
+            auto scale = obj->is<int>() ? obj->get<int>() : obj->get<float>();
             ax *= scale;
             ay *= scale;
         }

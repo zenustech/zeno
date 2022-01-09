@@ -100,6 +100,10 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         if (objValue.HasMember("inputs"))
         {
             INPUT_SOCKETS inputs = descriptors[name].inputs;
+            if (name == "MakeDict")
+            {
+                _parseBySocketKeys(inputs, objValue);
+            }
             _parseInputs(inputs, descriptors, objIdToName, objValue["inputs"]);
             nodeData[ROLE_INPUTS] = QVariant::fromValue(inputs);
         }
@@ -428,6 +432,20 @@ void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
     }
 }
 
+void ZsgReader::_parseBySocketKeys(INPUT_SOCKETS& inputSocks, const rapidjson::Value& objValue)
+{
+    auto socket_keys = objValue["socket_keys"].GetArray();
+    QJsonArray socketKeys;
+    for (int i = 0; i < socket_keys.Size(); i++)
+    {
+        QString key = socket_keys[i].GetString();
+        INPUT_SOCKET socket;
+        socket.info.name = key;
+        //socket.info.control = 
+        inputSocks[socket.info.name] = socket;
+    }
+}
+
 void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& descriptors,
     const QMap<QString, QString>& objId2Name, const rapidjson::Value &inputs)
 {
@@ -438,6 +456,24 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& desc
         const auto &inputObj = inputsObj[bytes.data()];
         if (inputObj.IsArray())
         {
+            QString type = inputSocket.info.type;
+            if (type == "NumericObject")
+            {
+                type = "float";
+            }
+            if (type.startsWith("enum "))
+            {
+
+            }
+            else
+            {
+                static QStringList acceptTypes = {"int", "bool", "float", "string", "writepath", "readpath"};
+                if (type.isEmpty() || acceptTypes.indexOf(type) == -1)
+                {
+                    inputSocket.info.defaultValue = QVariant();
+                }
+            }
+
             const auto &arr = inputsObj[bytes.data()].GetArray();
             RAPIDJSON_ASSERT(arr.Size() >= 2);
             if (!arr[0].IsNull())
@@ -454,43 +490,9 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& desc
                     const QString socketName = arr[1].GetString();
                     inputSocket.outNodes[outId][socketName] = SOCKET_INFO(outId, socketName);
                 }
-                //to ask: default value type else
-                if (arr.Size() > 2) {
-                    if (arr[2].GetType() == rapidjson::kStringType) {
-                        inputSocket.info.defaultValue = arr[2].GetString();
-                    } else if (arr[2].GetType() == rapidjson::kNumberType) {
-                        inputSocket.info.defaultValue = arr[2].GetFloat();
-                    }
-                    else if (arr[2].GetType() == rapidjson::kTrueType) {
-                        inputSocket.info.defaultValue = arr[2].GetBool();
-                    }
-                    else if (arr[2].GetType() == rapidjson::kFalseType) {
-                        inputSocket.info.defaultValue = arr[2].GetBool();
-                    }
-                }
             }
             else
             {
-                if (arr.Size() > 2) {
-					if (arr[2].GetType() == rapidjson::kStringType) {
-						inputSocket.info.defaultValue = arr[2].GetString();
-					}
-					else if (arr[2].GetType() == rapidjson::kNumberType) {
-						inputSocket.info.defaultValue = arr[2].GetFloat();
-                        QVariant::Type varType = inputSocket.info.defaultValue.type();
-                        if (varType == QMetaType::Float)
-                        {
-                            int j;
-                            j = 0;
-                        }
-					}
-					else if (arr[2].GetType() == rapidjson::kTrueType) {
-						inputSocket.info.defaultValue = arr[2].GetBool();
-					}
-					else if (arr[2].GetType() == rapidjson::kFalseType) {
-						inputSocket.info.defaultValue = arr[2].GetBool();
-					}
-                }
             }
         }
     }
@@ -501,24 +503,14 @@ void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonPa
     if (jsonParams.IsObject())
     {
         const auto &paramsObj = jsonParams.GetObject();
-        for (PARAM_INFO &param : params) {
+        for (PARAM_INFO &param : params)
+        {
             const QString &name = param.name;
             QByteArray bytes = name.toUtf8();
             const auto &paramObj = paramsObj[bytes.data()];
             rapidjson::Type type = paramObj.GetType();
             param.bEnableConnect = false;
-            if (type == rapidjson::kNullType) {
-            } else if (type == rapidjson::kStringType) {
-                param.value = paramObj.GetString();
-            } else if (type == rapidjson::kNumberType) {
-                param.value = paramObj.GetDouble();
-			}
-			else if (type == rapidjson::kTrueType) {
-                param.value = paramObj.GetBool();
-			}
-			else if (type == rapidjson::kFalseType) {
-                param.value = paramObj.GetBool();
-			}
+            param.value = UiHelper::parseVariantValue(paramObj);
         }
     }
     

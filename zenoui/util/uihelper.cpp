@@ -108,6 +108,25 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue)
     return var;
 }
 
+QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
+{
+    if (val.GetType() == rapidjson::kStringType) {
+        return val.GetString();
+    }
+    else if (val.GetType() == rapidjson::kNumberType) {
+        return val.GetFloat();
+    }
+    else if (val.GetType() == rapidjson::kTrueType) {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kFalseType) {
+        return val.GetBool();
+    }
+    else {
+        return QVariant();
+    }
+}
+
 QString UiHelper::generateUuid(const QString& name)
 {
     QUuid uuid = QUuid::createUuid();

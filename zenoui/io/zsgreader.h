@@ -26,6 +26,7 @@ private:
         const QMap<QString, QString>& objId2Name, const rapidjson::Value& inputs);
     void _parseParams(PARAMS_INFO &params, const rapidjson::Value &jsonParams);
     void _parseColorRamps(COLOR_RAMPS& colorRamps, const rapidjson::Value& jsonColorRamps);
+    void _parseBySocketKeys(INPUT_SOCKETS& inputSocks, const rapidjson::Value& objValue);
     void _parseOutputConnections(SubGraphModel* pModel);
     QVariant _parseDefaultValue(const QString& val);
     PARAM_CONTROL _getControlType(const QString& type);
