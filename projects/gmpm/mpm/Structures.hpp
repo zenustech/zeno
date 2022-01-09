@@ -88,19 +88,23 @@ struct ZenoParticles : IObject {
   ZenoConstitutiveModel model{};
 };
 
-struct ZenoGrid : IObject {
-  using grid_t =
-      zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
-  auto &get() noexcept { return grid; }
-  const auto &get() const noexcept { return grid; }
-  grid_t grid;
-};
-
 struct ZenoPartition : IObject {
   using table_t = zs::HashTable<int, 3, int, zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return table; }
   const auto &get() const noexcept { return table; }
   table_t table;
+};
+
+struct ZenoGrid : IObject {
+  enum transfer_scheme_e { Empty, Apic, Flip, AsFlip };
+  using grid_t =
+      zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return grid; }
+  const auto &get() const noexcept { return grid; }
+
+  grid_t grid;
+  std::string transferScheme; //
+  std::shared_ptr<ZenoPartition> partition;
 };
 
 struct ZenoIndexBuckets : IObject {

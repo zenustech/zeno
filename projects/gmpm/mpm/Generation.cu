@@ -41,6 +41,9 @@ struct ConfigConstitutiveModel : INode {
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized (isotropic) elastic model [{}]\n", typeStr));
 
     // aniso elastic model
     const auto get_arg = [&params](const char *const tag, auto type) {
@@ -224,9 +227,20 @@ struct MakeZSGrid : INode {
   void apply() override {
     auto dx = get_input2<float>("dx");
 
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"v", 3}};
+
     auto grid = IObject::make<ZenoGrid>();
-    grid->get() = typename ZenoGrid::grid_t{
-        {{"m", 1}, {"v", 3}}, dx, 1, zs::memsrc_e::um, 0};
+    grid->transferScheme = get_input2<std::string>("transfer");
+    // default is "apic"
+    if (grid->transferScheme == "flip")
+      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+    else if (grid->transferScheme == "apic")
+      ;
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized transfer scheme [{}]\n", grid->transferScheme));
+
+    grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::um, 0};
 
     using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
     fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n",
@@ -234,12 +248,13 @@ struct MakeZSGrid : INode {
     set_output("ZSGrid", grid);
   }
 };
-ZENDEFNODE(MakeZSGrid, {
-                           {{"float", "dx", "0.1"}},
-                           {"ZSGrid"},
-                           {},
-                           {"MPM"},
-                       });
+ZENDEFNODE(MakeZSGrid,
+           {
+               {{"float", "dx", "0.1"}, {"string", "transfer", "apic"}},
+               {"ZSGrid"},
+               {},
+               {"MPM"},
+           });
 
 struct ToZSBoundary : INode {
   void apply() override {
