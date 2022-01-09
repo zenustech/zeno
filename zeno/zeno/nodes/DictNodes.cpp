@@ -138,4 +138,23 @@ ZENDEFNODE(ExtractDict, {
     {"dict"},
 });
 
+
+struct DictGetKeyList : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict1");
+        auto keys = std::make_shared<zeno::ListObject>();
+        for (auto const &[k, v]: dict->lut) {
+            keys.push_back(std::make_shared<zeno::StringObject>(k));
+        }
+        set_output("keys", std::move(keys));
+    }
+};
+
+ZENDEFNODE(DictGetKeyList, {
+    {{"DictObject", "dict"}},
+    {{"ListObject", "keys"}},
+    {},
+    {"dict"},
+});
+
 }
