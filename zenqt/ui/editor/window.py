@@ -94,6 +94,8 @@ class NodeEditor(QWidget):
 
         self.window = window
 
+        self.always_run = False
+
         self.current_path = None
         self.clipboard = QApplication.clipboard()
 
@@ -128,6 +130,10 @@ class NodeEditor(QWidget):
         self.newProgram()
 
         self.startTimer(1000 * 10)
+
+    def try_run_this_frame(self):
+        if self.always_run:
+            print('run_this_frame')
 
     @property
     def current_path(self):

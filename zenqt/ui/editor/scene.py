@@ -232,6 +232,8 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def setContentChanged(self, flag):
         self.contentChanged = flag
+        if flag:
+            self.editor.try_run_this_frame()
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}

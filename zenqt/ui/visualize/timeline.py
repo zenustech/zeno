@@ -112,6 +112,8 @@ class TimelineWidget(QWidget):
             self.maxframe.setText('1')
         self.maxframe.setFixedWidth(40)
 
+        self.always_run = QCheckBox('Always', self)
+        self.always_run.setFixedWidth(65)
         self.button_execute = QPushButton('Run', self)
         self.button_execute.setFixedWidth(40)
         self.button_kill = QPushButton('Kill', self)
@@ -134,6 +136,7 @@ class TimelineWidget(QWidget):
 
         layout = QHBoxLayout()
         layout.addWidget(self.maxframe)
+        layout.addWidget(self.always_run)
         layout.addWidget(self.button_execute)
         layout.addWidget(self.button_kill)
         layout.addWidget(self.player)
@@ -157,6 +160,11 @@ class TimelineWidget(QWidget):
         self.maxframe_changed()
         self.button_kill.clicked.connect(self.on_kill)
         self.button_execute.clicked.connect(self.on_execute)
+        self.always_run.stateChanged.connect(self.on_always_run)
+
+    def on_always_run(self, state):
+        self.editor.always_run = state == 2
+        self.editor.try_run_this_frame()
 
     def on_kill(self):
         self.editor.on_kill()
