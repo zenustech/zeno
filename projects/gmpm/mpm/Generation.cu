@@ -1,3 +1,4 @@
+#include "../Utils.hpp"
 #include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
@@ -339,6 +340,56 @@ ZENDEFNODE(ToZSParticles, {
                               {},
                               {"MPM"},
                           });
+
+/// this requires further polishing
+struct UpdatePrimitiveFromZSParticles : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing UpdatePrimitiveFromZSParticles\n");
+
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    for (auto &&parObjPtr : parObjPtrs) {
+      auto &pars = parObjPtr->getParticles();
+      if (parObjPtr->prim.get() == nullptr)
+        continue;
+
+      const auto category = parObjPtr->category;
+      auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      vec3f *velsPtr{nullptr};
+      if (parObjPtr->prim->has_attr("vel"))
+        velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
+
+      auto size = pars.size();
+
+      if (category == ZenoParticles::mpm || category == ZenoParticles::vertex) {
+        // currently only write back pos and vel (if has)
+        ompExec(range(size),
+                [&, pars = proxy<execspace_e::host>({}, pars)](std::size_t pi) {
+                  pos[pi] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[pi] = pars.array<3>("vel", pi);
+                });
+      } else if (category == ZenoParticles::element) {
+        ;
+      }
+    }
+
+    fmt::print(fg(fmt::color::cyan),
+               "done executing UpdatePrimitiveFromZSParticles\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
+                                               {"ZSParticles"},
+                                               {"ZSParticles"},
+                                               {},
+                                               {"MPM"},
+                                           });
 
 struct MakeZSPartition : INode {
   void apply() override {

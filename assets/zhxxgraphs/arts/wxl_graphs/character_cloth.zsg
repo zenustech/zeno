@@ -28,13 +28,15 @@
       ]
      },
      "params": {
-      "value": 0.5
+      "value": 0.001
      },
      "uipos": [
       -1765.0193386617511,
       883.8332367913312
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "ed1d492e-x": {
      "name": "ToZSParticles",
@@ -45,9 +47,14 @@
        null
       ],
       "prim": [
-       "26a4abac-PrimSprayParticles",
-       "particlesPrim",
+       "fecfc63c-ImportObjPrimitive",
+       "prim",
        null
+      ],
+      "category": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -57,8 +64,8 @@
      },
      "params": {},
      "uipos": [
-      77.06099912977359,
-      358.0052512884197
+      38.420796427070954,
+      378.24535746602584
      ],
      "options": [
       "ONCE"
@@ -260,8 +267,8 @@
      },
      "params": {},
      "uipos": [
-      1637.19751301085,
-      402.8987439602962
+      1668.109675173012,
+      401.4267362382884
      ],
      "options": []
     },
@@ -476,9 +483,7 @@
       1290.0950235109676,
       364.8755945321842
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "eb0329b4-x": {
      "name": "PortalOut",
@@ -537,8 +542,8 @@
      },
      "params": {},
      "uipos": [
-      -1174.0556730708267,
-      728.922833878834
+      -1482.0409117642944,
+      720.089605235618
      ],
      "options": [
       "ONCE"
@@ -596,8 +601,8 @@
        null
       ],
       "SRC": [
-       "c377ec6d-ToZSLevelSet",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -630,12 +635,11 @@
       "path": ""
      },
      "uipos": [
-      978.4990464963098,
-      1054.6300638638224
+      972.102234415773,
+      1085.3347618504
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "2294831f-ComputeParticleVolume": {
@@ -652,8 +656,8 @@
        null
       ],
       "SRC": [
-       "71eb4933-MakeList",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -675,20 +679,25 @@
        null
       ],
       "prim": [
-       "26a4abac-PrimSprayParticles",
-       "particlesPrim",
+       "fecfc63c-ImportObjPrimitive",
+       "prim",
        null
       ],
+      "category": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
-       "4da73a07-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
-      109.30045032661616,
-      904.4980848879381
+      103.01904329144025,
+      903.241803480903
      ],
      "options": [
       "ONCE"
@@ -743,8 +752,8 @@
        null
       ],
       "SRC": [
-       "2026e921-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -761,8 +770,8 @@
      "name": "MakeList",
      "inputs": {
       "SRC": [
-       "1028c497-x",
-       "DST",
+       null,
+       null,
        null
       ],
       "obj0": [
@@ -824,18 +833,18 @@
       "count": [
        null,
        null,
-       20
+       1
       ],
       "SRC": [
-       "b8a4f4be-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
-      1421.7973443467113,
-      743.8434765332361
+      1368.007475678794,
+      653.4307185595027
      ],
      "options": []
     },
@@ -889,7 +898,9 @@
       4446.457085790006,
       1041.3457350345022
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "58f6c625-x": {
      "name": "ParticlesWrangle",
@@ -920,14 +931,16 @@
       5086.221590909084,
       1221.7329545454527
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "2026e921-x": {
      "name": "MakeDict",
      "inputs": {
       "SRC": [
-       "95b012f8-x",
-       "DST",
+       null,
+       null,
        null
       ],
       "friction_angle": [
@@ -945,10 +958,12 @@
       "_KEYS": "friction_angle\nobj1"
      },
      "uipos": [
-      -505.24336047835794,
-      974.0587466027948
+      -515.547414532412,
+      969.6427234367717
      ],
-     "options": [],
+     "options": [
+      "ONCE"
+     ],
      "socket_keys": [
       "friction_angle",
       "obj1"
@@ -958,8 +973,8 @@
      "name": "NumericFloat",
      "inputs": {
       "SRC": [
-       "e5a9c8ce-MakeZSGrid",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -967,10 +982,12 @@
       "value": 35.0
      },
      "uipos": [
-      -802.2381015194438,
-      961.0522248344812
+      -805.0945176422681,
+      971.619422069679
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "62483cfa-x": {
      "name": "MakeDict",
@@ -995,10 +1012,12 @@
       "_KEYS": "strength\nobj1"
      },
      "uipos": [
-      -530.9124936317,
-      211.3926333845092
+      -576.9127349444411,
+      222.89269371269452
      ],
-     "options": [],
+     "options": [
+      "ONCE"
+     ],
      "socket_keys": [
       "strength",
       "obj1"
@@ -1017,8 +1036,8 @@
       "value": 20.0
      },
      "uipos": [
-      -801.6867912718553,
-      244.30489416827857
+      -916.6873945537085,
+      209.80471318372264
      ],
      "options": []
     },
@@ -1028,7 +1047,7 @@
       "path": [
        null,
        null,
-       "assets/character/clothAnimationMidres_v01.0024.obj"
+       "assets/character/clothAnimationSDF_v01.0024.obj"
       ],
       "SRC": [
        null,
@@ -1038,36 +1057,8 @@
      },
      "params": {},
      "uipos": [
-      -1581.8478969972066,
-      474.3116028098814
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "26a4abac-PrimSprayParticles": {
-     "name": "PrimSprayParticles",
-     "inputs": {
-      "TrianglePrim": [
-       "fecfc63c-ImportObjPrimitive",
-       "prim",
-       null
-      ],
-      "Dx": [
-       "c3bee76e-NumericFloat",
-       "value",
-       0.04
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1280.5373049642258,
-      525.9995909511986
+      -1451.3073247645616,
+      467.1586947423392
      ],
      "options": [
       "ONCE"
@@ -1082,8 +1073,8 @@
        null
       ],
       "SRC": [
-       "85cfbf16-PrimitiveToSDF",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -1107,8 +1098,8 @@
        "assets/torus-tri-10k.obj"
       ],
       "SRC": [
-       "2294831f-ComputeParticleVolume",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -1118,7 +1109,8 @@
       1194.6533073262951
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "85cfbf16-PrimitiveToSDF": {
@@ -1135,8 +1127,8 @@
        0.08
       ],
       "SRC": [
-       "10c209e3-ImportObjPrimitive",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -1149,39 +1141,6 @@
      ],
      "options": [
       "ONCE"
-     ]
-    },
-    "fa106f2e-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "26a4abac-PrimSprayParticles",
-       "particlesPrim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@rad=0.5"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -792.3610920601694,
-      493.83444143525173
-     ],
-     "options": [
-      "VIEW"
      ]
     },
     "505f1bc2-ImportVDBGrid": {
@@ -1206,8 +1165,7 @@
       1037.0216103261298
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "ecbb7dc1-MakeString": {
@@ -1223,17 +1181,73 @@
       "value": "assets/character/humanAnimationLowSDF_v01.0024.vdb"
      },
      "uipos": [
-      415.72473404255265,
-      1010.5828900709207
+      446.42943202912977,
+      1020.8177893997797
      ],
      "options": []
+    },
+    "48956b16-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "79c98a8d-ZSParticlesToPrimitiveObject",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@rad=0.5"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      662.4034749034741,
+      261.28137065637026
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "79c98a8d-ZSParticlesToPrimitiveObject": {
+     "name": "ZSParticlesToPrimitiveObject",
+     "inputs": {
+      "ZSParticles": [
+       "ed1d492e-x",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      397.44208494208425,
+      307.28161196911157
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": -649.8593148496161,
-    "y": -259.3858912292844,
-    "width": 4577.636718749997,
-    "height": 2326.9653320312464
+    "x": -1910.7489599771777,
+    "y": -893.0883984481701,
+    "width": 7152.55737304687,
+    "height": 3635.883331298822
    }
   }
  },
@@ -13823,6 +13837,11 @@
      "",
      "prim",
      ""
+    ],
+    [
+     "int",
+     "category",
+     "0"
     ],
     [
      "",
