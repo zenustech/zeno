@@ -102,6 +102,10 @@ struct ComputePrimitiveSequenceVelocity : zeno::INode {
     auto prim0 = get_input<PrimitiveObject>("prim0");
     auto prim1 = get_input<PrimitiveObject>("prim1");
 
+    if (prim0->size() != prim1->size())
+      throw std::runtime_error(
+          "consecutive sequence objs with different topo!");
+
     auto &p0 = prim0->attr<zeno::vec3f>("pos");
     auto &p1 = prim1->attr<zeno::vec3f>("pos");
     auto &v0 = prim0->add_attr<zeno::vec3f>("vel");

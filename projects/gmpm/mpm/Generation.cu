@@ -250,6 +250,37 @@ struct ToZSParticles : INode {
     if (hasLogJp)
       tags.emplace_back(zs::PropertyTag{"logJp", 1});
 
+    // tag assembly
+    std::vector<zs::PropertyTag> auxAttribs{};
+    if (outParticles->category == ZenoParticles::mpm ||
+        outParticles->category == ZenoParticles::vertex) {
+      for (auto &&[key, arr] : inParticles->verts.attrs) {
+        const auto checkDuplication = [&tags](const std::string &name) {
+          for (std::size_t i = 0; i != tags.size(); ++i)
+            if (tags[i].name == name.data())
+              return true;
+          return false;
+        };
+        if (checkDuplication(key))
+          continue;
+        const auto &k{key};
+        match(
+            [&k, &auxAttribs](const std::vector<vec3f> &vals) {
+              auxAttribs.push_back(PropertyTag{k, 3});
+            },
+            [&k, &auxAttribs](const std::vector<float> &vals) {
+              auxAttribs.push_back(PropertyTag{k, 1});
+            },
+            [&k, &auxAttribs](const std::vector<vec3i> &vals) {},
+            [&k, &auxAttribs](const std::vector<int> &vals) {},
+            [](...) {
+              throw std::runtime_error(
+                  "what the heck is this type of attribute!");
+            })(arr);
+      }
+    }
+    tags.insert(std::end(tags), std::begin(auxAttribs), std::end(auxAttribs));
+
     fmt::print("pending {} particles with these attributes\n", size);
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
@@ -261,7 +292,8 @@ struct ToZSParticles : INode {
               [pars = proxy<execspace_e::host>({}, pars), hasLogJp,
                hasOrientation, hasF, hasDeformation, &model, &obj, velsPtr,
                nrmsPtr, &eleVol, &elePos, &eleVel,
-               category = (int)outParticles->category](size_t pi) mutable {
+               category = (int)outParticles->category, &inParticles,
+               &auxAttribs](size_t pi) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
                 float vol{};
@@ -324,6 +356,19 @@ struct ToZSParticles : INode {
                 if (hasLogJp)
                   pars("logJp", pi) = -0.04;
                 pars("vms", pi) = 0; // vms
+
+                // additional attributes
+                if (category == ZenoParticles::mpm ||
+                    category == ZenoParticles::vertex) {
+                  for (auto &prop : auxAttribs) {
+                    if (prop.numChannels == 3)
+                      pars.tuple<3>(prop.name, pi) =
+                          inParticles->attr<vec3f>(std::string{prop.name})[pi];
+                    else
+                      pars(prop.name, pi) =
+                          inParticles->attr<float>(std::string{prop.name})[pi];
+                  }
+                }
               });
 
       pars = pars.clone({memsrc_e::um, 0});
