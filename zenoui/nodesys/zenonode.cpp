@@ -270,10 +270,9 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
     {
         QColor clr(0, 0, 0);
         bodyWidget->setColors(false, clr, clr, clr);
-        const QSize &sz = m_index.data(ROLE_BLACKBOARD_SIZE).toSize();
-        const QString& content = m_index.data(ROLE_BLACKBOARD_CONTENT).toString();
+        BLACKBOARD_INFO blackboard = m_index.data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
 
-        ZenoBoardTextLayoutItem* pTextItem = new ZenoBoardTextLayoutItem(content, m_renderParams.boardFont, m_renderParams.boardTextClr.color(), sz);
+        ZenoBoardTextLayoutItem* pTextItem = new ZenoBoardTextLayoutItem(blackboard.content, m_renderParams.boardFont, m_renderParams.boardTextClr.color(), blackboard.sz);
         //pVLayout->addStretch();
         pVLayout->addItem(pTextItem);
     }

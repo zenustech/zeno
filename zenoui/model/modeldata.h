@@ -123,6 +123,17 @@ struct COLOR_RAMP
 typedef QVector<COLOR_RAMP> COLOR_RAMPS;
 Q_DECLARE_METATYPE(COLOR_RAMPS)
 
+struct BLACKBOARD_INFO
+{
+    QSizeF sz;
+    QString title;
+    QString content;
+    //params
+    bool special;
+    BLACKBOARD_INFO() : special(false) {}
+};
+Q_DECLARE_METATYPE(BLACKBOARD_INFO)
+
 struct NODE_DESC {
     INPUT_SOCKETS inputs;
     PARAMS_INFO params;

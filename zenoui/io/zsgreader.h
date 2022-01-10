@@ -1,5 +1,5 @@
-#ifndef __ZSG_READER_H__
-#define __ZSG_READER_H__
+#ifndef __ZSG_LEGACY_READER_H__
+#define __ZSG_LEGACY_READER_H__
 
 #include <rapidjson/document.h>
 #include "../model/nodeitem.h"
@@ -10,16 +10,16 @@
 class NodeItem;
 class NodesModel;
 
-class ZsgReader
+class ZsgReader_Legacy
 {
 public:
-    static ZsgReader& getInstance();
+    static ZsgReader_Legacy& getInstance();
     GraphsModel* loadZsgFile(const QString& fn);
     QString dumpNodeData(const NODE_DATA& data);
     NODE_DATA importNodeData(const QString json);
 
 private:
-    ZsgReader();
+    ZsgReader_Legacy();
     SubGraphModel* _parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph);
     void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
     void _parseInputs(INPUT_SOCKETS& inputSocks, const NODE_DESCS& descriptors,

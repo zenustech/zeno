@@ -1,6 +1,8 @@
 #include "graphsmanagment.h"
 #include <io/zsgreader.h>
 #include <model/graphsmodel.h>
+#include <zenoio/reader/zsgreader.h>
+#include <zenoio/acceptor/modelacceptor.h>
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
@@ -24,7 +26,9 @@ GraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     }
     else
     {
-        m_model = ZsgReader::getInstance().loadZsgFile(fn);
+        m_model = new GraphsModel;
+        ModelAcceptor acceptor(m_model);
+        ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
     }
     return m_model;
 }

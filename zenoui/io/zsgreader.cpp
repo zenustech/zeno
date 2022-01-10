@@ -4,17 +4,17 @@
 #include "../util/uihelper.h"
 
 
-ZsgReader::ZsgReader()
+ZsgReader_Legacy::ZsgReader_Legacy()
 {
 }
 
-ZsgReader& ZsgReader::getInstance()
+ZsgReader_Legacy& ZsgReader_Legacy::getInstance()
 {
-    static ZsgReader reader;
+    static ZsgReader_Legacy reader;
     return reader;
 }
 
-GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
+GraphsModel* ZsgReader_Legacy::loadZsgFile(const QString& fn)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -47,12 +47,12 @@ GraphsModel* ZsgReader::loadZsgFile(const QString& fn)
     return pModel;
 }
 
-void ZsgReader::_parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph)
+void ZsgReader_Legacy::_parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph)
 {
 
 }
 
-SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph)
+SubGraphModel* ZsgReader_Legacy::_parseSubGraph(GraphsModel* pGraphsModel, const rapidjson::Value &subgraph)
 {
     //todo: should consider descript info. some info of outsock without connection show in descript info.
     SubGraphModel *pModel = new SubGraphModel(pGraphsModel);
@@ -187,20 +187,20 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
         if (name == "Blackboard")
         {
             nodeData[ROLE_OBJTYPE] = BLACKBOARD_NODE;
-            if (objValue.HasMember("special"))
-            {
-                nodeData[ROLE_BLACKBOARD_SPECIAL] = objValue["special"].GetBool();
-            }
+            //if (objValue.HasMember("special"))
+            //{
+            //    nodeData[ROLE_BLACKBOARD_SPECIAL] = objValue["special"].GetBool();
+            //}
 
-            nodeData[ROLE_BLACKBOARD_TITLE] = objValue.HasMember("title") ? objValue["title"].GetString() : "";
-            nodeData[ROLE_BLACKBOARD_CONTENT] = objValue.HasMember("content") ? objValue["content"].GetString() : "";
+            //nodeData[ROLE_BLACKBOARD_TITLE] = objValue.HasMember("title") ? objValue["title"].GetString() : "";
+            //nodeData[ROLE_BLACKBOARD_CONTENT] = objValue.HasMember("content") ? objValue["content"].GetString() : "";
 
-            if (objValue.HasMember("width") && objValue.HasMember("height"))
-            {
-                qreal w = objValue["width"].GetFloat();
-                qreal h = objValue["height"].GetFloat();
-                nodeData[ROLE_BLACKBOARD_SIZE] = QSizeF(w, h);
-            }
+            //if (objValue.HasMember("width") && objValue.HasMember("height"))
+            //{
+            //    qreal w = objValue["width"].GetFloat();
+            //    qreal h = objValue["height"].GetFloat();
+            //    nodeData[ROLE_BLACKBOARD_SIZE] = QSizeF(w, h);
+            //}
             if (objValue.HasMember("params"))
             {
                 //todo
@@ -236,7 +236,7 @@ SubGraphModel* ZsgReader::_parseSubGraph(GraphsModel* pGraphsModel, const rapidj
     return pModel;
 }
 
-QString ZsgReader::dumpNodeData(const NODE_DATA& data)
+QString ZsgReader_Legacy::dumpNodeData(const NODE_DATA& data)
 {
     //not compatible with current zeno file format, only used for copy/paste.
     //but now copy/paste is limited in current process.
@@ -317,7 +317,7 @@ QString ZsgReader::dumpNodeData(const NODE_DATA& data)
     return strJson;
 }
 
-NODE_DATA ZsgReader::importNodeData(const QString json)
+NODE_DATA ZsgReader_Legacy::importNodeData(const QString json)
 {
     NODE_DATA data;
     QJsonObject obj;
@@ -367,7 +367,7 @@ NODE_DATA ZsgReader::importNodeData(const QString json)
     return data;
 }
 
-PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
+PARAM_CONTROL ZsgReader_Legacy::_getControlType(const QString& type)
 {
     if (type == "int") {
         return CONTROL_INT;
@@ -392,7 +392,7 @@ PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
     }
 }
 
-QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
+QVariant ZsgReader_Legacy::_parseDefaultValue(const QString& defaultValue)
 {
     //some data like vec3f, cast to string first.
     bool bOk = false;
@@ -406,7 +406,7 @@ QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
     return var;
 }
 
-void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
+void ZsgReader_Legacy::_parseOutputConnections(SubGraphModel* pModel)
 {
     //init output ports for each node.
     int n = pModel->rowCount();
@@ -432,7 +432,7 @@ void ZsgReader::_parseOutputConnections(SubGraphModel* pModel)
     }
 }
 
-void ZsgReader::_parseBySocketKeys(INPUT_SOCKETS& inputSocks, const rapidjson::Value& objValue)
+void ZsgReader_Legacy::_parseBySocketKeys(INPUT_SOCKETS& inputSocks, const rapidjson::Value& objValue)
 {
     auto socket_keys = objValue["socket_keys"].GetArray();
     QJsonArray socketKeys;
@@ -446,7 +446,7 @@ void ZsgReader::_parseBySocketKeys(INPUT_SOCKETS& inputSocks, const rapidjson::V
     }
 }
 
-void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& descriptors,
+void ZsgReader_Legacy::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& descriptors,
     const QMap<QString, QString>& objId2Name, const rapidjson::Value &inputs)
 {
     const auto &inputsObj = inputs.GetObject();
@@ -498,7 +498,7 @@ void ZsgReader::_parseInputs(INPUT_SOCKETS& inputSockets, const NODE_DESCS& desc
     }
 }
 
-void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonParams)
+void ZsgReader_Legacy::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonParams)
 {
     if (jsonParams.IsObject())
     {
@@ -529,7 +529,7 @@ void ZsgReader::_parseParams(PARAMS_INFO& params, const rapidjson::Value& jsonPa
     */
 }
 
-void ZsgReader::_parseColorRamps(COLOR_RAMPS& colorRamps, const rapidjson::Value& jsonColorRamps)
+void ZsgReader_Legacy::_parseColorRamps(COLOR_RAMPS& colorRamps, const rapidjson::Value& jsonColorRamps)
 {
     if (jsonColorRamps.IsNull())
         return;
