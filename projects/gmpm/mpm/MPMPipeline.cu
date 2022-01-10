@@ -315,15 +315,18 @@ struct ApplyBoundaryOnZSGrid : INode {
           } else if constexpr (is_same_v<RM_CVREF_T(ls), transition_ls_t>) {
             auto [fieldViewSrc, fieldViewDst] =
                 ls.template getView<zs::execspace_e::cuda>();
-            match([&](auto fvSrc, auto fvDst) {
-              if constexpr (is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>)
-                projectBoundary(cudaPol,
-                                TransitionLevelSetView{SdfVelFieldView{fvSrc},
-                                                       SdfVelFieldView{fvDst},
-                                                       ls._stepDt, ls._alpha},
-                                *boundary, partition, grid,
-                                zsgrid->transferScheme);
-            })(fieldViewSrc, fieldViewDst);
+            match(
+                [&](auto fvSrc, auto fvDst)
+                    -> std::enable_if_t<
+                        is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>> {
+                  projectBoundary(cudaPol,
+                                  TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                                         SdfVelFieldView{fvDst},
+                                                         ls._stepDt, ls._alpha},
+                                  *boundary, partition, grid,
+                                  zsgrid->transferScheme);
+                },
+                [](...) {})(fieldViewSrc, fieldViewDst);
           }
         })(*boundary->levelset);
     }

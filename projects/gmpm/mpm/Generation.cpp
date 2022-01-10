@@ -41,13 +41,15 @@ struct PoissonDiskSample : INode {
       zs::vec<float, 3> x{x_[0], x_[1], x_[2]}, diff{};
       /// compute a local partial derivative
       for (int i = 0; i != 3; i++) {
-        zs::vec<float, 3> v1 = x;
-        zs::vec<float, 3> v2 = x;
+        auto v1 = x;
+        auto v2 = x;
         v1[i] = x[i] + eps;
         v2[i] = x[i] - eps;
         diff[i] = (spls.getSignedDistance(v1) - spls.getSignedDistance(v2)) /
                   (eps + eps);
       }
+      if (math::near_zero(diff.l2NormSqr()))
+        return vec3f{0, 0, 0};
       auto r = diff.normalized();
       return vec3f{r[0], r[1], r[2]};
     };
