@@ -85,18 +85,22 @@ class QDMSlider(QSlider):
     def __init__(self, type, timeline):
         super().__init__(type)
         self.timeline = timeline
+        self.valueChanged.connect(self.valueChanged_callback)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.timeline.stop_play()
-        self.setValue(QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), event.x(), self.width()))
+        value = QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width())
+        self.setValue(value)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.timeline.stop_play()
-        self.setValue(QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), event.x(), self.width()))
+        value = QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width())
+        self.setValue(value)
+
+    def valueChanged_callback(self, v):
+        self.timeline.label.setText(str(v))
 
 
 class TimelineWidget(QWidget):
@@ -119,7 +123,7 @@ class TimelineWidget(QWidget):
         self.button_kill = QPushButton('Kill', self)
         self.button_kill.setFixedWidth(40)
 
-        self.label = QLabel('-')
+        self.label = QLabel('0')
         self.status = QLabel('-')
 
         self.slider = QDMSlider(Qt.Horizontal, self)
