@@ -12,8 +12,8 @@ QString g_iopath;
 void launchProgram(GraphsModel* pModel, int nframes)
 {
     //todo
-    LoadLibrary("C:\\zeno2\\zenqt\\bin\\zeno_ZenoFX.dll");
-    LoadLibrary("C:\\zeno2\\zenqt\\bin\\zeno_oldzenbase.dll");
+    LoadLibrary("zeno_ZenoFX.dll");
+    LoadLibrary("zeno_oldzenbase.dll");
 
     cleanIOPath();
 
