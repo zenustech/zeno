@@ -11,6 +11,7 @@ namespace zeno {
 
 struct PoissonDiskSample : INode {
   void apply() override {
+    using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing PoissonDiskSample\n");
     auto ls = IObject::make<ZenoLevelSet>();
 
