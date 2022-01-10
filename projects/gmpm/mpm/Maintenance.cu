@@ -68,15 +68,22 @@ ZENDEFNODE(ComputeParticleVolume,
 struct PushOutZSParticles : INode {
   template <typename LsView>
   void pushout(zs::CudaExecutionPolicy &cudaPol,
-               typename ZenoParticles::particles_t &pars, LsView lsv) {
+               typename ZenoParticles::particles_t &pars, LsView lsv,
+               float dis) {
     using namespace zs;
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars), lsv,
-                                 eps = limits<float>::epsilon() *
-                                       128] __device__(size_t pi) mutable {
+                                 eps = limits<float>::epsilon() * 128,
+                                 dis] __device__(size_t pi) mutable {
       auto x = pars.pack<3>("pos", pi);
       bool updated = false;
       int cnt = 5;
-      for (auto sd = lsv.getSignedDistance(x); sd < 0 && cnt--;) {
+#if 0
+      if (pi < 10) {
+        printf("par[%d] sd (%f). x(%f, %f, %f) towards %f\n", (int)pi,
+               lsv.getSignedDistance(x), x[0], x[1], x[2], dis);
+      }
+#endif
+      for (auto sd = lsv.getSignedDistance(x); sd < dis && cnt--;) {
         auto diff = x.zeros();
         for (int i = 0; i != 3; i++) {
           auto v1 = x;
@@ -86,13 +93,20 @@ struct PushOutZSParticles : INode {
           diff[i] = (lsv.getSignedDistance(v1) - lsv.getSignedDistance(v2)) /
                     (eps + eps);
         }
+        // normal info is missing will also cause this
         if (math::near_zero(diff.l2NormSqr()))
           break;
         auto n = diff.normalized();
         x -= n * sd;
         auto newSd = lsv.getSignedDistance(x);
-        if (newSd < sd ||
-            zs::abs(newSd - sd) < -sd) // new position should be no deeper
+#if 0
+        if (pi < 10)
+          printf("%d rounds left, par[%d] sdf (%f)->(%f). x(%f, %f, %f), n(%f, "
+                 "%f, %f)\n",
+                 cnt, (int)pi, sd, newSd, x[0], x[1], x[2], n[0], n[1], n[2]);
+#endif
+        if (                                 // newSd < sd ||
+            newSd - sd < 0.5f * zs::abs(sd)) // new position should be no deeper
           break;
         updated = true;
         sd = newSd;
@@ -107,6 +121,7 @@ struct PushOutZSParticles : INode {
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
     auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto dis = get_input2<float>("dis");
 
     for (auto &&parObjPtr : parObjPtrs) {
       auto &pars = parObjPtr->getParticles();
@@ -117,12 +132,12 @@ struct PushOutZSParticles : INode {
           [&](basic_ls_t &ls) {
             match([&](const auto &lsPtr) {
               auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-              pushout(cudaPol, pars, lsv);
+              pushout(cudaPol, pars, lsv, dis);
             })(ls._ls);
           },
           [&](sdf_vel_ls_t &ls) {
             match([&](auto lsv) {
-              pushout(cudaPol, pars, SdfVelFieldView{lsv});
+              pushout(cudaPol, pars, SdfVelFieldView{lsv}, dis);
             })(ls.template getView<execspace_e::cuda>());
           },
           [&](transition_ls_t &ls) {
@@ -135,7 +150,8 @@ struct PushOutZSParticles : INode {
                   pushout(cudaPol, pars,
                           TransitionLevelSetView{SdfVelFieldView{fvSrc},
                                                  SdfVelFieldView{fvDst},
-                                                 ls._stepDt, ls._alpha});
+                                                 ls._stepDt, ls._alpha},
+                          dis);
                 },
                 [](...) {})(fieldViewSrc, fieldViewDst);
           })(zsls->getLevelSet());
@@ -145,11 +161,12 @@ struct PushOutZSParticles : INode {
     set_output("ZSParticles", get_input("ZSParticles"));
   }
 };
-ZENDEFNODE(PushOutZSParticles, {
-                                   {"ZSParticles", "ZSLevelSet"},
-                                   {"ZSParticles"},
-                                   {},
-                                   {"MPM"},
-                               });
+ZENDEFNODE(PushOutZSParticles,
+           {
+               {"ZSParticles", "ZSLevelSet", {"float", "dis", "0.01"}},
+               {"ZSParticles"},
+               {},
+               {"MPM"},
+           });
 
 } // namespace zeno
