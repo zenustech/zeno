@@ -97,6 +97,32 @@ ZENDEFNODE(ScalePrimitiveAlongNormal, {
                                           {"primitive"},
                                       });
 
+struct ComputePrimitiveSequenceVelocity : zeno::INode {
+  virtual void apply() override {
+    auto prim0 = get_input<PrimitiveObject>("prim0");
+    auto prim1 = get_input<PrimitiveObject>("prim1");
+
+    auto &p0 = prim0->attr<zeno::vec3f>("pos");
+    auto &p1 = prim1->attr<zeno::vec3f>("pos");
+    auto &v0 = prim0->add_attr<zeno::vec3f>("vel");
+    auto &v1 = prim1->add_attr<zeno::vec3f>("vel");
+
+    auto ompExec = zs::omp_exec();
+    ompExec(zs::range(p0.size()), [&, dt = get_input2<float>("dt")](size_t pi) {
+      v0[pi] = (p1[pi] - p0[pi]) / dt;
+      v1[pi] = vec3f{0, 0, 0};
+    });
+  }
+};
+
+ZENDEFNODE(ComputePrimitiveSequenceVelocity,
+           {
+               {"prim0", "prim1", {"float", "dt", "1"}},
+               {},
+               {},
+               {"primitive"},
+           });
+
 struct ToZSLevelSet : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZSLevelSet\n");
