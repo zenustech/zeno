@@ -72,6 +72,31 @@ ZENDEFNODE(PoissonDiskSample,
                {"MPM"},
            });
 
+struct ScalePrimitiveAlongNormal : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    set_output("prim", get_input("prim"));
+
+    if (!prim->has_attr("nrm"))
+      return;
+
+    auto &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto dis = get_input2<float>("dis");
+
+    auto ompExec = zs::omp_exec();
+    ompExec(zs::range(pos.size()),
+            [&](size_t pi) { pos[pi] += nrm[pi] * dis; });
+  }
+};
+
+ZENDEFNODE(ScalePrimitiveAlongNormal, {
+                                          {"prim", {"float", "dis", "0"}},
+                                          {"prim"},
+                                          {},
+                                          {"primitive"},
+                                      });
+
 struct ToZSLevelSet : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZSLevelSet\n");
