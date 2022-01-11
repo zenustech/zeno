@@ -126,8 +126,9 @@ struct ToZSParticles : INode {
     // model
     outParticles->getModel() = *model;
     // category
-    outParticles->category =
+    const auto category =
         static_cast<ZenoParticles::category_e>(get_input2<int>("category"));
+    outParticles->category = category;
 
     std::size_t size = obj.size();
     // per vertex (node) vol, pos, vel
@@ -135,31 +136,28 @@ struct ToZSParticles : INode {
 
     std::vector<vec3f> elePos{};
     std::vector<vec3f> eleVel{};
+    std::vector<std::array<vec3f, 3>> eleD{};
 
     using namespace zs;
     auto ompExec = zs::omp_exec();
 
-    if (auto category = outParticles->category;
-        category != ZenoParticles::mpm) {
+    if (category != ZenoParticles::mpm) {
       // tet
       if (quads.size()) {
-        if (category == ZenoParticles::element) {
-          size = quads.size();
-          elePos.resize(size);
-          eleVel.resize(size);
-        }
         const auto tetVol = [&obj](vec4i quad) {
           const auto &p0 = obj[quad[0]];
           auto s = cross(obj[quad[2]] - p0, obj[quad[1]] - p0);
           return std::abs(dot(s, obj[quad[3]] - p0)) / 6;
         };
-        for (std::size_t i = 0; i != quads.size(); ++i) {
-          auto quad = quads[i];
-          auto v = tetVol(quad);
-          if (category == ZenoParticles::vertex) {
-            for (auto pi : quad)
-              eleVol[pi] += v / 4;
-          } else if (category == ZenoParticles::element) {
+        if (category == ZenoParticles::element) {
+          size = quads.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+          eleD.resize(size);
+          for (std::size_t i = 0; i != size; ++i) {
+            auto quad = quads[i];
+            auto v = tetVol(quad);
+
             eleVol[i] = v;
             elePos[i] =
                 (obj[quad[0]] + obj[quad[1]] + obj[quad[2]] + obj[quad[3]]) / 4;
@@ -167,56 +165,82 @@ struct ToZSParticles : INode {
               eleVel[i] = (velsPtr[quad[0]] + velsPtr[quad[1]] +
                            velsPtr[quad[2]] + velsPtr[quad[3]]) /
                           4;
+            eleD[i][0] = obj[quad[1]] - obj[quad[0]];
+            eleD[i][1] = obj[quad[2]] - obj[quad[0]];
+            eleD[i][2] = obj[quad[3]] - obj[quad[0]];
+          }
+        } else if (category == ZenoParticles::vertex) {
+          for (std::size_t i = 0; i != quads.size(); ++i) {
+            auto quad = quads[i];
+            auto v = tetVol(quad);
+            for (auto pi : quad)
+              eleVol[pi] += v / 4;
           }
         }
       }
       // surface
       else if (tris.size()) {
-        if (category == ZenoParticles::element) {
-          size = tris.size();
-          elePos.resize(size);
-          eleVel.resize(size);
-        }
         const auto triArea = [&obj](vec3i tri) {
           const auto &p0 = obj[tri[0]];
           return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
         };
-        for (std::size_t i = 0; i != tris.size(); ++i) {
-          auto tri = tris[i];
-          auto area = triArea(tri);
-          if (category == ZenoParticles::vertex) {
-            for (auto pi : tri)
-              eleVol[pi] += area / 3;
-          } else if (category == ZenoParticles::element) {
+        if (category == ZenoParticles::element) {
+          size = tris.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+          eleD.resize(size);
+          for (std::size_t i = 0; i != size; ++i) {
+            auto tri = tris[i];
+            auto area = triArea(tri);
             eleVol[i] = area;
             elePos[i] = (obj[tri[0]] + obj[tri[1]] + obj[tri[2]]) / 3;
             if (velsPtr)
               eleVel[i] =
                   (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+            eleD[i][0] = obj[tri[1]] - obj[tri[0]];
+            eleD[i][1] = obj[tri[2]] - obj[tri[0]];
+            eleD[i][2] = normalize(cross(eleD[i][0], eleD[i][1]));
+          }
+        } else if (category == ZenoParticles::vertex) {
+          for (std::size_t i = 0; i != tris.size(); ++i) {
+            auto tri = tris[i];
+            auto area = triArea(tri);
+            for (auto pi : tri)
+              eleVol[pi] += area / 3;
           }
         }
       }
       // strand
       else if (lines.size()) {
+        const auto lineLength = [&obj](vec2i line) {
+          return length(obj[line[1]] - obj[line[0]]);
+        };
         if (category == ZenoParticles::element) {
           size = lines.size();
           elePos.resize(size);
           eleVel.resize(size);
-        }
-        const auto lineLength = [&obj](vec2i line) {
-          return length(obj[line[1]] - obj[line[0]]);
-        };
-        for (std::size_t i = 0; i != lines.size(); ++i) {
-          auto line = lines[i];
-          auto len = lineLength(line);
-          if (category == ZenoParticles::vertex) {
-            for (auto pi : line)
-              eleVol[pi] += len / 2;
-          } else if (category == ZenoParticles::vertex) {
+          eleD.resize(size);
+          for (std::size_t i = 0; i != size; ++i) {
+            auto line = lines[i];
+            auto len = lineLength(line);
             eleVol[i] = len;
             elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
             if (velsPtr)
               eleVel[i] = (velsPtr[line[0]] + velsPtr[line[1]]) / 2;
+            eleD[i][0] = obj[line[1]] - obj[line[0]];
+            if (auto n = cross(vec3f{0, 1, 0}, eleD[i][0]);
+                lengthSquared(n) > zs::limits<float>::epsilon() * 128) {
+              eleD[i][1] = normalize(n);
+            } else
+              eleD[i][1] = normalize(cross(vec3f{1, 0, 0}, eleD[i][0]));
+            eleD[i][2] = normalize(cross(eleD[i][0], eleD[i][1]));
+          }
+        } else if (category == ZenoParticles::vertex) {
+          for (std::size_t i = 0; i != lines.size(); ++i) {
+            auto line = lines[i];
+            auto len = lineLength(line);
+            for (auto pi : line)
+              eleVol[pi] += len / 2;
           }
         }
       }
@@ -229,13 +253,10 @@ struct ToZSParticles : INode {
                                       {"vol", 1},  {"C", 9},   {"vms", 1}};
 
     const bool hasLogJp = model->hasLogJp();
-    const bool hasOrientation =
-        model->hasOrientation() ||
-        outParticles->category == ZenoParticles::element;
+    const bool hasOrientation = model->hasOrientation();
     const bool hasF = model->hasF();
     const bool hasDeformation =
-        outParticles->category == ZenoParticles::mpm ||
-        outParticles->category == ZenoParticles::element;
+        category == ZenoParticles::mpm || category == ZenoParticles::element;
 
     if (hasDeformation) {
       if (hasF)
@@ -252,8 +273,7 @@ struct ToZSParticles : INode {
 
     // tag assembly
     std::vector<zs::PropertyTag> auxAttribs{};
-    if (outParticles->category == ZenoParticles::mpm ||
-        outParticles->category == ZenoParticles::vertex) {
+    if (category == ZenoParticles::mpm || category == ZenoParticles::vertex) {
       for (auto &&[key, arr] : inParticles->verts.attrs) {
         const auto checkDuplication = [&tags](const std::string &name) {
           for (std::size_t i = 0; i != tags.size(); ++i)
@@ -278,6 +298,8 @@ struct ToZSParticles : INode {
                   "what the heck is this type of attribute!");
             })(arr);
       }
+    } else if (category == ZenoParticles::element) {
+      auxAttribs.push_back(PropertyTag{"Dinv", 9});
     }
     tags.insert(std::end(tags), std::begin(auxAttribs), std::end(auxAttribs));
 
@@ -291,9 +313,8 @@ struct ToZSParticles : INode {
       ompExec(zs::range(size),
               [pars = proxy<execspace_e::host>({}, pars), hasLogJp,
                hasOrientation, hasF, hasDeformation, &model, &obj, velsPtr,
-               nrmsPtr, &eleVol, &elePos, &eleVel,
-               category = (int)outParticles->category, &inParticles,
-               &auxAttribs](size_t pi) mutable {
+               nrmsPtr, &eleVol, &elePos, &eleVel, &eleD, category,
+               &inParticles, &auxAttribs](size_t pi) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
                 float vol{};
@@ -320,6 +341,11 @@ struct ToZSParticles : INode {
                     pars.tuple<3>("vel", pi) = eleVel[pi];
                   else
                     pars.tuple<3>("vel", pi) = vec3::zeros();
+
+                  const auto &D = eleD[pi]; // [col]
+                  auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
+                                   D[2][1], D[0][2], D[1][2], D[2][2]};
+                  pars.tuple<9>("Dinv", pi) = zs::inverse(Dmat);
                 }
 
                 pars("vol", pi) = vol;
