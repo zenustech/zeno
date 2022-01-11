@@ -499,9 +499,8 @@ struct ToZSBoundary : INode {
         return zs::collider_e::Separate;
       return zs::collider_e::Sticky;
     };
-    // pass in FloatGrid::Ptr
-    auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
-    boundary->levelset = &ls;
+
+    boundary->zsls = get_input<ZenoLevelSet>("ZSLevelSet");
 
     boundary->type = queryType();
 
@@ -534,7 +533,6 @@ struct ToZSBoundary : INode {
     }
     { boundary->omega = zs::AngularVelocity<float, 3>{}; }
 
-    // *boundary = ZenoBoundary{&ls, queryType()};
     fmt::print(fg(fmt::color::cyan), "done executing ToZSBoundary\n");
     set_output("ZSBoundary", boundary);
   }
@@ -552,11 +550,9 @@ struct StepZSBoundary : INode {
     fmt::print(fg(fmt::color::green), "begin executing StepZSBoundary\n");
 
     auto boundary = get_input<ZenoBoundary>("ZSBoundary");
-    auto dt = get_param<float>("dt");
-    if (has_input("dt"))
-      dt = get_input<NumericObject>("dt")->get<float>();
+    auto dt = get_input2<float>("dt");
 
-    auto oldB = boundary->b;
+    // auto oldB = boundary->b;
 
     boundary->s += boundary->dsdt * dt;
     boundary->b += boundary->dbdt * dt;
@@ -575,9 +571,9 @@ struct StepZSBoundary : INode {
   }
 };
 ZENDEFNODE(StepZSBoundary, {
-                               {"ZSBoundary", "dt"},
+                               {"ZSBoundary", {"float", "dt", "0"}},
                                {"ZSBoundary"},
-                               {{"float", "dt", "0"}},
+                               {},
                                {"MPM"},
                            });
 

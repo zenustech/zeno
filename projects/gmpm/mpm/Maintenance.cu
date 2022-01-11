@@ -126,8 +126,9 @@ struct PushOutZSParticles : INode {
     for (auto &&parObjPtr : parObjPtrs) {
       auto &pars = parObjPtr->getParticles();
       using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
-      using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
-      using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
+      using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+      using const_transition_ls_t =
+          typename ZenoLevelSet::const_transition_ls_t;
       match(
           [&](basic_ls_t &ls) {
             match([&](const auto &lsPtr) {
@@ -135,28 +136,22 @@ struct PushOutZSParticles : INode {
               pushout(cudaPol, pars, lsv, dis);
             })(ls._ls);
           },
-          [&](sdf_vel_ls_t &ls) {
+          [&](const_sdf_vel_ls_t &ls) {
             match([&](auto lsv) {
               pushout(cudaPol, pars, SdfVelFieldView{lsv}, dis);
             })(ls.template getView<execspace_e::cuda>());
           },
-          [&](transition_ls_t &ls) {
-            auto [fieldViewSrc, fieldViewDst] =
-                ls.template getView<zs::execspace_e::cuda>();
-            match(
-                [&](auto fvSrc, auto fvDst)
-                    -> std::enable_if_t<
-                        is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>> {
-                  pushout(cudaPol, pars,
-                          TransitionLevelSetView{SdfVelFieldView{fvSrc},
-                                                 SdfVelFieldView{fvDst},
-                                                 ls._stepDt, ls._alpha},
-                          dis);
-                },
-                [](...) {})(fieldViewSrc, fieldViewDst);
+          [&](const_transition_ls_t &ls) {
+            match([&](auto fieldPair) {
+              auto &fvSrc = std::get<0>(fieldPair);
+              auto &fvDst = std::get<1>(fieldPair);
+              pushout(cudaPol, pars,
+                      TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                             SdfVelFieldView{fvDst}},
+                      dis);
+            })(ls.template getView<execspace_e::cuda>());
           })(zsls->getLevelSet());
     }
-
     fmt::print(fg(fmt::color::cyan), "done executing PushOutZSParticles\n");
     set_output("ZSParticles", get_input("ZSParticles"));
   }

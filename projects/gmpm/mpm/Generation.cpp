@@ -170,7 +170,7 @@ struct ComposeSdfVelField : INode {
     std::shared_ptr<ZenoLevelSet> sdfLsPtr{};
     std::shared_ptr<ZenoLevelSet> velLsPtr{};
 
-    using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
+    using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
 
     if (has_input<ZenoLevelSet>("ZSSdfField")) {
       sdfLsPtr = get_input<ZenoLevelSet>("ZSSdfField");
@@ -186,15 +186,15 @@ struct ComposeSdfVelField : INode {
                                velLsPtr->holdsBasicLevelSet() ? "" : "not ");
         throw std::runtime_error(msg);
       }
-      ls->getLevelSet() = sdf_vel_ls_t{sdfLsPtr->getBasicLevelSet(),
-                                       velLsPtr->getBasicLevelSet()};
+      ls->getLevelSet() = const_sdf_vel_ls_t{sdfLsPtr->getBasicLevelSet(),
+                                             velLsPtr->getBasicLevelSet()};
     } else {
       if (!sdfLsPtr->holdsBasicLevelSet()) {
         auto msg = fmt::format("sdfField is {}a basic levelset.\n",
                                sdfLsPtr->holdsBasicLevelSet() ? "" : "not ");
         throw std::runtime_error(msg);
       }
-      ls->getLevelSet() = sdf_vel_ls_t{sdfLsPtr->getBasicLevelSet()};
+      ls->getLevelSet() = const_sdf_vel_ls_t{sdfLsPtr->getBasicLevelSet()};
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ComposeSdfVelField\n");
@@ -215,26 +215,28 @@ struct EnqueueLevelSetSequence : INode {
                "begin executing EnqueueLevelSetSequence\n");
 
     using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
-    using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
-    using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
+    using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+    using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
 
     std::shared_ptr<ZenoLevelSet> zsls{};
     if (has_input<ZenoLevelSet>("ZSLevelSetSequence"))
       zsls = get_input<ZenoLevelSet>("ZSLevelSetSequence");
     else {
       zsls = IObject::make<ZenoLevelSet>();
-      zsls->levelset = transition_ls_t{};
+      zsls->levelset = const_transition_ls_t{};
     }
     auto &lsseq = zsls->getLevelSetSequence();
 
     if (has_input<ZenoLevelSet>("ZSLevelSet")) {
       auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
       match(
-          [&lsseq](basic_ls_t &basicLs) { lsseq.push(sdf_vel_ls_t{basicLs}); },
-          [&lsseq](sdf_vel_ls_t &field) { // recommend
-            lsseq.push(field);            // also reset alpha in the meantime
+          [&lsseq](basic_ls_t &basicLs) {
+            lsseq.push(const_sdf_vel_ls_t{basicLs});
           },
-          [&lsseq](transition_ls_t &seq) {
+          [&lsseq](const_sdf_vel_ls_t &field) { // recommend
+            lsseq.push(field); // also reset alpha in the meantime
+          },
+          [&lsseq](const_transition_ls_t &seq) {
             lsseq._fields.insert(lsseq._fields.end(), seq._fields.begin(),
                                  seq._fields.end());
           })(ls);
@@ -260,15 +262,15 @@ struct UpdateLevelSetSequence : INode {
                "begin executing UpdateLevelSetSequence\n");
 
     using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
-    using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
-    using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
+    using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+    using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
 
     std::shared_ptr<ZenoLevelSet> zsls{};
     if (has_input<ZenoLevelSet>("ZSLevelSetSequence"))
       zsls = get_input<ZenoLevelSet>("ZSLevelSetSequence");
     else {
       zsls = IObject::make<ZenoLevelSet>();
-      zsls->levelset = transition_ls_t{};
+      zsls->getLevelSet() = const_transition_ls_t{};
     }
     auto &lsseq = zsls->getLevelSetSequence();
 

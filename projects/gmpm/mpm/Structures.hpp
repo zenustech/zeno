@@ -163,10 +163,12 @@ struct ZenoLevelSet : IObject {
 #endif
 
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
+  using const_sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
+  using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
+  using levelset_t =
+      zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
+
   using spls_t = typename basic_ls_t::spls_t;
-  using sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
-  using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
-  using levelset_t = zs::variant<basic_ls_t, sdf_vel_ls_t, transition_ls_t>;
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
@@ -177,7 +179,7 @@ struct ZenoLevelSet : IObject {
   bool holdsSparseLevelSet() const noexcept {
     return zs::match([](const auto &ls) {
       if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
-        return ls.template holdsLevelSet<typename basic_ls_t::spls_t>();
+        return ls.template holdsLevelSet<spls_t>();
       else
         return false;
     })(levelset);
@@ -189,18 +191,16 @@ struct ZenoLevelSet : IObject {
     return std::get<basic_ls_t>(levelset);
   }
   decltype(auto) getLevelSetSequence() const noexcept {
-    return std::get<transition_ls_t>(levelset);
+    return std::get<const_transition_ls_t>(levelset);
   }
   decltype(auto) getLevelSetSequence() noexcept {
-    return std::get<transition_ls_t>(levelset);
+    return std::get<const_transition_ls_t>(levelset);
   }
   decltype(auto) getSparseLevelSet() const noexcept {
-    return std::get<basic_ls_t>(levelset)
-        .getLevelSet<typename basic_ls_t::spls_t>();
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
   }
   decltype(auto) getSparseLevelSet() noexcept {
-    return std::get<basic_ls_t>(levelset)
-        .getLevelSet<typename basic_ls_t::spls_t>();
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
   }
 
   levelset_t levelset;
@@ -221,7 +221,8 @@ struct ZenoBoundary : IObject {
     return ret;
   }
 
-  levelset_t *levelset{nullptr};
+  // levelset_t *levelset{nullptr};
+  std::shared_ptr<ZenoLevelSet> zsls{};
   zs::collider_e type{zs::collider_e::Sticky};
   /** scale **/
   float s{1};

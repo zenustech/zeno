@@ -297,9 +297,10 @@ struct ApplyBoundaryOnZSGrid : INode {
       auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
 
       using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
-      using sdf_vel_ls_t = typename ZenoLevelSet::sdf_vel_ls_t;
-      using transition_ls_t = typename ZenoLevelSet::transition_ls_t;
-      if (boundary->levelset)
+      using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+      using const_transition_ls_t =
+          typename ZenoLevelSet::const_transition_ls_t;
+      if (boundary->zsls)
         match([&](const auto &ls) {
           if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
             match([&](const auto &lsPtr) {
@@ -307,28 +308,25 @@ struct ApplyBoundaryOnZSGrid : INode {
               projectBoundary(cudaPol, lsv, *boundary, partition, grid,
                               zsgrid->transferScheme);
             })(ls._ls);
-          } else if constexpr (is_same_v<RM_CVREF_T(ls), sdf_vel_ls_t>) {
+          } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
             match([&](auto lsv) {
               projectBoundary(cudaPol, SdfVelFieldView{lsv}, *boundary,
                               partition, grid, zsgrid->transferScheme);
             })(ls.template getView<execspace_e::cuda>());
-          } else if constexpr (is_same_v<RM_CVREF_T(ls), transition_ls_t>) {
-            auto [fieldViewSrc, fieldViewDst] =
-                ls.template getView<zs::execspace_e::cuda>();
-            match(
-                [&](auto fvSrc, auto fvDst)
-                    -> std::enable_if_t<
-                        is_same_v<RM_CVREF_T(fvSrc), RM_CVREF_T(fvDst)>> {
-                  projectBoundary(cudaPol,
-                                  TransitionLevelSetView{SdfVelFieldView{fvSrc},
-                                                         SdfVelFieldView{fvDst},
-                                                         ls._stepDt, ls._alpha},
-                                  *boundary, partition, grid,
-                                  zsgrid->transferScheme);
-                },
-                [](...) {})(fieldViewSrc, fieldViewDst);
+          } else if constexpr (is_same_v<RM_CVREF_T(ls),
+                                         const_transition_ls_t>) {
+            match([&](auto fieldPair) {
+              auto &fvSrc = std::get<0>(fieldPair);
+              auto &fvDst = std::get<1>(fieldPair);
+              projectBoundary(cudaPol,
+                              TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                                     SdfVelFieldView{fvDst},
+                                                     ls._stepDt, ls._alpha},
+                              *boundary, partition, grid,
+                              zsgrid->transferScheme);
+            })(ls.template getView<zs::execspace_e::cuda>());
           }
-        })(*boundary->levelset);
+        })(boundary->zsls->getLevelSet());
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ApplyBoundaryOnZSGrid \n");

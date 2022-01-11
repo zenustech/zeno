@@ -1102,8 +1102,8 @@
     }
    },
    "view_rect": {
-    "x": 1521.303144326425,
-    "y": -1504.7946266202434,
+    "x": 1615.0581706828534,
+    "y": -1676.452380190708,
     "width": 2980.2322387695312,
     "height": 2980.2322387695312
    }
@@ -2256,6 +2256,41 @@
    "params": [],
    "categories": [
     "MPM"
+   ]
+  },
+  "ComputePrimitiveSequenceVelocity": {
+   "inputs": [
+    [
+     "",
+     "prim0",
+     ""
+    ],
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ComputeVonMises": {
@@ -11651,6 +11686,41 @@
     "openvdb"
    ]
   },
+  "ScalePrimitiveAlongNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SetBoundaryMotion": {
    "inputs": [
     [
@@ -12566,9 +12636,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "dt",
-     ""
+     "0"
     ],
     [
      "",
@@ -12588,13 +12658,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dt",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
