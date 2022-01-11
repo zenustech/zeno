@@ -14,6 +14,7 @@ public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
     GraphsManagment* graphsManagment() const;
+    void initFonts();
         
 private:
     GraphsManagment* m_pGraphs;

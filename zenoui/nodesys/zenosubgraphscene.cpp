@@ -39,7 +39,7 @@ void ZenoSubGraphScene::initModel(SubGraphModel* pModel)
     {
         const QModelIndex& idx = m_subgraphModel->index(r, 0);
         ZenoNode* pNode = new ZenoNode(m_nodeParams);
-        pNode->init(idx, m_subgraphModel);
+        pNode->initUI(idx, m_subgraphModel);
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
@@ -509,7 +509,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
 {
     QModelIndex idx = m_subgraphModel->index(first, 0);
     ZenoNode *pNode = new ZenoNode(m_nodeParams);
-    pNode->init(idx, m_subgraphModel);
+    pNode->initUI(idx, m_subgraphModel);
     QString id = pNode->nodeId();
     addItem(pNode);
     m_nodes[id] = pNode;

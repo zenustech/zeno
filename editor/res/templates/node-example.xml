@@ -6,7 +6,7 @@
 		<component id="status" x="32" y="24" w="208" h="48">
 			<image id="mute" x="48" y="32" w="32" h="32" normal=":/icons/mute.svg" hovered="" selected=""/>
 			<image id="view" x="96" y="32" w="32" h="32" normal=":/icons/view.svg" hovered="" selected=""/>
-			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/prep.svg" hovered="" selected=""/>
+			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/once.svg" hovered="" selected=""/>
 		</component>
 		<component id="control" x="32" y="72" w="32" h="32">
 			<image id="collapse" x="47" y="86" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=":/icons/uncollaspe.svg"/>
@@ -14,7 +14,7 @@
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
 		</component>
-		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="10px 10px 0px 0px" normal-clr="#27497C" hoverd-clr="" selected-clr="#821EA8">
+		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="0px 0px 0px 0px" normal-clr="#56608F" hoverd-clr="" selected-clr="" border-clr="#56608F" border-width="4px">
 			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
 		</background>
 	</header>
@@ -35,7 +35,7 @@
 			<image id="rbsocket-image" x="232" y="176" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
 			<text id="rbsocket-text" x="180" y="173" w="43" h="18" font-family="SimSun">Output</text>
 		</component>
-		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 10px 10px" normal-clr="#3D3B3B" hoverd-clr="#3D3B3B" selected-clr="#3D3B3B">
+		<background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 0px 0px" normal-clr="#1E1E1E" hoverd-clr="" selected-clr="" border-clr="#4A4848" border-width="4px">
 			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
 		</background>
 	</body>

@@ -44,8 +44,9 @@ struct BackgroundComponent
     ImageElement imageElem;
     QRect rc;
 
-    QColor clr_normal, clr_hovered, clr_selected;
+    QColor clr_normal, clr_hovered, clr_selected, clr_border;
     int lt_radius, rt_radius, lb_radius, rb_radius;
+    int border_witdh;
     bool bApplyImage;
     bool bAcceptHovers;
 };

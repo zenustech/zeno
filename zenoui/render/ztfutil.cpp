@@ -169,6 +169,15 @@ BackgroundComponent ZtfUtil::_parseBackground(rapidxml::xml_node<>* node)
     {
         comp.clr_selected = QColor(attr->value());
     }
+    if (auto attr = node->first_attribute("border-clr"))
+    {
+        comp.clr_border = QColor(attr->value());
+    }
+    if (auto attr = node->first_attribute("border-width"))
+    {
+         QString bw = QString(attr->value());
+         comp.border_witdh = bw.mid(0, bw.indexOf("px", 0, Qt::CaseInsensitive)).toInt();
+    }
     //todo: gradient
 
     auto img = node->first_node("image");
@@ -442,12 +451,20 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() -
                                   nodeParam.body.leftBottomSocket.image.rc.top());
     //todo: parameterized.
-    param.nameFont = QFont("Consolas", 13);
-    param.socketFont = QFont("Consolas", 11);
-    param.paramFont = QFont("Consolas", 11);
-    param.nameClr = QColor(255, 255, 255);
-    param.socketClr = QColor(255, 255, 255);
-    param.paramClr = QColor(255, 255, 255);
+    param.nameFont = QFont("HarmonyOS Sans", 16);
+    param.nameFont.setBold(true);
+    param.socketFont = QFont("HarmonyOS Sans", 11);
+    param.socketFont.setBold(true);
+    param.paramFont = QFont("HarmonyOS Sans", 11);
+    param.paramFont.setBold(true);
+
+    QColor clr(255, 255, 255);
+    clr.setAlphaF(0.4);
+    param.nameClr = clr;
+    param.socketClr = QColor(188, 188, 188);
+    clr = QColor(255, 255, 255);
+    clr.setAlphaF(0.7);
+    param.paramClr = clr;
 
     param.boardFont = QFont("Consolas", 17);
     param.boardTextClr = QColor(255, 255, 255);

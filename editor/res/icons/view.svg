@@ -1,1 +1,10 @@
-<svg id="图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><style>.cls-1{fill:#5a8e5b;}.cls-2{font-size:12px;fill:#fff;font-family:STHupo;}</style></defs><title>view</title><rect class="cls-1" width="32" height="32"/><text class="cls-2" transform="translate(4.06 19.39)">View</text></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>IC/VIEW</title>
+    <g id="IC/VIEW" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="View_off" fill-rule="nonzero">
+            <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="24" height="24"></rect>
+            <path d="M0.24,12 C2.49396474,7.57869064 7.03730583,4.79519808 12,4.79519808 C16.9626942,4.79519808 21.5060353,7.57869064 23.76,12 C21.5060353,16.4213094 16.9626942,19.2048019 12,19.2048019 C7.03730583,19.2048019 2.49396474,16.4213094 0.24,12 L0.24,12 Z M12,16.8 C14.6509668,16.8 16.8,14.6509668 16.8,12 C16.8,9.3490332 14.6509668,7.2 12,7.2 C9.3490332,7.2 7.2,9.3490332 7.2,12 C7.2,14.6509668 9.3490332,16.8 12,16.8 L12,16.8 Z M12,14.4 C10.6745166,14.4 9.6,13.3254834 9.6,12 C9.6,10.6745166 10.6745166,9.6 12,9.6 C13.3254834,9.6 14.4,10.6745166 14.4,12 C14.4,13.3254834 13.3254834,14.4 12,14.4 L12,14.4 Z" id="形状" fill="#FFFFFF"></path>
+        </g>
+    </g>
+</svg>

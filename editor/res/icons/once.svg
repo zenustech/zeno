@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>IC/ONCE</title>
+    <g id="IC/ONCE" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Once" transform="translate(0.000938, 0.000000)" fill-rule="nonzero">
+            <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="24" height="24"></rect>
+            <path d="M18.6666,4 C19.3998,4 20,4.6002 20,5.3334 L20,5.3334 L20,18.6666 C20,19.3998 19.3998,20 18.6666,20 L18.6666,20 L5.3334,20 C4.6002,20 4,19.3998 4,18.6666 L4,18.6666 L4,5.3334 C4,4.6002 4.6002,4 5.3334,4 L5.3334,4 Z M13.4191496,7.6666665 L11.9747051,7.6666665 L9.08581613,9.11111101 L9.08581613,10.5555555 L11.2524829,10.5555555 L11.2524829,16.3333335 L13.4191496,16.3333335 L13.4191496,7.6666665 Z" id="形状结合" fill="#FFFFFF"></path>
+        </g>
+    </g>
+</svg>

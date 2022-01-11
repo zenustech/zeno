@@ -85,6 +85,7 @@ ZenoBackgroundWidget::ZenoBackgroundWidget(QGraphicsItem *parent, Qt::WindowFlag
     , rt_radius(0)
     , lb_radius(0)
     , rb_radius(0)
+    , m_borderWidth(0)
     , m_bFixRadius(true)
     , m_bSelected(false)
 {
@@ -94,7 +95,17 @@ ZenoBackgroundWidget::ZenoBackgroundWidget(QGraphicsItem *parent, Qt::WindowFlag
 
 QRectF ZenoBackgroundWidget::boundingRect() const
 {
-    return _base::boundingRect();
+    QRectF rc = _base::boundingRect();
+    qreal halfpw = (qreal)m_borderWidth / 2;
+	//if (halfpw > 0.0)
+ //       rc.adjust(-halfpw, -halfpw, halfpw, halfpw);
+    return rc;
+}
+
+void ZenoBackgroundWidget::setBorder(int width, const QColor& clrBorder)
+{
+    m_borderWidth = width;
+    m_clrBorder = clrBorder;
 }
 
 void ZenoBackgroundWidget::setColors(bool bAcceptHovers, const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected)
@@ -130,20 +141,32 @@ void ZenoBackgroundWidget::paint(QPainter* painter, const QStyleOptionGraphicsIt
 {
     painter->setRenderHint(QPainter::Antialiasing, true);
     QPainterPath path = shape();
-    painter->fillPath(path, m_color);
+    QPen pen(m_clrBorder, m_borderWidth);
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->setBrush(m_color);
+    painter->drawPath(path);
 }
 
 void ZenoBackgroundWidget::toggle(bool bSelected)
 {
     m_bSelected = bSelected;
-    m_color = m_bSelected ? m_clrSelected : m_clrNormal;
+    if (m_clrSelected.isValid())
+    {
+        m_color = m_bSelected ? m_clrSelected : m_clrNormal;
+        update();
+    }
 }
 
 QPainterPath ZenoBackgroundWidget::shape() const
 {
-    QGraphicsLayout *pLayout = layout();
-    QRectF rcc = pLayout->geometry();
-    QRectF r = rcc.normalized();
+    //QGraphicsLayout *pLayout = layout();
+    //QRectF rcc = pLayout->geometry();
+    //QRectF r = rcc.normalized();
+    QRectF r = boundingRect();
+    //QPainterPath path;
+    //path.addRect(r);
+    //return path;
     return UiHelper::getRoundPath(r, lt_radius, rt_radius, lb_radius, rb_radius, m_bFixRadius);
 }
 
@@ -162,6 +185,9 @@ void ZenoBackgroundWidget::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 void ZenoBackgroundWidget::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     _base::hoverLeaveEvent(event);
-    m_color = isSelected() ? m_clrSelected : m_clrNormal;
-    update();
+    if (m_clrSelected.isValid())
+    {
+		m_color = isSelected() ? m_clrSelected : m_clrNormal;
+		update();
+    }
 }

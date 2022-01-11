@@ -25,7 +25,9 @@ public:
     enum { Type = ZTYPE_NODE };
     int type() const override;
 
-    void init(const QModelIndex& index, SubGraphModel* pModel);
+    void initUI(const QModelIndex& index, SubGraphModel* pModel);
+    void initLegacy(const QModelIndex& index, SubGraphModel* pModel);
+    void initWangStyle(const QModelIndex& index, SubGraphModel* pModel);
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -59,11 +61,12 @@ protected:
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
-    ZenoBackgroundWidget* initHeaderBgWidget(NODE_TYPE type);
+    ZenoBackgroundWidget* initHeaderLegacy(NODE_TYPE type);
+    ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
     QGraphicsGridLayout* initParams();
     QGraphicsGridLayout* initSockets();
-    void initIndependentWidgets();
+    void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
 
     QPersistentModelIndex m_index;
