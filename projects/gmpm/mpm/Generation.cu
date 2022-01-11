@@ -1,3 +1,4 @@
+#include "../Utils.hpp"
 #include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
@@ -41,6 +42,9 @@ struct ConfigConstitutiveModel : INode {
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized (isotropic) elastic model [{}]\n", typeStr));
 
     // aniso elastic model
     const auto get_arg = [&params](const char *const tag, auto type) {
@@ -102,18 +106,121 @@ struct ToZSParticles : INode {
     fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto model = get_input<ZenoConstitutiveModel>("ZSModel");
 
+    // primitive
     auto inParticles = get_input<PrimitiveObject>("prim");
-
     auto &obj = inParticles->attr<vec3f>("pos");
     vec3f *velsPtr{nullptr};
     if (inParticles->has_attr("vel"))
       velsPtr = inParticles->attr<vec3f>("vel").data();
-
-    const auto size = obj.size();
+    vec3f *nrmsPtr{nullptr};
+    if (inParticles->has_attr("nrm"))
+      nrmsPtr = inParticles->attr<vec3f>("nrm").data();
+    auto &quads = inParticles->quads;
+    auto &tris = inParticles->tris;
+    auto &lines = inParticles->lines;
 
     auto outParticles = IObject::make<ZenoParticles>();
+
+    // primitive binding
+    outParticles->prim = inParticles;
     // model
     outParticles->getModel() = *model;
+    // category
+    outParticles->category =
+        static_cast<ZenoParticles::category_e>(get_input2<int>("category"));
+
+    std::size_t size = obj.size();
+    // per vertex (node) vol, pos, vel
+    std::vector<float> eleVol(size, 0);
+
+    std::vector<vec3f> elePos{};
+    std::vector<vec3f> eleVel{};
+
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    if (auto category = outParticles->category;
+        category != ZenoParticles::mpm) {
+      // tet
+      if (quads.size()) {
+        if (category == ZenoParticles::element) {
+          size = quads.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto tetVol = [&obj](vec4i quad) {
+          const auto &p0 = obj[quad[0]];
+          auto s = cross(obj[quad[2]] - p0, obj[quad[1]] - p0);
+          return std::abs(dot(s, obj[quad[3]] - p0)) / 6;
+        };
+        for (std::size_t i = 0; i != quads.size(); ++i) {
+          auto quad = quads[i];
+          auto v = tetVol(quad);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : quad)
+              eleVol[pi] += v / 4;
+          } else if (category == ZenoParticles::element) {
+            eleVol[i] = v;
+            elePos[i] =
+                (obj[quad[0]] + obj[quad[1]] + obj[quad[2]] + obj[quad[3]]) / 4;
+            if (velsPtr)
+              eleVel[i] = (velsPtr[quad[0]] + velsPtr[quad[1]] +
+                           velsPtr[quad[2]] + velsPtr[quad[3]]) /
+                          4;
+          }
+        }
+      }
+      // surface
+      else if (tris.size()) {
+        if (category == ZenoParticles::element) {
+          size = tris.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto triArea = [&obj](vec3i tri) {
+          const auto &p0 = obj[tri[0]];
+          return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
+        };
+        for (std::size_t i = 0; i != tris.size(); ++i) {
+          auto tri = tris[i];
+          auto area = triArea(tri);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : tri)
+              eleVol[pi] += area / 3;
+          } else if (category == ZenoParticles::element) {
+            eleVol[i] = area;
+            elePos[i] = (obj[tri[0]] + obj[tri[1]] + obj[tri[2]]) / 3;
+            if (velsPtr)
+              eleVel[i] =
+                  (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+          }
+        }
+      }
+      // strand
+      else if (lines.size()) {
+        if (category == ZenoParticles::element) {
+          size = lines.size();
+          elePos.resize(size);
+          eleVel.resize(size);
+        }
+        const auto lineLength = [&obj](vec2i line) {
+          return length(obj[line[1]] - obj[line[0]]);
+        };
+        for (std::size_t i = 0; i != lines.size(); ++i) {
+          auto line = lines[i];
+          auto len = lineLength(line);
+          if (category == ZenoParticles::vertex) {
+            for (auto pi : line)
+              eleVol[pi] += len / 2;
+          } else if (category == ZenoParticles::vertex) {
+            eleVol[i] = len;
+            elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
+            if (velsPtr)
+              eleVel[i] = (velsPtr[line[0]] + velsPtr[line[1]]) / 2;
+          }
+        }
+      }
+    }
 
     // particles
     auto &pars = outParticles->getParticles(); // tilevector
@@ -122,13 +229,20 @@ struct ToZSParticles : INode {
                                       {"vol", 1},  {"C", 9},   {"vms", 1}};
 
     const bool hasLogJp = model->hasLogJp();
-    const bool hasOrientation = model->hasOrientation();
+    const bool hasOrientation =
+        model->hasOrientation() ||
+        outParticles->category == ZenoParticles::element;
     const bool hasF = model->hasF();
+    const bool hasDeformation =
+        outParticles->category == ZenoParticles::mpm ||
+        outParticles->category == ZenoParticles::element;
 
-    if (hasF)
-      tags.emplace_back(zs::PropertyTag{"F", 9});
-    else
-      tags.emplace_back(zs::PropertyTag{"J", 1});
+    if (hasDeformation) {
+      if (hasF)
+        tags.emplace_back(zs::PropertyTag{"F", 9});
+      else
+        tags.emplace_back(zs::PropertyTag{"J", 1});
+    }
 
     if (hasOrientation)
       tags.emplace_back(zs::PropertyTag{"a", 3});
@@ -136,44 +250,126 @@ struct ToZSParticles : INode {
     if (hasLogJp)
       tags.emplace_back(zs::PropertyTag{"logJp", 1});
 
+    // tag assembly
+    std::vector<zs::PropertyTag> auxAttribs{};
+    if (outParticles->category == ZenoParticles::mpm ||
+        outParticles->category == ZenoParticles::vertex) {
+      for (auto &&[key, arr] : inParticles->verts.attrs) {
+        const auto checkDuplication = [&tags](const std::string &name) {
+          for (std::size_t i = 0; i != tags.size(); ++i)
+            if (tags[i].name == name.data())
+              return true;
+          return false;
+        };
+        if (checkDuplication(key))
+          continue;
+        const auto &k{key};
+        match(
+            [&k, &auxAttribs](const std::vector<vec3f> &vals) {
+              auxAttribs.push_back(PropertyTag{k, 3});
+            },
+            [&k, &auxAttribs](const std::vector<float> &vals) {
+              auxAttribs.push_back(PropertyTag{k, 1});
+            },
+            [&k, &auxAttribs](const std::vector<vec3i> &vals) {},
+            [&k, &auxAttribs](const std::vector<int> &vals) {},
+            [](...) {
+              throw std::runtime_error(
+                  "what the heck is this type of attribute!");
+            })(arr);
+      }
+    }
+    tags.insert(std::end(tags), std::begin(auxAttribs), std::end(auxAttribs));
+
     fmt::print("pending {} particles with these attributes\n", size);
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
     {
-      using namespace zs;
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
 
-      auto ompExec = zs::omp_exec();
-      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
-                                hasLogJp, hasOrientation, hasF, &inParticles,
-                                &model, &obj, &velsPtr](size_t pi) mutable {
-        using vec3 = zs::vec<float, 3>;
-        using mat3 = zs::vec<float, 3, 3>;
-        pars("mass", pi) = model->volume * model->density;
-        pars.tuple<3>("pos", pi) = obj[pi];
-        pars.tuple<9>("C", pi) = mat3::zeros();
+      ompExec(zs::range(size),
+              [pars = proxy<execspace_e::host>({}, pars), hasLogJp,
+               hasOrientation, hasF, hasDeformation, &model, &obj, velsPtr,
+               nrmsPtr, &eleVol, &elePos, &eleVel,
+               category = (int)outParticles->category, &inParticles,
+               &auxAttribs](size_t pi) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+                float vol{};
+                // vol, pos, vel
+                if (category == ZenoParticles::mpm) {
+                  vol = model->volume;
+                  pars.tuple<3>("pos", pi) = obj[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = velsPtr[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                } else if (category == ZenoParticles::vertex) {
+                  // iter
+                  vol = eleVol[pi]; // different
+                  pars.tuple<3>("pos", pi) = obj[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = velsPtr[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                } else if (category == ZenoParticles::element) {
+                  vol = eleVol[pi];
+                  pars.tuple<3>("pos", pi) = elePos[pi];
+                  if (velsPtr != nullptr)
+                    pars.tuple<3>("vel", pi) = eleVel[pi];
+                  else
+                    pars.tuple<3>("vel", pi) = vec3::zeros();
+                }
 
-        if (velsPtr != nullptr)
-          pars.tuple<3>("vel", pi) = velsPtr[pi];
-        else
-          pars.tuple<3>("vel", pi) = vec3::zeros();
+                pars("vol", pi) = vol;
+                pars("mass", pi) = vol * model->density;
 
-        pars("vol", pi) = model->volume;
+                // deformation
+                if (hasDeformation) {
+                  if (hasF)
+                    pars.tuple<9>("F", pi) = mat3::identity();
+                  else
+                    pars("J", pi) = 1.;
+                }
 
-        if (hasF)
-          pars.tuple<9>("F", pi) = mat3::identity();
-        else
-          pars("J", pi) = 1.;
+                // apic transfer
+                pars.tuple<9>("C", pi) = mat3::zeros();
 
-        if (hasOrientation)
-          pars.tuple<3>("a", pi) = vec3::zeros(); // need further initialization
+                // orientation
+                if (hasOrientation) {
+                  if (nrmsPtr != nullptr) {
+                    const auto n_ = nrmsPtr[pi];
+                    const auto n = vec3{n_[0], n_[1], n_[2]};
+                    constexpr auto up = vec3{0, 1, 0};
+                    if (!parallel(n, up)) {
+                      auto side = cross(up, n);
+                      auto a = cross(side, n);
+                      pars.tuple<3>("a", pi) = a;
+                    } else
+                      pars.tuple<3>("a", pi) = vec3{0, 0, 1};
+                  } else
+                    pars.tuple<3>("a", pi) = vec3::zeros();
+                }
 
-        if (hasLogJp)
-          pars("logJp", pi) = -0.04;
+                // plasticity
+                if (hasLogJp)
+                  pars("logJp", pi) = -0.04;
+                pars("vms", pi) = 0; // vms
 
-        pars("vms", pi) = 0; // vms
-      });
+                // additional attributes
+                if (category == ZenoParticles::mpm ||
+                    category == ZenoParticles::vertex) {
+                  for (auto &prop : auxAttribs) {
+                    if (prop.numChannels == 3)
+                      pars.tuple<3>(prop.name, pi) =
+                          inParticles->attr<vec3f>(std::string{prop.name})[pi];
+                    else
+                      pars(prop.name, pi) =
+                          inParticles->attr<float>(std::string{prop.name})[pi];
+                  }
+                }
+              });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
@@ -184,11 +380,61 @@ struct ToZSParticles : INode {
 };
 
 ZENDEFNODE(ToZSParticles, {
-                              {"ZSModel", "prim"},
+                              {"ZSModel", "prim", {"int", "category", "0"}},
                               {"ZSParticles"},
                               {},
                               {"MPM"},
                           });
+
+/// this requires further polishing
+struct UpdatePrimitiveFromZSParticles : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing UpdatePrimitiveFromZSParticles\n");
+
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    for (auto &&parObjPtr : parObjPtrs) {
+      auto &pars = parObjPtr->getParticles();
+      if (parObjPtr->prim.get() == nullptr)
+        continue;
+
+      const auto category = parObjPtr->category;
+      auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      vec3f *velsPtr{nullptr};
+      if (parObjPtr->prim->has_attr("vel"))
+        velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
+
+      auto size = pars.size();
+
+      if (category == ZenoParticles::mpm || category == ZenoParticles::vertex) {
+        // currently only write back pos and vel (if has)
+        ompExec(range(size),
+                [&, pars = proxy<execspace_e::host>({}, pars)](std::size_t pi) {
+                  pos[pi] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[pi] = pars.array<3>("vel", pi);
+                });
+      } else if (category == ZenoParticles::element) {
+        ;
+      }
+    }
+
+    fmt::print(fg(fmt::color::cyan),
+               "done executing UpdatePrimitiveFromZSParticles\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
+                                               {"ZSParticles"},
+                                               {"ZSParticles"},
+                                               {},
+                                               {"MPM"},
+                                           });
 
 struct MakeZSPartition : INode {
   void apply() override {
@@ -209,9 +455,20 @@ struct MakeZSGrid : INode {
   void apply() override {
     auto dx = get_input2<float>("dx");
 
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"v", 3}};
+
     auto grid = IObject::make<ZenoGrid>();
-    grid->get() = typename ZenoGrid::grid_t{
-        {{"m", 1}, {"v", 3}}, dx, 1, zs::memsrc_e::um, 0};
+    grid->transferScheme = get_input2<std::string>("transfer");
+    // default is "apic"
+    if (grid->transferScheme == "flip")
+      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+    else if (grid->transferScheme == "apic")
+      ;
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized transfer scheme [{}]\n", grid->transferScheme));
+
+    grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::um, 0};
 
     using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
     fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n",
@@ -219,12 +476,13 @@ struct MakeZSGrid : INode {
     set_output("ZSGrid", grid);
   }
 };
-ZENDEFNODE(MakeZSGrid, {
-                           {{"float", "dx", "0.1"}},
-                           {"ZSGrid"},
-                           {},
-                           {"MPM"},
-                       });
+ZENDEFNODE(MakeZSGrid,
+           {
+               {{"float", "dx", "0.1"}, {"string", "transfer", "apic"}},
+               {"ZSGrid"},
+               {},
+               {"MPM"},
+           });
 
 struct ToZSBoundary : INode {
   void apply() override {
@@ -241,9 +499,8 @@ struct ToZSBoundary : INode {
         return zs::collider_e::Separate;
       return zs::collider_e::Sticky;
     };
-    // pass in FloatGrid::Ptr
-    auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getLevelSet();
-    boundary->levelset = &ls;
+
+    boundary->zsls = get_input<ZenoLevelSet>("ZSLevelSet");
 
     boundary->type = queryType();
 
@@ -276,7 +533,6 @@ struct ToZSBoundary : INode {
     }
     { boundary->omega = zs::AngularVelocity<float, 3>{}; }
 
-    // *boundary = ZenoBoundary{&ls, queryType()};
     fmt::print(fg(fmt::color::cyan), "done executing ToZSBoundary\n");
     set_output("ZSBoundary", boundary);
   }
@@ -294,11 +550,9 @@ struct StepZSBoundary : INode {
     fmt::print(fg(fmt::color::green), "begin executing StepZSBoundary\n");
 
     auto boundary = get_input<ZenoBoundary>("ZSBoundary");
-    auto dt = get_param<float>("dt");
-    if (has_input("dt"))
-      dt = get_input<NumericObject>("dt")->get<float>();
+    auto dt = get_input2<float>("dt");
 
-    auto oldB = boundary->b;
+    // auto oldB = boundary->b;
 
     boundary->s += boundary->dsdt * dt;
     boundary->b += boundary->dbdt * dt;
@@ -317,9 +571,9 @@ struct StepZSBoundary : INode {
   }
 };
 ZENDEFNODE(StepZSBoundary, {
-                               {"ZSBoundary", "dt"},
+                               {"ZSBoundary", {"float", "dt", "0"}},
                                {"ZSBoundary"},
-                               {{"float", "dt", "0"}},
+                               {},
                                {"MPM"},
                            });
 
