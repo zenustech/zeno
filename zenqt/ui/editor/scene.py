@@ -230,9 +230,9 @@ class QDMGraphicsScene(QGraphicsScene):
     def descs_comment(self):
         return self.editor.descs_comment
 
-    def setContentChanged(self, flag):
+    def setContentChanged(self, flag, important=True):
         self.contentChanged = flag
-        if flag:
+        if flag and important:
             self.editor.try_run_this_frame()
 
     def dumpGraph(self, input_nodes=None):
@@ -354,9 +354,9 @@ class QDMGraphicsScene(QGraphicsScene):
         self.nodes.append(node)
         self.addItem(node)
 
-    def record(self):
+    def record(self, important=True):
         self.history_stack.record()
-        self.setContentChanged(True)
+        self.setContentChanged(True, important)
 
     def undo(self):
         self.history_stack.undo()
@@ -654,7 +654,7 @@ class QDMGraphicsView(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
 
         if self.scene().moved:
-            self.scene().record()
+            self.scene().record(important=False)
             self.scene().moved = False
 
     def wheelEvent(self, event):

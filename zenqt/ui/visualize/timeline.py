@@ -102,6 +102,11 @@ class QDMSlider(QSlider):
     def valueChanged_callback(self, v):
         self.timeline.label.setText(str(v))
 
+    def mouseReleaseEvent(self, e):
+        super().mouseReleaseEvent(e)
+        v = self.value()
+        self.timeline.editor.try_run_this_frame(v)
+
 
 class TimelineWidget(QWidget):
     def __init__(self, parent=None):
@@ -174,6 +179,7 @@ class TimelineWidget(QWidget):
         self.editor.on_kill()
 
     def on_execute(self):
+        self.always_run.setCheckState(Qt.CheckState.Unchecked)
         self.editor.on_kill()
         self.editor.on_execute()
         self.slider.setValue(0)
@@ -187,6 +193,8 @@ class TimelineWidget(QWidget):
         self.slider.setMaximum(int('0' + self.maxframe.text()))
 
     def on_update(self):
+        if self.always_run.checkState() == 2:
+            return
         frameid = zenvis.get_curr_frameid()
         self.slider.setValue(frameid)
         self.label.setText(str(frameid))
