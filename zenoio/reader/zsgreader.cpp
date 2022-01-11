@@ -271,7 +271,6 @@ void ZsgReader::_parseInputs(const QString& id, const NODE_DESCS& descriptors, c
             if (arr.Size() < 2 || arr.Size() > 3)
                 return;
 
-
             QString outId, outSock;
             QVariant defaultValue;
             if (arr[0].IsString())

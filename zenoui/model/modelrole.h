@@ -19,6 +19,11 @@ enum MODEL_ROLE
 	ROLE_COLORRAMPS,
 	ROLE_GRAPHPTR,
 	ROLE_BLACKBOARD,
+
+	//synchronize link change, param
+	ROLE_ADDLINK,
+	ROLE_REMOVELINK,
+	ROLE_MODIFY_PARAM,
 };
 
 #endif

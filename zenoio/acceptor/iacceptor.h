@@ -2,7 +2,6 @@
 #define __IACCEPTOR_H__
 
 #include <model/modeldata.h>
-#include <model/nodeinfo.h>
 
 interface IAcceptor
 {

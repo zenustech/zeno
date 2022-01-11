@@ -226,7 +226,8 @@ void SubGraphModel::_addLink(const EdgeInfo& info)
     inputs[info.inputSock].outNodes[info.outputNode][info.outputSock] = SOCKET_INFO(info.outputNode, info.outputSock);
     setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
-    emit linkChanged(true, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
+    //synchronize link change
+    setData(inIdx, QVariant::fromValue(info), ROLE_ADDLINK);
 }
 
 void SubGraphModel::removeLink(const EdgeInfo& info, bool enableTransaction)
@@ -262,7 +263,8 @@ void SubGraphModel::_removeLink(const EdgeInfo &info)
         inputs[info.inputSock].outNodes.remove(info.outputNode);
     setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 
-    emit linkChanged(false, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
+    //synchronize link change
+    setData(inIdx, QVariant::fromValue(info), ROLE_REMOVELINK);
 }
 
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const
@@ -325,34 +327,11 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     {
         PARAMS_INFO info = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
         info[paramName].value = var;
-        m_nodes[nodeid][ROLE_PARAMETERS] = QVariant::fromValue(info);
+
         const QModelIndex& idx = index(nodeid);
-        emit dataChanged(idx, idx, QVector<int>{ROLE_PARAMETERS});
-        emit paramUpdated(nodeid, paramName, var);
+        setData(idx, QVariant::fromValue(info), ROLE_PARAMETERS);
+        setData(idx, QVariant::fromValue(info[paramName]), ROLE_MODIFY_PARAM);
     }
-}
-
-void SubGraphModel::updateOptions(const QString& nodeid, int options)
-{
-    QModelIndex idx = index(nodeid);
-    Q_ASSERT(idx.isValid());
-    int oldOptions = this->data(idx, ROLE_OPTIONS).toInt();
-
-    //todo: transaction.
-    setData(idx, options, ROLE_OPTIONS);
-    emit optionsChanged(nodeid, oldOptions, options);
-}
-
-void SubGraphModel::updateCollasped(const QString& nodeid, bool collaspe)
-{
-    QModelIndex idx = index(nodeid);
-    Q_ASSERT(idx.isValid());
-    bool bCollasped = data(idx, ROLE_COLLASPED).toBool();
-    if (bCollasped == collaspe)
-        return;
-
-    setData(idx, collaspe, ROLE_COLLASPED);
-    emit collaspedChanged(nodeid, collaspe);
 }
 
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
@@ -484,13 +463,6 @@ bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
     _removeRow(index(row, 0));
     endRemoveRows();
     return true;
-}
-
-void SubGraphModel::onParamValueChanged(const QString& nodeid, const QString& paramName, const QVariant& var)
-{
-    blockSignals(true);
-    updateParam(nodeid, paramName, var, true);
-    blockSignals(false);
 }
 
 void SubGraphModel::onDoubleClicked(const QString& nodename)

@@ -134,8 +134,6 @@ void ZenoNode::init(const QModelIndex& index, SubGraphModel* pModel)
     setFlag(ItemSendsScenePositionChanges);
 
     connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
-    connect(this, SIGNAL(paramChanged(const QString&, const QString&, const QVariant&)),
-            pModel, SLOT(onParamValueChanged(const QString&, const QString&, const QVariant&)));
 }
 
 void ZenoNode::initIndependentWidgets()
@@ -323,7 +321,9 @@ QGraphicsGridLayout* ZenoNode::initParams()
                     pParamsLayout->addItem(pLineEdit, r, 1);
                     connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
                         QString textValue = pLineEdit->text();
-                        emit paramChanged(nodeid, paramName, textValue);
+                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
                     });
                     m_paramControls[paramName] = pLineEdit;
                     break;
@@ -334,7 +334,9 @@ QGraphicsGridLayout* ZenoNode::initParams()
                     ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
                     pParamsLayout->addItem(pComboBox, r, 1);
                     connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
-                        emit paramChanged(nodeid, paramName, textValue);
+						QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+						SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+						pGraphModel->updateParam(nodeid, paramName, textValue, true);
                     });
                     m_paramControls[paramName] = pComboBox;
                     break;
@@ -361,7 +363,9 @@ QGraphicsGridLayout* ZenoNode::initParams()
                     pParamsLayout->addItem(pMultiStrEdit, ++r, 0);
                     connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
                         QString textValue = pMultiStrEdit->text();
-                        emit paramChanged(nodeid, paramName, textValue);
+						QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+						SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+						pGraphModel->updateParam(nodeid, paramName, textValue, true);
                     });
                     m_paramControls[paramName] = pMultiStrEdit;
                     break;
@@ -616,7 +620,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
         if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
         {
-            pGraphModel->updateNodeState(nodeId(), ROLE_OBJPOS, pos, false);
+            pGraphModel->setData(pGraphModel->index(nodeId()), pos, ROLE_OBJPOS);
         }
     }
     return value;

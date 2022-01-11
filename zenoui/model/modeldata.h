@@ -39,6 +39,8 @@ struct PARAM_INFO {
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}
 };
+Q_DECLARE_METATYPE(PARAM_INFO)
+
 typedef QMap<QString, PARAM_INFO> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
 
@@ -69,6 +71,7 @@ struct EdgeInfo
         }
     }
 };
+Q_DECLARE_METATYPE(EdgeInfo)
 
 struct cmpEdge {
     bool operator()(const EdgeInfo &lhs, const EdgeInfo &rhs) const {
@@ -90,8 +93,24 @@ struct SOCKET_INFO {
 
     SOCKET_INFO() : binsock(true) {}
     SOCKET_INFO(const QString& id, const QString& name) : nodeid(id), name(name) {}
+    SOCKET_INFO(const QString& id, const QString& name, bool inSock) : nodeid(id), name(name), binsock(inSock) {}
     SOCKET_INFO(const QString &id, const QString &name, const QPointF &p, bool bIn)
         : nodeid(id), name(name), pos(p), binsock(bIn) {}
+
+	bool operator==(const SOCKET_INFO& rhs) const {
+		return nodeid == rhs.nodeid && name == rhs.name;
+	}
+	bool operator<(const SOCKET_INFO& rhs) const {
+		if (nodeid != rhs.nodeid) {
+			return nodeid < rhs.nodeid;
+		}
+		else if (name != rhs.name) {
+			return name < rhs.name;
+		}
+		else {
+			return 0;
+		}
+	}
 };
 typedef QMap<QString, SOCKET_INFO> SOCKETS_INFO;
 

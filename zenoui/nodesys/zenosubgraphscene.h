@@ -35,12 +35,10 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
 public slots:
-    void onNewNodeCreated();    //todo: category.
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
-    void onParamUpdated(const QString& nodeid, const QString& paramName, const QVariant& val);
 
 private slots:
     void reload();
@@ -49,8 +47,6 @@ private slots:
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
-    bool _enableLink(const QString &outputNode, const QString &outputSocket,
-                     const QString &inputNode, const QString &inputSocket);
 
     QRectF m_scene_rect;
     NodeUtilParam m_nodeParams;

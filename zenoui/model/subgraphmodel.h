@@ -68,8 +68,6 @@ public:
     void removeLink(const EdgeInfo& info, bool enableTransaction = false);
     void addLink(const EdgeInfo& info, bool enableTransaction = false);
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
-    void updateOptions(const QString& nodeid, int options);
-    void updateCollasped(const QString& nodeid, bool collaspe);
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA itemData(const QModelIndex &index) const override;
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
@@ -92,11 +90,6 @@ public:
     QUndoStack* undoStack() const;
 
 signals:
-    void linkChanged(bool bAdd, const QString& outputId, const QString& outputPort,
-                const QString& inputId, const QString& inputPort);
-    void paramUpdated(const QString& nodeid, const QString& paramName, const QVariant& val);
-    void optionsChanged(const QString& nodeid, int oldOptions, int newOptions);
-    void collaspedChanged(const QString& nodeid, bool toCollasped);
     void clearLayout();
     void reloaded();
 
@@ -104,7 +97,6 @@ public slots:
     void onDoubleClicked(const QString &nodename);
     void undo();
     void redo();
-    void onParamValueChanged(const QString& nodeid, const QString& paramName, const QVariant &var);
 
 private:
     SubGraphModel(const SubGraphModel& rhs);
