@@ -397,7 +397,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes)
+        go(launch.launchProgram, prog, nframes, start_frame=0)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()

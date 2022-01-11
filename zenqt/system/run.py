@@ -11,7 +11,7 @@ def evaluateExpr(expr, frame):
         return expr
 
 
-def runScene(graphs, nframes, iopath, start_frame=0):
+def runScene(graphs, nframes, iopath, start_frame):
     core.setIOPath(iopath)
 
     data = json.dumps(list(serializeScene(graphs)))
