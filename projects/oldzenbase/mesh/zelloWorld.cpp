@@ -4,12 +4,25 @@
 #include <zeno/NumericObject.h>
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/utils/prim_ops.h>
 #include <vector>
 #include <cstring>
 #include <iostream>
+#include <spdlog/spdlog.h>
+
 namespace zeno{
 struct StringToMesh : zeno::INode {
     virtual void apply() override {
+        auto alphaset = std::make_shared<zeno::ListObject>();
+        for (auto i = 33; i <= 126; i++) {
+            auto path = fmt::format("assets/ascii/{:03}.obj", i);
+            auto prim = std::make_shared<zeno::PrimitiveObject>();
+            auto &pos = prim->verts;
+            auto &tris = prim->tris;
+            read_obj_file(pos, tris, path.c_str());
+            prim->resize(pos.size());
+            alphaset->arr.push_back(prim);
+        }
         auto spacing = get_input("spacing")->as<zeno::NumericObject>()->get<float>();
         auto list = std::make_shared<zeno::ListObject>();
         auto list2 = std::make_shared<zeno::ListObject>();
