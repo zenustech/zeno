@@ -33,8 +33,8 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
     option->bdrHoverd = QColor(228, 228, 228);
     option->bdrSelected = QColor(122, 122, 122);
 
-    option->palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
-    option->palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
+    //option->palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
+    //option->palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
 
     option->clrBackground = QColor(50, 50, 50);
     option->clrBgHovered = QColor(50, 50, 50);

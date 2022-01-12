@@ -48,6 +48,7 @@ signals:
 
 public slots:
     void onCollaspeBtnClicked();
+    void onCollaspeLegacyUpdated(bool);
     void onCollaspeUpdated(bool);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
@@ -64,10 +65,11 @@ private:
     ZenoBackgroundWidget* initHeaderLegacy(NODE_TYPE type);
     ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
-    QGraphicsGridLayout* initParams();
+    QGraphicsLayout* initParams();
     QGraphicsGridLayout* initSockets();
     void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
+    void _drawBorderWangStyle(QPainter* painter);
 
     QPersistentModelIndex m_index;
     NodeUtilParam m_renderParams;
@@ -78,6 +80,7 @@ private:
     QMap<QString, ZenoParamWidget*> m_paramControls;
 
     QGraphicsTextItem* m_nameItem;
+    ZenoTextLayoutItem* m_NameItem;
     ZenoImageItem *m_mute;
     ZenoImageItem *m_view;
     ZenoImageItem *m_prep;
@@ -88,6 +91,7 @@ private:
     ZenoBackgroundWidget *m_headerWidget;
 
     QGraphicsLinearLayout *m_pMainLayout;
+    QGraphicsRectItem* m_border;
 
     bool m_bInitSockets;
     bool m_bHeapMap;

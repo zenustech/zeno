@@ -23,6 +23,50 @@ void ZenoParamWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
     QGraphicsProxyWidget::paint(painter, option, widget);
 }
 
+void ZenoParamWidget::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    QGraphicsProxyWidget::mousePressEvent(event);
+}
+
+void ZenoParamWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    QGraphicsProxyWidget::mouseReleaseEvent(event);
+}
+
+void ZenoParamWidget::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+    QGraphicsProxyWidget::mouseDoubleClickEvent(event);
+    emit doubleClicked();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+ZenoFrame::ZenoFrame(QWidget* parent, Qt::WindowFlags f)
+    : QFrame(parent, f)
+{
+	setFrameShape(QFrame::VLine);
+    QPalette pal = palette();
+    pal.setBrush(QPalette::WindowText, QColor(86, 96, 143));
+    setPalette(pal);
+    setLineWidth(4);
+}
+
+ZenoFrame::~ZenoFrame()
+{
+}
+
+QSize ZenoFrame::sizeHint() const
+{
+    QSize sz = QFrame::sizeHint();
+    return sz;
+    //return QSize(4, sz.height());
+}
+
+void ZenoFrame::paintEvent(QPaintEvent* e)
+{
+    QFrame::paintEvent(e);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ZenoGvLineEdit::ZenoGvLineEdit(QWidget* parent)
@@ -46,9 +90,7 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, LineEditParam param, Q
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
-    //todo: parameterize.
-    m_pLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    m_pLineEdit->setFixedWidth(128);    //todo: dpi scaled.
+    m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
 }
@@ -138,7 +180,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
 {
     m_combobox = new ZComboBox;
     m_combobox->addItems(items);
-    m_combobox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
     setWidget(m_combobox);
     connect(m_combobox, SIGNAL(textActivated(const QString&)), this, SIGNAL(textActivated(const QString&)));

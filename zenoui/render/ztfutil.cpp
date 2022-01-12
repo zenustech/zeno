@@ -469,24 +469,29 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.boardFont = QFont("Consolas", 17);
     param.boardTextClr = QColor(255, 255, 255);
 
-    param.lineEditParam.font = QFont("Consolas", 10);
+    param.lineEditParam.font = QFont("HarmonyOS Sans SC", 10);
     QPalette palette;
-    palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
-    palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
-    palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
-    palette.setColor(QPalette::Text, Qt::white);
+    palette.setColor(QPalette::Base, QColor(37, 37, 37));
+    //palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
+    //palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
+    clr = QColor(255, 255, 255);
+    clr.setAlphaF(0.4);
+    palette.setColor(QPalette::Text, clr);
     param.lineEditParam.palette = palette;
     param.lineEditParam.margins = QMargins(8, 0, 0, 0);
 
-    param.comboboxParam.font = QFont("Consolas", 10);
+    param.comboboxParam.font = QFont("HarmonyOS Sans SC", 13);
     param.comboboxParam.textColor = QColor(255, 255, 255);
-    param.comboboxParam.itemBgNormal = nodeParam.body.backboard.clr_normal;
-    param.comboboxParam.itemBgHovered = QColor(179, 102, 0);
-    param.comboboxParam.itemBgSelected = QColor(179, 102, 0);
+    param.comboboxParam.itemBgNormal = QColor(33, 33, 33);
+    param.comboboxParam.itemBgHovered = QColor(23, 160, 252);
+    param.comboboxParam.itemBgSelected = QColor(23, 160, 252);
     param.comboboxParam.margins = QMargins(8, 0, 0, 0);
-    palette.setColor(QPalette::Base, nodeParam.body.backboard.clr_normal);
-    palette.setColor(QPalette::Window, nodeParam.body.backboard.clr_normal);
+    palette.setColor(QPalette::Base, QColor(37, 37, 37));
+    palette.setColor(QPalette::Window, QColor(37, 37, 37));
     palette.setColor(QPalette::Text, Qt::white);
+    palette.setColor(QPalette::Active, QPalette::WindowText, QColor());
+    palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor());
+
     param.comboboxParam.palette = palette;
 
     return param;

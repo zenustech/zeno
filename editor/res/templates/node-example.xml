@@ -4,9 +4,9 @@
 			<text id="" x="75" y="75" w="116" h="22" font-family="Consolas">ReadVDBGrid</text>
 		</component>
 		<component id="status" x="32" y="24" w="208" h="48">
-			<image id="mute" x="48" y="32" w="32" h="32" normal=":/icons/mute.svg" hovered="" selected=""/>
-			<image id="view" x="96" y="32" w="32" h="32" normal=":/icons/view.svg" hovered="" selected=""/>
-			<image id="prep" x="144" y="32" w="32" h="32" normal=":/icons/once.svg" hovered="" selected=""/>
+			<image id="mute" x="48" y="32" w="24" h="24" normal=":/icons/mute.svg" hovered="" selected=""/>
+			<image id="view" x="96" y="32" w="24" h="24" normal=":/icons/view.svg" hovered="" selected=""/>
+			<image id="prep" x="144" y="32" w="24" h="24" normal=":/icons/once.svg" hovered="" selected=""/>
 		</component>
 		<component id="control" x="32" y="72" w="32" h="32">
 			<image id="collapse" x="47" y="86" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=":/icons/uncollaspe.svg"/>
@@ -20,7 +20,7 @@
 	</header>
 	<body>
 		<component id="topleftsocket" x="0" y="128" w="128" h="32">
-			<image id="ltsocket-image" x="24" y="137" w="16" h="16" normal=":/icons/socket-off.svg" hovered="" selected=":/icons/socket-on.svg"/>
+			<image id="ltsocket-image" x="24" y="137" w="16" h="16" normal=":/icons/socket-off.svg" hovered=":/icons/socket-hover.svg" selected=":/icons/socket-on.svg"/>
 			<text id="ltsocket-text" x="53" y="135" w="27" h="17" font-family="SimSun">SRC</text>
 		</component>
 		<component id="bottomleftsocket" x="0" y="168" w="128" h="32">

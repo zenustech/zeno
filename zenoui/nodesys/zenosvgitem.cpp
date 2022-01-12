@@ -49,6 +49,7 @@ ZenoImageItem::ZenoImageItem(const ImageElement& elem, const QSizeF& sz, QGraphi
     , m_hovered(elem.imageHovered)
     , m_selected(elem.imageOn)
     , m_size(sz)
+    , m_bToggled(false)
 {
     setAcceptHoverEvents(true);
     m_svg = new ZenoSvgItem(m_normal, this);
@@ -62,6 +63,7 @@ ZenoImageItem::ZenoImageItem(const QString &normal, const QString &hovered, cons
     , m_hovered(hovered)
     , m_selected(selected)
     , m_size(sz)
+    , m_bToggled(false)
 {
     setAcceptHoverEvents(true);
     m_svg = new ZenoSvgItem(m_normal, this);
@@ -83,9 +85,10 @@ void ZenoImageItem::resize(QSizeF sz)
     m_svg->setSize(m_size);
 }
 
-void ZenoImageItem::toggle(bool bSelected)
+void ZenoImageItem::toggle(bool bToggled)
 {
-    if (bSelected) {
+    m_bToggled = bToggled;
+    if (m_bToggled) {
         delete m_svg;
         m_svg = new ZenoSvgItem(m_selected, this);
         m_svg->setSize(m_size);
@@ -104,7 +107,7 @@ void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void ZenoImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
-    if (!m_hovered.isEmpty())
+    if (!m_bToggled && !m_hovered.isEmpty())
     {
         delete m_svg;
         m_svg = new ZenoSvgItem(m_hovered, this);
@@ -120,7 +123,7 @@ void ZenoImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    if (!m_hovered.isEmpty())
+    if (!m_bToggled && !m_hovered.isEmpty())
     {
         delete m_svg;
         m_svg = new ZenoSvgItem(m_normal, this);

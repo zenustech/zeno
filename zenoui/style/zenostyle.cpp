@@ -47,7 +47,8 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             }
         }
         case PE_ComboBoxLineEdit: {
-            if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option)) {
+            if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option))
+            {
                 QRect r = option->rect;
                 bool hasFocus = option->state & (State_MouseOver | State_HasFocus);
 
@@ -58,23 +59,27 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
 
                 QPalette pal = editOption->palette;
 
-                QColor bgClrNormal = pal.color(QPalette::Inactive, QPalette::Window);
-                QColor bgClrActive = pal.color(QPalette::Active, QPalette::Window);
+                QColor bgClrNormal(37, 37, 37);
+                QColor bgClrActive = bgClrNormal;
                 if (hasFocus) {
                     painter->fillRect(r.adjusted(0, 0, -1, -1), bgClrActive);
                 } else {
                     painter->fillRect(r.adjusted(0, 0, -1, -1), bgClrNormal);
                 }
 
-                // Draw Outline
-                QColor bdrClrNormal = pal.color(QPalette::Inactive, QPalette::WindowText);
-                QColor bdrClrActive = pal.color(QPalette::Active, QPalette::WindowText);
-                if (hasFocus) {
-                    painter->setPen(bdrClrActive);
-                } else {
-                    painter->setPen(bdrClrNormal);
-                }
-                painter->drawRect(r.adjusted(0, 0, -1, -1));
+				if (bgClrNormal.isValid() && bgClrActive.isValid())
+				{
+					// Draw Outline
+					QColor bdrClrNormal = pal.color(QPalette::Inactive, QPalette::WindowText);
+					QColor bdrClrActive = pal.color(QPalette::Active, QPalette::WindowText);
+					if (hasFocus) {
+						painter->setPen(bdrClrActive);
+					}
+					else {
+						painter->setPen(bdrClrNormal);
+					}
+					//painter->drawRect(r.adjusted(0, 0, -1, -1));
+				}
 
                 // Draw inner shadow
                 //p->setPen(d->topShadow());
@@ -113,6 +118,7 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
         {
             if (qobject_cast<const ZenoGvLineEdit *>(w))
             {
+                return;
                 painter->save();
                 QPalette pal = option->palette;
                 State flags = option->state;

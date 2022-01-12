@@ -20,6 +20,27 @@ public:
     };
     int type() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+
+protected:
+	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
+
+signals:
+    void doubleClicked();
+};
+
+class ZenoFrame : public QFrame
+{
+    Q_OBJECT
+public:
+    ZenoFrame(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+    ~ZenoFrame();
+
+    QSize sizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* e);
 };
 
 class ZenoGvLineEdit : public QLineEdit

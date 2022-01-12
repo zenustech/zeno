@@ -51,6 +51,7 @@ private:
     QString m_selected;
     ZenoSvgItem* m_svg;
     QSizeF m_size;
+    bool m_bToggled;
 };
 
 #endif

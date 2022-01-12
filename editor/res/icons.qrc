@@ -9,6 +9,7 @@
 	<file>icons/mute.svg</file>
 	<file>icons/prep.svg</file>
 	<file>icons/socket-on.svg</file>
+	<file>icons/socket-hover.svg</file>
     <file>icons/socket-off.svg</file>
 	<file>icons/view.svg</file>
 	<file>icons/playforward.svg</file>
@@ -57,5 +58,6 @@
 	<file>icons/search_arrow.svg</file>
 	<file>icons/search_arrow_backward.svg</file>
 	<file>icons/closebtn.svg</file>
+	<file>icons/once.svg</file>
 </qresource>
 </RCC>
