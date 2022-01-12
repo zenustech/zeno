@@ -6,14 +6,27 @@
 #include <extra/Visualization.h>
 #include <zeno.h>
 #include "serialize.h"
+#ifdef Q_OS_LINUX
+#include <dlfcn.h>
+#endif
 
 QString g_iopath;
 
 void launchProgram(GraphsModel* pModel, int nframes)
 {
     //todo
+#ifdef Q_OS_WIN
     LoadLibrary("zeno_ZenoFX.dll");
     LoadLibrary("zeno_oldzenbase.dll");
+#else
+    void* dp = nullptr;
+    dp = dlopen("libzeno_ZenoFX.so", RTLD_NOW);
+    if (dp == nullptr)
+        return;
+    dp = dlopen("libzeno_oldzenbase.so", RTLD_NOW);
+    if (dp == nullptr)
+        return;
+#endif
 
     cleanIOPath();
 

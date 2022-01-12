@@ -3,8 +3,9 @@
 
 #include <model/modeldata.h>
 
-interface IAcceptor
+class IAcceptor
 {
+public:
     virtual void setDescriptors(const NODE_DESCS& nodesParams) = 0;
     virtual void BeginSubgraph(const QString& name) = 0;
     virtual void EndSubgraph() = 0;
