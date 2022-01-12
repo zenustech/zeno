@@ -16738,8 +16738,8 @@
     "86d2bd8c-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      2781.106279807692,
-      986.0670451923074
+      2670.791473653846,
+      1112.3753282692303
      ],
      "special": true,
      "width": 3924.2096923076924,
@@ -16784,8 +16784,8 @@
       "name": "particles"
      },
      "uipos": [
-      2518.57076923077,
-      1235.676923076923
+      2523.5938461538462,
+      1127.1784615384613
      ],
      "options": []
     },
@@ -16886,8 +16886,8 @@
       "name": "flowSurf"
      },
      "uipos": [
-      2516.5615384615385,
-      1425.5492307692311
+      2516.561538461538,
+      1314.0369230769238
      ],
      "options": []
     },
@@ -17004,8 +17004,8 @@
        ""
       ],
       "params": [
-       "3bfa5c5d-SubInput",
-       "port",
+       "7cdadc74-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -17016,8 +17016,8 @@
      },
      "params": {},
      "uipos": [
-      4161.711655384614,
-      1599.154806153846
+      4153.674732307691,
+      1606.7095138461536
      ],
      "options": []
     },
@@ -17031,7 +17031,7 @@
       ]
      },
      "params": {
-      "value": "@force = vec3(0,0,0)\n@force += $gravity\ndepth = fit(@depth, $min_d, max_d, 0,1)\n@force + = $buoyancy * chramp(depth)\n@advect = @vel\n@advect *= $coffi * chramp(depth)\n@airresist = -0.5*dot(@vel, @vel) * $coffi\n@rforce = vec3(0,0,0)\n\n"
+      "value": "@force = vec3(0,0,0)\n@force += $gravity\nd = (@depth - $mind)/($maxd-$mind)\n@force += $buoyancy  * d\n@targetv = @vel\ndeltav = @targetv - @vel\n@airresist = $cofresis * deltav * length(deltav)\n@force += @airresist\n@tforce = vec3(0,0,0)"
      },
      "uipos": [
       3735.304664615384,
@@ -17054,98 +17054,8 @@
       "defl": ""
      },
      "uipos": [
-      3547.047778461538,
-      1823.9314707692306
-     ],
-     "options": []
-    },
-    "14c4ec4a-ParticlesNeighborWrangle": {
-     "name": "ParticlesNeighborWrangle",
-     "inputs": {
-      "prim": [
-       "cb274417-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "primNei": [
-       "7d20c99e-PortalOut",
-       "port",
-       null
-      ],
-      "hashGrid": [
-       "b0d6a634-ParticlesBuildHashGrid",
-       "hashGrid",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       ""
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4769.688812307691,
-      1769.9233476923073
-     ],
-     "options": []
-    },
-    "7d20c99e-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "repellants"
-     },
-     "uipos": [
-      4011.3890461538467,
-      1865.2091076923075
-     ],
-     "options": []
-    },
-    "b0d6a634-ParticlesBuildHashGrid": {
-     "name": "ParticlesBuildHashGrid",
-     "inputs": {
-      "primNei": [
-       "7d20c99e-PortalOut",
-       "port",
-       null
-      ],
-      "radius": [
-       "d6d075a4-SubInput",
-       "port",
-       null
-      ],
-      "radiusMin": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4464.028553846153,
-      1986.727384615384
+      2329.0119015384616,
+      1638.2785476923073
      ],
      "options": []
     },
@@ -17164,20 +17074,20 @@
       "defl": ""
      },
      "uipos": [
-      3750.189046153846,
-      2256.7679999999978
+      2077.82590769231,
+      1965.4295384615357
      ],
      "options": []
     },
     "b8f513c0-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      3986.796061538458,
-      2243.426707692308
+      3939.2174769230733,
+      2088.4748307692307
      ],
      "special": true,
-     "width": 200,
-     "height": 150,
+     "width": 378.74116923076963,
+     "height": 214.93833846153848,
      "title": "todo",
      "content": "some numericOp here",
      "params": []
@@ -17186,7 +17096,7 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "14c4ec4a-ParticlesNeighborWrangle",
+       "10129c04-ParticlesNeighborBvhWrangle",
        "prim",
        null
       ],
@@ -17196,8 +17106,8 @@
        ""
       ],
       "params": [
-       "3bfa5c5d-SubInput",
-       "port",
+       "7cdadc74-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -17208,8 +17118,8 @@
      },
      "params": {},
      "uipos": [
-      5460.607015384614,
-      1710.9001846153844
+      5274.311138461537,
+      1666.0541538461543
      ],
      "options": []
     },
@@ -17223,11 +17133,11 @@
       ]
      },
      "params": {
-      "value": "@vel += $dt * force\n"
+      "value": "@vel += $dt * (@force + @tforce)\n"
      },
      "uipos": [
-      4970.676184615382,
-      1303.2674461538465
+      4801.579323076921,
+      1281.4070153846155
      ],
      "options": []
     },
@@ -17252,11 +17162,6 @@
       "dt": [
        "d196c545-DictGetItem",
        "object",
-       null
-      ],
-      "params": [
-       "3bfa5c5d-SubInput",
-       "port",
        null
       ],
       "SRC": [
@@ -17296,8 +17201,8 @@
      "name": "DictGetItem",
      "inputs": {
       "dict": [
-       "3bfa5c5d-SubInput",
-       "port",
+       "7cdadc74-MakeDict",
+       "dict",
        null
       ],
       "key": [
@@ -17317,13 +17222,376 @@
       1998.7827692307678
      ],
      "options": []
+    },
+    "8cfd4cb7-NumericWrangle": {
+     "name": "NumericWrangle",
+     "inputs": {
+      "params": [
+       "7cdadc74-MakeDict",
+       "dict",
+       null
+      ],
+      "zfxCode": [
+       "8221f268-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3307.4669759615363,
+      2465.304177884615
+     ],
+     "options": []
+    },
+    "8221f268-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@spikykern = 0 - 45/(3.1415926 * pow($h, 6))\n@h = $h\n@k = $k"
+     },
+     "uipos": [
+      2852.7499236538465,
+      2426.730965576922
+     ],
+     "options": []
+    },
+    "acbbe45c-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "8cfd4cb7-NumericWrangle",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "kernels"
+     },
+     "uipos": [
+      3619.9345082692316,
+      2469.121716346153
+     ],
+     "options": []
+    },
+    "10129c04-ParticlesNeighborBvhWrangle": {
+     "name": "ParticlesNeighborBvhWrangle",
+     "inputs": {
+      "prim": [
+       "cb274417-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "primNei": [
+       "cb274417-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "lbvh": [
+       "0416ebf0-ParticlesBuildBvh",
+       "lbvh",
+       null
+      ],
+      "zfxCode": [
+       "7614d020-x",
+       "value",
+       ""
+      ],
+      "params": [
+       "eb41c038-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4744.999384615381,
+      1658.8209230769226
+     ],
+     "options": []
+    },
+    "0416ebf0-ParticlesBuildBvh": {
+     "name": "ParticlesBuildBvh",
+     "inputs": {
+      "primNei": [
+       "cb274417-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "radius": [
+       "d6d075a4-SubInput",
+       "port",
+       null
+      ],
+      "radiusMin": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4419.503999999995,
+      1759.4431999999993
+     ],
+     "options": []
+    },
+    "7614d020-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "rij = @pos - @@pos\nr2 = dot(rij,rij)\nr = sqrt(r2)\nc = $h*$h - r2\nc2 = 0.91*$h*$h\nc3 = r<$h?c/c2:0\ns_corr = $k * pow(c3,4)\n\n\nc4 = r<$h? $h-r:0\nkernel = d > 0?$spikykern * c4 * c4 * rij / d:vec3(0,0,0)\n\n@tfroce += s_corr * kernel\n"
+     },
+     "uipos": [
+      4349.582769230766,
+      1258.9036307692297
+     ],
+     "options": []
+    },
+    "eb41c038-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "kernels"
+     },
+     "uipos": [
+      4381.087507692305,
+      2011.1596307692303
+     ],
+     "options": []
+    },
+    "7cdadc74-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "h": [
+       "d6d075a4-SubInput",
+       "port",
+       null
+      ],
+      "gravity": [
+       "d67ef921-SubInput",
+       "port",
+       null
+      ],
+      "buoyancy": [
+       "c1d01509-x",
+       "port",
+       null
+      ],
+      "k": [
+       "b20e03a7-SubInput",
+       "port",
+       null
+      ],
+      "cofresis": [
+       "2ec61057-x",
+       "port",
+       null
+      ],
+      "mind": [
+       "a685411b-x",
+       "port",
+       null
+      ],
+      "maxd": [
+       "532b1fdd-x",
+       "port",
+       null
+      ],
+      "obj7": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "h\ngravity\nbuoyancy\nk\ncofresis\nmind\nmaxd\nobj7"
+     },
+     "uipos": [
+      2866.2882461538447,
+      2052.1479384615377
+     ],
+     "options": [],
+     "socket_keys": [
+      "h",
+      "gravity",
+      "buoyancy",
+      "k",
+      "cofresis",
+      "mind",
+      "maxd",
+      "obj7"
+     ]
+    },
+    "d67ef921-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "vec3",
+      "defl": "0,-9.8,0"
+     },
+     "uipos": [
+      2268.421538461537,
+      2212.1630769230756
+     ],
+     "options": []
+    },
+    "c1d01509-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "buoyancy",
+      "type": "vec3",
+      "defl": "0,13.8,0"
+     },
+     "uipos": [
+      2393.7171692307675,
+      2233.6216615384596
+     ],
+     "options": []
+    },
+    "b20e03a7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "traction",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      2423.9359999999992,
+      2348.0674461538447
+     ],
+     "options": []
+    },
+    "2ec61057-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dragResis",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      2351.000923076921,
+      2573.8246153846135
+     ],
+     "options": []
+    },
+    "a685411b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mind",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      2456.887384615384,
+      2763.0941538461516
+     ],
+     "options": []
+    },
+    "532b1fdd-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "maxd",
+      "type": "float",
+      "defl": ""
+     },
+     "uipos": [
+      2642.5403076923058,
+      2974.4652307692286
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 4839.182076923107,
-    "y": 1205.287307692291,
-    "width": 2555.9999999999945,
-    "height": 1305.9999999999993
+    "x": 1596.3966346154743,
+    "y": 991.9007211538128,
+    "width": 3993.749999999984,
+    "height": 2040.6249999999989
    }
   },
   "DivFreeMove": {
@@ -18329,8 +18597,8 @@
       "defl": ""
      },
      "uipos": [
-      -1908.7692307692296,
-      1034.40223076923
+      -1921.326923076922,
+      1049.4714615384605
      ],
      "options": []
     },
@@ -18348,8 +18616,8 @@
        ""
       ],
       "params": [
-       "c6aeb36e-SubInput",
-       "port",
+       "26d51c5d-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -18408,32 +18676,44 @@
      ],
      "options": []
     },
-    "c6aeb36e-SubInput": {
-     "name": "SubInput",
+    "26d51c5d-MakeDict": {
+     "name": "MakeDict",
      "inputs": {
       "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       "e621e4c4-SubInput",
+       "port",
+       null
+      ],
+      "obj1": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "name": "params",
-      "type": "",
-      "defl": ""
+      "_KEYS": "dt\nobj1"
      },
      "uipos": [
-      2910.9735384615374,
-      969.2529230769228
+      3258.721153846152,
+      1048.5673076923067
      ],
-     "options": []
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "obj1"
+     ]
     }
    },
    "view_rect": {
-    "x": -2637.814704432087,
-    "y": 396.7768783503599,
-    "width": 2044.7999999999956,
-    "height": 1044.7999999999995
+    "x": 1478.3290435556337,
+    "y": 170.084545499363,
+    "width": 3194.999999999993,
+    "height": 1632.499999999999
    }
   }
  },
@@ -20662,6 +20942,41 @@
     "MPM"
    ]
   },
+  "ComputePrimitiveSequenceVelocity": {
+   "inputs": [
+    [
+     "",
+     "prim0",
+     ""
+    ],
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ComputeVonMises": {
    "inputs": [
     [
@@ -21051,6 +21366,36 @@
     [
      "zany",
      "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictGetKeyList": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "keys",
      ""
     ],
     [
@@ -25893,6 +26238,11 @@
      "0.1"
     ],
     [
+     "string",
+     "transfer",
+     "apic"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -27579,6 +27929,52 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "PoissonDiskSample": {
+   "inputs": [
+    [
+     "",
+     "VDBGrid",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "ppc",
+     "8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "PolyDuplicate": {
@@ -29751,6 +30147,46 @@
     "FLIPSolver"
    ]
   },
+  "PushOutZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -29797,6 +30233,11 @@
     [
      "readpath",
      "path",
+     ""
+    ],
+    [
+     "",
+     "frameid",
      ""
     ],
     [
@@ -31214,6 +31655,41 @@
     "openvdb"
    ]
   },
+  "ScalePrimitiveAlongNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SetBoundaryMotion": {
    "inputs": [
     [
@@ -32243,9 +32719,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "dt",
-     ""
+     "0"
     ],
     [
      "",
@@ -32265,13 +32741,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dt",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -32961,6 +33431,11 @@
      "",
      "prim",
      ""
+    ],
+    [
+     "int",
+     "category",
+     "0"
     ],
     [
      "",
@@ -33664,6 +34139,36 @@
    "params": [],
    "categories": [
     "FEM"
+   ]
+  },
+  "UpdatePrimitiveFromZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "UpdateZSGrid": {
@@ -35674,6 +36179,26 @@
      ""
     ],
     [
+     "vec3",
+     "gravity",
+     "0,-9.8,0"
+    ],
+    [
+     "vec3",
+     "buoyancy",
+     "0,13.8,0"
+    ],
+    [
+     "float",
+     "traction",
+     "0.1"
+    ],
+    [
+     "float",
+     "dragResis",
+     "0.1"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -35712,11 +36237,6 @@
     [
      "",
      "dt",
-     ""
-    ],
-    [
-     "",
-     "params",
      ""
     ],
     [
