@@ -2890,7 +2890,7 @@
       "traction": [
        null,
        null,
-       0.1
+       0.0005
       ],
       "dragResis": [
        null,
@@ -2900,12 +2900,12 @@
       "mind": [
        null,
        null,
-       -0.2
+       -0.4
       ],
       "maxd": [
        null,
        null,
-       0.2
+       -0.1
       ],
       "flowParticles": [
        "3f9d9b08-StepFLIPWorld",
@@ -2930,7 +2930,7 @@
       "curv_min": [
        null,
        null,
-       1.0
+       0.8
       ],
       "curv_max": [
        null,
@@ -2940,7 +2940,7 @@
       "vort_min": [
        null,
        null,
-       100.0
+       10.0
       ],
       "vort_max": [
        null,
@@ -2950,7 +2950,7 @@
       "acc_min": [
        null,
        null,
-       20.0
+       5.0
       ],
       "acc_max": [
        null,
@@ -3115,8 +3115,8 @@
     }
    },
    "view_rect": {
-    "x": -9135.849702987873,
-    "y": -4036.552711637398,
+    "x": -8564.700149416345,
+    "y": -3959.711193780267,
     "width": 781.2499999999995,
     "height": 781.2499999999995
    }
@@ -17436,8 +17436,8 @@
     "86d2bd8c-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      5037.121649352406,
-      1067.2673586620117
+      5006.927943606692,
+      1121.068950870346
      ],
      "special": true,
      "width": 3924.2096923076924,
@@ -17653,8 +17653,8 @@
      },
      "params": {},
      "uipos": [
-      6637.500674305995,
-      1491.967554569058
+      6510.681202645379,
+      1438.1787328537798
      ],
      "options": []
     },
@@ -17691,30 +17691,17 @@
       "defl": ""
      },
      "uipos": [
-      220.3560728066211,
-      1747.7167950237713
+      79.13254640662123,
+      1751.3849385666285
      ],
      "options": []
-    },
-    "b8f513c0-Blackboard": {
-     "name": "Blackboard",
-     "uipos": [
-      6158.34895660131,
-      2052.9996623473426
-     ],
-     "special": true,
-     "width": 378.74116923076963,
-     "height": 214.93833846153848,
-     "title": "todo",
-     "content": "some numericOp here",
-     "params": []
     },
     "067b75a2-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "cb274417-ParticlesWrangle",
-       "prim",
+       "9acf66b3-IfElse",
+       "result",
        null
       ],
       "zfxCode": [
@@ -17735,8 +17722,8 @@
      },
      "params": {},
      "uipos": [
-      7758.137080459843,
-      1551.3121945690586
+      8053.229982920707,
+      1526.253624968397
      ],
      "options": []
     },
@@ -17753,8 +17740,8 @@
       "value": "@vel += $dt * (@force + @tforce)\n"
      },
      "uipos": [
-      7285.4052650752255,
-      1166.6650561075198
+      7598.93598576987,
+      1140.537496049633
      ],
      "options": []
     },
@@ -17789,8 +17776,8 @@
      },
      "params": {},
      "uipos": [
-      8495.428721735636,
-      1491.7644752444796
+      8641.444852347877,
+      1356.494858917949
      ],
      "options": [
       "VIEW"
@@ -17837,8 +17824,8 @@
      },
      "params": {},
      "uipos": [
-      7375.312951379162,
-      1906.9754441000136
+      7344.0931211584475,
+      2314.252320161134
      ],
      "options": []
     },
@@ -17863,8 +17850,8 @@
      },
      "params": {},
      "uipos": [
-      5521.743807036894,
-      2069.9546826210685
+      5523.303705997628,
+      2031.5906249081004
      ],
      "options": []
     },
@@ -17881,31 +17868,8 @@
       "value": "@spikykern = 0 - 45/(3.1415926 * pow($h, 6))\n@h = $h\n@k = $k"
      },
      "uipos": [
-      5067.026754729205,
-      2031.3814703133744
-     ],
-     "options": []
-    },
-    "acbbe45c-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "8cfd4cb7-NumericWrangle",
-       "result",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "kernels"
-     },
-     "uipos": [
-      5834.21133934459,
-      2073.7722210826055
+      4977.908330280987,
+      1719.7508013829843
      ],
      "options": []
     },
@@ -17933,8 +17897,8 @@
        ""
       ],
       "params": [
-       "eb41c038-PortalOut",
-       "port",
+       "9f1034c9-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -17945,12 +17909,10 @@
      },
      "params": {},
      "uipos": [
-      7238.164321027094,
-      1608.9330916707145
+      7338.25048462685,
+      1651.8384713318262
      ],
-     "options": [
-      "MUTE"
-     ]
+     "options": []
     },
     "0416ebf0-ParticlesBuildBvh": {
      "name": "ParticlesBuildBvh",
@@ -17978,8 +17940,8 @@
      },
      "params": {},
      "uipos": [
-      6903.3299419983,
-      1644.7012407229035
+      6756.422971466759,
+      1626.8159878190731
      ],
      "options": []
     },
@@ -17993,29 +17955,11 @@
       ]
      },
      "params": {
-      "value": "rij = @pos - @@pos\nr2 = dot(rij,rij)\nr = sqrt(r2)\nc = $h*$h - r2\nc2 = 0.91*$h*$h\nc3 = r<$h?c/c2:0\ns_corr = $k * pow(c3,4)\n\n\nc4 = r<$h? $h-r:0\nkernel = d > 0?$spikykern * c4 * c4 * rij / d:vec3(0,0,0)\n\n@tfroce += s_corr * kernel\n"
+      "value": "rij = @pos - @@pos\nr2 = dot(rij,rij)\nr = sqrt(r2)\nc = pow($h, 2) - r2\nc2 = 0.91*pow($h,2)\nc3 = r<$h?c/c2:0\ns_corr = $k * pow(c3,4)\nc4 = r<$h? $h-r:0\nkernel = r > 0? $spikykern * c4 * c4 * rij /r:vec3(0,0,0)\n\n@tforce += s_corr * kernel\n"
      },
      "uipos": [
-      6833.408711229071,
-      1144.1616714921338
-     ],
-     "options": []
-    },
-    "eb41c038-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "kernels"
-     },
-     "uipos": [
-      6864.91344969061,
-      1896.417671492134
+      6878.890019477986,
+      1125.7756107106575
      ],
      "options": []
     },
@@ -19324,13 +19268,166 @@
       3529.9357970731694
      ],
      "options": []
+    },
+    "9acf66b3-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "10129c04-ParticlesNeighborBvhWrangle",
+       "prim",
+       null
+      ],
+      "false": [
+       "cb274417-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "cond": [
+       "b5fdda78-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7703.260859612137,
+      1602.5196300135894
+     ],
+     "options": []
+    },
+    "042fde54-PrimitiveGetSize": {
+     "name": "PrimitiveGetSize",
+     "inputs": {
+      "prim": [
+       "cb274417-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6953.95146775075,
+      1489.3711204187707
+     ],
+     "options": []
+    },
+    "b5fdda78-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "042fde54-PrimitiveGetSize",
+       "size",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       2.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpge"
+     },
+     "uipos": [
+      7335.514926457883,
+      1438.758082892371
+     ],
+     "options": []
+    },
+    "2a9e445c-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "8cfd4cb7-NumericWrangle",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "h\nspikykern\nk\nobj3"
+     },
+     "uipos": [
+      5961.85230560271,
+      2155.871185059421
+     ],
+     "options": [],
+     "socket_keys": [
+      "h",
+      "spikykern",
+      "k",
+      "obj3"
+     ]
+    },
+    "9f1034c9-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "h": [
+       "2a9e445c-ExtractDict",
+       "h",
+       null
+      ],
+      "spikykern": [
+       "2a9e445c-ExtractDict",
+       "spikykern",
+       null
+      ],
+      "k": [
+       "2a9e445c-ExtractDict",
+       "k",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "h\nspikykern\nk\nobj3"
+     },
+     "uipos": [
+      6491.454152801351,
+      2078.1054261460076
+     ],
+     "options": [],
+     "socket_keys": [
+      "h",
+      "spikykern",
+      "k",
+      "obj3"
+     ]
     }
    },
    "view_rect": {
-    "x": 1494.883070576435,
-    "y": 543.6282156078935,
-    "width": 1635.8399999999797,
-    "height": 835.8399999999996
+    "x": 3170.0600232430734,
+    "y": -261.59887051240696,
+    "width": 9750.36621093734,
+    "height": 4981.994628906243
    }
   },
   "DivFreeMove": {
@@ -20482,8 +20579,8 @@
     }
    },
    "view_rect": {
-    "x": 2981.707944889027,
-    "y": 306.8246667354618,
+    "x": 2736.0733326441277,
+    "y": 132.83348306199224,
     "width": 2044.7999999999956,
     "height": 1044.7999999999995
    }
