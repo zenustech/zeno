@@ -59,6 +59,7 @@ protected:
     bool sceneEvent(QEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void resizeEvent(QGraphicsSceneResizeEvent *event) override;
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);

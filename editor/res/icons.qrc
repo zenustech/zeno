@@ -59,5 +59,22 @@
 	<file>icons/search_arrow_backward.svg</file>
 	<file>icons/closebtn.svg</file>
 	<file>icons/once.svg</file>
+	<file>icons/min_MUTE_dark.svg</file>
+	<file>icons/min_ONCE_dark.svg</file>
+	<file>icons/min_VIEW_dark.svg</file>
+	<file>icons/min_MUTE_light.svg</file>
+	<file>icons/min_ONCE_light.svg</file>
+	<file>icons/min_VIEW_light.svg</file>
+	<file>icons/MUTE_dark.svg</file>
+	<file>icons/MUTE_light.svg</file>
+	<file>icons/ONCE_dark.svg</file>
+	<file>icons/ONCE_light.svg</file>
+	<file>icons/VIEW_dark.svg</file>
+	<file>icons/VIEW_light.svg</file>
+	<file>icons/ic_pop_down.svg</file>
+	<file>icons/ic_openfile.svg</file>
+	<file>icons/ic_MUTE.svg</file>
+	<file>icons/ic_ONCE.svg</file>
+	<file>icons/ic_VIEW.svg</file>
 </qresource>
 </RCC>

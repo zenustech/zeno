@@ -313,6 +313,49 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+ZenoSpacerItem::ZenoSpacerItem(bool bHorizontal, qreal size, QGraphicsItem* parent)
+    : QGraphicsLayoutItem()
+    , QGraphicsItem(parent)
+    , m_bHorizontal(bHorizontal)
+    , m_size(size)
+{
+}
+
+void ZenoSpacerItem::setGeometry(const QRectF& rect)
+{
+	prepareGeometryChange();
+	QGraphicsLayoutItem::setGeometry(rect);
+	setPos(rect.topLeft());
+}
+
+QRectF ZenoSpacerItem::boundingRect() const
+{
+    if (m_bHorizontal)
+        return QRectF(0, 0, m_size, 0);
+    else
+        return QRectF(0, 0, 0, m_size);
+}
+
+void ZenoSpacerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+}
+
+QSizeF ZenoSpacerItem::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+	QRectF rc = boundingRect();
+	switch (which)
+	{
+	case Qt::MinimumSize:
+	case Qt::PreferredSize:
+    case Qt::MaximumSize:
+		return rc.size();
+	default:
+		break;
+	}
+	return constraint;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 ZenoBoardTextLayoutItem::ZenoBoardTextLayoutItem(const QString &text, const QFont &font, const QColor &color, const QSizeF& sz, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)
@@ -365,6 +408,75 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
             break;
     }
     return constraint;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent)
+    : QGraphicsItem(parent)
+    , m_mute(nullptr)
+    , m_view(nullptr)
+    , m_once(nullptr)
+{
+    m_mute = new ZenoImageItem(statusComp.mute, QSizeF(33, 42), this);
+    m_view = new ZenoImageItem(statusComp.view, QSizeF(25, 42), this);
+    m_once = new ZenoImageItem(statusComp.once, QSizeF(33, 42), this);
+    m_once->setPos(QPointF(0, 0));
+    m_mute->setPos(QPointF(20, 0));
+    m_view->setPos(QPointF(40, 0));
+    m_once->setZValue(ZVALUE_ELEMENT);
+    m_view->setZValue(ZVALUE_ELEMENT);
+    m_mute->setZValue(ZVALUE_ELEMENT);
+}
+
+QRectF ZenoMinStatusBtnItem::boundingRect() const
+{
+	QRectF rc = childrenBoundingRect();
+	return rc;
+}
+
+void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+ZenoMinStatusBtnWidget::ZenoMinStatusBtnWidget(const StatusComponent& statusComp, QGraphicsItem* parent)
+	: QGraphicsLayoutItem()
+	, ZenoMinStatusBtnItem(statusComp, parent)
+{
+}
+
+void ZenoMinStatusBtnWidget::updateGeometry()
+{
+    QGraphicsLayoutItem::updateGeometry();
+}
+
+void ZenoMinStatusBtnWidget::setGeometry(const QRectF& rect)
+{
+	prepareGeometryChange();
+	QGraphicsLayoutItem::setGeometry(rect);
+	setPos(rect.topLeft());
+}
+
+QRectF ZenoMinStatusBtnWidget::boundingRect() const
+{
+	QRectF rc = QRectF(QPointF(0, 0), geometry().size());
+	return rc;
+}
+
+QSizeF ZenoMinStatusBtnWidget::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+	switch (which)
+	{
+	case Qt::MinimumSize:
+	case Qt::PreferredSize:
+	case Qt::MaximumSize:
+		return ZenoMinStatusBtnItem::boundingRect().size();
+	default:
+		break;
+	}
+	return constraint;
 }
 
 

@@ -160,6 +160,21 @@ private:
     QTextEdit* m_pTextEdit;
 };
 
+class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
+{
+public:
+    ZenoSpacerItem(bool bHorizontal, qreal size, QGraphicsItem* parent = nullptr);
+    void setGeometry(const QRectF& rect) override;
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+protected:
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
+
+private:
+    qreal m_size;
+    bool m_bHorizontal;
+};
 
 class ZenoTextLayoutItem : public QGraphicsLayoutItem, public QGraphicsTextItem
 {
@@ -193,6 +208,31 @@ protected:
 private:
     QString m_text;
     QSizeF m_size;
+};
+
+class ZenoMinStatusBtnItem : public QGraphicsItem
+{
+public:
+    ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
+	QRectF boundingRect() const override;
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+private:
+    ZenoImageItem* m_mute;
+    ZenoImageItem* m_view;
+    ZenoImageItem* m_once;
+};
+
+class ZenoMinStatusBtnWidget : public QGraphicsLayoutItem, public ZenoMinStatusBtnItem
+{
+public:
+    ZenoMinStatusBtnWidget(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
+	void updateGeometry() override;
+	void setGeometry(const QRectF& rect) override;
+	QRectF boundingRect() const override;
+
+protected:
+	QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
 };
 
 

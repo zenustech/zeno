@@ -102,7 +102,7 @@ QRectF ZenoBackgroundWidget::boundingRect() const
     return rc;
 }
 
-void ZenoBackgroundWidget::setBorder(int width, const QColor& clrBorder)
+void ZenoBackgroundWidget::setBorder(qreal width, const QColor& clrBorder)
 {
     m_borderWidth = width;
     m_clrBorder = clrBorder;
@@ -139,13 +139,21 @@ void ZenoBackgroundWidget::setGeometry(const QRectF& rect)
 
 void ZenoBackgroundWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    painter->setRenderHint(QPainter::Antialiasing, true);
-    QPainterPath path = shape();
-    QPen pen(m_clrBorder, m_borderWidth);
-    pen.setJoinStyle(Qt::MiterJoin);
-    painter->setPen(pen);
-    painter->setBrush(m_color);
-    painter->drawPath(path);
+    if (m_borderWidth > 0)
+    {
+		painter->setRenderHint(QPainter::Antialiasing, true);
+		QPainterPath path = shape();
+		QPen pen(m_clrBorder, m_borderWidth);
+		pen.setJoinStyle(Qt::MiterJoin);
+		painter->setPen(pen);
+		painter->setBrush(m_color);
+		painter->drawPath(path);
+    }
+    else
+    {
+        QPainterPath path = shape();
+        painter->fillPath(path, m_color);
+    }
 }
 
 void ZenoBackgroundWidget::toggle(bool bSelected)
@@ -160,13 +168,8 @@ void ZenoBackgroundWidget::toggle(bool bSelected)
 
 QPainterPath ZenoBackgroundWidget::shape() const
 {
-    //QGraphicsLayout *pLayout = layout();
-    //QRectF rcc = pLayout->geometry();
-    //QRectF r = rcc.normalized();
     QRectF r = boundingRect();
-    //QPainterPath path;
-    //path.addRect(r);
-    //return path;
+    r.adjust(m_borderWidth / 2, m_borderWidth / 2, -m_borderWidth / 2, -m_borderWidth / 2);
     return UiHelper::getRoundPath(r, lt_radius, rt_radius, lb_radius, rb_radius, m_bFixRadius);
 }
 
@@ -190,4 +193,14 @@ void ZenoBackgroundWidget::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 		m_color = isSelected() ? m_clrSelected : m_clrNormal;
 		update();
     }
+}
+
+void ZenoBackgroundWidget::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mousePressEvent(event);
+}
+
+void ZenoBackgroundWidget::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseDoubleClickEvent(event);
 }

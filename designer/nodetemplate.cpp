@@ -196,7 +196,7 @@ void NodeTemplate::initStyleModel(const NodeParam& param)
     {
         addImageElement(pStatusItem, m_param.header.status.mute, m_component_status, "Mute");
         addImageElement(pStatusItem, m_param.header.status.view, m_component_status, "View");
-        addImageElement(pStatusItem, m_param.header.status.prep, m_component_status, "Prep");
+        addImageElement(pStatusItem, m_param.header.status.once, m_component_status, "Once");
     }
 
     id = m_param.header.backboard.id;
@@ -443,7 +443,7 @@ StatusComponent NodeTemplate::_exportStatusComponent(QString id)
     comp.rc = pItem->data(NODEPOS_ROLE).toRect();
     comp.mute = _exportImageElement(ELEMENT_MUTE);
     comp.view = _exportImageElement(ELEMENT_VIEW);
-    comp.prep = _exportImageElement(ELEMENT_PREP);
+    comp.once = _exportImageElement(ELEMENT_PREP);
     return comp;
 }
 

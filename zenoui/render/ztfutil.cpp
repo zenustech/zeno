@@ -47,7 +47,7 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
                         header.status.id = comp.id;
                         header.status.mute = comp.elements[0];
                         header.status.view = comp.elements[1];
-                        header.status.prep = comp.elements[2];
+                        header.status.once = comp.elements[2];
                         header.status.rc = comp.rc;
                     } else if (comp.id == COMPONENT_CONTROL) {
                         header.control = comp;
@@ -317,7 +317,7 @@ XML_NODE ZtfUtil::_exportHeader(rapidxml::xml_document<> &doc, HeaderParam heade
 	{
         status->append_node(_exportImage(doc, headerParam.status.mute));
         status->append_node(_exportImage(doc, headerParam.status.view));
-        status->append_node(_exportImage(doc, headerParam.status.prep));
+        status->append_node(_exportImage(doc, headerParam.status.once));
 	}
 
 	XML_NODE control = doc.allocate_node(rapidxml::node_element, "component", "");
@@ -426,10 +426,11 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
 
     param.mute = nodeParam.header.status.mute;
     param.view = nodeParam.header.status.view;
-    param.prep = nodeParam.header.status.prep;
+    param.prep = nodeParam.header.status.once;
     param.rcMute = nodeParam.header.status.mute.rc.translated(-base);
     param.rcView = nodeParam.header.status.view.rc.translated(-base);
-    param.rcPrep = nodeParam.header.status.prep.rc.translated(-base);
+    param.rcPrep = nodeParam.header.status.once.rc.translated(-base);
+    param.status = nodeParam.header.status;
 
     param.collaspe = nodeParam.header.control.elements[0];
     param.rcCollasped = nodeParam.header.control.elements[0].rc.translated(-base);
@@ -451,7 +452,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() -
                                   nodeParam.body.leftBottomSocket.image.rc.top());
     //todo: parameterized.
-    param.nameFont = QFont("HarmonyOS Sans", 16);
+    param.nameFont = QFont("HarmonyOS Sans", 13);
     param.nameFont.setBold(true);
     param.socketFont = QFont("HarmonyOS Sans", 11);
     param.socketFont.setBold(true);

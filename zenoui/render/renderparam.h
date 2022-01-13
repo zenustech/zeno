@@ -46,9 +46,11 @@ struct BackgroundComponent
 
     QColor clr_normal, clr_hovered, clr_selected, clr_border;
     int lt_radius, rt_radius, lb_radius, rb_radius;
-    int border_witdh;
+    qreal border_witdh;
     bool bApplyImage;
     bool bAcceptHovers;
+
+    BackgroundComponent() : border_witdh(0) {}
 };
 
 struct SocketComponent
@@ -70,7 +72,7 @@ struct StatusComponent
 {
     ImageElement mute;
     ImageElement view;
-    ImageElement prep;
+    ImageElement once;
     QRect rc;
     QString id;
 };
@@ -136,6 +138,7 @@ struct NodeUtilParam
 
     QRectF rcMute, rcView, rcPrep;
     ImageElement mute, view, prep;
+    StatusComponent status;
 
     QRectF rcCollasped;
     ImageElement collaspe;

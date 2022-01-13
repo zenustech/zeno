@@ -43,7 +43,7 @@ void ZenoNode::_initSocketItemPos()
         pos -= QPointF(m_renderParams.socketToText + socketItem->size().width(), 0);
         //fixed center on the border.
         //socket icon is hard to layout, as it's not a part of layout item but rely on the position of the layouted item.
-        pos.setX(-socketItem->size().width() / 2);
+        pos.setX(-socketItem->size().width() / 2 + m_renderParams.bodyBg.border_witdh / 2);
         pos.setY(y);
 
         socketItem->setPos(pos);
@@ -58,7 +58,7 @@ void ZenoNode::_initSocketItemPos()
         sRect = mapRectFromScene(sRect);
         QPointF pos;
 
-        int x = m_bodyWidget->rect().width() - socketItem->size().width() / 2;
+        int x = m_bodyWidget->rect().width() - socketItem->size().width() / 2 - m_renderParams.bodyBg.border_witdh / 2;
         int y = sRect.center().y() - socketItem->size().height() / 2;
         pos.setX(x);
         pos.setY(y);
@@ -87,7 +87,7 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
 	pen.setJoinStyle(Qt::MiterJoin);
 	painter->setPen(pen);
 	QRectF rc = m_pMainLayout->geometry();
-	qreal offset = innerBdrWidth - 0.5; //finetune
+	qreal offset = innerBdrWidth / 2; //finetune
 	rc.adjust(-offset, -offset, offset, offset);
 	QPainterPath path = UiHelper::getRoundPath(rc, m_renderParams.headerBg.lt_radius, m_renderParams.headerBg.rt_radius, m_renderParams.bodyBg.lb_radius, m_renderParams.bodyBg.rb_radius, true);
 	painter->drawPath(path);
@@ -128,24 +128,15 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 {
     m_index = QPersistentModelIndex(index);
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_OBJTYPE).toInt());
-	m_collaspedWidget = initCollaspedWidget();
-	m_collaspedWidget->setVisible(false);
-
-	const QString& name = m_index.data(ROLE_OBJNAME).toString();
-    m_NameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
-    m_NameItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    m_NameItem->setPos(-5, -36);
-    //fix size
 
     m_headerWidget = initHeaderWangStyle(type);
 	m_bodyWidget = initBodyWidget(type);
 
 	m_pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
-	m_pMainLayout->addItem(m_collaspedWidget);
 	m_pMainLayout->addItem(m_headerWidget);
 	m_pMainLayout->addItem(m_bodyWidget);
 	m_pMainLayout->setContentsMargins(0, 0, 0, 0);
-	m_pMainLayout->setSpacing(5);
+	m_pMainLayout->setSpacing(1);
 
     setLayout(m_pMainLayout);
 
@@ -165,6 +156,8 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 	// setPos will send geometry, but it's not supposed to happend during initialization.
 	setFlag(ItemSendsGeometryChanges);
 	setFlag(ItemSendsScenePositionChanges);
+
+    m_headerWidget->installSceneEventFilter(this);
 
 	connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }
@@ -295,7 +288,7 @@ ZenoBackgroundWidget *ZenoNode::initHeaderLegacy(NODE_TYPE type)
     pHLayout->addStretch();
 
     pHLayout->setContentsMargins(0, 5, 0, 5);
-    pHLayout->setSpacing(0);
+    pHLayout->setSpacing(5);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -318,40 +311,27 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
-    QGraphicsLinearLayout* pSubHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    ZenoSpacerItem* pSpacerItem = new ZenoSpacerItem(true, 100);
 
-    QRectF rc = m_renderParams.rcMute;
-    ZenoSvgLayoutItem* mute = new ZenoSvgLayoutItem(m_renderParams.mute, QSizeF(rc.width(), rc.height()));
-    mute->setZValue(ZVALUE_ELEMENT);
+	const QString& name = m_index.data(ROLE_OBJNAME).toString();
+	m_NameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+	m_NameItem->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	QGraphicsLinearLayout* pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+	pNameLayout->addItem(m_NameItem);
+	pNameLayout->setContentsMargins(5, 5, 5, 5);
 
-	rc = m_renderParams.rcView;
-    ZenoSvgLayoutItem* view = new ZenoSvgLayoutItem(m_renderParams.view, QSizeF(rc.width(), rc.height()), this);
-    view->setZValue(ZVALUE_ELEMENT);
+    ZenoMinStatusBtnWidget* pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
+    pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-	rc = m_renderParams.rcPrep;
-    ZenoSvgLayoutItem* prep = new ZenoSvgLayoutItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
-    prep->setZValue(ZVALUE_ELEMENT);
-
-    pSubHLayout->addItem(mute);
-    pSubHLayout->addItem(view);
-    pSubHLayout->addItem(prep);
-    pSubHLayout->setContentsMargins(5, 5, 5, 5);
-
-    ZenoParamWidget* pSeperator = new ZenoParamWidget;
-	pSeperator->setWidget(new ZenoFrame);
-
-    ZenoParamWidget* pCollaspeBtn = new ZenoParamWidget;
-    pCollaspeBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    connect(pCollaspeBtn, SIGNAL(doubleClicked()), this, SLOT(onCollaspeBtnClicked()));
-
-    pHLayout->addItem(pSubHLayout);
-    pHLayout->addItem(pSeperator);
-    pHLayout->addItem(pCollaspeBtn);
+    pHLayout->addItem(pNameLayout);
+    pHLayout->addItem(pSpacerItem);
+    pHLayout->addItem(pStatusWidgets);
     pHLayout->setSpacing(0);
     pHLayout->setContentsMargins(0, 0, 0, 0);
 
 	headerWidget->setLayout(pHLayout);
 	headerWidget->setZValue(ZVALUE_BACKGROUND);
+    headerWidget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
 	if (type == BLACKBOARD_NODE)
 	{
@@ -359,6 +339,17 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 		headerWidget->setColors(false, clr, clr, clr);
 	}
 	return headerWidget;
+}
+
+QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+    if ("1d9489c4-zelloWorld" == nodeId())
+    {
+        int j;
+        j = 0;
+    }
+    QSizeF sz = _base::sizeHint(which, constraint);
+    return sz;
 }
 
 ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
@@ -599,8 +590,7 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     if (bCollasped)
     {
-        m_collaspedWidget->show();
-        QRectF rc = m_collaspedWidget->sceneBoundingRect();
+        QRectF rc = m_headerWidget->sceneBoundingRect();
         if (bInput)
         {
             return QPointF(rc.left(), rc.center().y());
@@ -670,7 +660,15 @@ bool ZenoNode::sceneEvent(QEvent *event)
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
-    emit doubleClicked(nodeName());
+    QList<QGraphicsItem*> wtf = scene()->items(event->scenePos());
+    if (wtf.contains(m_headerWidget))
+    {
+        onCollaspeBtnClicked();
+    }
+    else
+    {
+        emit doubleClicked(nodeName());
+    }
 }
 
 void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
@@ -731,29 +729,25 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
 {
     if (collasped)
     {
-        m_NameItem->hide();
-        m_headerWidget->hide();
         m_bodyWidget->hide();
-        m_collaspedWidget->show();
 		for (auto p : m_inSocks) {
 			p.second->hide();
 		}
 		for (auto p : m_outSocks) {
 			p.second->hide();
 		}
+        m_pMainLayout->setSpacing(0);
     }
     else
     {
-        m_NameItem->show();
-		m_headerWidget->show();
 		m_bodyWidget->show();
-		m_collaspedWidget->hide();
 		for (auto p : m_inSocks) {
 			p.second->show();
 		}
 		for (auto p : m_outSocks) {
 			p.second->show();
 		}
+        m_pMainLayout->setSpacing(1);
     }
     update();
 }
@@ -770,7 +764,6 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         bool bSelected = isSelected();
         m_headerWidget->toggle(bSelected);
         m_bodyWidget->toggle(bSelected);
-        m_collaspedWidget->toggle(bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {

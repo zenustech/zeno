@@ -4,9 +4,9 @@
 			<text id="" x="75" y="75" w="116" h="22" font-family="Consolas">ReadVDBGrid</text>
 		</component>
 		<component id="status" x="32" y="24" w="208" h="48">
-			<image id="mute" x="48" y="32" w="24" h="24" normal=":/icons/mute.svg" hovered="" selected=""/>
-			<image id="view" x="96" y="32" w="24" h="24" normal=":/icons/view.svg" hovered="" selected=""/>
-			<image id="prep" x="144" y="32" w="24" h="24" normal=":/icons/once.svg" hovered="" selected=""/>
+			<image id="mute" x="48" y="32" w="24" h="24" normal=":/icons/min_MUTE_dark.svg" hovered=":/icons/min_MUTE_light.svg" selected=":/icons/min_MUTE_light.svg"/>
+			<image id="view" x="96" y="32" w="24" h="24" normal=":/icons/min_VIEW_dark.svg" hovered=":/icons/min_VIEW_light.svg" selected=":/icons/min_VIEW_light.svg"/>
+			<image id="prep" x="144" y="32" w="24" h="24" normal=":/icons/min_ONCE_dark.svg" hovered=":/icons/min_ONCE_light.svg" selected=":/icons/min_ONCE_light.svg"/>
 		</component>
 		<component id="control" x="32" y="72" w="32" h="32">
 			<image id="collapse" x="47" y="86" w="16" h="16" normal=":/icons/collaspe.svg" hovered="" selected=":/icons/uncollaspe.svg"/>
@@ -14,7 +14,7 @@
 		<component id="display" x="194" y="34" w="32" h="32">
 			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
 		</component>
-		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="0px 0px 0px 0px" normal-clr="#56608F" hoverd-clr="" selected-clr="" border-clr="#56608F" border-width="4px">
+		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="0px 0px 0px 0px" normal-clr="#56608F" hoverd-clr="" selected-clr="">
 			<image id="" x="0" y="0" w="0" h="0" normal="" hovered="" selected=""/>
 		</background>
 	</header>

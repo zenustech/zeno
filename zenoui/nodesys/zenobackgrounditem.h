@@ -35,23 +35,28 @@ class ZenoBackgroundWidget : public QGraphicsWidget
 public:
     ZenoBackgroundWidget(QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     QRectF boundingRect() const override;
-    void setBorder(int width, const QColor& clrBorder);
+    void setBorder(qreal width, const QColor& clrBorder);
     void setGeometry(const QRectF &rect) override;
     void setColors(bool bAcceptHovers, const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected);
     void setRadius(int lt, int rt, int lb, int rb);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     void toggle(bool bSelected);
 
+signals:
+	void doubleClicked();
+
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
     QPainterPath shape() const override;
 
-    int m_borderWidth;
+    qreal m_borderWidth;
     int lt_radius, rt_radius, lb_radius, rb_radius;
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
     QColor m_color;
