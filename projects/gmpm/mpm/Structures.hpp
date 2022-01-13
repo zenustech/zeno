@@ -72,7 +72,7 @@ struct ZenoConstitutiveModel : IObject {
   }
   bool hasPlasticity() const noexcept { return plasticModel.index() != None; }
 
-  float volume, density;
+  float dx, volume, density;
   ElasticModel elasticModel;
   AnisoElasticModel anisoElasticModel;
   PlasticModel plasticModel;
@@ -82,17 +82,30 @@ struct ZenoParticles : IObject {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  enum category_e : int { mpm, vertex, element };
+  enum category_e : int { mpm, curve, surface, tet };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }
   const auto &getParticles() const noexcept { return particles; }
+  auto &getQuadraturePoints() {
+    if (!elements.has_value())
+      throw std::runtime_error("quadrature points not binded.");
+    return *elements;
+  }
+  const auto &getQuadraturePoints() const {
+    if (!elements.has_value())
+      throw std::runtime_error("quadrature points not binded.");
+    return *elements;
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
+
   particles_t particles{};
-  ZenoConstitutiveModel model{};
-  category_e category{category_e::mpm};
+  std::optional<particles_t> elements{};
+  category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
+                                        // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim;
+  ZenoConstitutiveModel model{};
 };
 
 struct ZenoPartition : IObject {
