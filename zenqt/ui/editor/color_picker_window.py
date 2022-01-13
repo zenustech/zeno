@@ -4,6 +4,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from copy import deepcopy
 
 def color_picker_clamp(x, lower, upper):
     if x < lower:
@@ -413,6 +414,35 @@ class ColorPickerWidget(QWidget):
         self.__colorEditorWidget.setColor(c)
 
  
+black_body_color_ramps = [
+    [0,     [0, 0, 0]],
+    [0.33,  [1, 0, 0]],
+    [0.66,  [1, 1, 0]],
+    [1,     [1, 1, 1]],
+]
+grayscale_color_ramps = [
+    [0,     [0, 0, 0]],
+    [1,     [1, 1, 1]],
+]
+infra_red_color_ramps = [
+    [0,     [0.2, 0, 1]],
+    [0.25,  [0, 0.85, 1]],
+    [0.5,   [0, 1, 0.1]],
+    [0.75,  [0.95, 1, 0]],
+    [1,     [1, 0, 0]],
+]
+two_tone_color_ramps = [
+    [0,     [0, 1, 1]],
+    [0.49,  [0, 0, 1]],
+    [0.5,   [1, 1, 1]],
+    [0.51,  [1, 0, 0]],
+    [1,     [1, 1, 0]],
+]
+white_to_red_color_ramps = [
+    [0,     [1, 1, 1]],
+    [1,     [1, 0, 0]],
+]
+
 class BurningWidget(QWidget):
   
     def __init__(self, updateBar, updatePanel, color_ramps):      
@@ -448,6 +478,18 @@ class BurningWidget(QWidget):
                 (p[1][2] + n[1][2]) / 2,
             ),
         ])
+        self.update()
+
+    def set_preset(self, name):
+        name_map = {
+            'BlackBody': black_body_color_ramps,
+            'Grayscale': grayscale_color_ramps,
+            'InfraRed': infra_red_color_ramps,
+            'TwoTone': two_tone_color_ramps,
+            'WhiteToRed': white_to_red_color_ramps,
+        }
+        self.color_ramps = deepcopy(name_map[name])
+        self.select_index = 0
         self.update()
         
     def initUI(self):
@@ -562,16 +604,26 @@ class ColorRampBarWidget(QWidget):
         del_btn = QPushButton(self)
         del_btn.setText('-')
         del_btn.setFixedWidth(30)
-     
+
+        preset_combo = QComboBox(self)
+        preset_combo.addItem('BlackBody')
+        preset_combo.addItem('Grayscale')
+        preset_combo.addItem('InfraRed')
+        preset_combo.addItem('TwoTone')
+        preset_combo.addItem('WhiteToRed')
+        preset_combo.setFixedWidth(100)
+
         self.wid = BurningWidget(self.p.updateBar, self.p.updatePanel, self.color_ramps)
         self.wid.setFixedHeight(20)
         add_btn.clicked.connect(self.wid.add)
         del_btn.clicked.connect(self.wid.remove)
+        preset_combo.textActivated.connect(self.wid.set_preset)
         
         hbox = QHBoxLayout()
         hbox.addWidget(add_btn)
         hbox.addWidget(del_btn)
         hbox.addStretch(1)
+        hbox.addWidget(preset_combo)
         vbox = QVBoxLayout()
         vbox.addLayout(hbox)
         vbox.addWidget(self.wid)
