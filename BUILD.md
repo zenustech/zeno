@@ -32,7 +32,7 @@ sudo apt-get install -y git cmake make g++
 sudo apt-get install -y qt5-default
 ```
 
-> We haven't tested Zeno on WSL, but please give feedback if you meet trouble there, we'd happy to help you resolve :)
+> We haven't tested Zeno on WSL (they doesn't have X11 by default), but please give feedback if you meet trouble there, we'd happy to help you resolve :)
 
 ### Arch Linux
 
@@ -43,7 +43,7 @@ sudo pacman -S qt5
 
 ### Mac OS X
 
-https://www.bilibili.com/video/BV1uT4y1P7CX
+Please refer to this video for installation guide :) https://www.bilibili.com/video/BV1uT4y1P7CX
 
 ## Building Zeno from Source
 
@@ -77,6 +77,7 @@ Configure CMake:
 cmake -B build
 ```
 
+<!--
 #### Why is 'configure' building a butch of libraries
 
 Note: All the dependencies of Zeno will be installed to `build/zpm/opt` during this step, so it will take some time to 'configure'...
@@ -92,6 +93,7 @@ cmake -B build -DZENO_WITH_ZPM:BOOL=OFF
 ```
 
 to disable ZPM and use system-wide libraries directly.
+-->
 
 ### Build Zeno itself
 
@@ -106,13 +108,13 @@ cmake --build build --parallel 4
 ### Windows (cmd)
 
 ```cmd
-build\zeno.exe
+build\editor\zeno_editor.exe
 ```
 
 ### Linux (bash)
 
 ```bash
-build/zeno
+build/editor/zeno_editor
 ```
 
 ## References
@@ -123,7 +125,8 @@ build/zeno
 - [GitHub documentation](https://docs.github.com/en)
 - [Qt5 documentation](https://doc.qt.io/qt-5/)
 - [C++ references](https://en.cppreference.com/w/)
+- [TBB tutorial](https://www.inf.ed.ac.uk/teaching/courses/ppls/TBBtutorial.pdf)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
 - [hipSYCL install guide](https://github.com/illuhad/hipSYCL/blob/develop/doc/installing.md)
-- [SYCL specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020/html/sycl-2020.html)
+- [Jiayao's learning materials](https://github.com/jiayaozhang/OpenVDB_and_TBB)
 - [Zeno bug report](https://github.com/zenustech/zeno/issues)

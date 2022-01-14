@@ -7,7 +7,7 @@ forms, such as:
 
 * Raising, responding to, or reacting to Issues or Pull Requests
 * Testing new in-progress changes and providing feedback
-* Discussing in the [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
+* Discussing in our [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
 * etc.
 
 Both Chinese and English are supported! Feel free to express your idea in your favorable language!
@@ -33,6 +33,7 @@ Hint: you may use triple back quotes to insert pretty-shown code (for console ou
 ```md
 \`\`\`
 This is the Zeno log...
+[ERROR] file not found: foo.txt
 \`\`\`
 ```
 
@@ -322,6 +323,8 @@ See also [.clang-format](.clang-format) for automated formatting rules.
 ### Write a custom node
 
 See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
+
+(TODO: more examples on our new node API).
 
 # Code of conduct
 

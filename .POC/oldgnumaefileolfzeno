@@ -1,0 +1,18 @@
+#T=worker
+T=editor
+
+run: all
+	/tmp/build/$$PWD/$T/zeno_$T
+
+debug: all
+	gdb /tmp/build/$$PWD/$T/zeno_$T -ex r
+
+all:
+	cmake -B /tmp/build/$$PWD
+	cmake --build /tmp/build/$$PWD --parallel 11 --target zeno_$T
+
+install: all
+	cmake --build /tmp/build/$$PWD --target install
+
+clean:
+	rm -rf /tmp/build/$$PWD
