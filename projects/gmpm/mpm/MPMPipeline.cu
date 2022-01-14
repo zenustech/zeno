@@ -492,15 +492,19 @@ struct ZSParticleToZSGrid : INode {
                 auto Wgrad = arena.weightGradients(loc) * dxinv;
                 const auto cellid = grid_t::coord_to_cellid(localIndex);
 
-                auto vft = P_c3 * Wgrad.dot(d_c3) * -vol * dt;
+                auto vft = P_c3 * Wgrad.dot(d_c3) * (-vol * dt);
                 for (int d = 0; d != 3; ++d)
                   atomic_add(exec_cuda, &block("v", d, cellid), vft(d));
               }
 
               // type (ii)
-              auto transfer = [&P, &grid, &table](auto &&pos, auto &&Dminv_r,
+              auto transfer = [&P, &grid, &table](auto &&pos, auto &&Dinv_r,
                                                   const auto coeff) {
-                auto vft = coeff * P * Dminv_r;
+                auto vft =
+                    coeff * zs::vec<float, 3>{
+                                P(0, 0) * Dinv_r(0) + P(0, 1) * Dinv_r(1),
+                                P(1, 0) * Dinv_r(0) + P(1, 1) * Dinv_r(1),
+                                P(2, 0) * Dinv_r(0) + P(2, 1) * Dinv_r(1)};
                 auto arena = make_local_arena(grid.dx, std::move(pos));
 
                 for (auto loc : arena.range()) {
@@ -518,14 +522,14 @@ struct ZSParticleToZSGrid : INode {
                 }
               };
               auto Dminv = eles.pack<3, 3>("Dinv", pi);
+              auto p0 = verts.pack<3>("pos", (int)eles("inds", (int)0, pi));
               {
-                auto p0 = verts.pack<3>("pos", (int)eles("inds", (int)0, pi));
                 for (int i = 1, m = 3; i != m; ++i) {
-                  auto Dminv_ri = row(Dminv, i - 1);
+                  auto Dinv_ri = row(Dminv, i - 1);
                   transfer(verts.pack<3>("pos", (int)eles("inds", (int)i, pi)),
-                           Dminv_ri, -vol * dt);
+                           Dinv_ri, -vol * dt);
                   // this should be further optimized
-                  transfer(p0, Dminv_ri, vol * dt);
+                  transfer(p0, Dinv_ri, vol * dt);
                 }
               }
             });
@@ -936,17 +940,30 @@ struct ZSReturnMapping : INode {
       if (R(2, 2) > 1) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = 1;
+      } else if (R(2, 2) <= 0) { // inversion
+        R(0, 2) = R(1, 2) = 0;
+        R(2, 2) = zs::max(R(2, 2), -1.f);
       } else if (R(2, 2) < 1) {
+        auto rr = R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2);
         auto r33_m_1 = R(2, 2) - 1;
+#if 0
         auto r11_r22 = R(0, 0) * R(1, 1);
         auto fn = k * r33_m_1 * r33_m_1 / r11_r22; // normal traction
-        auto ff = gamma * zs::sqrt(R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2)) /
-                  r11_r22; // tangential traction
+        auto ff = gamma * zs::sqrt(rr) / r11_r22;  // tangential traction
         if (ff >= friction_coeff * fn) {
           auto scale = friction_coeff * fn / ff;
           R(0, 2) *= scale;
           R(1, 2) *= scale;
         }
+#else
+        auto gamma_over_k = gamma / k;
+        auto zz = friction_coeff  * r33_m_1 * r33_m_1; // normal traction
+        if (gamma_over_k * gamma_over_k * rr - zz * zz > 0) {
+          auto scale = zz / (gamma_over_k * zs::sqrt(rr));
+          R(0, 2) *= scale;
+          R(1, 2) *= scale;
+        }
+#endif
       }
       F = Q * R;
       eles.tuple<3 * 3>("F", pi) = F;
