@@ -9,6 +9,14 @@ project(zeno_FEM)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+if(WIN32)
+    if(TARGET igl::core)
+    else()
+        find_package(libigl REQUIRED)
+    endif()
+endif(WIN32)
+
+
 find_package(OpenMP)
 if(NOT OpenMP_CXX_FOUND)
 
@@ -32,7 +40,10 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/integrator/example_based_quasi_static_solver.h
     src/bspline/cubicBspline.cpp
     src/bspline/cubicBspline.h
-    nodesys.cpp
+    equa_solver.cpp
+    integrator.cpp
+    fem_tools.cpp
+    force_model.cpp
 )
 
 add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
@@ -49,5 +60,6 @@ target_include_directories(zeno_FEM PUBLIC
 
 target_link_libraries(zeno_FEM PUBLIC zeno)
 target_link_libraries(zeno_FEM PRIVATE zeno_nodep)
+target_link_libraries(zeno_FEM PRIVATE igl::core)
 target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)

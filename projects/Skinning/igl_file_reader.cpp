@@ -77,8 +77,8 @@ struct ReadMesh : zeno::INode {
         assert(V.cols() == 3 && T.cols() == 4 && F.cols() == 3);
 
         auto res = std::make_shared<PrimitiveObject>();
-        auto &stag = res->add_attr<float>("stag");
-        auto &fiberDir = res->add_attr<zeno::vec3f>("fiberDir");
+        auto &stag = res->add_attr<float>("surface_tag");
+        // auto &fiberDir = res->add_attr<zeno::vec3f>("fiberDir");
         res->resize(V.rows());
 
         for(size_t i = 0;i < V.rows();++i)
@@ -135,7 +135,7 @@ struct ReadMesh : zeno::INode {
                 nm_surface_verts++;
             }
 
-            fiberDir[i] = zeno::vec3f(0.0,1.0,0.0);
+            // fiberDir[i] = zeno::vec3f(0.0,1.0,0.0);
         }
         // std::cout << "NM_SURFACE_VERTS : " << nm_surface_verts << std::endl;
 

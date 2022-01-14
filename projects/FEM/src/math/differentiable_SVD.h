@@ -2,6 +2,8 @@
 
 #include <matrix_helper.hpp>
 #include <Eigen/Jacobi>
+#include <
+#include <igl/polar_svd.h>
 /**
  * @class <DiffSVD>
  * @brief Performing SVD or some other relavent decomposition.
