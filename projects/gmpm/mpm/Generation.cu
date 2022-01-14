@@ -433,6 +433,7 @@ struct ToZSParticles : INode {
                   }
                 }
               });
+      eles = eles.clone({memsrc_e::um, 0});
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToZensimParticles\n");
