@@ -33,7 +33,7 @@ static void jacobi(Grid<kSize, kOffset, Value> &ogrid, Grid<kSize, kOffset, Valu
 }
 
 static void BM_jacobi(benchmark::State &bm) {
-    static Grid<4096, 0, float> g1, g2;
+    static Grid<4096, 512, float> g1, g2;
     for (auto _: bm) {
         jacobi<32>(g1, g2);
     }
