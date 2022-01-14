@@ -39,6 +39,7 @@ class QDMEditMenu(QMenu):
                 ('&Paste', QKeySequence.Paste),
                 (None, None),
                 ('&Find', QKeySequence.Find),
+                ('Easy Subgraph', 'Alt+S'),
         ]
         
         for name, shortcut in acts:
@@ -463,6 +464,9 @@ class NodeEditor(QWidget):
         elif name == '&Find':
             self.find_bar.show()
 
+        elif name == 'Easy Subgraph':
+            self.easy_subgraph()
+
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
                 '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
@@ -556,6 +560,14 @@ ZENDEFNODE(''' + key + ''', {
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
+
+    def easy_subgraph(self):
+        self.do_copy()
+        name, okPressed = QInputDialog.getText(self, "New Subgraph", "Subgraph Name:", QLineEdit.Normal, "")
+        if okPressed == False:
+            return
+        self.on_switch_graph(name)
+        self.do_paste()
 
     def do_save(self, path, auto_save=False):
         prog = self.dumpProgram()
