@@ -667,7 +667,7 @@
       "zfxCode": [
        null,
        null,
-       "@vel = vec3(0, -1.5,  1.5)"
+       "@vel = vec3(0, 0.7,  1.2)"
       ],
       "params": [
        null,
@@ -710,14 +710,15 @@
       142.29277252286317
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "d1bc6a0f-PrimitiveToSDF": {
      "name": "PrimitiveToSDF",
      "inputs": {
       "PrimitiveMesh": [
-       "d2191251-ImportObjPrimitive",
+       "883a5a17-ImportObjPrimitive",
        "prim",
        null
       ],
@@ -851,16 +852,15 @@
       404.37684165632754
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     }
    },
    "view_rect": {
-    "x": 1759.0517803538924,
-    "y": -1027.9743387657788,
-    "width": 1907.3486328125,
-    "height": 1907.3486328125
+    "x": 1648.1710937447822,
+    "y": -1360.9261891818217,
+    "width": 2384.185791015625,
+    "height": 2384.185791015625
    }
   }
  },

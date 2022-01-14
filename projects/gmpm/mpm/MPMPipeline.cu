@@ -440,8 +440,8 @@ struct ZSParticleToZSGrid : INode {
               // hard coded P compute
               using mat2 = zs::vec<float, 2, 2>;
               using mat3 = zs::vec<float, 3, 3>;
-              constexpr auto gamma = 100.f;
-              constexpr auto k = 5000.f;
+              constexpr auto gamma = 0.f;
+              constexpr auto k = 500.f;
               auto [Q, R] = math::qr(F);
               mat2 R2{R(0, 0), R(0, 1), R(1, 0), R(1, 1)};
               auto P2 = model.first_piola(R2); // use as F
@@ -820,6 +820,9 @@ struct ZSGridToZSParticle : INode {
                   // vel
                   pars.tuple<3>("vel", pi) = vel;
                   // C
+                  auto skew = 0.5f * (C - C.transpose());
+                  auto sym = 0.5f * (C + C.transpose());
+                  C = sym + skew * 0.3;
                   pars.tuple<3 * 3>("C", pi) = C;
                   // pos
                   pos += vel * dt;
@@ -863,6 +866,9 @@ struct ZSGridToZSParticle : INode {
                       vGrad += dyadic_prod(vi, Wgrad);
                     }
                     // damping -> C is omitted here
+                    auto skew = 0.5f * (C - C.transpose());
+                    auto sym = 0.5f * (C + C.transpose());
+                    C = sym + skew * 0.3;
                     eles.tuple<3 * 3>("C", pi) = C;
 
                     // section 4.3
@@ -942,8 +948,8 @@ struct ZSReturnMapping : INode {
                                      {}, eles)] __device__(size_t pi) mutable {
       auto F = eles.pack<3, 3>("F", pi);
       // hard code ftm
-      constexpr auto gamma = 100.f;
-      constexpr auto k = 5000.f;
+      constexpr auto gamma = 0.f;
+      constexpr auto k = 500.f;
       // constexpr auto friction_coeff = 0.1f;
       constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::qr(F);
