@@ -440,8 +440,8 @@ struct ZSParticleToZSGrid : INode {
               // hard coded P compute
               using mat2 = zs::vec<float, 2, 2>;
               using mat3 = zs::vec<float, 3, 3>;
-              constexpr auto gamma = 1.f;
-              constexpr auto k = 0.5f;
+              constexpr auto gamma = 100.f;
+              constexpr auto k = 5000.f;
               auto [Q, R] = math::qr(F);
               mat2 R2{R(0, 0), R(0, 1), R(1, 0), R(1, 1)};
               auto P2 = model.first_piola(R2); // use as F
@@ -810,15 +810,18 @@ struct ZSGridToZSParticle : INode {
                         block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
 
                     vel += vi * W;
-                    C += W * Dinv * dyadic_prod(vi, xixp);
+                    C += W * dyadic_prod(vi, xixp); // remove Dinv
                   }
 #if 0
                   if (pi < 10)
                     printf("pi[%d] vel: %f, %f, %f\n", (int)pi, vel[0], vel[1],
                            vel[2]);
 #endif
+                  // vel
                   pars.tuple<3>("vel", pi) = vel;
+                  // C
                   pars.tuple<3 * 3>("C", pi) = C;
+                  // pos
                   pos += vel * dt;
                   pars.tuple<3>("pos", pi) = pos;
                 });
@@ -837,8 +840,11 @@ struct ZSGridToZSParticle : INode {
                     auto pos = eles.pack<3>("pos", pi);
                     auto vel = zs::vec<float, 3>::zeros();
                     auto C = zs::vec<float, 3, 3>::zeros();
+                    auto vGrad = zs::vec<float, 3, 3>::zeros();
 
-                    auto arena = make_local_arena(grid.dx, pos);
+                    auto arena =
+                        make_local_arena<grid_e::collocated,
+                                         kernel_e::quadratic, 1>(grid.dx, pos);
                     for (auto loc : arena.range()) {
                       auto coord = arena.coord(loc);
                       auto localIndex = coord & (grid_t::side_length - 1);
@@ -848,11 +854,13 @@ struct ZSGridToZSParticle : INode {
                       auto block = grid.block(blockno);
                       auto xixp = arena.diff(loc);
                       auto W = arena.weight(loc);
+                      auto Wgrad = arena.weightGradients(loc) * dxinv;
                       auto vi = block.pack<3>(
                           "v", grid_t::coord_to_cellid(localIndex));
 
                       vel += vi * W;
-                      C += W * Dinv * dyadic_prod(vi, xixp);
+                      C += W * dyadic_prod(vi, xixp); // remove Dinv
+                      vGrad += dyadic_prod(vi, Wgrad);
                     }
                     // damping -> C is omitted here
                     eles.tuple<3 * 3>("C", pi) = C;
@@ -873,17 +881,18 @@ struct ZSGridToZSParticle : INode {
                          verts.pack<3>("vel", i2)) /
                         3;
 
+                    // d
                     auto d_c1 = p1 - p0;
                     auto d_c2 = p2 - p0;
                     auto d_c3 = col(eles.pack<3, 3>("d", pi), 2);
-                    d_c3 += dt * (C * d_c3);
+                    // d_c3 += dt * (C * d_c3);
+                    d_c3 += dt * (vGrad * d_c3);
 
                     mat3 d{d_c1[0], d_c2[0], d_c3[0], d_c1[1], d_c2[1],
                            d_c3[1], d_c1[2], d_c2[2], d_c3[2]};
-                    // d, F
-                    eles.tuple<3 * 3>("d", pi) = d;
-                    eles.tuple<3 * 3>("F", pi) =
-                        d * eles.pack<3, 3>("Dinv", pi);
+                    eles.tuple<9>("d", pi) = d;
+                    // F
+                    eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("Dinv", pi);
                   });
         } // case: surface
       }   // end mesh particle g2p
@@ -933,11 +942,15 @@ struct ZSReturnMapping : INode {
                                      {}, eles)] __device__(size_t pi) mutable {
       auto F = eles.pack<3, 3>("F", pi);
       // hard code ftm
-      constexpr auto gamma = 1.f;
-      constexpr auto k = 0.5f;
-      constexpr auto friction_coeff = 0.1f;
+      constexpr auto gamma = 100.f;
+      constexpr auto k = 5000.f;
+      // constexpr auto friction_coeff = 0.1f;
+      constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::qr(F);
-      if (R(2, 2) > 1) {
+      if (friction_coeff == 0.f) {
+        R(0, 2) = R(1, 2) = 0;
+        R(2, 2) = zs::min(R(2, 2), 1.f);
+      } else if (R(2, 2) > 1) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = 1;
       } else if (R(2, 2) <= 0) { // inversion
@@ -967,7 +980,11 @@ struct ZSReturnMapping : INode {
       }
       F = Q * R;
       eles.tuple<3 * 3>("F", pi) = F;
-      eles.tuple<3 * 3>("d", pi) = F * inverse(eles.pack<3, 3>("Dinv", pi));
+#if 0
+      eles.tuple<3 * 3>("d", pi) =
+          F *
+          inverse(eles.pack<3, 3>("Dinv", pi)); // not sure if this is necessary
+#endif
     });
   }
   void apply() override {
