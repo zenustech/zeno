@@ -62,6 +62,20 @@ struct ZSPartitionForZSParticles : INode {
                   coord[d] = lower_trunc(c[d]);
                 table.insert(coord - (coord & (grid_t::side_length - 1)));
               });
+      if (parObjPtr->category != ZenoParticles::mpm) {
+        auto &eles = parObjPtr->getQuadraturePoints();
+        cudaPol(range(eles.size()),
+                [eles = proxy<execspace_e::cuda>({}, eles),
+                 table = proxy<execspace_e::cuda>(partition),
+                 dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+                  auto x = eles.template pack<3>("pos", pi);
+                  auto c = (x * dxinv - 0.5);
+                  typename Partition::key_t coord{};
+                  for (int d = 0; d != 3; ++d)
+                    coord[d] = lower_trunc(c[d]);
+                  table.insert(coord - (coord & (grid_t::side_length - 1)));
+                });
+      }
     }
     fmt::print("partition of [{}] blocks for {} particles\n", partition.size(),
                cnt);
@@ -182,13 +196,23 @@ struct UpdateZSGrid : INode {
 
     if (zsgrid->transferScheme == "apic")
       cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
-              [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
+              [grid = proxy<execspace_e::cuda>({}, grid),
+               /*table = proxy<execspace_e::cuda>(partition), */ stepDt, accel,
                ptr = velSqr.data()] __device__(int bi, int ci) mutable {
                 auto block = grid.block(bi);
                 auto mass = block("m", ci);
                 if (mass != 0.f) {
                   mass = 1.f / mass;
                   auto vel = block.pack<3>("v", ci) * mass;
+#if 0
+                  if (vel.norm() > 0.2) {
+                    auto pos =
+                        (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
+                        grid.dx;
+                    printf("(%f, %f, %f) vel: %f, %f, %f\n", pos[0], pos[1],
+                           pos[2], vel[0], vel[1], vel[2]);
+                  }
+#endif
                   vel += accel * stepDt;
                   block.set("v", ci, vel);
                   /// cfl dt
@@ -355,14 +379,22 @@ struct ZSParticleToZSGrid : INode {
              dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
               using grid_t = RM_CVREF_T(grid);
               const auto Dinv = 4.f * dxinv * dxinv;
-              auto localPos = pars.pack<3>("pos", pi);
+              auto pos = pars.pack<3>("pos", pi);
               auto vel = pars.pack<3>("vel", pi);
               auto mass = pars("mass", pi);
               auto vol = pars("vol", pi);
               auto C = pars.pack<3, 3>("C", pi);
               auto F = pars.pack<3, 3>("F", pi);
 
-              auto arena = make_local_arena(grid.dx, localPos);
+#if 0
+              if (pi < 10) {
+                printf("(%f, %f, %f) vel: %f, %f, %f, mass: %f, vol: %f\n",
+                       pos[0], pos[1], pos[2], vel[0], vel[1], vel[2], mass,
+                       vol);
+              }
+#endif
+
+              auto arena = make_local_arena(grid.dx, pos);
 
               for (auto loc : arena.range()) {
                 auto coord = arena.coord(loc);
@@ -629,8 +661,6 @@ struct ZSParticleToZSGrid : INode {
           if (parObjPtr->category == ZenoParticles::surface) {
             p2g_surface_force(cudaPol, elasticModel, pars, eles, partition,
                               stepDt, grid);
-            puts("been here p2g.");
-            getchar();
           }
         })(model.getElasticModel());
       }
@@ -778,6 +808,11 @@ struct ZSGridToZSParticle : INode {
                     vel += vi * W;
                     C += W * Dinv * dyadic_prod(vi, xixp);
                   }
+#if 0
+                  if (pi < 10)
+                    printf("pi[%d] vel: %f, %f, %f\n", (int)pi, vel[0], vel[1],
+                           vel[2]);
+#endif
                   pars.tuple<3>("vel", pi) = vel;
                   pars.tuple<3 * 3>("C", pi) = C;
                   pos += vel * dt;
@@ -846,8 +881,6 @@ struct ZSGridToZSParticle : INode {
                     eles.tuple<3 * 3>("F", pi) =
                         d * eles.pack<3, 3>("Dinv", pi);
                   });
-          puts("been here g2p.");
-          getchar();
         } // case: surface
       }   // end mesh particle g2p
     }

@@ -21,6 +21,7 @@ struct ConfigConstitutiveModel : INode {
 
     // volume
     out->volume = dx * dx * dx / get_input2<float>("ppc");
+    out->dx = dx;
 
     // density
     out->density = get_input2<float>("density");
@@ -150,11 +151,10 @@ struct ToZSParticles : INode {
         eleSize = lines.size();
       } else
         throw std::runtime_error("unable to deduce primitive manifold type.");
-      outParticles->elements = typename ZenoParticles::particles_t{eleSize};
 
-      dofVol.resize(size);
+      dofVol.resize(size, 0.f);
 
-      eleVol.resize(eleSize, 0.f);
+      eleVol.resize(eleSize);
       elePos.resize(eleSize);
       eleVel.resize(eleSize);
       eleD.resize(eleSize);
@@ -195,12 +195,27 @@ struct ToZSParticles : INode {
       // surface
       case ZenoParticles::surface: {
         const auto triArea = [&obj](vec3i tri) {
-          const auto &p0 = obj[tri[0]];
-          return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
+          using TV3 = zs::vec<float, 3>;
+          TV3 p0 = TV3{obj[tri[0]][0], obj[tri[0]][1], obj[tri[0]][2]};
+          TV3 p1 = TV3{obj[tri[1]][0], obj[tri[1]][1], obj[tri[1]][2]};
+          TV3 p2 = TV3{obj[tri[2]][0], obj[tri[2]][1], obj[tri[2]][2]};
+          return (p1 - p0).cross(p2 - p0).norm() * 0.5f;
+          // const auto &p0 = obj[tri[0]];
+          // return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto tri = tris[i];
-          auto v = triArea(tri) * model->dx * 0.5f;
+          auto v = triArea(tri) * model->dx;
+#if 0
+          if (i <= 3) {
+            for (auto pi : tri)
+              fmt::print("vi[{}]: {}, {}, {}\n", pi, obj[pi][0], obj[pi][1],
+                         obj[pi][2]);
+            fmt::print("tri area: {}, volume: {}, dx: {}\n", triArea(tri), v,
+                       model->dx);
+            getchar();
+          }
+#endif
           eleVol[i] = v;
           elePos[i] = (obj[tri[0]] + obj[tri[1]] + obj[tri[2]]) / 3;
           if (velsPtr)
@@ -220,7 +235,7 @@ struct ToZSParticles : INode {
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto line = lines[i];
-          auto v = lineLength(line) * model->dx * model->dx * 0.25f;
+          auto v = lineLength(line) * model->dx * model->dx;
           eleVol[i] = v;
           elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
           if (velsPtr)
@@ -379,9 +394,9 @@ struct ToZSParticles : INode {
       pars = pars.clone({memsrc_e::um, 0});
     }
     if (bindMesh) {
-      auto &eles = outParticles->getQuadraturePoints(); // tilevector
-      eles =
+      outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
+      auto &eles = outParticles->getQuadraturePoints(); // tilevector
       ompExec(zs::range(eleSize),
               [eles = proxy<execspace_e::host>({}, eles), &model, velsPtr,
                nrmsPtr, &eleVol, &elePos, &eleVel, &eleD, category, &quads,
@@ -464,7 +479,7 @@ struct UpdatePrimitiveFromZSParticles : INode {
       if (parObjPtr->prim.get() == nullptr)
         continue;
 
-      const auto category = parObjPtr->category;
+      // const auto category = parObjPtr->category;
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
       vec3f *velsPtr{nullptr};
       if (parObjPtr->prim->has_attr("vel"))
