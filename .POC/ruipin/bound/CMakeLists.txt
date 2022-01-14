@@ -16,4 +16,4 @@ target_link_libraries(main PUBLIC TBB::tbb)
 find_package(benchmark REQUIRED)
 target_link_libraries(main PUBLIC benchmark::benchmark)
 
-target_compile_options(main PUBLIC -ffast-math -march=native)
+target_compile_options(main PUBLIC -ffast-math -march=native -std=c++17)
