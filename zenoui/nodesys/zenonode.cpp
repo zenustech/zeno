@@ -152,7 +152,7 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 
 	bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 	if (bCollasped)
-		onCollaspeLegacyUpdated(true);
+		onCollaspeUpdated(true);
 
 	// setPos will send geometry, but it's not supposed to happend during initialization.
 	setFlag(ItemSendsGeometryChanges);
@@ -306,7 +306,6 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
     ZenoBackgroundWidget* headerWidget = new ZenoBackgroundWidget(this);
 	auto headerBg = m_renderParams.headerBg;
 	headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
-    headerBg.clr_normal.setAlphaF(0.6);
 	headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
 	headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
 

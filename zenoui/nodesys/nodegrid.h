@@ -1,6 +1,10 @@
 #ifndef __NODEGRID_H__
 #define __NODEGRID_H__
 
+#include <QtWidgets>
+#include <QtSvg/QGraphicsSvgItem>
+#include <render/common_id.h>
+
 class NodeGridItem;
 
 class NodeGridLineItem : public QGraphicsLineItem

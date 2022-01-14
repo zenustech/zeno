@@ -13,7 +13,7 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, m_dragMove(false)
 	, m_menu(nullptr)
 {
-    setBackgroundBrush(QBrush(QColor(25,25,25), Qt::SolidPattern));
+    setBackgroundBrush(QBrush(QColor("#272727"), Qt::SolidPattern));
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::NoAnchor);
@@ -92,7 +92,11 @@ void ZenoSubGraphView::setModel(SubGraphModel* pModel)
 {
     m_scene = new ZenoSubGraphScene(this);
     m_scene->initModel(pModel);
+    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
+    m_scene->initGrid(rcView);
+
     setScene(m_scene);
+    connect(this, SIGNAL(viewChanged(qreal)), m_scene, SLOT(onViewTransformChanged(qreal)));
     if (!m_scene->_sceneRect().isNull())
         _updateSceneRect();
 }

@@ -11,6 +11,7 @@ class SubGraphModel;
 class ZenoNode;
 class ZenoFullLink;
 class ZenoTempLink;
+class NodeGridItem;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -18,6 +19,7 @@ class ZenoSubGraphScene : public QGraphicsScene
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     void initModel(SubGraphModel* pModel);
+    void initGrid(QRectF rc);
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
     void undo();
     void redo();
@@ -39,6 +41,7 @@ public slots:
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
+    void onViewTransformChanged(qreal factor);
 
 private slots:
     void reload();
@@ -51,6 +54,7 @@ private:
     QRectF m_scene_rect;
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
+    NodeGridItem* m_grid;
     std::map<QString, ZenoNode*> m_nodes;
     std::map<EdgeInfo, ZenoFullLink*/*, cmpEdge*/> m_links;
     ZenoTempLink* m_tempLink;

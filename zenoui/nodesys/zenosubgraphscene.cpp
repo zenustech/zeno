@@ -6,12 +6,14 @@
 #include "../io/zsgreader.h"
 #include "../util/uihelper.h"
 #include "nodesys_common.h"
+#include "nodegrid.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_subgraphModel(nullptr)
     , m_tempLink(nullptr)
+    , m_grid(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -19,6 +21,22 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     // https://stackoverflow.com/questions/38458830/crash-after-qgraphicssceneremoveitem-with-custom-item-class
     setItemIndexMethod(QGraphicsScene::NoIndex);
     setSceneRect(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
+}
+
+void ZenoSubGraphScene::initGrid(QRectF rc)
+{
+    if (!m_grid)
+    {
+        //todo
+        //m_grid = new NodeGridItem(rc.size().toSize());
+        //m_grid->setPos(rc.topLeft());
+        //addItem(m_grid);
+    }
+}
+
+void ZenoSubGraphScene::onViewTransformChanged(qreal factor)
+{
+    m_grid->setFactor(factor);
 }
 
 void ZenoSubGraphScene::initModel(SubGraphModel* pModel)

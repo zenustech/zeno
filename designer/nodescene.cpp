@@ -6,7 +6,7 @@
 #include "componentitem.h"
 #include "timelineitem.h"
 #include "dragpointitem.h"
-#include "nodegrid.h"
+#include <nodesys/nodegrid.h>
 #include "nodesview.h"
 #include "styletabwidget.h"
 #include "nodeswidget.h"
