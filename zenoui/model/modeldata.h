@@ -23,10 +23,10 @@ enum NODE_TYPE {
 };
 
 enum NODE_OPTION {
-    OPT_ONCE,       //discarded, only for compatible.
-    OPT_MUTE,
-    OPT_VIEW,
-    OPT_PREP
+    OPT_ONCE = 1,
+    OPT_MUTE = 1 << 1,
+    OPT_VIEW = 1 << 2,
+    OPT_PREP = 1 << 3
 };
 
 struct PARAM_INFO {

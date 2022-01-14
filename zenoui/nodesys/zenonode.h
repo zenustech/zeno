@@ -52,9 +52,9 @@ public slots:
     void onCollaspeBtnClicked();
     void onCollaspeLegacyUpdated(bool);
     void onCollaspeUpdated(bool);
+    void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
-    void onStatusHoveredChange(STATUS_BTN btn, bool hovered);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -62,6 +62,7 @@ protected:
     bool sceneEvent(QEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void resizeEvent(QGraphicsSceneResizeEvent *event) override;
 	void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
@@ -76,7 +77,6 @@ private:
     QGraphicsLayout* initParams();
     QGraphicsGridLayout* initSockets();
     void initIndependentWidgetsLegacy();
-    void initStatusBtns();
     void _initSocketItemPos();
     void _initStatusBtnPos();
     void _drawBorderWangStyle(QPainter* painter);

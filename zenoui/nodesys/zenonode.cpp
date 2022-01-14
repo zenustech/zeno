@@ -69,23 +69,6 @@ void ZenoNode::_initSocketItemPos()
     }
 }
 
-void ZenoNode::_initStatusBtnPos()
-{
-    QPointF base = m_pStatusWidgets->pos();
-    QSizeF sz = m_pStatusWidgets->effectiveSizeHint(Qt::PreferredSize);
-    QSizeF sz2 = m_once->size();
-    base += QPointF(12, -sz2.height() - 8);
-    m_once->setPos(base);
-    base += QPointF(38, 0);
-    m_mute->setPos(base);
-    base += QPointF(38, 0);
-    m_view->setPos(base);
-
-    m_once->hide();
-    m_mute->hide();
-    m_view->hide();
-}
-
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     if (isSelected())
@@ -155,8 +138,6 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 	m_pMainLayout->addItem(m_bodyWidget);
 	m_pMainLayout->setContentsMargins(0, 0, 0, 0);
 	m_pMainLayout->setSpacing(1);
-
-    initStatusBtns();
 
     setLayout(m_pMainLayout);
 
@@ -342,7 +323,9 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 
     m_pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
     m_pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(m_pStatusWidgets, SIGNAL(hoverChanged(STATUS_BTN, bool)), this, SLOT(onStatusHoveredChange(STATUS_BTN, bool)));
+    int options = m_index.data(ROLE_OPTIONS).toInt();
+    m_pStatusWidgets->setOptions(options);
+    connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
 
     pHLayout->addItem(pNameLayout);
     pHLayout->addItem(pSpacerItem);
@@ -360,77 +343,6 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 		headerWidget->setColors(false, clr, clr, clr);
 	}
 	return headerWidget;
-}
-
-void ZenoNode::initStatusBtns()
-{
-    m_once = new ZenoImageItem(":/icons/ONCE_dark.svg", ":/icons/ONCE_light.svg", ":/icons/ONCE_light.svg", QSize(50, 42), this);
-    m_mute = new ZenoImageItem(":/icons/MUTE_dark.svg", ":/icons/MUTE_light.svg", ":/icons/MUTE_light.svg", QSize(50, 42), this);
-    m_view = new ZenoImageItem(":/icons/VIEW_dark.svg", ":/icons/VIEW_light.svg", ":/icons/VIEW_light.svg", QSize(50, 42), this);
-    
-    connect(m_once, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
-        onStatusHoveredChange(STATUS_ONCE, hovered);
-    });
-	connect(m_mute, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
-		onStatusHoveredChange(STATUS_MUTE, hovered);
-    });
-	connect(m_view, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
-		onStatusHoveredChange(STATUS_VIEW, hovered);
-	});
-}
-
-void ZenoNode::onStatusHoveredChange(STATUS_BTN btn, bool hovered)
-{
-	if (btn == STATUS_ONCE)
-	{
-        m_pStatusWidgets->setHovered(btn, hovered);
-		m_once->toggle(hovered);
-	}
-	else if (btn == STATUS_MUTE)
-	{
-        m_pStatusWidgets->setHovered(btn, hovered);
-		m_mute->toggle(hovered);
-	}
-	else if (btn == STATUS_VIEW)
-	{
-        m_pStatusWidgets->setHovered(btn, hovered);
-		m_view->toggle(hovered);
-	}
-
-    QPointF mousePos = this->cursor().pos();
-    QPointF scenePos = m_once->scenePos();
-    
-    QGraphicsView* pView = scene()->views()[0];
-    QPoint wtf = pView->mapFromGlobal(mousePos.toPoint());
-    mousePos = pView->mapToScene(wtf);
-
-    if (!hovered)
-    {
-		QRectF rc = m_pStatusWidgets->sceneBoundingRect();
-		rc |= m_mute->sceneBoundingRect();
-		rc |= m_once->sceneBoundingRect();
-		rc |= m_view->sceneBoundingRect();
-		if (rc.contains(mousePos))
-		{
-			m_once->show();
-			m_view->show();
-			m_mute->show();
-            return;
-		}
-    }
-
-    if (!m_pStatusWidgets->hasHovered())
-    {
-        m_once->hide();
-        m_view->hide();
-        m_mute->hide();
-    }
-    else
-    {
-		m_once->show();
-		m_view->show();
-		m_mute->show();
-    }
 }
 
 QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
@@ -768,11 +680,15 @@ void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseMoveEvent(event);
 }
 
+void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseReleaseEvent(event);
+}
+
 void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
 {
     _base::resizeEvent(event);
     _initSocketItemPos();
-    _initStatusBtnPos();
 }
 
 void ZenoNode::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
@@ -798,6 +714,51 @@ void ZenoNode::onCollaspeBtnClicked()
 
     bool bCollasped = pGraphModel->data(m_index, ROLE_COLLASPED).toBool();
     pGraphModel->setData(m_index, !bCollasped, ROLE_COLLASPED);
+}
+
+void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
+{
+	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+	SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+	Q_ASSERT(pGraphModel);
+
+    int options = 0;
+    if (btn == STATUS_MUTE)
+    {
+        if (toggled)
+        {
+            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_MUTE;
+        }
+        else
+        {
+            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_MUTE;
+        }
+        
+    }
+    else if (btn == STATUS_ONCE)
+    {
+        if (toggled)
+        {
+            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_ONCE;
+        }
+        else
+        {
+            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_ONCE;
+        }
+    }
+    else if (btn == STATUS_VIEW)
+    {
+		if (toggled)
+		{
+			options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_VIEW;
+		}
+		else
+		{
+			options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_VIEW;
+		}
+    }
+
+    pGraphModel->setData(m_index, options, ROLE_OPTIONS);
 }
 
 void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
@@ -867,7 +828,7 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
 
 void ZenoNode::onOptionsUpdated(int options)
 {
-    //todo
+    m_pStatusWidgets->setOptions(options);
 }
 
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)

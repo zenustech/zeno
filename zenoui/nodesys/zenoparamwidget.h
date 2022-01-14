@@ -213,17 +213,27 @@ private:
 class ZenoMinStatusBtnItem : public QGraphicsObject
 {
     Q_OBJECT
+    typedef QGraphicsObject _base;
 public:
     ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    void setHovered(STATUS_BTN btn, bool hovered);
-    bool hasHovered();
+    void setChecked(STATUS_BTN btn, bool bChecked);
+    void setOptions(int options);
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 signals:
-    void hoverChanged(STATUS_BTN btn, bool hovered);
+    void toggleChanged(STATUS_BTN btn, bool hovered);
 
-private:
+protected:
+    ZenoImageItem* m_minMute;
+    ZenoImageItem* m_minView;
+    ZenoImageItem* m_minOnce;
+
     ZenoImageItem* m_mute;
     ZenoImageItem* m_view;
     ZenoImageItem* m_once;

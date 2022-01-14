@@ -33,20 +33,24 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     void resize(QSizeF sz);
     QSizeF size() const { return m_size; }
-    void toggle(bool bSelected);
-    void setHovered(bool bHovered);
     bool isHovered() const;
+    void setCheckable(bool bCheckable);
 
 signals:
     void clicked();
     void toggled(bool);
     void hoverChanged(bool);
 
+public slots:
+    void setHovered(bool bHovered);
+    void toggle(bool bSelected);
+
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
     QString m_normal;
@@ -56,6 +60,7 @@ private:
     QSizeF m_size;
     bool m_bToggled;
     bool m_bHovered;
+    bool m_bCheckable;
 };
 
 #endif
