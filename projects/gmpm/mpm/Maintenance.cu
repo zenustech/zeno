@@ -83,7 +83,8 @@ struct PushOutZSParticles : INode {
                lsv.getSignedDistance(x), x[0], x[1], x[2], dis);
       }
 #endif
-      for (auto sd = lsv.getSignedDistance(x); sd < dis && cnt--;) {
+      for (auto sd = lsv.getSignedDistance(x), sdabs = zs::abs(sd);
+           sd < dis && cnt--;) {
         auto diff = x.zeros();
         for (int i = 0; i != 3; i++) {
           auto v1 = x;
@@ -97,7 +98,7 @@ struct PushOutZSParticles : INode {
         if (math::near_zero(diff.l2NormSqr()))
           break;
         auto n = diff.normalized();
-        x -= n * sd;
+        x += n * sdabs;
         auto newSd = lsv.getSignedDistance(x);
 #if 0
         if (pi < 10)
@@ -105,8 +106,8 @@ struct PushOutZSParticles : INode {
                  "%f, %f)\n",
                  cnt, (int)pi, sd, newSd, x[0], x[1], x[2], n[0], n[1], n[2]);
 #endif
-        if (                                 // newSd < sd ||
-            newSd - sd < 0.5f * zs::abs(sd)) // new position should be no deeper
+        if (                           // newSd < sd ||
+            newSd - sd < 0.5f * sdabs) // new position should be no deeper
           break;
         updated = true;
         sd = newSd;
