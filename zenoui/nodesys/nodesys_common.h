@@ -42,6 +42,13 @@ struct NODES_MIME_DATA : public QObjectUserData
     QList<NODE_DATA> m_vecNodes;
 };
 
+enum STATUS_BTN
+{
+	STATUS_ONCE,
+    STATUS_MUTE,
+    STATUS_VIEW,
+};
+
 #define SCENE_INIT_WIDTH 64000
 #define SCENE_INIT_HEIGHT 64000
 

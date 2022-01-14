@@ -413,7 +413,7 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent)
-    : QGraphicsItem(parent)
+    : QGraphicsObject(parent)
     , m_mute(nullptr)
     , m_view(nullptr)
     , m_once(nullptr)
@@ -427,12 +427,33 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_once->setZValue(ZVALUE_ELEMENT);
     m_view->setZValue(ZVALUE_ELEMENT);
     m_mute->setZValue(ZVALUE_ELEMENT);
+    connect(m_mute, &ZenoImageItem::hoverChanged, [=](bool hovered) {
+        emit hoverChanged(STATUS_MUTE, hovered);
+    });
+	connect(m_view, &ZenoImageItem::hoverChanged, [=](bool hovered) {
+        emit hoverChanged(STATUS_VIEW, hovered);
+    });
+	connect(m_once, &ZenoImageItem::hoverChanged, [=](bool hovered) {
+        emit hoverChanged(STATUS_ONCE, hovered);
+	});
 }
 
 QRectF ZenoMinStatusBtnItem::boundingRect() const
 {
 	QRectF rc = childrenBoundingRect();
 	return rc;
+}
+
+void ZenoMinStatusBtnItem::setHovered(STATUS_BTN btn, bool hovered)
+{
+    m_mute->setHovered(btn == STATUS_MUTE && hovered);
+    m_once->setHovered(btn == STATUS_ONCE && hovered);
+    m_view->setHovered(btn == STATUS_VIEW && hovered);
+}
+
+bool ZenoMinStatusBtnItem::hasHovered()
+{
+    return m_mute->isHovered() || m_once->isHovered() || m_view->isHovered();
 }
 
 void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

@@ -16,6 +16,7 @@ class ZenoNode : public QGraphicsWidget
 {
     Q_OBJECT
     typedef QGraphicsWidget _base;
+
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
     ~ZenoNode();
@@ -45,6 +46,7 @@ signals:
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
+    void statusBtnHovered(STATUS_BTN);
 
 public slots:
     void onCollaspeBtnClicked();
@@ -52,13 +54,18 @@ public slots:
     void onCollaspeUpdated(bool);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
+    void onStatusHoveredChange(STATUS_BTN btn, bool hovered);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
     bool sceneEvent(QEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void resizeEvent(QGraphicsSceneResizeEvent *event) override;
+	void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
 
 private:
@@ -69,7 +76,9 @@ private:
     QGraphicsLayout* initParams();
     QGraphicsGridLayout* initSockets();
     void initIndependentWidgetsLegacy();
+    void initStatusBtns();
     void _initSocketItemPos();
+    void _initStatusBtnPos();
     void _drawBorderWangStyle(QPainter* painter);
 
     QPersistentModelIndex m_index;
@@ -84,12 +93,13 @@ private:
     ZenoTextLayoutItem* m_NameItem;
     ZenoImageItem *m_mute;
     ZenoImageItem *m_view;
-    ZenoImageItem *m_prep;
+    ZenoImageItem *m_once;
     ZenoImageItem *m_collaspe;
 
     ZenoBackgroundWidget* m_collaspedWidget;
     ZenoBackgroundWidget *m_bodyWidget;
     ZenoBackgroundWidget *m_headerWidget;
+    ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
     QGraphicsLinearLayout *m_pMainLayout;
     QGraphicsRectItem* m_border;

@@ -210,12 +210,18 @@ private:
     QSizeF m_size;
 };
 
-class ZenoMinStatusBtnItem : public QGraphicsItem
+class ZenoMinStatusBtnItem : public QGraphicsObject
 {
+    Q_OBJECT
 public:
     ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void setHovered(STATUS_BTN btn, bool hovered);
+    bool hasHovered();
+
+signals:
+    void hoverChanged(STATUS_BTN btn, bool hovered);
 
 private:
     ZenoImageItem* m_mute;

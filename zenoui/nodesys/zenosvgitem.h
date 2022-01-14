@@ -34,10 +34,13 @@ public:
     void resize(QSizeF sz);
     QSizeF size() const { return m_size; }
     void toggle(bool bSelected);
+    void setHovered(bool bHovered);
+    bool isHovered() const;
 
 signals:
     void clicked();
     void toggled(bool);
+    void hoverChanged(bool);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -52,6 +55,7 @@ private:
     ZenoSvgItem* m_svg;
     QSizeF m_size;
     bool m_bToggled;
+    bool m_bHovered;
 };
 
 #endif

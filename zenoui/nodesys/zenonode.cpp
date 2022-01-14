@@ -21,6 +21,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_NameItem(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
+    setAcceptHoverEvents(true);
 }
 
 ZenoNode::~ZenoNode()
@@ -66,6 +67,23 @@ void ZenoNode::_initSocketItemPos()
         socketItem->setPos(pos);
         emit socketPosInited(nodeid, sockName, false);
     }
+}
+
+void ZenoNode::_initStatusBtnPos()
+{
+    QPointF base = m_pStatusWidgets->pos();
+    QSizeF sz = m_pStatusWidgets->effectiveSizeHint(Qt::PreferredSize);
+    QSizeF sz2 = m_once->size();
+    base += QPointF(12, -sz2.height() - 8);
+    m_once->setPos(base);
+    base += QPointF(38, 0);
+    m_mute->setPos(base);
+    base += QPointF(38, 0);
+    m_view->setPos(base);
+
+    m_once->hide();
+    m_mute->hide();
+    m_view->hide();
 }
 
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -137,6 +155,8 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 	m_pMainLayout->addItem(m_bodyWidget);
 	m_pMainLayout->setContentsMargins(0, 0, 0, 0);
 	m_pMainLayout->setSpacing(1);
+
+    initStatusBtns();
 
     setLayout(m_pMainLayout);
 
@@ -221,9 +241,9 @@ void ZenoNode::initIndependentWidgetsLegacy()
     m_view->setZValue(ZVALUE_ELEMENT);
 
     rc = m_renderParams.rcPrep;
-    m_prep = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
-    m_prep->setPos(rc.topLeft());
-    m_prep->setZValue(ZVALUE_ELEMENT);
+    m_once = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
+    m_once->setPos(rc.topLeft());
+    m_once->setZValue(ZVALUE_ELEMENT);
 
     rc = m_renderParams.rcCollasped;
     m_collaspe = new ZenoImageItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()), this);
@@ -320,12 +340,13 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 	pNameLayout->addItem(m_NameItem);
 	pNameLayout->setContentsMargins(5, 5, 5, 5);
 
-    ZenoMinStatusBtnWidget* pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
-    pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
+    m_pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    connect(m_pStatusWidgets, SIGNAL(hoverChanged(STATUS_BTN, bool)), this, SLOT(onStatusHoveredChange(STATUS_BTN, bool)));
 
     pHLayout->addItem(pNameLayout);
     pHLayout->addItem(pSpacerItem);
-    pHLayout->addItem(pStatusWidgets);
+    pHLayout->addItem(m_pStatusWidgets);
     pHLayout->setSpacing(0);
     pHLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -339,6 +360,77 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 		headerWidget->setColors(false, clr, clr, clr);
 	}
 	return headerWidget;
+}
+
+void ZenoNode::initStatusBtns()
+{
+    m_once = new ZenoImageItem(":/icons/ONCE_dark.svg", ":/icons/ONCE_light.svg", ":/icons/ONCE_light.svg", QSize(50, 42), this);
+    m_mute = new ZenoImageItem(":/icons/MUTE_dark.svg", ":/icons/MUTE_light.svg", ":/icons/MUTE_light.svg", QSize(50, 42), this);
+    m_view = new ZenoImageItem(":/icons/VIEW_dark.svg", ":/icons/VIEW_light.svg", ":/icons/VIEW_light.svg", QSize(50, 42), this);
+    
+    connect(m_once, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
+        onStatusHoveredChange(STATUS_ONCE, hovered);
+    });
+	connect(m_mute, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
+		onStatusHoveredChange(STATUS_MUTE, hovered);
+    });
+	connect(m_view, &ZenoImageItem::hoverChanged, this, [=](bool hovered) {
+		onStatusHoveredChange(STATUS_VIEW, hovered);
+	});
+}
+
+void ZenoNode::onStatusHoveredChange(STATUS_BTN btn, bool hovered)
+{
+	if (btn == STATUS_ONCE)
+	{
+        m_pStatusWidgets->setHovered(btn, hovered);
+		m_once->toggle(hovered);
+	}
+	else if (btn == STATUS_MUTE)
+	{
+        m_pStatusWidgets->setHovered(btn, hovered);
+		m_mute->toggle(hovered);
+	}
+	else if (btn == STATUS_VIEW)
+	{
+        m_pStatusWidgets->setHovered(btn, hovered);
+		m_view->toggle(hovered);
+	}
+
+    QPointF mousePos = this->cursor().pos();
+    QPointF scenePos = m_once->scenePos();
+    
+    QGraphicsView* pView = scene()->views()[0];
+    QPoint wtf = pView->mapFromGlobal(mousePos.toPoint());
+    mousePos = pView->mapToScene(wtf);
+
+    if (!hovered)
+    {
+		QRectF rc = m_pStatusWidgets->sceneBoundingRect();
+		rc |= m_mute->sceneBoundingRect();
+		rc |= m_once->sceneBoundingRect();
+		rc |= m_view->sceneBoundingRect();
+		if (rc.contains(mousePos))
+		{
+			m_once->show();
+			m_view->show();
+			m_mute->show();
+            return;
+		}
+    }
+
+    if (!m_pStatusWidgets->hasHovered())
+    {
+        m_once->hide();
+        m_view->hide();
+        m_mute->hide();
+    }
+    else
+    {
+		m_once->show();
+		m_view->show();
+		m_mute->show();
+    }
 }
 
 QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
@@ -671,10 +763,31 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     }
 }
 
+void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseMoveEvent(event);
+}
+
 void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
 {
     _base::resizeEvent(event);
     _initSocketItemPos();
+    _initStatusBtnPos();
+}
+
+void ZenoNode::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverEnterEvent(event);
+}
+
+void ZenoNode::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverMoveEvent(event);
+}
+
+void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverLeaveEvent(event);
 }
 
 void ZenoNode::onCollaspeBtnClicked()
@@ -701,7 +814,7 @@ void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
         }
         m_mute->hide();
         m_view->hide();
-        m_prep->hide();
+        m_once->hide();
 
         m_collaspedWidget->show();
         m_collaspe->toggle(true);
@@ -717,7 +830,7 @@ void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
         }
         m_mute->show();
         m_view->show();
-        m_prep->show();
+        m_once->show();
         m_headerWidget->show();
         m_collaspedWidget->hide();
         m_collaspe->toggle(false);
