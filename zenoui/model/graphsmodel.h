@@ -29,6 +29,9 @@ public:
     void removeGraph(int idx);
     void setDescriptors(const NODE_DESCS &nodesParams);
     void initDescriptors();
+    bool isDirty() const;
+    void markDirty();
+    void clearDirty();
     NODE_DESCS getSubgraphDescs();
     NODE_CATES getCates();
 
@@ -41,6 +44,7 @@ private:
     NODE_DESCS m_nodesDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
+    bool m_dirty;
 };
 
 #endif

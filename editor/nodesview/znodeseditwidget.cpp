@@ -61,24 +61,21 @@ QString ZNodesEditWidget::getOpenFileByDialog()
 
 void ZNodesEditWidget::openFileDialog()
 {
+    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    saveQuit();
+
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
     //todo: path validation
-
-    GraphsManagment *pGraphs = zenoApp->graphsManagment();
-
-    GraphsModel *pModel = pGraphs->openZsgFile(filePath);
+    GraphsModel *pModel = zenoApp->graphsManagment()->openZsgFile(filePath);
     pModel->initDescriptors();
 
     m_pGraphsWidget->setGraphsModel(pModel);
     m_pComboSubGraph->setModel(pModel);
 
-    connect(m_pReloadBtn, &QPushButton::clicked, [=]() {
-        pGraphs->currentModel()->reloadSubGraph(m_pComboSubGraph->currentText());
-    });
-    connect(m_pDeleteBtn, SIGNAL(clicked()), pModel, SLOT(onRemoveCurrentItem()));
-
+    connect(m_pReloadBtn, SIGNAL(clicked()), this, SLOT(onReloadBtnClicked()));
+    connect(m_pDeleteBtn, SIGNAL(clicked()), this, SLOT(onDeleteBtnClicked()));
     connect(m_pComboSubGraph, SIGNAL(currentIndexChanged(int)), pModel, SLOT(onCurrentIndexChanged(int)));
     connect(pModel->selectionModel(), &QItemSelectionModel::currentChanged, 
         [=](const QModelIndex &current, const QModelIndex &previous) {
@@ -88,6 +85,36 @@ void ZNodesEditWidget::openFileDialog()
 
     //menu
     connect(m_pNewSubGraph, SIGNAL(triggered()), this, SLOT(onSubGraphTriggered()));
+}
+
+void ZNodesEditWidget::saveQuit()
+{
+    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    if (pGraphs->saveCurrent())
+    {
+        saveAs();
+    }
+    pGraphs->clear();
+}
+
+void ZNodesEditWidget::onReloadBtnClicked()
+{
+    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    const QString& subGraphName = m_pComboSubGraph->currentText();
+    if (pGraphs)
+    {
+        pGraphs->reloadGraph(subGraphName);
+    }
+}
+
+void ZNodesEditWidget::onDeleteBtnClicked()
+{
+    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    const QString& subGraphName = m_pComboSubGraph->currentText();
+    if (pGraphs)
+    {
+        pGraphs->removeCurrent();
+    }
 }
 
 void ZNodesEditWidget::importGraph()
@@ -197,6 +224,10 @@ void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
         pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+E")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(exportGraph()));
 		pFile->addAction(pAction);
+
+        pAction = new QAction(tr("Close"), pFile);
+        connect(pAction, SIGNAL(triggered()), this, SLOT(saveQuit()));
+        pFile->addAction(pAction);
 	}
 
     QMenu* pEdit = new QMenu(tr("Edit"));

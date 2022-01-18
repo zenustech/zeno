@@ -13,6 +13,10 @@ public:
     GraphsModel *currentModel();
     GraphsModel *openZsgFile(const QString &fn);
     GraphsModel *importGraph(const QString &fn);
+    void reloadGraph(const QString& graphName);
+    bool saveCurrent();
+    void clear();
+    void removeCurrent();
 
 private:
     GraphsModel *m_model;

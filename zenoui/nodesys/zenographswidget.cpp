@@ -107,3 +107,8 @@ void ZenoGraphsWidget::onRowsInserted(const QModelIndex &parent, int first, int 
     pView->setModel(pSubModel);
     addWidget(pView);
 }
+
+void ZenoGraphsWidget::clear()
+{
+
+}

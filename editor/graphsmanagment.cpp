@@ -19,17 +19,10 @@ GraphsModel* GraphsManagment::currentModel()
 
 GraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
-    if (m_model != nullptr)
-    {
-        //save first
-        m_model = nullptr;
-    }
-    else
-    {
-        m_model = new GraphsModel;
-        ModelAcceptor acceptor(m_model);
-        ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
-    }
+    m_model = new GraphsModel(this);
+    ModelAcceptor acceptor(m_model);
+    ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
+    m_model->clearDirty();
     return m_model;
 }
 
@@ -49,4 +42,42 @@ GraphsModel* GraphsManagment::importGraph(const QString& fn)
         }
     }
     return m_model;
+}
+
+void GraphsManagment::reloadGraph(const QString& graphName)
+{
+    if (m_model)
+        m_model->reloadSubGraph(graphName);
+}
+
+bool GraphsManagment::saveCurrent()
+{
+    if (!m_model || !m_model->isDirty())
+        return false;
+
+    int flag = QMessageBox::question(nullptr, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (flag & QMessageBox::Yes)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void GraphsManagment::clear()
+{
+    if (m_model) {
+        m_model->clear();
+        delete m_model;
+        m_model = nullptr;
+    }
+}
+
+void GraphsManagment::removeCurrent()
+{
+    if (m_model) {
+        m_model->onRemoveCurrentItem();
+    }
 }

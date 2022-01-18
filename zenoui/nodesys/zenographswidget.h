@@ -14,6 +14,7 @@ public:
     void setGraphsModel(GraphsModel* pModel);
     GraphsModel* model() const;
     QList<QAction*> getCategoryActions(QPointF scenePos);
+    void clear();
 
 public slots:
 	void onRowsRemoved(const QModelIndex &parent, int first, int last);

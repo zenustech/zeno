@@ -18,8 +18,11 @@ public slots:
 
 private slots:
     void onSubGraphTriggered();
+    void onReloadBtnClicked();
+    void onDeleteBtnClicked();
     void importGraph();
     void exportGraph();
+    void saveQuit();
 
 private:
     void initMenu(QMenuBar* pMenu);

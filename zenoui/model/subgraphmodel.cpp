@@ -5,15 +5,15 @@
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
-    : QAbstractItemModel(parent)
+    : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
 {
-    //to think: should graphsModel be a parent of this.
 }
 
 SubGraphModel::~SubGraphModel()
 {
+    clear();
 }
 
 SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
@@ -198,6 +198,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_row2Key.remove(rowCount() - 1);
     m_key2Row.remove(id);
     m_nodes.remove(id);
+    m_pGraphsModel->markDirty();
     return true;
 }
 
@@ -297,6 +298,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     {
         m_nodes[id][role] = value;
         emit dataChanged(index, index, QVector<int>{role});
+        m_pGraphsModel->markDirty();
         return true;
     }
     else
@@ -425,6 +427,7 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
         m_nodes[id] = nodeData;
         m_row2Key[nRows] = id;
         m_key2Row[id] = nRows;
+        m_pGraphsModel->markDirty();
         return true;
     }
     else if (row < nRows)
@@ -441,10 +444,12 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
         m_nodes[id] = nodeData;
         m_row2Key[row] = id;
         m_key2Row[id] = row;
+        m_pGraphsModel->markDirty();
         return true;
     }
     else
     {
+        Q_ASSERT(false);
         return false;
     }
 }

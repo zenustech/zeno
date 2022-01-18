@@ -8,6 +8,7 @@
 GraphsModel::GraphsModel(QObject *parent)
     : QStandardItemModel(parent)
     , m_selection(nullptr)
+    , m_dirty(false)
 {
     m_selection = new QItemSelectionModel(this);
 }
@@ -77,6 +78,7 @@ void GraphsModel::newSubgraph(const QString &graphName)
         subGraphModel->setName(graphName);
         appendSubGraph(subGraphModel);
         m_selection->setCurrentIndex(index(rowCount() - 1, 0), QItemSelectionModel::Current);
+        markDirty();
     }
 }
 
@@ -94,6 +96,7 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     }
     pReloadModel->blockSignals(false);
     pReloadModel->reload();
+    markDirty();
 }
 
 int GraphsModel::graphCounts() const
@@ -103,13 +106,6 @@ int GraphsModel::graphCounts() const
 
 void GraphsModel::initDescriptors()
 {
-    //NODE_DESCS descs2 = UiHelper::loadDescsFromTempFile();
- //   NODE_DESCS subgDescs = getSubgraphDescs();
- //   descs.insert(subgDescs);
-	//NODE_DESC blackBoard;
-	//blackBoard.categories.push_back("layout");
-	//descs["Blackboard"] = blackBoard;
-
     NODE_DESCS descs;
     QString strDescs = QString::fromStdString(zeno::dumpDescriptors());
     QStringList L = strDescs.split("\n");
@@ -285,6 +281,7 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 void GraphsModel::removeGraph(int idx)
 {
     removeRow(idx);
+    markDirty();
 }
 
 NODE_CATES GraphsModel::getCates()
@@ -296,6 +293,21 @@ void GraphsModel::onCurrentIndexChanged(int row)
 {
     const QString& graphName = data(index(row, 0), ROLE_OBJNAME).toString();
     switchSubGraph(graphName);
+}
+
+bool GraphsModel::isDirty() const
+{
+    return m_dirty;
+}
+
+void GraphsModel::markDirty()
+{
+    m_dirty = true;
+}
+
+void GraphsModel::clearDirty()
+{
+    m_dirty = false;
 }
 
 void GraphsModel::onRemoveCurrentItem()
