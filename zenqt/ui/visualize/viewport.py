@@ -6,11 +6,14 @@ import numpy as np
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-# from PySide2.QtOpenGL import *
+from PySide2.QtOpenGL import *
 
 from . import zenvis
 from .dialog import RecordVideoDialog
 from .camera_keyframe import CameraKeyframeWidget
+
+from ..utils import asset_path
+from ..editor import locale
 
 
 class CameraControl:
@@ -27,6 +30,12 @@ class CameraControl:
         self.fov = 45.0
         self.radius = 5.0
         self.res = (1, 1)
+
+        self.update_perspective()
+
+    def reset(self):
+        self.center = (0.0, 0.0, 0.0)
+        self.radius = 5.0
 
         self.update_perspective()
 
@@ -98,9 +107,9 @@ class CameraControl:
         self.fov = f[6]
         self.ortho_mode = f[7]
 
-class ViewportWidget(QOpenGLWidget):
+class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
-        fmt = QSurfaceFormat()
+        fmt = QGLFormat()
         nsamples = os.environ.get('ZEN_MSAA')
         if not nsamples:
             nsamples = 16
@@ -108,9 +117,8 @@ class ViewportWidget(QOpenGLWidget):
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
         fmt.setVersion(3, 0)
-        fmt.setProfile(QSurfaceFormat.CoreProfile)
-        super().__init__(parent)
-        self.setFormat(fmt)
+        fmt.setProfile(QGLFormat.CoreProfile)
+        super().__init__(fmt, parent)
 
         self.camera = CameraControl()
         zenvis.camera_control = self.camera
@@ -142,7 +150,7 @@ class ViewportWidget(QOpenGLWidget):
                 self.parent_widget.record_video.finish_record()
 
     def on_update(self):
-        self.update()
+        self.updateGL()
 
 @eval('lambda x: x()')
 def _():
@@ -185,6 +193,21 @@ class QDMDisplayMenu(QMenu):
         self.addSeparator()
 
         action = QAction('Camera Keyframe', self)
+        self.addAction(action)
+
+        self.addSeparator()
+
+        action = QAction('Use English', self)
+        action.setCheckable(True)
+        with open(asset_path('language.txt')) as f:
+            lang = f.read()
+            action.setChecked(lang == 'en')
+        self.addAction(action)
+
+        self.addSeparator()
+
+        action = QAction('Reset Camera', self)
+        action.setShortcut(QKeySequence('Shift+C'))
         self.addAction(action)
 
 class QDMRecordMenu(QMenu):
@@ -266,6 +289,15 @@ class DisplayWidget(QWidget):
 
         elif name == 'Camera Keyframe':
             self.camera_keyframe_widget.show()
+
+        elif name == 'Use English':
+            checked = act.isChecked()
+            with open(asset_path('language.txt'), 'w') as f:
+                f.write('en' if checked else 'zh-cn')
+            QMessageBox.information(None, 'Zeno', 'Language switched! Please reboot zeno!')
+
+        elif name == 'Reset Camera':
+            self.view.camera.reset()
 
     def get_output_path(self, extname):
         dir_path = 'outputs'

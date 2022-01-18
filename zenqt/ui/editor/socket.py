@@ -123,7 +123,7 @@ class QDMGraphicsSocket(QGraphicsItem):
             if param_type not in globals():
                 return
             self.paramEdit = globals()[param_type](self)
-        w = self.node.width / 3
+        w = self.label.boundingRect().width()
         rect = QRectF(HORI_MARGIN + w, -TEXT_HEIGHT * 0.5,
             self.node.width - HORI_MARGIN * 3 - w, 0)
         self.paramEdit.setGeometry(rect)

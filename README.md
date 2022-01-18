@@ -8,7 +8,7 @@
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-![rigid3.zsg](/images/rigid3.jpg "arts/rigid3.zsg")
+ <img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/WelcomePic2.jpg" width="640" position="left">
 
 ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
@@ -23,10 +23,29 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ## Gallery
 
-![robot hit water](/images/crag_hit_water.gif)
+Fig.1 - Robot hit water
 
-![SuperSonic Flow](/images/shock.gif)
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crag_hit_water.gif" width="640" position="left">
 
+Fig.2 - SuperSonic Flow
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/shock.gif" width="640" position="left">
+
+Fig.3 - Fluid-structure interaction in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water2.gif" width="640" position="left">
+
+Fig.4 - Rigid fracture in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/mid-autumn-festival.gif" width="640" position="left">
+
+Fig.5 - Muscular-skeleton simulation in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/muscle2.gif" width="640" position="left">
+
+Fig.6 - Large scale Fluids in ZENO
+
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
 
 # End-user Installation
 

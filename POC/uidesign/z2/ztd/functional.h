@@ -10,7 +10,6 @@ namespace z2::ztd {
 template <class T = void, class ...Ts>
 using promise = std::function<T(Ts...)>;
 
-
 template <class ...Ts, class T>
 promise<T, Ts...> make_promise(T val) {
     return [val = std::move(val)] (Ts...) -> T { return val; };
@@ -38,9 +37,6 @@ struct match : private Fs... {
 
     using Fs::operator()...;
 };
-
-template <class ...Fs>
-match(Fs &&...) -> match<Fs...>;
 
 
 };

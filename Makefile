@@ -21,7 +21,7 @@ default: run
 #default: run
 
 all:
-	cmake -B build -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake -B build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
 	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count; print(cpu_count())'`
 
 run: all

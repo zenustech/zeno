@@ -1,5 +1,5 @@
 from . import *
-
+import math 
 
 class HistoryStack:
     def __init__(self, scene):
@@ -66,6 +66,9 @@ class QDMFindBar(QWidget):
         self.prevButton.setFixedWidth(50)
         self.nextButton = QPushButton('Next', self)
         self.nextButton.setFixedWidth(50)
+        self.globalSearchCheck = QPushButton('Global', self)
+        self.globalSearchCheck.setFixedWidth(60)
+        self.globalSearchCheck.setCheckable(True)
         self.closeButton = QPushButton('X', self)
         self.closeButton.setFixedWidth(30)
 
@@ -75,6 +78,7 @@ class QDMFindBar(QWidget):
         self.layout.addWidget(self.resultLabel)
         self.layout.addWidget(self.prevButton)
         self.layout.addWidget(self.nextButton)
+        self.layout.addWidget(self.globalSearchCheck)
         self.layout.addWidget(self.closeButton)
         self.setLayout(self.layout)
 
@@ -86,6 +90,12 @@ class QDMFindBar(QWidget):
         self.prevButton.clicked.connect(self.jump_prev)
         self.nextButton.clicked.connect(self.jump_next)
         self.closeButton.clicked.connect(self.close)
+        self.globalSearchCheck.clicked.connect(self.globalSearchCheck_callback)
+
+    def globalSearchCheck_callback(self):
+        self.current_index = 0
+        self.total_count = 0
+        self.textChanged(self.lineEdit.text())
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -94,19 +104,30 @@ class QDMFindBar(QWidget):
         p.drawRect(self.rect())
 
     def do_search(self, text):
-        scene = self.window.view.scene()
+        global_search = self.globalSearchCheck.isChecked()
         text = text.lower()
+        if global_search:
+            result = []
+            for _, scene in self.window.scenes.items():
+                result += self.one_scene_search(text, scene)
+            return result
+        else:
+            scene = self.window.view.scene()
+            return self.one_scene_search(text, scene)
+
+    def one_scene_search(self, text, scene):
         result = []
         for n in scene.nodes:
             if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
                 name = n.params['name'].getValue().lower()
                 if text in name:
-                    result.append(n)
+                    result.append((scene.name, n))
                     continue
 
             name = n.name.lower()
-            if text in name:
-                result.append(n)
+            ident = n.ident.lower()
+            if text in name or text in ident:
+                result.append((scene.name, n))
 
         return result
 
@@ -121,14 +142,18 @@ class QDMFindBar(QWidget):
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-        self.on_jump()
+        self.on_jump(ns)
 
-    def on_jump(self):
+    def on_jump(self, ns=None):
         self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
 
         text = self.lineEdit.text()
-        ns = self.do_search(text)
-        n = ns[self.current_index]
+        if ns == None:
+            ns = self.do_search(text)
+        scene_name, n = ns[self.current_index]
+        if self.window.scene.name != scene_name:
+            self.window.switchScene(scene_name)
+            self.window.edit_graphname.setCurrentText(scene_name)
 
         view = self.window.view
         rect = view.scene()._scene_rect
@@ -169,11 +194,19 @@ class QDMFindBar(QWidget):
         self.hide()
         self.window.view.setFocus()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
+        super().keyPressEvent(event)
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        width, height = 64000, 64000
+        self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor(style['background_color']))
 
         self.nodes = []
@@ -183,7 +216,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
-        self._scene_rect = QRectF(0, 0, 500, 500)
+        self._scene_rect = None
 
     @property
     def descs(self):
@@ -192,6 +225,10 @@ class QDMGraphicsScene(QGraphicsScene):
     @property
     def cates(self):
         return self.editor.cates
+
+    @property
+    def descs_comment(self):
+        return self.editor.descs_comment
 
     def setContentChanged(self, flag):
         self.contentChanged = flag
@@ -332,6 +369,43 @@ class QDMGraphicsScene(QGraphicsScene):
             return
         super().mousePressEvent(event)
 
+    def _draw_dots(self, painter, rect, grid_size):
+        viewer = self.views()[0]
+        zoom = viewer.transform().m11()
+        if zoom < 0.05:
+            return
+
+        if zoom < 1:
+            grid_size = int(abs(zoom - 1) / 0.3 + 1) * grid_size
+
+        left = int(rect.left())
+        right = int(rect.right())
+        top = int(rect.top())
+        bottom = int(rect.bottom())
+
+        first_left = left - (left % grid_size)
+        first_top = top - (top % grid_size)
+
+        pen = QPen(QColor(255, 255, 255, 50), 0.65)
+        if (1.0 / zoom) > 3:
+            zoom *=  (0.3333333 / zoom) ** 1.5
+        elif zoom > 1:
+            zoom = math.log(zoom + 1, 2)
+        pen.setWidth(3.0 / zoom)
+        
+        painter.setPen(pen)
+        painter.drawPoints([QPoint(x, y) for x in range(first_left, right, grid_size) for y in range(first_top, bottom, grid_size)])
+
+    def drawBackground(self, painter, rect):
+        super().drawBackground(painter, rect)
+        painter.save()
+
+        if style['background_style'] is BackgroundStyle.DOT:
+            painter.setRenderHint(QPainter.Antialiasing, False)
+            painter.setBrush(self.backgroundBrush())
+            self._draw_dots(painter, rect, 50)
+
+        painter.restore()
 
 class QDMGraphicsView(QGraphicsView):
     ZOOM_FACTOR = 1.25
@@ -359,11 +433,41 @@ class QDMGraphicsView(QGraphicsView):
         self.node_editor = parent
 
         self._last_mouse_pos = None
+        self._last_mouse_move_pos = None
+
+        self.initShortcuts()
+
+    def initShortcuts(self):
+        self.msgNumericOperator = QShortcut(QKeySequence(Qt.Key_O), self)
+        self.msgNumericOperator.activated.connect(lambda: self.opNumericOperator())
+
+        self.msgView = QShortcut(QKeySequence(Qt.Key_D), self)
+        self.msgView.activated.connect(lambda: self.opView())
+    
+    def opView(self):
+        itemList = self.scene().selectedItems()
+        for n in itemList:
+            if isinstance(n, QDMGraphicsNode):
+                n.options['VIEW'].setChecked(not n.options['VIEW'].checked)
+
+    def opNumericOperator(self):
+        if self._last_mouse_move_pos:
+            self.lastContextMenuPos = self.mapToScene(self._last_mouse_move_pos)
+            act = QAction()
+            act.setText('NumericOperator')
+            self.menuTriggered(act)
 
     def setScene(self, scene):
         super().setScene(scene)
         if scene._scene_rect:
             self._update_scene_rect()
+
+    def safeSetToolTip(self, key, action):
+        comments = self.scene().descs_comment
+        if key in comments:
+            action.setToolTip(comments[key])
+        else:
+            action.setToolTip(key)
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
@@ -374,7 +478,8 @@ class QDMGraphicsView(QGraphicsView):
             keys = self.scene().descs.keys()
             matched = fuzzy_search(pattern, keys)
             for key in matched:
-                edit.menu.addAction(key)
+                keyAction = edit.menu.addAction(key)
+                self.safeSetToolTip(key, keyAction)
 
     def getCategoryActions(self):
         cates = self.scene().cates
@@ -388,15 +493,19 @@ class QDMGraphicsView(QGraphicsView):
             act = QAction()
             act.setText(cate_name)
             childMenu = QMenu()
+            childMenu.setToolTipsVisible(True)
             childActs = []
             for type_name in type_names:
-                childMenu.addAction(type_name)
+                # add action and its tooltip if exits
+                childMenuAction = childMenu.addAction(type_name)
+                self.safeSetToolTip(type_name, childMenuAction)
             act.setMenu(childMenu)
             acts.append(act)
         return acts
 
     def contextMenu(self, pos):
         menu = QMenu(self)
+        menu.setToolTipsVisible(True)
 
         edit = QDMSearchLineEdit(menu, self)
         edit.textChanged.connect(lambda: self.updateSearch(edit))
@@ -451,6 +560,7 @@ class QDMGraphicsView(QGraphicsView):
         if event.button() == Qt.MiddleButton:
             self._last_mouse_pos = event.pos()
             self.setDragMode(QGraphicsView.NoDrag)
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
             self.scene().mmb_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
@@ -514,6 +624,7 @@ class QDMGraphicsView(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        self._last_mouse_move_pos = event.pos()
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
             edge = self.dragingEdge
@@ -521,6 +632,7 @@ class QDMGraphicsView(QGraphicsView):
             edge.updatePath()
             self.scene().update()
         if self.scene().mmb_press:
+            self.check_scene_rect()
             last_pos = self.mapToScene(self._last_mouse_pos)
             current_pos = self.mapToScene(event.pos())
             delta = last_pos - current_pos
@@ -550,18 +662,21 @@ class QDMGraphicsView(QGraphicsView):
         elif event.angleDelta().y() < 0:
             zoomFactor = 1 / self.ZOOM_FACTOR
 
+
         self.scale(zoomFactor, zoomFactor, event.pos())
         self._update_scene_rect()
 
-    '''
-    def resizeEvent(self, event):
+    def check_scene_rect(self):
         if self.scene()._scene_rect is None:
             self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
             self._update_scene_rect()
+
+    def resizeEvent(self, event):
+        self.check_scene_rect()
         super().resizeEvent(event)
-    '''
 
     def scale(self, sx, sy, pos=None):
+        self.check_scene_rect()
         rect = self.scene()._scene_rect
         if (rect.width() > 10000 and sx < 1) or \
             (rect.width() < 200 and sx > 1):

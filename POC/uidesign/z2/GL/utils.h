@@ -31,7 +31,7 @@ static const char *get_opengl_error_string(GLenum err) {
 
 static void _check_opengl_error(const char *file, int line, const char *hint) {
     auto err = glGetError();
-    if (err != GL_NO_ERROR) {
+    [[unlikely]] if (err != GL_NO_ERROR) {
       auto msg = get_opengl_error_string(err);
       throw ztd::make_error(file, ':', line, ':', hint, ": ", msg);
     }

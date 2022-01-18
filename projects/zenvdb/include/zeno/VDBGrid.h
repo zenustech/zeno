@@ -133,7 +133,7 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   dilateTopo(int l) override {
     openvdb::tools::dilateActiveValues(
       m_grid->tree(), l,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   }
 
   virtual zeno::vec3f getVoxelSize() const override {

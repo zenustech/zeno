@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include <z2/ztd/type_traits.h>
+#include <functional>
 #include <concepts>
 #include <utility>
 #include <cstdint>
@@ -8,6 +10,7 @@
 
 
 namespace z2::ztd {
+inline namespace mathvec {
 
 
 /* main class */
@@ -24,6 +27,10 @@ struct vec {
             std::conditional_t<N >= 4, T, std::type_identity<T>> w;
         };
     };
+
+    constexpr size_t size() const {
+        return N;
+    }
 
     constexpr T *data() {
         return _M_data;
@@ -49,7 +56,7 @@ struct vec {
     template <class ...Ts>
         requires(sizeof...(Ts) == N - 2)
     constexpr vec(T t1, T t2, Ts ...ts)
-        : vec(std::initializer_list<T>{t1, t2, ts...})
+        : vec(std::initializer_list<T>{t1, t2, (T)ts...})
     {}
 
     constexpr explicit(N != 1) vec(T const &t) {
@@ -91,31 +98,43 @@ struct vec {
 
 template <class T>
 struct vec_traits : std::false_type {
-    size_t dim = 0;
+    static constexpr size_t dim = 0;
     using type = T;
 };
 
 template <size_t N, class T>
 struct vec_traits<vec<N, T>> : std::true_type {
-    size_t dim = N;
+    static constexpr size_t dim = N;
     using type = T;
+
+    template <class S>
+    constexpr bool operator==(vec_traits<S> const &that) const {
+        return !value || !that.value || dim == that.dim;
+    }
 };
+
+template <class ...Ts>
+static constexpr bool vec_broadcastable = false;
+
+template <class T>
+static constexpr bool vec_broadcastable<T> = true;
+
+template <class T1, class T2, class ...Ts>
+static constexpr bool vec_broadcastable<T1, T2, Ts...> = vec_traits<T1>() == vec_traits<T2>() && vec_broadcastable<T2, Ts...>;
 
 
 /* broadcasting */
 
 template <class F, class ...Ts>
-    requires ((!vec_traits<Ts>::value && ...)
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, Ts...>>>)
+    requires (!vec_traits<Ts>::value && ...)
 constexpr auto vapply(F func, Ts const &...ts) {
     return func(ts...);
 }
 
 template <class F, size_t N, class ...Ts>
-    requires ((!vec_traits<Ts>::value && ...)
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, Ts...>>>)
+    requires (!vec_traits<Ts>::value && ...)
 constexpr auto vapply(F func, vec<N, Ts> const &...ts) {
-    using T0 = std::decay_t<std::invoke_result_t<F, Ts...>>;
+    using T0 = nocvref_invoke_result_t<F, Ts...>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(ts[i]...);
@@ -124,10 +143,9 @@ constexpr auto vapply(F func, vec<N, Ts> const &...ts) {
 }
 
 template <class F, size_t N, class T1, class T2>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
 constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1[i], t2);
@@ -136,10 +154,9 @@ constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2) {
 }
 
 template <class F, size_t N, class T1, class T2>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
 constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1, t2[i]);
@@ -148,10 +165,9 @@ constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2) {
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2, T3 const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1[i], t2, t3);
@@ -160,10 +176,9 @@ constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2, T3 const &t3) 
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2, T3 const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1, t2[i], t3);
@@ -172,10 +187,9 @@ constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2, T3 const &t3) 
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, T1 const &t1, T2 const &t2, vec<N, T3> const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1, t2, t3[i]);
@@ -184,10 +198,9 @@ constexpr auto vapply(F func, T1 const &t1, T2 const &t2, vec<N, T3> const &t3) 
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, vec<N, T1> const &t1, vec<N, T2> const &t2, T3 const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1[i], t2[i], t3);
@@ -196,10 +209,9 @@ constexpr auto vapply(F func, vec<N, T1> const &t1, vec<N, T2> const &t2, T3 con
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2, vec<N, T3> const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1, t2[i], t3[i]);
@@ -208,15 +220,19 @@ constexpr auto vapply(F func, T1 const &t1, vec<N, T2> const &t2, vec<N, T3> con
 }
 
 template <class F, size_t N, class T1, class T2, class T3>
-    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value
-              && std::is_void_v<std::void_t<std::invoke_result_t<F, T1, T2, T3>>>)
+    requires (!vec_traits<T1>::value && !vec_traits<T2>::value && !vec_traits<T3>::value)
 constexpr auto vapply(F func, vec<N, T1> const &t1, T2 const &t2, vec<N, T3> const &t3) {
-    using T0 = std::decay_t<std::invoke_result_t<F, T1, T2, T3>>;
+    using T0 = nocvref_invoke_result_t<F, T1, T2, T3>;
     vec<N, T0> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = func(t1[i], t2, t3[i]);
     }
     return ret;
+}
+
+template <class F, class T1, class T2>
+constexpr auto &ivapply(F func, T1 &t1, T2 const &t2) {
+    return (t1 = vapply(func, t1, t2));
 }
 
 
@@ -242,89 +258,118 @@ constexpr S vcast(T const &t) {
     }
 }
 
+template <class S, size_t N, class T>
+constexpr S vec_to_other(vec<N, T> const &t) {
+    return ([&] <size_t ...I> (std::index_sequence<I...>) {
+        return S(t[I]...);
+    })(std::make_index_sequence<N>());
+}
+
+template <size_t N, class S>
+constexpr auto other_to_vec(S const &s) {
+    return ([&] <size_t ...I> (std::index_sequence<I...>) {
+        using T = std::remove_cvref_t<decltype(s[0])>;
+        return vec<N, T>(s[I]...);
+    })(std::make_index_sequence<N>());
+}
+
 
 /* operators */
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() + std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator+(T1 const &t1, T2 const &t2) {
     return vapply(std::plus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() - std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator-(T1 const &t1, T2 const &t2) {
     return vapply(std::minus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() * std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator*(T1 const &t1, T2 const &t2) {
     return vapply(std::multiplies{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() / std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator/(T1 const &t1, T2 const &t2) {
     return vapply(std::divides{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() % std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator%(T1 const &t1, T2 const &t2) {
     return vapply(std::modulus{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() == std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator==(T1 const &t1, T2 const &t2) {
     return vapply(std::equal_to{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() != std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator!=(T1 const &t1, T2 const &t2) {
     return vapply(std::not_equal_to{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() > std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator>(T1 const &t1, T2 const &t2) {
     return vapply(std::greater{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() < std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator<(T1 const &t1, T2 const &t2) {
     return vapply(std::less{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() >= std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator>=(T1 const &t1, T2 const &t2) {
     return vapply(std::greater_equal{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() <= std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator<=(T1 const &t1, T2 const &t2) {
     return vapply(std::less_equal{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() & std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator&(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_and{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() | std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator|(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_or{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() ^ std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator^(T1 const &t1, T2 const &t2) {
     return vapply(std::bit_xor{}, t1, t2);
 }
@@ -332,14 +377,14 @@ constexpr auto operator^(T1 const &t1, T2 const &t2) {
 template <class = void>
 struct __bit_shr {
     template <class T1, class T2>
-        requires (std::declval<T1>() >> std::declval<T2>())
     constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
         return std::forward<T1>(t1) >> std::forward<T2>(t2);
     }
 };
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() >> std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator>>(T1 const &t1, T2 const &t2) {
     return vapply(__bit_shr{}, t1, t2);
 }
@@ -347,32 +392,34 @@ constexpr auto operator>>(T1 const &t1, T2 const &t2) {
 template <class = void>
 struct __bit_shl {
     template <class T1, class T2>
-        requires (std::declval<T1>() << std::declval<T2>())
     constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
         return std::forward<T1>(t1) << std::forward<T2>(t2);
     }
 };
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() << std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator<<(T1 const &t1, T2 const &t2) {
     return vapply(__bit_shl{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() && std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator&&(T1 const &t1, T2 const &t2) {
     return vapply(std::logical_and{}, t1, t2);
 }
 
 template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+    requires ((vec_traits<T1>::value || vec_traits<T2>::value) && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() || std::declval<typename vec_traits<T2>::type>())>)
 constexpr auto operator||(T1 const &t1, T2 const &t2) {
     return vapply(std::logical_or{}, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (vec_traits<T1>::value || vec_traits<T2>::value)
+template <class T1>
+    requires (vec_traits<T1>::value && true_v<decltype(!(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto operator!(T1 const &t1) {
     return vapply(std::logical_not{}, t1);
 }
@@ -380,262 +427,320 @@ constexpr auto operator!(T1 const &t1) {
 template <class = void>
 struct __positive {
     template <class T1>
-        requires (std::is_void_v<std::void_t<decltype(+std::declval<T1>())>>)
     constexpr decltype(auto) operator()(T1 &&t1) const {
         return +std::forward<T1>(t1);
     }
 };
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && true_v<decltype(+(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto operator+(T1 const &t1) {
     return vapply(__positive{}, t1);
 }
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && true_v<decltype(-(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto operator-(T1 const &t1) {
     return vapply(std::negate{}, t1);
 }
 
 template <class T1>
-    requires (vec_traits<T1>::value)
+    requires (vec_traits<T1>::value && true_v<decltype(~(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto operator~(T1 const &t1) {
     return vapply(std::bit_not{}, t1);
 }
 
 
+/* inplace operators */
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() + std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator+=(T1 &t1, T2 const &t2) {
+    return ivapply(std::plus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() - std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator-=(T1 &t1, T2 const &t2) {
+    return ivapply(std::minus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() * std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator*=(T1 &t1, T2 const &t2) {
+    return ivapply(std::multiplies{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() / std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator/=(T1 &t1, T2 const &t2) {
+    return ivapply(std::divides{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() % std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator%=(T1 &t1, T2 const &t2) {
+    return ivapply(std::modulus{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() & std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator&=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_and{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() | std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator|=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_or{}, t1, t2);
+}
+
+template <class T1, class T2>
+    requires (vec_traits<T1>::value && vec_broadcastable<T1, T2>
+        && true_v<decltype(std::declval<typename vec_traits<T1>::type>() ^ std::declval<typename vec_traits<T2>::type>())>)
+constexpr auto &operator^=(T1 &t1, T2 const &t2) {
+    return ivapply(std::bit_xor{}, t1, t2);
+}
+
+
 /* scalar math functions */
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::floor(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::floor(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto floor(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::floor(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::floor((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::ceil(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::ceil(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto ceil(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::ceil(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::ceil((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::sin(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::sin(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto sin(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::sin(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::sin((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::cos(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::cos(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto cos(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::cos(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::cos((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::tan(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::tan(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto tan(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::tan(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::tan((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::asin(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::asin(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto asin(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::sin(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::sin((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::acos(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::acos(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto acos(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::acos(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::acos((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::atan(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::atan(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto atan(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::atan(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::atan((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::sinh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::sinh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto sinh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::sinh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::sinh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::cosh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::cosh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto cosh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::cosh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::cosh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::tanh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::tanh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto tanh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::tanh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::tanh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::asinh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::asinh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto asinh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::sinh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::sinh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::acosh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::acosh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto acosh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::acosh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::acosh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::atanh(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::atanh(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto atanh(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::atanh(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::atanh((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::abs(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::abs(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto abs(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::abs(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::abs((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::fabs(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::fabs(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto fabs(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::fabs(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::fabs((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::sqrt(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::sqrt(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto sqrt(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::sqrt(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::sqrt((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::exp(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::exp(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto exp(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::exp(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::exp((T0)t1);
     }, t1);
 }
 
-template <class T1>
-    requires (std::is_void_v<std::void_t<decltype(std::log(std::declval<typename vec_traits<T1>::type>()))>>)
+template <class T1, class T0 = typename vec_traits<T1>::type>
+    requires (true_v<decltype(std::log(std::declval<typename vec_traits<T1>::type>()))>)
 constexpr auto log(T1 const &t1) {
-    return vapply([] (auto const &t1) -> decltype(auto) {
-        return std::log(t1);
+    return vapply([] (auto const &t1) -> T0 {
+        return std::log((T0)t1);
     }, t1);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::fmod(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::fmod(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmod(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::fmod(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::fmod((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::fmin(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::fmin(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmin(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::fmin(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::fmin((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::fmax(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::fmax(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fmax(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::fmax(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::fmax((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::min(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::min(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto min(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::min(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::min((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::max(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::max(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto max(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::max(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::max((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::atan2(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::atan2(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto atan2(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::atan2(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::atan2((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2>
-    requires (std::is_void_v<std::void_t<decltype(std::pow(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>()))>>)
+template <class T1, class T2, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type>>
+    requires (vec_broadcastable<T1, T2> && true_v<decltype(std::pow(std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto pow(T1 const &t1, T2 const &t2) {
-    return vapply([] (auto const &t1, auto const &t2) -> decltype(auto) {
-        return std::pow(t1, t2);
+    return vapply([] (auto const &t1, auto const &t2) -> T0 {
+        return std::pow((T0)t1, (T0)t2);
     }, t1, t2);
 }
 
-template <class T1, class T2, class T3>
-    requires (std::is_void_v<std::void_t<decltype(std::fma(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (vec_broadcastable<T1, T2, T3> && true_v<decltype(std::fma(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto fma(T1 const &t1, T2 const &t2, T3 const &t3) {
-    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::fma(t1, t2, t3);
+    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> T0 {
+        return std::fma((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 
-template <class T1, class T2, class T3>
-    requires (std::is_void_v<std::void_t<decltype(std::clamp(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (vec_broadcastable<T1, T2, T3> && true_v<decltype(std::clamp(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto clamp(T1 const &t1, T2 const &t2, T3 const &t3) {
-    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::clamp(t1, t2, t3);
+    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> T0 {
+        return std::clamp((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 
-template <class T1, class T2, class T3>
-    requires (std::is_void_v<std::void_t<decltype(std::clamp(std::declval<typename vec_traits<T1>::type>(), std::declval<typename vec_traits<T2>::type>(), std::declval<typename vec_traits<T3>::type>()))>>)
+template <class T1, class T2, class T3, class T0 = promoted_t<typename vec_traits<T1>::type, typename vec_traits<T2>::type, typename vec_traits<T3>::type>>
+    requires (vec_broadcastable<T1, T2, T3> && true_v<decltype(std::lerp(std::declval<T0>(), std::declval<T0>(), std::declval<T0>()))>)
 constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
-    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> decltype(auto) {
-        return std::lerp(t1, t2, t3);
+    return vapply([] (auto const &t1, auto const &t2, auto const &t3) -> T0 {
+        return std::lerp((T0)t1, (T0)t2, (T0)t3);
     }, t1, t2, t3);
 }
 
@@ -644,7 +749,7 @@ constexpr auto lerp(T1 const &t1, T2 const &t2, T3 const &t3) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool vany(vec<N, T> const &t) {
+constexpr bool vany(vec<N, T> const &t) {
     bool ret = false;
     for (size_t i = 0; i < N; i++) {
         ret = ret || (bool)t[i];
@@ -654,13 +759,13 @@ bool vany(vec<N, T> const &t) {
 
 template <class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool vany(T const &t) {
+constexpr bool vany(T const &t) {
     return (bool)t;
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool vall(vec<N, T> const &t) {
+constexpr bool vall(vec<N, T> const &t) {
     bool ret = true;
     for (size_t i = 0; i < N; i++) {
         ret = ret && (bool)t[i];
@@ -670,20 +775,20 @@ bool vall(vec<N, T> const &t) {
 
 template <class T>
     requires (!vec_traits<T>::value && (std::convertible_to<T, bool> || std::constructible_from<bool, T>))
-bool vall(T const &t) {
+constexpr bool vall(T const &t) {
     return (bool)t;
 }
 
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-auto dot(T1 const &t1, T2 const &t2) {
+constexpr auto dot(T1 const &t1, T2 const &t2) {
     return t1 * t2;
 }
 
 template <size_t N, class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
-    std::decay_t<decltype(t1[0] * t2[0])> res(0);
+constexpr auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
+    std::remove_cvref_t<decltype(t1[0] * t2[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += t1[i] * t2[i];
     }
@@ -692,36 +797,36 @@ auto dot(vec<N, T1> const &t1, vec<N, T2> const &t2) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-auto length(vec<N, T> const &t) {
+constexpr auto length(vec<N, T> const &t) {
     T res(0);
     for (size_t i = 0; i < N; i++) {
         res += t[i] * t[i];
     }
-    return std::sqrt(res);
+    return (T)std::sqrt(res);
 }
 
 template <size_t N, class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-auto distance(vec<N, T1> const &t1, vec<N, T2> const &t2) {
+constexpr auto distance(vec<N, T1> const &t1, vec<N, T2> const &t2) {
     return length(t2 - t1);
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-auto normalize(vec<N, T> const &t) {
+constexpr auto normalize(vec<N, T> const &t) {
     return t * (T(1) / length(t));
 }
 
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-auto cross(vec<2, T1> const &t1, vec<2, T2> const &t2) {
+constexpr auto cross(vec<2, T1> const &t1, vec<2, T2> const &t2) {
     return t1[0] * t2[1] - t2[0] * t1[1];
 }
 
 template <class T1, class T2>
     requires (!vec_traits<T1>::value && !vec_traits<T2>::value)
-auto cross(vec<3, T1> const &t1, vec<3, T2> const &t2) {
-    return vec<3, std::decay_t<decltype(t1[0] * t2[0])>>(
+constexpr auto cross(vec<3, T1> const &t1, vec<3, T2> const &t2) {
+    return vec<3, std::remove_cvref_t<decltype(t1[0] * t2[0])>>(
       t1[1] * t2[2] - t2[1] * t1[2],
       t1[2] * t2[0] - t2[2] * t1[0],
       t1[0] * t2[1] - t2[0] * t1[1]);
@@ -729,14 +834,14 @@ auto cross(vec<3, T1> const &t1, vec<3, T2> const &t2) {
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-auto tovec(T const &x) {
-  return vec<N, T>(x);
+constexpr auto tovec(T const &t) {
+  return vec<N, T>(t);
 }
 
 template <size_t N, class T>
     requires (!vec_traits<T>::value)
-auto tovec(vec<N, T> const &x) {
-    return x;
+constexpr auto tovec(vec<N, T> const &t) {
+    return t;
 }
 
 
@@ -780,4 +885,5 @@ using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
 
 
+}
 }

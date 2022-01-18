@@ -489,11 +489,13 @@ struct particle_to_grid_reducer {
 struct deduce_missing_velocity_and_normalize {
   deduce_missing_velocity_and_normalize(
       openvdb::Vec3fGrid::Ptr in_velocity_weights,
-      openvdb::Vec3fGrid::Ptr in_original_velocity)
+      openvdb::Vec3fGrid::Ptr in_original_velocity,
+      bool setActive)
       : original_velocity_accessor(in_original_velocity->getConstAccessor()),
         original_weights_accessor(in_velocity_weights->getConstAccessor()) {
     m_velocity_weights = in_velocity_weights;
     m_original_velocity = in_original_velocity;
+    m_setActive = setActive;
   }
 
   void operator()(openvdb::Vec3fGrid::TreeType::LeafNodeType &vel_leaf,
@@ -554,12 +556,14 @@ struct deduce_missing_velocity_and_normalize {
 
       // store the weighted version
       vel_leaf.setValueOn(offset, vel);
+      
     } // end for all voxels in this leaf node
   }   // end operator()
 
   openvdb::Vec3fGrid::ConstAccessor original_weights_accessor;
   openvdb::Vec3fGrid::ConstAccessor original_velocity_accessor;
 
+  bool m_setActive;
   openvdb::Vec3fGrid::Ptr m_velocity_weights;
   openvdb::Vec3fGrid::Ptr m_original_velocity;
 };
@@ -1866,13 +1870,14 @@ void FLIP_vdb::particle_to_grid_collect_style(
     openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
     openvdb::Vec3fGrid::Ptr &velocity_weights,
     openvdb::FloatGrid::Ptr &liquid_sdf,
-    openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx) {
+    openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx,
+    bool setActive) {
   float particle_radius = 0.8f * dx * 1.01;
   velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
       particles->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
       velocity->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
 
   velocity_weights = velocity->deepCopy();
 
@@ -1896,7 +1901,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
       velocity_grid_manager(velocity->tree());
 
   auto velocity_normalizer = deduce_missing_velocity_and_normalize(
-      velocity_weights, original_unweighted_velocity);
+      velocity_weights, original_unweighted_velocity, setActive);
 
   velocity_grid_manager.foreach (velocity_normalizer, true, 1);
 
@@ -3166,7 +3171,7 @@ void FLIP_vdb::calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
       liquid_sdf->tree(), openvdb::Vec3f{1.0f}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
       face_weight->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   face_weight->setName("Face_Weights");
   face_weight->setTransform(liquid_sdf->transformPtr());
   face_weight->setGridClass(openvdb::GridClass::GRID_STAGGERED);
@@ -3239,7 +3244,7 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
     openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx) {
   openvdb::tools::dilateActiveValues(
       liquid_sdf->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   auto correct_liquid_phi_in_solid = [&](openvdb::FloatTree::LeafNodeType &leaf,
                                          openvdb::Index leafpos) {
     // detech if there is solid
@@ -3721,7 +3726,7 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 
   openvdb::tools::dilateActiveValues(
       voxel_center_solid_normal->tree(), 5,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
   voxel_center_solid_normal->setTransform(in_out_points->transformPtr());
   voxel_center_solid_normal->setName("solidnormal");
 

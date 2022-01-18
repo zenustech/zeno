@@ -6,7 +6,7 @@
 #include <z2/UI/GraphicsView.h>
 #include <z2/UI/UiDopContextMenu.h>
 #include <z2/UI/UiDopSocket.h>
-#include <z2/dop/DopGraph.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -17,11 +17,9 @@ struct UiDopScene;
 
 
 struct UiDopGraph : GraphicsView {
-    std::set<UiDopNode *> nodes;
-    std::set<UiDopLink *> links;
     UiDopPendingLink *pending_link = nullptr;
-
-    std::unique_ptr<dop::DopGraph> bk_graph = std::make_unique<dop::DopGraph>();
+    std::map<std::string, UiDopNode *> nodes;
+    std::set<UiDopLink *> links;
 
     UiDopEditor *editor = nullptr;
     UiDopContextMenu *menu = nullptr;
@@ -48,6 +46,8 @@ struct UiDopGraph : GraphicsView {
 
     void on_event(Event_Mouse e) override;
     void on_event(Event_Key e) override;
+
+    std::unique_ptr<dop::Graph> dump_graph();
 
     inline UiDopScene *get_parent() const {
         return (UiDopScene *)parent;

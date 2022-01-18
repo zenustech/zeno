@@ -21,10 +21,7 @@ struct VDBVoxelAsParticles : INode {
             for (auto iter = leaf.cbeginValueOn(); iter != leaf.cendValueOn(); ++iter) {
                 auto coord = iter.getCoord();
                 auto value = iter.getValue();
-                if(value < 0.0001)
-                    continue;
-                //printf("value is %f\n", value);
-                auto p = grid->transform().indexToWorld(coord.asVec3d() + 0.5f);
+                auto p = grid->transform().indexToWorld(coord.asVec3d());
                 pos.emplace_back(p[0], p[1], p[2]);
                 sdf.emplace_back(value);
             }
@@ -32,7 +29,7 @@ struct VDBVoxelAsParticles : INode {
                 for (auto iter = leaf.cbeginValueOff(); iter != leaf.cendValueOff(); ++iter) {
                     auto coord = iter.getCoord();
                     auto value = iter.getValue();
-                    auto p = grid->transform().indexToWorld(coord.asVec3d() + 0.5f);
+                    auto p = grid->transform().indexToWorld(coord.asVec3d());
                     pos.emplace_back(p[0], p[1], p[2]);
                     sdf.emplace_back(value);
                 }

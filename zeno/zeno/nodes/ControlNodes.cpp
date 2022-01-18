@@ -156,6 +156,18 @@ struct EndForEach : EndFor {
             else
                 dropped_result.push_back(std::move(obj));
         }
+        if (requireInput("list")) {
+            if (accept) {
+                auto listObj = get_input<zeno::ListObject>("list");
+                for(auto obj : listObj->arr)
+                    result.push_back(std::move(obj));
+            }
+            else{
+                auto listObj = get_input<zeno::ListObject>("list");
+                for(auto obj : listObj->arr)
+                    dropped_result.push_back(std::move(obj));
+            }
+        }
         if (requireInput("accumate")) {
             auto [sn, ss] = safe_at(inputBounds, "FOR", "input socket of EndForEach");
             auto fore = dynamic_cast<BeginForEach *>(graph->nodes.at(sn).get());
@@ -199,7 +211,7 @@ struct EndForEach : EndFor {
 };
 
 ZENDEFNODE(EndForEach, {
-    {"object", "accumate", {"bool", "accept", "1"}, "FOR"},
+    {"object", "list", "accumate", {"bool", "accept", "1"}, "FOR"},
     {"list", "droppedList", "accumate"},
     {{"bool", "doConcat", "0"}},
     {"control"},

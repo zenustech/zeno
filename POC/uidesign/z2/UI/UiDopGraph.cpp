@@ -2,7 +2,7 @@
 #include <z2/UI/UiDopNode.h>
 #include <z2/UI/UiDopScene.h>
 #include <z2/UI/UiDopEditor.h>
-#include <z2/dop/DopTable.h>
+#include <z2/dop/dop.h>
 
 
 namespace z2::UI {
@@ -10,8 +10,7 @@ namespace z2::UI {
 
 void UiDopGraph::select_child(GraphicsWidget *ptr, bool multiselect) {
     GraphicsView::select_child(ptr, multiselect);
-    if (editor)
-        editor->set_selection(dynamic_cast<UiDopNode *>(ptr));
+    if (editor) editor->set_selection(dynamic_cast<UiDopNode *>(ptr));
 }
 
 
@@ -21,8 +20,6 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
         link->to_socket->links.erase(link);
         auto to_node = link->to_socket->get_parent();
         auto from_node = link->from_socket->get_parent();
-        bk_graph->remove_node_input(to_node->bk_node,
-                link->to_socket->get_index());
         links.erase(link);
         return true;
     } else {
@@ -32,7 +29,6 @@ bool UiDopGraph::remove_link(UiDopLink *link) {
 
 
 bool UiDopGraph::remove_node(UiDopNode *node) {
-    bk_graph->remove_node(node->bk_node);
     for (auto *socket: node->inputs) {
         for (auto *link: std::set(socket->links)) {
             remove_link(link);
@@ -44,7 +40,7 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
         }
     }
     if (remove_child(node)) {
-        nodes.erase(node);
+        nodes.erase(node->name);
         return true;
     } else {
         return false;
@@ -54,10 +50,15 @@ bool UiDopGraph::remove_node(UiDopNode *node) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind) {
     auto p = add_child<UiDopNode>();
-    p->bk_node = bk_graph->add_node(kind);
-    p->name = p->bk_node->name;
-    p->kind = p->bk_node->kind;
-    nodes.insert(p);
+    for (int i = 1;; i++) {
+        auto name = kind + std::to_string(i);
+        if (!nodes.contains(name)) {
+            p->name = name;
+            break;
+        }
+    }
+    p->kind = kind;
+    nodes.emplace(p->name, p);
     return p;
 }
 
@@ -66,8 +67,6 @@ UiDopLink *UiDopGraph::add_link(UiDopOutputSocket *from_socket, UiDopInputSocket
     auto p = add_child<UiDopLink>(from_socket, to_socket);
     auto to_node = to_socket->get_parent();
     auto from_node = from_socket->get_parent();
-    bk_graph->set_node_input(to_node->bk_node, to_socket->get_index(),
-            from_node->bk_node, from_socket->get_index());
     links.insert(p);
     return p;
 }
@@ -102,21 +101,16 @@ void UiDopGraph::add_pending_link(UiDopSocket *socket) {
 
 
 UiDopGraph::UiDopGraph() {
-    auto n1 = add_node("readobj", {400, 384});
-    auto n2 = add_node("route", {100, 128});
-    auto n3 = add_node("first", {700, 256});
-    n1->bk_node->inputs[0].value = "assets/monkey.obj";
-    add_link(n1->outputs[0], n3->inputs[0]);
-    add_link(n2->outputs[0], n3->inputs[1]);
+    auto n1 = add_node("Route", {400, 128});
+    auto n2 = add_node("ReadOBJMesh", {200, 384});
+    n1->inputs[0]->value = "assets/monkey.obj";
+    n2->inputs[0]->value = "@Route1";
 
     auto btn = add_child<Button>();
     btn->text = "Apply";
     btn->on_clicked.connect([this] () {
-        std::string expr = "@first1:lhs";
-        dop::DopDepsgraph deps;
-        bk_graph->resolve_depends(expr, &deps);
-        deps.execute();
-        auto val = bk_graph->resolve_value(expr);
+        auto g = this->dump_graph();
+        auto val = dop::resolve(dop::Input_Link{.node = g->get_node("ReadOBJMesh1")});
         get_parent()->set_view_result(val);
     });
 }
@@ -188,9 +182,8 @@ void UiDopGraph::on_event(Event_Mouse e) {
 
 UiDopNode *UiDopGraph::add_node(std::string kind, Point pos) {
     auto node = add_node(kind);
-    node->set_position(pos);
-    node->kind = kind;
-    auto const &desc = dop::tab.desc_of(kind);
+    node->position = pos;
+    auto const &desc = dop::desc_of(kind);
     for (auto const &sock_info: desc.inputs) {
         auto socket = node->add_input_socket();
         socket->name = sock_info.name;
@@ -209,7 +202,7 @@ UiDopContextMenu *UiDopGraph::add_context_menu() {
 
     menu = get_parent()->add_child<UiDopContextMenu>();
     menu->position = position + translate + Point(cur.x, cur.y) * scaling;
-    for (auto const &key: dop::tab.entry_names()) {
+    for (auto const &key: dop::desc_names()) {
         menu->add_entry(key);
     }
     menu->update_entries();

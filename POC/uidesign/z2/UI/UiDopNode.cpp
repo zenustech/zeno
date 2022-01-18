@@ -3,25 +3,6 @@
 namespace z2::UI {
 
 
-void UiDopNode::set_position(Point pos) {
-    Widget::set_position(pos);
-    bk_node->xpos = position.x;
-    bk_node->ypos = position.y;
-}
-
-
-void UiDopNode::_update_backend_data() const {
-    bk_node->name = name;
-    bk_node->inputs.resize(inputs.size());
-    for (int i = 0; i < inputs.size(); i++) {
-        bk_node->inputs[i].name = inputs[i]->name;
-    }
-    bk_node->outputs.resize(outputs.size());
-    for (int i = 0; i < outputs.size(); i++) {
-        bk_node->outputs[i].name = outputs[i]->name;
-    }
-}
-
 void UiDopNode::update_sockets() {
     for (int i = 0; i < inputs.size(); i++) {
         auto y = DH * (i + 0.5f);
@@ -33,8 +14,6 @@ void UiDopNode::update_sockets() {
     }
     auto h = std::max(outputs.size(), inputs.size()) * DH;
     bbox = {0, -h, W, h + TH};
-
-    _update_backend_data();
 }
 
 UiDopInputSocket *UiDopNode::add_input_socket() {
@@ -67,7 +46,11 @@ void UiDopNode::paint() const {
     }
     glRectf(bbox.x0 - BW, bbox.y0 - BW, bbox.x0 + bbox.nx + BW, bbox.y0 + bbox.ny + BW);
 
-    glColor3f(0.375f, 0.375f, 0.375f);
+    if (failed) {
+        glColor3f(0.5f, 0.125f, 0.075f);
+    } else {
+        glColor3f(0.375f, 0.375f, 0.375f);
+    }
     glRectf(bbox.x0, bbox.y0, bbox.x0 + bbox.nx, bbox.y0 + bbox.ny);
 
     if (selected) {

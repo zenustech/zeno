@@ -2,11 +2,16 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <unordered_map>
+#include <stdexcept>
 
 namespace zeno {
     struct PrimitiveClip : zeno::INode {
-        static zeno::vec3f line_plane_intersection(const zeno::vec3f& plane_point, const zeno::vec3f& plane_normal, const zeno::vec3f& line_point, const zeno::vec3f& line_direction) {
+        static zeno::vec3f line_plane_intersection(const zeno::vec3f& plane_point, const zeno::vec3f& plane_normal, const zeno::vec3f& line_point, const zeno::vec3f&line_end, const zeno::vec3f& line_direction, float &intersection) {
             float t = (dot(plane_normal, plane_point) - dot(plane_normal, line_point)) / dot(plane_normal, line_direction);
+            //printf("%f\n",t);
+            //intersection = t;
+            float ldir = length(line_end - line_point);
+            intersection = abs(t) / ldir;
             return line_point + line_direction * t;
         }
 
@@ -28,7 +33,50 @@ namespace zeno {
             }
             element_arr.emplace_back(new_element);
         }
-
+        static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t index)
+        {
+            for(auto key:src->attr_keys())
+            {
+                //using T = std::decay_t<decltype(src->attr(key)[0])>;
+                if (key != "pos") {
+                std::visit([index, &key, dst](auto &&src) {
+                    using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                    std::get<SrcT>(dst->attr(key)).emplace_back(src[index]);
+                }, src->attr(key));
+                // dst->attr(key).emplace_back(src->attr(key)[index]);
+                } else {
+                    dst->attr<vec3f>(key).emplace_back(src->attr<vec3f>(key)[index]);
+                }
+            }
+            dst->resize(dst->attr<zeno::vec3f>("pos").size());
+        }
+        static void addLerpIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t i, size_t j, float c)
+        {
+            for(auto key:src->attr_keys())
+            {
+                if (key != "pos")
+                std::visit([i, j, c](auto &&dst, auto &&src) {
+                    using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
+                    using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                    if constexpr (std::is_same_v<DstT, SrcT>) {
+                        auto val1 = src[i];
+                        auto val2 = src[j];
+                        auto val = (1.0-c)*val1 + c * val2;
+                        dst.emplace_back(val);
+                    } else  {
+                        throw std::runtime_error("the same attr of both primitives are of different types.");
+                    }
+                }, dst->attr(key), src->attr(key));
+                else {
+                    const auto &srcs = src->attr<vec3f>(key);
+                    auto val1 = srcs[i];
+                    auto val2 = srcs[j];
+                    auto val = (1.0-c)*val1 + c * val2;
+                    dst->attr<vec3f>(key).emplace_back(val);
+                }
+            }
+            dst->resize(dst->attr<zeno::vec3f>("pos").size());
+        }
         static void clip_points(PrimitiveObject* outprim, const PrimitiveObject* refprim,
                 std::unordered_map<int32_t, int32_t>& point_map,
                 const std::vector<bool>& is_above_arr) {
@@ -36,6 +84,7 @@ namespace zeno {
                 const int32_t ref_point = refprim->points[i];
                 if (!is_above_arr[ref_point]) {
                     outprim->points.emplace_back(point_map[ref_point]);
+                    
                 }
             }
         }
@@ -59,14 +108,19 @@ namespace zeno {
 
                     const zeno::vec3f& pos1 = ref_pos_attr[below_point];
                     const zeno::vec3f& pos2 = ref_pos_attr[above_point];
-                    const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos1, normalize(pos2 - pos1));
-                    const int32_t new_point1 = new_pos_attr.size();
+                    float t;
+                    const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos1, pos2, normalize(pos2 - pos1), t);
+                    const int32_t new_point1 = outprim->size();
+                    
+                    
                     const int32_t new_point2 = point_map[below_point];
-                    new_pos_attr.emplace_back(new_pos);
+                    //new_pos_attr.emplace_back(new_pos);
+                    addLerpIndividualPrimitive(outprim, refprim, below_point, above_point, t);
                     outprim->lines.emplace_back(new_point1, new_point2);
                 }
             }
         }
+        
 
         static void clip_tris(PrimitiveObject* outprim, const PrimitiveObject* refprim, 
                 std::vector<zeno::vec3f>& new_pos_attr, 
@@ -125,9 +179,11 @@ namespace zeno {
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
-                        const zeno::vec3f p1 = line_plane_intersection(origin, direction, pos1, normalize(pos - pos1));
-                        new_point1 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(p1);
+                        float t;
+                        const zeno::vec3f p1 = line_plane_intersection(origin, direction, pos1, pos, normalize(pos - pos1), t);
+                        new_point1 = outprim->size();
+                        addLerpIndividualPrimitive(outprim, refprim, below_points[0], above_points[0], t);
+                        //new_pos_attr.emplace_back(p1);
                         edge_point_map[edge1] = new_point1;
                     }
                     else {
@@ -136,9 +192,12 @@ namespace zeno {
 
                     auto edge_it2 = edge_point_map.find(edge2);
                     if (edge_it2 == edge_point_map.end()) {
-                        const zeno::vec3f p2 = line_plane_intersection(origin, direction, pos2, normalize(pos - pos2));
-                        new_point2 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(p2);
+                        float t;
+                        const zeno::vec3f p2 = line_plane_intersection(origin, direction, pos2, pos, normalize(pos - pos2), t);
+                        new_point2 = outprim->size();
+                        //new_point2 = new_pos_attr.size();
+                        //new_pos_attr.emplace_back(p2);
+                        addLerpIndividualPrimitive(outprim, refprim, below_points[1], above_points[0], t);
                         edge_point_map[edge2] = new_point2;
                     }
                     else {
@@ -168,9 +227,12 @@ namespace zeno {
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
-                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, normalize(pos1 - pos));
-                        new_point1 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(new_pos);
+                        float t;
+                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, pos1, normalize(pos1 - pos), t);
+                        //new_point1 = new_pos_attr.size();
+                        new_point1 = outprim->size();
+                        //new_pos_attr.emplace_back(new_pos);
+                        addLerpIndividualPrimitive(outprim, refprim, below_points[0], above_points[0], t);
                         edge_point_map[edge1] = new_point1;
                     }
                     else {
@@ -179,9 +241,12 @@ namespace zeno {
 
                     auto edge_it2 = edge_point_map.find(edge2);
                     if (edge_it2 == edge_point_map.end()) {
-                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, normalize(pos2 - pos));
-                        new_point2 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(new_pos);
+                        float t;
+                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, pos2, normalize(pos2 - pos), t);
+                        //new_point2 = new_pos_attr.size();
+                        //new_pos_attr.emplace_back(new_pos);
+                        new_point2 = outprim->size();
+                        addLerpIndividualPrimitive(outprim, refprim, below_points[0], above_points[1], t);
                         edge_point_map[edge2] = new_point2;
                     }
                     else {
@@ -226,7 +291,17 @@ namespace zeno {
             auto outprim = std::make_unique<PrimitiveObject>();
             std::vector<zeno::vec3f> new_pos_attr;
             std::unordered_map<int32_t, int32_t> point_map;
-            
+            for(auto key:refprim->attr_keys())
+            {
+                if (key != "pos")
+                std::visit([&outprim, key](auto &&ref) {
+                    using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                    printf("key: %s, T: %s\n", key.c_str(), typeid(T).name());
+                    outprim->add_attr<T>(key);
+                }, refprim->attr(key));
+                // using T = std::decay_t<decltype(refprim->attr(key)[0])>;
+                // outprim->add_attr<T>(key);
+            }
             std::vector<bool> is_above_arr(ref_pos_attr.size());
             for (int32_t i = 0; i < ref_pos_attr.size(); ++i)
             {
@@ -234,6 +309,7 @@ namespace zeno {
                 if (!is_above_arr[i]) {
                     point_map[i] = new_pos_attr.size();
                     new_pos_attr.emplace_back(ref_pos_attr[i]);
+                    addIndividualPrimitive(outprim.get(), refprim.get(), i);
                 }
             }
 
@@ -257,8 +333,8 @@ namespace zeno {
                 origin,
                 direction);
 
-            outprim->attr<zeno::vec3f>("pos") = new_pos_attr;
-            outprim->resize(new_pos_attr.size());
+            //outprim->attr<zeno::vec3f>("pos") = new_pos_attr;
+            //outprim->resize(new_pos_attr.size());
             set_output("outPrim", std::move(outprim));
         }
     };

@@ -16,7 +16,7 @@ static inline float frand(unsigned int i) {
     return (float)value / (float)4294967296;
 }
 static inline struct MakeZhxxHappyRandomTable {
-    float operator[](unsigned int i) { return frand(i); }
+    float operator[](unsigned int i) { return frand(i)-0.5; }
 } randomTable;
 
 struct FLIP_vdb {
@@ -140,7 +140,7 @@ struct FLIP_vdb {
                                  openvdb::Vec3fGrid::Ptr &velocity_weights,
                                  openvdb::FloatGrid::Ptr &liquid_sdf,
                                  openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
-                                 float dx);
+                                 float dx, bool setActive);
   static void calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
                                      openvdb::FloatGrid::Ptr &liquid_sdf,
                                      openvdb::FloatGrid::Ptr &solid_sdf);

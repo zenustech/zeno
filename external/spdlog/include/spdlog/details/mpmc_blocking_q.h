@@ -10,7 +10,7 @@
 // dequeue_for(..) - will block until the queue is not empty or timeout have
 // passed.
 
-#include <spdlog/details/circular_q.h>
+#include "spdlog/details/circular_q.h"
 
 #include <condition_variable>
 #include <mutex>
@@ -108,12 +108,6 @@ public:
     {
         std::unique_lock<std::mutex> lock(queue_mutex_);
         return q_.overrun_counter();
-    }
-
-    size_t size()
-    {
-        std::unique_lock<std::mutex> lock(queue_mutex_);
-        return q_.size();
     }
 
 private:

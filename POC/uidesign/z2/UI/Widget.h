@@ -12,12 +12,6 @@
 namespace z2::UI {
 
 
-template <class T>
-inline T notnull(T &&t) {
-    if (!t) throw ztd::error("null pointer exception");
-    return t;
-}
-
 struct Object {
     Object() = default;
     Object(Object const &) = delete;
@@ -71,8 +65,6 @@ struct Widget : Object {
     virtual void do_paint();
     virtual void paint() const;
     virtual ztd::dtor_function do_transform() const;
-
-    virtual void set_position(Point pos);
 
     float absolute_zvalue() const {
         return parent ? zvalue : parent->absolute_zvalue() + zvalue;

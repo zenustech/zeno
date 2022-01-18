@@ -21,7 +21,7 @@ void Shader::compile(std::string const &source) const {
     CHECK_GL(glCompileShader(sha));
     int status = GL_TRUE;
     CHECK_GL(glGetShaderiv(sha, GL_COMPILE_STATUS, &status));
-    if (status != GL_TRUE) {
+    [[unlikely]] if (status != GL_TRUE) {
         GLsizei logLength;
         CHECK_GL(glGetShaderiv(sha, GL_INFO_LOG_LENGTH, &logLength));
         std::vector<GLchar> log(logLength + 1);
@@ -49,7 +49,7 @@ void Program::link() const {
     CHECK_GL(glLinkProgram(pro));
     int status = GL_TRUE;
     CHECK_GL(glGetProgramiv(pro, GL_LINK_STATUS, &status));
-    if (status != GL_TRUE) {
+    [[unlikely]] if (status != GL_TRUE) {
         GLsizei logLength;
         CHECK_GL(glGetProgramiv(pro, GL_INFO_LOG_LENGTH, &status));
         std::vector<GLchar> log(logLength + 1);
