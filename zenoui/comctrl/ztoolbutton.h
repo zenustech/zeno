@@ -20,6 +20,7 @@ public:
         Opt_TextRightToIcon = 0x0001 << 5,
         Opt_Checkable = 0x0001 << 6,
         Opt_NoBackground = 0x0001 << 7,
+        Opt_UpRight = 0x0001 << 8
     };
     ZToolButton(
         int option,

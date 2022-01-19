@@ -470,7 +470,13 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
         {
         case SC_ZenoToolButtonIcon:
         {
-            if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
+            if (opt->buttonOpts & ZToolButton::Opt_UpRight)
+            {
+                int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
+                int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
+                return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+            }
+            else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
             {
                 int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
                 int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
@@ -490,7 +496,17 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
         }
         case SC_ZenoToolButtonText:
         {
-            if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
+            if (opt->buttonOpts & ZToolButton::Opt_UpRight)
+            {
+                QFontMetrics fontMetrics(opt->font);
+                int textWidth = fontMetrics.height(); 
+                int textHeight = fontMetrics.horizontalAdvance(opt->text);
+                int xleft = opt->rect.width() / 2 - textWidth / 2;
+                int ypos = opt->rect.height() - textHeight - pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, widget);
+                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonIcon), widget);
+                return QRect(rcIcon.right(), rcIcon.center().y(), textWidth, textHeight);
+            }
+            else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
             {
                 QFontMetrics fontMetrics(opt->font);
                 int textWidth = fontMetrics.horizontalAdvance(opt->text);
@@ -780,12 +796,15 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
                 painter->restore();
             }
         }
-        else
+        else if (option->buttonOpts & ZToolButton::Opt_UpRight)
         {
-            //todo
+            painter->save();
+            painter->setFont(option->font);
+            painter->setPen(text_color);
+            
+            painter->restore();
         }
     }
-    
     //draw arrow
     if (option->m_arrowOption != ZStyleOptionToolButton::NO_ARROW)
     {

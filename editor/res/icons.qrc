@@ -76,5 +76,6 @@
 	<file>icons/ic_MUTE.svg</file>
 	<file>icons/ic_ONCE.svg</file>
 	<file>icons/ic_VIEW.svg</file>
+    <file>icons/subnetbtn.svg</file>
 </qresource>
 </RCC>

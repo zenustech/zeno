@@ -87,8 +87,13 @@ QSize ZToolButton::sizeHint() const
         QFontMetrics fontMetrics(m_font);
         int textWidth = fontMetrics.horizontalAdvance(m_text);
         int textHeight = fontMetrics.height();
-        //ignore margin.
-        if (m_options & Opt_TextUnderIcon)
+        //ignore margin between icon and text.
+        if (m_options & Opt_UpRight)
+        {
+            w = qMax(textHeight, m_iconSize.width());
+            h = textWidth + m_iconSize.width();
+        }
+        else if (m_options & Opt_TextUnderIcon)
         {
             w = qMax(textWidth, m_iconSize.width());
             h = textHeight + m_iconSize.height();

@@ -10,6 +10,7 @@
 #include "graphsmanagment.h"
 #include <model/graphsmodel.h>
 #include "launch/corelaunch.h"
+#include "nodesview/zenographseditor.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -126,7 +127,7 @@ void ZenoMainWindow::initDocks()
     m_data = new ZenoDockWidget("data", this);
     m_data->setObjectName(QString::fromUtf8("dock_data"));
     m_data->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_data->setWidget(new ZenoDataPanel);
+    m_data->setWidget(new ZenoGraphsEditor);
 
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
