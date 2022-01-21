@@ -41,6 +41,7 @@ public:
     bool isHovered() const;
     int buttonOption() const;
     virtual QSize sizeHint() const;
+    void setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
 
 public slots:
     void setText(const QString& text);

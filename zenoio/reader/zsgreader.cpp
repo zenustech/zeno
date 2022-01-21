@@ -19,6 +19,8 @@ void ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
     if (!ret)
         return;
 
+    pAcceptor->setFilePath(fn);
+
     rapidjson::Document doc;
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);

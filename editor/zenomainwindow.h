@@ -11,20 +11,28 @@ class ZenoMainWindow : public QMainWindow
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
+signals:
+    void modelInited();
+
 public slots:
     void onRunClicked(int nFrames);
+    void openFileDialog();
+    void saveQuit();
+    void saveAs();
 
 private:
     void init();
     void initMenu();
     void initDocks();
     void houdiniStyleLayout();
+    void simplifyLayout();
     void arrangeDocks2();
     void arrangeDocks3();
     void writeHoudiniStyleLayout();
     void writeSettings2();
     void readHoudiniStyleLayout();
     void readSettings2();
+    QString getOpenFileByDialog();
 
     ZenoDockWidget *m_viewDock;
     ZenoDockWidget *m_editor;

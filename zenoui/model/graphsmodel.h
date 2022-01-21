@@ -16,7 +16,7 @@ public:
     GraphsModel(QObject* parent = nullptr);
     ~GraphsModel();
     void setFilePath(const QString& fn);
-    SubGraphModel* subGraph(const QString& id);
+    SubGraphModel* subGraph(const QString& name);
     SubGraphModel *subGraph(int idx);
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName);
@@ -34,6 +34,8 @@ public:
     void clearDirty();
     NODE_DESCS getSubgraphDescs();
     NODE_CATES getCates();
+    QString filePath() const;
+    QString fileName() const;
 
 public slots:
     void onCurrentIndexChanged(int);

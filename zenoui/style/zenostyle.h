@@ -36,6 +36,8 @@ public:
 
     enum ZenoControlElement {
         CE_ZenoComboBoxLabel = CE_CustomBase + 1,
+        CE_TabBarTabUnderline,
+        CE_TabBarTabCloseBtn,
     };
 
     ZenoStyle();
@@ -56,6 +58,7 @@ public:
     QRect subElementRect(SubElement element, const QStyleOption* option, const QWidget* widget) const override;
     void drawItemText(QPainter* painter, const QRect& rect, int flags, const QPalette& pal, bool enabled,
         const QString& text, QPalette::ColorRole textRole = QPalette::NoRole) const override;
+    QSize sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const override;
 
 private:
     void drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* opt, QPainter* p, const QWidget* widget) const;

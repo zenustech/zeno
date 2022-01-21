@@ -6,7 +6,7 @@
 class ZToolButton;
 class ZenoSubnetListView;
 class ZenoGraphsTabWidget;
-
+class ZenoSubnetListPanel;
 
 class ZenoGraphsEditor : public QWidget
 {
@@ -15,9 +15,16 @@ public:
     ZenoGraphsEditor(QWidget* parent = nullptr);
     ~ZenoGraphsEditor();
 
+public slots:
+    void onModelInited();
+
+private slots:
+    void onSubnetBtnClicked();
+    void onListItemActivated(const QModelIndex& index);
+
 private:
     ZToolButton* m_pSubnetBtn;
-    ZenoSubnetListView* m_pSubnetList;
+    ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
 };
 

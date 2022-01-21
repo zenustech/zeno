@@ -1,13 +1,16 @@
 #include "zenodockwidget.h"
+#include <QtWidgets/private/qdockwidget_p.h>
 
 
 ZenoDockWidget::ZenoDockWidget(const QString &title, QWidget *parent, Qt::WindowFlags flags)
-    : _base(title, parent, flags) {
+    : _base(title, parent, flags)
+{
     init();
 }
 
 ZenoDockWidget::ZenoDockWidget(QWidget *parent, Qt::WindowFlags flags)
-    : _base(parent, flags) {
+    : _base(parent, flags)
+{
     init();
 }
 
@@ -19,7 +22,7 @@ ZenoDockWidget::~ZenoDockWidget()
 void ZenoDockWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
-    painter.fillRect(rect(), QColor(50, 50, 50));
+    painter.fillRect(rect(), QColor(42, 42, 42));
     _base::paintEvent(event);
 }
 

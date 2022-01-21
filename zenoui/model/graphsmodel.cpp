@@ -289,6 +289,18 @@ NODE_CATES GraphsModel::getCates()
     return m_nodesCate;
 }
 
+QString GraphsModel::filePath() const
+{
+    return m_filePath;
+}
+
+QString GraphsModel::fileName() const
+{
+    QFileInfo fi(m_filePath);
+    Q_ASSERT(fi.isFile());
+    return fi.fileName();
+}
+
 void GraphsModel::onCurrentIndexChanged(int row)
 {
     const QString& graphName = data(index(row, 0), ROLE_OBJNAME).toString();

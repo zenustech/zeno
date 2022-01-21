@@ -13,10 +13,11 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, m_dragMove(false)
 	, m_menu(nullptr)
 {
-    setBackgroundBrush(QBrush(QColor("#272727"), Qt::SolidPattern));
+    setBackgroundBrush(QBrush(QColor(29, 29, 32), Qt::SolidPattern));
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::NoAnchor);
+    setFrameShape(QFrame::NoFrame);
     viewport()->installEventFilter(this);
     setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);

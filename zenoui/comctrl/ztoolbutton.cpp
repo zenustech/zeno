@@ -179,6 +179,13 @@ QBrush ZToolButton::backgrondColor(QStyle::State state) const
     }
 }
 
+void ZToolButton::setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
+{
+    m_clrBgHover = hoverClr;
+    m_clrBgDown = downClr;
+    m_clrBgChecked = checkedClr;
+}
+
 void ZToolButton::initColors(ZStyleOptionToolButton* option) const
 {
     option->hoveredBgColor = QColor();

@@ -35,16 +35,32 @@ QSize ZenoStyle::dpiScaledSize(const QSize &value)
     return QSize(ZenoStyle::dpiScaled(value.width()), ZenoStyle::dpiScaled(value.height()));
 }
 
+QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const
+{
+    switch (type)
+    {
+        case CT_TabBarTab:
+        {
+            QSize sz = dpiScaledSize(QSize(120, 37));
+            return sz;
+        }
+    }
+    return base::sizeFromContents(type, option, size, widget);
+}
+
 void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, QPainter* painter, const QWidget* w) const
 {
     switch (pe) {
-        case PE_FrameTabWidget: {
-            if (const QStyleOptionTabWidgetFrame *tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame *>(option)) {
+        case PE_FrameTabWidget:
+        {
+            if (const QStyleOptionTabWidgetFrame* tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option))
+            {
                 QStyleOptionTabWidgetFrame frameOpt = *tab;
                 frameOpt.rect = w->rect();
                 painter->fillRect(frameOpt.rect, QColor(58, 58, 58));
                 return;
             }
+            break;
         }
         case PE_ComboBoxLineEdit: {
             if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option))
@@ -185,15 +201,21 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
         }
         return;
     }
+    else if (CE_TabBarTab == element) {
+        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option)) {
+            proxy()->drawControl(CE_TabBarTabShape, tab, painter, widget);
+            proxy()->drawControl(CE_TabBarTabLabel, tab, painter, widget);
+            proxy()->drawControl(static_cast<ControlElement>(CE_TabBarTabUnderline), tab, painter, widget);
+            proxy()->drawControl(static_cast<ControlElement>(CE_TabBarTabCloseBtn), tab, painter, widget);
+            return;
+        }
+    }
     else if (CE_TabBarTabShape == element)
     {
-        //base QProxyStyle
         if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
         {
             QRect rect(option->rect);
-
             int rotate = 0;
-
             bool isDisabled = !(tab->state & State_Enabled);
             bool hasFocus = tab->state & State_HasFocus;
             bool isHot = tab->state & State_MouseOver;
@@ -205,122 +227,60 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             bool centerAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, widget) == Qt::AlignCenter;
             int borderThickness = proxy()->pixelMetric(PM_DefaultFrameWidth, option, widget);
             int tabOverlap = proxy()->pixelMetric(PM_TabBarTabOverlap, option, widget);
-
-            if (isDisabled)
-            {
-                //todo
-            }
-            else if (selected)
-            {
-
-            }
-            else if (hasFocus)
-            {
-
-            }
-            else if (isHot)
-            {
-
-            }
-            else
-            {
-
-            }
-
-            // Selecting proper part depending on position
-            if (firstTab || onlyOne) {
-                if (leftAligned) {
-
-                }
-                else if (centerAligned) {
-
-                }
-                else { // rightAligned
-
-                }
-            }
-            else {
-
-            }
-
-            if (tab->direction == Qt::RightToLeft
-                && (tab->shape == QTabBar::RoundedNorth
-                    || tab->shape == QTabBar::RoundedSouth)) {
-                bool temp = firstTab;
-                firstTab = lastTab;
-                lastTab = temp;
-            }
-            bool begin = firstTab || onlyOne;
-            bool end = lastTab || onlyOne;
-            switch (tab->shape) {
-            case QTabBar::RoundedNorth:
-                if (selected)
-                    rect.adjust(begin ? 0 : -tabOverlap, 0, end ? 0 : tabOverlap, borderThickness);
-                else
-                    rect.adjust(begin ? tabOverlap : 0, tabOverlap, end ? -tabOverlap : 0, 0);
-                break;
-            case QTabBar::RoundedSouth:
-                //vMirrored = true;
-                rotate = 180; // Not 100% correct, but works
-                if (selected)
-                    rect.adjust(begin ? 0 : -tabOverlap, -borderThickness, end ? 0 : tabOverlap, 0);
-                else
-                    rect.adjust(begin ? tabOverlap : 0, 0, end ? -tabOverlap : 0, -tabOverlap);
-                break;
-            case QTabBar::RoundedEast:
-                rotate = 90;
-                if (selected) {
-                    rect.adjust(-borderThickness, begin ? 0 : -tabOverlap, 0, end ? 0 : tabOverlap);
-                }
-                else {
-                    rect.adjust(0, begin ? tabOverlap : 0, -tabOverlap, end ? -tabOverlap : 0);
-                }
-                break;
-            case QTabBar::RoundedWest:
-                rotate = 90;
-                if (selected) {
-                    rect.adjust(0, begin ? 0 : -tabOverlap, borderThickness, end ? 0 : tabOverlap);
-                }
-                else {
-                    rect.adjust(tabOverlap, begin ? tabOverlap : 0, 0, end ? -tabOverlap : 0);
-                }
-                break;
-            default:
-                // Do our own painting for triangular
-                break;
-            }
-
-            if (!selected) {
-                switch (tab->shape) {
-                case QTabBar::RoundedNorth:
-                    rect.adjust(0, 0, 0, -1);
-                    break;
-                case QTabBar::RoundedSouth:
-                    rect.adjust(0, 1, 0, 0);
-                    break;
-                case QTabBar::RoundedEast:
-                    rect.adjust(1, 0, 0, 0);
-                    break;
-                case QTabBar::RoundedWest:
-                    rect.adjust(0, 0, -1, 0);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            painter->fillRect(rect, selected ? QColor(69, 69, 69) : QColor(58, 58, 58));
-            QPen pen(QColor(43, 43, 43));
-            painter->drawRect(rect);
+            painter->fillRect(rect, selected ? QColor(48, 48, 48) : QColor(58, 58, 58));
             return;
         }
     }
     else if (CE_TabBarTabLabel == element)
     {
-        if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(option)) {
+        if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(option))
+        {
             QStyleOptionTab _tab(*tab);
-            _tab.palette.setBrush(QPalette::WindowText, QColor(188,188,188));
-            return base::drawControl(element, &_tab, painter, widget);
+            bool selected = tab->state & State_Selected;
+            QColor textColor;
+            painter->save();
+            if (selected)
+            {
+                textColor = QColor(244, 235, 229);
+            }
+            else
+            {
+                textColor = QColor(129, 125, 123);
+            }
+            _tab.palette.setBrush(QPalette::WindowText, textColor);
+            QFont font("HarmonyOS Sans", 11);
+            font.setBold(false);
+            QPen pen(textColor);
+            painter->setPen(pen);
+            painter->setFont(font);
+            
+            int alignment = Qt::AlignLeft | Qt::AlignVCenter;
+            QRect tr = proxy()->subElementRect(SE_TabBarTabText, &_tab, widget);
+            proxy()->drawItemText(painter, tr, alignment, _tab.palette, _tab.state & State_Enabled, _tab.text, QPalette::WindowText);
+
+            painter->restore();
+            return;
+        }
+    }
+    else if (CE_TabBarTabUnderline == element)
+    {
+        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
+        {
+            static const int height = 2;
+            bool selected = tab->state & State_Selected;
+            if (selected)
+            {
+                QRect rc = QRect(tab->rect.left(), tab->rect.bottom() - height, tab->rect.width(), height);
+                painter->fillRect(rc, QColor(23, 160, 252));
+            }
+            return;
+        }
+    }
+    else if (CE_TabBarTabCloseBtn == element)
+    {
+        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
+        {
+            return;
         }
     }
     else if (CE_MenuItem == element)
@@ -391,9 +351,9 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
                 QColor bgClr = option->palette.window().color();
                 bgClr = bgClr.darker(110);
                 QColor bdrClr = option->palette.window().color().darker(130);
-                painter->setBrush(bgClr);
+                painter->setBrush(/*bgClr*/QColor(58, 58, 58));
                 painter->setPen(Qt::NoPen);
-                painter->drawRect(rect.adjusted(0, 1, -1, -3));
+                painter->drawRect(rect.adjusted(0, 1, -1, -2));     //titlebar margin to inside widget
 
                 int buttonMargin = 4;
                 int mw = proxy()->pixelMetric(QStyle::PM_DockWidgetTitleMargin, dwOpt, widget);
@@ -563,7 +523,21 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
     }
     switch (m)
     {
-    case QStyle::PM_MenuPanelWidth: return 1;
+        case QStyle::PM_MenuPanelWidth: return 1;
+        case QStyle::PM_SmallIconSize:
+        {
+            if (widget->objectName() == "qt_dockwidget_closebutton" ||
+                widget->objectName() == "qt_dockwidget_floatbutton")
+            {
+                return dpiScaled(32);
+            }
+            break;
+        }
+        case QStyle::PM_DockWidgetTitleBarButtonMargin:
+        {
+            //only way to customize the height of titlebar.
+            return dpiScaled(10);
+        }
     }
     return base::pixelMetric(m, option, widget);
 }
