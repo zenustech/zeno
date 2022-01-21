@@ -39,13 +39,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
     else if (opt.state & QStyle::State_MouseOver)
     {
-        bgColor = QColor(44, 73, 98);
-        borderColor = QColor(27, 145, 225);
         textColor = QColor(255, 255, 255);
-
-        painter->fillRect(rc, bgColor);
-        painter->setPen(QPen(borderColor));
-        painter->drawRect(rc.adjusted(0, 0, -1, -1));
     }
     else
     {

@@ -4,7 +4,7 @@
 #include <QtWidgets>
 
 class ZSlider;
-class ZLabel;
+class ZIconLabel;
 
 class ZTimeline : public QWidget
 {

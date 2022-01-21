@@ -4,11 +4,11 @@
 #include <QLabel>
 #include <QIcon>
 
-class ZLabel : public QLabel
+class ZIconLabel : public QLabel
 {
     Q_OBJECT
 public:
-    ZLabel(QWidget* pLabel = nullptr);
+    ZIconLabel(QWidget* pLabel = nullptr);
     void setIcons(const QSize& sz, const QString& iconEnable, const QString& iconHover, const QString& iconNormalOn = QString(), const QString& iconHoverOn = QString(), const QString& iconDisable = QString());
 
 protected:
@@ -32,6 +32,23 @@ private:
     bool m_bHovered;
     bool m_bClicked;
     bool m_bToggleable;
+};
+
+class ZTextLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    ZTextLabel(QWidget* parent = nullptr);
+    ZTextLabel(const QString& text, QWidget* parent = nullptr);
+    void setTextColor(const QColor& clr);
+    void setBackgroundColor(const QColor& clr);
+
+protected:
+    void enterEvent(QEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+
+private:
+    QColor m_normal;
 };
 
 #endif

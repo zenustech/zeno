@@ -4,6 +4,7 @@
 #include "style/zenostyle.h"
 #include <model/graphsmodel.h>
 #include "zsubnetlistitemdelegate.h"
+#include <comctrl/zlabel.h>
 
 
 ZSubnetListModel::ZSubnetListModel(GraphsModel* pModel, QObject* parent)
@@ -111,14 +112,11 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     m_pListView = new ZenoSubnetListView;
     pMainLayout->addWidget(m_pListView);
 
-    QLabel* pNewSubnetBtn = new QLabel("Add New Subnet");
+    ZTextLabel* pNewSubnetBtn = new ZTextLabel("Add New Subnet");
     pNewSubnetBtn->setFont(QFont("HarmonyOS Sans", 13));
-    pal = pNewSubnetBtn->palette();
-    pal.setColor(QPalette::WindowText, QColor(116, 116, 116));
-    pal.setColor(pNewSubnetBtn->backgroundRole(), QColor(56, 57, 56));
-    pNewSubnetBtn->setAutoFillBackground(true);
+    pNewSubnetBtn->setTextColor(QColor(116, 116, 116));
+    pNewSubnetBtn->setBackgroundColor(QColor(56, 57, 56));
     pNewSubnetBtn->setAlignment(Qt::AlignCenter);
-    pNewSubnetBtn->setPalette(pal);
     pNewSubnetBtn->setFixedHeight(ZenoStyle::dpiScaled(40));
 
     pMainLayout->addWidget(pNewSubnetBtn);

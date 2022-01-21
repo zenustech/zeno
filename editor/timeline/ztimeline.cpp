@@ -19,22 +19,22 @@ ZTimeline::ZTimeline(QWidget* parent)
     QPushButton* pKill = new QPushButton(tr("Kill"));
     pKill->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
-    ZLabel* plblForward = new ZLabel;
+    ZIconLabel* plblForward = new ZIconLabel;
     plblForward->setIcons(QSize(20, 20), ":/icons/playforward.svg", ":/icons/playforward_hover.svg", ":/icons/playforward_on.svg", ":/icons/playforward_on_hover.svg", ":/icons/playforward.svg");
 
-    ZLabel* plblBackward = new ZLabel;
+    ZIconLabel* plblBackward = new ZIconLabel;
     plblBackward->setIcons(QSize(20, 20), ":/icons/playbackward.svg", ":/icons/playbackward_hover.svg", ":/icons/playforward_on.svg", ":/icons/playforward_on_hover.svg", ":/icons/playbackward.svg");
 
-    ZLabel* plblBackwardOneFrame = new ZLabel;
+    ZIconLabel* plblBackwardOneFrame = new ZIconLabel;
     plblBackwardOneFrame->setIcons(QSize(20, 20), ":/icons/playbackward_oneframe.svg", ":/icons/playbackward_oneframe_hover.svg");
 
-    ZLabel* plblForwardOneFrame = new ZLabel;
+    ZIconLabel* plblForwardOneFrame = new ZIconLabel;
     plblForwardOneFrame->setIcons(QSize(20, 20), ":/icons/playforward_oneframe.svg", ":/icons/playforward_oneframe_hover.svg");
 
-    ZLabel* plblBackwardFirstFrame = new ZLabel;
+    ZIconLabel* plblBackwardFirstFrame = new ZIconLabel;
     plblBackwardFirstFrame->setIcons(QSize(20, 20), ":/icons/playbackward_firstframe.svg", ":/icons/playbackward_firstframe_hover.svg");
 
-    ZLabel* plblForwardLastFrame = new ZLabel;
+    ZIconLabel* plblForwardLastFrame = new ZIconLabel;
     plblForwardLastFrame->setIcons(QSize(20, 20), ":/icons/playforward_lastframe.svg", ":/icons/playforward_lastframe_hover.svg");
 
     m_slider = new ZSlider;

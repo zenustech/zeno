@@ -526,8 +526,8 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         case QStyle::PM_MenuPanelWidth: return 1;
         case QStyle::PM_SmallIconSize:
         {
-            if (widget->objectName() == "qt_dockwidget_closebutton" ||
-                widget->objectName() == "qt_dockwidget_floatbutton")
+            if (widget && (widget->objectName() == "qt_dockwidget_closebutton" ||
+                widget->objectName() == "qt_dockwidget_floatbutton"))
             {
                 return dpiScaled(32);
             }

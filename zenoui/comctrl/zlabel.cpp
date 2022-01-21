@@ -1,7 +1,7 @@
 #include "zlabel.h"
 
 
-ZLabel::ZLabel(QWidget* parent)
+ZIconLabel::ZIconLabel(QWidget* parent)
     : QLabel(parent)
     , m_bToggled(false)
     , m_bHovered(false)
@@ -10,7 +10,7 @@ ZLabel::ZLabel(QWidget* parent)
 {
 }
 
-void ZLabel::setIcons(const QSize& sz, const QString& iconEnable, const QString& iconHover, const QString& iconNormalOn, const QString& iconHoverOn, const QString& iconDisable)
+void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QString& iconHover, const QString& iconNormalOn, const QString& iconHoverOn, const QString& iconDisable)
 {
     m_iconSz = sz;
     m_icon.addFile(iconEnable, QSize(), QIcon::Normal, QIcon::Off);
@@ -26,24 +26,24 @@ void ZLabel::setIcons(const QSize& sz, const QString& iconEnable, const QString&
     setFixedSize(m_iconSz);
 }
 
-void ZLabel::enterEvent(QEvent* event)
+void ZIconLabel::enterEvent(QEvent* event)
 {
     m_bHovered = true;
     updateIcon();
 }
 
-void ZLabel::leaveEvent(QEvent* event)
+void ZIconLabel::leaveEvent(QEvent* event)
 {
     m_bHovered = false;
     updateIcon();
 }
 
-void ZLabel::paintEvent(QPaintEvent* e)
+void ZIconLabel::paintEvent(QPaintEvent* e)
 {
     QLabel::paintEvent(e);
 }
 
-void ZLabel::mouseReleaseEvent(QMouseEvent* event)
+void ZIconLabel::mouseReleaseEvent(QMouseEvent* event)
 {
     QLabel::mouseReleaseEvent(event);
     if (m_bToggleable)
@@ -57,12 +57,12 @@ void ZLabel::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-void ZLabel::onClicked()
+void ZIconLabel::onClicked()
 {
 
 }
 
-void ZLabel::updateIcon()
+void ZIconLabel::updateIcon()
 {
     if (isEnabled())
     {
@@ -75,6 +75,52 @@ void ZLabel::updateIcon()
     update();
 }
 
-void ZLabel::onToggled()
+void ZIconLabel::onToggled()
 {
+}
+
+
+
+ZTextLabel::ZTextLabel(QWidget* parent)
+    : QLabel(parent)
+{
+    setMouseTracking(true);
+}
+
+ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
+    : QLabel(text, parent)
+{
+    setMouseTracking(true);
+}
+
+void ZTextLabel::setTextColor(const QColor& clr)
+{
+    m_normal = clr;
+    QPalette pal = palette();
+    pal.setColor(QPalette::WindowText, m_normal);
+    setPalette(pal);
+}
+
+void ZTextLabel::setBackgroundColor(const QColor& clr)
+{
+    QPalette pal = palette();
+    pal.setColor(backgroundRole(), QColor(56, 57, 56));
+    setAutoFillBackground(true);
+    setPalette(pal);
+}
+
+void ZTextLabel::enterEvent(QEvent* event)
+{
+    QPalette pal = palette();
+    pal.setColor(QPalette::WindowText, QColor(255, 255, 255));
+    setPalette(pal);
+    setCursor(Qt::PointingHandCursor);
+}
+
+void ZTextLabel::leaveEvent(QEvent* event)
+{
+    QPalette pal = palette();
+    pal.setColor(QPalette::WindowText, m_normal);
+    setPalette(pal);
+    setCursor(Qt::ArrowCursor);
 }
