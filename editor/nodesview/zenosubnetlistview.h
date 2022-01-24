@@ -42,6 +42,10 @@ public:
 signals:
     void clicked(const QModelIndex& index);
 
+private slots:
+    void onNewSubnetBtnClicked();
+    void onModelReset();
+
 private:
     ZenoSubnetListView* m_pListView;
     QLabel* m_pTextLbl;

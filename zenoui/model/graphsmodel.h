@@ -22,6 +22,7 @@ public:
     void switchSubGraph(const QString& graphName);
     void newSubgraph(const QString& graphName);
     void reloadSubGraph(const QString& graphName);
+    void renameSubGraph(const QString& oldName, const QString& newName);
     QItemSelectionModel* selectionModel() const;
     int graphCounts() const;
     NODE_DESCS descriptors() const;
@@ -36,6 +37,10 @@ public:
     NODE_CATES getCates();
     QString filePath() const;
     QString fileName() const;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+
+signals:
+    void graphRenamed(const QString& oldName, const QString& newName);
 
 public slots:
     void onCurrentIndexChanged(int);

@@ -99,6 +99,41 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     markDirty();
 }
 
+void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
+{
+    //todo: transaction.
+    SubGraphModel* pSubModel = subGraph(oldName);
+    Q_ASSERT(pSubModel);
+    pSubModel->setName(newName);
+
+    for (int r = 0; r < this->rowCount(); r++)
+    {
+        QModelIndex index = this->index(r, 0);
+        Q_ASSERT(index.isValid());
+        SubGraphModel* pModel = static_cast<SubGraphModel*>(index.data(ROLE_GRAPHPTR).value<void*>());
+        const QString& subgraphName = pModel->name();
+        if (subgraphName != oldName)
+        {
+            pModel->replaceSubGraphNode(oldName, newName);
+        }
+    }
+    emit graphRenamed(oldName, newName);
+}
+
+bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    if (role == Qt::EditRole)
+    {
+        QString oldName = index.data(ROLE_OBJNAME).toString();
+        if (oldName != value.toString())
+        {
+            renameSubGraph(oldName, value.toString());
+            QStandardItemModel::setData(index, value, ROLE_OBJNAME);
+        }
+    }
+    return QStandardItemModel::setData(index, value, role);
+}
+
 int GraphsModel::graphCounts() const
 {
     return rowCount();

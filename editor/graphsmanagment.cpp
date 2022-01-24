@@ -3,6 +3,7 @@
 #include <model/graphsmodel.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/acceptor/modelacceptor.h>
+#include <zenoui/util/uihelper.h>
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
@@ -80,4 +81,54 @@ void GraphsManagment::removeCurrent()
     if (m_model) {
         m_model->onRemoveCurrentItem();
     }
+}
+
+QList<QAction*> GraphsManagment::getCategoryActions(QPointF scenePos)
+{
+    NODE_CATES cates = m_model->getCates();
+    QList<QAction*> acts;
+    if (cates.isEmpty())
+    {
+        QAction* pAction = new QAction("ERROR: no descriptors loaded!");
+        pAction->setEnabled(false);
+        acts.push_back(pAction);
+        return acts;
+    }
+    for (const NODE_CATE& cate : cates)
+    {
+        QAction* pAction = new QAction(cate.name);
+        QMenu* pChildMenu = new QMenu;
+        pChildMenu->setToolTipsVisible(true);
+        for (const QString& name : cate.nodes)
+        {
+            QAction* pChildAction = pChildMenu->addAction(name);
+            //todo: tooltip
+            connect(pChildAction, &QAction::triggered, this, [=]() {
+                onNewNodeCreated(name, scenePos);
+                });
+        }
+        pAction->setMenu(pChildMenu);
+        acts.push_back(pAction);
+    }
+    return acts;
+}
+
+void GraphsManagment::onNewNodeCreated(const QString& descName, const QPointF& pt)
+{
+    NODE_DESCS descs = m_model->descriptors();
+    const NODE_DESC& desc = descs[descName];
+
+    const QString& nodeid = UiHelper::generateUuid(descName);
+    NODE_DATA node;
+    node[ROLE_OBJID] = nodeid;
+    node[ROLE_OBJNAME] = descName;
+    node[ROLE_OBJTYPE] = NORMAL_NODE;
+    node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
+    node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
+    node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
+    node[ROLE_OBJPOS] = pt;
+
+    SubGraphModel* pModel = m_model->currentGraph();
+    int row = pModel->rowCount();
+    pModel->appendItem(node, true);
 }

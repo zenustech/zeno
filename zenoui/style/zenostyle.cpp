@@ -544,6 +544,15 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
 
 QRect ZenoStyle::subElementRect(SubElement element, const QStyleOption* option, const QWidget* widget) const
 {
+    switch (element)
+    {
+        case QStyle::SE_ItemViewItemText:
+        {
+            QRect rc = base::subElementRect(element, option, widget);
+            rc.adjust(10, 0, 10, 0);
+            return rc;
+        }
+    }
     return base::subElementRect(element, option, widget);
 }
 

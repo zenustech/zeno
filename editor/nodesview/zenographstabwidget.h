@@ -3,6 +3,8 @@
 
 #include <QtWidgets>
 
+class GraphsModel;
+
 class ZenoGraphsTabWidget : public QTabWidget
 {
     Q_OBJECT
@@ -12,9 +14,18 @@ public:
     ZenoGraphsTabWidget(QWidget* parent = nullptr);
     void activate(const QString& subgraphName);
     int indexOfName(const QString& subGraphName);
+    void resetModel(GraphsModel* pModel);
+
+public slots:
+    void onSubGraphsToRemove(const QModelIndex&, int, int);
+    void onModelReset();
+    void onSubGraphRename(const QString& oldName, const QString& newName);
 
 protected:
     void paintEvent(QPaintEvent* e);
+
+private:
+    GraphsModel* m_model;
 };
 
 

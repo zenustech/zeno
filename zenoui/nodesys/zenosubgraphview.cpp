@@ -266,12 +266,9 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
         delete m_menu;
         m_menu = nullptr;
     }
-    m_menu = new QMenu(this);
-
-    ZenoGraphsWidget* pWidget = qobject_cast<ZenoGraphsWidget*>(parent());
-    Q_ASSERT(pWidget);
-
-    QList<QAction*> actions = pWidget->getCategoryActions(mapToScene(pos));
-    m_menu->addActions(actions);
-    m_menu->exec(QCursor::pos());
+    //todo
+    //m_menu = new QMenu(this);
+    //QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
+    //m_menu->addActions(actions);
+    //m_menu->exec(QCursor::pos());
 }

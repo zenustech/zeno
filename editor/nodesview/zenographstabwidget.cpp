@@ -8,6 +8,7 @@
 
 ZenoGraphsTabWidget::ZenoGraphsTabWidget(QWidget* parent)
     : QTabWidget(parent)
+    , m_model(nullptr)
 {
     setAutoFillBackground(false);
 }
@@ -33,6 +34,39 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
     {
         setCurrentIndex(idx);
     }
+}
+
+void ZenoGraphsTabWidget::resetModel(GraphsModel* pModel)
+{
+    m_model = pModel;
+    connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
+    connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
+    connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
+}
+
+void ZenoGraphsTabWidget::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
+{
+    QTabBar* pTabBar = tabBar();
+    for (int r = first; r <= last; r++)
+    {
+        SubGraphModel* pSubModel = m_model->subGraph(r);
+        const QString& name = pSubModel->name();
+        pTabBar->removeTab(indexOfName(name));
+    }
+}
+
+void ZenoGraphsTabWidget::onModelReset()
+{
+    clear();
+    m_model = nullptr;
+}
+
+void ZenoGraphsTabWidget::onSubGraphRename(const QString& oldName, const QString& newName)
+{
+    int idx = indexOfName(oldName);
+    Q_ASSERT(idx != -1);
+    QTabBar* pTabBar = tabBar();
+    pTabBar->setTabText(idx, newName);
 }
 
 int ZenoGraphsTabWidget::indexOfName(const QString& subGraphName)

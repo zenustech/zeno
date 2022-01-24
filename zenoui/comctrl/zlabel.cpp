@@ -124,3 +124,9 @@ void ZTextLabel::leaveEvent(QEvent* event)
     setPalette(pal);
     setCursor(Qt::ArrowCursor);
 }
+
+void ZTextLabel::mouseReleaseEvent(QMouseEvent* event)
+{
+    QLabel::mouseReleaseEvent(event);
+    emit clicked();
+}

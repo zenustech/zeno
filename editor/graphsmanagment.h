@@ -3,7 +3,7 @@
 
 class GraphsModel;
 
-#include <QObject>
+#include <QtWidgets>
 
 class GraphsManagment : public QObject
 {
@@ -17,6 +17,10 @@ public:
     bool saveCurrent();
     void clear();
     void removeCurrent();
+    QList<QAction*> getCategoryActions(QPointF scenePos);
+
+public slots:
+    void onNewNodeCreated(const QString& descName, const QPointF& pt);
 
 private:
     GraphsModel *m_model;

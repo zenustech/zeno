@@ -535,6 +535,12 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
     }
 }
 
+void ZenoNode::onNameUpdated(const QString& newName)
+{
+    m_NameItem->setPlainText(newName);
+    update();
+}
+
 QGraphicsGridLayout* ZenoNode::initSockets()
 {
     const QString &nodeid = nodeId();

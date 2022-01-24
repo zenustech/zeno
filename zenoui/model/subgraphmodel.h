@@ -74,12 +74,13 @@ public:
     void setPos(const QString& nodeid, const QPointF& pt);
     void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);
     SubGraphModel* clone(GraphsModel* parent);
-
+    void rename(const QString& name);
 
     void beginTransaction(const QString& name);
     void endTransaction();
 
     void setName(const QString& name);
+    void replaceSubGraphNode(const QString& oldName, const QString& newName);
     void setViewRect(const QRectF& rc);
     QRectF viewRect() const { return m_rect; }
     QString name() const;

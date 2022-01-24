@@ -5,6 +5,7 @@
 #include <model/graphsmodel.h>
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
+#include <zenoui/model/modelrole.h>
 
 
 ZSubnetListModel::ZSubnetListModel(GraphsModel* pModel, QObject* parent)
@@ -65,7 +66,6 @@ void ZenoSubnetListView::initModel(GraphsModel* pModel)
     setModel(pModel);
     setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
     viewport()->setAutoFillBackground(false);
-
     update();
 }
 
@@ -96,6 +96,7 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
 
     QHBoxLayout* pLabelLayout = new QHBoxLayout;
     QLabel* pIcon = new QLabel;
+    pIcon->setPixmap(QIcon(":/icons/ic_File.svg").pixmap(ZenoStyle::dpiScaledSize(QSize(16,16)), QIcon::Normal));
 
     m_pTextLbl = new QLabel("");
     m_pTextLbl->setFont(QFont("HarmonyOS Sans", 12));
@@ -106,7 +107,7 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     pLabelLayout->addWidget(pIcon);
     pLabelLayout->addWidget(m_pTextLbl);
     pLabelLayout->addStretch();
-    pLabelLayout->setContentsMargins(0, 0, 0, 0);
+    pLabelLayout->setContentsMargins(12, 5, 5, 0);
     pMainLayout->addLayout(pLabelLayout);
 
     m_pListView = new ZenoSubnetListView;
@@ -125,6 +126,7 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     setLayout(pMainLayout);
 
     connect(m_pListView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
+    connect(pNewSubnetBtn, SIGNAL(clicked()), this, SLOT(onNewSubnetBtnClicked()));
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 }
 
@@ -132,6 +134,7 @@ void ZenoSubnetListPanel::initModel(GraphsModel* pModel)
 {
     m_pListView->initModel(pModel);
     m_pTextLbl->setText(pModel->fileName());
+    connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 }
 
 QSize ZenoSubnetListPanel::sizeHint() const
@@ -139,4 +142,23 @@ QSize ZenoSubnetListPanel::sizeHint() const
     int w = m_pListView->sizeHint().width();
     int h = QWidget::sizeHint().height();
     return QSize(w, h);
+}
+
+void ZenoSubnetListPanel::onModelReset()
+{
+    hide();
+}
+
+void ZenoSubnetListPanel::onNewSubnetBtnClicked()
+{
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(m_pListView->model());
+    Q_ASSERT(pModel);
+    SubGraphModel* pSubModel = new SubGraphModel(pModel);
+    pSubModel->setName("temp");
+    pModel->appendSubGraph(pSubModel);
+
+    const QModelIndexList& lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, "temp", 1, Qt::MatchExactly);
+    Q_ASSERT(lst.size() == 1);
+    const QModelIndex idx = lst[0];
+    m_pListView->edit(idx);
 }

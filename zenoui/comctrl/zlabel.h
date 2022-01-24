@@ -46,6 +46,10 @@ public:
 protected:
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
+signals:
+    void clicked();
 
 private:
     QColor m_normal;

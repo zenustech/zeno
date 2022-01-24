@@ -55,6 +55,7 @@ public slots:
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
+    void onNameUpdated(const QString& newName);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;

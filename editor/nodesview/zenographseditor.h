@@ -7,6 +7,7 @@ class ZToolButton;
 class ZenoSubnetListView;
 class ZenoGraphsTabWidget;
 class ZenoSubnetListPanel;
+class GraphsModel;
 
 class ZenoGraphsEditor : public QWidget
 {
@@ -14,9 +15,10 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(QWidget* parent = nullptr);
     ~ZenoGraphsEditor();
+    void resetModel(GraphsModel* pModel);
 
 public slots:
-    void onModelInited();
+    void onCurrentModelClear();
 
 private slots:
     void onSubnetBtnClicked();
@@ -26,6 +28,7 @@ private:
     ZToolButton* m_pSubnetBtn;
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
+    QFrame* m_seperateLine;
 };
 
 #endif

@@ -17,6 +17,7 @@
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
+    , m_pEditor(nullptr)
 {
     init();
 }
@@ -151,7 +152,7 @@ void ZenoMainWindow::initDocks()
     //m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     //m_parameter->setWidget(new QWidget);
 
-    ZenoGraphsEditor* pEditor = new ZenoGraphsEditor;
+    m_pEditor = new ZenoGraphsEditor;
     //pEditor->setGeometry(500, 500, 1000, 1000);
     //ZNodesEditWidget* pOldEditor = new ZNodesEditWidget;
 
@@ -162,7 +163,7 @@ void ZenoMainWindow::initDocks()
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(pEditor);
+    m_editor->setWidget(m_pEditor);
 
     m_timelineDock = new ZenoDockWidget(this);
     m_timelineDock->setObjectName(QString::fromUtf8("dock_timeline"));
@@ -174,7 +175,6 @@ void ZenoMainWindow::initDocks()
 	connect(pTimeline, SIGNAL(playForward(bool)), &Zenvis::GetInstance(), SLOT(startPlay(bool)));
 	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenvis::GetInstance(), SLOT(setCurrentFrameId(int)));
     connect(pTimeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
-    connect(this, SIGNAL(modelInited()), pEditor, SLOT(onModelInited()));
 
     QTimer* pTimer = new QTimer;
     connect(pTimer, SIGNAL(timeout()), view, SLOT(updateFrame()));
@@ -192,7 +192,7 @@ void ZenoMainWindow::openFileDialog()
     //todo: path validation
     GraphsModel* pModel = zenoApp->graphsManagment()->openZsgFile(filePath);
     pModel->initDescriptors();
-    emit modelInited();
+    m_pEditor->resetModel(pModel);
 }
 
 void ZenoMainWindow::saveQuit()

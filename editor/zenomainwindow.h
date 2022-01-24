@@ -4,15 +4,13 @@
 #include <QtWidgets>
 
 class ZenoDockWidget;
+class ZenoGraphsEditor;
 
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
-
-signals:
-    void modelInited();
 
 public slots:
     void onRunClicked(int nFrames);
@@ -41,6 +39,7 @@ private:
     ZenoDockWidget *m_toolbar;
     ZenoDockWidget *m_shapeBar;
     ZenoDockWidget *m_timelineDock;
+    ZenoGraphsEditor* m_pEditor;
 };
 
 #endif

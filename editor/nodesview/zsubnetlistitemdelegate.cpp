@@ -1,11 +1,18 @@
 #include "zsubnetlistitemdelegate.h"
 #include "style/zenostyle.h"
+#include "zenosubnetlistview.h"
+#include <model/graphsmodel.h>
 
 
 ZSubnetListItemDelegate::ZSubnetListItemDelegate(GraphsModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
 {
+}
+
+ZSubnetListItemDelegate::~ZSubnetListItemDelegate()
+{
+    m_model = nullptr;
 }
 
 // painting
@@ -24,7 +31,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     int button_rightmargin = 10;
     int button_button = 12;
     int text_yoffset = 12;
-    int text_xmargin = 10;
+    int text_xmargin = 12;
 
     QColor bgColor, borderColor, textColor;
     if (opt.state & QStyle::State_Selected)
@@ -73,11 +80,64 @@ QSize ZSubnetListItemDelegate::sizeHint(const QStyleOptionViewItem& option, cons
 {
     int width = option.fontMetrics.horizontalAdvance(option.text);
     QFont fnt = option.font;
-    return ZenoStyle::dpiScaledSize(QSize(185, 30));
+    return ZenoStyle::dpiScaledSize(QSize(180, 30));
 }
 
 void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const
 {
     QStyledItemDelegate::initStyleOption(option, index);
 
+}
+
+bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+    if (event->type() == QEvent::MouseButtonPress)
+    {
+        QMouseEvent* me = static_cast<QMouseEvent*>(event);
+        if (me->button() == Qt::RightButton)
+        {
+            QMenu* menu = new QMenu(qobject_cast<ZenoSubnetListView*>(parent()));
+            QAction* pCopySubnet = new QAction("Copy subnet");
+            QAction* pPasteSubnet = new QAction("Paste subnet");
+            QAction* pRename = new QAction("Rename");
+            QAction* pDelete = new QAction("Delete");
+
+            connect(pDelete, &QAction::triggered, this, [=]() {
+                onDelete(index);
+                });
+
+            menu->addAction(pCopySubnet);
+            menu->addAction(pPasteSubnet);
+            menu->addSeparator();
+            menu->addAction(pRename);
+            menu->addAction(pDelete);
+            menu->exec(QCursor::pos());
+        }
+    }
+    return QStyledItemDelegate::editorEvent(event, model, option, index);
+}
+
+void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
+{
+    m_model->removeGraph(index.row());
+}
+
+QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    return QStyledItemDelegate::createEditor(parent, option, index);
+}
+
+void ZSubnetListItemDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
+{
+    QStyledItemDelegate::setEditorData(editor, index);
+}
+
+void ZSubnetListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const
+{
+    QStyledItemDelegate::setModelData(editor, model, index);
+}
+
+void ZSubnetListItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const  QModelIndex& index) const
+{
+    QStyledItemDelegate::updateEditorGeometry(editor, option, index);
 }

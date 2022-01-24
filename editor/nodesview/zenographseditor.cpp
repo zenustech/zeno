@@ -13,6 +13,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_pSubnetBtn(nullptr)
     , m_pSubnetList(nullptr)
     , m_pTabWidget(nullptr)
+    , m_seperateLine(nullptr)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -26,6 +27,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     );
     m_pSubnetBtn->setBackgroundClr(QColor(36, 36, 36), QColor(36, 36, 36), QColor(36, 36, 36));
     m_pSubnetBtn->setCheckable(true);
+    m_pSubnetBtn->hide();
     pVLayout->addWidget(m_pSubnetBtn);
     pVLayout->addStretch();
     pVLayout->setSpacing(0);
@@ -33,15 +35,16 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
 
     pLayout->addLayout(pVLayout);
 
-    QFrame* seperateLine = new QFrame;
-    seperateLine->setFrameShape(QFrame::VLine);
-    seperateLine->setFrameShadow(QFrame::Plain);
-    seperateLine->setLineWidth(2);
-    QPalette pal = seperateLine->palette();
+    m_seperateLine = new QFrame;
+    m_seperateLine->setFrameShape(QFrame::VLine);
+    m_seperateLine->setFrameShadow(QFrame::Plain);
+    m_seperateLine->setLineWidth(2);
+    QPalette pal = m_seperateLine->palette();
     pal.setBrush(QPalette::WindowText, QColor(38, 38, 38));
-    seperateLine->setPalette(pal);
+    m_seperateLine->setPalette(pal);
+    m_seperateLine->hide();
 
-    pLayout->addWidget(seperateLine);
+    pLayout->addWidget(m_seperateLine);
 
     QVBoxLayout* pLayout2 = new QVBoxLayout;
 
@@ -71,10 +74,23 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
     m_pTabWidget->activate(subgraphName);
 }
 
-void ZenoGraphsEditor::onModelInited()
+void ZenoGraphsEditor::resetModel(GraphsModel* pModel)
 {
-    GraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     m_pSubnetList->initModel(pModel);
+    m_pTabWidget->resetModel(pModel);
+    m_pSubnetBtn->show();
+    m_pSubnetBtn->setChecked(true);
+    m_pSubnetList->show();
+    m_seperateLine->show();
+    connect(pModel, SIGNAL(modelReset()), this, SLOT(onCurrentModelClear()));
+}
+
+void ZenoGraphsEditor::onCurrentModelClear()
+{
+    m_pSubnetList->hide();
+    m_pSubnetBtn->hide();
+    m_seperateLine->hide();
+    m_pTabWidget->clear();
 }
 
 void ZenoGraphsEditor::onSubnetBtnClicked()
@@ -89,10 +105,12 @@ void ZenoGraphsEditor::onSubnetBtnClicked()
         if (m_pSubnetBtn->isChecked())
         {
             m_pSubnetList->show();
+            m_seperateLine->show();
         }
         else
         {
             m_pSubnetList->hide();
+            m_seperateLine->hide();
         }
     }
 }

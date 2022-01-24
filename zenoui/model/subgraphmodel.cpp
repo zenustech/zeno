@@ -314,6 +314,11 @@ SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
     return pClone;
 }
 
+void SubGraphModel::rename(const QString& name)
+{
+    m_name = name;
+}
+
 void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction)
 {
     auto it = m_nodes.find(nodeid);
@@ -508,4 +513,16 @@ void SubGraphModel::beginTransaction(const QString& name)
 void SubGraphModel::endTransaction()
 {
     m_stack->endMacro();
+}
+
+void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
+{
+    for (int i = 0; i < rowCount(); i++)
+    {
+        const QModelIndex& idx = index(i, 0);
+        if (idx.data(ROLE_OBJNAME).toString() == oldName)
+        {
+            setData(idx, newName, ROLE_OBJNAME);
+        }
+    }
 }
