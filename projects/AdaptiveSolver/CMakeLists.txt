@@ -82,6 +82,7 @@ if(${ZS_ENABLE_CUDA})
 endif()
 
 target_include_directories(zeno_gpuAdaptiveSolver PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(zeno_gpuAdaptiveSolver PRIVATE inc)
 
 target_link_libraries(zeno_gpuAdaptiveSolver PRIVATE TBB::tbb TBB::tbbmalloc)
 if (UNIX)
