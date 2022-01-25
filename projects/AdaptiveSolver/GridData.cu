@@ -74,7 +74,62 @@ namespace zeno
         while (node_type == 1);
         return data.vel[dim][index];
     }
+    float3 __device__ intepolateVel(GridData data, float3 index, int* gridNum)
+    {
+        float vel[3];
+        for(int dim = 0;dim < 3;++dim)
+        {
+            float indx[3] = {(index.x), (index.y), (index.z)};
+            indx[dim]+=0.5;
+            float baseIndex[3] = {::floor(indx[0]), ::floor(indx[1]), ::floor(indx[2])};
+            int gNum[3] = {gridNum[0], gridNum[1], gridNum[2]};
+            gNum[dim]++;
+            if(baseIndex[0] < 0 || baseIndex[1] < 0 || baseIndex[2] < 0 ||
+                baseIndex[0]>=gNum[0] -1 || baseIndex[1]>=gNum[1] -1 || baseIndex[2]>=gNum[2] -1)
+            {
+                vel[dim] = 0;
+                continue;
+            }
+            float w[3] = {indx[0] - baseIndex[0], indx[1] - baseIndex[1], indx[2] - baseIndex[2]};
+            
+            float accum = 0;
+            for (size_t i = 0; i < 2; i++)
+                for (size_t j = 0; j < 2; j++)
+                    for (size_t k = 0; k < 2; k++)
+                    {
+                        float3 rpos = make_float3((baseIndex[0] + i)/gNum[0], (baseIndex[1] + j)/gNum[1], (baseIndex[2] + k)/gNum[2]);
+                        accum += (i*w[0]+(1-i)*(1-w[0]))*
+                            (j*w[1]+(1-j)*(1-w[1]))*
+                            (k*w[2]+(1-k)*(1-w[2]))*findVel(data, dim, rpos);
+                    }
+            vel[dim] = accum;
+        }
+        return make_float3(vel[0], vel[1], vel[2]);
+    }
 
+    void __device__ intepolateData(GridData data, float3 index, int* gNum, PointData& pData)
+    {
+        float baseIndex[3] = {::floor(index.x), ::floor(index.y), ::floor(index.z)};
+        float w[3] = {index.x - baseIndex[0], index.y - baseIndex[1],index.z - baseIndex[2]};
+        float accum = 0;
+        pData.vol = pData.temperature = 0;
+        if(baseIndex[0] < 0 || baseIndex[1] < 0 || baseIndex[2] < 0 || 
+            baseIndex[0] >= gNum[0] - 1 || baseIndex[1] >= gNum[1] - 1 || baseIndex[2] >= gNum[2] - 1)
+            return;
+        for (size_t i = 0; i < 2; i++)
+            for (size_t j = 0; j < 2; j++)
+                for (size_t k = 0; k < 2; k++)
+                {
+                    float3 rpos = make_float3((baseIndex[0] + i)/gNum[0], (baseIndex[1] + j)/gNum[1], (baseIndex[2] + k)/gNum[2]);
+                    float weight = (i*w[0]+(1-i)*(1-w[0]))*
+                        (j*w[1]+(1-j)*(1-w[1]))*
+                        (k*w[2]+(1-k)*(1-w[2]));
+                    auto point = findPoint(data, rpos);
+                    pData.temperature += weight * point.temperature;
+                    pData.vol += weight * point.vol;
+                }
+    }
+    
     void __global__ initPos(GridData data)
     {
         int3 index;
@@ -259,61 +314,6 @@ namespace zeno
         }
     }
     
-    float3 __device__ intepolateVel(GridData data, float3 index, int* gridNum)
-    {
-        float vel[3];
-        for(int dim = 0;dim < 3;++dim)
-        {
-            float indx[3] = {(index.x), (index.y), (index.z)};
-            indx[dim]+=0.5;
-            float baseIndex[3] = {::floor(indx[0]), ::floor(indx[1]), ::floor(indx[2])};
-            int gNum[3] = {gridNum[0], gridNum[1], gridNum[2]};
-            gNum[dim]++;
-            if(baseIndex[0] < 0 || baseIndex[1] < 0 || baseIndex[2] < 0 ||
-                baseIndex[0]>=gNum[0] -1 || baseIndex[1]>=gNum[1] -1 || baseIndex[2]>=gNum[2] -1)
-            {
-                vel[dim] = 0;
-                continue;
-            }
-            float w[3] = {indx[0] - baseIndex[0], indx[1] - baseIndex[1], indx[2] - baseIndex[2]};
-            
-            float accum = 0;
-            for (size_t i = 0; i < 2; i++)
-                for (size_t j = 0; j < 2; j++)
-                    for (size_t k = 0; k < 2; k++)
-                    {
-                        float3 rpos = make_float3((baseIndex[0] + i)/gNum[0], (baseIndex[1] + j)/gNum[1], (baseIndex[2] + k)/gNum[2]);
-                        accum += (i*w[0]+(1-i)*(1-w[0]))*
-                            (j*w[1]+(1-j)*(1-w[1]))*
-                            (k*w[2]+(1-k)*(1-w[2]))*findVel(data, dim, rpos);
-                    }
-            vel[dim] = accum;
-        }
-        return make_float3(vel[0], vel[1], vel[2]);
-    }
-
-    void __device__ intepolateData(GridData data, float3 index, int* gNum, PointData& pData)
-    {
-        float baseIndex[3] = {::floor(index.x), ::floor(index.y), ::floor(index.z)};
-        float w[3] = {index.x - baseIndex[0], index.y - baseIndex[1],index.z - baseIndex[2]};
-        float accum = 0;
-        pData.vol = pData.temperature = 0;
-        if(baseIndex[0] < 0 || baseIndex[1] < 0 || baseIndex[2] < 0 || 
-            baseIndex[0] >= gNum[0] - 1 || baseIndex[1] >= gNum[1] - 1 || baseIndex[2] >= gNum[2] - 1)
-            return;
-        for (size_t i = 0; i < 2; i++)
-            for (size_t j = 0; j < 2; j++)
-                for (size_t k = 0; k < 2; k++)
-                {
-                    float3 rpos = make_float3((baseIndex[0] + i)/gNum[0], (baseIndex[1] + j)/gNum[1], (baseIndex[2] + k)/gNum[2]);
-                    float weight = (i*w[0]+(1-i)*(1-w[0]))*
-                        (j*w[1]+(1-j)*(1-w[1]))*
-                        (k*w[2]+(1-k)*(1-w[2]));
-                    auto point = findPoint(data, rpos);
-                    pData.temperature += weight * point.temperature;
-                    pData.vol += weight * point.vol;
-                }
-    }
     void __global__ semiLaAdvection(GridData data)
     {
         int3 index;
@@ -340,6 +340,99 @@ namespace zeno
         pointer->pos = data.pData[i].pos;
         pointer->temperature = data.pData[i].temperature;
         pointer->vol = data.pData[i].vol;
+    }
+
+    void __global__ semiLaVelAdvection(GridData data)
+    {
+        int3 index;
+        index.x = blockIdx.x * blockDim.x + threadIdx.x;
+        index.y = blockIdx.y * blockDim.y + threadIdx.y;
+        index.z = blockIdx.z * blockDim.z + threadIdx.z;
+        int baseDrift = sizeof(PointData) * data.gpuParm.gridNum[0] * data.gpuParm.gridNum[1] * data.gpuParm.gridNum[2];
+        for(int dim = 0;dim<3;++dim)
+        {
+            
+            int gridNum[3] = {data.gpuParm.gridNum[0], data.gpuParm.gridNum[1], data.gpuParm.gridNum[2]};
+            gridNum[dim]++;
+            int i = index.x + index.y * gridNum[0] + index.z * gridNum[0] * gridNum[1];
+            int maxIndex = gridNum[0] * gridNum[1] * gridNum[2];
+            if(index.x >= gridNum[0] || index.y >= gridNum[1] || index.z >= gridNum[2])
+                continue;
+            float indx[3] = {index.x, index.y, index.z};
+            indx[dim] -= 0.5;
+            auto vel = intepolateVel(data, make_float3(indx[0], indx[1], indx[2]), gridNum);
+            
+            auto newIndex = make_float3(index) - 0.5 * vel * data.gpuParm.dt / data.gpuParm.dx;
+            indx[0] = newIndex.x;indx[1] = newIndex.y;indx[2] = newIndex.z;
+            indx[dim] -= 0.5;
+            auto midvel = intepolateVel(data, make_float3(indx[0], indx[1], indx[2]), gridNum);
+
+            newIndex = newIndex - 0.5 * data.gpuParm.dt * midvel / data.gpuParm.dx;
+            indx[0] = newIndex.x;indx[1] = newIndex.y;indx[2] = newIndex.z;
+            indx[dim] -= 0.5;
+
+            vel = intepolateVel(data, make_float3(indx[0], indx[1], indx[2]), gridNum);
+            indx[0] = vel.x;indx[1] = vel.y;indx[2] = vel.z;
+            int bufDrift = baseDrift + sizeof(float) * i;
+            *(float*)(data.buffer + bufDrift) = indx[dim];
+            baseDrift += sizeof(float)*  gridNum[0] * gridNum[1] * gridNum[2];
+        }
+        
+        
+    }
+
+    void __global__ computeRHS(GridData data)
+    {
+        int3 index;
+        float rho = 1;
+
+        index.x = blockIdx.x * blockDim.x + threadIdx.x;
+        index.y = blockIdx.y * blockDim.y + threadIdx.y;
+        index.z = blockIdx.z * blockDim.z + threadIdx.z;
+
+        int i = index.x + index.y * data.gpuParm.gridNum[0] + index.z * data.gpuParm.gridNum[0] * data.gpuParm.gridNum[1];
+        if(index.x >= data.gpuParm.gridNum[0] || index.y >= data.gpuParm.gridNum[1] || index.z >= data.gpuParm.gridNum[2])
+            return;
+        float rhs = 0;
+        for(int dim=0;dim<3;++dim)
+        {
+            int gNum[3] = {data.gpuParm.gridNum[0], data.gpuParm.gridNum[1], data.gpuParm.gridNum[2]};
+            gNum[dim]++;
+            float rpos[3] = {index.x, index.y, index.z};
+            for(int drift = 0;drift < 2;++drift)
+            {
+                rpos[dim] += drift;
+                auto vel = findVel(data, dim, make_float3(rpos[0] / gNum[0], rpos[1] / gNum[1], rpos[2] / gNum[2]));
+                rhs += 2 * (drift - 0.5) * vel;
+            }
+        }
+        data.b[i] = -rhs / data.gpuParm.dx * rho / data.gpuParm.dt;
+    }
+    void __global__ computeAp(GridData data, float*p, float*Ap)
+    {
+        int3 index;
+        float rho = 1;
+
+        index.x = blockIdx.x * blockDim.x + threadIdx.x;
+        index.y = blockIdx.y * blockDim.y + threadIdx.y;
+        index.z = blockIdx.z * blockDim.z + threadIdx.z;
+
+        int i = index.x + index.y * data.gpuParm.gridNum[0] + index.z * data.gpuParm.gridNum[0] * data.gpuParm.gridNum[1];
+        if(index.x >= data.gpuParm.gridNum[0] || index.y >= data.gpuParm.gridNum[1] || index.z >= data.gpuParm.gridNum[2])
+            return;
+        
+        for(int dim=0;dim<3;++dim)
+        {
+            for(int drift =-1;drift<=1;drift+=2)
+            {
+                int gNum[3] = {data.gpuParm.gridNum[0], data.gpuParm.gridNum[1], data.gpuParm.gridNum[2]};
+                gNum[dim]++;
+                float rpos[3] = {index.x, index.y, index.z};
+                rpos[dim] += drift;
+                auto point = findPoint(data, make_float3(rpos[0] / gNum[0], rpos[1] / gNum[1], rpos[2] / gNum[2]));
+                
+            }
+        }
     }
     void GridData::constructOctree()
     {
@@ -413,14 +506,39 @@ namespace zeno
         int bufferBytesCount = sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
         bufferBytesCount += 3 * sizeof(float) * (parm.gridNum[0] + 1) * (parm.gridNum[1] + 1) * (parm.gridNum[2]+1);
         cudaMalloc(&buffer, bufferBytesCount);
+
+        //iterate buffers
+        int baseBytesCount = sizeof(float) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
+        cudaMalloc(&r, baseBytesCount);
+        cudaMalloc(&b, baseBytesCount);
+        cudaMalloc(&press, baseBytesCount);
     }
 
     void GridData::advection()
     {
-        
+        semiLaAdvection<<<parm.blockPerGrid, parm.threadsPerBlock>>>(*this);
+        semiLaVelAdvection<<<parm.velBlockPerGrid, parm.threadsPerBlock>>>(*this);
+        cudaThreadSynchronize();
+        int basedrift = sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] * parm.gridNum[2];
+        cudaMemcpy(pData,buffer, basedrift, cudaMemcpyDeviceToDevice);
+        for(int dim=0;dim<3;++dim)
+        {
+            int gNum[3] = {parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]};
+            gNum[dim]++;
+            int bCounts = sizeof(float) * gNum[0] * gNum[1] * gNum[2];
+            cudaMemcpy(vel[dim], buffer + basedrift, bCounts, cudaMemcpyDeviceToDevice);
+            basedrift += bCounts;
+        }
+    }
+    void GridData::applyOtherForce()
+    {
+
     }
     void GridData::PossionSolver()
     {
+        computeRHS<<<parm.blockPerGrid, parm.threadsPerBlock>>>(*this);
+        cudaThreadSynchronize();
+
 
     }
     void GridData::step()

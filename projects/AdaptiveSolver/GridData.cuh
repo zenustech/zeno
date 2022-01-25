@@ -42,7 +42,13 @@ namespace zeno{
         Parms parm;
         Octree pTree, velTree[3];
 
-        void* buffer;
+        char* buffer;
+        //iterator
+        float*  b;
+        float*  r;
+        float*  press;
+        
+
         __device__ Parms gpuParm;
         void initData(vec3f bmin, vec3f bmax, float dx, float dt);
         void step();
@@ -52,6 +58,7 @@ namespace zeno{
         // // adaptive grid functions
         void advection();
         void PossionSolver();
+        void applyOtherForce();
         // virtual void subdivision();
         // virtual void coarsen();
     };
