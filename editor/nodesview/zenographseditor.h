@@ -25,10 +25,10 @@ private slots:
     void onListItemActivated(const QModelIndex& index);
 
 private:
+    QWidget* m_pSideBar;
     ZToolButton* m_pSubnetBtn;
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
-    QFrame* m_seperateLine;
 };
 
 #endif

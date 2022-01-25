@@ -78,5 +78,6 @@
 	<file>icons/ic_VIEW.svg</file>
     <file>icons/ic_File.svg</file>
     <file>icons/subnetbtn.svg</file>
+    <file>icons/dockOption.svg</file>
 </qresource>
 </RCC>

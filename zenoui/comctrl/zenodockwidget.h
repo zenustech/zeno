@@ -3,6 +3,18 @@
 
 #include <QtWidgets>
 
+class ZenoDockTitleWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    ZenoDockTitleWidget(QWidget* parent = nullptr);
+    ~ZenoDockTitleWidget();
+    QSize sizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+};
+
 class ZenoDockWidget : public QDockWidget
 {
     Q_OBJECT

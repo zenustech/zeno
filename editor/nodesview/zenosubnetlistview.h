@@ -46,6 +46,9 @@ private slots:
     void onNewSubnetBtnClicked();
     void onModelReset();
 
+protected:
+    void paintEvent(QPaintEvent* e) override;
+
 private:
     ZenoSubnetListView* m_pListView;
     QLabel* m_pTextLbl;

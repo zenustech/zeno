@@ -168,7 +168,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
 {
     if (CE_MenuBarEmptyArea == element)
     {
-        painter->fillRect(option->rect, QColor(58, 58, 58));
+        painter->fillRect(option->rect, QColor(45, 45, 48));
         return;
     }
     else if (CE_MenuBarItem == element)
@@ -184,7 +184,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             {
                 if (option->state & State_Sunken)
                 {
-                    painter->fillRect(option->rect, QColor(179, 102, 0));
+                    painter->fillRect(option->rect, QColor(23, 160, 252));
                 }
                 else
                 {
@@ -193,7 +193,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             }
             else
             {
-                painter->fillRect(option->rect, QColor(58, 58, 58));
+                painter->fillRect(option->rect, QColor(45, 45, 48));
             }
 
             optItem.palette.setBrush(QPalette::All, textRole, QColor(190, 190, 190));
@@ -313,97 +313,6 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
                              cb->palette, cb->state & State_Enabled, cb->currentText, QPalette::ButtonText);
             }
             painter->restore();
-        }
-    }
-    else if (CE_DockWidgetTitle == element)
-    {
-        if (const ZenoDockWidget* pCustomDock = qobject_cast<const ZenoDockWidget*>(widget))
-        {
-            if (const QStyleOptionDockWidget* dwOpt = qstyleoption_cast<const QStyleOptionDockWidget*>(option))
-            {
-                QRect rect = option->rect;
-                if (pCustomDock && pCustomDock->isFloating())
-                {
-                    base::drawControl(element, option, painter, widget);
-                    return;
-                }
-
-                //hide all buttons.
-                QDockWidgetLayout *dwLayout = qobject_cast<QDockWidgetLayout*>(pCustomDock->layout());
-                QWidget *pCloseBtn = dwLayout->widgetForRole(QDockWidgetLayout::CloseButton);
-                QWidget *pFloatBtn = dwLayout->widgetForRole(QDockWidgetLayout::FloatButton);
-                if (pCloseBtn)
-                    pCloseBtn->setVisible(false);
-                if (pFloatBtn)
-                    pFloatBtn->setVisible(false);
-
-                const bool verticalTitleBar = dwOpt->verticalTitleBar;
-
-                if (verticalTitleBar)
-                {
-                    rect = rect.transposed();
-
-                    painter->translate(rect.left() - 1, rect.top() + rect.width());
-                    painter->rotate(-90);
-                    painter->translate(-rect.left() + 1, -rect.top());
-                }
-
-                QColor bgClr = option->palette.window().color();
-                bgClr = bgClr.darker(110);
-                QColor bdrClr = option->palette.window().color().darker(130);
-                painter->setBrush(/*bgClr*/QColor(58, 58, 58));
-                painter->setPen(Qt::NoPen);
-                painter->drawRect(rect.adjusted(0, 1, -1, -2));     //titlebar margin to inside widget
-
-                int buttonMargin = 4;
-                int mw = proxy()->pixelMetric(QStyle::PM_DockWidgetTitleMargin, dwOpt, widget);
-                int fw = proxy()->pixelMetric(PM_DockWidgetFrameWidth, dwOpt, widget);
-                const QDockWidget *dw = qobject_cast<const QDockWidget *>(widget);
-                bool isFloating = dw && dw->isFloating();
-
-                QRect r = option->rect.adjusted(0, 2, -1, -3);
-                QRect titleRect = r;
-
-                if (dwOpt->closable)
-                {
-                    QSize sz = proxy()->standardIcon(QStyle::SP_TitleBarCloseButton, dwOpt, widget).actualSize(QSize(10, 10));
-                    titleRect.adjust(0, 0, -sz.width() - mw - buttonMargin, 0);
-                }
-
-                if (dwOpt->floatable)
-                {
-                    //QSize sz = proxy()->standardIcon(QStyle::SP_TitleBarMaxButton, dwOpt, widget).actualSize(QSize(10, 10));
-                    //titleRect.adjust(0, 0, -sz.width() - mw - buttonMargin, 0);
-                }
-
-                if (isFloating)
-                {
-                    titleRect.adjust(0, -fw, 0, 0);
-                    if (widget && widget->windowIcon().cacheKey() != QApplication::windowIcon().cacheKey())
-                        titleRect.adjust(titleRect.height() + mw, 0, 0, 0);
-                }
-                else
-                {
-                    titleRect.adjust(mw, 0, 0, 0);
-                    if (!dwOpt->floatable && !dwOpt->closable)
-                        titleRect.adjust(0, 0, -mw, 0);
-                }
-                if (!verticalTitleBar)
-                    titleRect = visualRect(dwOpt->direction, r, titleRect);
-
-                if (!dwOpt->title.isEmpty())
-                {
-                    QString titleText = painter->fontMetrics().elidedText(dwOpt->title, Qt::ElideRight,
-                                                                          verticalTitleBar ? titleRect.height() : titleRect.width());
-                    const int indent = 4;
-                    drawItemText(painter, rect.adjusted(indent + 1, 1, -indent - 1, -1),
-                                 Qt::AlignLeft | Qt::AlignVCenter | Qt::TextShowMnemonic,
-                                 dwOpt->palette,
-                                 dwOpt->state & State_Enabled, titleText,
-                                 QPalette::WindowText);
-                }
-                return;
-            }
         }
     }
     return base::drawControl(element, option, painter, widget);
@@ -738,7 +647,8 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     //draw the background
     if (option->buttonEnabled && (option->state & (State_MouseOver | State_On)))
     {
-        QRect rect = option->rect.adjusted(0, 0, -1, -1);
+        //QRect rect = option->rect.adjusted(0, 0, -1, -1);       //???
+        QRect rect = option->rect;
         //todo: round corner
         QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
         painter->fillRect(rect, bgBrush);

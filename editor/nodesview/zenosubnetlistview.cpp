@@ -162,3 +162,9 @@ void ZenoSubnetListPanel::onNewSubnetBtnClicked()
     const QModelIndex idx = lst[0];
     m_pListView->edit(idx);
 }
+
+void ZenoSubnetListPanel::paintEvent(QPaintEvent* e)
+{
+    QPainter painter(this);
+    painter.fillRect(rect(), QColor(42, 42, 42));
+}
