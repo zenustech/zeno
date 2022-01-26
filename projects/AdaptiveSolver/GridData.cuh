@@ -3,6 +3,9 @@
 #include <helper_math.h>
 #include <cuda_runtime.h>
 #include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 namespace zeno{
     struct Parms
     {
@@ -34,8 +37,25 @@ namespace zeno{
         TreeNode* nodes;
         int rootIndex;
     };
+
+    struct gpuVDBGrid
+    {
+        float3* pos;
+        std::map<std::string, float*> data;
+        unsigned long* key;
+
+        Octree tree;
+        float3 drift;
+        float dx;
+        int size;
+        void addProperty(std::string map_key);
+        void initBox(int gNum[3], float3 bmin, float3 bmax, float3 drift, float dx, std::vector<std::string> properties);
+    };
     struct GridData : IObject
     {
+        gpuVDBGrid      data;
+        //gpuVDBGrid      vel[3];
+
         PointData*   pData;
         float*      vel[3];
         unsigned long*  pKey, *velKey[3];
@@ -47,7 +67,6 @@ namespace zeno{
         float*  b;
         float*  r;
         float*  press;
-        
 
         __device__ Parms gpuParm;
         void initData(vec3f bmin, vec3f bmax, float dx, float dt);
@@ -66,6 +85,7 @@ namespace zeno{
     void __global__ generateMortonCode(GridData data);
     void __global__ sortViaMortonCode(GridData data);
     void __global__ genOctree(GridData data);
+
     void __global__ findOctreeRoot(GridData data);
 
 }

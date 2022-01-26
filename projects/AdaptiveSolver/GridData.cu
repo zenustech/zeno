@@ -176,15 +176,15 @@ namespace zeno
             data.velKey[dim][i] = morton3d(rPos);
         }
     }
-    void __global__ genOctree(unsigned long* key, Octree& tree, Parms gpuParm)
+    void __global__ genOctree(unsigned long* key, Octree& tree, int* gridNum)
     {
         int3 index;
         index.x = blockIdx.x * blockDim.x + threadIdx.x;
         index.y = blockIdx.y * blockDim.y + threadIdx.y;
         index.z = blockIdx.z * blockDim.z + threadIdx.z;
-        int i = index.x + index.y * gpuParm.gridNum[0] + index.z * gpuParm.gridNum[0] * gpuParm.gridNum[1];
-        int maxIndex = gpuParm.gridNum[0] * gpuParm.gridNum[1] * gpuParm.gridNum[2];
-        if(index.x >= gpuParm.gridNum[0] || index.y >= gpuParm.gridNum[1] || index.z >= gpuParm.gridNum[2])
+        int i = index.x + index.y * gridNum[0] + index.z * gridNum[0] * gridNum[1];
+        int maxIndex = gridNum[0] * gridNum[1] * gridNum[2];
+        if(index.x >= gridNum[0] || index.y >= gridNum[1] || index.z >= gridNum[2])
             return;
         if(i >= maxIndex - 1)
             return;
@@ -430,7 +430,7 @@ namespace zeno
                 float rpos[3] = {index.x, index.y, index.z};
                 rpos[dim] += drift;
                 auto point = findPoint(data, make_float3(rpos[0] / gNum[0], rpos[1] / gNum[1], rpos[2] / gNum[2]));
-                
+
             }
         }
     }
@@ -451,7 +451,8 @@ namespace zeno
                                 (parm.gridNum[i]+1) * parm.gridNum[(i+1)%3] * parm.gridNum[(i+2)%3]),
                             thrust::device_ptr<float>(vel[i]));
         }
-        genOctree<<<parm.blockPerGrid, parm.threadsPerBlock>>>(pKey, pTree, gpuParm);
+
+        genOctree<<<parm.blockPerGrid, parm.threadsPerBlock>>>(pKey, pTree, (int*)(&gpuParm.gridNum));
         genVelOctree<<<parm.velBlockPerGrid, parm.threadsPerBlock>>>(*this, gpuParm);
         cudaThreadSynchronize();
 
@@ -476,42 +477,44 @@ namespace zeno
                 parm.gridNum[i] = 1;
         parm.bmax = parm.bmin + make_float3(parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]) * dx;
         printf("grid Num is (%d,%d,%d)\n", parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]);
+        std::vector<std::string> pros;
+        int gNum[3] = {parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]};
+        data.initBox(gNum, parm.bmin, parm.bmax, make_float3(0), dx, pros);
+        // cudaMalloc(&pData, sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2]);
+        // cudaMalloc(&pKey, sizeof(unsigned long) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2]);
+        // cudaMalloc(&pTree.nodes, sizeof(TreeNode) * (parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2] - 1));
+        // for(int i=0;i<3;++i)
+        // {
+        //     int gNum[3] = {parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]};
+        //     gNum[i]++;
+        //     cudaMalloc(&vel[i], sizeof(float) * gNum[0] * gNum[1] * gNum[2]);
+        //     cudaMalloc(&velKey[i], sizeof(unsigned long) * gNum[0] * gNum[1] * gNum[2]);
+        //     cudaMalloc(&velTree[i].nodes, sizeof(TreeNode) * 
+        //         (gNum[0] * gNum[1] * gNum[2] - 1));
+        // }
 
-        cudaMalloc(&pData, sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2]);
-        cudaMalloc(&pKey, sizeof(unsigned long) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2]);
-        cudaMalloc(&pTree.nodes, sizeof(TreeNode) * (parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2] - 1));
-        for(int i=0;i<3;++i)
-        {
-            int gNum[3] = {parm.gridNum[0], parm.gridNum[1], parm.gridNum[2]};
-            gNum[i]++;
-            cudaMalloc(&vel[i], sizeof(float) * gNum[0] * gNum[1] * gNum[2]);
-            cudaMalloc(&velKey[i], sizeof(unsigned long) * gNum[0] * gNum[1] * gNum[2]);
-            cudaMalloc(&velTree[i].nodes, sizeof(TreeNode) * 
-                (gNum[0] * gNum[1] * gNum[2] - 1));
-        }
+        // dim3 threadsPerBlock(8,8,8);
+        // parm.threadsPerBlock = threadsPerBlock;
+        // parm.blockPerGrid = dim3(ceil(parm.gridNum[0] * 1.0 / threadsPerBlock.x), 
+        //     ceil(parm.gridNum[1] * 1.0 / threadsPerBlock.y), 
+        //     ceil(parm.gridNum[2] * 1.0 / threadsPerBlock.z));
+        // parm.velBlockPerGrid = dim3(ceil((parm.gridNum[0] + 1) * 1.0 / threadsPerBlock.x), 
+        //     ceil((parm.gridNum[1] + 1) * 1.0 / threadsPerBlock.y), 
+        //     ceil((parm.gridNum[2] + 1) * 1.0 / threadsPerBlock.z));
 
-        dim3 threadsPerBlock(8,8,8);
-        parm.threadsPerBlock = threadsPerBlock;
-        parm.blockPerGrid = dim3(ceil(parm.gridNum[0] * 1.0 / threadsPerBlock.x), 
-            ceil(parm.gridNum[1] * 1.0 / threadsPerBlock.y), 
-            ceil(parm.gridNum[2] * 1.0 / threadsPerBlock.z));
-        parm.velBlockPerGrid = dim3(ceil((parm.gridNum[0] + 1) * 1.0 / threadsPerBlock.x), 
-            ceil((parm.gridNum[1] + 1) * 1.0 / threadsPerBlock.y), 
-            ceil((parm.gridNum[2] + 1) * 1.0 / threadsPerBlock.z));
+        // cudaMemcpyToSymbol(&gpuParm, &parm, sizeof(Parms));
+        // initPos<<<parm.blockPerGrid, parm.threadsPerBlock>>>(*this);
+        // cudaThreadSynchronize();
 
-        cudaMemcpyToSymbol(&gpuParm, &parm, sizeof(Parms));
-        initPos<<<parm.blockPerGrid, parm.threadsPerBlock>>>(*this);
-        cudaThreadSynchronize();
+        // int bufferBytesCount = sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
+        // bufferBytesCount += 3 * sizeof(float) * (parm.gridNum[0] + 1) * (parm.gridNum[1] + 1) * (parm.gridNum[2]+1);
+        // cudaMalloc(&buffer, bufferBytesCount);
 
-        int bufferBytesCount = sizeof(PointData) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
-        bufferBytesCount += 3 * sizeof(float) * (parm.gridNum[0] + 1) * (parm.gridNum[1] + 1) * (parm.gridNum[2]+1);
-        cudaMalloc(&buffer, bufferBytesCount);
-
-        //iterate buffers
-        int baseBytesCount = sizeof(float) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
-        cudaMalloc(&r, baseBytesCount);
-        cudaMalloc(&b, baseBytesCount);
-        cudaMalloc(&press, baseBytesCount);
+        // //iterate buffers
+        // int baseBytesCount = sizeof(float) * parm.gridNum[0] * parm.gridNum[1] *parm.gridNum[2];
+        // cudaMalloc(&r, baseBytesCount);
+        // cudaMalloc(&b, baseBytesCount);
+        // cudaMalloc(&press, baseBytesCount);
     }
 
     void GridData::advection()
@@ -547,6 +550,83 @@ namespace zeno
         constructOctree();
         PossionSolver();
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    void gpuVDBGrid::addProperty(std::string map_key)
+    {
+        float* buf;
+        cudaMalloc(&buf, sizeof(float) * size);
+        data[map_key] = buf;
+        //data.insert(map_key, buf);
+    }
+    __global__ void genBoxPos(gpuVDBGrid grid, float3 bmin, float3 bmax, int gNum[3], float3 drift, float dx)
+    {
+        int3 index;
+        index.x = blockIdx.x * blockDim.x + threadIdx.x;
+        index.y = blockIdx.y * blockDim.y + threadIdx.y;
+        index.z = blockIdx.z * blockDim.z + threadIdx.z;
+        if(index.x >= gNum[0] || index.y >= gNum[1] || index.z >= gNum[2])
+            return;
+
+        int i = index.x + index.y * gNum[0] + index.z * gNum[0] * gNum[1];
+        grid.pos[i] = bmin +  dx * make_float3(index.x, index.y, index.z) + drift;
+        grid.key[i] = morton3d((grid.pos[i] - bmin) / (bmax - bmin));
+
+    }
+
+    void gpuVDBGrid::initBox(int gNum[3], float3 bmin, float3 bmax, float3 drift, float dx, std::vector<std::string> properties)
+    {
+        size = gNum[0] * gNum[1] * gNum[2];
+        this->drift = drift;
+        this->dx = dx;
+        cudaMalloc(&pos, sizeof(float3) * size);
+        cudaMalloc(&key, sizeof(unsigned long) * size);
+        for(int i=0;i<properties.size();++i)
+        {
+            addProperty(properties[i]);
+        }
+        dim3 threadsPerBlock(8,8,8);
+        auto blockPerGrid = dim3(ceil(gNum[0] * 1.0 / threadsPerBlock.x), 
+            ceil(gNum[1] * 1.0 / threadsPerBlock.y), 
+            ceil(gNum[2] * 1.0 / threadsPerBlock.z));
+        genBoxPos<<<blockPerGrid, threadsPerBlock>>>(*(this), bmin, bmax, gNum, drift, dx);
+        cudaThreadSynchronize();
+
+        thrust::sort_by_key(thrust::device_ptr<unsigned long>(key),
+                            thrust::device_ptr<unsigned long>(key + size),
+                            thrust::device_ptr<float3>(pos));
+        thrust::sort_by_key(thrust::device_ptr<unsigned long>(key),
+                            thrust::device_ptr<unsigned long>(key + size),
+                            thrust::device_ptr<float3>(key));
+        genOctree<<<blockPerGrid, threadsPerBlock>>>(key, tree, gNum);
+        cudaThreadSynchronize();
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //node define
     struct generateAdaptiveGridGPU : zeno::INode{
         virtual void apply() override {
             auto bmin = get_input("bmin")->as<zeno::NumericObject>()->get<vec3f>();
