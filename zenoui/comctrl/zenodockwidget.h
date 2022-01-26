@@ -11,6 +11,9 @@ public:
     ~ZenoDockTitleWidget();
     QSize sizeHint() const override;
 
+signals:
+    void dockOptionsClicked();
+
 protected:
     void paintEvent(QPaintEvent* event) override;
 };
@@ -28,6 +31,15 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+
+signals:
+    void maximizeTriggered();
+    void floatTriggered();
+
+private slots:
+    void onDockOptionsClicked();
+    void onMaximizeTriggered();
+    void onFloatTriggered();
 
 private:
     void init();

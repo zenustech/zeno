@@ -42,6 +42,7 @@ public:
     int buttonOption() const;
     virtual QSize sizeHint() const;
     void setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
+    void setMargins(const QMargins& margins);
 
 public slots:
     void setText(const QString& text);
@@ -78,6 +79,7 @@ private:
     void setPressed(bool bPressed);
     QString getCustomTip() const;
 
+    QMargins m_margins;
     QString m_text;
     QString m_customTip;
     QSize m_iconSize;

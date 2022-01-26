@@ -76,10 +76,22 @@ QSize ZToolButton::sizeHint() const
 {
     int w = 0, h = 0;
 
-    int marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
-    int marginRight = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, this);
-    int marginTop = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, this);
-    int marginBottom = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, this);
+    int marginLeft = 0, marginRight = 0, marginTop = 0, marginBottom = 0;
+
+    if (m_margins.isNull())
+    {
+        marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
+        marginRight = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, this);
+        marginTop = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, this);
+        marginBottom = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, this);
+    }
+    else
+    {
+        marginLeft = m_margins.left();
+        marginRight = m_margins.right();
+        marginTop = m_margins.top();
+        marginBottom = m_margins.bottom();
+    }
 
     if (!m_text.isEmpty())
     {
@@ -201,6 +213,11 @@ void ZToolButton::setIcon(const QIcon& icon)
 void ZToolButton::setIconSize(const QSize& size)
 {
     m_iconSize = size;
+}
+
+void ZToolButton::setMargins(const QMargins& margins)
+{
+    m_margins = margins;
 }
 
 void ZToolButton::showToolTip()

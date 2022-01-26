@@ -44,6 +44,18 @@ QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option,
             QSize sz = dpiScaledSize(QSize(120, 37));
             return sz;
         }
+        case CT_MenuItem:
+        {
+            if (const QStyleOptionMenuItem* pOption = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
+            {
+                if (pOption->menuItemType != QStyleOptionMenuItem::Separator)
+                {
+                    QSize sz = dpiScaledSize(QSize(187, 28));
+                    return sz;
+                }
+                break;
+            }
+        }
     }
     return base::sizeFromContents(type, option, size, widget);
 }
@@ -531,7 +543,7 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
         if (menuitem->menuItemType == QStyleOptionMenuItem::Separator) {
             int yoff = y - 2 + h / 2;
             const int separatorSize = 0;// qRound(qreal(6) * QWindowsStylePrivate::nativeMetricScaleFactor(widget));
-            QPoint p1 = QPoint(x + checkcol, yoff);
+            QPoint p1 = QPoint(/*x + checkcol*/0, yoff);
             QPoint p2 = QPoint(x + w + separatorSize, yoff);
             
             QPen pen(QColor(148, 148, 148));
@@ -546,7 +558,7 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
 
         if (act)
         {
-            painter->fillRect(option->rect, QColor(179, 102, 0));
+            painter->fillRect(option->rect, QColor(24, 160, 251));
         }
         else
         {
@@ -597,7 +609,7 @@ void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option,
 
         const int windowsItemFrame = 2, windowsItemHMargin = 3, windowsItemVMargin = 4, windowsRightBorder = 15, windowsArrowHMargin = 6;
 
-        int xm = windowsItemFrame + checkcol + windowsItemHMargin + (gutterWidth - menuitem->rect.x()) - 1;
+        int xm = 12;// todo: windowsItemFrame + checkcol + windowsItemHMargin + (gutterWidth - menuitem->rect.x()) - 1;
         int xpos = menuitem->rect.x() + xm;
         QRect textRect(xpos, y + windowsItemVMargin, w - xm - windowsRightBorder - tab + 1, h - 2 * windowsItemVMargin);
         QRect vTextRect = visualRect(option->direction, menuitem->rect, textRect);
