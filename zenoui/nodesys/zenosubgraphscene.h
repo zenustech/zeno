@@ -18,6 +18,7 @@ class ZenoSubGraphScene : public QGraphicsScene
 	Q_OBJECT
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
+    ~ZenoSubGraphScene();
     void initModel(SubGraphModel* pModel);
     void initGrid(QRectF rc);
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);

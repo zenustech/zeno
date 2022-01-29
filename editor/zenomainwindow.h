@@ -21,6 +21,7 @@ class ZenoMainWindow : public QMainWindow
 
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+    ~ZenoMainWindow();
 
 public slots:
     void onRunClicked(int nFrames);
@@ -29,6 +30,7 @@ public slots:
     void saveAs();
     void onMaximumTriggered();
     void onSplitDock(bool);
+    void onToggleDockWidget(DOCK_TYPE, bool);
 
 private:
     void init();

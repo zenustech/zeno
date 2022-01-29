@@ -50,6 +50,7 @@ class ViewportWidget : public QOpenGLWidget
     typedef QOpenGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
+    ~ViewportWidget();
     void initializeGL();
     void resizeGL(int nx, int ny) override;
     void paintGL() override;

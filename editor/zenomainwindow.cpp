@@ -20,6 +20,11 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_pEditor(nullptr)
 {
     init();
+    setContextMenuPolicy(Qt::NoContextMenu);
+}
+
+ZenoMainWindow::~ZenoMainWindow()
+{
 }
 
 void ZenoMainWindow::init()
@@ -103,9 +108,79 @@ void ZenoMainWindow::initMenu()
         pEdit->addAction(pAction);
     }
 
+    QMenu* pDisplay = new QMenu(tr("Display"));
+    {
+        QAction* pAction = new QAction(tr("Show Grid"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        pDisplay->addAction(pAction);
+
+        pAction = new QAction(tr("Background Color"), this);
+        pDisplay->addAction(pAction);
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Smooth Shading"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+
+        pAction = new QAction(tr("Wireframe"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Camera Keyframe"), this);
+        pDisplay->addAction(pAction);
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Use English"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        pDisplay->addAction(pAction);
+    }
+
+    QMenu* pRecord = new QMenu(tr("Record"));
+    {
+        QAction* pAction = new QAction(tr("Screenshot"), this);
+        pAction->setShortcut(QKeySequence("F12"));
+        pRecord->addAction(pAction);
+
+        pAction = new QAction(tr("Record Video"), this);
+        pAction->setShortcut(QKeySequence(tr("Shift+F12")));
+        pRecord->addAction(pAction);
+    }
+
     QMenu *pRender = new QMenu(tr("Render"));
 
     QMenu *pView = new QMenu(tr("View"));
+    {
+        QAction* pAction = new QAction(tr("view"));
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            onToggleDockWidget(DOCK_VIEW, pAction->isChecked());
+        });
+        pView->addAction(pAction);
+
+        pAction = new QAction(tr("editor"));
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            onToggleDockWidget(DOCK_EDITOR, pAction->isChecked());
+            });
+        pView->addAction(pAction);
+
+        pAction = new QAction(tr("timeline"));
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            onToggleDockWidget(DOCK_TIMER, pAction->isChecked());
+            });
+        pView->addAction(pAction);
+    }
 
     QMenu *pWindow = new QMenu(tr("Window"));
 
@@ -115,6 +190,8 @@ void ZenoMainWindow::initMenu()
     pMenuBar->addMenu(pEdit);
     pMenuBar->addMenu(pRender);
     pMenuBar->addMenu(pView);
+    pMenuBar->addMenu(pDisplay);
+    pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
 
@@ -224,14 +301,14 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     saveQuit();
 
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
     //todo: path validation
-    GraphsModel* pModel = zenoApp->graphsManagment()->openZsgFile(filePath);
+    GraphsModel* pModel = pGraphs->openZsgFile(filePath);
     pModel->initDescriptors();
 
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
@@ -244,9 +321,21 @@ void ZenoMainWindow::openFileDialog()
     }
 }
 
+void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
+{
+    QList<ZenoDockWidget*> list = m_docks.values(type);
+    for (auto dock : list)
+    {
+        if (bShow)
+            dock->show();
+        else
+            dock->close();
+    }
+}
+
 void ZenoMainWindow::saveQuit()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     if (pGraphs->saveCurrent())
     {
         saveAs();
@@ -366,7 +455,7 @@ void ZenoMainWindow::readSettings2()
 
 void ZenoMainWindow::onRunClicked(int nFrames)
 {
-    GraphsManagment* pGraphsMgr = zenoApp->graphsManagment();
+    auto pGraphsMgr = zenoApp->graphsManagment();
     GraphsModel* pModel = pGraphsMgr->currentModel();
     launchProgram(pModel, nFrames);
 }

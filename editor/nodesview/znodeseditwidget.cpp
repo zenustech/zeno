@@ -61,7 +61,7 @@ QString ZNodesEditWidget::getOpenFileByDialog()
 
 void ZNodesEditWidget::openFileDialog()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     saveQuit();
 
     QString filePath = getOpenFileByDialog();
@@ -89,7 +89,7 @@ void ZNodesEditWidget::openFileDialog()
 
 void ZNodesEditWidget::saveQuit()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     if (pGraphs->saveCurrent())
     {
         saveAs();
@@ -99,7 +99,7 @@ void ZNodesEditWidget::saveQuit()
 
 void ZNodesEditWidget::onReloadBtnClicked()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     const QString& subGraphName = m_pComboSubGraph->currentText();
     if (pGraphs)
     {
@@ -109,7 +109,7 @@ void ZNodesEditWidget::onReloadBtnClicked()
 
 void ZNodesEditWidget::onDeleteBtnClicked()
 {
-    GraphsManagment* pGraphs = zenoApp->graphsManagment();
+    auto pGraphs = zenoApp->graphsManagment();
     const QString& subGraphName = m_pComboSubGraph->currentText();
     if (pGraphs)
     {

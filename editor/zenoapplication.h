@@ -13,11 +13,11 @@ class ZenoApplication : public QApplication
 public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
-    GraphsManagment* graphsManagment() const;
+    QSharedPointer<GraphsManagment> graphsManagment() const;
     void initFonts();
         
 private:
-    GraphsManagment* m_pGraphs;
+    QSharedPointer<GraphsManagment> m_pGraphs;
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))

@@ -102,6 +102,10 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     Zenvis::GetInstance().m_camera_control = m_camera;
 }
 
+ViewportWidget::~ViewportWidget()
+{
+}
+
 void ViewportWidget::initializeGL()
 {
     Zenvis::GetInstance().initializeGL();
@@ -213,6 +217,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
 
+    /*
     ZMenuBar* menuBar = new ZMenuBar;
     menuBar->setMaximumHeight(26);
 
@@ -222,6 +227,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
     menuBar->addMenu(recordDisplay);
 
     pLayout->addWidget(menuBar);
+    */
 
     m_view = new ViewportWidget(this);
     pLayout->addWidget(m_view);

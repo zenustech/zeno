@@ -23,6 +23,10 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     setSceneRect(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
 }
 
+ZenoSubGraphScene::~ZenoSubGraphScene()
+{
+}
+
 void ZenoSubGraphScene::initGrid(QRectF rc)
 {
     if (!m_grid)

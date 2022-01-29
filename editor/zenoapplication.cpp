@@ -32,7 +32,7 @@ void ZenoApplication::initFonts()
     QFontDatabase::addApplicationFont(":/font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Thin.ttf");
 }
 
-GraphsManagment* ZenoApplication::graphsManagment() const
+QSharedPointer<GraphsManagment> ZenoApplication::graphsManagment() const
 {
     return m_pGraphs;
 }
