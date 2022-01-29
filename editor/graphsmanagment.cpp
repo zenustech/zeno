@@ -132,3 +132,8 @@ void GraphsManagment::onNewNodeCreated(const QString& descName, const QPointF& p
     int row = pModel->rowCount();
     pModel->appendItem(node, true);
 }
+
+ZenoSubGraphScene* GraphsManagment::scene(const QString& subGraphName)
+{
+    return m_model->subGraph(subGraphName)->scene();
+}

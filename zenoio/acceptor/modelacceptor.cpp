@@ -49,6 +49,7 @@ void ModelAcceptor::EndSubgraph()
 		}
 	}
 
+	m_currentGraph->onModelInited();
 	m_currentGraph = nullptr;
 }
 

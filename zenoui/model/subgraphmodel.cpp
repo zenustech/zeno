@@ -2,13 +2,17 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
 #include "modeldata.h"
+#include "../nodesys/zenosubgraphscene.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
+    , m_scene(new ZenoSubGraphScene(this))
 {
+    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
+    m_scene->initGrid(rcView);
 }
 
 SubGraphModel::~SubGraphModel()
@@ -24,7 +28,20 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
     , m_rect(rhs.m_rect)
     , m_name(rhs.m_name)
     , m_nodes(rhs.m_nodes)
+    , m_scene(new ZenoSubGraphScene(this))
 {
+    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
+    m_scene->initGrid(rcView);
+}
+
+void SubGraphModel::onModelInited()
+{
+    m_scene->initModel(this);
+}
+
+ZenoSubGraphScene* SubGraphModel::scene() const
+{
+    return m_scene;
 }
 
 NODE_DESCS SubGraphModel::descriptors()

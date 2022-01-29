@@ -21,7 +21,7 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
     if (idx == -1)
     {
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-        pView->setModel(pSubModel);
+        pView->initScene(pSubModel->scene());
         int idx = addTab(pView, subgraphName);
         setCurrentIndex(idx);
         ZIconButton* pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(14, 14), QColor(), QColor());

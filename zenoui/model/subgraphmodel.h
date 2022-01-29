@@ -28,6 +28,7 @@ struct PlainNodeItem
 //typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
 
 class GraphsModel;
+class ZenoSubGraphScene;
 
 class SubGraphModel : public QAbstractItemModel
 {
@@ -89,6 +90,8 @@ public:
     void clear();
     void reload();
     QUndoStack* undoStack() const;
+    void onModelInited();
+    ZenoSubGraphScene* scene() const;
 
 signals:
     void clearLayout();
@@ -116,6 +119,7 @@ private:
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;
     QUndoStack* m_stack;
+    ZenoSubGraphScene* m_scene;
 };
 
 #endif

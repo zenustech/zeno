@@ -101,8 +101,15 @@ void ZenoDockWidget::onDockOptionsClicked()
     QAction* pFloatWin = new QAction("Float Window");
     QAction* pCloseLayout = new QAction("Close Layout");
 
-    connect(pMaximize, SIGNAL(triggered()), this, SLOT(onMaximizeTriggered()));
+    connect(pMaximize, SIGNAL(triggered()), this, SIGNAL(maximizeTriggered()));
     connect(pFloatWin, SIGNAL(triggered()), this, SLOT(onFloatTriggered()));
+    connect(pCloseLayout, SIGNAL(triggered()), this, SLOT(close()));
+    connect(pSplitHor, &QAction::triggered, this, [=]() {
+        emit splitRequest(true);
+    });
+    connect(pSplitVer, &QAction::triggered, this, [=]() {
+        emit splitRequest(false);
+    });
 
     menu->addAction(pSplitHor);
     menu->addAction(pSplitVer);

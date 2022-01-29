@@ -26,9 +26,7 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    //houdiniStyleLayout();
     simplifyLayout();
-    //readHoudiniStyleLayout();
 }
 
 void ZenoMainWindow::initMenu()
@@ -146,13 +144,14 @@ void ZenoMainWindow::initDocks()
     m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     DisplayWidget* view = new DisplayWidget;
     m_viewDock->setWidget(view);
+    m_docks.insert(DOCK_VIEW, m_viewDock);
 
     //m_parameter = new ZenoDockWidget("parameter", this);
     //m_parameter->setObjectName(QString::fromUtf8("dock_parameter"));
     //m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     //m_parameter->setWidget(new QWidget);
 
-    m_pEditor = new ZenoGraphsEditor;
+    //m_pEditor = new ZenoGraphsEditor;
     //pEditor->setGeometry(500, 500, 1000, 1000);
     //ZNodesEditWidget* pOldEditor = new ZNodesEditWidget;
 
@@ -163,13 +162,15 @@ void ZenoMainWindow::initDocks()
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(m_pEditor);
+    m_editor->setWidget(new ZenoGraphsEditor);
+    m_docks.insert(DOCK_EDITOR, m_editor);
 
     m_timelineDock = new ZenoDockWidget(this);
     m_timelineDock->setObjectName(QString::fromUtf8("dock_timeline"));
     m_timelineDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
     ZTimeline* pTimeline = new ZTimeline;
     m_timelineDock->setWidget(pTimeline);
+    m_docks.insert(DOCK_TIMER, m_timelineDock);
 
 	connect(&Zenvis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
 	connect(pTimeline, SIGNAL(playForward(bool)), &Zenvis::GetInstance(), SLOT(startPlay(bool)));
@@ -179,6 +180,46 @@ void ZenoMainWindow::initDocks()
     QTimer* pTimer = new QTimer;
     connect(pTimer, SIGNAL(timeout()), view, SLOT(updateFrame()));
     pTimer->start(16);
+
+    for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
+    {
+        ZenoDockWidget* pDock = it.value();
+        connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
+        connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
+    }
+}
+
+void ZenoMainWindow::onMaximumTriggered()
+{
+    ZenoDockWidget* pDockWidget = qobject_cast<ZenoDockWidget*>(sender());
+    for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
+    {
+        ZenoDockWidget* pDock = it.value();
+        if (pDock != pDockWidget)
+        {
+            pDock->close();
+        }
+    }
+}
+
+void ZenoMainWindow::onSplitDock(bool bHorzontal)
+{
+    ZenoDockWidget* pDockWidget = qobject_cast<ZenoDockWidget*>(sender());
+    if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDockWidget->widget()))
+    {
+        ZenoDockWidget* pDock = new ZenoDockWidget("", this);
+        ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor;
+
+        pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+        pDock->setWidget(pEditor2);
+        //only one model.
+        pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
+        m_docks.insert(DOCK_EDITOR, pDock);
+        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
+
+        connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
+        connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
+    }
 }
 
 void ZenoMainWindow::openFileDialog()
@@ -192,7 +233,15 @@ void ZenoMainWindow::openFileDialog()
     //todo: path validation
     GraphsModel* pModel = zenoApp->graphsManagment()->openZsgFile(filePath);
     pModel->initDescriptors();
-    m_pEditor->resetModel(pModel);
+
+    for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
+    {
+        ZenoDockWidget* pDock = it.value();
+        if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDock->widget()))
+        {
+            pEditor->resetModel(pModel);
+        }
+    }
 }
 
 void ZenoMainWindow::saveQuit()

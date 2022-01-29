@@ -9,6 +9,16 @@ class ZenoGraphsEditor;
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
+
+    enum DOCK_TYPE
+    {
+        DOCK_VIEW,
+        DOCK_EDITOR,
+        DOCK_NODE_PARAMS,
+        DOCK_NODE_DATA,
+        DOCK_TIMER
+    };
+
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
@@ -17,6 +27,8 @@ public slots:
     void openFileDialog();
     void saveQuit();
     void saveAs();
+    void onMaximumTriggered();
+    void onSplitDock(bool);
 
 private:
     void init();
@@ -39,6 +51,10 @@ private:
     ZenoDockWidget *m_toolbar;
     ZenoDockWidget *m_shapeBar;
     ZenoDockWidget *m_timelineDock;
+
+    //QVector<ZenoDockWidget*> m_docks;
+    QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;
+
     ZenoGraphsEditor* m_pEditor;
 };
 

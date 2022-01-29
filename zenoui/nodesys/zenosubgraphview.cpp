@@ -89,15 +89,10 @@ void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
     m_scene->select(rec.id);
 }
 
-void ZenoSubGraphView::setModel(SubGraphModel* pModel)
+void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
 {
-    m_scene = new ZenoSubGraphScene(this);
-    m_scene->initModel(pModel);
-    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
-    m_scene->initGrid(rcView);
-
+    m_scene = pScene;
     setScene(m_scene);
-    connect(this, SIGNAL(viewChanged(qreal)), m_scene, SLOT(onViewTransformChanged(qreal)));
     if (!m_scene->_sceneRect().isNull())
         _updateSceneRect();
 }

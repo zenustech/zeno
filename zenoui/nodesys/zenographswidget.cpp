@@ -29,7 +29,7 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
         SubGraphModel* pSubModel = pModel->subGraph(i);
         Q_ASSERT(pSubModel);
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-        pView->setModel(pSubModel);
+        pView->initScene(pSubModel->scene());
         addWidget(pView);
     }
 
@@ -104,7 +104,7 @@ void ZenoGraphsWidget::onRowsInserted(const QModelIndex &parent, int first, int 
     SubGraphModel *pSubModel = m_model->subGraph(first);
     Q_ASSERT(pSubModel);
     ZenoSubGraphView *pView = new ZenoSubGraphView;
-    pView->setModel(pSubModel);
+    pView->initScene(pSubModel->scene());
     addWidget(pView);
 }
 

@@ -35,6 +35,7 @@ protected:
 signals:
     void maximizeTriggered();
     void floatTriggered();
+    void splitRequest(bool bHorzonal);
 
 private slots:
     void onDockOptionsClicked();

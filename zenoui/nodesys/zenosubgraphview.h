@@ -13,7 +13,7 @@ class ZenoSubGraphView : public QGraphicsView
 
 public:
     ZenoSubGraphView(QWidget* parent = nullptr);
-    void setModel(SubGraphModel* pModel);
+    void initScene(ZenoSubGraphScene* pScene);
 
 protected:
     void mousePressEvent(QMouseEvent *event);

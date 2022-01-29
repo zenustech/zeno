@@ -2,6 +2,7 @@
 #define __GRAPHS_MANAGMENT_H__
 
 class GraphsModel;
+class ZenoSubGraphScene;
 
 #include <QtWidgets>
 
@@ -13,6 +14,7 @@ public:
     GraphsModel *currentModel();
     GraphsModel *openZsgFile(const QString &fn);
     GraphsModel *importGraph(const QString &fn);
+    ZenoSubGraphScene* scene(const QString& subGraphName);
     void reloadGraph(const QString& graphName);
     bool saveCurrent();
     void clear();
