@@ -31,7 +31,7 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    simplifyLayout();
+    simpleLayout();
 }
 
 void ZenoMainWindow::initMenu()
@@ -387,11 +387,18 @@ void ZenoMainWindow::houdiniStyleLayout()
     writeHoudiniStyleLayout();
 }
 
-void ZenoMainWindow::simplifyLayout()
+void ZenoMainWindow::simpleLayout()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Horizontal);
     splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
+}
+
+void ZenoMainWindow::simpleLayout2()
+{
+    addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
+    splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
+    splitDockWidget(m_timelineDock, m_editor, Qt::Vertical);
 }
 
 void ZenoMainWindow::arrangeDocks2()

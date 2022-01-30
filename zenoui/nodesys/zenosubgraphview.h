@@ -39,12 +39,7 @@ signals:
 private:
     void gentle_zoom(qreal factor);
     void set_modifiers(Qt::KeyboardModifiers modifiers);
-    void zoomIn();
-    void zoomOut();
     void resetTransform();
-    void _updateSceneRect();
-    void _scale(qreal sx, qreal sy, QPointF pos);
-    qreal _factorStep(qreal factor);
 
     QPointF target_scene_pos, target_viewport_pos, m_startPos;
     QPoint m_mousePos;

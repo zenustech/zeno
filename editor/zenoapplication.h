@@ -15,7 +15,7 @@ public:
     ~ZenoApplication();
     QSharedPointer<GraphsManagment> graphsManagment() const;
     void initFonts();
-        
+
 private:
     QSharedPointer<GraphsManagment> m_pGraphs;
 };

@@ -47,6 +47,9 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     ctrlf->setShortcut(QKeySequence::Find);
     connect(ctrlf, SIGNAL(triggered()), this, SLOT(find()));
     addAction(ctrlf);
+
+    QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
+    setSceneRect(rcView);
 }
 
 void ZenoSubGraphView::redo()
@@ -79,13 +82,13 @@ void ZenoSubGraphView::find()
 
 void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 {
-    QRectF rect = m_scene->_sceneRect();
-    qreal node_scene_center_x = rec.pos.x() + 0;
-    qreal diff_x = node_scene_center_x - rect.center().x();
-    qreal node_scene_center_y = rec.pos.y();
-    qreal diff_y = node_scene_center_y - rect.center().y();
-    m_scene->_setSceneRect(QRectF(rect.x() + diff_x, rect.y() + diff_y, rect.width(), rect.height()));
-    _updateSceneRect();
+    const qreal zoomFactor = 3.0;
+    QTransform tf = transform();
+    tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
+                 tf.m21(), zoomFactor, tf.m23(),
+                 tf.m31(), tf.m32(), zoomFactor);
+    setTransform(tf);
+    centerOn(rec.pos);
     m_scene->select(rec.id);
 }
 
@@ -93,13 +96,12 @@ void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
 {
     m_scene = pScene;
     setScene(m_scene);
-    if (!m_scene->_sceneRect().isNull())
-        _updateSceneRect();
+    QRectF rect = m_scene->nodesBoundingRect();
+    fitInView(rect, Qt::KeepAspectRatio);
 }
 
 void ZenoSubGraphView::gentle_zoom(qreal factor)
 {
-    //legacy code.
 	scale(factor, factor);
 	centerOn(target_scene_pos);
 	QPointF delta_viewport_pos = target_viewport_pos - 
@@ -110,40 +112,6 @@ void ZenoSubGraphView::gentle_zoom(qreal factor)
 	qreal factor_i_want = transform().m11();
 	emit zoomed(factor_i_want);
 	emit viewChanged(m_factor);
-}
-
-qreal ZenoSubGraphView::_factorStep(qreal factor)
-{
-	if (factor < 2)
-		return 0.2;
-	else if (factor < 3)
-		return 0.25;
-	else if (factor < 4)
-		return 0.4;
-	else if (factor < 10)
-		return 0.7;
-	else if (factor < 20)
-		return 1.0;
-	else
-		return 1.5;
-}
-
-void ZenoSubGraphView::zoomIn()
-{
-    //legacy code.
-	m_factor = std::min(m_factor + _factorStep(m_factor), 32.0);
-	qreal current_factor = transform().m11();
-	qreal factor_complicate = m_factor / current_factor;
-	gentle_zoom(factor_complicate);
-}
-
-void ZenoSubGraphView::zoomOut()
-{
-    //legacy code.
-	m_factor = std::max(m_factor - _factorStep(m_factor), 0.4);
-	qreal current_factor = transform().m11();
-	qreal factor_complicate = m_factor / current_factor;
-	gentle_zoom(factor_complicate);
 }
 
 void ZenoSubGraphView::set_modifiers(Qt::KeyboardModifiers modifiers)
@@ -157,13 +125,6 @@ void ZenoSubGraphView::resetTransform()
 	m_factor = 1.0;
 }
 
-void ZenoSubGraphView::_updateSceneRect()
-{
-    QRectF rect = m_scene->_sceneRect();
-    setSceneRect(rect);
-    fitInView(rect, Qt::KeepAspectRatio);
-}
-
 void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::MidButton)
@@ -172,6 +133,7 @@ void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
         setDragMode(QGraphicsView::NoDrag);
         setDragMode(QGraphicsView::ScrollHandDrag);
         m_dragMove = true;
+        QRectF rc = this->sceneRect();
         return;
 	}
     if (event->button() == Qt::LeftButton)
@@ -195,11 +157,8 @@ void ZenoSubGraphView::mouseMoveEvent(QMouseEvent* event)
         QPointF last_pos = mapToScene(_last_mouse_pos);
         QPointF current_pos = mapToScene(event->pos());
         QPointF delta = last_pos - current_pos;
+        translate(-delta.x(), -delta.y());
         _last_mouse_pos = event->pos();
-        QRectF _sceneRect = m_scene->_sceneRect();
-        _sceneRect.translate(delta);
-        m_scene->_setSceneRect(_sceneRect);
-        _updateSceneRect();
 	}
 	QGraphicsView::mouseMoveEvent(event);
 }
@@ -221,27 +180,7 @@ void ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         zoomFactor = 1.25;
     else if (event->angleDelta().y() < 0)
         zoomFactor = 1 / 1.25;
-
-	_scale(zoomFactor, zoomFactor, event->pos());
-    _updateSceneRect();
-
-	QGraphicsView::wheelEvent(event);
-}
-
-void ZenoSubGraphView::_scale(qreal sx, qreal sy, QPointF pos)
-{
-    QRectF rect = m_scene->_sceneRect();
-    if ((rect.width() > 10000 && sx < 1) || (rect.width() < 200 && sx > 1))
-        return;
-    pos = mapToScene(pos.x(), pos.y());
-    QPointF center = pos;
-    qreal w = rect.width() / sx;
-    qreal h = rect.height() / sy;
-    QRectF rc(center.x() - (center.x() - rect.left()) / sx,
-              center.y() - (center.y() - rect.top()) / sy,
-              w, h);
-    m_scene->_setSceneRect(rc);
-    _updateSceneRect();
+    gentle_zoom(zoomFactor);
 }
 
 void ZenoSubGraphView::resizeEvent(QResizeEvent* event)

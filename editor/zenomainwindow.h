@@ -37,7 +37,8 @@ private:
     void initMenu();
     void initDocks();
     void houdiniStyleLayout();
-    void simplifyLayout();
+    void simpleLayout();
+    void simpleLayout2();
     void arrangeDocks2();
     void arrangeDocks3();
     void writeHoudiniStyleLayout();

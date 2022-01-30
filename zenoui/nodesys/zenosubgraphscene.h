@@ -26,8 +26,7 @@ public:
     void redo();
     void copy();
     void paste(QPointF pos);
-    QRectF _sceneRect() const;
-    void _setSceneRect(const QRectF &rc);
+    QRectF nodesBoundingRect() const;
     SubGraphModel* model() const;
     void select(const QString& id);
 
@@ -52,7 +51,7 @@ private slots:
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
 
-    QRectF m_scene_rect;
+    QRectF m_viewRect;
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
     NodeGridItem* m_grid;
