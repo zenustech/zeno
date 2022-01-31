@@ -36,38 +36,34 @@ namespace zeno{
     {
         TreeNode* nodes;
         int rootIndex;
+        Octree* deepCopy();
     };
 
     struct gpuVDBGrid
     {
         float3* pos;
-        std::map<std::string, float*> data;
+        std::vector<float*>data;
         unsigned long* key;
 
         Octree tree;
-        float3 drift;
+        float3 bmin, bmax, drift;
         float dx;
-        int size;
+        int size, gridNum[3];
+        int prosNum;
         void addProperty(std::string map_key);
+        void constructOctree();
         void initBox(int gNum[3], float3 bmin, float3 bmax, float3 drift, float dx, std::vector<std::string> properties);
+        gpuVDBGrid* deepCopy();
+        void assign(gpuVDBGrid* grid);
+        void clear();
     };
     struct GridData : IObject
     {
         gpuVDBGrid      data;
-        //gpuVDBGrid      vel[3];
+        gpuVDBGrid      vel[3];
 
-        PointData*   pData;
-        float*      vel[3];
-        unsigned long*  pKey, *velKey[3];
         Parms parm;
-        Octree pTree, velTree[3];
-
-        char* buffer;
-        //iterator
-        float*  b;
-        float*  r;
-        float*  press;
-
+        gpuVDBGrid*          data_buf, vel_buf[3];
         __device__ Parms gpuParm;
         void initData(vec3f bmin, vec3f bmax, float dx, float dt);
         void step();
@@ -81,11 +77,8 @@ namespace zeno{
         // virtual void subdivision();
         // virtual void coarsen();
     };
-    void __global__ initPos(GridData data);
-    void __global__ generateMortonCode(GridData data);
-    void __global__ sortViaMortonCode(GridData data);
-    void __global__ genOctree(GridData data);
-
-    void __global__ findOctreeRoot(GridData data);
-
+    static unsigned long __device__ morton3d(float3 const &rpos);
+    int __device__ computePrefix(unsigned long*  keys, const int& index1, const int& index2, const int& maxIndex);
+    int __device__ computePrefix2(unsigned long key1, unsigned long key2);
+    void __device__ intepolateValue(gpuVDBGrid data, float3 pos, float* values);
 }
