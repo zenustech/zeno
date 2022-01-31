@@ -11,8 +11,6 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     , m_stack(new QUndoStack(this))
     , m_scene(new ZenoSubGraphScene(this))
 {
-    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
-    m_scene->initGrid(rcView);
 }
 
 SubGraphModel::~SubGraphModel()
@@ -30,8 +28,6 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
     , m_nodes(rhs.m_nodes)
     , m_scene(new ZenoSubGraphScene(this))
 {
-    QRectF rcView(QPointF(-2400, -3700), QPointF(3300, 4500));
-    m_scene->initGrid(rcView);
 }
 
 void SubGraphModel::onModelInited()

@@ -13,8 +13,9 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, m_dragMove(false)
 	, m_menu(nullptr)
 {
-    setBackgroundBrush(QBrush(QColor(29, 29, 32), Qt::SolidPattern));
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::NoAnchor);
     setFrameShape(QFrame::NoFrame);
@@ -191,6 +192,35 @@ void ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 void ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
     QGraphicsView::contextMenuEvent(event);
+}
+
+void ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
+{
+    QTransform tf = transform();
+    qreal scale = tf.m11();
+    int innerGrid = SCENE_GRID_SIZE;   //will be associated with scale factor.
+
+    qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
+    qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
+
+    QVarLengthArray<QLineF, 100> innerLines;
+
+    for (qreal x = left; x < rect.right(); x += innerGrid)
+    {
+        innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
+    }
+    for (qreal y = top; y < rect.bottom(); y += innerGrid)
+    {
+        innerLines.append(QLineF(rect.left(), y, rect.right(), y));
+    }
+
+    painter->fillRect(rect, QColor(0, 0, 0));
+
+    QPen pen;
+    pen.setColor(QColor("#232323"));
+    pen.setWidthF(pen.widthF() / scale);
+    painter->setPen(pen);
+    painter->drawLines(innerLines.data(), innerLines.size());
 }
 
 void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)

@@ -851,10 +851,18 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
         QPointF pos = this->scenePos();
-        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-        if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
+        int x = pos.x(), y = pos.y();
+        x = x - x % SCENE_GRID_SIZE;
+        y = y - y % SCENE_GRID_SIZE;
+        if (x != pos.x() && y != pos.y())
         {
-            pGraphModel->setData(pGraphModel->index(nodeId()), pos, ROLE_OBJPOS);
+            pos.setX(x);
+            pos.setY(y);
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+            if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
+            {
+                pGraphModel->setData(pGraphModel->index(nodeId()), pos, ROLE_OBJPOS);
+            }
         }
     }
     return value;

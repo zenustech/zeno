@@ -26,17 +26,6 @@ ZenoSubGraphScene::~ZenoSubGraphScene()
 {
 }
 
-void ZenoSubGraphScene::initGrid(QRectF rc)
-{
-    if (!m_grid)
-    {
-        //todo
-        //m_grid = new NodeGridItem(rc.size().toSize());
-        //m_grid->setPos(rc.topLeft());
-        //addItem(m_grid);
-    }
-}
-
 void ZenoSubGraphScene::onViewTransformChanged(qreal factor)
 {
     m_grid->setFactor(factor);
@@ -123,6 +112,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
 			{
                 Q_ASSERT(m_nodes.find(id) != m_nodes.end());
 				QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
+                m_nodes[id]->setPos(pos);
 				updateLinkPos(m_nodes[id], pos);
 			}
 			if (role == ROLE_INPUTS || role == ROLE_REMOVELINK)

@@ -22,6 +22,7 @@ protected:
     void wheelEvent(QWheelEvent *event);
     void resizeEvent(QResizeEvent *event);
     void contextMenuEvent(QContextMenuEvent *event) override;
+    void drawBackground(QPainter* painter, const QRectF& rect) override;
 
 public slots:
     void onCustomContextMenu(const QPoint& pos);
