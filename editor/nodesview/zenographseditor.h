@@ -7,6 +7,7 @@ class ZToolButton;
 class ZenoSubnetListView;
 class ZenoGraphsTabWidget;
 class ZenoSubnetListPanel;
+class ZenoSubnetTreeView;
 class GraphsModel;
 
 class ZenoGraphsEditor : public QWidget
@@ -29,6 +30,7 @@ private:
     ZToolButton* m_pSubnetBtn;
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
+    ZenoSubnetTreeView* m_pSubnetTree;
 };
 
 #endif

@@ -228,7 +228,7 @@ ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *par
 
 
 //////////////////////////////////////////////////////////////////////////////////////
-ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, QGraphicsItem *parent)
+ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_value(value)
     , m_pTextEdit(nullptr)
@@ -238,6 +238,12 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, QGraphicsItem
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     m_pTextEdit->installEventFilter(this);
+    m_pTextEdit->setFrameShape(QFrame::NoFrame);
+    m_pTextEdit->setFont(param.font);
+
+    QPalette pal = param.palette;
+    pal.setColor(QPalette::Base, QColor(37, 37, 37));
+    m_pTextEdit->setPalette(pal);
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)

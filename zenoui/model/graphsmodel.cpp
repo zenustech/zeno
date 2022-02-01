@@ -120,6 +120,21 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     emit graphRenamed(oldName, newName);
 }
 
+QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) const
+{
+    return QStandardItemModel::index(row, column, parent);
+}
+
+QModelIndex GraphsModel::parent(const QModelIndex& child) const
+{
+    return QStandardItemModel::parent(child);
+}
+
+QVariant GraphsModel::data(const QModelIndex& index, int role) const
+{
+    return QStandardItemModel::data(index, role);
+}
+
 bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     if (role == Qt::EditRole)

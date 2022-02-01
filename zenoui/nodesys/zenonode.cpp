@@ -485,7 +485,7 @@ QGraphicsLayout* ZenoNode::initParams()
                 }
                 case CONTROL_MULTILINE_STRING:
                 {
-                    ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value);
+                    ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
                     pParamLayout->addItem(pMultiStrEdit);
                     connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
                         QString textValue = pMultiStrEdit->text();

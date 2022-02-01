@@ -144,7 +144,7 @@ class ZenoParamMultilineStr : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamMultilineStr(const QString &value, QGraphicsItem *parent = nullptr);
+    ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);
 
