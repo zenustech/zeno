@@ -158,3 +158,86 @@ void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonA
 		ret.push_back(QJsonArray({"completeNode", ident}));
 	}
 }
+
+QJsonArray serializeScene(const QJsonObject& graphs)
+{
+    QJsonArray item = { "clearAllState" };
+	QJsonArray arr;
+    arr.push_back(item);
+
+	const QStringList& graphsNames = graphs.keys();
+	for (const QString& name : graphsNames)
+	{
+		const QJsonObject& graphObj = graphs[name].toObject();
+		serializeGraph(graphObj["nodes"].toObject(), graphsNames, arr);
+	}
+	return arr;
+}
+
+QJsonArray serializeGraphs(const QJsonObject& graphs, bool has_subgraphs)
+{
+	return QJsonArray();
+}
+
+void serializeGraph(const QJsonObject& nodes, const QStringList& subgkeys, QJsonArray& ret)
+{
+	for (const QString& nodeId : nodes.keys())
+	{
+		const QJsonObject& nodeObj = nodes[nodeId].toObject();
+		if (nodeObj.find("special") != nodeObj.end())
+			continue;
+		QString name = nodeObj["name"].toString();
+		const QJsonObject& inputs = nodeObj["inputs"].toObject();
+		QJsonObject params = nodeObj["params"].toObject();
+		const QJsonArray& options = nodeObj["options"].toArray();
+		const QJsonArray& uipos = nodeObj["uipos"].toArray();
+
+		if (subgkeys.contains(name))
+		{
+			params["name"] = name;
+			name = "Subgraph";
+		}
+		else if (name == "ExecutionOutput")
+		{
+			name = "Route";
+		}
+		ret.push_back(QJsonArray({ "addNode", name, nodeId }));
+
+		for (const QString& inputSock : inputs.keys())
+		{
+			QJsonObject inputObj = inputs[inputSock].toObject();
+            if (inputObj.isEmpty()) {
+				continue;
+			}
+			else {
+				QJsonArray inputArr = inputs[inputSock].toArray();
+				QJsonValue srcIdent = inputArr[0];
+				QJsonValue srcSockName = inputArr[1];
+				QJsonValue sockDeflVal;
+				if (inputArr.size() > 2)
+					sockDeflVal = inputArr[2];
+				if (srcIdent.isNull())
+				{
+					if (!sockDeflVal.isNull())
+					{
+						ret.push_back(QJsonArray({ "setNodeInput", srcIdent, srcSockName, sockDeflVal }));
+					}
+				}
+				else
+				{
+					ret.push_back(QJsonArray({ "bindNodeInput", srcIdent, inputSock, sockDeflVal, srcSockName }));
+				}
+			}
+		}
+
+		for (const QString& paramName : params.keys())
+		{
+			ret.push_back(QJsonArray({"setNodeParam", nodeId, paramName, params[paramName] }));
+		}
+		for (auto option : options)
+		{
+			ret.push_back(QJsonArray({"setNodeOption", nodeId, option.toString()}));
+		}
+		ret.push_back(QJsonArray({ "completeNode", nodeId }));
+	}
+}

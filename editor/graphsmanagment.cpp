@@ -4,13 +4,30 @@
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/acceptor/modelacceptor.h>
 #include <zenoui/util/uihelper.h>
+#include <io/zsgwriter.h>
+#include <zeno.h>
+#include <zeno/core/Session.h>
+#include <extra/GlobalState.h>
+#include "launch/serialize.h"
+#include "launch/corelaunch.h"
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
     : QObject(parent)
     , m_model(nullptr)
 {
-
+#ifdef Q_OS_WIN
+    LoadLibrary("zeno_ZenoFX.dll");
+    LoadLibrary("zeno_oldzenbase.dll");
+#else
+    void* dp = nullptr;
+    dp = dlopen("libzeno_ZenoFX.so", RTLD_NOW);
+    if (dp == nullptr)
+        return;
+    dp = dlopen("libzeno_oldzenbase.so", RTLD_NOW);
+    if (dp == nullptr)
+        return;
+#endif
 }
 
 GraphsModel* GraphsManagment::currentModel()
@@ -20,10 +37,48 @@ GraphsModel* GraphsManagment::currentModel()
 
 GraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
-    m_model = new GraphsModel(this);
-    ModelAcceptor acceptor(m_model);
-    ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
-    m_model->clearDirty();
+    cleanIOPath();
+    QTemporaryDir dir("zenvis-");
+    dir.setAutoRemove(false);
+    if (dir.isValid())
+    {
+        g_iopath = dir.path();
+        QByteArray bytes = g_iopath.toLatin1();
+        zeno::state = zeno::GlobalState();
+        zeno::state.setIOPath(bytes.data());
+
+        QFile file(fn);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return nullptr;
+
+        bytes = file.readAll();
+        QJsonDocument doc = QJsonDocument::fromJson(bytes);
+        QJsonArray ret = serializeScene(doc["graph"].toObject());
+
+        QJsonDocument doc2(ret);
+        QString strJson(doc2.toJson(QJsonDocument::Compact));
+        bytes = strJson.toUtf8();
+
+        zeno::loadScene(bytes.data());
+        zeno::switchGraph("main");
+
+        m_model = new GraphsModel(this);
+        const zeno::Session& sess = zeno::getSession();
+        for (auto it = sess.defaultScene->graphs.begin(); it != sess.defaultScene->graphs.end(); it++)
+        {
+            SubGraphModel* pSubModel = new SubGraphModel(m_model);
+            const std::string& name = it->first;
+            pSubModel->setName(QString::fromStdString(name));
+            for (auto it2 = it->second->nodes.begin(); it2 != it->second->nodes.end(); it2++)
+            {
+                it2->second;
+                int j;
+                j = 0;
+            }
+            m_model->appendSubGraph(pSubModel);
+        }
+        m_model->clear();
+    }
     return m_model;
 }
 
