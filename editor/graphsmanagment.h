@@ -2,6 +2,7 @@
 #define __GRAPHS_MANAGMENT_H__
 
 class GraphsModel;
+class GraphsTreeModel;
 class ZenoSubGraphScene;
 
 #include <QtWidgets>

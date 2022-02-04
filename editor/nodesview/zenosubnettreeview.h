@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class GraphsModel;
+class GraphsTreeModel;
 
 class ZenoSubnetTreePanel : public QWidget
 {
@@ -18,7 +19,7 @@ class ZenoSubnetTreeView : public QTreeView
 public:
     ZenoSubnetTreeView(QWidget* parent = nullptr);
     ~ZenoSubnetTreeView();
-    void initModel(GraphsModel* pModel);
+    void initModel(GraphsTreeModel* pModel);
 
 private:
     void paintEvent(QPaintEvent* e) override;

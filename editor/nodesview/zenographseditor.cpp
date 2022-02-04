@@ -6,8 +6,9 @@
 #include "graphsmanagment.h"
 #include "zenosubnettreeview.h"
 #include <model/graphsmodel.h>
+#include <model/graphstreemodel.h>
 
-#define USE_LISTVIEW_PANEL
+//#define USE_LISTVIEW_PANEL
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
@@ -92,7 +93,9 @@ void ZenoGraphsEditor::resetModel(GraphsModel* pModel)
     m_pSubnetList->show();
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onCurrentModelClear()));
 #else
-    m_pSubnetTree->initModel(pModel);
+    GraphsTreeModel* pTreeModel = new GraphsTreeModel(pModel, this);
+    pTreeModel->init(pModel);
+    m_pSubnetTree->initModel(pTreeModel);
     m_pSideBar->show();
     m_pSubnetBtn->setChecked(true);
     m_pSubnetTree->show();

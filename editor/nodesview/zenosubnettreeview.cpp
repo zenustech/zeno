@@ -1,5 +1,6 @@
 #include "zenosubnettreeview.h"
 #include <model/graphsmodel.h>
+#include <model/graphstreemodel.h>
 
 
 ZenoSubnetTreeView::ZenoSubnetTreeView(QWidget* parent)
@@ -12,7 +13,7 @@ ZenoSubnetTreeView::~ZenoSubnetTreeView()
 {
 }
 
-void ZenoSubnetTreeView::initModel(GraphsModel* pModel)
+void ZenoSubnetTreeView::initModel(GraphsTreeModel* pModel)
 {
     setModel(pModel);
 }

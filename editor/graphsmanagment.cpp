@@ -1,6 +1,7 @@
 #include "graphsmanagment.h"
 #include <io/zsgreader.h>
 #include <model/graphsmodel.h>
+#include <model/graphstreemodel.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/acceptor/modelacceptor.h>
 #include <zenoui/util/uihelper.h>
