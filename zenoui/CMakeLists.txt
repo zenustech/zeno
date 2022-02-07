@@ -13,7 +13,7 @@ set_property(TARGET zenoui PROPERTY AUTORCC ON)
 target_link_libraries(zenoui PUBLIC Qt5::Widgets Qt5::Svg glad zeno)
 target_include_directories(zenoui
 	PUBLIC .
-	PRIVATE ../3rdparty
+	PRIVATE ../external/include
 	PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS}
 	PRIVATE ../zeno/zeno
 )
