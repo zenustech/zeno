@@ -1,5 +1,6 @@
 #include "zenographseditor.h"
 #include "zenographstabwidget.h"
+#include "zenographslayerwidget.h"
 #include "zenosubnetlistview.h"
 #include <comctrl/ztoolbutton.h>
 #include "zenoapplication.h"
@@ -7,6 +8,7 @@
 #include "zenosubnettreeview.h"
 #include <model/graphsmodel.h>
 #include <model/graphstreemodel.h>
+#include <model/modelrole.h>
 
 #define USE_LISTVIEW_PANEL
 
@@ -16,6 +18,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_pSubnetBtn(nullptr)
     , m_pSubnetList(nullptr)
     , m_pTabWidget(nullptr)
+    , m_pLayerWidget(nullptr)
     , m_pSideBar(nullptr)
     , m_pSubnetTree(nullptr)
 {
@@ -56,15 +59,17 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     m_pSubnetList->hide();
     pLayout->addWidget(m_pSubnetList);
     connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
+    m_pTabWidget = new ZenoGraphsTabWidget();
+    pLayout->addWidget(m_pTabWidget);
 #else
     m_pSubnetTree = new ZenoSubnetTreeView;
     m_pSubnetTree->hide();
     pLayout->addWidget(m_pSubnetTree);
-    //connect(m_pSubnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
-#endif
 
-    m_pTabWidget = new ZenoGraphsTabWidget();
-    pLayout->addWidget(m_pTabWidget);
+    m_pLayerWidget = new ZenoGraphsLayerWidget;
+    connect(m_pSubnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
+    pLayout->addWidget(m_pLayerWidget);
+#endif
 
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
 
@@ -79,8 +84,25 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 
 void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 {
+#ifdef USE_LISTVIEW_PANEL
     const QString& subgraphName = index.data().toString();
     m_pTabWidget->activate(subgraphName);
+#else
+    QSharedPointer<GraphsManagment> spGm = zenoApp->graphsManagment();
+    GraphsModel* pModel = spGm->currentModel();
+    QModelIndex idx = index;
+    QString path;
+    do
+    {
+        const QString& objName = idx.data().toString();
+        if (pModel->subGraph(objName))
+        {
+            path = "/" + objName + path;
+        }
+        idx = idx.parent();
+    } while (idx.isValid());
+    m_pLayerWidget->resetPath(path);
+#endif
 }
 
 void ZenoGraphsEditor::resetModel(GraphsModel* pModel)
@@ -107,11 +129,13 @@ void ZenoGraphsEditor::onCurrentModelClear()
 {
 #ifdef USE_LISTVIEW_PANEL
     m_pSubnetList->hide();
+    m_pTabWidget->clear();
 #else
     m_pSubnetTree->hide();
+    m_pLayerWidget;
 #endif
     m_pSideBar->hide();
-    m_pTabWidget->clear();
+    
 }
 
 void ZenoGraphsEditor::onSubnetBtnClicked()

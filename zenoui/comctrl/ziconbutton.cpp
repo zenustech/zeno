@@ -13,7 +13,10 @@ ZIconButton::ZIconButton(QIcon icon, const QSize &sz, const QColor &hoverClr, co
     , m_bChecked(false)
 {
     setPixmap(m_icon.pixmap(m_size, QIcon::Normal));
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    if (sz.isNull())
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    else
+        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 QSize ZIconButton::sizeHint() const
