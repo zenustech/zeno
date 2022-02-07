@@ -21,6 +21,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
+    this->setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
 }
 
 ZenoMainWindow::~ZenoMainWindow()

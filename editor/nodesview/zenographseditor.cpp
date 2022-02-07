@@ -8,7 +8,7 @@
 #include <model/graphsmodel.h>
 #include <model/graphstreemodel.h>
 
-//#define USE_LISTVIEW_PANEL
+#define USE_LISTVIEW_PANEL
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
