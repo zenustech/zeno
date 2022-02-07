@@ -79,5 +79,8 @@
     <file>icons/ic_File.svg</file>
     <file>icons/subnetbtn.svg</file>
     <file>icons/dockOption.svg</file>
+	<file>icons/dir_arrow.svg</file>
+	<file>icons/forward.svg</file>
+	<file>icons/backward.svg</file>
 </qresource>
 </RCC>

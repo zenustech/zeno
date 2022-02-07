@@ -7,6 +7,7 @@ class ZToolButton;
 class ZenoSubnetListView;
 class ZenoGraphsTabWidget;
 class ZenoSubnetListPanel;
+class ZenoGraphsLayerWidget;
 class ZenoSubnetTreeView;
 class GraphsModel;
 
@@ -30,6 +31,7 @@ private:
     ZToolButton* m_pSubnetBtn;
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
+    ZenoGraphsLayerWidget* m_pLayerWidget;
     ZenoSubnetTreeView* m_pSubnetTree;
 };
 
