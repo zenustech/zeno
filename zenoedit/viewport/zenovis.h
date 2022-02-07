@@ -46,9 +46,7 @@ public:
     void _recieveStatus();
     void _frameUpdate();
 
-    QList<FRAME_FILE> getFrameFiles(int frameid);
-    int getFrameCount(int* max_frameid = nullptr);
-    static QString sIoPath;
+    //static QString sIoPath;
 
     int m_solver_frameid;
     int m_solver_interval;
@@ -60,7 +58,7 @@ public:
     bool m_playing;
     CameraKeyframeWidget* m_camera_keyframe;
     std::shared_ptr<CameraControl> m_camera_control;
-    QList<FRAME_FILE> m_frame_files;
+    //QList<FRAME_FILE> m_frame_files;
 };
 
 #endif

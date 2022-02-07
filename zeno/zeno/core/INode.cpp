@@ -6,9 +6,6 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#ifdef ZENO_VISUALIZATION  // TODO: can we decouple vis from zeno core?
-#include <zeno/extra/Visualization.h>
-#endif
 #ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
 #endif

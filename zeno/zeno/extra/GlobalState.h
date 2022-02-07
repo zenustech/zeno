@@ -7,9 +7,9 @@
 namespace zeno {
 
 struct GlobalState {
-    std::vector<std::shared_ptr<IObject>> view_objects;
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
 
-    //std::string iopath = "/tmp/zenio";
     int frameid = 0;
     int substepid = 0;
     float frame_time = 0.03f;
@@ -35,12 +35,17 @@ struct GlobalState {
         return substepid == 0;
     }
 
+    ZENO_API GlobalState();
+    ZENO_API ~GlobalState();
+
     ZENO_API bool substepBegin();
     ZENO_API void substepEnd();
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
     ZENO_API void addViewObject(std::shared_ptr<IObject> const &object);
-    ZENO_API void clearViewObjects();
+    ZENO_API void clearFrames();
+    ZENO_API int countFrames();
+    ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects(int frame);
 };
 
 ZENO_API extern GlobalState state;

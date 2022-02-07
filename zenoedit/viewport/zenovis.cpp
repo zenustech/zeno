@@ -3,6 +3,7 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
 #include "../launch/corelaunch.h"
+#include <zeno/extra/GlobalState.h>
 
 
 Zenovis::Zenovis()
@@ -58,7 +59,7 @@ int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
         frameid = 0;
-    int nFrames = getFrameCount();
+    int nFrames = zeno::state.countFrames();
     if (frameid >= nFrames)
         frameid = nFrames - 1;
     int cur_frameid = zenvis::get_curr_frameid();
@@ -104,24 +105,14 @@ void Zenovis::_frameUpdate()
     zenvis::auto_gc_frame_data(m_cache_frames);
     zenvis::set_show_grid(m_show_grid);
 
-    auto frame_files = getFrameFiles(frameid);
-    if (m_frame_files != frame_files)
-    {
-        foreach(auto frame_file, frame_files)
-        {
-            QString name = std::get<0>(frame_file);
-            QString ext = std::get<1>(frame_file);
-            QString path = std::get<2>(frame_file);
+    auto viewObjs = zeno::state.getViewObjects(frameid);
 
-            std::string sName = name.toStdString();
-            std::string sExt = ext.toStdString();
-            std::string sPath = path.toStdString();
-            zenvis::load_file(sName, sExt, sPath, frameid);
-        }
+    for (auto const &obj: viewObjs) {
+        zenvis::load_object(obj, frameid);
     }
-    m_frame_files = frame_files;
 }
 
+/*
 QList<Zenovis::FRAME_FILE> Zenovis::getFrameFiles(int frameid)
 {
     QList<Zenovis::FRAME_FILE> framefiles;
@@ -143,21 +134,4 @@ QList<Zenovis::FRAME_FILE> Zenovis::getFrameFiles(int frameid)
         framefiles.append(FRAME_FILE(fn, ext, path));
     }
     return framefiles;
-}
-
-int Zenovis::getFrameCount(int* max_frameid)
-{
-    if (g_iopath.isEmpty())
-        return 0;
-
-    int frameid = 0;
-    while (!max_frameid || frameid < *max_frameid)
-    {
-        QString dirPath = QString("%1/%2").arg(g_iopath).arg(QString::number(frameid), 6, QLatin1Char('0'));
-        QString lockfile = QString("%1/done.lock").arg(dirPath);
-        if (!QDir(dirPath).exists("done.lock"))
-            return frameid;
-        frameid += 1;
-    }
-    return *max_frameid;
-}
+}*/

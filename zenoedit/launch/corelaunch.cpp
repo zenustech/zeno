@@ -4,15 +4,20 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/zeno.h>
 #include "serialize.h"
+#include <thread>
+#include <future>
+#include <optional>
 
 namespace {
 
 struct ProgramRunData {
+    inline static bool g_running = false;
+
     std::string progJson;
     int nframes;
     std::set<std::string> applies;
 
-    void run() {
+    void operator()() {
         zeno::loadScene(progJson.c_str());
 
         zeno::switchGraph("main");
@@ -27,19 +32,20 @@ struct ProgramRunData {
             //zeno::Visualization::endFrame();
             zeno::state.frameEnd();
         }
+
+        g_running = false;
     }
 };
 
 }
 
-static ProgramRunData g_program_run_data;
-
-static void program_runner() {
-    g_program_run_data.run();
-}
-
 void launchProgram(GraphsModel* pModel, int nframes)
 {
+    if (ProgramRunData::g_running) {
+        printf("A program is already running! Please kill first\n");
+        return;
+    }
+
     QJsonArray ret;
     serializeScene(pModel, ret);
 
@@ -58,8 +64,9 @@ void launchProgram(GraphsModel* pModel, int nframes)
             applies.insert(node[ROLE_OBJID].toString().toStdString());
     }
 
-    static std::thread runner_thread(program_runner);
-    g_program_run_data = {std::move(progJson), nframes, std::move(applies)};
+    std::thread thr(ProgramRunData{std::move(progJson), nframes, std::move(applies)});
+    ProgramRunData::g_running = true;
+    thr.detach();
 
     /*for (int i = 0; i < nframes; i++)
     {
