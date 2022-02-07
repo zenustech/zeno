@@ -29,6 +29,7 @@ zeno_output.txt
 .*.un~
 tags
 *~
+.vim_localrc
 
 # ide files
 .vs

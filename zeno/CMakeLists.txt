@@ -1,15 +1,17 @@
 file(GLOB ZENO_SOURCE */*.cpp */*/*.cpp */*/*/*.cpp */*/*/*/*.cpp */*.h */*/*.h */*/*/*.h */*/*/*/*.h)
 
-add_library(zeno SHARED ${ZENO_SOURCE})
+add_library(zeno STATIC ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)
-        message("found package: OpenMP::OpenMP_CXX")
+        message(STATUS "Found OpenMP::OpenMP_CXX")
         target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
-        target_compile_options(zeno # MSVC, GNU, Clang, Intel
-            PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
-        )
+        #target_compile_options(zeno # MSVC, GNU, Clang, Intel
+        #PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
+        #)
+    else()
+        message(WARNING "Not found OpenMP")
     endif()
 endif()
 if (ZENO_VISUALIZATION)
@@ -29,7 +31,6 @@ if (ZENO_FAIL_SILENTLY)
 endif()
 if (ZENO_FAULTHANDLER)
     target_compile_definitions(zeno PRIVATE -DZENO_FAULTHANDLER)
-    target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)
 endif()
 
