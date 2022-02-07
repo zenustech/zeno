@@ -17,7 +17,7 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     else()
         set(val OFF)
     endif()
-    option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
+    option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})

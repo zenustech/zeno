@@ -4,7 +4,7 @@ file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
 
 
-add_library(zenoio STATIC ${source})
+add_library(zenoio OBJECT ${source})
 
 set_property(TARGET zenoio PROPERTY AUTOUIC ON)
 set_property(TARGET zenoio PROPERTY AUTOMOC ON)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -28,7 +28,7 @@ if (UNIX)
     endif()
 endif()
 
-option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
+option(ZENO_BUILD_TESTS "Build unit tests for ZENO" OFF)
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
@@ -75,20 +75,16 @@ if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
 endif()
 
-if (ZENO_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
-
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
     add_subdirectory(zenoui)
-    add_subdirectory(system)
+    add_subdirectory(zenosys)
     add_subdirectory(zenoio)
 endif()
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
-    add_subdirectory(editor)
+    add_subdirectory(zenoedit)
 endif()
 
 if (ZENO_VISUALIZATION)
@@ -99,5 +95,10 @@ endif()
 
 if (ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno Designer")
-    add_subdirectory(designer)
+    add_subdirectory(zenodesign)
+endif()
+
+if (ZENO_BUILD_TESTS)
+    message(STATUS "Building Zeno Tests")
+    add_subdirectory(zenotest)
 endif()

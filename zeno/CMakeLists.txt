@@ -1,6 +1,6 @@
 file(GLOB ZENO_SOURCE */*.cpp */*/*.cpp */*/*/*.cpp */*/*/*/*.cpp */*.h */*/*.h */*/*/*.h */*/*/*/*.h)
 
-add_library(zeno STATIC ${ZENO_SOURCE})
+add_library(zeno OBJECT ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
