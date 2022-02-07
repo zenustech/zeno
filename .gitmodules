@@ -4,5 +4,8 @@
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
+[submodule "projects/fTetWild"]
+	path = projects/fTetWild
+	url = https://github.com/zenustech/libigl.git
 
 
