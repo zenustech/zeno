@@ -8,7 +8,7 @@ set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
 add_library(zeno_nodep INTERFACE)
 if (ZENO_HIDE_SYMBOLS AND UNIX)
     message("Hidding symbols from ZENO libraries...")
-    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
+    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../misc/linker.map)
 endif()
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})

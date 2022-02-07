@@ -1,4 +1,3 @@
-#ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
 #include <mutex>
 
@@ -72,4 +71,3 @@ ZENO_API std::vector<std::shared_ptr<IObject>> GlobalState::getViewObjects(int f
 }
 
 }
-#endif

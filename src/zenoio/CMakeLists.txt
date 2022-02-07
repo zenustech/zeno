@@ -14,7 +14,6 @@ target_link_libraries(zenoio PUBLIC Qt5::Widgets glad zeno)
 target_include_directories(zenoio
     PRIVATE .
 	PRIVATE ../external/include
-	PRIVATE ../zenoui
 	PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS}
-	PRIVATE ../zeno/zeno
+	PRIVATE ..
 )

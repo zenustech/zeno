@@ -1,4 +1,4 @@
-file(GLOB ZENO_SOURCE */*.cpp */*/*.cpp */*/*/*.cpp */*/*/*/*.cpp */*.h */*/*.h */*/*/*.h */*/*/*/*.h)
+file(GLOB_RECURSE ZENO_SOURCE CONFIGURE_DEPENDS *.h *.cpp)
 
 add_library(zeno OBJECT ${ZENO_SOURCE})
 
@@ -25,7 +25,9 @@ if (ZENO_FAULTHANDLER)
     add_backward(zeno)
 endif()
 
-target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
-target_include_directories(zeno PUBLIC .)
+# we are not using shared libraries now, so no need for this:
+#target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
+target_include_directories(zeno PUBLIC ..)
+target_include_directories(zeno PRIVATE ../../external/include)
 
 target_link_libraries(zeno PUBLIC spdlog)
