@@ -110,11 +110,7 @@ ZENO_API void INode::doApply() {
         auto obj = muted_output.has_value() ? muted_output
             : safe_at(outputs, desc->outputs[0].name, "output");
         if (auto p = silent_any_cast<std::shared_ptr<IObject>>(obj); p.has_value()) {
-            auto path = Visualization::exportPath();
-            if (auto node = graph->getOverloadNode("ToVisualize", {p.value()}); node) {
-                node->inputs["path:"] = path;
-                node->doApply();
-            }
+            zeno::state.addViewObject(p.value());
         }
     }
 #endif

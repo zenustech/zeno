@@ -1,3 +1,4 @@
+#if 0
 #ifdef ZENO_VISUALIZATION
 #ifndef ZENO_GLOBALSTATE
 #error "ZENO_GLOBALSTATE must be ON when ZENO_VISUALIZATION is ON"
@@ -40,4 +41,5 @@ ZENO_API void endFrame() {
 }
 
 }
+#endif
 #endif

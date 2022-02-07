@@ -3,7 +3,7 @@
 
 #include <rapidjson/document.h>
 #include <QtWidgets>
-#include "acceptor/iacceptor.h"
+#include "../acceptor/iacceptor.h"
 #include <model/modeldata.h>
 
 class NodeItem;

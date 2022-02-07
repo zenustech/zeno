@@ -1,12 +1,15 @@
 #pragma once
 
 #include <zeno/utils/api.h>
+#include <zeno/core/IObject.h>
 #include <string>
 
 namespace zeno {
 
 struct GlobalState {
-    std::string iopath = "/tmp/zenio";
+    std::vector<std::shared_ptr<IObject>> view_objects;
+
+    //std::string iopath = "/tmp/zenio";
     int frameid = 0;
     int substepid = 0;
     float frame_time = 0.03f;
@@ -36,7 +39,8 @@ struct GlobalState {
     ZENO_API void substepEnd();
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
-    ZENO_API void setIOPath(std::string const &iopath_);
+    ZENO_API void addViewObject(std::shared_ptr<IObject> const &object);
+    ZENO_API void clearViewObjects();
 };
 
 ZENO_API extern GlobalState state;

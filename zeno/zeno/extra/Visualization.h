@@ -1,4 +1,5 @@
 #pragma once
+#if 0
 
 #include <zeno/utils/api.h>
 #include <string>
@@ -9,3 +10,4 @@ ZENO_API std::string exportPath();
 ZENO_API void endFrame();
 
 }
+#endif

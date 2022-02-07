@@ -8,6 +8,5 @@ extern QString g_iopath;
 class GraphsModel;
 
 void launchProgram(GraphsModel* pModel, int nframes);
-void cleanIOPath();
 
 #endif

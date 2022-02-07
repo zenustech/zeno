@@ -1,3 +1,4 @@
+#if 0
 #ifdef ZENO_VISUALIZATION
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -23,6 +24,7 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _PrimitiveObject, typeid(PrimitiveObject).name
 });
 
 
+#if 0
 struct PrimitiveShadeObject : zeno::IObject {
     std::string vertpath, fragpath;
     std::shared_ptr<PrimitiveObject> prim;
@@ -77,4 +79,8 @@ ZENDEFNODE(PrimitiveShade,
     }});
 
 }
+#endif
+
+}
+#endif
 #endif

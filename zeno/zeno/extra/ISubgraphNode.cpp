@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#ifdef ZENO_VISUALIZATION
-#include <zeno/extra/Visualization.h>
+#ifdef ZENO_GLOBALSTATE
+#include <zeno/extra/GlobalState.h>
 #endif
 #include <zeno/extra/ISubgraphNode.h>
 
@@ -22,13 +22,9 @@ void ISubgraphNode::apply() {
     for (auto &[key, obj]: subg->subOutputs) {
 #ifdef ZENO_VISUALIZATION
         if (subg->isViewed && !subg->hasAnyView) {
-            auto path = zeno::Visualization::exportPath();
             if (auto p = zeno::silent_any_cast<
                     std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
-                if (auto node = graph->getOverloadNode("ToVisualize", {p.value()}); node) {
-                    node->inputs["path:"] = path;
-                    node->doApply();
-                }
+                zeno::state.addViewObject(p.value());
             }
             subg->hasAnyView = true;
         }
