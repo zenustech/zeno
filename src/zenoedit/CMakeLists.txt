@@ -15,5 +15,5 @@ if (ZENO_FAULTHANDLER)
 endif()
 
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)
-target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis glad zeno ${CMAKE_DL_LIBS})
-target_include_directories(zenoedit PRIVATE . ..)
+target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis glad zeno zeno_external_include ${CMAKE_DL_LIBS})
+target_include_directories(zenoedit PRIVATE . .. ../zenoui)

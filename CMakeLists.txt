@@ -58,6 +58,7 @@ if (ZENO_FAULTHANDLER)
     add_subdirectory(external/backward-cpp)
 endif()
 
+add_subdirectory(external/include)
 add_subdirectory(external/spdlog)
 add_subdirectory(src/zeno)
 

@@ -1,7 +1,7 @@
 #ifndef __IACCEPTOR_H__
 #define __IACCEPTOR_H__
 
-#include <model/modeldata.h>
+#include <zenoui/model/modeldata.h>
 
 class IAcceptor
 {

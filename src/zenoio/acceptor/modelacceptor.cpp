@@ -1,6 +1,6 @@
 #include "modelacceptor.h"
-#include <model/graphsmodel.h>
-#include <model/modelrole.h>
+#include <zenoui/model/graphsmodel.h>
+#include <zenoui/model/modelrole.h>
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel)

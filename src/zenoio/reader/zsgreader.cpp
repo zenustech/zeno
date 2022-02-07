@@ -1,4 +1,4 @@
-#include <model/nodesmodel.h>
+#include <zenoui/model/nodesmodel.h>
 #include "zsgreader.h"
 
 

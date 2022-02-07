@@ -2,7 +2,7 @@
 #include "graphsmodel.h"
 #include "modelrole.h"
 #include "../util/uihelper.h"
-#include <zeno.h>
+#include <zeno/zeno.h>
 
 
 GraphsModel::GraphsModel(QObject *parent)
