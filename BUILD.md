@@ -4,7 +4,7 @@
 
 To work with Zeno, you need:
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >= 12) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
 ```
 
 ### Windows
@@ -15,7 +15,7 @@ Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 11 || Clang >=
 
 3. Download and install Visual Studio 2019 Community Edition (which is free): https://visualstudio.microsoft.com/zh-hans/downloads/
 
-> Note that we install Visual Studio **only to get the compiler bundled with it**. feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
+> Note that we install Visual Studio **only to get the compiler bundled with it**. Feel free to use your favorite editors like VSCode or CLion other than Visual Studio for coding.
 
 > It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
@@ -58,44 +58,24 @@ cd zeno
 
 > If you find GitHub slow: use `git clone https://gitee.com/zenustech/zeno.git` instead, which is our [official Gitee mirror](https://gitee.com/zenustech/zeno).
 
-### Fetch submodules
+### Fetch submodules (optional)
 
-Update the submodules of Zeno (for downloading dependencies):
+Update the submodules of Zeno (for some extension modules):
 ```bash
 git submodule update --init --recursive
 ```
 
-> If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
-
-### Configure and build dependencies
-
 > Hint: `git submodule update --init --recursive` should also be executed every time you `git pull` (when you'd like to synchronize with latest updates).
 
-Configure CMake:
+> If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
+
+### Configure CMake
 
 ```bash
 cmake -B build
 ```
 
-<!--
-#### Why is 'configure' building a butch of libraries
-
-Note: All the dependencies of Zeno will be installed to `build/zpm/opt` during this step, so it will take some time to 'configure'...
-
-What's going on here is, [our package manager](cmake/ZPM.cmake) will build and install [all the submodules](cmake/ZenoRequires.cmake) we just fetched,
-which are libraries required by Zeno.
-
-If you already have [these dependencies](3rdparty/README.md) on your system (via `apt-get` or `vcpkg`), feel free to use:
-
-```bash
-rm -rf build
-cmake -B build -DZENO_WITH_ZPM:BOOL=OFF
-```
-
-to disable ZPM and use system-wide libraries directly.
--->
-
-### Build Zeno itself
+### Build Zeno
 
 Starts to build (`4` here means using 4 CPU threads):
 
@@ -108,13 +88,13 @@ cmake --build build --parallel 4
 ### Windows (cmd)
 
 ```cmd
-build\editor\zeno_editor.exe
+build\bin\zenoedit.exe
 ```
 
 ### Linux (bash)
 
 ```bash
-build/editor/zeno_editor
+build/bin/zenoedit
 ```
 
 ## References
