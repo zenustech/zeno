@@ -1,10 +1,10 @@
 #include "corelaunch.h"
 #include <model/graphsmodel.h>
 #include <QTemporaryFile>
-#include <io/zsgwriter.h>
-#include <extra/GlobalState.h>
-#include <extra/Visualization.h>
-#include <zeno.h>
+#include <zenoui/io/zsgwriter.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/Visualization.h>
+#include <zeno/zeno.h>
 #include "serialize.h"
 #ifdef Q_OS_LINUX
 #include <dlfcn.h>

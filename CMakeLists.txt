@@ -90,7 +90,7 @@ endif()
 if (ZENO_VISUALIZATION)
     message(STATUS "Building Zeno Visualizer")
     add_subdirectory(external/glad)
-    add_subdirectory(zenvis)
+    add_subdirectory(zenovis)
 endif()
 
 if (ZENO_BUILD_DESIGNER)

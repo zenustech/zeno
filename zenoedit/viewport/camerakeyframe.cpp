@@ -1,5 +1,5 @@
 #include "camerakeyframe.h"
-#include "../zenvis/zenvis.h"
+#include "../zenovis/zenvis.h"
 
 CameraKeyframeWidget::CameraKeyframeWidget()
     : m_list(nullptr)
@@ -16,8 +16,8 @@ bool CameraKeyframeWidget::queryFrame(int frame, PerspectiveInfo& ret)
 
 void CameraKeyframeWidget::insertKeyFrames()
 {
-    int frameid = Zenvis::GetInstance().getCurrentFrameId();
-    m_keyFrames[frameid] = Zenvis::GetInstance().m_perspective;
+    int frameid = Zenovis::GetInstance().getCurrentFrameId();
+    m_keyFrames[frameid] = Zenovis::GetInstance().m_perspective;
     updateList();
 }
 

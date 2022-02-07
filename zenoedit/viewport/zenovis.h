@@ -21,7 +21,7 @@ struct PerspectiveInfo
         : cx(cx), cy(cy), cz(cz), theta(theta), phi(phi), radius(radius), fov(fov), ortho_mode(ortho_mode) {}
 };
 
-class Zenvis : public QObject
+class Zenovis : public QObject
 {
     Q_OBJECT
     typedef std::tuple<QString, QString, QString> FRAME_FILE;
@@ -34,14 +34,14 @@ public slots:
     int setCurrentFrameId(int frameid);
 
 public:
-    static Zenvis& GetInstance();
+    static Zenovis& GetInstance();
     void initializeGL();
     void paintGL();
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
 
 //private:
-    Zenvis();
+    Zenovis();
     void _uploadStatus();
     void _recieveStatus();
     void _frameUpdate();

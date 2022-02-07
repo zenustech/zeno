@@ -250,9 +250,9 @@ void ZenoMainWindow::initDocks()
     m_timelineDock->setWidget(pTimeline);
     m_docks.insert(DOCK_TIMER, m_timelineDock);
 
-	connect(&Zenvis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
-	connect(pTimeline, SIGNAL(playForward(bool)), &Zenvis::GetInstance(), SLOT(startPlay(bool)));
-	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenvis::GetInstance(), SLOT(setCurrentFrameId(int)));
+	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
+	connect(pTimeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
+	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
     connect(pTimeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
 
     QTimer* pTimer = new QTimer;

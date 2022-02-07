@@ -66,8 +66,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 void CameraControl::updatePerspective()
 {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    Zenvis::GetInstance().m_perspective = PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode);
-    Zenvis::GetInstance().m_resolution = m_res;
+    Zenovis::GetInstance().m_perspective = PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode);
+    Zenovis::GetInstance().m_resolution = m_res;
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent* event)
@@ -99,7 +99,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>(new CameraControl);
-    Zenvis::GetInstance().m_camera_control = m_camera;
+    Zenovis::GetInstance().m_camera_control = m_camera;
 }
 
 ViewportWidget::~ViewportWidget()
@@ -108,7 +108,7 @@ ViewportWidget::~ViewportWidget()
 
 void ViewportWidget::initializeGL()
 {
-    Zenvis::GetInstance().initializeGL();
+    Zenovis::GetInstance().initializeGL();
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)
@@ -120,19 +120,19 @@ void ViewportWidget::resizeGL(int nx, int ny)
 
 void ViewportWidget::paintGL()
 {
-    Zenvis::GetInstance().paintGL();
+    Zenovis::GetInstance().paintGL();
     checkRecord();
 }
 
 void ViewportWidget::checkRecord()
 {
-    int f = Zenvis::GetInstance().getCurrentFrameId();
+    int f = Zenovis::GetInstance().getCurrentFrameId();
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         QVector2D oldRes = m_camera->res();
         m_camera->setRes(record_res);
         m_camera->updatePerspective();
-        Zenvis::GetInstance().recordGL(record_path);
+        Zenovis::GetInstance().recordGL(record_path);
         m_camera->setRes(oldRes);
         m_camera->updatePerspective();
         //if f == self.frame_end:
@@ -236,7 +236,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 
     //RecordVideoDialog
     m_camera_keyframe = new CameraKeyframeWidget;
-    Zenvis::GetInstance().m_camera_keyframe = m_camera_keyframe;
+    Zenovis::GetInstance().m_camera_keyframe = m_camera_keyframe;
 }
 
 DisplayWidget::~DisplayWidget()

@@ -1,11 +1,11 @@
 #include "zenovis.h"
-#include "../zenvis/zenvis.h"
+#include "../zenovis/zenvis.h"
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
 #include "../launch/corelaunch.h"
 
 
-Zenvis::Zenvis()
+Zenovis::Zenovis()
     : m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
@@ -17,18 +17,18 @@ Zenvis::Zenvis()
 {
 }
 
-Zenvis& Zenvis::GetInstance()
+Zenovis& Zenovis::GetInstance()
 {
-    static Zenvis instance;
+    static Zenovis instance;
     return instance;
 }
 
-void Zenvis::initializeGL()
+void Zenovis::initializeGL()
 {
     zenvis::initialize();
 }
 
-void Zenvis::paintGL()
+void Zenovis::paintGL()
 {
     _frameUpdate();
     _uploadStatus();
@@ -36,7 +36,7 @@ void Zenvis::paintGL()
     _recieveStatus();
 }
 
-void Zenvis::recordGL(const std::string& record_path)
+void Zenovis::recordGL(const std::string& record_path)
 {
     zenvis::set_window_size(m_resolution[0], m_resolution[1]);
     zenvis::look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, 
@@ -44,17 +44,17 @@ void Zenvis::recordGL(const std::string& record_path)
     zenvis::new_frame_offline(record_path);
 }
 
-int Zenvis::getCurrentFrameId()
+int Zenovis::getCurrentFrameId()
 {
     return zenvis::get_curr_frameid();
 }
 
-void Zenvis::startPlay(bool bPlaying)
+void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
 }
 
-int Zenvis::setCurrentFrameId(int frameid)
+int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
         frameid = 0;
@@ -77,14 +77,14 @@ int Zenvis::setCurrentFrameId(int frameid)
     return frameid;
 }
 
-void Zenvis::_uploadStatus()
+void Zenovis::_uploadStatus()
 {
     zenvis::set_window_size(m_resolution[0], m_resolution[1]);
     zenvis::look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, m_perspective.theta,
         m_perspective.phi, m_perspective.radius, m_perspective.fov, false);
 }
 
-void Zenvis::_recieveStatus()
+void Zenovis::_recieveStatus()
 {
     int frameid = zenvis::get_curr_frameid();
     double solver_interval = zenvis::get_solver_interval();
@@ -93,7 +93,7 @@ void Zenvis::_recieveStatus()
     m_render_fps = render_fps;
 }
 
-void Zenvis::_frameUpdate()
+void Zenovis::_frameUpdate()
 {
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
@@ -122,9 +122,9 @@ void Zenvis::_frameUpdate()
     m_frame_files = frame_files;
 }
 
-QList<Zenvis::FRAME_FILE> Zenvis::getFrameFiles(int frameid)
+QList<Zenovis::FRAME_FILE> Zenovis::getFrameFiles(int frameid)
 {
-    QList<Zenvis::FRAME_FILE> framefiles;
+    QList<Zenovis::FRAME_FILE> framefiles;
     if (g_iopath.isEmpty())
         return framefiles;
 
@@ -145,7 +145,7 @@ QList<Zenvis::FRAME_FILE> Zenvis::getFrameFiles(int frameid)
     return framefiles;
 }
 
-int Zenvis::getFrameCount(int* max_frameid)
+int Zenovis::getFrameCount(int* max_frameid)
 {
     if (g_iopath.isEmpty())
         return 0;
