@@ -1,5 +1,6 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/IObject.h>
+#include <zeno/extra/GlobalState.h>
 #include <zeno/core/Scene.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -8,7 +9,9 @@
 
 namespace zeno {
 
-ZENO_API Session::Session() = default;
+ZENO_API Session::Session() : globalState(std::make_unique<GlobalState>()) {
+}
+
 ZENO_API Session::~Session() = default;
 
 ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {

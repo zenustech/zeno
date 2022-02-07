@@ -1,10 +1,13 @@
 #pragma once
 
 #include <zeno/utils/api.h>
-#include <zeno/core/IObject.h>
 #include <string>
+#include <memory>
+#include <vector>
 
 namespace zeno {
+
+struct IObject;
 
 struct GlobalState {
     struct Impl;
@@ -47,7 +50,5 @@ struct GlobalState {
     ZENO_API int countFrames();
     ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects(int frame);
 };
-
-ZENO_API extern GlobalState state;
 
 }

@@ -21,14 +21,14 @@ struct ProgramRunData {
         zeno::switchGraph("main");
 
         for (int i = 0; i < nframes; i++) {
-            zeno::state.frameBegin();
-            while (zeno::state.substepBegin())
+            zeno::getSession().globalState->frameBegin();
+            while (zeno::getSession().globalState->substepBegin())
             {
                 zeno::applyNodes(applies);
-                zeno::state.substepEnd();
+                zeno::getSession().globalState->substepEnd();
             }
             //zeno::Visualization::endFrame();
-            zeno::state.frameEnd();
+            zeno::getSession().globalState->frameEnd();
         }
 
         g_running = false;

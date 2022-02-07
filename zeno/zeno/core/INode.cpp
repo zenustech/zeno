@@ -6,9 +6,7 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
-#endif
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
 #endif
@@ -19,6 +17,22 @@ namespace zeno {
 
 ZENO_API INode::INode() = default;
 ZENO_API INode::~INode() = default;
+
+ZENO_API Graph *INode::getThisGraph() const {
+    return graph;
+}
+
+ZENO_API Scene *INode::getThisScene() const {
+    return graph->scene;
+}
+
+ZENO_API Session *INode::getThisSession() const {
+    return graph->scene->sess;
+}
+
+ZENO_API GlobalState *INode::getGlobalState() const {
+    return graph->scene->sess->globalState.get();
+}
 
 ZENO_API void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
@@ -34,17 +48,15 @@ ZENO_API bool INode::checkApplyCondition() {
             return false;
     }*/
 
-#ifdef ZENO_GLOBALSTATE
     if (has_option("ONCE")) {  // TODO: frame control should be editor work
-        if (!zeno::state.isFirstSubstep())
+        if (!getGlobalState()->isFirstSubstep())
             return false;
     }
 
     if (has_option("PREP")) {
-        if (!zeno::state.isOneSubstep())
+        if (!getGlobalState()->isOneSubstep())
             return false;
     }
-#endif
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
@@ -96,10 +108,9 @@ ZENO_API void INode::doApply() {
         log_trace("--> leave {}", myname);
     }
 
-#ifdef ZENO_VISUALIZATION
     if (has_option("VIEW")) {
         graph->hasAnyView = true;
-        if (!state.isOneSubstep())  // no duplicate view when multi-substep used
+        if (!getGlobalState()->isOneSubstep())  // no duplicate view when multi-substep used
             return;
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
@@ -107,10 +118,9 @@ ZENO_API void INode::doApply() {
         auto obj = muted_output.has_value() ? muted_output
             : safe_at(outputs, desc->outputs[0].name, "output");
         if (auto p = silent_any_cast<std::shared_ptr<IObject>>(obj); p.has_value()) {
-            zeno::state.addViewObject(p.value());
+            getGlobalState()->addViewObject(p.value());
         }
     }
-#endif
 }
 
 ZENO_API bool INode::has_option(std::string const &id) const {

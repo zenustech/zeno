@@ -15,6 +15,9 @@ namespace zeno {
 
 struct Graph;
 struct INodeClass;
+struct Scene;
+struct Session;
+struct GlobalState;
 
 struct INode {
 public:
@@ -41,6 +44,11 @@ protected:
     ZENO_API virtual void preApply();
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
+
+    ZENO_API Graph *getThisGraph() const;
+    ZENO_API Scene *getThisScene() const;
+    ZENO_API Session *getThisSession() const;
+    ZENO_API GlobalState *getGlobalState() const;
 
     ZENO_API bool has_option(std::string const &id) const;
     ZENO_API bool has_input2(std::string const &id) const;

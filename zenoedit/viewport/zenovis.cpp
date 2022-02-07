@@ -4,6 +4,7 @@
 #include "viewportwidget.h"
 #include "../launch/corelaunch.h"
 #include <zeno/extra/GlobalState.h>
+#include <zeno/zeno.h>
 
 
 Zenovis::Zenovis()
@@ -59,7 +60,7 @@ int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
         frameid = 0;
-    int nFrames = zeno::state.countFrames();
+    int nFrames = zeno::getSession().globalState->countFrames();
     if (frameid >= nFrames)
         frameid = nFrames - 1;
     int cur_frameid = zenvis::get_curr_frameid();
@@ -105,7 +106,7 @@ void Zenovis::_frameUpdate()
     zenvis::auto_gc_frame_data(m_cache_frames);
     zenvis::set_show_grid(m_show_grid);
 
-    auto viewObjs = zeno::state.getViewObjects(frameid);
+    auto viewObjs = zeno::getSession().globalState->getViewObjects(frameid);
 
     for (auto const &obj: viewObjs) {
         zenvis::load_object(obj, frameid);

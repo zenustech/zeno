@@ -209,7 +209,7 @@ ZENDEFNODE(NumericRangeList, {
     });
 
 
-#ifdef ZENO_VISUALIZATION
+/*#ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
         auto list = get_input<ListObject>("list");
@@ -234,6 +234,6 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({
         {{"string", "path", ""}},
         {"list"},
 });
-#endif
+#endif*/
 
 }

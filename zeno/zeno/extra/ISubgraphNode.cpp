@@ -24,7 +24,7 @@ void ISubgraphNode::apply() {
         if (subg->isViewed && !subg->hasAnyView) {
             if (auto p = zeno::silent_any_cast<
                     std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
-                zeno::state.addViewObject(p.value());
+                getGlobalState()->addViewObject(p.value());
             }
             subg->hasAnyView = true;
         }
