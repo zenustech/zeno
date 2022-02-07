@@ -18,12 +18,12 @@
       "density": [
        null,
        null,
-       1000.0
+       400.0
       ],
       "type": [
        null,
        null,
-       "fcr"
+       "stvk"
       ],
       "aniso": [
        null,
@@ -33,21 +33,21 @@
       "plasticity": [
        null,
        null,
-       "none"
+       "nadp"
       ],
       "E": [
        null,
        null,
-       100000.0
+       140000.0
       ],
       "nu": [
        null,
        null,
-       0.4
+       0.2
       ],
       "params": [
-       null,
-       null,
+       "77c48534-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -77,6 +77,11 @@
        "173cbd37-x",
        "primOut",
        null
+      ],
+      "category": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -347,20 +352,20 @@
      "name": "ZSParticlesToPrimitiveObject",
      "inputs": {
       "ZSParticles": [
-       "1dfddf18-PortalOut",
-       "port",
+       "80377fd0-ZSReturnMapping",
+       "ZSParticles",
        null
       ],
       "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
+       "80377fd0-ZSReturnMapping",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4889.3495752604895,
-      -306.53525197677686
+      5223.3781072550755,
+      -131.4981534924981
      ],
      "options": [
       "VIEW"
@@ -374,6 +379,11 @@
        "value",
        0.1
       ],
+      "transfer": [
+       null,
+       null,
+       "apic"
+      ],
       "SRC": [
        null,
        null,
@@ -382,8 +392,8 @@
      },
      "params": {},
      "uipos": [
-      1984.9132536165303,
-      -138.26063714537742
+      2187.943268814099,
+      -201.18806875631964
      ],
      "options": [
       "ONCE"
@@ -426,7 +436,7 @@
        null
       ],
       "SRC": [
-       "16450fd6-ComputeParticleVolume",
+       "b75a278b-ToZSParticles",
        "DST",
        null
       ]
@@ -637,8 +647,8 @@
      },
      "params": {},
      "uipos": [
-      4618.944554988243,
-      -252.5046022117513
+      4682.353751557806,
+      -243.44614555895637
      ],
      "options": []
     },
@@ -900,40 +910,83 @@
       "ONCE"
      ]
     },
-    "16450fd6-ComputeParticleVolume": {
-     "name": "ComputeParticleVolume",
+    "77c48534-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "friction_angle": [
+       "5ef66621-NumericFloat",
+       "value",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "friction_angle\nobj1"
+     },
+     "uipos": [
+      1181.099079702803,
+      -985.2080156476761
+     ],
+     "options": [],
+     "socket_keys": [
+      "friction_angle",
+      "obj1"
+     ]
+    },
+    "5ef66621-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 10.0
+     },
+     "uipos": [
+      900.6076388888889,
+      -977.2223395270272
+     ],
+     "options": []
+    },
+    "80377fd0-ZSReturnMapping": {
+     "name": "ZSReturnMapping",
      "inputs": {
       "ZSParticles": [
-       "b75a278b-ToZSParticles",
+       "ce8e0002-ZSGridToZSParticle",
        "ZSParticles",
        null
       ],
-      "ZSGrid": [
-       "fedd88b0-MakeZSGrid",
-       "ZSGrid",
-       null
-      ],
       "SRC": [
-       "b75a278b-ToZSParticles",
+       "ce8e0002-ZSGridToZSParticle",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      2310.7427811550147,
-      -305.68780870060795
+      4965.992647058823,
+      -267.4632352941176
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     }
    },
    "view_rect": {
-    "x": 986.8408530211318,
-    "y": -1712.2438040481206,
-    "width": 2980.2322387695312,
-    "height": 2980.2322387695312
+    "x": 641.9646714129474,
+    "y": -2107.4152184375853,
+    "width": 3725.290298461914,
+    "height": 3725.290298461914
    }
   }
  },
@@ -2980,6 +3033,41 @@
     "MPM"
    ]
   },
+  "ComputePrimitiveSequenceVelocity": {
+   "inputs": [
+    [
+     "",
+     "prim0",
+     ""
+    ],
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ComputeVonMises": {
    "inputs": [
     [
@@ -3274,6 +3362,36 @@
     [
      "zany",
      "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictGetKeyList": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "keys",
      ""
     ],
     [
@@ -7196,6 +7314,11 @@
      "0.1"
     ],
     [
+     "string",
+     "transfer",
+     "apic"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -8858,6 +8981,52 @@
     "math"
    ]
   },
+  "PoissonDiskSample": {
+   "inputs": [
+    [
+     "",
+     "VDBGrid",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "ppc",
+     "8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "PolyDuplicate": {
    "inputs": [
     [
@@ -9993,6 +10162,11 @@
     ],
     [
      "",
+     "dst",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -10975,6 +11149,46 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "PushOutZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "RandomParticles": {
@@ -12105,6 +12319,41 @@
     "openvdb"
    ]
   },
+  "ScalePrimitiveAlongNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SetFLIPWorld": {
    "inputs": [
     [
@@ -12760,9 +13009,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "dt",
-     ""
+     "0"
     ],
     [
      "",
@@ -12782,13 +13031,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dt",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -13444,6 +13687,11 @@
      ""
     ],
     [
+     "int",
+     "category",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -14015,6 +14263,36 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "UpdatePrimitiveFromZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "UpdateZSGrid": {

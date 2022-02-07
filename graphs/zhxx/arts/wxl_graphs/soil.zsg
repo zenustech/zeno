@@ -18,12 +18,12 @@
       "density": [
        null,
        null,
-       1000.0
+       2200.0
       ],
       "type": [
        null,
        null,
-       "fcr"
+       "stvk"
       ],
       "aniso": [
        null,
@@ -33,21 +33,21 @@
       "plasticity": [
        null,
        null,
-       "none"
+       "nacc"
       ],
       "E": [
        null,
        null,
-       100000.0
+       140000.0
       ],
       "nu": [
        null,
        null,
-       0.4
+       0.2
       ],
       "params": [
-       null,
-       null,
+       "77c48534-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -347,20 +347,20 @@
      "name": "ZSParticlesToPrimitiveObject",
      "inputs": {
       "ZSParticles": [
-       "1dfddf18-PortalOut",
-       "port",
+       "80377fd0-ZSReturnMapping",
+       "ZSParticles",
        null
       ],
       "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
+       "80377fd0-ZSReturnMapping",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4889.3495752604895,
-      -306.53525197677686
+      5223.3781072550755,
+      -131.4981534924981
      ],
      "options": [
       "VIEW"
@@ -382,8 +382,8 @@
      },
      "params": {},
      "uipos": [
-      1984.9132536165303,
-      -138.26063714537742
+      2187.943268814099,
+      -201.18806875631964
      ],
      "options": [
       "ONCE"
@@ -426,7 +426,7 @@
        null
       ],
       "SRC": [
-       "16450fd6-ComputeParticleVolume",
+       "b75a278b-ToZSParticles",
        "DST",
        null
       ]
@@ -637,8 +637,8 @@
      },
      "params": {},
      "uipos": [
-      4618.944554988243,
-      -252.5046022117513
+      4682.353751557806,
+      -243.44614555895637
      ],
      "options": []
     },
@@ -900,40 +900,131 @@
       "ONCE"
      ]
     },
-    "16450fd6-ComputeParticleVolume": {
-     "name": "ComputeParticleVolume",
+    "77c48534-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "beta": [
+       "acba505f-x",
+       "value",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "xi": [
+       "d2daa8ac-x",
+       "value",
+       null
+      ],
+      "friction_angle": [
+       "5ef66621-NumericFloat",
+       "value",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "friction_angle\nbeta\nxi\nobj3"
+     },
+     "uipos": [
+      1181.099079702803,
+      -985.2080156476761
+     ],
+     "options": [],
+     "socket_keys": [
+      "friction_angle",
+      "beta",
+      "xi",
+      "obj3"
+     ]
+    },
+    "5ef66621-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 20.0
+     },
+     "uipos": [
+      900.6076388888889,
+      -977.2223395270272
+     ],
+     "options": []
+    },
+    "80377fd0-ZSReturnMapping": {
+     "name": "ZSReturnMapping",
      "inputs": {
       "ZSParticles": [
-       "b75a278b-ToZSParticles",
+       "ce8e0002-ZSGridToZSParticle",
        "ZSParticles",
        null
       ],
-      "ZSGrid": [
-       "fedd88b0-MakeZSGrid",
-       "ZSGrid",
-       null
-      ],
       "SRC": [
-       "b75a278b-ToZSParticles",
+       "ce8e0002-ZSGridToZSParticle",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      2310.7427811550147,
-      -305.68780870060795
+      4965.992647058823,
+      -267.4632352941176
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
+    },
+    "acba505f-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2.0
+     },
+     "uipos": [
+      684.6487766377272,
+      -871.5432029165258
+     ],
+     "options": []
+    },
+    "d2daa8ac-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      878.5714285714284,
+      -751.0204081632654
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 986.8408530211318,
-    "y": -1712.2438040481206,
-    "width": 2980.2322387695312,
-    "height": 2980.2322387695312
+    "x": 1438.6727059750558,
+    "y": -1488.9016359577058,
+    "width": 2384.185791015625,
+    "height": 2384.185791015625
    }
   }
  },
@@ -2943,41 +3034,6 @@
    "params": [],
    "categories": [
     "CompressibleFlow"
-   ]
-  },
-  "ComputeParticleVolume": {
-   "inputs": [
-    [
-     "ZenoParticles",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "ZenoGrid",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ZenoParticles",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "MPM"
    ]
   },
   "ComputeVonMises": {

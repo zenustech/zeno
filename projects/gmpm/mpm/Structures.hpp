@@ -7,12 +7,16 @@
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
+#include "zensim/physics/constitutive_models/AnisotropicArap.hpp"
 #include "zensim/physics/constitutive_models/EquationOfState.hpp"
 #include "zensim/physics/constitutive_models/FixedCorotated.h"
 #include "zensim/physics/constitutive_models/NeoHookean.hpp"
 #include "zensim/physics/constitutive_models/StvkWithHencky.hpp"
-#include "zensim/physics/plasticity_models/VonMisesCapped.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeCamClay.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeDruckerPrager.hpp"
+#include "zensim/physics/plasticity_models/NonAssociativeVonMises.hpp"
 #include "zensim/resource/Resource.h"
+#include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -20,14 +24,24 @@ namespace zeno {
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
                 zs::StvkWithHencky<float>>;
-using PlasticModel = zs::variant<std::monostate>;
+using AnisoElasticModel =
+    zs::variant<std::monostate, zs::AnisotropicArap<float>>;
+using PlasticModel =
+    zs::variant<std::monostate, zs::NonAssociativeDruckerPrager<float>,
+                zs::NonAssociativeVonMises<float>,
+                zs::NonAssociativeCamClay<float>>;
 
 struct ZenoConstitutiveModel : IObject {
   enum elastic_model_e { Fcr, Nhk, Stvk };
-  enum plastic_model_e { None, VonMises, DruckerPrager, Camclay };
+  enum aniso_plastic_model_e { None_, Arap };
+  enum plastic_model_e { None, DruckerPrager, VonMises, CamClay };
 
   auto &getElasticModel() noexcept { return elasticModel; }
   const auto &getElasticModel() const noexcept { return elasticModel; }
+  auto &getAnisoElasticModel() noexcept { return anisoElasticModel; }
+  const auto &getAnisoElasticModel() const noexcept {
+    return anisoElasticModel;
+  }
   auto &getPlasticModel() noexcept { return plasticModel; }
   const auto &getPlasticModel() const noexcept { return plasticModel; }
 
@@ -44,31 +58,54 @@ struct ZenoConstitutiveModel : IObject {
     return std::get<I>(plasticModel);
   }
 
-  bool hasF() const noexcept { return elasticModel.index() < 3; }
-  bool hasPlasticity() const noexcept { return plasticModel.index() != 0; }
+  bool hasAnisoModel() const noexcept {
+    return !std::holds_alternative<std::monostate>(anisoElasticModel);
+  }
+  bool hasPlasticModel() const noexcept {
+    return !std::holds_alternative<std::monostate>(plasticModel);
+  }
 
-  float volume, density;
+  bool hasF() const noexcept { return elasticModel.index() < 3; }
+  bool hasLogJp() const noexcept { return plasticModel.index() == CamClay; }
+  bool hasOrientation() const noexcept {
+    return anisoElasticModel.index() != None;
+  }
+  bool hasPlasticity() const noexcept { return plasticModel.index() != None; }
+
+  float dx, volume, density;
   ElasticModel elasticModel;
+  AnisoElasticModel anisoElasticModel;
   PlasticModel plasticModel;
 };
 
 struct ZenoParticles : IObject {
+  // (i  ) traditional mpm particle,
+  // (ii ) lagrangian mesh vertex particle
+  // (iii) lagrangian mesh element quadrature particle
+  enum category_e : int { mpm, curve, surface, tet };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }
   const auto &getParticles() const noexcept { return particles; }
+  auto &getQuadraturePoints() {
+    if (!elements.has_value())
+      throw std::runtime_error("quadrature points not binded.");
+    return *elements;
+  }
+  const auto &getQuadraturePoints() const {
+    if (!elements.has_value())
+      throw std::runtime_error("quadrature points not binded.");
+    return *elements;
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
-  particles_t particles{};
-  ZenoConstitutiveModel model{};
-};
 
-struct ZenoGrid : IObject {
-  using grid_t =
-      zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
-  auto &get() noexcept { return grid; }
-  const auto &get() const noexcept { return grid; }
-  grid_t grid;
+  particles_t particles{};
+  std::optional<particles_t> elements{};
+  category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
+                                        // curve, 2: surface, 3: tet
+  std::shared_ptr<PrimitiveObject> prim;
+  ZenoConstitutiveModel model{};
 };
 
 struct ZenoPartition : IObject {
@@ -76,6 +113,18 @@ struct ZenoPartition : IObject {
   auto &get() noexcept { return table; }
   const auto &get() const noexcept { return table; }
   table_t table;
+};
+
+struct ZenoGrid : IObject {
+  enum transfer_scheme_e { Empty, Apic, Flip, AsFlip };
+  using grid_t =
+      zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return grid; }
+  const auto &get() const noexcept { return grid; }
+
+  grid_t grid;
+  std::string transferScheme; //
+  std::shared_ptr<ZenoPartition> partition;
 };
 
 struct ZenoIndexBuckets : IObject {
@@ -127,9 +176,12 @@ struct ZenoLevelSet : IObject {
 #endif
 
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
-  using sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
-  using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
-  using levelset_t = zs::variant<basic_ls_t, sdf_vel_ls_t, transition_ls_t>;
+  using const_sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
+  using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
+  using levelset_t =
+      zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
+
+  using spls_t = typename basic_ls_t::spls_t;
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
@@ -140,7 +192,7 @@ struct ZenoLevelSet : IObject {
   bool holdsSparseLevelSet() const noexcept {
     return zs::match([](const auto &ls) {
       if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
-        return ls.template holdsLevelSet<typename basic_ls_t::spls_t>();
+        return ls.template holdsLevelSet<spls_t>();
       else
         return false;
     })(levelset);
@@ -152,18 +204,16 @@ struct ZenoLevelSet : IObject {
     return std::get<basic_ls_t>(levelset);
   }
   decltype(auto) getLevelSetSequence() const noexcept {
-    return std::get<transition_ls_t>(levelset);
+    return std::get<const_transition_ls_t>(levelset);
   }
   decltype(auto) getLevelSetSequence() noexcept {
-    return std::get<transition_ls_t>(levelset);
+    return std::get<const_transition_ls_t>(levelset);
   }
   decltype(auto) getSparseLevelSet() const noexcept {
-    return std::get<basic_ls_t>(levelset)
-        .getLevelSet<typename basic_ls_t::spls_t>();
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
   }
   decltype(auto) getSparseLevelSet() noexcept {
-    return std::get<basic_ls_t>(levelset)
-        .getLevelSet<typename basic_ls_t::spls_t>();
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
   }
 
   levelset_t levelset;
@@ -184,7 +234,8 @@ struct ZenoBoundary : IObject {
     return ret;
   }
 
-  levelset_t *levelset{nullptr};
+  // levelset_t *levelset{nullptr};
+  std::shared_ptr<ZenoLevelSet> zsls{};
   zs::collider_e type{zs::collider_e::Sticky};
   /** scale **/
   float s{1};

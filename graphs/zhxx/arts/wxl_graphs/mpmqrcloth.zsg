@@ -18,7 +18,7 @@
       "density": [
        null,
        null,
-       1000.0
+       2.0
       ],
       "type": [
        null,
@@ -38,12 +38,12 @@
       "E": [
        null,
        null,
-       100000.0
+       200.0
       ],
       "nu": [
        null,
        null,
-       0.4
+       0.3
       ],
       "params": [
        null,
@@ -58,8 +58,8 @@
      },
      "params": {},
      "uipos": [
-      1603.6201406266457,
-      -862.736202980923
+      1485.5067913059966,
+      -739.8824054729502
      ],
      "options": [
       "ONCE"
@@ -74,88 +74,14 @@
        null
       ],
       "prim": [
-       "173cbd37-x",
-       "primOut",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2004.7421056414523,
-      -447.0292018490642
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "10ff5ed6-x": {
-     "name": "ParticlesToPrimitive",
-     "inputs": {
-      "pars": [
-       "dd6d4ecf-x",
-       "pars",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1289.243385979028,
-      -386.3202833004567
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "dd6d4ecf-x": {
-     "name": "GetVDBPoints",
-     "inputs": {
-      "grid": [
-       "2a72c05f-x",
-       "data",
-       null
-      ],
-      "SRC": [
-       "e04aeb0b-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1040.13133759863,
-      -514.5878938693936
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "173cbd37-x": {
-     "name": "PrimitiveHalfBinaryOp",
-     "inputs": {
-      "primA": [
-       "10ff5ed6-x",
+       "1457f6a6-ParticlesWrangle",
        "prim",
        null
       ],
-      "valueB": [
-       "7448aec0-NumericVec3",
-       "vec3",
-       null
-      ],
-      "primOut": [
-       "10ff5ed6-x",
-       "prim",
-       null
+      "category": [
+       null,
+       null,
+       1
       ],
       "SRC": [
        null,
@@ -163,88 +89,10 @@
        null
       ]
      },
-     "params": {
-      "attrA": "vel",
-      "attrOut": "vel",
-      "op": "copyB"
-     },
+     "params": {},
      "uipos": [
-      1652.9144823245433,
-      -363.197824828696
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "2a72c05f-x": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "6353d603-NumericFloat",
-       "value",
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "points",
-      "structure": "Centered",
-      "name": "MaterialPoints"
-     },
-     "uipos": [
-      409.56771893168604,
-      -700.7843146542775
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "e04aeb0b-x": {
-     "name": "ParticleEmitter",
-     "inputs": {
-      "Particles": [
-       "2a72c05f-x",
-       "data",
-       null
-      ],
-      "ShapeSDF": [
-       "165f4beb-x",
-       "sdf",
-       null
-      ],
-      "VelocityVolume": [
-       null,
-       null,
-       null
-      ],
-      "VelocityInit": [
-       null,
-       null,
-       null
-      ],
-      "LiquidSDF": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "vx": 0.0,
-      "vy": 0.0,
-      "vz": 0.0
-     },
-     "uipos": [
-      735.2613036492941,
-      -412.2783580512874
+      1782.010585558584,
+      -410.6502000884641
      ],
      "options": [
       "ONCE"
@@ -260,110 +108,14 @@
       ]
      },
      "params": {
-      "value": 0.1
+      "value": 0.01
      },
      "uipos": [
-      -98.99945734955038,
-      -425.88778712773853
+      690.8149202057658,
+      -284.87172717528995
      ],
      "options": [
       "ONCE"
-     ]
-    },
-    "7448aec0-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": -10.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1294.102990033222,
-      -204.15282392026577
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "5af0e325-x": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -27.118318820079548,
-      -686.9672079396804
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "165f4beb-x": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "5af0e325-x",
-       "mesh",
-       null
-      ],
-      "Dx": [
-       "6353d603-NumericFloat",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "voxel_size": 0.2,
-      "type": "center"
-     },
-     "uipos": [
-      439.41067762406635,
-      -389.94309106364227
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "c7db4052-ZSParticlesToPrimitiveObject": {
-     "name": "ZSParticlesToPrimitiveObject",
-     "inputs": {
-      "ZSParticles": [
-       "1dfddf18-PortalOut",
-       "port",
-       null
-      ],
-      "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4889.3495752604895,
-      -306.53525197677686
-     ],
-     "options": [
-      "VIEW"
      ]
     },
     "fedd88b0-MakeZSGrid": {
@@ -374,6 +126,11 @@
        "value",
        0.1
       ],
+      "transfer": [
+       null,
+       null,
+       "apic"
+      ],
       "SRC": [
        null,
        null,
@@ -382,8 +139,8 @@
      },
      "params": {},
      "uipos": [
-      1984.9132536165303,
-      -138.26063714537742
+      1919.8512712431684,
+      -103.28857577759803
      ],
      "options": [
       "ONCE"
@@ -400,8 +157,8 @@
      },
      "params": {},
      "uipos": [
-      2592.7722645566387,
-      -715.3882059080264
+      2639.9776068278816,
+      -741.1168709149983
      ],
      "options": [
       "ONCE"
@@ -421,20 +178,20 @@
        null
       ],
       "ZSParticles": [
-       "b75a278b-ToZSParticles",
+       "16450fd6-ComputeParticleVolume",
        "ZSParticles",
        null
       ],
       "SRC": [
-       "16450fd6-ComputeParticleVolume",
+       "6bf3405a-BeginFor",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      2646.708740816996,
-      -359.010165645033
+      2831.4039732685983,
+      -398.29085789861705
      ],
      "options": []
     },
@@ -459,8 +216,8 @@
      },
      "params": {},
      "uipos": [
-      3356.016184315193,
-      -208.64650109962096
+      3356.1856847473146,
+      -345.1375601854403
      ],
      "options": []
     },
@@ -479,12 +236,12 @@
       ]
      },
      "params": {
-      "offset": 0,
-      "extent": 2
+      "offset": -1,
+      "extent": 3
      },
      "uipos": [
-      2900.332225913621,
-      -323.920265780731
+      3084.3583462840606,
+      -404.2330757485578
      ],
      "options": []
     },
@@ -524,8 +281,8 @@
      },
      "params": {},
      "uipos": [
-      3967.0168732575985,
-      -277.8583674122718
+      4038.2659494634645,
+      -313.25384218645826
      ],
      "options": []
     },
@@ -560,8 +317,8 @@
      },
      "params": {},
      "uipos": [
-      3642.559979441868,
-      -268.1772701425946
+      3694.840605807817,
+      -337.96608803310966
      ],
      "options": []
     },
@@ -578,8 +335,8 @@
       "name": "zspars"
      },
      "uipos": [
-      3336.706379581838,
-      -473.36997528650153
+      3380.8964562569818,
+      -552.1726095547605
      ],
      "options": []
     },
@@ -587,7 +344,7 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "b75a278b-ToZSParticles",
+       "16450fd6-ComputeParticleVolume",
        "ZSParticles",
        null
       ],
@@ -601,8 +358,8 @@
       "name": "zspars"
      },
      "uipos": [
-      2312.155784553431,
-      -512.8042551453918
+      2440.276730524525,
+      -521.8189202944299
      ],
      "options": []
     },
@@ -637,8 +394,8 @@
      },
      "params": {},
      "uipos": [
-      4618.944554988243,
-      -252.5046022117513
+      4633.496726178101,
+      -281.2298528664072
      ],
      "options": []
     },
@@ -652,11 +409,11 @@
       ]
      },
      "params": {
-      "value": 0.001
+      "value": 1e-05
      },
      "uipos": [
-      3350.179200201207,
-      45.19303319919514
+      3025.1000188288576,
+      303.4359833402188
      ],
      "options": []
     },
@@ -678,8 +435,8 @@
       "name": "partition"
      },
      "uipos": [
-      3130.1087776659956,
-      -39.29828973843059
+      3299.1183261237284,
+      -44.469311470994796
      ],
      "options": []
     },
@@ -696,8 +453,8 @@
       "name": "partition"
      },
      "uipos": [
-      3415.0213782696183,
-      -691.6498993963784
+      3570.4820339845564,
+      -681.187583348793
      ],
      "options": []
     },
@@ -716,42 +473,10 @@
       "z": 0.0
      },
      "uipos": [
-      3413.170728465318,
-      268.67324111608286
+      3661.063493805388,
+      403.2903147010213
      ],
      "options": []
-    },
-    "6f8deabd-MeshToSDF": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "d3bb0aea-ReadObjMesh",
-       "mesh",
-       null
-      ],
-      "Dx": [
-       "6353d603-NumericFloat",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "voxel_size": 0.08,
-      "type": "vertex"
-     },
-     "uipos": [
-      708.883217131474,
-      54.469621513944254
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
     },
     "52bd47ec-ApplyBoundaryOnZSGrid": {
      "name": "ApplyBoundaryOnZSGrid",
@@ -779,30 +504,10 @@
      },
      "params": {},
      "uipos": [
-      4333.252925796811,
-      -61.76466010956179
+      4331.129536687839,
+      -270.58596199153897
      ],
      "options": []
-    },
-    "d3bb0aea-ReadObjMesh": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "assets/bowl.obj"
-     },
-     "uipos": [
-      426.41932270916334,
-      -14.006474103585646
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "e239e641-CachedOnce": {
      "name": "CachedOnce",
@@ -820,8 +525,8 @@
      },
      "params": {},
      "uipos": [
-      1395.471740135098,
-      68.32196999172928
+      1668.1050615643044,
+      86.84307437502412
      ],
      "options": []
     },
@@ -829,7 +534,7 @@
      "name": "ToZSLevelSet",
      "inputs": {
       "VDBGrid": [
-       "6f8deabd-MeshToSDF",
+       "d1bc6a0f-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -843,8 +548,8 @@
       "path": ""
      },
      "uipos": [
-      1033.070545322847,
-      102.66840852649011
+      1312.7421550403415,
+      125.41248588275792
      ],
      "options": [
       "ONCE"
@@ -890,11 +595,11 @@
       ]
      },
      "params": {
-      "type": "sticky"
+      "type": "slip"
      },
      "uipos": [
-      4007.1399006622496,
-      112.53104304635767
+      4049.2067463451685,
+      94.64490658593863
      ],
      "options": [
       "ONCE"
@@ -921,8 +626,230 @@
      },
      "params": {},
      "uipos": [
-      2310.7427811550147,
-      -305.68780870060795
+      2184.2121739941476,
+      -271.33731326281463
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "2b20a20f-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/character/clothAnimationSDF_v01.0024.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      794.9832531732095,
+      -647.5977832039321
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "1457f6a6-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "bbcf84cb-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@vel = vec3(0, 0.7,  1.2)"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1359.2133820309746,
+      -372.7802942747975
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "883a5a17-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/character/humnanAnimationHiresOBJ_v01.0024.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      725.4241789348247,
+      142.29277252286317
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "d1bc6a0f-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "883a5a17-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "6353d603-NumericFloat",
+       "value",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      1010.1981455139794,
+      130.55724358278042
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6248afa0-UpdatePrimitiveFromZSParticles": {
+     "name": "UpdatePrimitiveFromZSParticles",
+     "inputs": {
+      "ZSParticles": [
+       "16450fd6-ComputeParticleVolume",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       "5b956354-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5115.080364505333,
+      -109.42693862223554
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "6bf3405a-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       null,
+       null,
+       50
+      ],
+      "SRC": [
+       "16450fd6-ComputeParticleVolume",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2463.7421985066967,
+      -134.25730687955928
+     ],
+     "options": []
+    },
+    "5b956354-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "6bf3405a-BeginFor",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "ce8e0002-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4869.336380182949,
+      -392.64957332054087
+     ],
+     "options": []
+    },
+    "bbcf84cb-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "2b20a20f-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1082.8153860786128,
+      -499.02159016200903
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "d2191251-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/torus-tri-10k.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.7953629032259,
+      404.37684165632754
      ],
      "options": [
       "ONCE"
@@ -930,10 +857,10 @@
     }
    },
    "view_rect": {
-    "x": 986.8408530211318,
-    "y": -1712.2438040481206,
-    "width": 2980.2322387695312,
-    "height": 2980.2322387695312
+    "x": 1648.1710937447822,
+    "y": -1360.9261891818217,
+    "width": 2384.185791015625,
+    "height": 2384.185791015625
    }
   }
  },
@@ -1178,6 +1105,76 @@
    "params": [],
    "categories": [
     "MPM"
+   ]
+  },
+  "ApplyTranformOnPoint": {
+   "inputs": [
+    [
+     "",
+     "T",
+     ""
+    ],
+    [
+     "",
+     "P",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "ApplyTransformOnPrimitve": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "T",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "AssembleSolvePPE": {
@@ -1439,6 +1436,117 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BlendPrimitiveByAttr": {
+   "inputs": [
+    [
+     "",
+     "q1",
+     ""
+    ],
+    [
+     "",
+     "b1",
+     ""
+    ],
+    [
+     "",
+     "q2",
+     ""
+    ],
+    [
+     "",
+     "b2",
+     ""
+    ],
+    [
+     "",
+     "primIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "RENAME_ME"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "BlendTransform": {
+   "inputs": [
+    [
+     "",
+     "q1",
+     ""
+    ],
+    [
+     "",
+     "b1",
+     ""
+    ],
+    [
+     "",
+     "q2",
+     ""
+    ],
+    [
+     "",
+     "b2",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "qw",
+     ""
+    ],
+    [
+     "",
+     "bw",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "BreakFor": {
@@ -2980,6 +3088,41 @@
     "MPM"
    ]
   },
+  "ComputePrimitiveSequenceVelocity": {
+   "inputs": [
+    [
+     "",
+     "prim0",
+     ""
+    ],
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ComputeVonMises": {
    "inputs": [
     [
@@ -3191,6 +3334,101 @@
     "FLIPSolver"
    ]
   },
+  "DebugBSplineImp": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "DeformFiberWithFE": {
+   "inputs": [
+    [
+     "",
+     "restFibers",
+     ""
+    ],
+    [
+     "",
+     "restShape",
+     ""
+    ],
+    [
+     "",
+     "deformedShape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "deformedFiber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "DeformPrimitiveWithFE": {
+   "inputs": [
+    [
+     "",
+     "bindMesh",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "DelUserData": {
    "inputs": [
     [
@@ -3274,6 +3512,36 @@
     [
      "zany",
      "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictGetKeyList": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "keys",
      ""
     ],
     [
@@ -3390,6 +3658,36 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "DoStep": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "EmptyDict": {
@@ -4996,6 +5294,87 @@
     "trimesh"
    ]
   },
+  "GetAverageAttrByTag": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrname",
+     "attrName"
+    ],
+    [
+     "string",
+     "tagName",
+     "vtag"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "GetCurrentFrame": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "frame",
+     ""
+    ],
+    [
+     "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "GetDenseField": {
    "inputs": [
     [
@@ -5030,6 +5409,116 @@
    ],
    "categories": [
     "CompressibleFlow"
+   ]
+  },
+  "GetEffectiveStrain": {
+   "inputs": [
+    [
+     "",
+     "deform",
+     ""
+    ],
+    [
+     "",
+     "refMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "GetEffectiveStress": {
+   "inputs": [
+    [
+     "",
+     "deform",
+     ""
+    ],
+    [
+     "",
+     "refMesh",
+     ""
+    ],
+    [
+     "",
+     "forceModel",
+     ""
+    ],
+    [
+     "",
+     "yield_stress",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "GetFEMMaterial": {
+   "inputs": [
+    [
+     "",
+     "femmesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mprim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "GetFrameNum": {
@@ -5132,6 +5621,81 @@
     "frame"
    ]
   },
+  "GetPlasticState": {
+   "inputs": [
+    [
+     "",
+     "refMesh",
+     ""
+    ],
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "GetPlasticStrain": {
+   "inputs": [
+    [
+     "",
+     "deform",
+     ""
+    ],
+    [
+     "",
+     "refMesh",
+     ""
+    ],
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "GetTime": {
    "inputs": [
     [
@@ -5155,6 +5719,41 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "GetTrajStrain": {
+   "inputs": [
+    [
+     "",
+     "straj",
+     ""
+    ],
+    [
+     "",
+     "frameID",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "GetUserData": {
@@ -5837,6 +6436,36 @@
     "list"
    ]
   },
+  "LoadBindingIndicesFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "BindFile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "Make2DGridPrimitive": {
    "inputs": [
     [
@@ -6035,6 +6664,41 @@
     "primitive"
    ]
   },
+  "MakeBindingIndices": {
+   "inputs": [
+    [
+     "",
+     "cbIndices",
+     ""
+    ],
+    [
+     "",
+     "fbIndices",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "BindIndices",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeBoxPrimitive": {
    "inputs": [
     [
@@ -6129,6 +6793,36 @@
    "params": [],
    "categories": [
     "CompressibleFlow"
+   ]
+  },
+  "MakeConstantSpline": {
+   "inputs": [
+    [
+     "",
+     "constant",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "spline",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeCuOcean": {
@@ -6302,6 +6996,31 @@
     "numeric"
    ]
   },
+  "MakeDampingForceModel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DampForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeDict": {
    "inputs": [
     [
@@ -6325,6 +7044,42 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "MakeElasticForceModel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "BaseForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum HyperElastic Fiberic BSplineModel Stvk",
+     "ForceModel",
+     "HyperElastic"
+    ],
+    [
+     "float",
+     "aniso_strength",
+     "20"
+    ]
+   ],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeExplicitTimeIntegrator2": {
@@ -6353,6 +7108,52 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeFEMIntegrator": {
+   "inputs": [
+    [
+     "",
+     "femGeo",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FEMIntegrator",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum BE QS EBQS",
+     "integType",
+     "QS"
+    ]
+   ],
    "categories": [
     "FEM"
    ]
@@ -6548,6 +7349,31 @@
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "MakeIdentityMatrix": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeIdentityMatrix2": {
@@ -6756,6 +7582,51 @@
     "control"
    ]
   },
+  "MakeNeohookeanSplineModel": {
+   "inputs": [
+    [
+     "",
+     "E",
+     ""
+    ],
+    [
+     "",
+     "nu",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "I1Spline",
+     ""
+    ],
+    [
+     "",
+     "I2Spline",
+     ""
+    ],
+    [
+     "",
+     "I3Spline",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeOrthonormalBase": {
    "inputs": [
     [
@@ -6830,6 +7701,42 @@
    ],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "MakePlasticForceModel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "BaseForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum HyperElastic Fiberic BSplineModel Stvk",
+     "ForceModel",
+     "HyperElastic"
+    ],
+    [
+     "float",
+     "aniso_strength",
+     "20"
+    ]
+   ],
+   "categories": [
+    "FEM"
    ]
   },
   "MakePrimitive": {
@@ -6954,6 +7861,76 @@
     "list"
    ]
   },
+  "MakeSplineCurveFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "SplineFile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "spline",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "MakeSplineForceModel": {
+   "inputs": [
+    [
+     "",
+     "S1",
+     ""
+    ],
+    [
+     "",
+     "S2",
+     ""
+    ],
+    [
+     "",
+     "S3",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "SplineForceModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "MakeString": {
    "inputs": [
     [
@@ -6983,6 +7960,41 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MakeTransformMatrix": {
+   "inputs": [
+    [
+     "",
+     "eulerAngle",
+     ""
+    ],
+    [
+     "",
+     "translate",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "TM",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "MakeVDBGrid": {
@@ -7194,6 +8206,11 @@
      "float",
      "dx",
      "0.1"
+    ],
+    [
+     "string",
+     "transfer",
+     "apic"
     ],
     [
      "",
@@ -8205,6 +9222,36 @@
     "Ocean"
    ]
   },
+  "OutputVec2List": {
+   "inputs": [
+    [
+     "",
+     "vec2list",
+     ""
+    ],
+    [
+     "readpath",
+     "outfile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "OutputZensimParticles": {
    "inputs": [
     [
@@ -8763,6 +9810,47 @@
     "primitive"
    ]
   },
+  "ParticlesToSegments": {
+   "inputs": [
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "seg",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr_name",
+     ""
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
   "ParticlesWrangle": {
    "inputs": [
     [
@@ -8856,6 +9944,52 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "PoissonDiskSample": {
+   "inputs": [
+    [
+     "",
+     "VDBGrid",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "ppc",
+     "8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
    ]
   },
   "PolyDuplicate": {
@@ -9993,6 +11127,11 @@
     ],
     [
      "",
+     "dst",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -10611,6 +11750,57 @@
     "Bullet"
    ]
   },
+  "PrimitiveToFEMMesh": {
+   "inputs": [
+    [
+     "",
+     "femGeo",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fem",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "phi",
+     "1000"
+    ],
+    [
+     "float",
+     "E",
+     "1e6"
+    ],
+    [
+     "float",
+     "nu",
+     "0.45"
+    ],
+    [
+     "float",
+     "dampingCoeff",
+     "0"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
   "PrimitiveToMesh": {
    "inputs": [
     [
@@ -10977,6 +12167,46 @@
     "FLIPSolver"
    ]
   },
+  "PushOutZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -11170,6 +12400,36 @@
     "primitive"
    ]
   },
+  "ReadStrainTrajFromFile": {
+   "inputs": [
+    [
+     "readpath",
+     "trajfile",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "ReadVDBGrid": {
    "inputs": [
     [
@@ -11309,6 +12569,111 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "RetrieveRigidTransform": {
+   "inputs": [
+    [
+     "",
+     "refObj",
+     ""
+    ],
+    [
+     "",
+     "newObj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "T",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "RetrieveRigidTransformQuat": {
+   "inputs": [
+    [
+     "",
+     "refObj",
+     ""
+    ],
+    [
+     "",
+     "newObj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "quat",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "RetrieveVertIndices": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "bound",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "RigidGetPressureForce": {
@@ -12105,6 +13470,161 @@
     "openvdb"
    ]
   },
+  "ScalePrimitiveAlongNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "SetBoundaryMotion": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "refGeo",
+     ""
+    ],
+    [
+     "",
+     "CT",
+     ""
+    ],
+    [
+     "",
+     "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetExampleShape": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "examShape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetExternalForce": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "nodalForce",
+     ""
+    ],
+    [
+     "",
+     "VertIds",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetFLIPWorld": {
    "inputs": [
     [
@@ -12281,6 +13801,41 @@
     "numeric"
    ]
   },
+  "SetUniformActivation": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "uniformAct",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "SetUniformActivation2": {
    "inputs": [
     [
@@ -12338,6 +13893,76 @@
     [
      "",
      "aniMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetUniformPlasticParam": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "khs",
+     ""
+    ],
+    [
+     "",
+     "ps",
+     ""
+    ],
+    [
+     "",
+     "initStress",
+     ""
+    ],
+    [
+     "",
+     "initStrain",
+     ""
+    ],
+    [
+     "",
+     "khc",
+     ""
+    ],
+    [
+     "",
+     "ys",
+     ""
+    ],
+    [
+     "",
+     "rs",
+     ""
+    ],
+    [
+     "",
+     "fs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
      ""
     ],
     [
@@ -12547,6 +14172,87 @@
    "params": [],
    "categories": [
     "FLIP"
+   ]
+  },
+  "SolveEquaUsingNRSolver": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "muscleForce",
+     ""
+    ],
+    [
+     "",
+     "dampForce",
+     ""
+    ],
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "stress_field",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "maxNRIters",
+     "10"
+    ],
+    [
+     "int",
+     "maxBTLs",
+     "10"
+    ],
+    [
+     "float",
+     "ArmijoCoeff",
+     "0.01"
+    ],
+    [
+     "float",
+     "CurvatureCoeff",
+     "0.9"
+    ],
+    [
+     "float",
+     "BTL_shrinkingRate",
+     "0.5"
+    ],
+    [
+     "float",
+     "epsilon",
+     "1e-8"
+    ]
+   ],
+   "categories": [
+    "FEM"
    ]
   },
   "SpatialPartitionForParticles": {
@@ -12760,9 +14466,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "dt",
-     ""
+     "0"
     ],
     [
      "",
@@ -12782,13 +14488,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dt",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -13444,6 +15144,11 @@
      ""
     ],
     [
+     "int",
+     "category",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -13586,6 +15291,46 @@
     "openvdb"
    ]
   },
+  "TransformFEMMesh": {
+   "inputs": [
+    [
+     "",
+     "inputMesh",
+     ""
+    ],
+    [
+     "",
+     "translate",
+     ""
+    ],
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outMesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "TransformMesh": {
    "inputs": [
     [
@@ -13724,6 +15469,51 @@
    "params": [],
    "categories": [
     "MPM"
+   ]
+  },
+  "TranslateBoundary": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "refGeo",
+     ""
+    ],
+    [
+     "",
+     "CT",
+     ""
+    ],
+    [
+     "",
+     "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "TranslatePrimitive": {
@@ -14015,6 +15805,81 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "UpdatePlasticParam": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "muscleForce",
+     ""
+    ],
+    [
+     "",
+     "integrator",
+     ""
+    ],
+    [
+     "",
+     "fiber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "UpdatePrimitiveFromZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "UpdateZSGrid": {

@@ -8,11 +8,11 @@
 // from projects/ZenoFX/ppw.cpp : ParticlesParticlesWrangle
 #include <cassert>
 #include <cuda.h>
-#include <zeno/DictObject.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/zeno.h>
 #include <zensim/execution/ExecutionPolicy.hpp>
 #include <zensim/physics/ConstitutiveModel.hpp>
@@ -187,8 +187,7 @@ struct ZSParticleParticleWrangler : INode {
           (unsigned short)unitBytes,
           (unsigned short)tileSize,
           (unsigned short)targetParPtr->numChannels(),
-          (unsigned short)targetParPtr->getChannelOffset(name) +
-              (unsigned short)dimid,
+          (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
           (unsigned short)isNeighborProperty};
     }
     auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

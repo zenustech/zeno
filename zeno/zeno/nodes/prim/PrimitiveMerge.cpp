@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <zeno/zeno.h>
 #include <zeno/utils/prim_ops.h>
 #include <zeno/utils/vec.h>
@@ -126,14 +127,22 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
 struct PrimitiveMerge : zeno::INode {
   virtual void apply() override {
     auto list = get_input<ListObject>("listPrim");
-    auto outprim = primitive_merge(list);
-
-    set_output("prim", std::move(outprim));
+    if(!has_input("dst")){
+        auto outprim = primitive_merge(list);
+        set_output("prim", std::move(outprim));
+    }
+    else
+    {
+        auto dst = get_input<PrimitiveObject>("dst");
+        auto outprim = primitive_merge(list);
+        *dst = *outprim;
+        set_output("prim", std::move(dst));
+    }
   }
 };
 
 ZENDEFNODE(PrimitiveMerge, {
-    {"listPrim"},
+    {"listPrim", "dst"},
     {"prim"},
     {},
     {"primitive"},

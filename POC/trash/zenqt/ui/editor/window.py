@@ -179,6 +179,7 @@ class NodeEditor(QWidget):
             scene.editor = self
             scene.record()
             scene.setContentChanged(False)
+            scene.name = name
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
@@ -238,7 +239,7 @@ class NodeEditor(QWidget):
 
         self.find_bar = QDMFindBar(self)
         self.find_bar.move(400, 40)
-        self.find_bar.resize(300, 30)
+        self.find_bar.resize(320, 30)
         self.find_bar.hide()
 
         self.subgraphHistoryStack = SubgraphHistoryStack(self)
@@ -525,7 +526,7 @@ ZENDEFNODE(''' + key + ''', {
             nodes = json.loads(self.clipboard.text())
             nid_map = {}
             for nid in nodes:
-                nid_map[nid] = gen_unique_ident()
+                nid_map[nid] = gen_unique_ident(nodes[nid]['name'])
             new_nodes = {}
             pos = self.view.mapToScene(self.view.mapFromGlobal(QCursor.pos()))
             coors = [n['uipos'] for n in nodes.values()]
