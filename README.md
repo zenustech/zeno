@@ -16,6 +16,7 @@ Aside of its simulation Tools, ZENO provides necessary visualization nodes for u
 - [Contributor guidelines](CONTRIBUTING.md)
 - [How to build from source](BUILD.md)
 - [Why a new node system?](docs/introduction.md)
+- [Tutorial on the editor (WIP)](docs/node_editor.md)
 
 ## Features
 
