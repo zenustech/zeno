@@ -28,10 +28,7 @@ struct GraphicPrimitive : IGraphic {
 
   //std::vector<std::unique_ptr<Texture>> textures;
 
-  GraphicPrimitive
-    ( zeno::PrimitiveObject *prim
-    , std::string const &path
-    ) {
+  GraphicPrimitive(std::shared_ptr<zeno::PrimitiveObject> prim) {
     if (!prim->has_attr("pos")) {
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         for (size_t i = 0; i < pos.size(); i++) {
@@ -88,26 +85,26 @@ struct GraphicPrimitive : IGraphic {
     if (points_count) {
         points_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         points_ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
-        points_prog = get_points_program(path);
+        points_prog = get_points_program();
     }
 
     lines_count = prim->lines.size();
     if (lines_count) {
         lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
-        lines_prog = get_lines_program(path);
+        lines_prog = get_lines_program();
     }
 
     tris_count = prim->tris.size();
     if (tris_count) {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        tris_prog = get_tris_program(path);
+        tris_prog = get_tris_program();
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
     if (draw_all_points) {
-        points_prog = get_points_program(path);
+        points_prog = get_points_program();
     }
 
     //load_textures(path);
@@ -196,13 +193,8 @@ struct GraphicPrimitive : IGraphic {
       }
   }*/
 
-  Program *get_points_program(std::string const &path) {
-    auto vert = hg::file_get_content(path + ".points.vert");
-    auto frag = hg::file_get_content(path + ".points.frag");
-
-    if (vert.size() == 0) {
-      vert = R"(
-#version 120
+  Program *get_points_program() {
+    auto vert = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -234,10 +226,7 @@ void main()
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
-    }
-    if (frag.size() == 0) {
-      frag = R"(
-#version 120
+    auto frag = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -272,18 +261,12 @@ void main()
   gl_FragColor = vec4(oColor, 1.0 - opacity);
 }
 )";
-    }
 
     return compile_program(vert, frag);
   }
 
-  Program *get_lines_program(std::string const &path) {
-    auto vert = hg::file_get_content(path + ".lines.vert");
-    auto frag = hg::file_get_content(path + ".lines.frag");
-
-    if (vert.size() == 0) {
-      vert = R"(
-#version 120
+  Program *get_lines_program() {
+      auto vert = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -306,10 +289,7 @@ void main()
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
-    }
-    if (frag.size() == 0) {
-      frag = R"(
-#version 120
+      auto frag = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -326,18 +306,12 @@ void main()
   gl_FragColor = vec4(color, 1.0);
 }
 )";
-    }
 
     return compile_program(vert, frag);
   }
 
-  Program *get_tris_program(std::string const &path) {
-    auto vert = hg::file_get_content(path + ".tris.vert");
-    auto frag = hg::file_get_content(path + ".tris.frag");
-
-    if (vert.size() == 0) {
-      vert = R"(
-#version 120
+  Program *get_tris_program() {
+      auto vert = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -363,9 +337,7 @@ void main()
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
-    }
-    if (frag.size() == 0) {
-      frag = R"(
+      auto frag = R"(
 #version 120
 
 uniform mat4 mVP;
@@ -452,17 +424,15 @@ void main()
   gl_FragColor = vec4(color, 1.0);
 }
 )";
-    }
 
     return compile_program(vert, frag);
   }
 };
 
-std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zeno::PrimitiveObject *prim
-    , std::string const &path
-    ) {
-  return std::make_unique<GraphicPrimitive>(prim, path);
+std::unique_ptr<IGraphic> makeGraphicPrimitive(std::shared_ptr<zeno::IObject> obj) {
+  if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
+      return std::make_unique<GraphicPrimitive>(std::move(prim));
+  return nullptr;
 }
 
 }

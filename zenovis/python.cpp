@@ -1,3 +1,4 @@
+#if 0
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "zenvis.h"
@@ -46,3 +47,4 @@ client -> server: (per-mouse-event)
 ^^^NVM: our web enginneer never get hired in to handle zenwebvis..^^^
 
 \****/
+#endif

@@ -1,9 +1,10 @@
-#ifdef ZENVIS_WITH_OPENVDB
+#ifdef ZENVIS_WITH_OPENVDB // TODO
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
 #include "main.hpp"
 #include <zeno/utils/vec.h>
+#include <zeno/VDBGrid.h>
 #include <openvdb/openvdb.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
@@ -373,10 +374,10 @@ void main()
   }
 };
 
-std::unique_ptr<IGraphic> makeGraphicVolume
-    ( std::string const &path
-    ) {
-  return std::make_unique<GraphicVolume>(path);
+std::unique_ptr<IGraphic> makeGraphicPrimitive(std::shared_ptr<zeno::IObject> obj) {
+  if (auto grid = std::dynamic_pointer_cast<zeno::VDBGrid>(obj))
+      return std::make_unique<GraphicPrimitive>(std::move(grid));
+  return nullptr;
 }
 
 }

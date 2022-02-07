@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <zeno/core/IObject.h>
 
 namespace zenvis {
     void initialize();
@@ -12,7 +13,7 @@ namespace zenvis {
     void clear_graphics();
     void auto_gc_frame_data(int nkeep);
     std::vector<int> get_valid_frames_list();
-    void load_file(std::string name, std::string ext, std::string path, int frameid);
+    void load_object(std::shared_ptr<zeno::IObject> obj, int unused_frameid);
     void set_window_size(int nx, int ny);
     void set_curr_frameid(int frameid);
     int get_curr_frameid();

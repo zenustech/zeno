@@ -5,8 +5,6 @@
 #include <zeno/zeno.h>
 #include "serialize.h"
 #include <thread>
-#include <future>
-#include <optional>
 
 namespace {
 

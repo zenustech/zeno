@@ -1,38 +1,31 @@
 #include "main.hpp"
 #include "IGraphic.hpp"
-#include <zeno/types/PrimitiveIO.h>
+//#include <zeno/types/PrimitiveIO.h>
+#include <zeno/core/IObject.h>
 
 
 namespace zenvis {
 
+using namespace zeno;
+
 std::vector<std::unique_ptr<FrameData>> frames;
 
-std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zeno::PrimitiveObject *prim
-    , std::string const &path
-    );
+std::unique_ptr<IGraphic> makeGraphicPrimitive(std::shared_ptr<IObject> obj);
 #ifdef ZENVIS_WITH_OPENVDB
-std::unique_ptr<IGraphic> makeGraphicVolume
-    ( std::string const &path
-    );
+std::unique_ptr<IGraphic> makeGraphicVolume(std::shared_ptr<IObject> obj);
 #endif
 
 
-std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
-    if (ext == ".zpm") {
-        auto prim = std::make_unique<zeno::PrimitiveObject>();
-        zeno::readzpm(prim.get(), path.c_str());
-        return makeGraphicPrimitive(prim.get(), path);
-
+std::unique_ptr<IGraphic> makeGraphic(std::shared_ptr<IObject> obj) {
+    if (auto ig = makeGraphicPrimitive(obj))
+        return ig;
 #ifdef ZENVIS_WITH_OPENVDB
-    if (ext == ".vdb") {
-        return makeGraphicVolume(path);
+    if (auto ig = makeGraphicVolume(obj))
+        return ig;
 #endif
 
-    } else {
-        //printf("%s\n", ext.c_str());
-        //assert(0 && "bad file extension name");
-    }
+    //printf("%s\n", ext.c_str());
+    //assert(0 && "bad file extension name");
     return nullptr;
 }
 
@@ -71,20 +64,17 @@ void clear_graphics() {
     frames.clear();
 }
 
-void load_file(std::string name, std::string ext, std::string path, int frameid) {
-    if (ext == ".lock")
-        return;
-
+void load_object(std::shared_ptr<IObject> obj, int unused_frameid) {
     auto &graphics = current_frame_data()->graphics;
-    if (graphics.find(name) != graphics.end()) {
+    if (graphics.find(obj) != graphics.end()) {
         //printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
         return;
     }
     //printf("load_file: %p %s %s\n", &graphics, path.c_str(), name.c_str());
 
-    auto ig = makeGraphic(path, ext);
+    auto ig = makeGraphic(obj);
     if (!ig) return;
-    graphics[name] = std::move(ig);
+    graphics.emplace(obj, std::move(ig));
 }
 
 }

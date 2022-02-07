@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <zeno/core/IObject.h>
 
 namespace zenvis {
 
@@ -13,7 +14,7 @@ struct IGraphic {
 };
 
 struct FrameData {
-    std::map<std::string, std::unique_ptr<IGraphic>> graphics;
+    std::map<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>> graphics;
 };
 
 FrameData *current_frame_data();
