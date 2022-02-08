@@ -27,7 +27,9 @@ struct PrimitiveTwist : zeno::INode {
         auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
         auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<vec3f>() : vec3f(0, 1, 0);
 
-        orthonormal orb(direction);
+        auto orb = has_input("tangent")
+            ? orthonormal(direction, get_input<zeno::NumericObject>("tangent")->get<vec3f>())
+            : orthonormal(direction);
         direction = orb.normal;
         auto tangent = orb.tangent;
         auto bitangent = orb.bitangent;
@@ -37,6 +39,9 @@ struct PrimitiveTwist : zeno::INode {
         if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f) {
             angle *= M_PI / 180;
             angle /= limitMax - limitMin;
+
+            printf("%f %f %f\n", tangent[0], tangent[1], tangent[2]);
+            printf("%f %f %f\n", bitangent[0], bitangent[1], bitangent[2]);
 
             auto acc = parallel_reduce_array(prim->size(), vec2f(prim->size() ? dot(direction, prim->verts[0] - origin) : 0.f), [&] (size_t i) {
                 return vec2f(dot(direction, prim->verts[i] - origin));
@@ -57,7 +62,7 @@ struct PrimitiveTwist : zeno::INode {
                 auto tanpos = dot(pos, tangent);
                 auto bitpos = dot(pos, bitangent);
 
-                auto newtanpos = tanpos * cosang - bitpos + sinang;
+                auto newtanpos = tanpos * cosang - bitpos * sinang;
                 auto newbitpos = bitpos * cosang + tanpos * sinang;
 
                 pos += (newtanpos - tanpos) * tangent + (newbitpos - bitpos) * bitangent;
@@ -76,6 +81,7 @@ ZENDEFNODE(PrimitiveTwist, {
     {"PrimitiveObject", "prim"},
     {"vec3f", "origin", "0,0,0"},
     {"vec3f", "direction", "0,1,0"},
+    {"vec3f", "tangent"},
     {"float", "angle", "45"},
     {"float", "limitMin", "0"},
     {"float", "limitMax", "1"},
