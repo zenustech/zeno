@@ -264,7 +264,7 @@ namespace zeno {
             }
         }
     );
-    struct PrimitiveAttrCurvemap : zeno::INode {
+    struct PrimitiveCurvemap : zeno::INode {
         virtual void apply() override {
             auto curvemap = get_input<zeno::CurvemapObject>("curvemap");
             auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -291,7 +291,7 @@ namespace zeno {
             set_output("prim", std::move(prim));
         }
     };
-ZENDEFNODE(PrimitiveAttrCurvemap, {
+ZENDEFNODE(PrimitiveCurvemap, {
     {
     {"PrimitiveObject", "prim"},
     "curvemap",
