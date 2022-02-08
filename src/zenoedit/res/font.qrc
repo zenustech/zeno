@@ -2,15 +2,9 @@
   <qresource prefix="/">
     <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Black.ttf</file>
 	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Bold.ttf</file>
-	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Light.ttf</file>
-	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Medium.ttf</file>
 	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Regular.ttf</file>
-	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Thin.ttf</file>
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Black.ttf</file>
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.ttf</file>
-	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Light.ttf</file>
-	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Medium.ttf</file>
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf</file>
-	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Thin.ttf</file>
   </qresource>
 </RCC>
