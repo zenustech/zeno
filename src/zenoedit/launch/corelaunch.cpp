@@ -1,6 +1,7 @@
 #include "corelaunch.h"
-#include <model/graphsmodel.h>
-#include <zenoui/io/zsgwriter.h>
+#include <zenoui/model/graphsmodel.h>
+#include <zenoui/model/modelrole.h>
+#include <zenoio/writer/zsgwriter.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/zeno.h>
 #include "serialize.h"

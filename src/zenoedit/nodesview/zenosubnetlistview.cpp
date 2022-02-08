@@ -2,7 +2,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "style/zenostyle.h"
-#include <model/graphsmodel.h>
+#include <zenoui/model/graphsmodel.h>
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
 #include <zenoui/model/modelrole.h>

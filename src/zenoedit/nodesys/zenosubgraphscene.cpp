@@ -1,19 +1,18 @@
 #include "zenosubgraphscene.h"
-#include "../model/subgraphmodel.h"
+#include <zenoui/model/subgraphmodel.h>
 #include "zenonode.h"
 #include "zenolink.h"
-#include "../model/modelrole.h"
-#include "../io/zsgreader.h"
-#include "../util/uihelper.h"
-#include "nodesys_common.h"
-#include "nodegrid.h"
+#include <zenoui/model/modelrole.h>
+#include <zenoio/reader/zsgreader.h>
+#include <zenoui/util/uihelper.h>
+#include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/nodesys/nodegrid.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_subgraphModel(nullptr)
     , m_tempLink(nullptr)
-    , m_grid(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -28,7 +27,6 @@ ZenoSubGraphScene::~ZenoSubGraphScene()
 
 void ZenoSubGraphScene::onViewTransformChanged(qreal factor)
 {
-    m_grid->setFactor(factor);
 }
 
 void ZenoSubGraphScene::initModel(SubGraphModel* pModel)

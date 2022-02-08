@@ -5,7 +5,7 @@
 #include <QRectF>
 #include <vector>
 #include <QtWidgets>
-#include "modelrole.h"
+#include <zenoui/model/modelrole.h>
 
 struct SocketItem
 {

@@ -1,7 +1,7 @@
 #ifndef __NODESYS_COMMON_H__
 #define __NODESYS_COMMON_H__
 
-#include "../model/modeldata.h"
+#include <zenoui/model/modeldata.h>
 
 enum ZenoGVItemType {
     ZTYPE_NODE = QGraphicsItem::UserType + 1,

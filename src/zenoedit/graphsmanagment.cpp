@@ -1,10 +1,11 @@
 #include "graphsmanagment.h"
-#include <io/zsgreader.h>
-#include <model/graphsmodel.h>
-#include <model/graphstreemodel.h>
+#include <zenoui/model/graphsmodel.h>
+#include <zenoui/model/modelrole.h>
+#include "model/graphstreemodel.h"
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/acceptor/modelacceptor.h>
 #include <zenoui/util/uihelper.h>
+#include "nodesys/zenosubgraphscene.h"
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
@@ -25,6 +26,13 @@ GraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     ModelAcceptor acceptor(m_model);
     ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
     m_model->clearDirty();
+    for (int i = 0; i < m_model->rowCount(); i++)
+    {
+        SubGraphModel* pSubGraphModel = m_model->subGraph(i);
+        ZenoSubGraphScene* pScene = new ZenoSubGraphScene(this);
+        pScene->initModel(pSubGraphModel);
+        m_scenes[pSubGraphModel->name()] = pScene;
+    }
     return m_model;
 }
 
@@ -136,5 +144,5 @@ void GraphsManagment::onNewNodeCreated(const QString& descName, const QPointF& p
 
 ZenoSubGraphScene* GraphsManagment::scene(const QString& subGraphName)
 {
-    return m_model->subGraph(subGraphName)->scene();
+    return m_scenes[subGraphName];
 }

@@ -1,7 +1,7 @@
 #include "zenosearchbar.h"
-#include "../comctrl/ziconbutton.h"
-#include "../model/subgraphmodel.h"
-#include "../model/modelrole.h"
+#include <zenoui/comctrl/ziconbutton.h>
+#include <zenoui/model/subgraphmodel.h>
+#include <zenoui/model/modelrole.h>
 
 
 ZenoSearchBar::ZenoSearchBar(SubGraphModel *model, QWidget *parentWidget)

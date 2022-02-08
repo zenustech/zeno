@@ -1,8 +1,10 @@
 #include "zenosubgraphscene.h"
-#include "../model/subgraphmodel.h"
+#include <zenoui/model/subgraphmodel.h>
+#include "../graphsmanagment.h"
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"
 #include "zenosearchbar.h"
+#include "zenoapplication.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -231,8 +233,8 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
         m_menu = nullptr;
     }
     //todo
-    //m_menu = new QMenu(this);
-    //QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
-    //m_menu->addActions(actions);
-    //m_menu->exec(QCursor::pos());
+    m_menu = new QMenu(this);
+    QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
+    m_menu->addActions(actions);
+    m_menu->exec(QCursor::pos());
 }

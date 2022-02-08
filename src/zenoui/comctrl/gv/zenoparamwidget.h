@@ -2,10 +2,10 @@
 #define __ZENO_PARAM_WIDGET_H__
 
 #include <QtWidgets>
-#include "../model/modelrole.h"
-#include "nodesys_common.h"
+#include <zenoui/model/modelrole.h>
+#include "../../nodesys/nodesys_common.h"
 #include "zenosocketitem.h"
-#include "../comctrl/zcombobox.h"
+#include <zenoui/comctrl/zcombobox.h>
 
 
 class ZenoParamWidget : public QGraphicsProxyWidget

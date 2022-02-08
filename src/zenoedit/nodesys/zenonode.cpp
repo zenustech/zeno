@@ -1,11 +1,11 @@
 #include "zenonode.h"
-#include "../model/modelrole.h"
-#include "../model/subgraphmodel.h"
-#include "../render/common_id.h"
-#include "zenoparamnameitem.h"
-#include "zenoparamwidget.h"
+#include <zenoui/model/modelrole.h>
+#include <zenoui/model/subgraphmodel.h>
+#include <zenoui/render/common_id.h>
+#include <zenoui/comctrl/gv/zenoparamnameitem.h>
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include "zenoheatmapitem.h"
-#include "util/uihelper.h"
+#include <zenoui/util/uihelper.h>
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)

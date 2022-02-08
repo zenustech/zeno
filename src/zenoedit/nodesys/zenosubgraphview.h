@@ -2,7 +2,7 @@
 #define __ZENO_GRAPHVIEW_H__
 
 #include <QtWidgets>
-#include "nodesys_common.h"
+#include <zenoui/nodesys/nodesys_common.h>
 
 class ZenoSubGraphScene;
 

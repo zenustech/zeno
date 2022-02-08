@@ -6,9 +6,9 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "zenosubnettreeview.h"
-#include <model/graphsmodel.h>
+#include <zenoui/model/graphsmodel.h>
 #include <model/graphstreemodel.h>
-#include <model/modelrole.h>
+#include <zenoui/model/modelrole.h>
 
 #define USE_LISTVIEW_PANEL
 

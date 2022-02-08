@@ -1,5 +1,5 @@
 #include "zenosubnettreeview.h"
-#include <model/graphsmodel.h>
+#include <zenoui/model/graphsmodel.h>
 #include <model/graphstreemodel.h>
 
 

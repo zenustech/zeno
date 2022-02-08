@@ -1,7 +1,7 @@
 #include "zenolink.h"
 #include "zenosubgraphscene.h"
-#include "nodesys_common.h"
-#include "../render/common_id.h"
+#include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/render/common_id.h>
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)

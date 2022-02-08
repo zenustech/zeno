@@ -1,7 +1,7 @@
 #include "zenoparamwidget.h"
 #include "zenosocketitem.h"
-#include "../render/common_id.h"
-#include "../style/zenostyle.h"
+#include <zenoui/render/common_id.h>
+#include <zenoui/style/zenostyle.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)

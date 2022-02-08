@@ -27,6 +27,7 @@ public slots:
 
 private:
     GraphsModel *m_model;
+    QMap<QString, ZenoSubGraphScene*> m_scenes;
     QString m_currFile;
 };
 
