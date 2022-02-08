@@ -24,7 +24,7 @@ public slots:
 
 private slots:
     void onSubnetBtnClicked();
-    void onListItemActivated(const QModelIndex& index);
+    void onItemActivated(const QModelIndex& index);
 
 private:
     QWidget* m_pSideBar;

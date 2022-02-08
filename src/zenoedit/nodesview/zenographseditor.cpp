@@ -58,7 +58,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     m_pSubnetList = new ZenoSubnetListPanel();
     m_pSubnetList->hide();
     pLayout->addWidget(m_pSubnetList);
-    connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
+    connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
     m_pTabWidget = new ZenoGraphsTabWidget();
     pLayout->addWidget(m_pTabWidget);
 #else
@@ -67,7 +67,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     pLayout->addWidget(m_pSubnetTree);
 
     m_pLayerWidget = new ZenoGraphsLayerWidget;
-    connect(m_pSubnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
+    connect(m_pSubnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
     pLayout->addWidget(m_pLayerWidget);
 #endif
 
@@ -82,7 +82,7 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 {
 }
 
-void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
+void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
 {
 #ifdef USE_LISTVIEW_PANEL
     const QString& subgraphName = index.data().toString();
@@ -91,17 +91,24 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
     QSharedPointer<GraphsManagment> spGm = zenoApp->graphsManagment();
     GraphsModel* pModel = spGm->currentModel();
     QModelIndex idx = index;
+
+    const QString& objId = idx.data(ROLE_OBJID).toString();
     QString path;
-    do
+    if (!idx.parent().isValid())
     {
-        const QString& objName = idx.data().toString();
-        if (pModel->subGraph(objName))
-        {
-            path = "/" + objName + path;
-        }
-        idx = idx.parent();
-    } while (idx.isValid());
-    m_pLayerWidget->resetPath(path);
+        path = "/" + idx.data(ROLE_OBJNAME).toString();
+    }
+    else
+    {
+		idx = idx.parent();
+		while (idx.isValid())
+		{
+			QString objName = idx.data(ROLE_OBJNAME).toString();
+			path = "/" + objName + path;
+			idx = idx.parent();
+		}
+    }
+    m_pLayerWidget->resetPath(path, objId);
 #endif
 }
 

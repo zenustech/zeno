@@ -1,5 +1,10 @@
 #include "zenographslayerwidget.h"
 #include <comctrl/ziconbutton.h>
+#include <zenoui/model/graphsmodel.h>
+#include <zenoui/model/modelrole.h>
+#include "../zenoapplication.h"
+#include "../graphsmanagment.h"
+#include "../nodesys/zenosubgraphview.h"
 
 
 LayerPathWidget::LayerPathWidget(QWidget* parent)
@@ -41,7 +46,40 @@ void LayerPathWidget::setPath(const QString& path)
 }
 
 
-ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent /* = nullptr */)
+////////////////////////////////////////////////////////////////////
+ZenoStackedViewWidget::ZenoStackedViewWidget(QWidget* parent)
+	: QStackedWidget(parent)
+{
+}
+
+ZenoStackedViewWidget::~ZenoStackedViewWidget()
+{
+}
+
+void ZenoStackedViewWidget::activate(const QString& subGraph, const QString& nodeId)
+{
+	auto graphsMgm = zenoApp->graphsManagment();
+	if (m_views.find(subGraph) == m_views.end())
+	{
+		ZenoSubGraphScene* pScene = graphsMgm->scene(subGraph);
+		ZenoSubGraphView* pView = new ZenoSubGraphView;
+		pView->initScene(pScene);
+		m_views[subGraph] = pView;
+		addWidget(pView);
+	}
+	setCurrentWidget(m_views[subGraph]);
+	SubGraphModel* pModel = graphsMgm->currentModel()->subGraph(subGraph);
+	const QModelIndex& idx = pModel->index(nodeId);
+	if (idx.isValid())
+	{
+		QPointF pos = pModel->data(idx, ROLE_OBJPOS).toPointF();
+		m_views[subGraph]->focusOn(nodeId, pos);
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////////
+ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent)
 	: QWidget(parent)
 	, m_pPathWidget(nullptr)
 	, m_graphsWidget(nullptr)
@@ -56,17 +94,16 @@ ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent /* = nullptr */)
 	pHLayout->addWidget(m_pPathWidget);
 	QVBoxLayout* pLayout = new QVBoxLayout;
 	pLayout->addLayout(pHLayout);
-	m_graphsWidget = new QStackedWidget;
+	m_graphsWidget = new ZenoStackedViewWidget;
 	pLayout->addWidget(m_graphsWidget);
 	setLayout(pLayout);
 }
 
-void ZenoGraphsLayerWidget::resetPath(const QString& path)
+void ZenoGraphsLayerWidget::resetPath(const QString& path, const QString& nodeId)
 {
 	m_pPathWidget->setPath(path);
-	QStringList L = path.split("/");
-	const QString& subGraph = L[L.length() - 1];
-	//...
-
 	m_pPathWidget->show();
+	QStringList L = path.split("/", Qt::SkipEmptyParts);
+	const QString& subGraph = L[L.length() - 1];
+	m_graphsWidget->activate(subGraph, nodeId);
 }

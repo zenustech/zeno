@@ -85,14 +85,19 @@ void ZenoSubGraphView::find()
 
 void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 {
-    const qreal zoomFactor = 3.0;
-    QTransform tf = transform();
-    tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
-                 tf.m21(), zoomFactor, tf.m23(),
-                 tf.m31(), tf.m32(), zoomFactor);
-    setTransform(tf);
-    centerOn(rec.pos);
-    m_scene->select(rec.id);
+    focusOn(rec.id, rec.pos);
+}
+
+void ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
+{
+	const qreal zoomFactor = 3.0;
+	QTransform tf = transform();
+	tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
+		tf.m21(), zoomFactor, tf.m23(),
+		tf.m31(), tf.m32(), zoomFactor);
+	setTransform(tf);
+	centerOn(pos);
+	m_scene->select(nodeId);
 }
 
 void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)

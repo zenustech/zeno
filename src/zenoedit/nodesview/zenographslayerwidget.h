@@ -3,6 +3,8 @@
 
 #include <QtWidgets>
 
+class ZenoSubGraphView;
+
 class LayerPathWidget : public QWidget
 {
 	Q_OBJECT
@@ -14,16 +16,28 @@ private:
 	QString m_path;
 };
 
+class ZenoStackedViewWidget : public QStackedWidget
+{
+	Q_OBJECT
+public:
+	ZenoStackedViewWidget(QWidget* parent = nullptr);
+	~ZenoStackedViewWidget();
+	void activate(const QString& subGraph, const QString& nodeId = "");
+
+private:
+	QMap<QString, ZenoSubGraphView*> m_views;
+};
+
 class ZenoGraphsLayerWidget : public QWidget
 {
 	Q_OBJECT
 public:
 	ZenoGraphsLayerWidget(QWidget* parent = nullptr);
-	void resetPath(const QString& path);
+	void resetPath(const QString& path, const QString& nodeId);
 
 private:
 	LayerPathWidget* m_pPathWidget;
-	QStackedWidget* m_graphsWidget;
+	ZenoStackedViewWidget* m_graphsWidget;
 };
 
 #endif
