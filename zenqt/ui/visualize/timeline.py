@@ -152,6 +152,8 @@ class TimelineWidget(QWidget):
         self.msgPlay.activated.connect(lambda: self.player.change())
         self.msgRun = QShortcut(QKeySequence(Qt.Key_A), self)
         self.msgRun.activated.connect(self.on_execute)
+        self.msgRun_pybhappy = QShortcut(QKeySequence(Qt.Key_F5), self)
+        self.msgRun_pybhappy.activated.connect(self.on_execute)
 
         self.maxframe.textChanged.connect(self.maxframe_changed)
         self.maxframe_changed()
