@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
 
+# Please use VS2019+ or GCC 9+
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(zeno LANGUAGES C CXX)
 
+# Otherwise we can't link SHARED libs with STATIC libs
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -11,6 +14,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (WIN32)
+    # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
@@ -45,6 +49,7 @@ if (ZENO_NO_WARNING)
 endif()
 
 if (ZENO_FIXED_OUTPUT)
+    # Otherwise Windows (which doesn't support RPATH) cannot find the DLLs at runtime
     set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -56,6 +61,7 @@ if (ZENO_FIXED_OUTPUT)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
     if (WIN32)
+        # No more annoying zeno_d.dll
         set(CMAKE_DEBUG_POSTFIX "")
     endif()
 endif()

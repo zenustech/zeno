@@ -5,17 +5,20 @@
 #include <zeno/zeno.h>
 #include "serialize.h"
 #include <thread>
+#include <mutex>
 
 namespace {
 
 struct ProgramRunData {
-    inline static bool g_running = false;
+    inline static std::mutex g_mtx;
 
     std::string progJson;
     int nframes;
     std::set<std::string> applies;
 
     void operator()() {
+        std::unique_lock _(g_mtx);
+
         zeno::loadScene(progJson.c_str());
 
         zeno::switchGraph("main");
@@ -30,8 +33,6 @@ struct ProgramRunData {
             //zeno::Visualization::endFrame();
             zeno::getSession().globalState->frameEnd();
         }
-
-        g_running = false;
     }
 };
 
@@ -39,7 +40,8 @@ struct ProgramRunData {
 
 void launchProgram(GraphsModel* pModel, int nframes)
 {
-    if (ProgramRunData::g_running) {
+    std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
+    if (!lck.owns_lock()) {
         printf("A program is already running! Please kill first\n");
         return;
     }
@@ -63,8 +65,8 @@ void launchProgram(GraphsModel* pModel, int nframes)
     }
 
     std::thread thr(ProgramRunData{std::move(progJson), nframes, std::move(applies)});
-    ProgramRunData::g_running = true;
     thr.detach();
+}
 
     /*for (int i = 0; i < nframes; i++)
     {
@@ -87,4 +89,3 @@ void launchProgram(GraphsModel* pModel, int nframes)
         }
         // ENDOF XINXIN HAPPY >>>>>
     }*/
-}

@@ -44,6 +44,11 @@ struct Session {
     ZENO_API Session();
     ZENO_API ~Session();
 
+    Session(Session const &) = delete;
+    Session &operator=(Session const &) = delete;
+    Session(Session &&) = delete;
+    Session &operator=(Session &&) = delete;
+
     ZENO_API Scene &getDefaultScene();
     ZENO_API std::unique_ptr<Scene> createScene();
     ZENO_API std::string dumpDescriptors() const;

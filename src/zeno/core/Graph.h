@@ -55,6 +55,11 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
+    Graph(Graph const &) = delete;
+    Graph &operator=(Graph const &) = delete;
+    Graph(Graph &&) = delete;
+    Graph &operator=(Graph &&) = delete;
+
     ZENO_API UserData &getUserData();
 
     ZENO_API std::unique_ptr<INode> getOverloadNode(std::string const &id,

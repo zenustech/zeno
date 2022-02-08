@@ -34,6 +34,11 @@ public:
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
+    INode(INode const &) = delete;
+    INode &operator=(INode const &) = delete;
+    INode(INode &&) = delete;
+    INode &operator=(INode &&) = delete;
+
     ZENO_API void doComplete();
     ZENO_API void doApply();
 

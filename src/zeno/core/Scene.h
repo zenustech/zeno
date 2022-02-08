@@ -19,6 +19,11 @@ struct Scene {
     ZENO_API Scene();
     ZENO_API ~Scene();
 
+    Scene(Scene const &) = delete;
+    Scene &operator=(Scene const &) = delete;
+    Scene(Scene &&) = delete;
+    Scene &operator=(Scene &&) = delete;
+
     ZENO_API Graph &getGraph();
     ZENO_API void clearAllState();
     ZENO_API Graph &getGraph(std::string const &name) const;
