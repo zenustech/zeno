@@ -24,7 +24,7 @@ file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
 
 add_executable(zenodesign ${source})
 target_include_directories(zenodesign PRIVATE ../3rdparty ../zenoui ../editor)
-target_link_libraries(zenodesign PRIVATE Qt5::Widgets Qt5::Svg zenoui)
+target_link_libraries(zenodesign PRIVATE Qt5::Widgets Qt5::Svg zenoui zeno)
 if (NOT WIN32)
     target_link_libraries(zenodesign PRIVATE Qt5::X11Extras dl X11)
 endif(NOT WIN32)
