@@ -49,13 +49,20 @@ struct PrimitiveLineSolidify : zeno::INode {
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
         auto radiusAttr = get_input<zeno::StringObject>("radiusAttr")->get();
         bool isTri = get_input2<bool>("isTri");
+        bool sealEnd = get_input2<bool>("sealEnd");
 
         intptr_t n = prim->verts.size();
         if (n >= 2 && count >= 2) {
 
             prim->lines.clear();
 
-            prim->verts.resize(count * n);
+            if (sealEnd) {
+                prim->verts.resize(count * n + 2);
+                prim->verts[count * n + 0] = prim->verts[0];
+                prim->verts[count * n + 1] = prim->verts[n - 1];
+            } else {
+                prim->verts.resize(count * n);
+            }
 
             std::vector<vec3f> directions(n);
 #pragma omp parallel for
@@ -150,7 +157,22 @@ struct PrimitiveLineSolidify : zeno::INode {
 
             });
 
+            if (sealEnd) {
+                for (int a = 0; a < count - 1; a++) {
+                    prim->tris.emplace_back(count * n, n * a, n * (a+1));
+                    prim->tris.emplace_back(count * n + 1, n-1 + n * a, n-1 + n * (a+1));
+                }
+                prim->tris.emplace_back(count * n, n * (count-1), 0);
+                prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
+            }
+
             prim->verts.foreach_attr([&] (auto const &key, auto &attr) {
+                for (int a = 1; a < count; a++) {
+                    intptr_t na = n * a;
+                    for (intptr_t i = 0; i < n; i++) {
+                        attr[i + na] = attr[i];
+                    }
+                }
             });
 
         }
@@ -167,6 +189,7 @@ ZENDEFNODE(PrimitiveLineSolidify, {
     {"float", "radius", "0.1"},
     {"string", "radiusAttr", ""},
     {"bool", "isTri", "1"},
+    {"bool", "sealEnd", "1"},
     },
     {
     {"PrimitiveObject", "prim"},
