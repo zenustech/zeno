@@ -20,19 +20,19 @@ struct ProgramRunData {
     void operator()() {
         std::unique_lock _(g_mtx);
 
-        zeno::loadScene(progJson.c_str());
+        auto session = &zeno::getSession();
 
-        zeno::switchGraph("main");
+        auto graph = session->createGraph();
+        graph->loadGraph(progJson.c_str());
 
         for (int i = 0; i < nframes; i++) {
-            zeno::getSession().globalState->frameBegin();
-            while (zeno::getSession().globalState->substepBegin())
+            session->globalState->frameBegin();
+            while (session->globalState->substepBegin())
             {
-                zeno::applyNodes(applies);
-                zeno::getSession().globalState->substepEnd();
+                graph->applyNodes(applies);
+                session->globalState->substepEnd();
             }
-            //zeno::Visualization::endFrame();
-            zeno::getSession().globalState->frameEnd();
+            session->globalState->frameEnd();
         }
     }
 };

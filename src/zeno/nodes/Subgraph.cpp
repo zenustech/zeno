@@ -5,6 +5,7 @@
 #include <cassert>
 
 
+namespace zeno {
 namespace {
 
 
@@ -151,10 +152,10 @@ ZENDEFNODE(SubResult, {
 });
 
 
-struct Subgraph : zeno::ISubgraphNode {  // to be deprecated
+/*struct Subgraph : zeno::ISubgraphNode {  // to be deprecated
     virtual zeno::Graph *get_subgraph() override {
         auto name = get_param<std::string>("name");
-        auto subg = safe_at(graph->scene->graphs, name, "subgraph");
+        auto subg = safe_at(graph->graphs, name, "subgraph");
         assert(subg->scene == graph->scene);
         return subg;
     }
@@ -165,7 +166,7 @@ ZENDEFNODE(Subgraph, {
     {},//"output1", "output2", "output3", "output4"},
     {{"string", "name", "DoNotUseThisNodeDirectly"}},
     {"subgraph"},
-});
+});*/
 
 
 struct SubCategory : zeno::INode {
@@ -180,4 +181,5 @@ ZENDEFNODE(SubCategory, {
 });
 
 
+}
 }

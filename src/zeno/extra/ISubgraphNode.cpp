@@ -30,10 +30,10 @@ ZENO_API void ISubgraphNode::apply() {
 ZENO_API ISubgraphNode::ISubgraphNode() = default;
 ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 
-ZENO_API zeno::Graph *ISerialSubgraphNode::get_subgraph() {
+ZENO_API Graph *ISerialSubgraphNode::get_subgraph() {
     if (!subg) {
-        subg = std::make_unique<zeno::Graph>();
-        subg->scene = graph->scene;
+        subg = std::make_unique<Graph>();
+        subg->session = graph->session;
         auto json = get_subgraph_json();
         subg->loadGraph(json);
     }

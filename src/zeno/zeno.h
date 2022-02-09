@@ -18,10 +18,6 @@ inline std::string dumpDescriptors() {
     return getSession().dumpDescriptors();
 }
 
-inline void loadSession(const char *json) {
-    return getSession().loadSession(json);
-}
-
 inline std::unique_ptr<Graph> createGraph() {
     return getSession().createGraph();
 }
