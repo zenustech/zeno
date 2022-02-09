@@ -174,6 +174,10 @@ struct PrimitiveLineSolidify : zeno::INode {
                         attr[i + na] = attr[i];
                     }
                 }
+                if (sealEnd) {
+                    attr[count * n + 0] = attr[0];
+                    attr[count * n + 1] = attr[n - 1];
+                }
             });
 
         }

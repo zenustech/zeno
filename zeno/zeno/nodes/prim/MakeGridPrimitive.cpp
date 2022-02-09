@@ -8,6 +8,71 @@
 
 namespace zeno {
 
+struct Make1DLinePrimitive : INode {
+    virtual void apply() override {
+        size_t nx = get_input<NumericObject>("n")->get<int>();
+        float dx = 1.f / std::max(nx - 1, (size_t)1);
+        vec3f ax = has_input("direction") ?
+            get_input<NumericObject>("direction")->get<vec3f>()
+            : vec3f(1, 0, 0);
+        vec3f o = has_input("origin") ?
+            get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
+        if (has_input("scale")) {
+            auto scale = get_input<NumericObject>("scale")->get<float>();
+            ax *= scale;
+        }
+
+    auto dir = get_param<std::string>("Direction");
+    if(dir == "Y")
+    {
+        ax = zeno::vec3f(0,ax[0],0);
+    }
+    if(dir == "Z")
+    {
+        ax = zeno::vec3f(0,0,ax[0]);
+    }
+
+    if (get_param<bool>("isCentered"))
+      o -= (ax) / 2;
+    ax *= dx;
+
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->resize(nx);
+    auto &pos = prim->add_attr<vec3f>("pos");
+#pragma omp parallel for
+    for (intptr_t x = 0; x < nx; x++) {
+      vec3f p = o + x * ax;
+      pos[x] = p;
+    }
+    if (get_param<bool>("hasLines")) {
+        prim->lines.resize((nx - 1));
+#pragma omp parallel for
+        for (intptr_t x = 0; x < nx-1; x++) {
+          prim->lines[x][0] = x;
+          prim->lines[x][1] = x + 1;
+        }
+    }
+    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
+    set_output("prim", std::move(prim));
+  }
+};
+
+ZENDEFNODE(Make1DLinePrimitive,
+        { /* inputs: */ {
+        {"int", "n", "2"},
+        {"vec3f", "direction", "1,0,0"},
+        {"float", "scale", "1"},
+        {"vec3f", "origin", "0,0,0"},
+        }, /* outputs: */ {
+        {"PrimitiveObject", "prim"},
+        }, /* params: */ {
+        {"enum X Y Z", "Direction", "X"}, // zhxxhappy
+        {"bool", "isCentered", "0"},
+        {"bool", "hasLines", "1"},
+        }, /* category: */ {
+        "primitive",
+        }});
+
 struct Make2DGridPrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
@@ -47,23 +112,18 @@ struct Make2DGridPrimitive : INode {
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx * ny);
     auto &pos = prim->add_attr<vec3f>("pos");
-    // for (size_t y = 0; y < ny; y++) {
-    //     for (size_t x = 0; x < nx; x++) {
-#pragma omp parallel for
-    for (int index = 0; index < nx * ny; index++) {
-      int x = index % nx;
-      int y = index / nx;
+#pragma omp parallel for collapse(2)
+        for (intptr_t y = 0; y < ny; y++) for (intptr_t x = 0; x < nx; x++) {
+          intptr_t index = y * nx + x;
       vec3f p = o + x * ax + y * ay;
       size_t i = x + y * nx;
       pos[i] = p;
-      // }
     }
     if (get_param<bool>("hasFaces")) {
         prim->tris.resize((nx - 1) * (ny - 1) * 2);
-#pragma omp parallel for
-        for (int index = 0; index < (nx - 1) * (ny - 1); index++) {
-          int x = index % (nx - 1);
-          int y = index / (nx - 1);
+#pragma omp parallel for collapse(2)
+        for (intptr_t y = 0; y < ny-1; y++) for (intptr_t x = 0; x < nx-1; x++) {
+          intptr_t index = y * (nx - 1) + x;
           prim->tris[index * 2][0] = y * nx + x;
           prim->tris[index * 2][1] = y * nx + x + 1;
           prim->tris[index * 2][2] = (y + 1) * nx + x + 1;
@@ -72,8 +132,8 @@ struct Make2DGridPrimitive : INode {
           prim->tris[index * 2 + 1][2] = y * nx + x;
         }
     }
-    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);
-    prim->userData.get("ny") = std::make_shared<NumericObject>((int)ny);
+    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
+    prim->userData.get("ny") = std::make_shared<NumericObject>((int)ny);//zhxx
     set_output("prim", std::move(prim));
   }
 };
@@ -89,7 +149,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         }, /* outputs: */ {
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
-        {"enum XZ XY YZ", "Direction", "XZ"},
+        {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
         {"bool", "isCentered", "0"},
         {"bool", "hasFaces", "1"},
         }, /* category: */ {
@@ -136,11 +196,15 @@ struct Make3DGridPrimitive : INode {
     auto &pos = prim->add_attr<vec3f>("pos");
     // for (size_t y = 0; y < ny; y++) {
     //     for (size_t x = 0; x < nx; x++) {
+    /*
 #pragma omp parallel for
     for (int index = 0; index < nx * ny * nz; index++) {
       int x = index % nx;
       int y = index / nx % ny;
-      int z = index / nx / ny;
+      int z = index / nx / ny;*/
+#pragma omp parallel for collapse(3)
+        for (intptr_t z = 0; z < nz; z++) for (intptr_t y = 0; y < ny; y++) for (intptr_t x = 0; x < nx; x++) {
+          intptr_t index = (z * (ny) + y) * (nx) + x;
       vec3f p = o + x * ax + y * ay + z * az;
       pos[index] = p;
     }
