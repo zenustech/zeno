@@ -32,7 +32,7 @@ private:
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
     ZenoGraphsLayerWidget* m_pLayerWidget;
-    ZenoSubnetTreeView* m_pSubnetTree;
+    bool m_bListView;
 };
 
 #endif

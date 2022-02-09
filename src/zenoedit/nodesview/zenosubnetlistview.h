@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class GraphsModel;
+class ZenoSubnetTreeView;
 
 class ZSubnetListModel : public QStandardItemModel
 {
@@ -51,7 +52,9 @@ protected:
 
 private:
     ZenoSubnetListView* m_pListView;
+    ZenoSubnetTreeView* m_pTreeView;
     QLabel* m_pTextLbl;
+    bool m_bListView;
 };
 
 #endif

@@ -13,6 +13,7 @@ public:
     static QString generateUuid(const QString &name = "x");
     static QVariant _parseDefaultValue(const QString& defaultValue);
     static QVariant parseVariantValue(const rapidjson::Value& val);
+    static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
 
 private:
     static PARAM_CONTROL _getControlType(const QString &type);

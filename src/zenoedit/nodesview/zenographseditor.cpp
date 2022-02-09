@@ -10,8 +10,6 @@
 #include <model/graphstreemodel.h>
 #include <zenoui/model/modelrole.h>
 
-#define USE_LISTVIEW_PANEL
-
 
 ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     : QWidget(parent)
@@ -20,7 +18,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_pTabWidget(nullptr)
     , m_pLayerWidget(nullptr)
     , m_pSideBar(nullptr)
-    , m_pSubnetTree(nullptr)
+    , m_bListView(false)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -51,31 +49,27 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
 
     pLayout->addWidget(m_pSideBar);
 
-
     QVBoxLayout* pLayout2 = new QVBoxLayout;
 
-#ifdef USE_LISTVIEW_PANEL
     m_pSubnetList = new ZenoSubnetListPanel();
     m_pSubnetList->hide();
     pLayout->addWidget(m_pSubnetList);
-    connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
-    m_pTabWidget = new ZenoGraphsTabWidget();
-    pLayout->addWidget(m_pTabWidget);
-#else
-    m_pSubnetTree = new ZenoSubnetTreeView;
-    m_pSubnetTree->hide();
-    pLayout->addWidget(m_pSubnetTree);
 
+    m_pTabWidget = new ZenoGraphsTabWidget;
     m_pLayerWidget = new ZenoGraphsLayerWidget;
-    connect(m_pSubnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
-    pLayout->addWidget(m_pLayerWidget);
-#endif
 
+    pLayout->addWidget(m_pTabWidget);
+    pLayout->addWidget(m_pLayerWidget);
+
+    connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
 
     pLayout->setSpacing(1);
     pLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(pLayout);
+
+    m_pTabWidget->setVisible(m_bListView);
+    m_pLayerWidget->setVisible(!m_bListView);
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()
@@ -84,65 +78,60 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 
 void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
 {
-#ifdef USE_LISTVIEW_PANEL
-    const QString& subgraphName = index.data().toString();
-    m_pTabWidget->activate(subgraphName);
-#else
-    QSharedPointer<GraphsManagment> spGm = zenoApp->graphsManagment();
-    GraphsModel* pModel = spGm->currentModel();
-    QModelIndex idx = index;
-
-    const QString& objId = idx.data(ROLE_OBJID).toString();
-    QString path;
-    if (!idx.parent().isValid())
-    {
-        path = "/" + idx.data(ROLE_OBJNAME).toString();
+    if (m_bListView)
+	{
+		const QString& subgraphName = index.data().toString();
+		m_pTabWidget->activate(subgraphName);
     }
     else
     {
-		idx = idx.parent();
-		while (idx.isValid())
-		{
-			QString objName = idx.data(ROLE_OBJNAME).toString();
-			path = "/" + objName + path;
-			idx = idx.parent();
-		}
+        QSharedPointer<GraphsManagment> spGm = zenoApp->graphsManagment();
+        GraphsModel* pModel = spGm->currentModel();
+        QModelIndex idx = index;
+
+        const QString& objId = idx.data(ROLE_OBJID).toString();
+        QString path;
+        if (!idx.parent().isValid())
+        {
+            path = "/" + idx.data(ROLE_OBJNAME).toString();
+        }
+        else
+        {
+            idx = idx.parent();
+            while (idx.isValid())
+            {
+                QString objName = idx.data(ROLE_OBJNAME).toString();
+                path = "/" + objName + path;
+                idx = idx.parent();
+            }
+        }
+        m_pLayerWidget->resetPath(path, objId);
     }
-    m_pLayerWidget->resetPath(path, objId);
-#endif
 }
 
 void ZenoGraphsEditor::resetModel(GraphsModel* pModel)
 {
-#ifdef USE_LISTVIEW_PANEL
     m_pSubnetList->initModel(pModel);
-    m_pTabWidget->resetModel(pModel);
-    m_pSideBar->show();
-    m_pSubnetBtn->setChecked(true);
-    m_pSubnetList->show();
+    if (m_bListView)
+    {
+		m_pTabWidget->resetModel(pModel);
+    }
+    else
+    {
+        m_pLayerWidget;
+    }
+	m_pSideBar->show();
+	m_pSubnetBtn->setChecked(true);
+	m_pSubnetList->show();
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onCurrentModelClear()));
-#else
-    GraphsTreeModel* pTreeModel = new GraphsTreeModel(pModel, this);
-    pTreeModel->init(pModel);
-    m_pSubnetTree->initModel(pTreeModel);
-    m_pSideBar->show();
-    m_pSubnetBtn->setChecked(true);
-    m_pSubnetTree->show();
-    connect(pModel, SIGNAL(modelReset()), this, SLOT(onCurrentModelClear()));
-#endif
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()
 {
-#ifdef USE_LISTVIEW_PANEL
     m_pSubnetList->hide();
     m_pTabWidget->clear();
-#else
-    m_pSubnetTree->hide();
     m_pLayerWidget;
-#endif
     m_pSideBar->hide();
-    
 }
 
 void ZenoGraphsEditor::onSubnetBtnClicked()
@@ -154,7 +143,6 @@ void ZenoGraphsEditor::onSubnetBtnClicked()
     }
     else
     {
-#ifdef USE_LISTVIEW_PANEL
         if (m_pSubnetBtn->isChecked())
         {
             m_pSubnetList->show();
@@ -163,8 +151,5 @@ void ZenoGraphsEditor::onSubnetBtnClicked()
         {
             m_pSubnetList->hide();
         }
-#else
-
-#endif
     }
 }

@@ -127,6 +127,34 @@ QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
     }
 }
 
+QSizeF UiHelper::viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight, int* lastVisibleLine)
+{
+	if (lastVisibleLine)
+		*lastVisibleLine = -1;
+	qreal height = 0;
+	qreal widthUsed = 0;
+	textLayout.beginLayout();
+	int i = 0;
+	while (true) {
+		QTextLine line = textLayout.createLine();
+		if (!line.isValid())
+			break;
+		line.setLineWidth(lineWidth);
+		line.setPosition(QPointF(0, height));
+		height += line.height();
+		widthUsed = qMax(widthUsed, line.naturalTextWidth());
+		// we assume that the height of the next line is the same as the current one
+		if (maxHeight > 0 && lastVisibleLine && height + line.height() > maxHeight) {
+			const QTextLine nextLine = textLayout.createLine();
+			*lastVisibleLine = nextLine.isValid() ? i : -1;
+			break;
+		}
+		++i;
+	}
+	textLayout.endLayout();
+	return QSizeF(widthUsed, height);
+}
+
 QString UiHelper::generateUuid(const QString& name)
 {
     QUuid uuid = QUuid::createUuid();
