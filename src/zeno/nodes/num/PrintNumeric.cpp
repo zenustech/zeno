@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
+namespace zeno {
 namespace {
 
 struct PrintNumeric : zeno::INode {
@@ -49,7 +50,7 @@ ZENDEFNODE(PrintNumeric, {
 
 struct ToVisualize_NumericObject : PrintNumeric {
     virtual void apply() override {
-        inputs["hint:"] = std::string("VIEW of NumericObject");
+        inputs["hint:"] = std::make_shared<zeno::StringObject>("VIEW of NumericObject");
         PrintNumeric::apply();
     }
 };
@@ -61,4 +62,5 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _NumericObject, typeid(zeno::NumericObject).na
         {"numeric"},
 });
 
+}
 }

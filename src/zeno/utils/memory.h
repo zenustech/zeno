@@ -27,6 +27,18 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
             static_cast<T const &>(*o))) {
     }
 
+    template <bool lazyHelper = true>
+    T &access() const {
+        if constexpr (lazyHelper) {
+            if (!std::unique_ptr<T>::operator bool())
+                const_cast<copiable_unique_ptr *>(this)->
+                    std::unique_ptr<T>::operator=(std::make_unique<T>());
+        } else {
+            static_assert(lazyHelper);
+        }
+        return *std::unique_ptr<T>::get();
+    }
+
     operator std::unique_ptr<T> &() { return *this; }
     operator std::unique_ptr<T> const &() const { return *this; }
 };

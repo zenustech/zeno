@@ -116,8 +116,8 @@ struct BeginForEach : IBeginFor {
         m_index = 0;
         is_break = false;
         m_list = get_input<zeno::ListObject>("list");
-        if (has_input2("accumate"))
-            m_accumate = get_input2("accumate");
+        if (has_input("accumate"))
+            m_accumate = get_input("accumate");
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 
@@ -126,10 +126,10 @@ struct BeginForEach : IBeginFor {
         ret->set(m_index);
         set_output("index", std::move(ret));
         auto obj = m_list->arr[m_index];
-        set_output2("object", std::move(obj));
+        set_output("object", std::move(obj));
         m_index++;
-        if (m_accumate.has_value())
-            set_output2("accumate", std::move(m_accumate));
+        if (m_accumate)
+            set_output("accumate", std::move(m_accumate));
     }
 };
 
@@ -150,7 +150,7 @@ struct EndForEach : EndFor {
             accept = evaluate_condition(get_input("accept").get());
         }
         if (requireInput("object")) {
-            auto obj = get_input2("object");
+            auto obj = get_input("object");
             if (accept)
                 result.push_back(std::move(obj));
             else
@@ -174,7 +174,7 @@ struct EndForEach : EndFor {
             if (!fore) {
                 throw Exception("EndForEach::FOR must be conn to BeginForEach::FOR (when accumate used)!\n");
             }
-            auto accumate = get_input2("accumate");
+            auto accumate = get_input("accumate");
             fore->m_accumate = std::move(accumate);
         }
     }
@@ -204,8 +204,8 @@ struct EndForEach : EndFor {
 
         auto [sn, ss] = safe_at(inputBounds, "FOR", "input socket of EndForEach");
         if (auto fore = dynamic_cast<BeginForEach *>(graph->nodes.at(sn).get()); fore) {
-            if (fore->m_accumate.has_value())
-                set_output2("accumate", std::move(fore->m_accumate));
+            if (fore->m_accumate)
+                set_output("accumate", std::move(fore->m_accumate));
         }
     }
 };
@@ -301,11 +301,11 @@ struct IfElse : zeno::INode {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
             if (requireInput("true")) {
-                set_output2("result", get_input2("true"));
+                set_output("result", get_input("true"));
             }
         } else {
             if (requireInput("false")) {
-                set_output2("result", get_input2("false"));
+                set_output("result", get_input("false"));
             }
         }
 

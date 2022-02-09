@@ -4,6 +4,8 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 
 namespace zeno {
 
@@ -38,7 +40,7 @@ ZENO_API zany const &Graph::getGraphOutput2(
 ZENO_API zany const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    if (node->muted_output.has_value())
+    if (node->muted_output)
         return node->muted_output;
     return safe_at(node->outputs, ss, "output", node->myname);
 }
@@ -132,6 +134,18 @@ ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
     if (!node) return nullptr;
     node->graph = const_cast<Graph *>(this);
     return node;
+}
+
+ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
+    std::variant<int, float, std::string> const &val) {
+    auto parid = par + ":";
+    std::visit([&] (auto const &val) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(val)>, std::string>) {
+            setNodeInput(id, parid, std::make_shared<StringObject>(val));
+        } else {
+            setNodeInput(id, parid, std::make_shared<NumericObject>(val));
+        }
+    }, val);
 }
 
 }

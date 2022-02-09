@@ -6,6 +6,7 @@
 namespace zeno {
 
 
+    /* deprecated */
 struct ConditionObject : IObjectClone<ConditionObject> {
   bool value;
 

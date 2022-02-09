@@ -5,7 +5,6 @@
 #include <string>
 #include <typeinfo>
 #include <zeno/utils/Exception.h>
-#include <zeno/utils/Any.h>
 
 namespace zeno {
 
@@ -40,17 +39,6 @@ T safe_any_cast(std::any &&a, std::string const &msg = {}) {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"
                 + a.type().name() + "` (safe_any_cast for std::any)");
-    }
-}
-
-template <class T>
-T safe_any_cast(Any const &a, std::string const &msg = {}) {
-    if (auto o = silent_any_cast<T>(a); o.has_value()) {
-        return o.value();
-    } else {
-        throw Exception(msg + "expect `"
-                + typeid(T).name() + "`, got `"
-                + a.type().name() + "` (safe_any_cast)");
     }
 }
 

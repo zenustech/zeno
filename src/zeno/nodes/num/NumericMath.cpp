@@ -137,10 +137,10 @@ struct SetRandomSeed : INode {
     virtual void apply() override {
         auto seed = get_input<NumericObject>("seed")->get<int>();
         sfrand(seed);
-        if (has_input2("routeIn")) {
-            set_output2("routeOut", get_input2("routeIn"));
+        if (has_input("routeIn")) {
+            set_output("routeOut", get_input("routeIn"));
         } else {
-            set_output2("routeOut", std::make_shared<NumericObject>(seed));
+            set_output("routeOut", std::make_shared<NumericObject>(seed));
         }
     }
 };

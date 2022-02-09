@@ -4,7 +4,6 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/UserData.h>
-#include <zeno/utils/Any.h>
 #include <functional>
 #include <variant>
 #include <memory>
@@ -105,14 +104,8 @@ struct Graph {
     ZENO_API zany const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);
-
-    void setNodeParam(std::string const &id, std::string const &par,
-        std::variant<int, float, std::string> const &val) {
-        auto parid = par + ":";
-        std::visit([&] (auto const &val) {
-            setNodeInput(id, parid, val);
-        }, val);
-    }
+    ZENO_API void setNodeParam(std::string const &id, std::string const &par,
+        std::variant<int, float, std::string> const &val);  /* to be deprecated */
 };
 
 }

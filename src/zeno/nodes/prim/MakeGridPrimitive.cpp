@@ -52,7 +52,7 @@ struct Make1DLinePrimitive : INode {
           prim->lines[x][1] = x + 1;
         }
     }
-    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
+    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
     set_output("prim", std::move(prim));
   }
 };
@@ -133,8 +133,8 @@ struct Make2DGridPrimitive : INode {
           prim->tris[index * 2 + 1][2] = y * nx + x;
         }
     }
-    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
-    prim->userData.get("ny") = std::make_shared<NumericObject>((int)ny);//zhxx
+    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
+    prim->userData().set("ny", std::make_shared<NumericObject>((int)ny));//zhxx
     set_output("prim", std::move(prim));
   }
 };

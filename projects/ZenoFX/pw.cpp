@@ -78,10 +78,8 @@ struct ParticlesWrangle : zeno::INode {
             std::make_shared<zeno::DictObject>();
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
-        for (auto const &[key_, obj]: params->lut) {
+        for (auto const &[key_, par]: params->getLiterial<zeno::NumericValue>()) {
             auto key = '$' + key_;
-            if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj); o.has_value()) {
-                auto par = o.value();
                 auto dim = std::visit([&] (auto const &v) {
                     using T = std::decay_t<decltype(v)>;
                     if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -104,7 +102,6 @@ struct ParticlesWrangle : zeno::INode {
                 }, par);
                 dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
                 opts.define_param(key, dim);
-            }
             //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
             
         }

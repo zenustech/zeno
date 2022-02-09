@@ -2,6 +2,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ConditionObject.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/utils/safe_at.h>
 
 namespace zeno {
@@ -14,7 +15,7 @@ struct PortalIn : zeno::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = get_input2("port");
+        auto obj = get_input("port");
         graph->portals[name] = std::move(obj);
     }
 };
@@ -32,7 +33,7 @@ struct PortalOut : zeno::INode {
         auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
         graph->applyNode(depnode);
         auto obj = zeno::safe_at(graph->portals, name, "portal object");
-        set_output2("port", std::move(obj));
+        set_output("port", std::move(obj));
     }
 };
 
@@ -46,11 +47,11 @@ ZENDEFNODE(PortalOut, {
 
 struct Route : zeno::INode {
     virtual void apply() override {
-        if (has_input2("input")) {
-            auto obj = get_input2("input");
-            set_output2("output", std::move(obj));
+        if (has_input("input")) {
+            auto obj = get_input("input");
+            set_output("output", std::move(obj));
         } else {
-            set_output2("output", std::make_shared<zeno::ConditionObject>());
+            set_output("output", std::make_shared<zeno::ConditionObject>());
         }
     }
 };
@@ -169,7 +170,7 @@ struct SetUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input("object");
         auto key = get_param<std::string>("key");
-        object->userData.get(key) = get_input2("data");
+        object->userData().set(key, get_input("data"));
         set_output("object", std::move(object));
     }
 };
@@ -186,10 +187,10 @@ struct GetUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input("object");
         auto key = get_param<std::string>("key");
-        auto hasValue = object->userData.has(key);
-        auto data = object->userData.get(key);
+        auto hasValue = object->userData().has(key);
+        auto data = object->userData().get(key);
         set_output2("hasValue", hasValue);
-        set_output2("data", std::move(data));
+        set_output("data", std::move(data));
     }
 };
 
@@ -205,7 +206,7 @@ struct DelUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input("object");
         auto key = get_param<std::string>("key");
-        object->userData.del(key);
+        object->userData().del(key);
     }
 };
 
@@ -221,7 +222,7 @@ struct CopyAllUserData : zeno::INode {
     virtual void apply() override {
         auto src = get_input("src");
         auto dst = get_input("dst");
-        dst->userData = src->userData;
+        dst->userData() = src->userData();
         set_output("dst", std::move(dst));
     }
 };

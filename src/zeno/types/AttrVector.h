@@ -2,6 +2,7 @@
 
 #include <zeno/utils/vec.h>
 #include <zeno/utils/Exception.h>
+#include <zeno/utils/type_traits.h>
 #include <variant>
 #include <vector>
 #include <map>

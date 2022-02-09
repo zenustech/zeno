@@ -29,7 +29,7 @@ void ISubgraphNode::apply() {
             subg->hasAnyView = true;
         }
 #endif
-        set_output2(key, std::move(obj));
+        set_output(key, std::move(obj));
     }
 
     subg->subInputs.clear();

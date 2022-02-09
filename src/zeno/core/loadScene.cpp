@@ -1,5 +1,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
+#include <zeno/types/LiterialConverter.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -10,41 +11,50 @@ using namespace rapidjson;
 
 template <class T, bool HasVec = true>
 static T generic_get(Value const &x) {
+    auto cast = [&] {
+        if constexpr (std::is_same_v<T, zany>) {
+            return [&] (auto &&x) -> zany {
+                return objectFromLiterial(std::forward<decltype(x)>(x));
+            };
+        } else {
+            return [&] (auto &&x) { return x; };
+        };
+    }();
     if (x.IsString()) {
-        return (std::string)x.GetString();
+        return cast((std::string)x.GetString());
     } else if (x.IsInt()) {
-        return x.GetInt();
+        return cast(x.GetInt());
     } else if (x.IsFloat()) {
-        return x.GetFloat();
+        return cast(x.GetFloat());
     } else if (x.IsBool()) {
-        return x.GetBool();
+        return cast(x.GetBool());
     } else {
         if constexpr (HasVec) {
             if (x.IsArray()) {
                 auto a = x.GetArray();
                 if (a.Size() == 2) {
                     if (a[0].IsInt()) {
-                        return vec2i(a[0].GetInt(), a[1].GetInt());
+                        return cast(vec2i(a[0].GetInt(), a[1].GetInt()));
                     } else if (a[0].IsFloat()) {
-                        return vec2f(a[0].GetFloat(), a[1].GetFloat());
+                        return cast(vec2f(a[0].GetFloat(), a[1].GetFloat()));
                     }
                 } else if (a.Size() == 3) {
                     if (a[0].IsInt()) {
-                        return vec3i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt());
+                        return cast(vec3i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt()));
                     } else if (a[0].IsFloat()) {
-                        return vec3f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat());
+                        return cast(vec3f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat()));
                     }
                 } else if (a.Size() == 4) {
                     if (a[0].IsInt()) {
-                        return vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt());
+                        return cast(vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt()));
                     } else if (a[0].IsFloat()) {
-                        return vec4f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat(), a[4].GetFloat());
+                        return cast(vec4f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat(), a[4].GetFloat()));
                     }
                 }
             }
         }
         log_warn("unknown type encountered in generic_get");
-        return 0;
+        return cast(0);
     }
 }
 

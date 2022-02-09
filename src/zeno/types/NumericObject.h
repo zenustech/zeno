@@ -16,18 +16,26 @@ struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;
 
   NumericObject() = default;
-  NumericObject(NumericValue value) : value(value) {}
+  NumericObject(NumericValue const &value) : value(value) {}
+
+  NumericValue &get() {
+      return value;
+  }
+
+  NumericValue const &get() const {
+      return value;
+  }
 
   template <class T>
-  T get() {
+  T get() const {
     if (!is<T>())
         throw Exception((std::string)"NumericObject expect `" + typeid(T).name()
-                + "`, got index `" + "0123456789abcdefghijklmnopqrstuvwxyz"[value.index()] + "`");
+                + "`, got index `" + std::to_string(value.index()) + "`");
     return std::get<T>(value);
   }
 
   template <class T>
-  bool is() {
+  bool is() const {
     return std::holds_alternative<T>(value);
   }
 

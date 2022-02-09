@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 
+namespace zeno {
 namespace {
 
 struct MakeWritePath : zeno::INode {
@@ -159,4 +160,5 @@ ZENDEFNODE(EndFrame, {
     {"fileio"},
 });*/
 
+}
 }

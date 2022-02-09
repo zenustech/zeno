@@ -14,7 +14,7 @@ struct MakePrimitiveFromList : zeno::INode {
   virtual void apply() override {
     auto prim = std::make_shared<PrimitiveObject>();
     auto list = get_input<ListObject>("list");
-    for (auto const &val: list->get<vec3f>()) {
+    for (auto const &val: list->getLiterial<vec3f>()) {
         prim->verts.push_back(val);
     }
     prim->verts.update();

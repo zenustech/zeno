@@ -35,17 +35,17 @@ struct SubEndpoint : zeno::INode {
         auto name = get_param<std::string>("name");
         if (auto it = graph->subEndpointGetters.find(name);
                 it == graph->subEndpointGetters.end()) {
-            set_output2("hasValue",
+            set_output("hasValue",
                     std::make_shared<zeno::ConditionObject>(false));
         } else {
-            if (has_input2("setValue")) {
-                auto obj = get_input2("setValue");
+            if (has_input("setValue")) {
+                auto obj = get_input("setValue");
                 graph->subEndpointSetValues[name] = std::move(obj);
             } else {
                 auto obj = it->second();
-                set_output2("getValue", std::move(obj));
+                set_output("getValue", std::move(obj));
             }
-            set_output2("hasValue",
+            set_output("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
         }
     }
@@ -72,19 +72,19 @@ struct SubInput : zeno::INode {
         if (auto it = graph->subInputs.find(name);
                 it != graph->subInputs.end()) {
             auto obj = it->second;
-            set_output2("port", std::move(obj));
-            set_output2("hasValue",
+            set_output("port", std::move(obj));
+            set_output("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
 
         } else if (auto it = graph->subInputPromises.find(name);
                 it != graph->subInputPromises.end()) {
             auto obj = it->second();
-            set_output2("port", std::move(obj));
-            set_output2("hasValue",
+            set_output("port", std::move(obj));
+            set_output("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
 
         } else {
-            set_output2("hasValue",
+            set_output("hasValue",
                     std::make_shared<zeno::ConditionObject>(false));
         }
     }
@@ -108,9 +108,9 @@ struct SubOutput : zeno::INode {
     }
 
     virtual void apply() override {
-        if (has_input2("port")) {
+        if (has_input("port")) {
             auto name = get_param<std::string>("name");
-            auto obj = get_input2("port");
+            auto obj = get_input("port");
             graph->subOutputs[name] = std::move(obj);
         }
     }
@@ -133,9 +133,9 @@ struct SubResult : zeno::INode {
     }
 
     virtual void apply() override {
-        if (has_input2("port")) {
+        if (has_input("port")) {
             auto name = get_param<std::string>("name");
-            auto obj = get_input2("port");
+            auto obj = get_input("port");
             graph->subOutputs[name] = std::move(obj);
         }
     }

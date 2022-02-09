@@ -24,7 +24,7 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
 #endif
     //
 
-    for (auto const &prim: list->get<std::shared_ptr<PrimitiveObject>>()) {
+    for (auto const &prim: list->get<PrimitiveObject>()) {
 #if defined(_OPENMP)
         nTotalVerts += prim->verts.size();
         nTotalPts += prim->points.size();
@@ -50,7 +50,7 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
     outprim->polys.resize(nTotalPolys);
 #endif
 
-    for (auto const &prim: list->get<std::shared_ptr<PrimitiveObject>>()) {
+    for (auto const &prim: list->get<PrimitiveObject>()) {
         const auto base = outprim->size();
         prim->foreach_attr([&] (auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
@@ -60,7 +60,7 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
 #if defined(_OPENMP)
             static_assert(std::is_trivially_copyable_v<T>, "if T is not trivially copyable, then perf is damaged.");
             // since attr is stored in std::vector, its iterator must be LegacyContiguousIterator.
-            memcpy(outarr.data() + len, arr.data(), sizeof(T) * arr.size());
+            std::memcpy(outarr.data() + len, arr.data(), sizeof(T) * arr.size());
             // std::copy(std::begin(arr), std::end(arr), std::begin(outarr) + len);
 #else
             outarr.insert(outarr.end(), std::begin(arr), std::end(arr));
