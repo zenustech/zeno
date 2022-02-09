@@ -51,7 +51,7 @@ struct PrimitiveLineSolidify : zeno::INode {
         bool isTri = get_input2<bool>("isTri");
 
         intptr_t n = prim->verts.size();
-        if (n >= 2) {
+        if (n >= 2 && count >= 2) {
 
             prim->lines.clear();
 
@@ -78,6 +78,19 @@ struct PrimitiveLineSolidify : zeno::INode {
                 cosang[a] = std::cos(ang) * radius;
             }
 
+            std::vector<vec3f> bidirections(n);
+            orthonormal first_orb(directions[0]);
+            directions[0] = first_orb.tangent;
+            bidirections[0] = first_orb.bitangent;
+            vec3f last_tangent = directions[0];
+            for (intptr_t i = 1; i < n; i++) {
+                orthonormal orb(directions[i], last_tangent);
+                last_tangent = directions[i] = orb.tangent;
+                bidirections[i] = orb.bitangent;
+                //printf("%f %f %f\n", directions[i][0], directions[i][1], directions[i][2]);
+                //printf("%f %f %f\n", bidirections[i][0], bidirections[i][1], bidirections[i][2]);
+            }
+
             boolean_switch(!radiusAttr.empty(), [&] (auto has_radius_attr) {
 
                 decltype(auto) radattr = [&] () -> decltype(auto) {
@@ -90,9 +103,10 @@ struct PrimitiveLineSolidify : zeno::INode {
 #pragma omp parallel for
             for (intptr_t i = 0; i < n; i++) {
                 auto currpos = prim->verts[i];
-                orthonormal orb(directions[i]);
+                auto tangent = directions[i];
+                auto bitangent = bidirections[i];
                 for (int a = 0; a < count; a++) {
-                    auto offs = orb.tangent * sinang[a] + orb.bitangent * cosang[a];
+                    auto offs = tangent * sinang[a] + bitangent * cosang[a];
                     if constexpr (has_radius_attr.value)
                         offs *= radattr[i];
                     prim->verts[i + n * a] = currpos + offs;
