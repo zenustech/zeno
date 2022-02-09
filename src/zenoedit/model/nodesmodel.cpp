@@ -1,5 +1,5 @@
 #include "nodesmodel.h"
-#include "modelrole.h"
+#include <zenoui/model/modelrole.h>
 #include "nodeitem.h"
 
 

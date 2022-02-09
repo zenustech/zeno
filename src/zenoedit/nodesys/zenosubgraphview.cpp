@@ -1,8 +1,10 @@
 #include "zenosubgraphscene.h"
-#include "../model/subgraphmodel.h"
+#include <zenoui/model/subgraphmodel.h>
+#include "../graphsmanagment.h"
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"
 #include "zenosearchbar.h"
+#include "zenoapplication.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -83,14 +85,19 @@ void ZenoSubGraphView::find()
 
 void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 {
-    const qreal zoomFactor = 3.0;
-    QTransform tf = transform();
-    tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
-                 tf.m21(), zoomFactor, tf.m23(),
-                 tf.m31(), tf.m32(), zoomFactor);
-    setTransform(tf);
-    centerOn(rec.pos);
-    m_scene->select(rec.id);
+    focusOn(rec.id, rec.pos);
+}
+
+void ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
+{
+	const qreal zoomFactor = 3.0;
+	QTransform tf = transform();
+	tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
+		tf.m21(), zoomFactor, tf.m23(),
+		tf.m31(), tf.m32(), zoomFactor);
+	setTransform(tf);
+	centerOn(pos);
+	m_scene->select(nodeId);
 }
 
 void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
@@ -231,8 +238,8 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
         m_menu = nullptr;
     }
     //todo
-    //m_menu = new QMenu(this);
-    //QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
-    //m_menu->addActions(actions);
-    //m_menu->exec(QCursor::pos());
+    m_menu = new QMenu(this);
+    QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
+    m_menu->addActions(actions);
+    m_menu->exec(QCursor::pos());
 }

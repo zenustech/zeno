@@ -2,9 +2,9 @@
 #define __ZENO_SUBGRAPH_SCENE_H__
 
 #include <QtWidgets>
-#include "../render/ztfutil.h"
-#include "nodesys_common.h"
-#include "../model/modeldata.h"
+#include <zenoui/render/ztfutil.h>
+#include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/model/modeldata.h>
 
 
 class SubGraphModel;
@@ -53,7 +53,6 @@ private:
     QRectF m_viewRect;
     NodeUtilParam m_nodeParams;
 	SubGraphModel* m_subgraphModel;
-    NodeGridItem* m_grid;
     std::map<QString, ZenoNode*> m_nodes;
     std::map<EdgeInfo, ZenoFullLink*/*, cmpEdge*/> m_links;
     ZenoTempLink* m_tempLink;

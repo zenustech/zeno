@@ -2,7 +2,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "style/zenostyle.h"
-#include <model/graphsmodel.h>
+#include <zenoui/model/graphsmodel.h>
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
 #include <zenoui/model/modelrole.h>
@@ -99,7 +99,9 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     pIcon->setPixmap(QIcon(":/icons/ic_File.svg").pixmap(ZenoStyle::dpiScaledSize(QSize(16,16)), QIcon::Normal));
 
     m_pTextLbl = new QLabel("");
-    m_pTextLbl->setFont(QFont("HarmonyOS Sans", 12));
+    QFont font = QFont("HarmonyOS Sans", 12);
+    font.setBold(false);
+    m_pTextLbl->setFont(font);
     QPalette pal = m_pTextLbl->palette();
     pal.setColor(QPalette::WindowText, QColor(128, 124, 122));
     m_pTextLbl->setPalette(pal);
@@ -114,7 +116,9 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     pMainLayout->addWidget(m_pListView);
 
     ZTextLabel* pNewSubnetBtn = new ZTextLabel("Add New Subnet");
-    pNewSubnetBtn->setFont(QFont("HarmonyOS Sans", 13));
+    font.setPointSize(13);
+    font.setBold(false);
+    pNewSubnetBtn->setFont(font);
     pNewSubnetBtn->setTextColor(QColor(116, 116, 116));
     pNewSubnetBtn->setBackgroundColor(QColor(56, 57, 56));
     pNewSubnetBtn->setAlignment(Qt::AlignCenter);

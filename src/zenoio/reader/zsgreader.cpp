@@ -1,4 +1,3 @@
-#include <zenoui/model/nodesmodel.h>
 #include "zsgreader.h"
 
 
@@ -38,10 +37,6 @@ void ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
         _parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor);
     }
     pAcceptor->switchSubGraph("main");
-}
-
-void ZsgReader::_parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph)
-{
 }
 
 void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)

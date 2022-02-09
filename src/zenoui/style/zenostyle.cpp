@@ -2,7 +2,7 @@
 #include "zstyleoption.h"
 #include "../comctrl/ztoolbutton.h"
 #include "../comctrl/zobjectbutton.h"
-#include "../nodesys/zenoparamwidget.h"
+#include "../comctrl/gv/zenoparamwidget.h"
 #include <QScreen>
 #include "../comctrl/zenodockwidget.h"
 #include <QtWidgets/private/qdockwidget_p.h>

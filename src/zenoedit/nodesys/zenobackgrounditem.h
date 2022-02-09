@@ -2,7 +2,7 @@
 #define __ZENO_BACKGROUND_ITEM_H__
 
 #include <QtWidgets>
-#include "zenosvgitem.h"
+#include <zenoui/nodesys/zenosvgitem.h>
 
 class ZenoBackgroundItem : public QGraphicsObject
 {

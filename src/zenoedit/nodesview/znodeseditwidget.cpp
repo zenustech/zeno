@@ -2,9 +2,9 @@
 #include "znodeswebview.h"
 #include <util/uihelper.h>
 #include <nodesys/zenographswidget.h>
-#include <io/zsgreader.h>
-#include <io/zsgwriter.h>
-#include <model/graphsmodel.h>
+#include <zenoio/reader/zsgreader.h>
+#include <zenoio/writer/zsgwriter.h>
+#include <zenoui/model/graphsmodel.h>
 #include <QMenuBar>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"

@@ -4,6 +4,12 @@ cmake_minimum_required(VERSION 3.18)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
+    message(WARNING "The binary directory of CMake cannot be the same as source directory!"
+        "Please consider use 'cmake -B build' to specify a different binary directory."
+        "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
+endif()
+
 project(zeno LANGUAGES C CXX)
 
 # Otherwise we can't link SHARED libs with STATIC libs
@@ -30,7 +36,7 @@ option(ZENO_FIXED_OUTPUT "Output files to fixed position" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" OFF)
 
-if (ZENO_USE_CCACHE)
+if (ZENO_USE_CCACHE)  # speed up compilation by cache
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_PROGRAM})

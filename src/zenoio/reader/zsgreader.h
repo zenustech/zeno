@@ -1,13 +1,13 @@
 #ifndef __ZSG_READER_H__
 #define __ZSG_READER_H__
 
-#include <rapidjson/document.h>
+#include <QObject>
 #include <QtWidgets>
+
+#include <rapidjson/document.h>
+
 #include "../acceptor/iacceptor.h"
 #include <zenoui/model/modeldata.h>
-
-class NodeItem;
-class NodesModel;
 
 class ZsgReader
 {
@@ -19,7 +19,6 @@ private:
     ZsgReader();
     void _parseSubGraph(const QString& name, const rapidjson::Value &subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor);
     void _parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& descriptors, IAcceptor* pAcceptor);
-    void _parseGraph(NodesModel *pModel, const rapidjson::Value &subgraph);
     void _parseInputs(const QString& id, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor);
     void _parseParams(const QString& id, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
     void _parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor);

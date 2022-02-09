@@ -1,5 +1,5 @@
 #include "linkitemmodel.h"
-#include "modelrole.h"
+#include <zenoui/model/modelrole.h>
 
 LinkItemModel::LinkItemModel(QObject* parent)
 {

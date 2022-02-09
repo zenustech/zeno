@@ -1,6 +1,6 @@
 #include "graphstreemodel.h"
-#include <model/graphsmodel.h>
-#include <model/modelrole.h>
+#include <zenoui/model/graphsmodel.h>
+#include <zenoui/model/modelrole.h>
 
 
 GraphsTreeModel::GraphsTreeModel(GraphsModel* pTreeModel, QObject* parent)
@@ -29,6 +29,7 @@ QStandardItem* GraphsTreeModel::appendSubModel(GraphsModel* pTreeModel, SubGraph
 	{
 		const QModelIndex& idx = pModel->index(r, 0);
 		const QString& objName = pModel->data(idx, ROLE_OBJNAME).toString();
+		const QString& objId = pModel->data(idx, ROLE_OBJID).toString();
 		QStandardItem* pSubItem = nullptr;
 		if (SubGraphModel* pSubModel = pTreeModel->subGraph(objName))
 		{
@@ -38,7 +39,10 @@ QStandardItem* GraphsTreeModel::appendSubModel(GraphsModel* pTreeModel, SubGraph
 		{
 			pSubItem = new QStandardItem(objName);
 		}
+		pSubItem->setData(objName, ROLE_OBJNAME);
+		pSubItem->setData(objId, ROLE_OBJID);
 		pItem->appendRow(pSubItem);
 	}
+	pItem->setData(pModel->name(), ROLE_OBJNAME);
 	return pItem;
 }

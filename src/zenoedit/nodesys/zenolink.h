@@ -2,8 +2,8 @@
 #define __ZENO_LINK_H__
 
 #include <QtWidgets>
-#include "nodesys_common.h"
-#include "../model/modeldata.h"
+#include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/model/modeldata.h>
 
 class ZenoSubGraphScene;
 

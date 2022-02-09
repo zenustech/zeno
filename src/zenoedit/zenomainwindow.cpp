@@ -8,11 +8,11 @@
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <model/graphsmodel.h>
+#include <zenoui/model/graphsmodel.h>
 #include "launch/corelaunch.h"
 #include "nodesview/zenographseditor.h"
-#include <io/zsgreader.h>
-#include <io/zsgwriter.h>
+#include <zenoio/reader/zsgreader.h>
+#include <zenoio/writer/zsgwriter.h>
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)

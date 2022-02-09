@@ -2,8 +2,8 @@
 #define __ZENO_HEATMAPITEM_H__
 
 #include <QtWidgets>
-#include "zenoparamwidget.h"
-#include "../model/modeldata.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include <zenoui/model/modeldata.h>
 
 class ZenoColorChannelItem;
 class ZenoColorRampItem;

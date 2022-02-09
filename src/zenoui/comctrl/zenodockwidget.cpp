@@ -94,7 +94,9 @@ void ZenoDockWidget::init()
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    menu->setFont(QFont("HarmonyOS Sans SC", 12));
+    QFont font("HarmonyOS Sans SC", 12);
+    font.setBold(false);
+    menu->setFont(font);
     QAction* pSplitHor = new QAction("Split Left/Right");
     QAction* pSplitVer = new QAction("Split Top/Bottom");
     QAction* pMaximize = new QAction("Maximize");

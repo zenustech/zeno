@@ -2,13 +2,13 @@
 #define __ZENO_NODE_H__
 
 #include <QtWidgets>
-#include "../render/renderparam.h"
-#include "zenosvgitem.h"
+#include <zenoui/render/renderparam.h>
+#include <zenoui/nodesys/zenosvgitem.h>
 #include "zenobackgrounditem.h"
-#include "nodesys_common.h"
-#include "zenosocketitem.h"
-#include "zenoparamwidget.h"
-#include "../model/modeldata.h"
+#include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/comctrl/gv/zenosocketitem.h>
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include <zenoui/model/modeldata.h>
 
 class SubGraphModel;
 

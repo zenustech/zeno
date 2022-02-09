@@ -1,7 +1,7 @@
 #ifndef __ZENO_SEARCHBAR_H__
 #define __ZENO_SEARCHBAR_H__
 
-#include "nodesys_common.h"
+#include <zenoui/nodesys/nodesys_common.h>
 
 class SubGraphModel;
 

@@ -6,7 +6,7 @@
 #include <QObject>
 #include <memory>
 
-#include "../model/modeldata.h"
+#include "modeldata.h"
 #include "command.h"
 
 struct PlainNodeItem
@@ -91,7 +91,6 @@ public:
     void reload();
     QUndoStack* undoStack() const;
     void onModelInited();
-    ZenoSubGraphScene* scene() const;
 
 signals:
     void clearLayout();
@@ -119,7 +118,6 @@ private:
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;
     QUndoStack* m_stack;
-    ZenoSubGraphScene* m_scene;
 };
 
 #endif

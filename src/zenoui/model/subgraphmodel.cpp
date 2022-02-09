@@ -2,14 +2,12 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
 #include "modeldata.h"
-#include "../nodesys/zenosubgraphscene.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
-    , m_scene(new ZenoSubGraphScene(this))
 {
 }
 
@@ -26,18 +24,11 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
     , m_rect(rhs.m_rect)
     , m_name(rhs.m_name)
     , m_nodes(rhs.m_nodes)
-    , m_scene(new ZenoSubGraphScene(this))
 {
 }
 
 void SubGraphModel::onModelInited()
 {
-    m_scene->initModel(this);
-}
-
-ZenoSubGraphScene* SubGraphModel::scene() const
-{
-    return m_scene;
 }
 
 NODE_DESCS SubGraphModel::descriptors()
@@ -301,6 +292,12 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
     NODE_DATA nodeData;
     if (!itemFromIndex(index, nodeData))
         return QVariant();
+
+    if (role == ROLE_INPUTS)
+    {
+        //get input sockets from core.
+    }
+
     return nodeData[role];
 }
 

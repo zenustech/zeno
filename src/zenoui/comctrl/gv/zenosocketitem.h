@@ -1,9 +1,9 @@
 #ifndef __ZENO_SOCKET_ITEM_H__
 #define __ZENO_SOCKET_ITEM_H__
 
-#include "../model/modeldata.h"
-#include "zenosvgitem.h"
-#include "nodesys_common.h"
+#include <zenoui/model/modeldata.h>
+#include <zenoui/nodesys/zenosvgitem.h>
+#include "../../nodesys/nodesys_common.h"
 
 class ZenoSocketItem : public ZenoImageItem
 {
