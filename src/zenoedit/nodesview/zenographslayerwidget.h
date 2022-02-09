@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class ZenoSubGraphView;
+class ZIconButton;
 
 class LayerPathWidget : public QWidget
 {
@@ -14,6 +15,8 @@ public:
 
 private:
 	QString m_path;
+	ZIconButton* m_pForward;
+	ZIconButton* m_pBackward;
 };
 
 class ZenoStackedViewWidget : public QStackedWidget

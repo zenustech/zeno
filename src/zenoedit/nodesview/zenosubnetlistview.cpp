@@ -1,7 +1,9 @@
 #include "zenosubnetlistview.h"
 #include "zenoapplication.h"
+#include "zenosubnettreeview.h"
 #include "graphsmanagment.h"
 #include "style/zenostyle.h"
+#include "../model/graphstreemodel.h"
 #include <zenoui/model/graphsmodel.h>
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
@@ -91,6 +93,8 @@ void ZenoSubnetListView::paintEvent(QPaintEvent* e)
 ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     : QWidget(parent)
     , m_pListView(nullptr)
+    , m_pTreeView(nullptr)
+    , m_bListView(false)
 {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
 
@@ -113,7 +117,9 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     pMainLayout->addLayout(pLabelLayout);
 
     m_pListView = new ZenoSubnetListView;
+    m_pTreeView = new ZenoSubnetTreeView;
     pMainLayout->addWidget(m_pListView);
+    pMainLayout->addWidget(m_pTreeView);
 
     ZTextLabel* pNewSubnetBtn = new ZTextLabel("Add New Subnet");
     font.setPointSize(13);
@@ -130,22 +136,38 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     setLayout(pMainLayout);
 
     connect(m_pListView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
+    connect(m_pTreeView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
     connect(pNewSubnetBtn, SIGNAL(clicked()), this, SLOT(onNewSubnetBtnClicked()));
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+
+    m_pListView->setVisible(m_bListView);
+    m_pTreeView->setVisible(!m_bListView);
 }
 
 void ZenoSubnetListPanel::initModel(GraphsModel* pModel)
 {
     m_pListView->initModel(pModel);
+	GraphsTreeModel* pTreeModel = new GraphsTreeModel(pModel, this);    //todo: put in managment.
+	pTreeModel->init(pModel);
+    m_pTreeView->initModel(pTreeModel);
     m_pTextLbl->setText(pModel->fileName());
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 }
 
 QSize ZenoSubnetListPanel::sizeHint() const
 {
-    int w = m_pListView->sizeHint().width();
-    int h = QWidget::sizeHint().height();
-    return QSize(w, h);
+    if (m_bListView)
+    {
+		int w = m_pListView->sizeHint().width();
+		int h = QWidget::sizeHint().height();
+		return QSize(w, h);
+    }
+    else
+    {
+        int w = m_pTreeView->sizeHint().width();
+		int h = QWidget::sizeHint().height();
+		return QSize(w, h);
+    }
 }
 
 void ZenoSubnetListPanel::onModelReset()
@@ -155,16 +177,19 @@ void ZenoSubnetListPanel::onModelReset()
 
 void ZenoSubnetListPanel::onNewSubnetBtnClicked()
 {
-    GraphsModel* pModel = qobject_cast<GraphsModel*>(m_pListView->model());
-    Q_ASSERT(pModel);
-    SubGraphModel* pSubModel = new SubGraphModel(pModel);
-    pSubModel->setName("temp");
-    pModel->appendSubGraph(pSubModel);
+    if (m_bListView)
+    {
+		GraphsModel* pModel = qobject_cast<GraphsModel*>(m_pListView->model());
+		Q_ASSERT(pModel);
+		SubGraphModel* pSubModel = new SubGraphModel(pModel);
+		pSubModel->setName("temp");
+		pModel->appendSubGraph(pSubModel);
 
-    const QModelIndexList& lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, "temp", 1, Qt::MatchExactly);
-    Q_ASSERT(lst.size() == 1);
-    const QModelIndex idx = lst[0];
-    m_pListView->edit(idx);
+		const QModelIndexList& lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, "temp", 1, Qt::MatchExactly);
+		Q_ASSERT(lst.size() == 1);
+		const QModelIndex idx = lst[0];
+		m_pListView->edit(idx);
+    }
 }
 
 void ZenoSubnetListPanel::paintEvent(QPaintEvent* e)

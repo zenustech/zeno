@@ -5,6 +5,7 @@
 #include "zenographswidget.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
+#include "zenonode.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -90,14 +91,17 @@ void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 
 void ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
 {
-	const qreal zoomFactor = 3.0;
-	QTransform tf = transform();
-	tf.setMatrix(zoomFactor, tf.m12(), tf.m13(),
-		tf.m21(), zoomFactor, tf.m23(),
-		tf.m31(), tf.m32(), zoomFactor);
-	setTransform(tf);
-	centerOn(pos);
 	m_scene->select(nodeId);
+    auto items = m_scene->selectedItems();
+    for (auto item : items)
+    {
+        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+        {
+            QRectF rcBounding = pNode->sceneBoundingRect();
+            rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
+            fitInView(rcBounding, Qt::KeepAspectRatio);
+        }
+    }
 }
 
 void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)

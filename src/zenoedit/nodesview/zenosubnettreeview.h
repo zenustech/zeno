@@ -6,13 +6,6 @@
 class GraphsModel;
 class GraphsTreeModel;
 
-class ZenoSubnetTreePanel : public QWidget
-{
-    Q_OBJECT
-public:
-
-};
-
 class ZenoSubnetTreeView : public QTreeView
 {
     Q_OBJECT
@@ -21,8 +14,11 @@ public:
     ~ZenoSubnetTreeView();
     void initModel(GraphsTreeModel* pModel);
 
-private:
+protected:
     void paintEvent(QPaintEvent* e) override;
+
+private:
+    void initStyle();
 };
 
 #endif

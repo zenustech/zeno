@@ -9,8 +9,14 @@
 
 LayerPathWidget::LayerPathWidget(QWidget* parent)
 	: QWidget(parent)
+	, m_pForward(nullptr)
+	, m_pBackward(nullptr)
 {
 	QHBoxLayout* pLayout = new QHBoxLayout;
+	m_pForward = new ZIconButton(QIcon(":/icons/forward.svg"), QSize(28, 28), QColor(), QColor());
+	m_pBackward = new ZIconButton(QIcon(":/icons/backward.svg"), QSize(28, 28), QColor(), QColor());
+	pLayout->addWidget(m_pForward);
+	pLayout->addWidget(m_pBackward);
 	setLayout(pLayout);
 }
 
@@ -18,11 +24,16 @@ void LayerPathWidget::setPath(const QString& path)
 {
 	m_path = path;
 	QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(this->layout());
-	while (QWidget* w = findChild<QWidget*>())
+	while (pLayout->count() > 2)
 	{
-		delete w;
+		QLayoutItem* pItem = pLayout->itemAt(pLayout->count() - 1);
+		QWidget* w = pItem->widget();
+		if (w != m_pForward && w != m_pBackward)
+		{
+			pLayout->removeItem(pItem);
+			delete w;
+		}
 	}
-	int cnt = pLayout->count();
 
 	QStringList L = m_path.split("/");
 	for (QString item : L)
@@ -42,6 +53,7 @@ void LayerPathWidget::setPath(const QString& path)
 		if (L.indexOf(item) != L.length() - 1)
 			pLayout->addWidget(pArrow);
 	}
+	pLayout->addStretch();
 	update();
 }
 
@@ -84,18 +96,13 @@ ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent)
 	, m_pPathWidget(nullptr)
 	, m_graphsWidget(nullptr)
 {
-	ZIconButton* pForward = new ZIconButton(QIcon(":/icons/forward.svg"), QSize(28, 28), QColor(), QColor());
-	ZIconButton* pBackward = new ZIconButton(QIcon(":/icons/backward.svg"), QSize(28, 28), QColor(), QColor());
+	QVBoxLayout* pLayout = new QVBoxLayout;
 	m_pPathWidget = new LayerPathWidget;
 	m_pPathWidget->hide();
-	QHBoxLayout* pHLayout = new QHBoxLayout;
-	pHLayout->addWidget(pForward);
-	pHLayout->addWidget(pBackward);
-	pHLayout->addWidget(m_pPathWidget);
-	QVBoxLayout* pLayout = new QVBoxLayout;
-	pLayout->addLayout(pHLayout);
+	pLayout->addWidget(m_pPathWidget);
 	m_graphsWidget = new ZenoStackedViewWidget;
 	pLayout->addWidget(m_graphsWidget);
+	pLayout->setMargin(0);
 	setLayout(pLayout);
 }
 
