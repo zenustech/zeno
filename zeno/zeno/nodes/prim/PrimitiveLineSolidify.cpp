@@ -164,6 +164,7 @@ struct PrimitiveLineSolidify : zeno::INode {
                 }
                 prim->tris.emplace_back(count * n, n * (count-1), 0);
                 prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
+                prim->tris.update();
             }
 
             prim->verts.foreach_attr([&] (auto const &key, auto &attr) {
