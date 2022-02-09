@@ -2,7 +2,6 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
-#include <zeno/core/Scene.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>

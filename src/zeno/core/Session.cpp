@@ -1,7 +1,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/IObject.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/core/Scene.h>
+#include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
@@ -62,16 +62,10 @@ ZENO_API INodeClass::INodeClass(Descriptor const &desc)
 
 ZENO_API INodeClass::~INodeClass() = default;
 
-ZENO_API std::unique_ptr<Scene> Session::createScene() {
-    auto scene = std::make_unique<Scene>();
-    scene->sess = const_cast<Session *>(this);
-    return scene;
-}
-
-ZENO_API Scene &Session::getDefaultScene() {
-    if (!defaultScene)
-        defaultScene = createScene();
-    return *defaultScene;
+ZENO_API std::unique_ptr<Graph> Session::createGraph() {
+    auto graph = std::make_unique<Graph>();
+    graph->session = const_cast<Session *>(this);
+    return graph;
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {
@@ -83,12 +77,15 @@ ZENO_API std::string Session::dumpDescriptors() const {
   return res;
 }
 
-
 ZENO_API Session &getSession() {
+#if 0
     static std::unique_ptr<Session> ptr;
     if (!ptr) {
         ptr = std::make_unique<Session>();
     }
+#else
+    static std::unique_ptr<Session> ptr = std::make_unique<Session>();
+#endif
     return *ptr;
 }
 

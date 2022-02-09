@@ -1,4 +1,3 @@
-#include <zeno/core/Scene.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
