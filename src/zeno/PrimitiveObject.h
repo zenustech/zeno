@@ -5,3 +5,4 @@
 #endif
 
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/utils/legacy_smart_any_cast.h>

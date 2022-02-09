@@ -52,9 +52,9 @@ struct VDBWrangle : zeno::INode {
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
-        if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid).has_value())
+        if (std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid))
             opts.define_symbol("@val", 1);
-        else if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid).has_value())
+        else if (std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid))
             opts.define_symbol("@val", 3);
         else
             dbg_printf("unexpected vdb grid type");
@@ -101,10 +101,10 @@ struct VDBWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid);
-        else if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid);
+        if (auto p = std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid))
+            vdb_wrangle(exec, p->m_grid);
+        else if (auto p = std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid))
+            vdb_wrangle(exec, p->m_grid);
 
         set_output("grid", std::move(grid));
     }
