@@ -3,6 +3,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/extra/ISubgraphNode.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 
@@ -145,6 +146,19 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
             setNodeInput(id, parid, std::make_shared<NumericObject>(val));
         }
     }, val);
+}
+
+ZENO_API Graph *Graph::createSubgraph(std::string const &ident) {
+    auto subgraph = std::make_unique<Graph>();
+    auto rawptr = subgraph.get();
+    subgraph->session = this->session;
+    auto node = std::make_unique<SubgraphNode>();
+    node->graph = this;
+    node->myname = ident;
+    node->nodeClass = nullptr;
+    node->subgraph = std::move(subgraph);
+    nodes[ident] = std::move(node);
+    return rawptr;
 }
 
 }

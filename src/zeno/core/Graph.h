@@ -97,6 +97,7 @@ struct Graph {
     ZENO_API void loadGraph(const char *json);
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val);  /* to be deprecated */
+    ZENO_API Graph *createSubgraph(std::string const &ident);
 };
 
 }

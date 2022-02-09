@@ -7,7 +7,5 @@ class GraphsModel;
 class SubGraphModel;
 
 void serializeScene(GraphsModel* pModel, QJsonArray& ret);
-QJsonArray serializeGraphs(GraphsModel* pModel);
-void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonArray& ret);
 
 #endif

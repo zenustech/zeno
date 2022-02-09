@@ -4,6 +4,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
+#include <stack>
 
 namespace zeno {
 
@@ -58,9 +59,11 @@ static T generic_get(Value const &x) {
     }
 }
 
-ZENO_API void Graph::loadGraph(const char *json) {
+static void loadGraphImpl(Graph *graph, const char *json) {
     Document d;
     d.Parse(json);
+
+    std::stack<Graph *> graphStack;
 
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
@@ -70,17 +73,23 @@ ZENO_API void Graph::loadGraph(const char *json) {
 #endif
             if (0) {
             } else if (cmd == "addNode") {
-                addNode(di[1].GetString(), di[2].GetString());
+                graph->addNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "completeNode") {
-                completeNode(di[1].GetString());
+                graph->completeNode(di[1].GetString());
             } else if (cmd == "setNodeInput") {
-                setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+                graph->setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
-                setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
+                graph->setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
             } else if (cmd == "setNodeOption") {
-                setNodeOption(di[1].GetString(), di[2].GetString());
+                graph->setNodeOption(di[1].GetString(), di[2].GetString());
             } else if (cmd == "bindNodeInput") {
-                bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+                graph->bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+            } else if (cmd == "pushSubgraph") {
+                graphStack.push(graph);
+                graph = graph->createSubgraph(di[1].GetString());
+            } else if (cmd == "popSubgraph") {
+                graph = graphStack.top();
+                graphStack.pop();
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
@@ -89,6 +98,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
         }
 #endif
     }
+}
+
+ZENO_API void Graph::loadGraph(const char *json) {
+    loadGraphImpl(this, json);
 }
 
 }

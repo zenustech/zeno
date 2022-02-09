@@ -4,32 +4,9 @@
 #include <model/modelrole.h>
 
 
-void serializeScene(GraphsModel* pModel, QJsonArray& ret)
-{
-	QJsonArray item = { "clearAllState" };
-    ret.push_back(item);
-
-	QStringList graphs;
-	for (int i = 0; i < pModel->rowCount(); i++)
-		graphs.push_back(pModel->subGraph(i)->name());
-
-    for (int i = 0; i < pModel->rowCount(); i++)
-    {
-        SubGraphModel* pSubModel = pModel->subGraph(i);
-		serializeGraph(pSubModel, graphs, ret);
-    }
-}
-
-QJsonArray serializeGraphs(GraphsModel* pModel)
-{
-	QJsonArray ret;
-    return ret;
-}
-
-void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonArray& ret)
+static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, QJsonArray& ret)
 {
 	const QString& name = pModel->name();
-	ret.push_back(QJsonArray({ "switchGraph", name }));
 	const NODES_DATA& nodes = pModel->nodes();
 
 	for (const NODE_DATA& node : nodes)
@@ -59,28 +36,14 @@ void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonA
 
 		if (graphNames.indexOf(name) != -1)
 		{
-			params["name"].name = "name";
-			params["name"].value = name;
-			name = "Subgraph";
-		}
-		else if (name == "ExecutionOutput")
-		{
-			name = "Route";
-		}
+            SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
+            ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
+            serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
+            ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
 
-		//temp code for debug
-		if (name == "MakeDict")
-		{
-			int j;
-			j = 0;
-		}
-		if (ident == "730549a0-Make2DGridPrimitive")
-		{
-			int j;
-			j = 0;
-		}
-
-		ret.push_back(QJsonArray({ "addNode", name, ident }));
+		} else {
+            ret.push_back(QJsonArray({ "addNode", name, ident }));
+        }
 
 		for (INPUT_SOCKET input : inputs)
 		{
@@ -157,4 +120,17 @@ void serializeGraph(SubGraphModel* pModel, const QStringList& graphNames, QJsonA
 
 		ret.push_back(QJsonArray({"completeNode", ident}));
 	}
+}
+
+void serializeScene(GraphsModel* pModel, QJsonArray& ret)
+{
+	//QJsonArray item = { "clearAllState" };
+    //ret.push_back(item);
+
+	QStringList graphs;
+	for (int i = 0; i < pModel->rowCount(); i++)
+		graphs.push_back(pModel->subGraph(i)->name());
+
+    SubGraphModel* pSubModel = pModel->subGraph("main");
+    serializeGraph(pSubModel, pModel, graphs, ret);
 }

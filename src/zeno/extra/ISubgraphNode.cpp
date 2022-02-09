@@ -44,17 +44,17 @@ ZENO_API ISerialSubgraphNode::ISerialSubgraphNode() = default;
 ZENO_API ISerialSubgraphNode::~ISerialSubgraphNode() = default;
 
 ZENO_API Graph *SubgraphNode::get_subgraph() {
-    return graph.get();
+    return subgraph.get();
 }
 
 ZENO_API SubgraphNode::SubgraphNode() = default;
 ZENO_API SubgraphNode::~SubgraphNode() = default;
 
-ZENDEFNODE(SubgraphNode, {
+/*ZENDEFNODE(SubgraphNode, {
     {},
     {},
     {},
     {"subgraph"},
-});
+});*/
 
 }
