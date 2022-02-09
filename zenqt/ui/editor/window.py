@@ -95,6 +95,9 @@ class NodeEditor(QWidget):
 
         self.window = window
 
+        self.always_run = False
+        self.target_frame = 0
+
         self.current_path = None
         self.clipboard = QApplication.clipboard()
 
@@ -129,6 +132,14 @@ class NodeEditor(QWidget):
         self.newProgram()
 
         self.startTimer(1000 * 10)
+
+    def try_run_this_frame(self, frame=None):
+        if frame != None:
+            self.target_frame = frame
+        if self.always_run:
+            prog = self.dumpProgram()
+            go(launch.launchProgram, prog, nframes=1, start_frame=self.target_frame)
+            print('run_this_frame')
 
     @property
     def current_path(self):
@@ -392,7 +403,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes)
+        go(launch.launchProgram, prog, nframes, start_frame=0)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()

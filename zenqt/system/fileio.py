@@ -36,3 +36,23 @@ def getFrameCount(max_frameid=None):
             return frameid
         frameid += 1
     return max_frameid
+
+# return value: tuple: (frame_start, frame_count)
+def getFrameRange():
+    if launch.g_iopath is None:
+        return (0, 0)
+    ns = os.listdir(launch.g_iopath)
+    ns = [int(n) for n in ns if n.isdigit()]
+    if len(ns) == 0:
+        return (0, 0)
+    ns.sort()
+    frame_start = ns[0]
+    frame_count = 0
+
+    for n in ns:
+        dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(n))
+        if os.path.exists(os.path.join(dirpath, 'done.lock')):
+            frame_count += 1
+        else:
+            break
+    return (frame_start, frame_count)

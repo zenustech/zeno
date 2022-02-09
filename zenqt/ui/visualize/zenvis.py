@@ -73,10 +73,11 @@ def get_curr_frameid():
     return core.get_curr_frameid()
 
 def set_curr_frameid(frameid):
-    if frameid < 0:
-        frameid = 0
-    if frameid >= fileio.getFrameCount():
-        frameid = fileio.getFrameCount() - 1
+    start, count = fileio.getFrameRange()
+    if frameid < start:
+        frameid = start
+    if frameid >= start + count:
+        frameid = start + count - 1
     cur_frameid = core.get_curr_frameid()
     core.set_curr_frameid(frameid)
     if cur_frameid != frameid and camera_keyframe != None and camera_control != None:

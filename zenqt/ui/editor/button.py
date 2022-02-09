@@ -52,6 +52,7 @@ class QDMGraphicsButton(QGraphicsItem):
 
     def on_click(self):
         self.setChecked(not self.checked)
+        self.node.scene().record()
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
