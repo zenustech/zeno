@@ -51,7 +51,6 @@ protected:
     ZENO_API virtual void apply() = 0;
 
     ZENO_API Graph *getThisGraph() const;
-    ZENO_API Scene *getThisScene() const;
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 

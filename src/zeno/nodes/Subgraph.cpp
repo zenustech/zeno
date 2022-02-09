@@ -151,7 +151,7 @@ ZENDEFNODE(SubResult, {
 });
 
 
-struct Subgraph : zeno::ISubgraphNode {
+struct Subgraph : zeno::ISubgraphNode {  // to be deprecated
     virtual zeno::Graph *get_subgraph() override {
         auto name = get_param<std::string>("name");
         auto subg = safe_at(graph->scene->graphs, name, "subgraph");

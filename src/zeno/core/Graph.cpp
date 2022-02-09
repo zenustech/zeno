@@ -24,7 +24,7 @@ ZENO_API void Graph::setGraphInputPromise(std::string const &id,
     subInputPromises[id] = std::move(getter);
 }
 
-ZENO_API void Graph::setGraphInput2(std::string const &id, zany obj) {
+ZENO_API void Graph::setGraphInput(std::string const &id, zany obj) {
     subInputs[id] = std::move(obj);
 }
 
@@ -32,7 +32,7 @@ ZENO_API void Graph::applyGraph() {
     applyNodes(finalOutputNodes);
 }
 
-ZENO_API zany const &Graph::getGraphOutput2(
+ZENO_API zany const &Graph::getGraphOutput(
         std::string const &id) const {
     return safe_at(subOutputs, id, "subgraph output");
 }
@@ -52,7 +52,7 @@ ZENO_API void Graph::clearNodes() {
 ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto cl = safe_at(scene->sess->nodeClasses, cls, "node class");
+    auto cl = safe_at(session->nodeClasses, cls, "node class");
     auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
@@ -130,7 +130,7 @@ ZENO_API UserData &Graph::getUserData() {
 
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {
-    auto node = scene->sess->getOverloadNode(id, inputs);
+    auto node = session->getOverloadNode(id, inputs);
     if (!node) return nullptr;
     node->graph = const_cast<Graph *>(this);
     return node;

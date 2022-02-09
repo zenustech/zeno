@@ -1,11 +1,12 @@
 #pragma once
 
-#include <zeno/zeno.h>
+#include <zeno/core/INode.h>
+#include <zeno/core/Graph.h>
 
 namespace zeno {
 
-struct ISubgraphNode : zeno::INode {
-    virtual zeno::Graph *get_subgraph() = 0;
+struct ISubgraphNode : INode {
+    virtual Graph *get_subgraph() = 0;
     ZENO_API virtual void apply() override;
 
     ZENO_API ISubgraphNode();
@@ -13,13 +14,22 @@ struct ISubgraphNode : zeno::INode {
 };
 
 struct ISerialSubgraphNode : ISubgraphNode {
-    std::unique_ptr<zeno::Graph> subg = nullptr;
+    std::unique_ptr<Graph> subg = nullptr;
 
     virtual const char *get_subgraph_json() = 0;
-    ZENO_API virtual zeno::Graph *get_subgraph() override;
+    ZENO_API virtual Graph *get_subgraph() override;
 
     ZENO_API ISerialSubgraphNode();
     ZENO_API virtual ~ISerialSubgraphNode();
+};
+
+struct SubgraphNode final : ISubgraphNode {
+    std::unique_ptr<Graph> graph = std::make_unique<Graph>();
+
+    ZENO_API SubgraphNode();
+    ZENO_API virtual ~SubgraphNode();
+
+    ZENO_API virtual Graph *get_subgraph() override;
 };
 
 }

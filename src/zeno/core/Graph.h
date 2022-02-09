@@ -13,7 +13,7 @@
 
 namespace zeno {
 
-struct Scene;
+struct Session;
 struct INode;
 
 struct Context {
@@ -29,7 +29,7 @@ struct Context {
 };
 
 struct Graph {
-    Scene *scene = nullptr;
+    Session *session = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
@@ -70,18 +70,9 @@ struct Graph {
     ZENO_API void setGraphInputPromise(std::string const &id,
             std::function<zany()> getter);
 
-    ZENO_API void setGraphInput2(std::string const &id, zany obj);
-    ZENO_API zany const &getGraphOutput2(std::string const &id) const;
+    ZENO_API void setGraphInput(std::string const &id, zany obj);
+    ZENO_API zany const &getGraphOutput(std::string const &id) const;
     ZENO_API void applyGraph();
-
-    void setGraphInput(std::string const &id,
-            std::shared_ptr<IObject> obj) {
-        setGraphInput2(id, std::move(obj));
-    }
-    std::shared_ptr<IObject> getGraphOutput(
-            std::string const &id) const {
-        return safe_any_cast<std::shared_ptr<IObject>>(getGraphOutput2(id));
-    }
 
     template <class T>
     std::shared_ptr<T> getGraphOutput(

@@ -22,16 +22,12 @@ ZENO_API Graph *INode::getThisGraph() const {
     return graph;
 }
 
-ZENO_API Scene *INode::getThisScene() const {
-    return graph->scene;
-}
-
 ZENO_API Session *INode::getThisSession() const {
-    return graph->scene->sess;
+    return graph->session;
 }
 
 ZENO_API GlobalState *INode::getGlobalState() const {
-    return graph->scene->sess->globalState.get();
+    return graph->session->globalState.get();
 }
 
 ZENO_API void INode::doComplete() {

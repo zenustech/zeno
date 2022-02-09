@@ -1,34 +1,25 @@
 #include <zeno/zeno.h>
-#ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
-#endif
 #include <zeno/extra/ISubgraphNode.h>
 
 namespace zeno {
 
-void ISubgraphNode::apply() {
+ZENO_API void ISubgraphNode::apply() {
     auto subg = get_subgraph();
 
-#ifdef ZENO_VISUALIZATION
     // VIEW subnodes only if subgraph is VIEW'ed
     subg->isViewed = has_option("VIEW");
-#endif
 
     for (auto const &[key, obj]: inputs) {
-        subg->setGraphInput2(key, obj);
+        subg->setGraphInput(key, obj);
     }
     subg->applyGraph();
 
     for (auto &[key, obj]: subg->subOutputs) {
-#ifdef ZENO_VISUALIZATION
         if (subg->isViewed && !subg->hasAnyView) {
-            if (auto p = zeno::silent_any_cast<
-                    std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
-                getGlobalState()->addViewObject(p.value());
-            }
+            getGlobalState()->addViewObject(obj);
             subg->hasAnyView = true;
         }
-#endif
         set_output(key, std::move(obj));
     }
 
@@ -36,10 +27,10 @@ void ISubgraphNode::apply() {
     subg->subOutputs.clear();
 }
 
-ISubgraphNode::ISubgraphNode() = default;
-ISubgraphNode::~ISubgraphNode() = default;
+ZENO_API ISubgraphNode::ISubgraphNode() = default;
+ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 
-zeno::Graph *ISerialSubgraphNode::get_subgraph() {
+ZENO_API zeno::Graph *ISerialSubgraphNode::get_subgraph() {
     if (!subg) {
         subg = std::make_unique<zeno::Graph>();
         subg->scene = graph->scene;
@@ -49,7 +40,21 @@ zeno::Graph *ISerialSubgraphNode::get_subgraph() {
     return subg.get();
 }
 
-ISerialSubgraphNode::ISerialSubgraphNode() = default;
-ISerialSubgraphNode::~ISerialSubgraphNode() = default;
+ZENO_API ISerialSubgraphNode::ISerialSubgraphNode() = default;
+ZENO_API ISerialSubgraphNode::~ISerialSubgraphNode() = default;
+
+ZENO_API Graph *SubgraphNode::get_subgraph() {
+    return graph.get();
+}
+
+ZENO_API SubgraphNode::SubgraphNode() = default;
+ZENO_API SubgraphNode::~SubgraphNode() = default;
+
+ZENDEFNODE(SubgraphNode, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});
 
 }
