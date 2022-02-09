@@ -3,7 +3,7 @@
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
-#include <zeno/utils/UserData.h>
+#include <zeno/types/UserData.h>
 #include <functional>
 #include <variant>
 #include <memory>

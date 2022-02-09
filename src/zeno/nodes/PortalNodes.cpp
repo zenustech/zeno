@@ -2,7 +2,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ConditionObject.h>
-#include <zeno/utils/UserData.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
 
 namespace zeno {

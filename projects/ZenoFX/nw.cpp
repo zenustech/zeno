@@ -113,7 +113,7 @@ struct NumericWrangle : zeno::INode {
             auto key = name.substr(1);
             std::visit([dimid = dimid, value] (auto &res) {
                     dimid[(float *)(void *)&res] = value;
-            }, zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(
+            }, std::dynamic_pointer_cast<zeno::NumericObject>(
                 result->lut[key])->value);
         }
 
