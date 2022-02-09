@@ -21,7 +21,14 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    this->setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
+
+    setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
+#ifdef __linux__
+    if (char *p = std::getenv("ZENO_OPEN")) {
+        printf("ZEN_OPEN: %s\n", p);
+        openFile(p);
+    }
+#endif
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -302,13 +309,17 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    auto pGraphs = zenoApp->graphsManagment();
     saveQuit();
 
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
     //todo: path validation
+    openFile(filePath);
+}
+
+void ZenoMainWindow::openFile(QString filePath) {
+    auto pGraphs = zenoApp->graphsManagment();
     GraphsModel* pModel = pGraphs->openZsgFile(filePath);
     pModel->initDescriptors();
 

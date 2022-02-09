@@ -26,6 +26,7 @@ public:
 public slots:
     void onRunClicked(int nFrames);
     void openFileDialog();
+    void openFile(QString filePath);
     void saveQuit();
     void saveAs();
     void onMaximumTriggered();
