@@ -77,7 +77,7 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
 struct SDFToPrimitive : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
-        set_output2("prim", std::move(outputs.at("Mesh")));
+        set_output("prim", std::move(outputs.at("Mesh")));
     }
 };
 
@@ -112,14 +112,14 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _VDBFloatGrid_PrimitiveObject, typeid(VDBFloatGr
 // TODO: ToVisualize is deprecated in zeno2, please impl this directly in the zenovis module later...
 struct ToVisualize_VDBFloatGrid : SDFToPoly {
     virtual void apply() override {
-        this->inputs["isoValue:"] = 0.0f;
-        this->inputs["adaptivity:"] = 0.0f;
-        this->inputs["allowQuads:"] = false;
+        this->inputs["isoValue:"] = std::make_shared<NumericObject>(0.0f);
+        this->inputs["adaptivity:"] = std::make_shared<NumericObject>(0.0f);
+        this->inputs["allowQuads:"] = std::make_shared<NumericObject>(false);
         SDFToPoly::apply();
         auto path = get_param<std::string>("path");
         auto prim = std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("Mesh")));
         if (auto node = graph->getOverloadNode("ToVisualize", {std::move(prim)}); node) {
-            node->inputs["path:"] = std::move(path);
+            node->inputs["path:"] = std::make_shared<StringObject>(path);
             node->doApply();
         }
     }
@@ -131,5 +131,5 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
         {{"string", "path", ""}},
         {"primitive"},
 });
-
+ 
 }

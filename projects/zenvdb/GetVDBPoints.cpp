@@ -228,13 +228,14 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPoints
         {"primitive"},
 });
 
+// TODO: ToVisualize is deprecated in zeno2, please impl this directly in the zenovis module later...
 struct ToVisualize_VDBPointsGrid : VDBPointsToPrimitive {
     virtual void apply() override {
         VDBPointsToPrimitive::apply();
         auto path = get_param<std::string>("path");
         auto prim = std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim")));
         if (auto node = graph->getOverloadNode("ToVisualize", {std::move(prim)}); node) {
-            node->inputs["path:"] = std::move(path);
+            node->inputs["path:"] = std::make_shared<StringObject>(path);
             node->doApply();
         }
     }

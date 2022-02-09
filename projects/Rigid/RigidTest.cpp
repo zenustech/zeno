@@ -3,7 +3,7 @@
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
-#include <zeno/utils/UserData.h>
+#include <zeno/types/UserData.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
@@ -906,7 +906,7 @@ ZENDEFNODE(BulletWorldRemoveObject, {
 struct BulletWorldSetObjList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto objList = get_input<ListObject>("objList")->get<std::shared_ptr<BulletObject>>();
+        auto objList = get_input<ListObject>("objList")->get<BulletObject>();
         world->setObjectList(std::move(objList));
         set_output("world", get_input("world"));
     }
@@ -955,7 +955,7 @@ struct BulletWorldSetConsList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto consList = get_input<ListObject>("consList")
-            ->get<std::shared_ptr<BulletConstraint>>();
+            ->get<BulletConstraint>();
         world->setConstraintList(std::move(consList));
         set_output("world", get_input("world"));
     }
