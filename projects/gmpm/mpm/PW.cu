@@ -149,7 +149,7 @@ struct ZSParticlesWrangler : zeno::INode {
                    pars.numChannels());
 #endif
         haccessors[i] = zs::AccessorAoSoA{
-            zs::aosoa_v,
+            zs::aosoa_c,
             (void *)pars.data(),
             (unsigned short)unitBytes,
             (unsigned short)tileSize,

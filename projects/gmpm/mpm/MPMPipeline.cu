@@ -1093,7 +1093,7 @@ struct TransformZSLevelSet : INode {
     if (has_input("eulerXYZ")) {
       auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
-                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+                                        yprAngles[2], zs::degree_c, zs::ypr_c};
       match(
           [&rot](basic_ls_t &basicLs) {
             match(

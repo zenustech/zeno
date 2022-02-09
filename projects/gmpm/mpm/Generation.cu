@@ -601,7 +601,7 @@ struct ToZSBoundary : INode {
     if (has_input("ypr_angles")) {
       auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
-                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+                                        yprAngles[2], zs::degree_c, zs::ypr_c};
       boundary->R = rot;
     }
     { boundary->omega = zs::AngularVelocity<float, 3>{}; }
