@@ -74,6 +74,27 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
     }});
 
 
+struct SDFToPrimitive : SDFToPoly {
+    virtual void apply() override {
+        SDFToPoly::apply();
+        set_output2("prim", std::move(outputs.at("Mesh")));
+    }
+};
+
+static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitive",
+    { /* inputs: */ {
+        "SDF",
+    }, /* outputs: */ {
+        "prim",
+    }, /* params: */ {
+        {"float", "isoValue", "0"},
+        {"float", "adaptivity", "0"},
+        {"bool", "allowQuads", "0"},
+    }, /* category: */ {
+    "openvdb",
+    }});
+
+
 struct ConvertTo_VDBFloatGrid_PrimitiveObject : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
@@ -88,6 +109,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _VDBFloatGrid_PrimitiveObject, typeid(VDBFloatGr
         {"primitive"},
 });
 
+// TODO: ToVisualize is deprecated in zeno2, please impl this directly in the zenovis module later...
 struct ToVisualize_VDBFloatGrid : SDFToPoly {
     virtual void apply() override {
         this->inputs["isoValue:"] = 0.0f;

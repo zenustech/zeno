@@ -85,18 +85,27 @@ class QDMSlider(QSlider):
     def __init__(self, type, timeline):
         super().__init__(type)
         self.timeline = timeline
+        self.valueChanged.connect(self.valueChanged_callback)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.timeline.stop_play()
-        self.setValue(QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), event.x(), self.width()))
+        value = QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width())
+        self.setValue(value)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.timeline.stop_play()
-        self.setValue(QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), event.x(), self.width()))
+        value = QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width())
+        self.setValue(value)
+
+    def valueChanged_callback(self, v):
+        self.timeline.label.setText(str(v))
+
+    def mouseReleaseEvent(self, e):
+        super().mouseReleaseEvent(e)
+        v = self.value()
+        self.timeline.editor.try_run_this_frame(v)
 
 
 class TimelineWidget(QWidget):
@@ -112,12 +121,14 @@ class TimelineWidget(QWidget):
             self.maxframe.setText('1')
         self.maxframe.setFixedWidth(40)
 
+        self.always_run = QCheckBox('Always', self)
+        self.always_run.setFixedWidth(65)
         self.button_execute = QPushButton('Run', self)
         self.button_execute.setFixedWidth(40)
         self.button_kill = QPushButton('Kill', self)
         self.button_kill.setFixedWidth(40)
 
-        self.label = QLabel('-')
+        self.label = QLabel('0')
         self.status = QLabel('-')
 
         self.slider = QDMSlider(Qt.Horizontal, self)
@@ -134,6 +145,7 @@ class TimelineWidget(QWidget):
 
         layout = QHBoxLayout()
         layout.addWidget(self.maxframe)
+        layout.addWidget(self.always_run)
         layout.addWidget(self.button_execute)
         layout.addWidget(self.button_kill)
         layout.addWidget(self.player)
@@ -152,16 +164,24 @@ class TimelineWidget(QWidget):
         self.msgPlay.activated.connect(lambda: self.player.change())
         self.msgRun = QShortcut(QKeySequence(Qt.Key_A), self)
         self.msgRun.activated.connect(self.on_execute)
+        self.msgRun_pybhappy = QShortcut(QKeySequence(Qt.Key_F5), self)
+        self.msgRun_pybhappy.activated.connect(self.on_execute)
 
         self.maxframe.textChanged.connect(self.maxframe_changed)
         self.maxframe_changed()
         self.button_kill.clicked.connect(self.on_kill)
         self.button_execute.clicked.connect(self.on_execute)
+        self.always_run.stateChanged.connect(self.on_always_run)
+
+    def on_always_run(self, state):
+        self.editor.always_run = state == 2
+        self.editor.try_run_this_frame()
 
     def on_kill(self):
         self.editor.on_kill()
 
     def on_execute(self):
+        self.always_run.setCheckState(Qt.CheckState.Unchecked)
         self.editor.on_kill()
         self.editor.on_execute()
         self.slider.setValue(0)
@@ -175,6 +195,8 @@ class TimelineWidget(QWidget):
         self.slider.setMaximum(int('0' + self.maxframe.text()))
 
     def on_update(self):
+        if self.always_run.checkState() == 2:
+            return
         frameid = zenvis.get_curr_frameid()
         self.slider.setValue(frameid)
         self.label.setText(str(frameid))

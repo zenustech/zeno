@@ -60,6 +60,7 @@ CMakeSettings.json
 /j.zsg
 /k.zsg
 /z
+.vim_localrc
 
 # zhxx files
 assets/smoke

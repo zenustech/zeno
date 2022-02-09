@@ -106,7 +106,7 @@ namespace zeno {
             return _handlers;
         }
 
-        std::vector<std::tuple<vec2f, vec2f>> handersToPoints(std::vector<std::tuple<vec2f, vec2f>> _handlers) {
+        std::vector<std::tuple<vec2f, vec2f>> handersToPoints(std::vector<std::tuple<vec2f, vec2f>> _handlers) const {
             std::vector<std::tuple<vec2f, vec2f>> ps;
             for (int i = 0; i < points.size(); i++) {
                 ps.emplace_back(
@@ -117,13 +117,46 @@ namespace zeno {
             return ps;
         }
 
-        float eval(float x) {
+        std::vector<std::tuple<vec2f, vec2f>> m_handlersToPoints;
+
+        void prepare() {
+            m_handlersToPoints = handersToPoints(correct_handlers());
+        }
+
+        float eval(float x) const {
             x = ratio(input_min, input_max, x);
-            auto _handlers = handersToPoints(correct_handlers());
-            float y = eval_value(points, _handlers, x);
+            float y = eval_value(points, m_handlersToPoints, x);
             return lerp(output_min, output_max, y);
         }
+
+        template <class T>
+        T generic_eval(T const &src) const {
+            if constexpr (std::is_arithmetic_v<T>) {
+                return eval(src);
+            } else {
+                T tmp{};
+                for (int i = 0; i != src.size(); ++i) {
+                    tmp[i] = eval(src[i]);
+                }
+                return tmp;
+            }
+        }
+
+        template <class T>
+        T generic_eval(T const &src, int sourceX, int sourceY, int sourceZ) const {
+            if constexpr (std::is_arithmetic_v<T>) {
+                return eval(src);
+            } else {
+                T tmp{
+                    sourceX == -1 ? src[0] : eval(src[sourceX]),
+                    sourceY == -1 ? src[1] : eval(src[sourceY]),
+                    sourceZ == -1 ? src[2] : eval(src[sourceZ]),
+                };
+                return tmp;
+            }
+        }
     };
+
     struct MakeCurvemap : zeno::INode {
         virtual void apply() override {
             auto curvemap = std::make_shared<zeno::CurvemapObject>();
@@ -154,6 +187,7 @@ namespace zeno {
             curvemap->input_max = get_param<float>("input_max");
             curvemap->output_min = get_param<float>("output_min");
             curvemap->output_max = get_param<float>("output_max");
+            curvemap->prepare();
             set_output("curvemap", std::move(curvemap));
         }
     };
@@ -202,18 +236,8 @@ namespace zeno {
             auto input = get_input<zeno::NumericObject>("value");
             auto res = std::make_shared<zeno::NumericObject>(input->value);
 
-            std::visit([&r = res->value, &curvemap](const auto &src) {
-                using T = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
-
-                T tmp{};
-                if constexpr (std::is_arithmetic_v<T>) {
-                    tmp = curvemap->eval(src);
-                } else {
-                    for (int i = 0; i != src.size(); ++i) {
-                        tmp[i] = curvemap->eval(src[i]);
-                    }
-                }
-                r = tmp;
+            std::visit([&](const auto &src) {
+                res->value = curvemap->generic_eval(src);
             }, input->value);
 
             set_output("res", std::move(res));
@@ -240,4 +264,47 @@ namespace zeno {
             }
         }
     );
+    struct PrimitiveCurvemap : zeno::INode {
+        virtual void apply() override {
+            auto curvemap = get_input<zeno::CurvemapObject>("curvemap");
+            auto prim = get_input<zeno::PrimitiveObject>("prim");
+            auto attrName = get_input<zeno::StringObject>("attrName")->get();
+            auto sourceX = get_input<zeno::NumericObject>("sourceX")->get<int>();
+            auto sourceY = get_input<zeno::NumericObject>("sourceY")->get<int>();
+            auto sourceZ = get_input<zeno::NumericObject>("sourceZ")->get<int>();
+
+            prim->attr_visit(attrName, [&] (auto &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                if (std::is_arithmetic_v<T> || (sourceX == 0 && sourceY == 1 && sourceZ == 2)) {
+#pragma omp parallel for
+                    for (intptr_t i = 0; i < attr.size(); ++i) {
+                        attr[i] = curvemap->generic_eval(attr[i]);
+                    }
+                } else {
+#pragma omp parallel for
+                    for (intptr_t i = 0; i < attr.size(); ++i) {
+                        attr[i] = curvemap->generic_eval(attr[i], sourceX, sourceY, sourceZ);
+                    }
+                }
+            });
+
+            set_output("prim", std::move(prim));
+        }
+    };
+ZENDEFNODE(PrimitiveCurvemap, {
+    {
+    {"PrimitiveObject", "prim"},
+    "curvemap",
+    {"string", "attrName", "pos"},
+    {"int", "sourceX", "0"},
+    {"int", "sourceY", "1"},
+    {"int", "sourceZ", "2"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
 }

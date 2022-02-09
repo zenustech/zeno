@@ -50,7 +50,7 @@ def _launch_mproc(func, *args):
         g_proc = None
 
 
-def launchProgram(prog, nframes):
+def launchProgram(prog, nframes, start_frame):
     global g_iopath
     global g_proc
     killProcess()
@@ -65,7 +65,7 @@ def launchProgram(prog, nframes):
         with open(filepath, 'w') as f:
             json.dump(prog, f)
         # TODO: replace with binary executable
-        g_proc = subprocess.Popen(get_executable() + [filepath, str(nframes), g_iopath])
+        g_proc = subprocess.Popen(get_executable() + [filepath, str(nframes), g_iopath, str(start_frame)])
         retcode = g_proc.wait()
         if retcode != 0:
             print('zeno program exited with error code:', retcode)

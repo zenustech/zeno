@@ -70,4 +70,8 @@ ZENO_API std::vector<std::shared_ptr<IObject>> GlobalState::getViewObjects(int f
     return m_impl->frames[frame_].view_objects;
 }
 
+ZENO_API void GlobalState::setFrameid(int _frameid) { // make zhouhang happy
+    frameid = _frameid;
+}
+
 }

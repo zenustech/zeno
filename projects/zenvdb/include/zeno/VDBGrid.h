@@ -61,11 +61,15 @@ struct VDBGrid : zeno::IObject {
   virtual std::string getType() const =0;
   virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
+
+  virtual ~VDBGrid() override = default;
 };
 
 template <typename GridT>
 struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
+
+  virtual ~VDBGridWrapper() override = default;
 
   VDBGridWrapper() { m_grid = GridT::create(); }
 
