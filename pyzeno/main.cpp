@@ -34,6 +34,7 @@ PYBIND11_MODULE(pylib_zeno, m) {
     });
     m.def("substepBegin", [] () { return zeno::state.substepBegin(); });
     m.def("substepEnd", [] () { return zeno::state.substepEnd(); });
+    m.def("setFrameid", [] (int frameid) { zeno::state.setFrameid(frameid); });
     m.def("frameBegin", [] () { return zeno::state.frameBegin(); });
     m.def("frameEnd", [] () {
 #ifdef ZENO_VISUALIZATION

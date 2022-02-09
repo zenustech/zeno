@@ -169,4 +169,74 @@ ZENDEFNODE(NumericVec4, {
     {"numeric"},
 });
 
+struct PackNumericVecInt : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto _type = get_param<std::string>("type");
+        auto x = get_input2<int>("x");
+        auto y = get_input2<int>("y");
+        auto z = get_input2<int>("z");
+        auto w = get_input2<int>("w");
+        if (_type == "int") {
+            obj->set(x);
+        } else if (_type == "vec2i") {
+            obj->set(zeno::vec2i(x, y));
+        } else if (_type == "vec3i") {
+            obj->set(zeno::vec3i(x, y, z));
+        } else if (_type == "vec4i") {
+            obj->set(zeno::vec4i(x, y, z, w));
+        }
+        set_output("veci", std::move(obj));
+    }
+};
+
+ZENDEFNODE(PackNumericVecInt, {
+    {
+        {"int", "x", "0"},
+        {"int", "y", "0"},
+        {"int", "z", "0"},
+        {"int", "w", "0"},
+    },
+    {"veci"},
+    {
+        {"enum int vec2i vec3i vec4i", "type", "vec3i"},
+    },
+    {"numeric"},
+});
+
+struct PackNumericVec : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto _type = get_param<std::string>("type");
+        auto x = get_input2<float>("x");
+        auto y = get_input2<float>("y");
+        auto z = get_input2<float>("z");
+        auto w = get_input2<float>("w");
+        if (_type == "float") {
+            obj->set(x);
+        } else if (_type == "vec2f") {
+            obj->set(zeno::vec2f(x, y));
+        } else if (_type == "vec3f") {
+            obj->set(zeno::vec3f(x, y, z));
+        } else if (_type == "vec4f") {
+            obj->set(zeno::vec4f(x, y, z, w));
+        }
+        set_output("vec", std::move(obj));
+    }
+};
+
+ZENDEFNODE(PackNumericVec, {
+    {
+        {"float", "x", "0"},
+        {"float", "y", "0"},
+        {"float", "z", "0"},
+        {"float", "w", "0"},
+    },
+    {"vec"},
+    {
+        {"enum float vec2f vec3f vec4f", "type", "vec3f"},
+    },
+    {"numeric"},
+});
+
 }

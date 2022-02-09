@@ -21,7 +21,12 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.name = None
 
     def edit_finished(self):
-        self.parent.scene().record()
+        if hasattr(self.parent, 'node'):
+            node = self.parent.node
+        else:
+            node = self.parent
+
+        node.scene().record()
 
     def initLayout(self):
         font = QFont()
