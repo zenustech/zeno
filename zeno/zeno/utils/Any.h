@@ -85,12 +85,18 @@ using any_underlying_type_t = typename any_traits<std::decay_t<T>>::underlying_t
 struct Any : std::any {
     Any() = default;
 
+    ~Any() = default;
+
+    Any(Any &&a) = default;
+
     Any(Any const &a) = default;
 
     template <class T>
     Any(T const &t)
     : std::any(static_cast<any_underlying_type_t<T> const &>(t))
     {}
+
+    Any &operator=(Any &&a) = default;
 
     Any &operator=(Any const &a) = default;
 
