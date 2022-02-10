@@ -6,6 +6,9 @@
 #include <zeno/extra/ISubgraphNode.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/core/Descriptor.h>
+#include <zeno/types/LiterialConverter.h>
+#include <iostream>
 
 namespace zeno {
 
@@ -124,9 +127,9 @@ ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
     return res;
 }
 
-ZENO_API UserData &Graph::getUserData() {
+/*ZENO_API UserData &Graph::getUserData() {
     return userData;
-}
+}*/
 
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {
@@ -140,11 +143,7 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
     std::variant<int, float, std::string> const &val) {
     auto parid = par + ":";
     std::visit([&] (auto const &val) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(val)>, std::string>) {
-            setNodeInput(id, parid, std::make_shared<StringObject>(val));
-        } else {
-            setNodeInput(id, parid, std::make_shared<NumericObject>(val));
-        }
+        setNodeInput(id, parid, objectFromLiterial(val));
     }, val);
 }
 
@@ -155,9 +154,34 @@ ZENO_API Graph *Graph::createSubgraph(std::string const &ident) {
     auto node = std::make_unique<SubgraphNode>();
     node->graph = this;
     node->myname = ident;
+    subgraph->subgraphNode = node.get();
     node->subgraph = std::move(subgraph);
     nodes[ident] = std::move(node);
     return rawptr;
+}
+
+ZENO_API void Graph::finalizeAsSubgraph() {
+    //if (!subgraphNode) throw Exception("not a subgraph!");
+    auto desc = subgraphNode->subgraphNodeClass->desc.get();
+    for (auto const &[name_, nodeid]: subInputNodes) {
+        auto subInNode = nodes.at(nodeid).get();
+        auto name = objectToLiterial<std::string>(subInNode->inputs.at("name:"));
+        auto type = objectToLiterial<std::string>(subInNode->inputs.at("type:"));
+        auto defl = objectToLiterial<std::string>(subInNode->inputs.at("defl:"));
+        desc->inputs.push_back({type, name, defl});
+    }
+    for (auto const &[name_, nodeid]: subOutputNodes) {
+        auto subOutNode = nodes.at(nodeid).get();
+        auto name = objectToLiterial<std::string>(subOutNode->inputs.at("name:"));
+        auto type = objectToLiterial<std::string>(subOutNode->inputs.at("type:"));
+        auto defl = objectToLiterial<std::string>(subOutNode->inputs.at("defl:"));
+        desc->outputs.push_back({type, name, defl});
+    }
+    for (auto const &nodeid: subCategoryNodes) {
+        auto subCateNode = nodes.at(nodeid).get();
+        auto name = objectToLiterial<std::string>(subCateNode->inputs.at("name:"));
+        desc->categories.push_back({name});
+    }
 }
 
 }

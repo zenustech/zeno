@@ -88,6 +88,7 @@ static void loadGraphImpl(Graph *graph, const char *json) {
                 graphStack.push(graph);
                 graph = graph->createSubgraph(di[1].GetString());
             } else if (cmd == "popSubgraph") {
+                graph->finalizeAsSubgraph();
                 graph = graphStack.top();
                 graphStack.pop();
             }

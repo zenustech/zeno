@@ -64,9 +64,10 @@ struct SubgraphNodeClass : INodeClass {
 
 ZENO_API SubgraphNode::SubgraphNode() {
     subgraph = std::make_unique<Graph>();
-    subgraphNodeClass = std::make_unique<SubgraphNodeClass>(Descriptor{{"_input1"}, {"_output1"}, {}, {"subgraph"}});
+    subgraph->subgraphNode = this;
+    subgraphNodeClass = std::make_unique<SubgraphNodeClass>(Descriptor{});
     // TODO: finalize subgraphNodeClass later!
-    nodeClass = subgraphNodeClass.get();
+    this->nodeClass = subgraphNodeClass.get();
 }
 
 ZENO_API SubgraphNode::~SubgraphNode() = default;

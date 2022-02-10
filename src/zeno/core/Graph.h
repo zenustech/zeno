@@ -14,6 +14,7 @@
 namespace zeno {
 
 struct Session;
+struct SubgraphNode;
 struct INode;
 
 struct Context {
@@ -30,6 +31,7 @@ struct Context {
 
 struct Graph {
     Session *session = nullptr;
+    SubgraphNode *subgraphNode = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
@@ -40,6 +42,7 @@ struct Graph {
     std::set<std::string> finalOutputNodes;
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
+    std::set<std::string> subCategoryNodes;
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
@@ -49,7 +52,7 @@ struct Graph {
     bool isViewed = true;
     bool hasAnyView = false;
 
-    UserData userData;
+    //UserData userData;
 
     ZENO_API Graph();
     ZENO_API ~Graph();
@@ -59,7 +62,7 @@ struct Graph {
     Graph(Graph &&) = delete;
     Graph &operator=(Graph &&) = delete;
 
-    ZENO_API UserData &getUserData();
+    //ZENO_API UserData &getUserData();
 
     ZENO_API std::unique_ptr<INode> getOverloadNode(std::string const &id,
             std::vector<std::shared_ptr<IObject>> const &inputs) const;
@@ -98,6 +101,7 @@ struct Graph {
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val);  /* to be deprecated */
     ZENO_API Graph *createSubgraph(std::string const &ident);
+    ZENO_API void finalizeAsSubgraph();
 };
 
 }

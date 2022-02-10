@@ -170,6 +170,11 @@ ZENDEFNODE(Subgraph, {
 
 
 struct SubCategory : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subCategoryNodes.insert(myname);
+    }
+
     virtual void apply() override {}
 };
 
