@@ -3,6 +3,7 @@
 #include <zenoui/model/modelrole.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 #include "serialize.h"
 #include <thread>
@@ -21,7 +22,7 @@ struct ProgramRunData {
         std::unique_lock _(g_mtx);
 
         auto session = &zeno::getSession();
-        session->globalState->clearFrames();
+        session->globalState->clearState();
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
@@ -44,7 +45,7 @@ void launchProgram(GraphsModel* pModel, int nframes)
 {
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
-        printf("A program is already running! Please kill first\n");
+        zeno::log_warn("A program is already running! Please kill first");
         return;
     }
 

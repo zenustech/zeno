@@ -48,13 +48,20 @@ ZENO_API void GlobalState::addViewObject(std::shared_ptr<IObject> const &object)
     if (m_impl->frames.size() <= this->frameid) {
         m_impl->frames.resize(this->frameid + 1);
     }
-    
     m_impl->frames[this->frameid].view_objects.push_back(object);
 }
 
-ZENO_API void GlobalState::clearFrames() {
+ZENO_API void GlobalState::clearState() {
     std::lock_guard lck(m_impl->mtx);
     m_impl->frames.clear();
+    frameid = 0;
+    frameid = 0;
+    substepid = 0;
+    frame_time = 0.03f;
+    frame_time_elapsed = 0;
+    has_frame_completed = false;
+    has_substep_executed = false;
+    time_step_integrated = false;
 }
 
 ZENO_API int GlobalState::countFrames() {
