@@ -480,6 +480,12 @@ QGraphicsLayout* ZenoNode::initParams()
                     ZenoParamPushButton* pBtn = new ZenoParamPushButton("...");
                     pParamLayout->addItem(pFileWidget);
                     pParamLayout->addItem(pBtn);
+                    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
+                        QString textValue = pFileWidget->text();
+                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                    });
                     break;
                 }
                 case CONTROL_WRITEPATH:
@@ -488,6 +494,12 @@ QGraphicsLayout* ZenoNode::initParams()
                     ZenoParamPushButton *pBtn = new ZenoParamPushButton("...");
                     pParamLayout->addItem(pFileWidget);
                     pParamLayout->addItem(pBtn);
+                    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
+                        QString textValue = pFileWidget->text();
+                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
+                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                    });
                     break;
                 }
                 case CONTROL_MULTILINE_STRING:
