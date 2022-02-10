@@ -56,7 +56,7 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
-    } catch (std::exception const &e) {
+    } catch (std::exception const &e) {  // TODO(bate): better ways to get a backtrace?
         throw zeno::BaseException("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
@@ -77,6 +77,10 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
     }
 }
 
+ZENO_API void Graph::applyNodesToExec() {
+    applyNodes(nodesToExec);
+}
+
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
     safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
@@ -86,11 +90,6 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
         zany const &val) {
     safe_at(nodes, id, "node")->inputs[par] = val;
 }
-
-/*ZENO_API void Graph::setNodeOption(std::string const &id,
-        std::string const &name) {
-    safe_at(nodes, id, "node")->options.insert(name);
-}*/
 
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {

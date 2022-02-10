@@ -29,7 +29,7 @@ struct ProgramRunData {
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
-                graph->applyNodes(applies);
+                graph->applyNodesToExec();
                 session->globalState->substepEnd();
             }
             session->globalState->frameEnd();
@@ -55,7 +55,7 @@ void launchProgram(GraphsModel* pModel, int nframes)
     QByteArray bytes = strJson.toUtf8();
     std::string progJson = bytes.data();
 
-    SubGraphModel* pMain = pModel->subGraph("main");
+    /*SubGraphModel* pMain = pModel->subGraph("main");
     NODES_DATA nodes = pMain->nodes();
     std::set<std::string> applies;
     for (NODE_DATA node : nodes)
@@ -63,9 +63,9 @@ void launchProgram(GraphsModel* pModel, int nframes)
         int options = node[ROLE_OPTIONS].toInt();
         if (options & OPT_VIEW)
             applies.insert(node[ROLE_OBJID].toString().toStdString());
-    }
+    }*/
 
-    std::thread thr(ProgramRunData{std::move(progJson), nframes, std::move(applies)});
+    std::thread thr(ProgramRunData{std::move(progJson), nframes});//, std::move(applies)});
     thr.detach();
 }
 

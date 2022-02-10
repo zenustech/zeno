@@ -8,6 +8,10 @@ namespace zeno {
 namespace {
 
 struct ToView : zeno::INode {
+    virtual void complete() override {
+        graph->nodesToExec.insert(myname);
+    }
+
     virtual void apply() override {
         auto p = get_input("object");
         getGlobalState()->addViewObject(p);
