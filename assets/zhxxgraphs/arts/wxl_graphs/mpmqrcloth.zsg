@@ -38,7 +38,7 @@
       "E": [
        null,
        null,
-       200.0
+       600.0
       ],
       "nu": [
        null,
@@ -394,8 +394,8 @@
      },
      "params": {},
      "uipos": [
-      4633.496726178101,
-      -281.2298528664072
+      4620.139488336156,
+      -266.388477486468
      ],
      "options": []
     },
@@ -412,8 +412,8 @@
       "value": 1e-05
      },
      "uipos": [
-      3025.1000188288576,
-      303.4359833402188
+      3199.486179543144,
+      303.43598334021885
      ],
      "options": []
     },
@@ -569,8 +569,8 @@
        null
       ],
       "translation_rate": [
-       null,
-       null,
+       "0084f100-NumericVec3",
+       "vec3",
        null
       ],
       "scale": [
@@ -598,8 +598,8 @@
       "type": "slip"
      },
      "uipos": [
-      4049.2067463451685,
-      94.64490658593863
+      4025.4605457372663,
+      72.38284351602982
      ],
      "options": [
       "ONCE"
@@ -706,8 +706,8 @@
      },
      "params": {},
      "uipos": [
-      725.4241789348247,
-      142.29277252286317
+      701.3069439424236,
+      225.7755090350212
      ],
      "options": [
       "ONCE",
@@ -760,8 +760,8 @@
      },
      "params": {},
      "uipos": [
-      5115.080364505333,
-      -109.42693862223554
+      6010.270386055011,
+      -16.042221973774303
      ],
      "options": [
       "VIEW"
@@ -797,15 +797,15 @@
        null
       ],
       "SRC": [
-       "ce8e0002-ZSGridToZSParticle",
+       "064bb6c7-TranslatePrimitive",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4869.336380182949,
-      -392.64957332054087
+      5764.526401732627,
+      -299.26485667207953
      ],
      "options": []
     },
@@ -854,11 +854,277 @@
      "options": [
       "ONCE"
      ]
+    },
+    "0084f100-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 10.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      3339.0836077982894,
+      833.0986057733692
+     ],
+     "options": []
+    },
+    "93dded1c-StepZSBoundary": {
+     "name": "StepZSBoundary",
+     "inputs": {
+      "ZSBoundary": [
+       "625669f6-ToZSBoundary",
+       "ZSBoundary",
+       null
+      ],
+      "dt": [
+       "abf787e6-NumericFloat",
+       "value",
+       0.0
+      ],
+      "SRC": [
+       "9edddc8b-RefineMeshParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5167.277141907291,
+      -198.99316109422494
+     ],
+     "options": []
+    },
+    "188a2a4b-EnqueueLevelSetSequence": {
+     "name": "EnqueueLevelSetSequence",
+     "inputs": {
+      "ZSLevelSetSequence": [
+       null,
+       null,
+       null
+      ],
+      "ZSLevelSet": [
+       "5b2dc139-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       "5b2dc139-ToZSLevelSet",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1448.0784528270576,
+      775.0847664951459
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "5b2dc139-ToZSLevelSet": {
+     "name": "ToZSLevelSet",
+     "inputs": {
+      "VDBGrid": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      1121.120272903838,
+      743.9550833685778
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6a93dcb6-EnqueueLevelSetSequence": {
+     "name": "EnqueueLevelSetSequence",
+     "inputs": {
+      "ZSLevelSetSequence": [
+       "188a2a4b-EnqueueLevelSetSequence",
+       "ZSLevelSetSequence",
+       null
+      ],
+      "ZSLevelSet": [
+       "522136ae-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       "522136ae-ToZSLevelSet",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2337.354341021356,
+      867.2966939663247
+     ],
+     "options": []
+    },
+    "522136ae-ToZSLevelSet": {
+     "name": "ToZSLevelSet",
+     "inputs": {
+      "VDBGrid": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "4526310f-MakeString",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      2038.6072472337537,
+      982.8263441075442
+     ],
+     "options": []
+    },
+    "4526310f-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       "188a2a4b-EnqueueLevelSetSequence",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "value": "assets/character/humanAnimationVelSDF_v01.00{frame+25}.vdb"
+     },
+     "uipos": [
+      1766.761444573759,
+      986.2183318559955
+     ],
+     "options": []
+    },
+    "49765e1b-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "assets/character/humanAnimationVelSDF_v01.00{frame+24}.vdb"
+     },
+     "uipos": [
+      821.075857021958,
+      741.4105209650534
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "064bb6c7-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "883a5a17-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "816194b0-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "93dded1c-StepZSBoundary",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5458.4665501371355,
+      -239.87628043966086
+     ],
+     "options": []
+    },
+    "816194b0-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "0084f100-NumericVec3",
+       "vec3",
+       null
+      ],
+      "rhs": [
+       "abf787e6-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      3696.684054690654,
+      890.5756437307433
+     ],
+     "options": []
+    },
+    "9edddc8b-RefineMeshParticles": {
+     "name": "RefineMeshParticles",
+     "inputs": {
+      "ZSParticles": [
+       "ce8e0002-ZSGridToZSParticle",
+       "ZSParticles",
+       null
+      ],
+      "dx": [
+       "6353d603-NumericFloat",
+       "value",
+       0.1
+      ],
+      "SRC": [
+       "ce8e0002-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4893.316483425153,
+      -188.0439364076747
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1648.1710937447822,
-    "y": -1360.9261891818217,
+    "x": 2182.132655768248,
+    "y": -1205.7914157796436,
     "width": 2384.185791015625,
     "height": 2384.185791015625
    }
@@ -6466,6 +6732,67 @@
     "FEM"
    ]
   },
+  "Make1DLinePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "n",
+     "2"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum X Y Z",
+     "Direction",
+     "X"
+    ],
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasLines",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "Make2DGridPrimitive": {
    "inputs": [
     [
@@ -7744,6 +8071,36 @@
     [
      "int",
      "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakePrimitiveFromList": {
+   "inputs": [
+    [
+     "ListObject",
+     "list",
      ""
     ],
     [
@@ -9363,6 +9720,108 @@
     "numeric"
    ]
   },
+  "PackNumericVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum float vec2f vec3f vec4f",
+     "type",
+     "vec3f"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PackNumericVecInt": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ],
+    [
+     "int",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "veci",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum int vec2i vec3i vec4i",
+     "type",
+     "vec3i"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "PairZensimParticles": {
    "inputs": [
     [
@@ -10210,6 +10669,66 @@
     "primitive"
    ]
   },
+  "PrimitiveBent": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveBinaryOp": {
    "inputs": [
     [
@@ -10656,6 +11175,61 @@
     "Bullet"
    ]
   },
+  "PrimitiveCurvemap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "int",
+     "sourceX",
+     "0"
+    ],
+    [
+     "int",
+     "sourceY",
+     "1"
+    ],
+    [
+     "int",
+     "sourceZ",
+     "2"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveDuplicate": {
    "inputs": [
     [
@@ -11018,6 +11592,91 @@
      "float",
      "portion",
      ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSimpleLink": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSolidify": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "count",
+     "4"
+    ],
+    [
+     "float",
+     "radius",
+     "0.1"
+    ],
+    [
+     "string",
+     "radiusAttr",
+     ""
+    ],
+    [
+     "bool",
+     "isTri",
+     "1"
+    ],
+    [
+     "bool",
+     "sealEnd",
+     "1"
     ],
     [
      "",
@@ -11932,6 +12591,66 @@
     "primitive"
    ]
   },
+  "PrimitiveTwist": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveUnaryOp": {
    "inputs": [
     [
@@ -12464,6 +13183,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "RefineMeshParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
    ]
   },
   "ResampleVDBGrid": {

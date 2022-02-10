@@ -481,11 +481,10 @@ struct UpdatePrimitiveFromZSParticles : INode {
 
       // const auto category = parObjPtr->category;
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
       if (parObjPtr->prim->has_attr("vel"))
         velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
-
-      auto size = pars.size();
 
       // currently only write back pos and vel (if has)
       ompExec(range(size),
