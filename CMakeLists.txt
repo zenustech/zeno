@@ -34,14 +34,14 @@ option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
 option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
 option(ZENO_FIXED_OUTPUT "Output files to fixed position" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
-option(ZENO_NO_WARNING "Disable compiler warnings" OFF)
+option(ZENO_NO_WARNING "Disable compiler warnings" ON)
 
 if (ZENO_USE_CCACHE)  # speed up compilation by cache
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
+        message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_PROGRAM})
         set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_PROGRAM})
-        message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
     endif()
 endif()
 

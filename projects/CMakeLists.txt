@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_MODULE_PATH /usr/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning)
-set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)  # Please `rm -rf build` if you changed this list, otherwise it won't update
+#set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)  # Please `rm -rf build` if you changed this list, otherwise it won't update
 
 add_library(zeno_nodep INTERFACE)
 if (ZENO_HIDE_SYMBOLS AND UNIX)
@@ -13,12 +13,13 @@ endif()
 
 add_library(zenoprojects INTERFACE)
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
-    if ("${name}" IN_LIST EXTENSIONS_ENABLE_LIST)
-        set(val ON)
-    else()
-        set(val OFF)
-    endif()
-    option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" ${val})
+    #if ("${name}" IN_LIST EXTENSIONS_ENABLE_LIST)
+    #set(val ON)
+    #else()
+    #set(val OFF)
+    #endif()
+    #option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" ${val})
+    option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
 
     if (ZENO_WITH_${name})
         message("*** Building ZENO with extension: ${name}")
