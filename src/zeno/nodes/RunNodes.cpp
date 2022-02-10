@@ -3,6 +3,9 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/GlobalState.h>
 
+namespace zeno {
+namespace {
+
 /*struct RunOnce : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = getGlobalState()->substepid == 0;
@@ -170,3 +173,6 @@ ZENDEFNODE(IntegrateFrameTime, {
     {{"float", "min_scale", "0.0001"}},
     {"frame"},
 });
+
+}
+}
