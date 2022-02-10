@@ -2,6 +2,8 @@
 #include "IGraphic.hpp"
 //#include <zeno/types/PrimitiveIO.h>
 #include <zeno/core/IObject.h>
+#include <zeno/utils/logger.h>
+#include <zeno/utils/cppdemangle.h>
 
 
 namespace zenvis {
@@ -17,12 +19,18 @@ std::unique_ptr<IGraphic> makeGraphicVolume(std::shared_ptr<IObject> obj);
 
 
 std::unique_ptr<IGraphic> makeGraphic(std::shared_ptr<IObject> obj) {
-    if (auto ig = makeGraphicPrimitive(obj))
+    if (auto ig = makeGraphicPrimitive(obj)) {
+        log_info("load_object: primitive");
         return ig;
+    }
 #ifdef ZENVIS_WITH_OPENVDB
-    if (auto ig = makeGraphicVolume(obj))
+    if (auto ig = makeGraphicVolume(obj)) {
+        log_info("load_object: volume");
         return ig;
+    }
 #endif
+
+    log_warn("load_object: unexpected view object {}", cppdemangle(typeid(*obj)));
 
     //printf("%s\n", ext.c_str());
     //assert(0 && "bad file extension name");
@@ -67,6 +75,7 @@ void clear_graphics() {
 void load_object(std::shared_ptr<IObject> obj, int unused_frameid) {
     auto &graphics = current_frame_data()->graphics;
     if (graphics.find(obj) != graphics.end()) {
+        log_info("load_object: using cached");
         //printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
         return;
     }

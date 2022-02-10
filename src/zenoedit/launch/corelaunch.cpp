@@ -21,6 +21,7 @@ struct ProgramRunData {
         std::unique_lock _(g_mtx);
 
         auto session = &zeno::getSession();
+        session->globalState->clearFrames();
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());

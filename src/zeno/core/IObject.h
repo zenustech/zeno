@@ -2,9 +2,9 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
-#include <zeno/utils/memory.h>
 #include <string>
 #include <memory>
+#include <any>
 
 namespace zeno {
 
@@ -13,7 +13,7 @@ struct UserData;
 struct IObject {
     using polymorphic_base_type = IObject;
 
-    copiable_unique_ptr<UserData> m_userData;
+    std::any m_userData;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();

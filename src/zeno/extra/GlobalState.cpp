@@ -63,15 +63,12 @@ ZENO_API int GlobalState::countFrames() {
 }
 
 ZENO_API std::vector<std::shared_ptr<IObject>> GlobalState::getViewObjects(int frame_) {
+    std::lock_guard lck(m_impl->mtx);
     if (frame_ < 0) return {};
     if (m_impl->frames.size() <= frame_) {
         m_impl->frames.resize(frame_ + 1);
     }
     return m_impl->frames[frame_].view_objects;
-}
-
-ZENO_API void GlobalState::setFrameid(int _frameid) { // make zhouhang happy
-    frameid = _frameid;
 }
 
 }

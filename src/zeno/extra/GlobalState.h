@@ -49,7 +49,6 @@ struct GlobalState {
     ZENO_API void clearFrames();
     ZENO_API int countFrames();
     ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects(int frame);
-    ZENO_API void setFrameid(int _frameid);
 };
 
 }

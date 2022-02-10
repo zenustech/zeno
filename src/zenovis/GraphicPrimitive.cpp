@@ -3,6 +3,7 @@
 #include "MyShader.hpp"
 #include "main.hpp"
 #include <zeno/utils/vec.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
@@ -29,6 +30,7 @@ struct GraphicPrimitive : IGraphic {
   //std::vector<std::unique_ptr<Texture>> textures;
 
   GraphicPrimitive(std::shared_ptr<zeno::PrimitiveObject> prim) {
+      zeno::log_info("rendering primitive size {}", prim->size());
     if (!prim->has_attr("pos")) {
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         for (size_t i = 0; i < pos.size(); i++) {
