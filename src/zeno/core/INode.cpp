@@ -91,11 +91,11 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
 }
 
 ZENO_API void INode::doApply() {
-    if (checkApplyCondition()) {
-        log_trace("--> enter {}", myname);
-        preApply();
-        log_trace("--> leave {}", myname);
-    }
+    //if (checkApplyCondition()) {
+    log_trace("--> enter {}", myname);
+    preApply();
+    log_trace("--> leave {}", myname);
+    //}
 
     /*if (has_option("VIEW")) {
         graph->hasAnyView = true;

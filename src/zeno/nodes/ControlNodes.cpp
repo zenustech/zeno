@@ -297,9 +297,9 @@ struct IfElse : zeno::INode {
     virtual void preApply() override {
         requireInput("cond");
         auto cond = get_input("cond");
-        if (has_option("MUTE")) {
+        /*if (has_option("MUTE")) {
             requireInput("true");
-        } else if (evaluate_condition(cond.get())) {
+        } else*/ if (evaluate_condition(cond.get())) {
             if (requireInput("true")) {
                 set_output("result", get_input("true"));
             }

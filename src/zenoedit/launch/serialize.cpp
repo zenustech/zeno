@@ -113,10 +113,11 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			}
 		}
 
-		for (QString optionName : options)
+        // TODO(bate): luzh please mock options at editor side!
+		/*for (QString optionName : options)
 		{
 			ret.push_back(QJsonArray({"setNodeOption", ident, optionName}));
-		}
+		}*/
 
 		ret.push_back(QJsonArray({"completeNode", ident}));
 	}

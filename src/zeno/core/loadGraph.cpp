@@ -77,8 +77,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
                 setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
-            } else if (cmd == "setNodeOption") {
-                setNodeOption(di[1].GetString(), di[2].GetString());
+            /*} else if (cmd == "setNodeOption") {
+                setNodeOption(di[1].GetString(), di[2].GetString());*/
             } else if (cmd == "bindNodeInput") {
                 bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
             } else {

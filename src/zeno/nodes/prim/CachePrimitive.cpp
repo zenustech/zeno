@@ -11,11 +11,11 @@ struct CachePrimitive : zeno::INode {
     int m_framecounter = 0;
 
     virtual void preApply() override {
-        if (has_option("MUTE")) {
+        /*if (has_option("MUTE")) {
             requireInput("inPrim");
             set_output("outPrim", get_input("inPrim"));
             return;
-        }
+        }*/
         auto dir = get_param<std::string>("dir");
         auto prefix = get_param<std::string>("prefix");
         bool ignore = get_param<bool>("ignore");
