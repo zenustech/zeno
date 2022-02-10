@@ -198,40 +198,39 @@ struct RefineMeshParticles : INode {
           eleCnt.setVal(eles.size());
           prevVertCnt = pars.size();
           prevEleCnt = eles.size();
-          vertOffsets.resize(prevVertCnt);
+          vertOffsets.resize(prevEleCnt);
           eleOffsets.resize(prevEleCnt);
-          cudaPol(range(prevEleCnt),
-                  [eles = proxy<execspace_e::cuda>({}, eles),
-                   pars = proxy<execspace_e::cuda>({}, pars),
-                   vertCnt = proxy<execspace_e::cuda>(vertCnt),
-                   eleCnt = proxy<execspace_e::cuda>(eleCnt),
-                   vertOffsets = proxy<execspace_e::cuda>(vertOffsets),
-                   eleOffsets = proxy<execspace_e::cuda>(eleOffsets),
-                   dx] __device__(int ei) {
-                    /// inds, xs
-                    int inds[3] = {(int)eles("inds", 0, ei),
-                                   (int)eles("inds", 1, ei),
-                                   (int)eles("inds", 2, ei)};
-                    zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                            pars.pack<3>("pos", inds[1]),
-                                            pars.pack<3>("pos", inds[2])};
-                    auto need_sampling = [dx](const auto &a,
-                                              const auto &b) -> bool {
-                      for (int d = 0; d != 3; ++d)
-                        if (zs::abs(a[d] - b[d]) > dx)
-                          return true;
-                      return false;
-                    };
-                    if (need_sampling(xs[0], xs[1]) ||
-                        need_sampling(xs[0], xs[2]) ||
-                        need_sampling(xs[1], xs[2])) {
-                      vertOffsets[ei] = atomic_add(exec_cuda, vertCnt, 1);
-                      eleOffsets[ei] = atomic_add(exec_cuda, eleCnt, 2);
-                    } else {
-                      vertOffsets[ei] = -1;
-                      eleOffsets[ei] = -1;
-                    }
-                  });
+          cudaPol(range(prevEleCnt), [eles = proxy<execspace_e::cuda>({}, eles),
+                                      pars = proxy<execspace_e::cuda>({}, pars),
+                                      vertCnt =
+                                          proxy<execspace_e::cuda>(vertCnt),
+                                      eleCnt = proxy<execspace_e::cuda>(eleCnt),
+                                      vertOffsets =
+                                          proxy<execspace_e::cuda>(vertOffsets),
+                                      eleOffsets =
+                                          proxy<execspace_e::cuda>(eleOffsets),
+                                      dx] __device__(int ei) mutable {
+            /// inds, xs
+            int inds[3] = {(int)eles("inds", 0, ei), (int)eles("inds", 1, ei),
+                           (int)eles("inds", 2, ei)};
+            zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
+                                    pars.pack<3>("pos", inds[1]),
+                                    pars.pack<3>("pos", inds[2])};
+            auto need_sampling = [dx](const auto &a, const auto &b) -> bool {
+              for (int d = 0; d != 3; ++d)
+                if (zs::abs(a[d] - b[d]) > dx)
+                  return true;
+              return false;
+            };
+            if (need_sampling(xs[0], xs[1]) || need_sampling(xs[0], xs[2]) ||
+                need_sampling(xs[1], xs[2])) {
+              vertOffsets[ei] = atomic_add(exec_cuda, vertCnt.data(), 1);
+              eleOffsets[ei] = atomic_add(exec_cuda, eleCnt.data(), 2);
+            } else {
+              vertOffsets[ei] = -1;
+              eleOffsets[ei] = -1;
+            }
+          });
           fmt::print("verts from {} to {}, {} added\n", prevVertCnt,
                      vertCnt.getVal(), vertCnt.getVal() - prevVertCnt);
           fmt::print("eles from {} to {}, {} added\n", prevEleCnt,
