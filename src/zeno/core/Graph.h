@@ -39,8 +39,8 @@ struct Graph {
 
     std::unique_ptr<Context> ctx;
 
-    bool isViewed = true;
-    bool hasAnyView = false;
+    //bool isViewed = true;
+    //bool hasAnyView = false;
 
     ZENO_API Graph();
     ZENO_API ~Graph();
@@ -80,7 +80,7 @@ struct Graph {
         std::string const &sn, std::string const &ss);
     ZENO_API void setNodeInput(std::string const &id, std::string const &par,
         zany const &val);
-    ZENO_API void setNodeOption(std::string const &id, std::string const &name);
+    //ZENO_API void setNodeOption(std::string const &id, std::string const &name);
     ZENO_API zany const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);

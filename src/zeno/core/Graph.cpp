@@ -87,10 +87,10 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
     safe_at(nodes, id, "node")->inputs[par] = val;
 }
 
-ZENO_API void Graph::setNodeOption(std::string const &id,
+/*ZENO_API void Graph::setNodeOption(std::string const &id,
         std::string const &name) {
     safe_at(nodes, id, "node")->options.insert(name);
-}
+}*/
 
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {

@@ -36,7 +36,7 @@ ZENO_API void INode::doComplete() {
 
 ZENO_API void INode::complete() {}
 
-ZENO_API bool INode::checkApplyCondition() {
+/*ZENO_API bool INode::checkApplyCondition() {
     if (has_option("ONCE")) {  // TODO: frame control should be editor work
         if (!getGlobalState()->isFirstSubstep())
             return false;
@@ -62,7 +62,7 @@ ZENO_API bool INode::checkApplyCondition() {
     }
 
     return true;
-}
+}*/
 
 ZENO_API void INode::preApply() {
     for (auto const &[ds, bound]: inputBounds) {
@@ -97,7 +97,7 @@ ZENO_API void INode::doApply() {
         log_trace("--> leave {}", myname);
     }
 
-    if (has_option("VIEW")) {
+    /*if (has_option("VIEW")) {
         graph->hasAnyView = true;
         if (!getGlobalState()->isOneSubstep())  // no duplicate view when multi-substep used
             return;
@@ -109,12 +109,12 @@ ZENO_API void INode::doApply() {
         if (auto p = std::dynamic_pointer_cast<IObject>(obj); p) {
             getGlobalState()->addViewObject(p);
         }
-    }
+    }*/
 }
 
-ZENO_API bool INode::has_option(std::string const &id) const {
+/*ZENO_API bool INode::has_option(std::string const &id) const {
     return options.find(id) != options.end();
-}
+}*/
 
 ZENO_API bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();

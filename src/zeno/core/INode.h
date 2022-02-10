@@ -28,7 +28,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, zany> inputs;
     std::map<std::string, zany> outputs;
-    std::set<std::string> options;
+    //std::set<std::string> options;
     zany muted_output;
 
     ZENO_API INode();
@@ -54,7 +54,7 @@ protected:
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 
-    ZENO_API bool has_option(std::string const &id) const;
+    //ZENO_API bool has_option(std::string const &id) const;
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output(std::string const &id, zany obj);
@@ -94,6 +94,7 @@ protected:
         return get_input2<T>(id + ':');
     }
 
+    template <int = 0>
     [[deprecated("use get_param<T>")]]
     std::variant<int, float, std::string> get_param(std::string const &id) const {
         auto nid = id + ':';
