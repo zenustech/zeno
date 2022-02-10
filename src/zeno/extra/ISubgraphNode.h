@@ -24,7 +24,8 @@ struct ISerialSubgraphNode : ISubgraphNode {
 };
 
 struct SubgraphNode final : ISubgraphNode {
-    std::unique_ptr<Graph> subgraph = std::make_unique<Graph>();
+    std::unique_ptr<Graph> subgraph;
+    std::unique_ptr<INodeClass> subgraphNodeClass;
 
     ZENO_API SubgraphNode();
     ZENO_API virtual ~SubgraphNode();

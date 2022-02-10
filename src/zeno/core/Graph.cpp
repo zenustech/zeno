@@ -155,7 +155,6 @@ ZENO_API Graph *Graph::createSubgraph(std::string const &ident) {
     auto node = std::make_unique<SubgraphNode>();
     node->graph = this;
     node->myname = ident;
-    node->nodeClass = nullptr;
     node->subgraph = std::move(subgraph);
     nodes[ident] = std::move(node);
     return rawptr;

@@ -4,6 +4,7 @@
 
 namespace zeno {
 
+
 ZENO_API void ISubgraphNode::apply() {
     auto subg = get_subgraph();
 
@@ -30,6 +31,7 @@ ZENO_API void ISubgraphNode::apply() {
 ZENO_API ISubgraphNode::ISubgraphNode() = default;
 ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 
+
 ZENO_API Graph *ISerialSubgraphNode::get_subgraph() {
     if (!subg) {
         subg = std::make_unique<Graph>();
@@ -43,11 +45,30 @@ ZENO_API Graph *ISerialSubgraphNode::get_subgraph() {
 ZENO_API ISerialSubgraphNode::ISerialSubgraphNode() = default;
 ZENO_API ISerialSubgraphNode::~ISerialSubgraphNode() = default;
 
+
 ZENO_API Graph *SubgraphNode::get_subgraph() {
     return subgraph.get();
 }
 
-ZENO_API SubgraphNode::SubgraphNode() = default;
+namespace {
+struct SubgraphNodeClass : INodeClass {
+    using INodeClass::INodeClass;
+
+    virtual ~SubgraphNodeClass() override = default;
+
+    virtual std::unique_ptr<INode> new_instance() const override {
+        return std::make_unique<SubgraphNode>();
+    }
+};
+}
+
+ZENO_API SubgraphNode::SubgraphNode() {
+    subgraph = std::make_unique<Graph>();
+    subgraphNodeClass = std::make_unique<SubgraphNodeClass>(Descriptor{{"_input1"}, {"_output1"}, {}, {"subgraph"}});
+    // TODO: finalize subgraphNodeClass later!
+    nodeClass = subgraphNodeClass.get();
+}
+
 ZENO_API SubgraphNode::~SubgraphNode() = default;
 
 /*ZENDEFNODE(SubgraphNode, {
@@ -56,5 +77,6 @@ ZENO_API SubgraphNode::~SubgraphNode() = default;
     {},
     {"subgraph"},
 });*/
+
 
 }
