@@ -108,7 +108,7 @@ ZENDEFNODE(TriggerAbortSignal, {
 
 struct SpdlogInfoMessage : zeno::INode {
     virtual void apply() override {
-        zeno::log_info("{}", get_param<std::string>("message"));
+        zeno::log_debug("{}", get_param<std::string>("message"));
     }
 };
 

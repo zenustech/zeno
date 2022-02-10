@@ -4,6 +4,7 @@
 #include "viewportwidget.h"
 #include "../launch/corelaunch.h"
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
 
@@ -103,11 +104,13 @@ void Zenovis::_frameUpdate()
     if (m_playing)
         frameid += 1;
     frameid = setCurrentFrameId(frameid);
-    zenvis::auto_gc_frame_data(m_cache_frames);
+    //zenvis::auto_gc_frame_data(m_cache_frames);
     zenvis::set_show_grid(m_show_grid);
 
     auto viewObjs = zeno::getSession().globalState->getViewObjects(frameid);
 
+    zeno::log_debug("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
+    zenvis::clear_graphics();
     for (auto const &obj: viewObjs) {
         zenvis::load_object(obj, frameid);
     }

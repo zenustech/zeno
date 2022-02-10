@@ -1,4 +1,5 @@
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/logger.h>
 #include <mutex>
 
 namespace zeno {
@@ -37,6 +38,7 @@ ZENO_API void GlobalState::frameBegin() {
     has_substep_executed = false;
     time_step_integrated = false;
     frame_time_elapsed = 0;
+    m_impl->frames.emplace_back();
 }
 
 ZENO_API void GlobalState::frameEnd() {
@@ -45,10 +47,11 @@ ZENO_API void GlobalState::frameEnd() {
 
 ZENO_API void GlobalState::addViewObject(std::shared_ptr<IObject> const &object) {
     std::lock_guard lck(m_impl->mtx);
-    if (m_impl->frames.size() <= this->frameid) {
-        m_impl->frames.resize(this->frameid + 1);
+    if (frameid >= m_impl->frames.size()) {
+        log_warn("bad frameid in addViewObject");
+        return;
     }
-    m_impl->frames[this->frameid].view_objects.push_back(object);
+    m_impl->frames[frameid].view_objects.push_back(object);
 }
 
 ZENO_API void GlobalState::clearState() {
@@ -71,10 +74,7 @@ ZENO_API int GlobalState::countFrames() {
 
 ZENO_API std::vector<std::shared_ptr<IObject>> GlobalState::getViewObjects(int frame_) {
     std::lock_guard lck(m_impl->mtx);
-    if (frame_ < 0) return {};
-    if (m_impl->frames.size() <= frame_) {
-        m_impl->frames.resize(frame_ + 1);
-    }
+    if (frame_ < 0 || frame_ >= m_impl->frames.size()) return {};
     return m_impl->frames[frame_].view_objects;
 }
 
