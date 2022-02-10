@@ -81,6 +81,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 setNodeOption(di[1].GetString(), di[2].GetString());
             } else if (cmd == "bindNodeInput") {
                 bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+            } else {
+                log_warn("got unexpected command: {}", cmd);
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
