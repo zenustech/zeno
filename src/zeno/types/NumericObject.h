@@ -3,6 +3,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/Exception.h>
+#include <zeno/utils/variantswitch.h>
 #include <variant>
 
 namespace zeno {
@@ -29,8 +30,7 @@ struct NumericObject : IObjectClone<NumericObject> {
   template <class T>
   T get() const {
     if (!is<T>())
-        throw Exception((std::string)"NumericObject expect `" + typeid(T).name()
-                + "`, got index `" + std::to_string(value.index()) + "`");
+        throw TypeError(typeid(T), typeid_of_variant<NumericValue>(value.index()));
     return std::get<T>(value);
   }
 
@@ -44,5 +44,6 @@ struct NumericObject : IObjectClone<NumericObject> {
     value = x;
   }
 };
+
 
 }
