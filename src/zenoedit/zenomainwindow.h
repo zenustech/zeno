@@ -27,7 +27,9 @@ public slots:
     void onRunClicked(int nFrames);
     void openFileDialog();
     void openFile(QString filePath);
+    void saveFile(QString filePath);
     void saveQuit();
+    void save();
     void saveAs();
     void onMaximumTriggered();
     void onSplitDock(bool);
@@ -58,6 +60,7 @@ private:
 
     //QVector<ZenoDockWidget*> m_docks;
     QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;
+    QString currFilePath;//TODO:luzh fix me
 
     ZenoGraphsEditor* m_pEditor;
 };

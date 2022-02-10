@@ -15,7 +15,7 @@ struct ProgramRunData {
 
     std::string progJson;
     int nframes;
-    std::set<std::string> applies;
+    //std::set<std::string> applies;
 
     void operator()() {
         std::unique_lock _(g_mtx);

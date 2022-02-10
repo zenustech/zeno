@@ -69,6 +69,7 @@ void ZenoMainWindow::initMenu()
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(tr("Ctrl+S")));
+        connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
@@ -331,6 +332,7 @@ void ZenoMainWindow::openFile(QString filePath) {
             pEditor->resetModel(pModel);
         }
     }
+    currFilePath = filePath;
 }
 
 void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
@@ -353,6 +355,25 @@ void ZenoMainWindow::saveQuit()
         saveAs();
     }
     pGraphs->clear();
+    currFilePath.clear();
+}
+
+void ZenoMainWindow::save()
+{
+    if (currFilePath.isEmpty())
+        return saveAs();
+    saveFile(currFilePath);
+}
+
+void ZenoMainWindow::saveFile(QString filePath) {
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(zenoApp->graphsManagment()->currentModel());
+    QFile f(filePath);
+    if (!f.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
+        return;
+    }
+    f.write(strContent.toUtf8());
+    f.close();
 }
 
 void ZenoMainWindow::saveAs()
@@ -360,14 +381,7 @@ void ZenoMainWindow::saveAs()
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty())
     {
-        QString strContent = ZsgWriter::getInstance().dumpProgramStr(zenoApp->graphsManagment()->currentModel());
-        QFile f(path);
-        if (!f.open(QIODevice::WriteOnly)) {
-            qWarning() << Q_FUNC_INFO << "Failed to open" << path << f.errorString();
-            return;
-        }
-        f.write(strContent.toUtf8());
-        f.close();
+        saveFile(path);
     }
 }
 
