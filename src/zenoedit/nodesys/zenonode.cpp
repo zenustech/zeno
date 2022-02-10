@@ -449,7 +449,14 @@ QGraphicsLayout* ZenoNode::initParams()
                         QString textValue = pLineEdit->text();
                         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
                         SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                        QVariant varValue;
+                        switch (param.control) {
+                        case CONTROL_INT: varValue = std::stoi(textValue.toStdString()); break;
+                        case CONTROL_FLOAT: varValue = std::stof(textValue.toStdString()); break;
+                        case CONTROL_BOOL: varValue = (bool)std::stoi(textValue.toStdString()); break;
+                        case CONTROL_STRING: varValue = textValue; break;
+                        }
+                        pGraphModel->updateParam(nodeid, paramName, varValue, true);
                     });
                     m_paramControls[paramName] = pLineEdit;
                     break;

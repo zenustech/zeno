@@ -21,6 +21,8 @@ struct ProgramRunData {
     void operator()() {
         std::unique_lock _(g_mtx);
 
+        zeno::log_info("launching program JSON: {}", progJson);
+
         auto session = &zeno::getSession();
         session->globalState->clearState();
 
