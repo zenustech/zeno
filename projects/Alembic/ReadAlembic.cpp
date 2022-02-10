@@ -18,6 +18,10 @@
 namespace zeno {
 namespace {
 
+struct ABCArchive: IObject {
+    Alembic::Abc::v12::IArchive archive;
+};
+
 static int clamp(int i, int _min, int _max) {
     if (i < _min) {
         return _min;
@@ -134,6 +138,22 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 
 struct ReadAlembic : INode {
     virtual void apply() override {
+        auto archive = std::make_shared<ABCArchive>();
+        auto path = get_input<StringObject>("path")->get();
+        archive->archive = readABC(path);;
+        set_output("archive", std::move(archive));
+    }
+};
+
+ZENDEFNODE(ReadAlembic, {
+    {{"readpath", "path"}},
+    {"archive"},
+    {},
+    {"alembic"},
+});
+
+struct GetAlembicFrame : INode {
+    virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
             frameid = get_input<NumericObject>("frameid")->get<int>();
@@ -142,21 +162,20 @@ struct ReadAlembic : INode {
         }
         auto abctree = std::make_shared<ABCTree>();
         {
-            auto path = get_input<StringObject>("path")->get();
-            auto archive = readABC(path);
+            auto archive = get_input<ABCArchive>("archive");
             double start, _end;
-            GetArchiveStartAndEndTime(archive, start, _end);
+            GetArchiveStartAndEndTime(archive->archive, start, _end);
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
-            auto obj = archive.getTop();
+            auto obj = archive->archive.getTop();
             traverseABC(obj, *abctree, frameid);
         }
         set_output("abctree", std::move(abctree));
     }
 };
 
-ZENDEFNODE(ReadAlembic, {
-    {{"readpath", "path"}, {"frameid"}},
+ZENDEFNODE(GetAlembicFrame, {
+    {{"archive"}, {"frameid"}},
     {{"ABCTree", "abctree"}},
     {},
     {"alembic"},
