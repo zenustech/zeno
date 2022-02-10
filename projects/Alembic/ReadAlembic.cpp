@@ -137,23 +137,13 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 }
 
 struct ReadAlembic : INode {
+    std::shared_ptr<ABCArchive> archive;
     virtual void apply() override {
-        auto archive = std::make_shared<ABCArchive>();
-        auto path = get_input<StringObject>("path")->get();
-        archive->archive = readABC(path);;
-        set_output("archive", std::move(archive));
-    }
-};
-
-ZENDEFNODE(ReadAlembic, {
-    {{"readpath", "path"}},
-    {"archive"},
-    {},
-    {"alembic"},
-});
-
-struct GetAlembicFrame : INode {
-    virtual void apply() override {
+        if (!archive) {
+            archive = std::make_shared<ABCArchive>();
+            auto path = get_input<StringObject>("path")->get();
+            archive->archive = readABC(path);
+        }
         int frameid;
         if (has_input("frameid")) {
             frameid = get_input<NumericObject>("frameid")->get<int>();
@@ -162,7 +152,6 @@ struct GetAlembicFrame : INode {
         }
         auto abctree = std::make_shared<ABCTree>();
         {
-            auto archive = get_input<ABCArchive>("archive");
             double start, _end;
             GetArchiveStartAndEndTime(archive->archive, start, _end);
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
@@ -174,8 +163,11 @@ struct GetAlembicFrame : INode {
     }
 };
 
-ZENDEFNODE(GetAlembicFrame, {
-    {{"archive"}, {"frameid"}},
+ZENDEFNODE(ReadAlembic, {
+    {
+        {"readpath", "path"},
+        {"frameid"},
+    },
     {{"ABCTree", "abctree"}},
     {},
     {"alembic"},
