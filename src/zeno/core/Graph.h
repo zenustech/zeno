@@ -34,16 +34,6 @@ struct Graph {
     SubgraphNode *subgraphNode = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
-
-    std::map<std::string, zany> subInputs;
-    std::map<std::string, zany> subOutputs;
-    std::map<std::string, std::function<zany()>> subInputPromises;
-
-    std::set<std::string> finalOutputNodes;
-    std::map<std::string, std::string> subInputNodes;
-    std::map<std::string, std::string> subOutputNodes;
-    std::set<std::string> subCategoryNodes;
-
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
 
@@ -52,8 +42,6 @@ struct Graph {
     bool isViewed = true;
     bool hasAnyView = false;
 
-    //UserData userData;
-
     ZENO_API Graph();
     ZENO_API ~Graph();
 
@@ -61,8 +49,6 @@ struct Graph {
     Graph &operator=(Graph const &) = delete;
     Graph(Graph &&) = delete;
     Graph &operator=(Graph &&) = delete;
-
-    //ZENO_API UserData &getUserData();
 
     ZENO_API std::unique_ptr<INode> getOverloadNode(std::string const &id,
             std::vector<std::shared_ptr<IObject>> const &inputs) const;

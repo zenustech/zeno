@@ -3,7 +3,6 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
-#include <zeno/extra/ISubgraphNode.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/core/Descriptor.h>
@@ -21,24 +20,6 @@ ZENO_API Context::Context(Context const &other)
 
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
-
-ZENO_API void Graph::setGraphInputPromise(std::string const &id,
-        std::function<zany()> getter) {
-    subInputPromises[id] = std::move(getter);
-}
-
-ZENO_API void Graph::setGraphInput(std::string const &id, zany obj) {
-    subInputs[id] = std::move(obj);
-}
-
-ZENO_API void Graph::applyGraph() {
-    applyNodes(finalOutputNodes);
-}
-
-ZENO_API zany const &Graph::getGraphOutput(
-        std::string const &id) const {
-    return safe_at(subOutputs, id, "subgraph output");
-}
 
 ZENO_API zany const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
@@ -111,26 +92,6 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
     safe_at(nodes, id, "node")->options.insert(name);
 }
 
-ZENO_API std::set<std::string> Graph::getGraphInputNames() const {
-    std::set<std::string> res;
-    for (auto const &[id, _]: subInputNodes) {
-        res.insert(id);
-    }
-    return res;
-}
-
-ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
-    std::set<std::string> res;
-    for (auto const &[id, _]: subOutputNodes) {
-        res.insert(id);
-    }
-    return res;
-}
-
-/*ZENO_API UserData &Graph::getUserData() {
-    return userData;
-}*/
-
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {
     auto node = session->getOverloadNode(id, inputs);
@@ -145,43 +106,6 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
     std::visit([&] (auto const &val) {
         setNodeInput(id, parid, objectFromLiterial(val));
     }, val);
-}
-
-ZENO_API Graph *Graph::createSubgraph(std::string const &ident) {
-    auto subgraph = std::make_unique<Graph>();
-    auto rawptr = subgraph.get();
-    subgraph->session = this->session;
-    auto node = std::make_unique<SubgraphNode>();
-    node->graph = this;
-    node->myname = ident;
-    subgraph->subgraphNode = node.get();
-    node->subgraph = std::move(subgraph);
-    nodes[ident] = std::move(node);
-    return rawptr;
-}
-
-ZENO_API void Graph::finalizeAsSubgraph() {
-    //if (!subgraphNode) throw Exception("not a subgraph!");
-    auto desc = subgraphNode->subgraphNodeClass->desc.get();
-    for (auto const &[name_, nodeid]: subInputNodes) {
-        auto subInNode = nodes.at(nodeid).get();
-        auto name = objectToLiterial<std::string>(subInNode->inputs.at("name:"));
-        auto type = objectToLiterial<std::string>(subInNode->inputs.at("type:"));
-        auto defl = objectToLiterial<std::string>(subInNode->inputs.at("defl:"));
-        desc->inputs.push_back({type, name, defl});
-    }
-    for (auto const &[name_, nodeid]: subOutputNodes) {
-        auto subOutNode = nodes.at(nodeid).get();
-        auto name = objectToLiterial<std::string>(subOutNode->inputs.at("name:"));
-        auto type = objectToLiterial<std::string>(subOutNode->inputs.at("type:"));
-        auto defl = objectToLiterial<std::string>(subOutNode->inputs.at("defl:"));
-        desc->outputs.push_back({type, name, defl});
-    }
-    for (auto const &nodeid: subCategoryNodes) {
-        auto subCateNode = nodes.at(nodeid).get();
-        auto name = objectToLiterial<std::string>(subCateNode->inputs.at("name:"));
-        desc->categories.push_back({name});
-    }
 }
 
 }

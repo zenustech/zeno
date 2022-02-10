@@ -1,15 +1,13 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/ISubgraphNode.h>
-#include <zeno/types/ConditionObject.h>
-#include <zeno/utils/safe_at.h>
-#include <cassert>
+//#include <zeno/types/ConditionObject.h>
+//#include <zeno/utils/safe_at.h>
+//#include <cassert>
 
 
 namespace zeno {
 namespace {
 
-
-struct FinalOutput : zeno::INode {
+/*struct FinalOutput : zeno::INode {
     virtual void complete() override {
         graph->finalOutputNodes.insert(myname);
     }
@@ -22,7 +20,7 @@ ZENDEFNODE(FinalOutput, {
     {},
     {},
     {"subgraph"},
-});
+});*/
 
 
 #if 0
@@ -61,7 +59,7 @@ ZENDEFNODE(SubEndpoint, {
 #endif
 
 
-struct SubInput : zeno::INode {
+/*struct SubInput : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->subInputNodes[name] = myname;
@@ -149,7 +147,7 @@ ZENDEFNODE(SubResult, {
      {"string", "type", ""},
      {"string", "defl", ""}},
     {"subgraph"},
-});
+});*/
 
 
 /*struct Subgraph : zeno::ISubgraphNode {  // to be deprecated
@@ -169,7 +167,7 @@ ZENDEFNODE(Subgraph, {
 });*/
 
 
-struct SubCategory : zeno::INode {
+/*struct SubCategory : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->subCategoryNodes.insert(myname);
@@ -183,8 +181,49 @@ ZENDEFNODE(SubCategory, {
     {},
     {{"string", "name", "subgraph"}},
     {"subgraph"},
+});*/
+
+struct SubInput : zeno::INode {
+    virtual void apply() override {
+        set_output("port", get_input("_IN_port"));
+        set_output("hasValue", get_input("_IN_hasValue"));
+    }
+};
+
+ZENDEFNODE(SubInput, {
+    {},
+    {"port", {"bool", "hasValue"}},
+    {{"string", "name", "input1"},
+     {"string", "type", ""},
+     {"string", "defl", ""}},
+    {"subgraph"},
 });
 
+struct SubOutput : zeno::INode {
+    virtual void apply() override {
+        set_output("_OUT_port", get_input("port"));
+    }
+};
+
+ZENDEFNODE(SubOutput, {
+    {"port"},
+    {},
+    {{"string", "name", "output1"},
+     {"string", "type", ""},
+     {"string", "defl", ""}},
+    {"subgraph"},
+});
+
+struct SubCategory : zeno::INode {
+    virtual void apply() override {}
+};
+
+ZENDEFNODE(SubCategory, {
+    {},
+    {},
+    {{"string", "name", "subgraph"}},
+    {"subgraph"},
+});
 
 }
 }
