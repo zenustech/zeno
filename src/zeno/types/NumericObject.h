@@ -30,7 +30,7 @@ struct NumericObject : IObjectClone<NumericObject> {
   template <class T>
   T get() const {
     if (!is<T>())
-        throw TypeError(typeid(T), typeid_of_variant<NumericValue>(value.index()));
+        throw TypeError(typeid(T), typeid_of_variant<NumericValue>(value.index()), "NumericObject::get<T>");
     return std::get<T>(value);
   }
 

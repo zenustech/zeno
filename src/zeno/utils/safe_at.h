@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <zeno/utils/Exception.h>
+#include <zeno/utils/Error.h>
 
 
 namespace zeno {
@@ -18,7 +18,7 @@ T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
   if (it == m.end()) {
     auto extra_ = extra;
     if (extra.size()) extra_ = " for `" + extra + "`";
-    throw Exception("invalid " + msg + " name `" + key + "`" + extra_);
+    throw KeyError(key, msg, extra_);
   }
   return it->second.get();
 }
@@ -30,7 +30,7 @@ T const &safe_at(std::map<std::string, T> const &m, std::string const &key,
   if (it == m.end()) {
     auto extra_ = extra;
     if (extra.size()) extra_ = " for `" + extra + "`";
-    throw Exception("invalid " + msg + " name `" + key + "`" + extra_);
+    throw KeyError(key, msg, extra_);
   }
   return it->second;
 }
@@ -39,7 +39,7 @@ template <class T, class S>
 T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
-    throw Exception("invalid " + msg + " as index");
+    throw KeyError(key);
   }
   return it->second;
 }

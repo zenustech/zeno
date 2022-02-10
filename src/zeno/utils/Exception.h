@@ -19,6 +19,10 @@ public:
   ~BaseException() noexcept = default;
   char const *what() const noexcept { return msg.c_str(); }
 #endif
+  BaseException(BaseException const &) = delete;
+  BaseException &operator=(BaseException const &) = delete;
+  BaseException(BaseException &&) = delete;
+  BaseException &operator=(BaseException &&) = delete;
 };
 
 class Exception : public BaseException {
