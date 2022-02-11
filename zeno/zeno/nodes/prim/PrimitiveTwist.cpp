@@ -40,13 +40,14 @@ struct PrimitiveTwist : zeno::INode {
             angle *= M_PI / 180;
             angle /= limitMax - limitMin;
 
-            printf("%f %f %f\n", tangent[0], tangent[1], tangent[2]);
-            printf("%f %f %f\n", bitangent[0], bitangent[1], bitangent[2]);
+            //printf("tangent: %f %f %f\n", tangent[0], tangent[1], tangent[2]);
+            //printf("bitangent: %f %f %f\n", bitangent[0], bitangent[1], bitangent[2]);
 
             auto acc = parallel_reduce_array(prim->size(), vec2f(prim->size() ? dot(direction, prim->verts[0] - origin) : 0.f), [&] (size_t i) {
                 return vec2f(dot(direction, prim->verts[i] - origin));
             }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
             auto height = acc[1] - acc[0];
+            auto middle = (acc[1] + acc[0]) * 0.5f;
             auto inv_height = 1 / height;
 
 #pragma omp parallel for
@@ -54,7 +55,7 @@ struct PrimitiveTwist : zeno::INode {
                 auto pos = prim->verts[i] - origin;
 
                 auto dirpos = dot(pos, direction);
-                auto fac = dirpos * inv_height;
+                auto fac = (dirpos - middle) * inv_height;
                 auto ang = std::max(limitMin, std::min(fac, limitMax)) * angle;
                 auto sinang = std::sin(ang);
                 auto cosang = std::cos(ang);

@@ -11,15 +11,17 @@ struct orthonormal {
     explicit orthonormal(vec3f const &normal_)
         : normal(normal_) {
         normal = normalize(normal);
-        tangent = vec3f(0, 0, 1);
-        bitangent = cross(normal, tangent);
-        if (dot(bitangent, bitangent) < 1e-5) {
-            tangent = vec3f(0, 1, 0);
-            bitangent = cross(normal, tangent);
+
+        // https://backend.orbit.dtu.dk/ws/portalfiles/portal/126824972/onb_frisvad_jgt2012_v2.pdf
+        if (normal[2] < -0.9999999f) {
+            tangent = vec3f(0.0f, -1.0f, 0.0f);
+            bitangent = vec3f(-1.0f, 0.0f, 0.0f);
+            return;
         }
-        bitangent = normalize(bitangent);
-        tangent = cross(bitangent, normal);
-        tangent = normalize(tangent);
+        float a = 1.0f / (1.0f + normal[2]);
+        float b = -normal[0]*normal[1]*a;
+        tangent = vec3f(1.0f - normal[0]*normal[0]*a, b, -normal[0]);
+        bitangent = vec3f(b, 1.0f - normal[1]*normal[1]*a, -normal[1]);
     }
 
     explicit orthonormal(vec3f const &normal_, vec3f const &tangent_)
@@ -27,7 +29,7 @@ struct orthonormal {
         bitangent = cross(normal, tangent);
         bitangent = normalize(bitangent);
         tangent = cross(bitangent, normal);
-        tangent = normalize(tangent);
+        //tangent = normalize(tangent);
     }
 };
 

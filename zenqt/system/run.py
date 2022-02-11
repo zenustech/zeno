@@ -11,7 +11,7 @@ def evaluateExpr(expr, frame):
         return expr
 
 
-def runScene(graphs, nframes, iopath):
+def runScene(graphs, nframes, iopath, start_frame):
     core.setIOPath(iopath)
 
     data = json.dumps(list(serializeScene(graphs)))
@@ -29,8 +29,9 @@ def runScene(graphs, nframes, iopath):
             applies.add(ident)
 
     core.switchGraph('main')
+    core.setFrameid(start_frame)
 
-    for frameid in range(nframes):
+    for frameid in range(start_frame, start_frame + nframes):
         print('FRAME:', frameid)
         ### BEGIN XINXIN HAPPY >>>>>
         for ident, data in graphs['main']['nodes'].items():

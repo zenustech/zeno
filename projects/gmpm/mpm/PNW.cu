@@ -204,7 +204,7 @@ struct ZSParticleNeighborWrangler : INode {
       }
 
       haccessors[i] = zs::AccessorAoSoA{
-          zs::aosoa_v,
+          zs::aosoa_c,
           (void *)targetParPtr->data(),
           (unsigned short)unitBytes,
           (unsigned short)tileSize,

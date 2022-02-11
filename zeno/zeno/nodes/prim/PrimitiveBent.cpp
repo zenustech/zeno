@@ -40,6 +40,7 @@ struct PrimitiveBent : zeno::INode {
                 return vec2f(dot(tangent, prim->verts[i] - origin));
             }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
             auto height = acc[1] - acc[0];
+            auto middle = (acc[1] + acc[0]) * 0.5f;
             auto radius = height / angle;
             auto inv_height = 1 / height;
 
@@ -48,7 +49,7 @@ struct PrimitiveBent : zeno::INode {
                 auto pos = prim->verts[i] - origin;
                 auto tanpos = dot(tangent, pos);
                 auto dirpos = dot(direction, pos);
-                auto fac = tanpos * inv_height;
+                auto fac = (tanpos - middle) * inv_height;
 
                 auto rad = radius - dirpos;
                 auto ang = std::max(limitMin, std::min(fac, limitMax)) * angle;

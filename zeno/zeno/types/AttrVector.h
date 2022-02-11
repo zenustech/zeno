@@ -66,6 +66,12 @@ struct AttrVector {
         values.push_back(std::move(t));
     }
 
+    void _ensure_update() const {
+        if (!attrs.empty()) {
+            const_cast<AttrVector *>(this)->update();
+        }
+    }
+
     void update() {
         for (auto &[key, val] : attrs) {
             std::visit([&](auto &val) { val.resize(this->size()); }, val);
@@ -184,6 +190,7 @@ struct AttrVector {
     }
 
     auto const &attr(std::string const &name) const {
+        _ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw Exception("invalid primitive attribute name: `" + name + "`");
@@ -191,6 +198,7 @@ struct AttrVector {
     }
 
     auto &attr(std::string const &name) {
+        _ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw Exception("invalid primitive attribute name: `" + name + "`");
@@ -216,6 +224,20 @@ struct AttrVector {
 
     size_t size() const {
         return values.size();
+    }
+
+    void reserve(size_t size) {
+        values.reserve(size);
+        for (auto &[key, val] : attrs) {
+            std::visit([&](auto &val) { val.reserve(size); }, val);
+        }
+    }
+
+    void shrink_to_fit() {
+        values.shrink_to_fit();
+        for (auto &[key, val] : attrs) {
+            std::visit([&](auto &val) { val.shrink_to_fit(); }, val);
+        }
     }
 
     void resize(size_t size) {

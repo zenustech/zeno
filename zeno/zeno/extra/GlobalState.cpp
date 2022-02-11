@@ -35,5 +35,9 @@ ZENO_API void GlobalState::frameEnd() {
     frameid++;
 }
 
+ZENO_API void GlobalState::setFrameid(int _frameid) {
+    frameid = _frameid;
+}
+
 }
 #endif

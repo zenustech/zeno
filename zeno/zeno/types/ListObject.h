@@ -11,7 +11,7 @@ struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
 
   template <class T = std::shared_ptr<IObject>>
-  auto get() {
+  std::vector<T> get() {
       std::vector<T> res;
       for (auto const &val: arr) {
           res.push_back(safe_any_cast<T>(val));

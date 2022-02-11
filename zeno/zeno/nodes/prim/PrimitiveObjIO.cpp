@@ -3,6 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/prim_ops.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -11,7 +12,7 @@
 #include <fstream>
 
 
-namespace {
+namespace zeno {
 
 
 static zeno::vec3i read_index(std::string str) {
@@ -34,7 +35,7 @@ static zeno::vec3f read_vec3f(std::vector<std::string> items) {
     return vec;
 }
 
-static void readobj(
+void read_obj_file(
         std::vector<zeno::vec3f> &vertices,
         //std::vector<zeno::vec3f> &uvs,
         //std::vector<zeno::vec3f> &normals,
@@ -96,7 +97,7 @@ struct ReadObjPrimitive : zeno::INode {
         auto &tris = prim->tris;
         //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
-        readobj(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
+        read_obj_file(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
         prim->resize(pos.size());
         set_output("prim", std::move(prim));
     }
