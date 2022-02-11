@@ -24,7 +24,6 @@ struct fill_voxels_op {
         }
     }
 };
-
 struct VDBFillActiveVoxels : INode {
   virtual void apply() override {
     auto grid = get_input<VDBGrid>("grid");

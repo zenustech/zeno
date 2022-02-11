@@ -163,12 +163,12 @@ struct VolumeAdvect : zeno::INode {
         if(get_input("InoutField")->as<VDBGrid>()->getType()=="FloatGrid")
         {
             auto f = get_input("InoutField")->as<VDBFloatGrid>()->m_grid;
-            advection.advect<openvdb::FloatGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep);
+            f = (advection.advect<openvdb::FloatGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep))->deepCopy();
         }
         else if(get_input("InoutField")->as<VDBGrid>()->getType()=="Vec3Grid")
         {
             auto f = get_input("InoutField")->as<VDBFloat3Grid>()->m_grid;
-            advection.advect<openvdb::Vec3fGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep);
+            f = (advection.advect<openvdb::Vec3fGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep))->deepCopy();
         }
         //advection.advect(0.0, timeStep);
         set_output("InoutSDF", get_input("InoutSDF"));

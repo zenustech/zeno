@@ -7,6 +7,7 @@
 #include <zfx/x64.h>
 #include <cassert>
 #include "dbg_printf.h"
+#include <zeno/StringObject.h>
 
 namespace {
 
@@ -20,8 +21,10 @@ struct Buffer {
     int which = 0;
 };
 
+
+
 template <class GridPtr>
-void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid) {
+void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.modifyValue([&](auto &v) {
@@ -34,12 +37,33 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid) {
                     v[0] = ctx.channel(0)[0];
                     v[1] = ctx.channel(1)[0];
                     v[2] = ctx.channel(2)[0];
+    
                 } else {
                     ctx.channel(0)[0] = v;
                     ctx.execute();
                     v = ctx.channel(0)[0];
+                    
                 }
+                
             });
+
+            if(modifyActive){
+                float testv;
+                auto v = iter.getValue();
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>)
+                {
+                    testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+                } else {
+                    testv = std::abs(v);
+                }
+                if(testv<1e-7)
+                {
+                    iter.setValueOff();
+                }
+                else{
+                    iter.setValueOn();
+                }
+            }
         }
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
@@ -101,18 +125,18 @@ struct VDBWrangle : zeno::INode {
             dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
-
+        auto modifyActive = (get_input<zeno::StringObject>("ModifyActive")->get())=="true";
         if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid);
+            vdb_wrangle(exec, p.value()->m_grid, modifyActive);
         else if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid);
+            vdb_wrangle(exec, p.value()->m_grid, modifyActive);
 
         set_output("grid", std::move(grid));
     }
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid"}, {"string", "zfxCode"},
+    {{"VDBGrid", "grid"}, {"string", "zfxCode"},{"enum true false","ModifyActive","false"},
      {"DictObject:NumericObject", "params"}},
     {{"VDBGrid", "grid"}},
     {},

@@ -69,12 +69,14 @@ struct VDBLeafAsParticles : INode {
     virtual void apply() override {
         auto ingrid = get_input<VDBFloatGrid>("vdbGrid");
         auto const &grid = ingrid->m_grid;
-
+        auto h = grid->voxelSize()[0];
         tbb::concurrent_vector<vec3f> pos;
         auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
             auto coord = leaf.origin();
             auto p = grid->transform().indexToWorld(coord + decltype(coord)(8/2));
-            pos.emplace_back(p[0], p[1], p[2]);
+            //auto bbox = leaf.getNodeBoundingBox();
+            //auto p = grid->transform().indexToWorld(bbox.min() + bbox.max());
+            pos.emplace_back(p[0]-0.5*h, p[1]-0.5*h, p[2]-0.5*h);
         };
         openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
         leafman.foreach(wrangler);
