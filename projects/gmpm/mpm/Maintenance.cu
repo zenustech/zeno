@@ -200,37 +200,34 @@ struct RefineMeshParticles : INode {
           prevEleCnt = eles.size();
           vertOffsets.resize(prevEleCnt);
           eleOffsets.resize(prevEleCnt);
-          cudaPol(range(prevEleCnt), [eles = proxy<execspace_e::cuda>({}, eles),
-                                      pars = proxy<execspace_e::cuda>({}, pars),
-                                      vertCnt =
-                                          proxy<execspace_e::cuda>(vertCnt),
-                                      eleCnt = proxy<execspace_e::cuda>(eleCnt),
-                                      vertOffsets =
-                                          proxy<execspace_e::cuda>(vertOffsets),
-                                      eleOffsets =
-                                          proxy<execspace_e::cuda>(eleOffsets),
-                                      dx] __device__(int ei) mutable {
-            /// inds, xs
-            int inds[3] = {(int)eles("inds", 0, ei), (int)eles("inds", 1, ei),
-                           (int)eles("inds", 2, ei)};
-            zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                    pars.pack<3>("pos", inds[1]),
-                                    pars.pack<3>("pos", inds[2])};
-            auto need_sampling = [dx](const auto &a, const auto &b) -> bool {
-              for (int d = 0; d != 3; ++d)
-                if (zs::abs(a[d] - b[d]) > dx)
-                  return true;
-              return false;
-            };
-            if (need_sampling(xs[0], xs[1]) || need_sampling(xs[0], xs[2]) ||
-                need_sampling(xs[1], xs[2])) {
-              vertOffsets[ei] = atomic_add(exec_cuda, vertCnt.data(), 1);
-              eleOffsets[ei] = atomic_add(exec_cuda, eleCnt.data(), 2);
-            } else {
-              vertOffsets[ei] = -1;
-              eleOffsets[ei] = -1;
-            }
-          });
+          cudaPol(range(prevEleCnt),
+                  [eles = proxy<execspace_e::cuda>({}, eles),
+                   pars = proxy<execspace_e::cuda>({}, pars),
+                   vertCnt = proxy<execspace_e::cuda>(vertCnt),
+                   eleCnt = proxy<execspace_e::cuda>(eleCnt),
+                   vertOffsets = proxy<execspace_e::cuda>(vertOffsets),
+                   eleOffsets = proxy<execspace_e::cuda>(eleOffsets),
+                   dx] __device__(int ei) mutable {
+                    /// inds, xs
+                    int inds[3] = {(int)eles("inds", 0, ei),
+                                   (int)eles("inds", 1, ei),
+                                   (int)eles("inds", 2, ei)};
+                    zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
+                                            pars.pack<3>("pos", inds[1]),
+                                            pars.pack<3>("pos", inds[2])};
+                    auto area =
+                        (xs[1] - xs[0]).cross(xs[2] - xs[0]).norm() * 0.5f;
+
+                    // not the ideal heuristic
+                    if (area > dx * dx * 0.5f) {
+                      vertOffsets[ei] =
+                          atomic_add(exec_cuda, vertCnt.data(), 1);
+                      eleOffsets[ei] = atomic_add(exec_cuda, eleCnt.data(), 2);
+                    } else {
+                      vertOffsets[ei] = -1;
+                      eleOffsets[ei] = -1;
+                    }
+                  });
           fmt::print("verts from {} to {}, {} added\n", prevVertCnt,
                      vertCnt.getVal(), vertCnt.getVal() - prevVertCnt);
           fmt::print("eles from {} to {}, {} added\n", prevEleCnt,
@@ -242,50 +239,50 @@ struct RefineMeshParticles : INode {
         while (probeSize()) {
           pars.resize(vertCnt.getVal());
           eles.resize(eleCnt.getVal());
-          cudaPol(
-              range(prevEleCnt),
-              [eles = proxy<execspace_e::cuda>({}, eles),
-               pars = proxy<execspace_e::cuda>({}, pars),
-               vertOffsets = proxy<execspace_e::cuda>(vertOffsets),
-               eleOffsets = proxy<execspace_e::cuda>(eleOffsets), dx,
-               rho = model.density] __device__(int ei) mutable {
-                if (auto vertId = vertOffsets[ei]; vertId >= 0) {
-                  /// inds, xs
-                  int inds[3] = {(int)eles("inds", 0, ei),
-                                 (int)eles("inds", 1, ei),
-                                 (int)eles("inds", 2, ei)};
-                  zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                          pars.pack<3>("pos", inds[1]),
-                                          pars.pack<3>("pos", inds[2])};
-                  /// vel, C, F, d
-                  auto vole_div_3 = eles("vol", ei) / 3.f;
-                  auto vele = eles.pack<3>("vel", ei);
-                  auto Ce = eles.pack<3, 3>("C", ei);
-                  auto Fe = eles.pack<3, 3>("F", ei);
-                  auto d2 = col(eles.pack<3, 3>("d", ei), 2);
+          cudaPol(range(prevEleCnt),
+                  [eles = proxy<execspace_e::cuda>({}, eles),
+                   pars = proxy<execspace_e::cuda>({}, pars),
+                   vertOffsets = proxy<execspace_e::cuda>(vertOffsets),
+                   eleOffsets = proxy<execspace_e::cuda>(eleOffsets), dx,
+                   rho = model.density] __device__(int ei) mutable {
+                    if (auto vertId = vertOffsets[ei]; vertId >= 0) {
+                      /// inds, xs
+                      int inds[3] = {(int)eles("inds", 0, ei),
+                                     (int)eles("inds", 1, ei),
+                                     (int)eles("inds", 2, ei)};
+                      zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
+                                              pars.pack<3>("pos", inds[1]),
+                                              pars.pack<3>("pos", inds[2])};
+                      auto c = (xs[0] + xs[1] + xs[2]) / 3.f;
+                      /// vel, C, F, d
+                      auto vole_div_3 = eles("vol", ei) / 3.f;
+                      auto vele = eles.pack<3>("vel", ei);
+                      auto Ce = eles.pack<3, 3>("C", ei);
+                      auto Fe = eles.pack<3, 3>("F", ei);
+                      auto d2 = col(eles.pack<3, 3>("d", ei), 2);
 
-                  auto eleId = eleOffsets[ei];
+                      auto eleId = eleOffsets[ei];
 
-                  /// spawn new elements
-                  auto c = (xs[0] + xs[1] + xs[2]) / 3.f;
-                  // elem: vol (mass), pos, vel, C, F, d, Dinv,  inds
-                  using mat3 = zs::vec<double, 3, 3>;
-                  using vec3 = zs::vec<float, 3>;
+                      /// spawn new elements
+                      // elem: vol (mass), pos, vel, C, F, d, Dinv,  inds
+                      using mat3 = zs::vec<double, 3, 3>;
+                      using vec3 = zs::vec<float, 3>;
 
-                  /// remove this element
-                  for (int i = 0; i != 3; ++i) {
-                    atomic_add(exec_cuda, &pars("vol", inds[i]), -vole_div_3);
-                    atomic_add(exec_cuda, &pars("mass", inds[i]),
-                               -vole_div_3 * rho);
-                  }
+                      /// remove this element
+                      for (int i = 0; i != 3; ++i) {
+                        atomic_add(exec_cuda, &pars("vol", inds[i]),
+                                   -vole_div_3);
+                        atomic_add(exec_cuda, &pars("mass", inds[i]),
+                                   -vole_div_3 * rho);
+                      }
 
-                  /// spawn new vertex
-                  pars("vol", vertId) = vole_div_3;
-                  pars("mass", vertId) = vole_div_3 * rho;
-                  pars.tuple<3>("pos", vertId) = c;
-                  pars.tuple<3>("vel", vertId) = vele;
-                  pars.tuple<9>("F", vertId) = Fe;
-                  pars.tuple<9>("C", vertId) = Ce;
+                      /// spawn new vertex
+                      pars("vol", vertId) = vole_div_3;
+                      pars("mass", vertId) = vole_div_3 * rho;
+                      pars.tuple<3>("pos", vertId) = c;
+                      pars.tuple<3>("vel", vertId) = vele;
+                      pars.tuple<9>("F", vertId) = Fe;
+                      pars.tuple<9>("C", vertId) = Ce;
 #if 0
                         if (pars.hasProperty("a"))
                           pars.tuple<3>("a", vertId) =
@@ -336,13 +333,13 @@ struct RefineMeshParticles : INode {
     atomic_add(exec_cuda, &pars("mass", ib), vole *rho / 3.f);                 \
   }
 
-                  CONSTRUCT_ELEMENT(ei, inds[0], inds[1], xs[0], xs[1]);
-                  CONSTRUCT_ELEMENT(eleId, inds[1], inds[2], xs[1], xs[2]);
-                  CONSTRUCT_ELEMENT(eleId + 1, inds[2], inds[0], xs[2], xs[0]);
-                }
-              });
-          fmt::print("done refinement iter.\n");
-          getchar();
+                      CONSTRUCT_ELEMENT(ei, inds[0], inds[1], xs[0], xs[1]);
+                      CONSTRUCT_ELEMENT(eleId, inds[1], inds[2], xs[1], xs[2]);
+                      CONSTRUCT_ELEMENT((eleId + 1), inds[2], inds[0], xs[2],
+                                        xs[0]);
+                    }
+                  });
+          fmt::print("done refinement iter [{}].\n", cnt);
           if (cnt++ >= limits<int>::max())
             break;
         }
