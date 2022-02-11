@@ -56,18 +56,19 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
                 } else {
                     testv = std::abs(v);
                 }
-                if(testv<1e-7)
+                if(testv<1e-5)
                 {
-                    iter.setValueOff();
+                    iter.setValueOn(false);
                 }
                 else{
-                    iter.setValueOn();
+                    iter.setValueOn(true);
                 }
             }
         }
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
+    openvdb::tools::prune(grid->tree());
 }
 
 struct VDBWrangle : zeno::INode {

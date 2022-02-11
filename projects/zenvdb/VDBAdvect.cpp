@@ -171,7 +171,7 @@ struct VolumeAdvect : zeno::INode {
             f = (advection.advect<openvdb::Vec3fGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep))->deepCopy();
         }
         //advection.advect(0.0, timeStep);
-        set_output("InoutSDF", get_input("InoutSDF"));
+        set_output("InoutField", get_input("InoutField"));
     }
 };
 

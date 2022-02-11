@@ -2945,8 +2945,7 @@ void FLIP_vdb::emit_liquid(
             liquid_phi = openvdb::tools::BoxSampler::sample(
                 liquid_sdf->getConstAccessor(), voxelipos);
           }
-          if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx &&
-              liquid_phi >= 0) {
+          if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
             const int max_emit_trial = 16;
             for (int trial = 0;
                  this_voxel_emitted < 8 && trial < max_emit_trial; trial++) {
@@ -3085,8 +3084,7 @@ void FLIP_vdb::emit_liquid(
             liquid_phi = openvdb::tools::BoxSampler::sample(
                 liquid_sdf->getConstAccessor(), voxelipos);
           }
-          if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx &&
-              liquid_phi >= 0) {
+          if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
             const int max_emit_trial = 16;
             for (int trial = 0;
                  this_voxel_emitted < 8 && trial < max_emit_trial; trial++) {
