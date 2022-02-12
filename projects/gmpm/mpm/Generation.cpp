@@ -25,8 +25,13 @@ struct PoissonDiskSample : INode {
     auto spls = zs::convert_floatgrid_to_sparse_levelset(
         gridPtr, zs::MemoryProperty{zs::memsrc_e::host, -1});
     auto dx = get_input2<float>("dx");
+#if 0
     auto sampled = zs::sample_from_levelset(
         zs::proxy<zs::execspace_e::host>(spls), dx, get_input2<float>("ppc"));
+#else
+    auto sampled =
+        zs::sample_from_levelset(gridPtr, dx, get_input2<float>("ppc"));
+#endif
 
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(sampled.size());

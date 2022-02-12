@@ -40,8 +40,8 @@
       "path": ""
      },
      "uipos": [
-      631.1090425531921,
-      519.0180471124618
+      733.1246200607911,
+      682.3691109422487
      ],
      "options": [
       "ONCE"
@@ -63,12 +63,11 @@
      },
      "params": {},
      "uipos": [
-      921.356762917933,
-      633.0642097264434
+      1098.6620440729487,
+      721.9139437689969
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "7c191f52-NumericFloat": {
@@ -247,8 +246,8 @@
       "type": ""
      },
      "uipos": [
-      301.1588145896656,
-      324.81003039513683
+      452.92078267477206,
+      381.9671352583587
      ],
      "options": [
       "ONCE"
@@ -258,7 +257,7 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "16484ea3-ParticlesToPrimitive",
+       "371cc073-PoissonDiskSample",
        "prim",
        null
       ],
@@ -280,11 +279,12 @@
      },
      "params": {},
      "uipos": [
-      2134.3251329787236,
-      297.4140387537992
+      2417.844082446809,
+      536.2913183890576
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "453dff02-MakeVDBGrid": {
@@ -323,8 +323,8 @@
        null
       ],
       "ShapeSDF": [
-       "d083994a-ImportVDBGrid",
-       "data",
+       "3e15bc36-ResampleVDBGrid",
+       "resampleTo",
        null
       ],
       "VelocityVolume": [
@@ -354,8 +354,8 @@
       "vz": 0.0
      },
      "uipos": [
-      1154.8494490881458,
-      73.20051291793311
+      1273.1055281155013,
+      48.56382978723403
      ],
      "options": [
       "ONCE"
@@ -377,8 +377,8 @@
      },
      "params": {},
      "uipos": [
-      1463.892002279635,
-      222.04549772036472
+      1830.9785809270513,
+      202.3361512158054
      ],
      "options": [
       "ONCE"
@@ -400,8 +400,8 @@
      },
      "params": {},
      "uipos": [
-      1750.229388297872,
-      290.16099924012155
+      2117.315966945288,
+      270.4516527355623
      ],
      "options": [
       "ONCE"
@@ -423,7 +423,7 @@
       "ppc": [
        null,
        null,
-       8.0
+       16.0
       ],
       "SRC": [
        null,
@@ -435,8 +435,8 @@
       "path": ""
      },
      "uipos": [
-      1527.4743541033436,
-      454.89171732522794
+      1504.3158719604864,
+      573.4434365501519
      ],
      "options": [
       "ONCE"
@@ -461,13 +461,68 @@
      "options": [
       "ONCE"
      ]
+    },
+    "3e15bc36-ResampleVDBGrid": {
+     "name": "ResampleVDBGrid",
+     "inputs": {
+      "resampleTo": [
+       "f3488156-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "resampleFrom": [
+       "d083994a-ImportVDBGrid",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      844.852963525836,
+      234.69889817629183
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "f3488156-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "7c191f52-NumericFloat",
+       "value",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "float",
+      "structure": "vertex",
+      "name": ""
+     },
+     "uipos": [
+      497.24316109422494,
+      89.81155015197564
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": -458.24230623098504,
-    "y": -205.71630414133142,
-    "width": 2929.6875,
-    "height": 1621.09375
+    "x": -548.166199657998,
+    "y": -423.9049291175829,
+    "width": 3662.109375,
+    "height": 2026.3671875
    }
   }
  },
@@ -9359,6 +9414,36 @@
     [
      "",
      "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SDFToFog": {
+   "inputs": [
+    [
+     "",
+     "SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oSDF",
      ""
     ],
     [
