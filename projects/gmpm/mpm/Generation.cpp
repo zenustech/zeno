@@ -32,10 +32,11 @@ struct PoissonDiskSample : INode {
     prim->resize(sampled.size());
     auto &pos = prim->attr<vec3f>("pos");
     auto &vel = prim->add_attr<vec3f>("vel");
-    auto &nrm = prim->add_attr<vec3f>("nrm");
+    // auto &nrm = prim->add_attr<vec3f>("nrm");
 
     /// compute default normal
     auto ompExec = zs::omp_exec();
+#if 0
     const auto calcNormal = [spls = proxy<zs::execspace_e::host>(spls),
                              eps = dx](const vec3f &x_) {
       zs::vec<float, 3> x{x_[0], x_[1], x_[2]}, diff{};
@@ -53,12 +54,12 @@ struct PoissonDiskSample : INode {
       auto r = diff.normalized();
       return vec3f{r[0], r[1], r[2]};
     };
-    ompExec(zs::range(sampled.size()),
-            [&sampled, &pos, &vel, &nrm, &calcNormal](size_t pi) {
-              pos[pi] = sampled[pi];
-              vel[pi] = vec3f{0, 0, 0};
-              nrm[pi] = calcNormal(pos[pi]);
-            });
+#endif
+    ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
+      pos[pi] = sampled[pi];
+      vel[pi] = vec3f{0, 0, 0};
+      // nrm[pi] = calcNormal(pos[pi]);
+    });
 
     fmt::print(fg(fmt::color::cyan), "done executing PoissonDiskSample\n");
     set_output("prim", std::move(prim));
