@@ -81,6 +81,7 @@ UpdateDataCommand::UpdateDataCommand(const QString& nodeid, const QString& param
     , m_newValue(newValue)
     , m_model(pModel)
 {
+    //should get from data(param).
     m_oldValue = m_model->getParamValue(nodeid, paramName);
 }
 

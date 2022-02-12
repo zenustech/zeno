@@ -3,7 +3,9 @@
 
 #include <QtWidgets>
 
-class GraphsModel;
+#include <zenoui/include/igraphsmodel.h>
+
+class IGraphsModel;
 
 class ZenoGraphsTabWidget : public QTabWidget
 {
@@ -14,7 +16,7 @@ public:
     ZenoGraphsTabWidget(QWidget* parent = nullptr);
     void activate(const QString& subgraphName);
     int indexOfName(const QString& subGraphName);
-    void resetModel(GraphsModel* pModel);
+    void resetModel(IGraphsModel* pModel);
 
 public slots:
     void onSubGraphsToRemove(const QModelIndex&, int, int);
@@ -25,7 +27,7 @@ protected:
     void paintEvent(QPaintEvent* e);
 
 private:
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
 };
 
 

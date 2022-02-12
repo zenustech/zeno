@@ -18,7 +18,8 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_pTabWidget(nullptr)
     , m_pLayerWidget(nullptr)
     , m_pSideBar(nullptr)
-    , m_bListView(false)
+    , m_bListView(true)
+    , m_pViewBtn(nullptr)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -26,18 +27,27 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
 
     QVBoxLayout* pVLayout = new QVBoxLayout;
     m_pSubnetBtn = new ZToolButton(
-        ZToolButton::Opt_HasIcon | ZToolButton::Opt_HasText | ZToolButton::Opt_UpRight,
+        ZToolButton::Opt_HasIcon | /*ZToolButton::Opt_HasText | */ZToolButton::Opt_UpRight,
         QIcon(":/icons/subnetbtn.svg"),
-        QSize(20, 20),
-        "Subset",
-        nullptr
+		QSize(20, 20)/*,
+		"Subset",
+		nullptr*/
     );
     m_pSubnetBtn->setBackgroundClr(QColor(36, 36, 36), QColor(36, 36, 36), QColor(36, 36, 36));
     m_pSubnetBtn->setCheckable(true);
 
+    m_pViewBtn = new ZToolButton(
+        ZToolButton::Opt_HasIcon,
+        QIcon(":/icons/treeview.svg"),
+        QSize(20, 20)
+    );
+    m_pViewBtn->setBackgroundClr(QColor(36, 36, 36), QColor(36, 36, 36), QColor(36, 36, 36));
+    m_pViewBtn->setCheckable(true);
+
     pVLayout->addWidget(m_pSubnetBtn);
+    pVLayout->addWidget(m_pViewBtn);
     pVLayout->addStretch();
-    pVLayout->setSpacing(0);
+    pVLayout->setSpacing(1);
     pVLayout->setContentsMargins(0, 0, 0, 0);
 
     m_pSideBar->setLayout(pVLayout);
@@ -63,11 +73,14 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
 
     connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
+    connect(m_pViewBtn, SIGNAL(clicked()), this, SLOT(onViewBtnClicked()));
 
     pLayout->setSpacing(1);
     pLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(pLayout);
 
+    m_pViewBtn->setEnabled(false);
+    m_pViewBtn->setChecked(!m_bListView);
     m_pTabWidget->setVisible(m_bListView);
     m_pLayerWidget->setVisible(!m_bListView);
 }
@@ -86,7 +99,7 @@ void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
     else
     {
         QSharedPointer<GraphsManagment> spGm = zenoApp->graphsManagment();
-        GraphsModel* pModel = spGm->currentModel();
+        IGraphsModel* pModel = spGm->currentModel();
         QModelIndex idx = index;
 
         const QString& objId = idx.data(ROLE_OBJID).toString();
@@ -109,7 +122,7 @@ void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
     }
 }
 
-void ZenoGraphsEditor::resetModel(GraphsModel* pModel)
+void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 {
     m_pSubnetList->initModel(pModel);
     if (m_bListView)
@@ -134,9 +147,24 @@ void ZenoGraphsEditor::onCurrentModelClear()
     m_pSideBar->hide();
 }
 
+void ZenoGraphsEditor::onViewBtnClicked()
+{
+	if (m_pViewBtn->isChecked())
+	{
+        m_bListView = false;
+	}
+	else
+	{
+        m_bListView = true;
+	}
+    m_pSubnetList->setViewWay(m_bListView);
+	m_pTabWidget->setVisible(m_bListView);
+	m_pLayerWidget->setVisible(!m_bListView);
+}
+
 void ZenoGraphsEditor::onSubnetBtnClicked()
 {
-    GraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (pModel == nullptr)
     {
         //open file dialog

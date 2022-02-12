@@ -26,8 +26,6 @@ void ZenoGraphsWidget::setGraphsModel(GraphsModel* pModel)
 
     for (int i = 0; i < pModel->rowCount(); i++)
     {
-        SubGraphModel* pSubModel = pModel->subGraph(i);
-        Q_ASSERT(pSubModel);
         ZenoSubGraphView* pView = new ZenoSubGraphView;
         //pView->initScene(pSubModel->scene());
         addWidget(pView);
@@ -83,7 +81,7 @@ void ZenoGraphsWidget::onNewNodeCreated(const QString& descName, const QPointF& 
     NODE_DATA node;
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
-    node[ROLE_OBJTYPE] = NORMAL_NODE;
+    node[ROLE_NODETYPE] = NORMAL_NODE;
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
     node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);

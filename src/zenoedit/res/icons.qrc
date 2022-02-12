@@ -82,5 +82,6 @@
 	<file>icons/dir_arrow.svg</file>
 	<file>icons/forward.svg</file>
 	<file>icons/backward.svg</file>
+	<file>icons/treeview.svg</file>
 </qresource>
 </RCC>

@@ -319,9 +319,10 @@ void ZenoMainWindow::openFileDialog()
     openFile(filePath);
 }
 
-void ZenoMainWindow::openFile(QString filePath) {
+void ZenoMainWindow::openFile(QString filePath)
+{
     auto pGraphs = zenoApp->graphsManagment();
-    GraphsModel* pModel = pGraphs->openZsgFile(filePath);
+    IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     pModel->initDescriptors();
 
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
@@ -365,8 +366,11 @@ void ZenoMainWindow::save()
     saveFile(currFilePath);
 }
 
-void ZenoMainWindow::saveFile(QString filePath) {
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(zenoApp->graphsManagment()->currentModel());
+void ZenoMainWindow::saveFile(QString filePath)
+{
+    //temp:
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(zenoApp->graphsManagment()->currentModel());
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
         qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
@@ -489,6 +493,7 @@ void ZenoMainWindow::readSettings2()
 void ZenoMainWindow::onRunClicked(int nFrames)
 {
     auto pGraphsMgr = zenoApp->graphsManagment();
-    GraphsModel* pModel = pGraphsMgr->currentModel();
-    launchProgram(pModel, nFrames);
+    IGraphsModel* pModel = pGraphsMgr->currentModel();
+    GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
+    launchProgram(pLegacy, nFrames);
 }

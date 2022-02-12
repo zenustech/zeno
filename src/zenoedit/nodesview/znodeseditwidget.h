@@ -6,6 +6,9 @@
 class ZenoGraphsWidget;
 class GraphsModel;
 
+/*
+* Legacy:
+* 
 class ZNodesEditWidget : public QWidget
 {
     Q_OBJECT
@@ -34,6 +37,7 @@ private:
     QPushButton* m_pDeleteBtn;
     QAction* m_pNewSubGraph;
 };
+*/
 
 
 #endif

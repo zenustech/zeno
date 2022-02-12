@@ -79,7 +79,7 @@ void ZenoSubGraphView::paste()
 
 void ZenoSubGraphView::find()
 {
-    ZenoSearchBar *pSearcher = new ZenoSearchBar(m_scene->model());
+    ZenoSearchBar *pSearcher = new ZenoSearchBar(m_scene->subGraphIndex());
     pSearcher->show();
     connect(pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
 }
@@ -243,7 +243,7 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
     }
     //todo
     m_menu = new QMenu(this);
-    QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(mapToScene(pos));
+    QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(m_scene->subGraphIndex(), mapToScene(pos));
     m_menu->addActions(actions);
     m_menu->exec(QCursor::pos());
 }

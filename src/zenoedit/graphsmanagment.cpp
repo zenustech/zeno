@@ -15,41 +15,46 @@ GraphsManagment::GraphsManagment(QObject* parent)
 
 }
 
-GraphsModel* GraphsManagment::currentModel()
+IGraphsModel* GraphsManagment::currentModel()
 {
     return m_model;
 }
 
-GraphsModel* GraphsManagment::openZsgFile(const QString& fn)
+IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
-    m_model = new GraphsModel(this);
-    ModelAcceptor acceptor(m_model);
+    GraphsModel* pModel = new GraphsModel(this);
+    ModelAcceptor acceptor(pModel);
+    m_model = pModel;
+
     ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
-    m_model->clearDirty();
-    for (int i = 0; i < m_model->rowCount(); i++)
+    pModel->clearDirty();
+    for (int row = 0; row < pModel->rowCount(); row++)
     {
-        SubGraphModel* pSubGraphModel = m_model->subGraph(i);
+        SubGraphModel* pSubGraphModel = pModel->subGraph(row);
+        QModelIndex subgIdx = pModel->index(row, 0);
         ZenoSubGraphScene* pScene = new ZenoSubGraphScene(this);
-        pScene->initModel(pSubGraphModel);
+        pScene->initModel(subgIdx);
         m_scenes[pSubGraphModel->name()] = pScene;
     }
+    m_model = pModel;
     return m_model;
 }
 
-GraphsModel* GraphsManagment::importGraph(const QString& fn)
+IGraphsModel* GraphsManagment::importGraph(const QString& fn)
 {
-    GraphsModel *pModel = openZsgFile(fn);
+    IGraphsModel *pModel = openZsgFile(fn);
     Q_ASSERT(pModel);
     m_model->setDescriptors(pModel->descriptors());
     for (int i = 0; i < pModel->rowCount(); i++)
     {
-        SubGraphModel *pSubGraphModel = pModel->subGraph(i);
-        QString name = pSubGraphModel->name();
-        if (SubGraphModel *pExist = m_model->subGraph(name)) {
-            //todo: reload
-        } else {
-            m_model->appendSubGraph(pSubGraphModel->clone(m_model));
-        }
+        QModelIndex subgIdx = pModel->index(i, 0, QModelIndex());
+        QString name = pModel->name(subgIdx);
+        //if (SubGraphModel *pExist = m_model->subGraph(name)) {
+        //    //todo: reload
+        //} else {
+        //    
+        //    //m_model->appendSubGraph(pSubGraphModel->clone(m_model));
+        //}
     }
     return m_model;
 }
@@ -79,7 +84,7 @@ bool GraphsManagment::saveCurrent()
 void GraphsManagment::clear()
 {
     if (m_model) {
-        m_model->clear();
+        //m_model->clear();
         delete m_model;
         m_model = nullptr;
     }
@@ -88,11 +93,11 @@ void GraphsManagment::clear()
 void GraphsManagment::removeCurrent()
 {
     if (m_model) {
-        m_model->onRemoveCurrentItem();
+        
     }
 }
 
-QList<QAction*> GraphsManagment::getCategoryActions(QPointF scenePos)
+QList<QAction*> GraphsManagment::getCategoryActions(QModelIndex subgIdx, QPointF scenePos)
 {
     NODE_CATES cates = m_model->getCates();
     QList<QAction*> acts;
@@ -113,7 +118,7 @@ QList<QAction*> GraphsManagment::getCategoryActions(QPointF scenePos)
             QAction* pChildAction = pChildMenu->addAction(name);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, this, [=]() {
-                onNewNodeCreated(name, scenePos);
+                onNewNodeCreated(subgIdx, name, scenePos);
                 });
         }
         pAction->setMenu(pChildMenu);
@@ -122,7 +127,7 @@ QList<QAction*> GraphsManagment::getCategoryActions(QPointF scenePos)
     return acts;
 }
 
-void GraphsManagment::onNewNodeCreated(const QString& descName, const QPointF& pt)
+void GraphsManagment::onNewNodeCreated(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC& desc = descs[descName];
@@ -131,15 +136,13 @@ void GraphsManagment::onNewNodeCreated(const QString& descName, const QPointF& p
     NODE_DATA node;
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
-    node[ROLE_OBJTYPE] = NORMAL_NODE;
+    node[ROLE_NODETYPE] = NORMAL_NODE;
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
     node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
     node[ROLE_OBJPOS] = pt;
 
-    SubGraphModel* pModel = m_model->currentGraph();
-    int row = pModel->rowCount();
-    pModel->appendItem(node, true);
+    m_model->appendItem(node, subgIdx);
 }
 
 ZenoSubGraphScene* GraphsManagment::scene(const QString& subGraphName)

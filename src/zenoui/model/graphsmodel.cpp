@@ -6,7 +6,7 @@
 
 
 GraphsModel::GraphsModel(QObject *parent)
-    : QStandardItemModel(parent)
+    : IGraphsModel(parent)
     , m_selection(nullptr)
     , m_dirty(false)
 {
@@ -27,8 +27,15 @@ void GraphsModel::setFilePath(const QString& fn)
     m_filePath = fn;
 }
 
-SubGraphModel* GraphsModel::subGraph(const QString& name)
+SubGraphModel* GraphsModel::subGraph(const QString& name) const
 {
+    for (int i = 0; i < m_subGraphs.size(); i++)
+    {
+        if (m_subGraphs[i]->name() == name)
+            return m_subGraphs[i];
+    }
+    return nullptr;
+
     const QModelIndexList& lst = this->match(index(0, 0), ROLE_OBJNAME, name, 1, Qt::MatchExactly);
     if (lst.size() > 0)
     {
@@ -38,8 +45,14 @@ SubGraphModel* GraphsModel::subGraph(const QString& name)
     return nullptr;
 }
 
-SubGraphModel* GraphsModel::subGraph(int idx)
+SubGraphModel* GraphsModel::subGraph(int idx) const
 {
+    if (idx >= 0 && idx < m_subGraphs.count())
+    {
+        return m_subGraphs[idx];
+    }
+    return nullptr;
+
     QModelIndex index = this->index(idx, 0);
     if (index.isValid())
     {
@@ -88,7 +101,9 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
     SubGraphModel *pReloadModel = subGraph(graphName);
     Q_ASSERT(pReloadModel);
     NODES_DATA datas = pReloadModel->nodes();
+
     pReloadModel->clear();
+
     pReloadModel->blockSignals(true);
     for (auto data : datas)
     {
@@ -122,17 +137,55 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
 
 QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) const
 {
-    return QStandardItemModel::index(row, column, parent);
+    if (row < 0 || row >= m_subGraphs.size())
+        return QModelIndex();
+
+    return createIndex(row, 0, nullptr);
+    //return _base::index(row, column, parent);
+}
+
+QModelIndex GraphsModel::index(const QString& subGraphName) const
+{
+	for (int row = 0; row < m_subGraphs.size(); row++)
+	{
+		if (m_subGraphs[row]->name() == subGraphName)
+		{
+            return createIndex(row, 0, nullptr);
+		}
+	}
+    return QModelIndex();
+}
+
+QModelIndex GraphsModel::indexBySubModel(SubGraphModel* pSubModel) const
+{
+    int row = m_subGraphs.indexOf(pSubModel);
+    return createIndex(row, 0, nullptr);
 }
 
 QModelIndex GraphsModel::parent(const QModelIndex& child) const
 {
-    return QStandardItemModel::parent(child);
+    return QModelIndex();
 }
 
 QVariant GraphsModel::data(const QModelIndex& index, int role) const
 {
-    return QStandardItemModel::data(index, role);
+    if (!index.isValid())
+        return QVariant();
+    if (role == Qt::DisplayRole)
+    {
+        return m_subGraphs[index.row()]->name();
+    }
+    return QVariant();
+}
+
+int GraphsModel::rowCount(const QModelIndex& parent) const
+{
+    return m_subGraphs.size();
+}
+
+int GraphsModel::columnCount(const QModelIndex& parent) const
+{
+    return 1;
 }
 
 bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -143,15 +196,10 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (oldName != value.toString())
         {
             renameSubGraph(oldName, value.toString());
-            QStandardItemModel::setData(index, value, ROLE_OBJNAME);
+            _base::setData(index, value, ROLE_OBJNAME);
         }
     }
-    return QStandardItemModel::setData(index, value, role);
-}
-
-int GraphsModel::graphCounts() const
-{
-    return rowCount();
+    return false;
 }
 
 void GraphsModel::initDescriptors()
@@ -220,6 +268,12 @@ void GraphsModel::initDescriptors()
                 desc.params[name] = paramInfo;
             }
             desc.categories = z_categories;
+
+            if (z_name == "SubInput")
+            {
+                int j;
+                j = 0;
+            }
 
             descs.insert(z_name, desc);
         }
@@ -319,19 +373,29 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
 
 void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 {
+    int row = m_subGraphs.size();
+	beginInsertRows(QModelIndex(), row, row);
+    m_subGraphs.append(pGraph);
+	endInsertRows();
+    return;
+
     QStandardItem *pItem = new QStandardItem;
     QString graphName = pGraph->name();
     QVariant var(QVariant::fromValue(static_cast<void *>(pGraph)));
     pItem->setText(graphName);
     pItem->setData(var, ROLE_GRAPHPTR);
     pItem->setData(graphName, ROLE_OBJNAME);
-    appendRow(pItem);
+    //appendRow(pItem);
 }
 
 void GraphsModel::removeGraph(int idx)
 {
-    removeRow(idx);
+    beginRemoveRows(QModelIndex(), idx, idx);
+    m_subGraphs.remove(idx);
+    endRemoveRows();
     markDirty();
+    //removeRow(idx);
+    //markDirty();
 }
 
 NODE_CATES GraphsModel::getCates()
@@ -381,4 +445,313 @@ void GraphsModel::onRemoveCurrentItem()
     const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, "main", 1, Qt::MatchExactly);
     if (lst.size() == 1)
         m_selection->setCurrentIndex(index(lst[0].row(), 0), QItemSelectionModel::Current);
+}
+
+
+void GraphsModel::beginTransaction(const QModelIndex& subGpIdx)
+{
+    SubGraphModel* pGraph = subGraph(subGpIdx.row());
+    Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+
+    }
+}
+
+void GraphsModel::endTransaction(const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+    Q_ASSERT(pGraph);
+	if (pGraph)
+	{
+
+	}
+}
+
+QModelIndex GraphsModel::index(const QString& id, const QModelIndex& subGpIdx)
+{
+    SubGraphModel* pGraph = subGraph(subGpIdx.row());
+    Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        // index of SubGraph rather than Graphs.
+        return pGraph->index(id);
+    }
+    return QModelIndex();
+}
+
+QModelIndex GraphsModel::index(int r, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+	if (pGraph)
+	{
+		// index of SubGraph rather than Graphs.
+		return pGraph->index(r, 0);
+	}
+	return QModelIndex();
+}
+
+QVariant GraphsModel::data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        return pGraph->data(index, role);
+    }
+    return QVariant();
+}
+
+void GraphsModel::setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->setData(index, value, role);
+    }
+}
+
+int GraphsModel::itemCount(const QModelIndex& subGpIdx) const
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        return pGraph->rowCount();
+    }
+    return 0;
+}
+
+void GraphsModel::appendItem(const NODE_DATA& nodeData, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->appendItem(nodeData);
+    }
+}
+
+void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->appendNodes(nodes);
+    }
+}
+
+void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        //todo: transaction.
+        QModelIndex idx = pGraph->index(nodeid);
+        pGraph->removeNode(nodeid, false);
+    }
+}
+
+void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+	if (pGraph)
+	{
+        QModelIndex idx = pGraph->index(row, 0);
+        pGraph->removeNode(row);
+	}
+}
+
+void GraphsModel::removeLink(const EdgeInfo& info, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+	if (pGraph)
+	{
+        pGraph->removeLink(info);
+	}
+}
+
+void GraphsModel::removeSubGraph(const QString& name)
+{
+	for (int i = 0; i < m_subGraphs.size(); i++)
+	{
+        if (m_subGraphs[i]->name() == name)
+        {
+            removeGraph(i);
+            return;
+        }
+	}
+}
+
+void GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->addLink(info);
+    }
+}
+
+void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->updateParam(id, info.name, info.newValue);
+    }
+}
+
+void GraphsModel::updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        //todo
+        pGraph->updateSocket(id, info.name, SOCKET_INFO());
+    }
+}
+
+NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        return pGraph->itemData(index);
+    }
+    return NODE_DATA();
+}
+
+QString GraphsModel::name(const QModelIndex& subGpIdx) const
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        return pGraph->name();
+    }
+    return "";
+}
+
+void GraphsModel::setName(const QString& name, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->setName(name);
+    }
+}
+
+void GraphsModel::replaceSubGraphNode(const QString& oldName, const QString& newName, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->replaceSubGraphNode(oldName, newName);
+    }
+}
+
+NODES_DATA GraphsModel::nodes(const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        return pGraph->nodes();
+    }
+    return NODES_DATA();
+}
+
+void GraphsModel::clear(const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->clear();
+    }
+}
+
+void GraphsModel::reload(const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        //todo
+        pGraph->reload();
+    }
+}
+
+void GraphsModel::onModelInited()
+{
+
+}
+
+void GraphsModel::undo()
+{
+    //todo
+}
+
+void GraphsModel::redo()
+{
+    //todo
+}
+
+QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
+{
+    SubGraphModel* pModel = subGraph(subgIdx.row());
+    return pModel->match(pModel->index(0, 0), ROLE_OBJNAME, objName, -1, Qt::MatchContains);
+}
+
+
+void GraphsModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    Q_ASSERT(pSubModel);
+    QModelIndex subgIdx = indexBySubModel(pSubModel);
+    emit _dataChanged(subgIdx, topLeft, roles[0]);
+}
+
+void GraphsModel::on_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
+{
+    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    Q_ASSERT(pSubModel);
+    QModelIndex subgIdx = indexBySubModel(pSubModel);
+    emit _rowsAboutToBeInserted(subgIdx, first, last);
+}
+
+void GraphsModel::on_rowsInserted(const QModelIndex& parent, int first, int last)
+{
+    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    Q_ASSERT(pSubModel);
+    QModelIndex subgIdx = indexBySubModel(pSubModel);
+    emit _rowsInserted(subgIdx, parent, first, last);
+}
+
+void GraphsModel::on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    Q_ASSERT(pSubModel);
+    QModelIndex subgIdx = indexBySubModel(pSubModel);
+    emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
+}
+
+void GraphsModel::on_rowsRemoved(const QModelIndex& parent, int first, int last)
+{
+    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    Q_ASSERT(pSubModel);
+    QModelIndex subgIdx = indexBySubModel(pSubModel);
+    emit _rowsRemoved(parent, first, last);
 }
