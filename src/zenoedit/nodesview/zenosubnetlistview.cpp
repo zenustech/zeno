@@ -8,12 +8,15 @@
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
 #include <zenoui/model/modelrole.h>
+#include <zenoui/include/igraphsmodel.h>
 
 
-ZSubnetListModel::ZSubnetListModel(GraphsModel* pModel, QObject* parent)
+ZSubnetListModel::ZSubnetListModel(IGraphsModel* pModel, QObject* parent)
     : QStandardItemModel(parent)
-    , m_model(pModel)
+    , m_model(nullptr)
 {
+    m_model = qobject_cast<GraphsModel*>(pModel);
+    Q_ASSERT(m_model);
 }
 
 int ZSubnetListModel::rowCount(const QModelIndex& parent) const
@@ -63,7 +66,7 @@ ZenoSubnetListView::~ZenoSubnetListView()
 {
 }
 
-void ZenoSubnetListView::initModel(GraphsModel* pModel)
+void ZenoSubnetListView::initModel(IGraphsModel* pModel)
 {
     setModel(pModel);
     setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
@@ -94,7 +97,7 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     : QWidget(parent)
     , m_pListView(nullptr)
     , m_pTreeView(nullptr)
-    , m_bListView(false)
+    , m_bListView(true)
 {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
 
@@ -144,14 +147,19 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
     m_pTreeView->setVisible(!m_bListView);
 }
 
-void ZenoSubnetListPanel::initModel(GraphsModel* pModel)
+void ZenoSubnetListPanel::initModel(IGraphsModel* pModel)
 {
     m_pListView->initModel(pModel);
-	GraphsTreeModel* pTreeModel = new GraphsTreeModel(pModel, this);    //todo: put in managment.
-	pTreeModel->init(pModel);
-    m_pTreeView->initModel(pTreeModel);
+    //m_pTreeView->initModel(pModel);
     m_pTextLbl->setText(pModel->fileName());
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
+}
+
+void ZenoSubnetListPanel::setViewWay(bool bListView)
+{
+    m_bListView = bListView;
+	m_pListView->setVisible(m_bListView);
+	m_pTreeView->setVisible(!m_bListView);
 }
 
 QSize ZenoSubnetListPanel::sizeHint() const
@@ -179,6 +187,7 @@ void ZenoSubnetListPanel::onNewSubnetBtnClicked()
 {
     if (m_bListView)
     {
+        //should detach from GraphsModel
 		GraphsModel* pModel = qobject_cast<GraphsModel*>(m_pListView->model());
 		Q_ASSERT(pModel);
 		SubGraphModel* pSubModel = new SubGraphModel(pModel);

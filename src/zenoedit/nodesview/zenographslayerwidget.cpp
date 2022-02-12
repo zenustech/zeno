@@ -80,11 +80,15 @@ void ZenoStackedViewWidget::activate(const QString& subGraph, const QString& nod
 		addWidget(pView);
 	}
 	setCurrentWidget(m_views[subGraph]);
-	SubGraphModel* pModel = graphsMgm->currentModel()->subGraph(subGraph);
-	const QModelIndex& idx = pModel->index(nodeId);
+
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	Q_ASSERT(pGraphsModel);
+
+	const QModelIndex& subgIdx = pGraphsModel->index(subGraph);
+	const QModelIndex& idx = pGraphsModel->index(nodeId, subgIdx);
 	if (idx.isValid())
 	{
-		QPointF pos = pModel->data(idx, ROLE_OBJPOS).toPointF();
+		QPointF pos = pGraphsModel->data2(subgIdx, idx, ROLE_OBJPOS).toPointF();
 		m_views[subGraph]->focusOn(nodeId, pos);
 	}
 }

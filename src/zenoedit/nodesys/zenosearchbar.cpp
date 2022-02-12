@@ -2,12 +2,14 @@
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/model/subgraphmodel.h>
 #include <zenoui/model/modelrole.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
-ZenoSearchBar::ZenoSearchBar(SubGraphModel *model, QWidget *parentWidget)
+ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     : QWidget(parentWidget)
     , m_idx(0)
-    , m_model(model)
+    , m_index(idx)
 {
     QVBoxLayout *pMainLayout = new QVBoxLayout;
 
@@ -61,7 +63,9 @@ SEARCH_RECORD ZenoSearchBar::_getRecord()
 
 void ZenoSearchBar::onSearchExec(const QString& content)
 {
-    m_results = m_model->match(m_model->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+
+    m_results = pGraphsModel->searchInSubgraph(content, m_index);
     if (!m_results.isEmpty())
     {
         m_idx = 0;

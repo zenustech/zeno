@@ -16,8 +16,7 @@ ZenoGraphsTabWidget::ZenoGraphsTabWidget(QWidget* parent)
 void ZenoGraphsTabWidget::activate(const QString& subgraphName)
 {
     auto graphsMgm = zenoApp->graphsManagment();
-    GraphsModel* pModel = graphsMgm->currentModel();
-    SubGraphModel* pSubModel = pModel->subGraph(subgraphName);
+    IGraphsModel* pModel = graphsMgm->currentModel();
     int idx = indexOfName(subgraphName);
     if (idx == -1)
     {
@@ -37,7 +36,7 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
     }
 }
 
-void ZenoGraphsTabWidget::resetModel(GraphsModel* pModel)
+void ZenoGraphsTabWidget::resetModel(IGraphsModel* pModel)
 {
     m_model = pModel;
     connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
@@ -50,8 +49,8 @@ void ZenoGraphsTabWidget::onSubGraphsToRemove(const QModelIndex& parent, int fir
     QTabBar* pTabBar = tabBar();
     for (int r = first; r <= last; r++)
     {
-        SubGraphModel* pSubModel = m_model->subGraph(r);
-        const QString& name = pSubModel->name();
+        QModelIndex subgIdx = m_model->index(r, 0);
+        const QString& name = m_model->name(subgIdx);
         pTabBar->removeTab(indexOfName(name));
     }
 }

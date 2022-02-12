@@ -20,6 +20,8 @@ enum NODE_TYPE {
     NORMAL_NODE,
     HEATMAP_NODE,
     BLACKBOARD_NODE,
+    SUBINPUT_NODE,
+    SUBOUTPUT_NODE,
 };
 
 enum NODE_OPTION {
@@ -170,6 +172,22 @@ typedef QMap<QString, NODE_CATE> NODE_CATES;
 
 typedef QMap<int, QVariant> NODE_DATA;
 Q_DECLARE_METATYPE(NODE_DATA)
+
+
+struct PARAM_UPDATE_INFO {
+    QString name;
+    QVariant oldValue;
+    QVariant newValue;
+};
+Q_DECLARE_METATYPE(PARAM_UPDATE_INFO)
+
+struct SOCKET_UPDATE_INFO {
+    QString name;
+    SOCKET_INFO oldinfo;
+    SOCKET_INFO newInfo;
+    bool bInput;
+};
+Q_DECLARE_METATYPE(SOCKET_UPDATE_INFO)
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 

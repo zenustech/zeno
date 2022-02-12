@@ -10,6 +10,7 @@
 #include "graphsmanagment.h"
 
 
+/*
 ZNodesEditWidget::ZNodesEditWidget(QWidget* parent)
     : QWidget(parent)
     , m_pGraphsWidget(nullptr)
@@ -256,3 +257,4 @@ void ZNodesEditWidget::initMenu(QMenuBar* pMenu)
     pMenu->addMenu(pFile);
     pMenu->addMenu(pEdit);
 }
+*/

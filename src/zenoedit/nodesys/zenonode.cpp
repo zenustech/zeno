@@ -6,6 +6,9 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include "zenoheatmapitem.h"
 #include <zenoui/util/uihelper.h>
+#include <zenoui/include/igraphsmodel.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -114,21 +117,26 @@ int ZenoNode::type() const
     return Type;
 }
 
-void ZenoNode::initUI(const QModelIndex& index, SubGraphModel* pModel)
+void ZenoNode::initUI(const QModelIndex& subGIdx, const QModelIndex& index)
 {
     if (true)
-        initWangStyle(index, pModel);
+        initWangStyle(subGIdx, index);
     else
-        initLegacy(index, pModel);
+        initLegacy(subGIdx, index);
 
     m_border->setZValue(ZVALUE_NODE_BORDER);
     m_border->hide();
 }
 
-void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
+void ZenoNode::initWangStyle(const QModelIndex& subGIdx, const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
-    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_OBJTYPE).toInt());
+    m_subGpIndex = QPersistentModelIndex(subGIdx);
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	Q_ASSERT(pGraphsModel);
+
 
     m_headerWidget = initHeaderWangStyle(type);
 	m_bodyWidget = initBodyWidget(type);
@@ -160,14 +168,15 @@ void ZenoNode::initWangStyle(const QModelIndex& index, SubGraphModel* pModel)
 
     m_headerWidget->installSceneEventFilter(this);
 
-	connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
+    //todo:
+	//connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }
 
-void ZenoNode::initLegacy(const QModelIndex& index, SubGraphModel* pModel)
+void ZenoNode::initLegacy(const QModelIndex& subGIdx, const QModelIndex& index)
 {
     m_index = QPersistentModelIndex(index);
 
-    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_OBJTYPE).toInt());
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
 
     m_collaspedWidget = initCollaspedWidget();
     m_collaspedWidget->setVisible(false);
@@ -204,7 +213,7 @@ void ZenoNode::initLegacy(const QModelIndex& index, SubGraphModel* pModel)
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 
-    connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
+    //connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }
 
 void ZenoNode::initIndependentWidgetsLegacy()
@@ -446,17 +455,7 @@ QGraphicsLayout* ZenoNode::initParams()
                     ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
                     pParamLayout->addItem(pLineEdit);
                     connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        QString textValue = pLineEdit->text();
-                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-                        QVariant varValue;
-                        switch (param.control) {
-                        case CONTROL_INT: varValue = std::stoi(textValue.toStdString()); break;
-                        case CONTROL_FLOAT: varValue = std::stof(textValue.toStdString()); break;
-                        case CONTROL_BOOL: varValue = (bool)std::stoi(textValue.toStdString()); break;
-                        case CONTROL_STRING: varValue = textValue; break;
-                        }
-                        pGraphModel->updateParam(nodeid, paramName, varValue, true);
+                        onParamEditFinished(param.control, paramName, pLineEdit->text());
                     });
                     m_paramControls[paramName] = pLineEdit;
                     break;
@@ -467,9 +466,11 @@ QGraphicsLayout* ZenoNode::initParams()
                     ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
                     pParamLayout->addItem(pComboBox);
                     connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
-						QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-						SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-						pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                        PARAM_UPDATE_INFO info;
+                        info.name = paramName;
+                        info.newValue = textValue;
+                        pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex);
                     });
                     m_paramControls[paramName] = pComboBox;
                     break;
@@ -481,10 +482,7 @@ QGraphicsLayout* ZenoNode::initParams()
                     pParamLayout->addItem(pFileWidget);
                     pParamLayout->addItem(pBtn);
                     connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        QString textValue = pFileWidget->text();
-                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                        onParamEditFinished(param.control, paramName, pFileWidget->text());
                     });
                     break;
                 }
@@ -495,10 +493,7 @@ QGraphicsLayout* ZenoNode::initParams()
                     pParamLayout->addItem(pFileWidget);
                     pParamLayout->addItem(pBtn);
                     connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        QString textValue = pFileWidget->text();
-                        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                        SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-                        pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                        onParamEditFinished(param.control, paramName, pFileWidget->text());
                     });
                     break;
                 }
@@ -507,10 +502,7 @@ QGraphicsLayout* ZenoNode::initParams()
                     ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
                     pParamLayout->addItem(pMultiStrEdit);
                     connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
-                        QString textValue = pMultiStrEdit->text();
-						QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-						SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-						pGraphModel->updateParam(nodeid, paramName, textValue, true);
+                        onParamEditFinished(param.control, paramName, pMultiStrEdit->text());
                     });
                     m_paramControls[paramName] = pMultiStrEdit;
                     break;
@@ -532,6 +524,27 @@ QGraphicsLayout* ZenoNode::initParams()
         }
     }
     return pParamsLayout;
+}
+
+void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
+{
+    const QString nodeid = nodeId();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    QVariant varValue;
+    switch (editCtrl) {
+        case CONTROL_INT: varValue = std::stoi(textValue.toStdString()); break;
+        case CONTROL_FLOAT: varValue = std::stof(textValue.toStdString()); break;
+        case CONTROL_BOOL: varValue = (bool)std::stoi(textValue.toStdString()); break;
+        case CONTROL_READPATH:
+        case CONTROL_WRITEPATH:
+        case CONTROL_MULTILINE_STRING:
+        case CONTROL_STRING: varValue = textValue; break;
+    }
+    PARAM_UPDATE_INFO info;
+    info.newValue = varValue;
+    info.name = paramName;
+    pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex);
+
 }
 
 void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
@@ -732,57 +745,57 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-    SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-    Q_ASSERT(pGraphModel);
-
-    bool bCollasped = pGraphModel->data(m_index, ROLE_COLLASPED).toBool();
-    pGraphModel->setData(m_index, !bCollasped, ROLE_COLLASPED);
+	//QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	Q_ASSERT(pGraphsModel);
+    bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
+    pGraphsModel->setData2(m_subGpIndex, m_index, !bCollasped, ROLE_COLLASPED);
 }
 
 void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
 	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-	SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
-	Q_ASSERT(pGraphModel);
 
-    int options = 0;
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	Q_ASSERT(pGraphsModel);
+
+    int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
+
     if (btn == STATUS_MUTE)
     {
         if (toggled)
         {
-            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_MUTE;
+            options |= OPT_MUTE;
         }
         else
         {
-            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_MUTE;
+            options ^= OPT_MUTE;
         }
-        
     }
     else if (btn == STATUS_ONCE)
     {
         if (toggled)
         {
-            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_ONCE;
+            options |= OPT_ONCE;
         }
         else
         {
-            options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_ONCE;
+            options ^= OPT_ONCE;
         }
     }
     else if (btn == STATUS_VIEW)
     {
 		if (toggled)
 		{
-			options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() | OPT_VIEW;
+			options |= OPT_VIEW;
 		}
 		else
 		{
-			options = pGraphModel->data(m_index, ROLE_OPTIONS).toInt() ^ OPT_VIEW;
+			options ^= OPT_VIEW;
 		}
     }
 
-    pGraphModel->setData(m_index, options, ROLE_OPTIONS);
+    pGraphsModel->setData2(m_subGpIndex, m_index, options, ROLE_OPTIONS);
 }
 
 void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
@@ -877,11 +890,9 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         {
             pos.setX(x);
             pos.setY(y);
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-            if (SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel))
-            {
-                pGraphModel->setData(pGraphModel->index(nodeId()), pos, ROLE_OBJPOS);
-            }
+			IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+			Q_ASSERT(pGraphsModel);
+            pGraphsModel->setData2(m_subGpIndex, m_index, pos, ROLE_OBJPOS);
         }
     }
     return value;

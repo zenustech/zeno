@@ -4,7 +4,7 @@
 #include <model/graphsmodel.h>
 
 
-ZSubnetListItemDelegate::ZSubnetListItemDelegate(GraphsModel* model, QObject* parent)
+ZSubnetListItemDelegate::ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
 {

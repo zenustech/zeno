@@ -19,14 +19,14 @@ class ZenoSubGraphScene : public QGraphicsScene
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
-    void initModel(SubGraphModel* pModel);
+    void initModel(const QModelIndex& index);
     QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
     void undo();
     void redo();
     void copy();
     void paste(QPointF pos);
     QRectF nodesBoundingRect() const;
-    SubGraphModel* model() const;
+    QModelIndex subGraphIndex() const;
     void select(const QString& id);
 
 protected:
@@ -36,23 +36,24 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
 public slots:
-    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
-    void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
-    void onRowsInserted(const QModelIndex& parent, int first, int last);
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
+    void onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last);
+    void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);
     void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
     void onViewTransformChanged(qreal factor);
 
 private slots:
-    void reload();
-    void clearLayout();
+    void reload(const QModelIndex& subGpIdx);
+    void clearLayout(const QModelIndex& subGpIdx);
     void onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
+    ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
 
     QRectF m_viewRect;
     NodeUtilParam m_nodeParams;
-	SubGraphModel* m_subgraphModel;
+    QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
     std::map<QString, ZenoNode*> m_nodes;
     std::map<EdgeInfo, ZenoFullLink*/*, cmpEdge*/> m_links;
     ZenoTempLink* m_tempLink;

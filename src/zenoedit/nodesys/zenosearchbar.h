@@ -2,6 +2,7 @@
 #define __ZENO_SEARCHBAR_H__
 
 #include <zenoui/nodesys/nodesys_common.h>
+#include <zenoui/include/igraphsmodel.h>
 
 class SubGraphModel;
 
@@ -10,7 +11,7 @@ class ZenoSearchBar : public QWidget
 	Q_OBJECT
 
 public:
-    ZenoSearchBar(SubGraphModel* model, QWidget *parentWidget = nullptr);
+    ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget = nullptr);
 
 signals:
     void searchRequest(const QString&, SEARCH_RANGE, SEARLCH_ELEMENT, int);
@@ -31,6 +32,7 @@ private:
     QModelIndexList m_results;
     QLineEdit* m_pLineEdit;
     SubGraphModel* m_model;
+    QPersistentModelIndex m_index;
     int m_idx;
 };
 

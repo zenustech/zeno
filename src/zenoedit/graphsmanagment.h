@@ -7,26 +7,28 @@ class ZenoSubGraphScene;
 
 #include <QtWidgets>
 
+#include <zenoui/include/igraphsmodel.h>
+
 class GraphsManagment : public QObject
 {
     Q_OBJECT
 public:
     GraphsManagment(QObject *parent = nullptr);
-    GraphsModel *currentModel();
-    GraphsModel *openZsgFile(const QString &fn);
-    GraphsModel *importGraph(const QString &fn);
+    IGraphsModel* currentModel();
+    IGraphsModel* openZsgFile(const QString &fn);
+    IGraphsModel* importGraph(const QString &fn);
     ZenoSubGraphScene* scene(const QString& subGraphName);
     void reloadGraph(const QString& graphName);
     bool saveCurrent();
     void clear();
     void removeCurrent();
-    QList<QAction*> getCategoryActions(QPointF scenePos);
+    QList<QAction*> getCategoryActions(QModelIndex subgIdx, QPointF scenePos);
 
 public slots:
-    void onNewNodeCreated(const QString& descName, const QPointF& pt);
+    void onNewNodeCreated(QModelIndex subgIdx, const QString& descName, const QPointF& pt);
 
 private:
-    GraphsModel *m_model;
+    IGraphsModel *m_model;
     QMap<QString, ZenoSubGraphScene*> m_scenes;
     QString m_currFile;
 };

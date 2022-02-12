@@ -26,9 +26,9 @@ public:
     enum { Type = ZTYPE_NODE };
     int type() const override;
 
-    void initUI(const QModelIndex& index, SubGraphModel* pModel);
-    void initLegacy(const QModelIndex& index, SubGraphModel* pModel);
-    void initWangStyle(const QModelIndex& index, SubGraphModel* pModel);
+    void initUI(const QModelIndex& subGIdx, const QModelIndex& index);
+    void initLegacy(const QModelIndex& subGIdx, const QModelIndex& index);
+    void initWangStyle(const QModelIndex& subGIdx, const QModelIndex& index);
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -69,6 +69,8 @@ protected:
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
+    //ZenoNode:
+    virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue);
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
@@ -83,6 +85,7 @@ private:
     void _drawBorderWangStyle(QPainter* painter);
 
     QPersistentModelIndex m_index;
+    QPersistentModelIndex m_subGpIndex;
     NodeUtilParam m_renderParams;
     std::map<QString, ZenoSocketItem*> m_inSocks;
     std::map<QString, ZenoSocketItem*> m_outSocks;

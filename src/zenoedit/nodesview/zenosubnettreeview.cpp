@@ -2,6 +2,7 @@
 #include "subnettreeitemdelegate.h"
 #include <zenoui/model/graphsmodel.h>
 #include <model/graphstreemodel.h>
+#include <zenoui/include/igraphsmodel.h>
 
 
 ZenoSubnetTreeView::ZenoSubnetTreeView(QWidget* parent)
@@ -59,7 +60,7 @@ ZenoSubnetTreeView::~ZenoSubnetTreeView()
 {
 }
 
-void ZenoSubnetTreeView::initModel(GraphsTreeModel* pModel)
+void ZenoSubnetTreeView::initModel(IGraphsModel* pModel)
 {
     setModel(pModel);
 }

@@ -71,11 +71,19 @@ void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
 	data[ROLE_COLLASPED] = false;
 	if (name == "Blackboard")
 	{
-		data[ROLE_OBJTYPE] = BLACKBOARD_NODE;
+		data[ROLE_NODETYPE] = BLACKBOARD_NODE;
+	}
+	else if (name == "SubInput")
+	{
+		data[ROLE_NODETYPE] = SUBINPUT_NODE;
+	}
+	else if (name == "SubOutput")
+	{
+		data[ROLE_NODETYPE] = SUBOUTPUT_NODE;
 	}
 	else
 	{
-		data[ROLE_OBJTYPE] = NORMAL_NODE;
+		data[ROLE_NODETYPE] = NORMAL_NODE;
 	}
 
 	m_currentGraph->appendItem(data, false);

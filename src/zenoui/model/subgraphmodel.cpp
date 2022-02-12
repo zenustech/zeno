@@ -29,11 +29,11 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
 
 void SubGraphModel::onModelInited()
 {
-}
-
-NODE_DESCS SubGraphModel::descriptors()
-{
-    return m_pGraphsModel->descriptors();
+    connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_dataChanged);
+    connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeInserted);
+    connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_rowsInserted);
+    connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeRemoved);
+    connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_rowsRemoved);
 }
 
 NODES_DATA SubGraphModel::nodes()
@@ -51,17 +51,14 @@ void SubGraphModel::clear()
     m_nodes.clear();
     m_key2Row.clear();
     m_row2Key.clear();
-    emit clearLayout();
+    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+    emit m_pGraphsModel->clearLayout(subgIdx);
 }
 
 void SubGraphModel::reload()
 {
-    emit reloaded();
-}
-
-QUndoStack* SubGraphModel::undoStack() const
-{
-    return m_stack;
+    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+    emit m_pGraphsModel->reloaded(subgIdx);
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -324,11 +321,6 @@ SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
     return pClone;
 }
 
-void SubGraphModel::rename(const QString& name)
-{
-    m_name = name;
-}
-
 void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction)
 {
     auto it = m_nodes.find(nodeid);
@@ -349,6 +341,18 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
         setData(idx, QVariant::fromValue(info), ROLE_PARAMETERS);
         setData(idx, QVariant::fromValue(info[paramName]), ROLE_MODIFY_PARAM);
     }
+}
+
+void SubGraphModel::updateSocket(const QString& nodeid, const QString& oldName, const SOCKET_INFO& sock)
+{
+    QModelIndex idx = index(nodeid);
+    INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+    Q_ASSERT(inputs.find(oldName) != inputs.end());
+    INPUT_SOCKET inputSock = inputs[oldName];
+    inputSock.info.name = sock.name;
+    inputs.remove(oldName);
+    inputs[sock.name] = inputSock;
+    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 }
 
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
@@ -374,11 +378,6 @@ void SubGraphModel::updateNodeState(const QString& nodeid, int role, const QVari
         const QModelIndex& idx = index(nodeid);
         emit dataChanged(idx, idx, QVector<int>{role});
     }
-}
-
-void SubGraphModel::setPos(const QString& nodeid, const QPointF& pt)
-{
-
 }
 
 bool SubGraphModel::hasChildren(const QModelIndex& parent) const
@@ -515,12 +514,12 @@ void SubGraphModel::redo()
     m_stack->redo();
 }
 
-void SubGraphModel::beginTransaction(const QString& name)
+void SubGraphModel::beginMacro(const QString& name)
 {
     m_stack->beginMacro(name);
 }
 
-void SubGraphModel::endTransaction()
+void SubGraphModel::endMacro()
 {
     m_stack->endMacro();
 }
