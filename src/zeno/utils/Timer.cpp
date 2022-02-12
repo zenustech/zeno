@@ -71,7 +71,7 @@ namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
             auto log = Timer::getLog();
-            if (auto env = getenv("ZEN_TIMER"); env) {
+            if (auto env = getenv("ZENO_TIMER"); env) {
                 FILE *fp = fopen(env, "w");
                 fprintf(fp, "%s", log.c_str());
                 fclose(fp);

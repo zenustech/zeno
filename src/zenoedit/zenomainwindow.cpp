@@ -25,7 +25,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
 #ifdef __linux__
     if (char *p = std::getenv("ZENO_OPEN")) {
-        printf("ZEN_OPEN: %s\n", p);
+        printf("ZENO_OPEN: %s\n", p);
         openFile(p);
     }
 #endif

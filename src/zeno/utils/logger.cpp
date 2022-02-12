@@ -17,7 +17,7 @@ ZENO_API spdlog::logger *get_spdlog_logger() {
 
 static void initialize_spdlog() {
     spdlog::set_pattern("%^[%L %X.%e] (%s:%#) %v%$");
-    if (auto env = getenv("ZEN_LOGLEVEL"); env) {
+    if (auto env = getenv("ZENO_LOGLEVEL"); env) {
         if (0) {
 #define _PER_LEVEL(x, y) } else if (!strcmp(env, #x)) { spdlog::set_level(spdlog::level::y);
         _PER_LEVEL(trace, trace)
@@ -29,7 +29,7 @@ static void initialize_spdlog() {
 #undef _PER_LEVEL
         }
     }
-    if (auto env = getenv("ZEN_LOGFILE"); env) {
+    if (auto env = getenv("ZENO_LOGFILE"); env) {
         g_logger = spdlog::basic_logger_mt("zeno", env);
     } else {
         g_logger = spdlog::stderr_color_mt("zeno");
