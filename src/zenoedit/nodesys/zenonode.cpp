@@ -430,6 +430,10 @@ QGraphicsLayout* ZenoNode::initParams()
             {
                 value = QString::number(val.toDouble());
             }
+            else if (val.type() == QVariant::Int)
+            {
+                value = QString::number(val.toInt());
+            }
 
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
@@ -451,9 +455,9 @@ QGraphicsLayout* ZenoNode::initParams()
                         SubGraphModel* pGraphModel = qobject_cast<SubGraphModel*>(pModel);
                         QVariant varValue;
                         switch (param.control) {
-                        case CONTROL_INT: varValue = std::stoi(textValue.toStdString()); break;
-                        case CONTROL_FLOAT: varValue = std::stof(textValue.toStdString()); break;
-                        case CONTROL_BOOL: varValue = (bool)std::stoi(textValue.toStdString()); break;
+                        case CONTROL_INT: varValue = textValue.isEmpty() ? 0 : std::stoi(textValue.toStdString()); break;
+                        case CONTROL_FLOAT: varValue = textValue.isEmpty() ? 0.f : std::stof(textValue.toStdString()); break;
+                        case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : (bool)std::stoi(textValue.toStdString()); break;
                         case CONTROL_STRING: varValue = textValue; break;
                         }
                         pGraphModel->updateParam(nodeid, paramName, varValue, true);
