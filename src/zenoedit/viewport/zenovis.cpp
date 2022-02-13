@@ -109,7 +109,7 @@ void Zenovis::_frameUpdate()
 
     auto viewObjs = zeno::getSession().globalState->getViewObjects(frameid);
 
-    zeno::log_debug("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
+    zeno::log_trace("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
     zenvis::clear_graphics();
     for (auto const &obj: viewObjs) {
         zenvis::load_object(obj, frameid);

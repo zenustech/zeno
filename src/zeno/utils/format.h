@@ -5,11 +5,12 @@
 #include <cstdlib>
 #include <stdarg.h>
 #include <string>
+#include <sstream>
 
 namespace zeno {
 
 template <class ...Ts>
-std::string format(const char *fmt, Ts &&...ts) {
+static std::string cformat(const char *fmt, Ts &&...ts) {
     int n = snprintf(nullptr, 0, fmt, std::forward<Ts>(ts)...);
     if (n < 0) return {};
     std::string res;
@@ -17,6 +18,19 @@ std::string format(const char *fmt, Ts &&...ts) {
     n = snprintf(res.data(), n + 1, fmt, std::forward<Ts>(ts)...);
     res.resize(n);
     return res;
+}
+
+template <class ...Ts>
+static std::string tostring(Ts &&...ts) {
+    std::ostringstream ss;
+    (ss << ... << std::forward<Ts>(ts));
+    return ss.str();
+}
+
+template <class ...Ts>
+static std::string print(Ts &&...ts) {
+    auto s = tostring(std::forward<Ts>(ts)...);
+    printf("%s\n", s.c_str());
 }
 
 }

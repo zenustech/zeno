@@ -59,7 +59,7 @@ std::string Timer::getLog() {
 
     res += "   avg   |   min   |   max   |  total  | cnt | tag\n";
     for (auto const &[tag, stat]: sortstats) {
-        res += format("%9d|%9d|%9d|%9d|%5d| %s\n",
+        res += cformat("%9d|%9d|%9d|%9d|%5d| %s\n",
                 stat.total_us / stat.count_rec,
                 stat.min_us, stat.max_us, stat.total_us,
                 stat.count_rec, tag.c_str());

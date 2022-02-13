@@ -20,17 +20,17 @@ std::unique_ptr<IGraphic> makeGraphicVolume(std::shared_ptr<IObject> obj);
 
 std::unique_ptr<IGraphic> makeGraphic(std::shared_ptr<IObject> obj) {
     if (auto ig = makeGraphicPrimitive(obj)) {
-        log_debug("load_object: primitive");
+        log_trace("load_object: primitive");
         return ig;
     }
 #ifdef ZENVIS_WITH_OPENVDB
     if (auto ig = makeGraphicVolume(obj)) {
-        log_debug("load_object: volume");
+        log_trace("load_object: volume");
         return ig;
     }
 #endif
 
-    log_warn("load_object: unexpected view object {}", cppdemangle(typeid(*obj)));
+    log_info("load_object: unexpected view object {}", cppdemangle(typeid(*obj)));
 
     //printf("%s\n", ext.c_str());
     //assert(0 && "bad file extension name");
@@ -75,7 +75,7 @@ void clear_graphics() {
 void load_object(std::shared_ptr<IObject> obj, int unused_frameid) {
     auto &graphics = current_frame_data()->graphics;
     if (graphics.find(obj) != graphics.end()) {
-        log_debug("load_object: using cached");
+        log_trace("load_object: using cached");
         //printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
         return;
     }
