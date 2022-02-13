@@ -54,9 +54,9 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 				if (!defl.isNull())
 				{
 					QVariant::Type varType = defl.type();
-					if (varType == QMetaType::Float)
+					if (varType == QVariant::Double)
 					{
-						ret.push_back(QJsonArray({ "setNodeInput", ident, input.info.name, defl.toFloat() }));
+						ret.push_back(QJsonArray({ "setNodeInput", ident, input.info.name, defl.toDouble() }));
 					}
 					else if (varType == QVariant::String)
 					{
@@ -97,9 +97,9 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 				j = 0;
 			}
 
-			if (varType == QMetaType::Float)
+			if (varType == QVariant::Double)
 			{
-				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toFloat()}));
+				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toDouble()}));
 			}
 			else if (varType == QVariant::Int)
 			{

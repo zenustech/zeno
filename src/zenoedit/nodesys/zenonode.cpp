@@ -436,9 +436,9 @@ QGraphicsLayout* ZenoNode::initParams()
             {
                 value = val.toString();
             }
-            else if (val.type() == QMetaType::Float)
+            else if (val.type() == QVariant::Double)
             {
-                value = QString::number(val.toFloat());
+                value = QString::number(val.toDouble());
             }
             else if (val.type() == QVariant::Int)
             {

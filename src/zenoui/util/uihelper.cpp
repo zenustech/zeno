@@ -1,4 +1,5 @@
 #include "uihelper.h"
+#include <zeno/utils/logger.h>
 #include <QUuid>
 
 
@@ -114,7 +115,14 @@ QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
         return val.GetString();
     }
     else if (val.GetType() == rapidjson::kNumberType) {
-        return val.GetFloat();
+        if (val.IsDouble())
+            return val.GetDouble();
+        else if (val.IsInt())
+            return val.GetInt();
+        else {
+            zeno::log_warn("bad rapidjson number type {}", val.GetType());
+            return QVariant();
+        }
     }
     else if (val.GetType() == rapidjson::kTrueType) {
         return val.GetBool();

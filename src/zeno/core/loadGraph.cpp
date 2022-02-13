@@ -24,8 +24,8 @@ static T generic_get(Value const &x) {
         return cast((std::string)x.GetString());
     } else if (x.IsInt()) {
         return cast(x.GetInt());
-    } else if (x.IsFloat()) {
-        return cast(x.GetFloat());
+    } else if (x.IsDouble()) {
+        return cast((float)x.GetDouble());
     } else if (x.IsBool()) {
         return cast(x.GetBool());
     } else {
@@ -35,20 +35,20 @@ static T generic_get(Value const &x) {
                 if (a.Size() == 2) {
                     if (a[0].IsInt()) {
                         return cast(vec2i(a[0].GetInt(), a[1].GetInt()));
-                    } else if (a[0].IsFloat()) {
-                        return cast(vec2f(a[0].GetFloat(), a[1].GetFloat()));
+                    } else if (a[0].IsDouble()) {
+                        return cast(vec2f(a[0].GetDouble(), a[1].GetDouble()));
                     }
                 } else if (a.Size() == 3) {
                     if (a[0].IsInt()) {
                         return cast(vec3i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt()));
-                    } else if (a[0].IsFloat()) {
-                        return cast(vec3f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat()));
+                    } else if (a[0].IsDouble()) {
+                        return cast(vec3f(a[0].GetDouble(), a[1].GetDouble(), a[2].GetDouble()));
                     }
                 } else if (a.Size() == 4) {
                     if (a[0].IsInt()) {
                         return cast(vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt()));
-                    } else if (a[0].IsFloat()) {
-                        return cast(vec4f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat(), a[4].GetFloat()));
+                    } else if (a[0].IsDouble()) {
+                        return cast(vec4f(a[0].GetDouble(), a[1].GetDouble(), a[2].GetDouble(), a[4].GetDouble()));
                     }
                 }
             }

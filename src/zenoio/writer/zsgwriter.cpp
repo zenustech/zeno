@@ -97,8 +97,8 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 					const QVariant& defl = outSock.defaultValue;
 					if (defl.type() == QVariant::String)
 						arr.push_back(defl.toString());
-					else if (defl.type() == QMetaType::Float)
-						arr.push_back(defl.toFloat());
+					else if (defl.type() == QVariant::Double)
+						arr.push_back(defl.toDouble());
 					else
 						arr.push_back(QJsonValue::Null);
 					inputsArr.insert(inSock.info.name, arr);
@@ -120,8 +120,8 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 		QVariant val = info.value;
 		if (val.type() == QVariant::String)
 			paramsObj.insert(info.name, val.toString());
-		else if (val.type() == QMetaType::Float)
-			paramsObj.insert(info.name, val.toFloat());
+		else if (val.type() == QVariant::Double)
+			paramsObj.insert(info.name, val.toDouble());
 		else if (val.type() == QVariant::Int)
 			paramsObj.insert(info.name, val.toInt());
 	}
@@ -183,8 +183,8 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			const QVariant& defl = inSock.info.defaultValue;
 			if (defl.type() == QVariant::String)
 				socketInfo.push_back(defl.toString());
-			else if (defl.type() == QMetaType::Float)
-				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QMetaType::Double)
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else {
@@ -205,8 +205,8 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			const QVariant& defl = param.defaultValue;
 			if (defl.type() == QVariant::String)
 				paramInfo.push_back(defl.toString());
-			else if (defl.type() == QMetaType::Float)
-				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QVariant::Double)
+				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else
@@ -225,8 +225,8 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			const QVariant& defl = outSock.info.defaultValue;
 			if (defl.type() == QVariant::String)
 				socketInfo.push_back(defl.toString());
-			else if (defl.type() == QMetaType::Float)
-				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QVariant::Double)
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else

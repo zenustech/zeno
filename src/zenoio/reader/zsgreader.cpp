@@ -210,7 +210,7 @@ QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
 {
     //some data like vec3f, cast to string first.
     bool bOk = false;
-    float val = defaultValue.toFloat(&bOk);
+    double val = defaultValue.toDouble(&bOk);
     QVariant var;
     if (bOk) {
         var = val;
@@ -228,8 +228,8 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     }
 	else if (val.GetType() == rapidjson::kNumberType)
     {
-        if (val.IsFloat())
-            return val.GetFloat();
+        if (val.IsDouble())
+            return val.GetDouble();
         else if (val.IsInt())
             return val.GetInt();
         else {
