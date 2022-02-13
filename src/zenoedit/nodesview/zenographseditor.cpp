@@ -79,7 +79,6 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     pLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(pLayout);
 
-    m_pViewBtn->setEnabled(false);
     m_pViewBtn->setChecked(!m_bListView);
     m_pTabWidget->setVisible(m_bListView);
     m_pLayerWidget->setVisible(!m_bListView);

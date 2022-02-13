@@ -55,7 +55,7 @@ private:
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
     std::map<QString, ZenoNode*> m_nodes;
-    std::map<EdgeInfo, ZenoFullLink*/*, cmpEdge*/> m_links;
+    QMap<EdgeInfo, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
 };
 

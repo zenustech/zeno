@@ -611,12 +611,11 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
 
 void GraphsModel::updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx)
 {
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph);
-    if (pGraph)
+	SubGraphModel* pSubg = subGraph(subGpIdx.row());
+	Q_ASSERT(pSubg);
+    if (pSubg)
     {
-        //todo
-        pGraph->updateSocket(id, info.name, SOCKET_INFO());
+        pSubg->updateSocket(id, info);
     }
 }
 
@@ -719,7 +718,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
 void GraphsModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-    Q_ASSERT(pSubModel);
+    Q_ASSERT(pSubModel && roles.size() == 1);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _dataChanged(subgIdx, topLeft, roles[0]);
 }

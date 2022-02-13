@@ -11,6 +11,12 @@
 
 class SubGraphModel;
 
+/*
+GraphsModel is a "plain" model, which contains subgraphModel for each subgraph.
+Modification at any SubgraphModel will apply to all subnet nodes associated to this subgraph.
+the implemenation is compatible with the graphs organization in zeno1.0.
+*/
+
 class GraphsModel : public IGraphsModel
 {
     Q_OBJECT

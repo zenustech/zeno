@@ -343,16 +343,41 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     }
 }
 
-void SubGraphModel::updateSocket(const QString& nodeid, const QString& oldName, const SOCKET_INFO& sock)
+void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)
 {
-    QModelIndex idx = index(nodeid);
-    INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-    Q_ASSERT(inputs.find(oldName) != inputs.end());
-    INPUT_SOCKET inputSock = inputs[oldName];
-    inputSock.info.name = sock.name;
-    inputs.remove(oldName);
-    inputs[sock.name] = inputSock;
-    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+    if (info.bInput)
+    {
+        QModelIndex idx = index(nodeid);
+        INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const QString& oldName = info.oldinfo.name;
+        const QString& newName = info.newInfo.name;
+        Q_ASSERT(inputs.find(oldName) != inputs.end());
+
+        QStringList outputNodes = inputs[oldName].outNodes.keys();
+
+        INPUT_SOCKET inputSock = inputs[oldName];
+        inputSock.info.name = newName;
+        inputs.remove(oldName);
+        inputs[newName] = inputSock;
+        setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+        setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+        setData(idx, QVariant(), ROLE_MODIFY_SOCKET);   //clear the modification.
+
+        //find other nodes linked to the old sock and update them.
+        for (SOCKETS_INFO sockets : inputs[newName].outNodes)
+        {
+            for (SOCKET_INFO outSock : sockets)
+            {
+                idx = index(outSock.nodeid);
+                OUTPUT_SOCKETS outputs = data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+                SOCKETS_INFO& outSocks = outputs[outSock.name].inNodes[nodeid];
+                Q_ASSERT(outSocks.find(oldName) != outSocks.end());
+                outSocks[newName] = outSocks[oldName];
+                outSocks.remove(oldName);
+                setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+            }
+        }
+    }
 }
 
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)

@@ -152,7 +152,7 @@ ZenoSubnetListPanel::ZenoSubnetListPanel(QWidget* parent)
 void ZenoSubnetListPanel::initModel(IGraphsModel* pModel)
 {
     m_pListView->initModel(pModel);
-    //m_pTreeView->initModel(pModel);
+    m_pTreeView->initModel(pModel);
     m_pTextLbl->setText(pModel->fileName());
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 }
