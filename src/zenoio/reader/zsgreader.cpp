@@ -1,4 +1,5 @@
 #include "zsgreader.h"
+#include "../../zenoui/util/uihelper.h"
 #include <zeno/utils/logger.h>
 
 
@@ -183,44 +184,22 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
 PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
 {
-    if (type == "int") {
-        return CONTROL_INT;
-    } else if (type == "bool") {
-        return CONTROL_BOOL;
-    } else if (type == "float") {
-        return CONTROL_FLOAT;
-    } else if (type == "string") {
-        return CONTROL_STRING;
-    } else if (type == "writepath") {
-        return CONTROL_WRITEPATH;
-    } else if (type == "readpath") {
-        return CONTROL_READPATH;
-    } else if (type == "multiline_string") {
-        return CONTROL_MULTILINE_STRING;
-    } else if (type == "_RAMPS") {
-        return CONTROL_HEAPMAP;
-    } else if (type.startsWith("enum ")) {
-        return CONTROL_ENUM;
-    } else if (type == "") {
-        return CONTROL_NONE;
-    } else {
-        zeno::log_debug("got undefined type {}", type.toStdString());
-        return CONTROL_NONE;
-    }
+    return UiHelper::_getControlType(type);
 }
 
-QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue)
+QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
 {
+    return UiHelper::_parseDefaultValue(defaultValue, type);
     //some data like vec3f, cast to string first.
-    bool bOk = false;
-    double val = defaultValue.toDouble(&bOk);
-    QVariant var;
-    if (bOk) {
-        var = val;
-    } else {
-        var = defaultValue;
-    }
-    return var;
+    //bool bOk = false;
+    //double val = defaultValue.toDouble(&bOk);
+    //QVariant var;
+    //if (bOk) {
+        //var = val;
+    //} else {
+        //var = defaultValue;
+    //}
+    //return var;
 }
 
 QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
@@ -375,7 +354,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 inputSocket.info = SOCKET_INFO("", socketName, QPointF(), true);
                 inputSocket.info.type = socketType;
                 inputSocket.info.control = _getControlType(socketType);
-                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
+                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             }
             else {
@@ -395,7 +374,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 paramInfo.control = ctrlType;
                 paramInfo.name = socketName;
                 paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = _parseDefaultValue(socketDefl);
+                paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.params.insert(socketName, paramInfo);
             }
@@ -412,7 +391,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 outputSocket.info = SOCKET_INFO("", socketName, QPointF(), false);
                 outputSocket.info.type = socketType;
                 outputSocket.info.control = _getControlType(socketType);
-                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
+                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
             }
