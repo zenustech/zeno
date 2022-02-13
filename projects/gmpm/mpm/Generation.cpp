@@ -13,7 +13,7 @@ struct PoissonDiskSample : INode {
   void apply() override {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing PoissonDiskSample\n");
-    auto ls = IObject::make<ZenoLevelSet>();
+    auto ls = std::make_shared<ZenoLevelSet>();
 
     zs::OpenVDBStruct gridPtr{};
     if (has_input<VDBFloatGrid>("VDBGrid"))
@@ -22,12 +22,12 @@ struct PoissonDiskSample : INode {
       gridPtr =
           zs::load_floatgrid_from_vdb_file(get_param<std::string>("path"));
 
-    auto spls = zs::convert_floatgrid_to_sparse_levelset(
-        gridPtr, zs::MemoryProperty{zs::memsrc_e::host, -1});
+    // auto spls = zs::convert_floatgrid_to_sparse_levelset(
+    //    gridPtr, {zs::memsrc_e::host, -1});
     auto dx = get_input2<float>("dx");
 #if 0
     auto sampled = zs::sample_from_levelset(
-        zs::proxy<zs::execspace_e::host>(spls), dx, get_input2<float>("ppc"));
+        zs::proxy<zs::execspace_e::openmp>(spls), dx, get_input2<float>("ppc"));
 #else
     auto sampled =
         zs::sample_from_levelset(gridPtr, dx, get_input2<float>("ppc"));
@@ -73,6 +73,43 @@ struct PoissonDiskSample : INode {
 ZENDEFNODE(PoissonDiskSample,
            {
                {"VDBGrid", {"float", "dx", "0.1"}, {"float", "ppc", "8"}},
+               {"prim"},
+               {{"string", "path", ""}},
+               {"MPM"},
+           });
+
+struct ZSPoissonDiskSample : INode {
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
+    const auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getSparseLevelSet();
+    auto spls = ls.clone({memsrc_e::host, -1});
+
+    auto dx = get_input2<float>("dx");
+
+    auto sampled = zs::sample_from_levelset(
+        zs::proxy<zs::execspace_e::openmp>(spls), dx, get_input2<float>("ppc"));
+
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->resize(sampled.size());
+    auto &pos = prim->attr<vec3f>("pos");
+    auto &vel = prim->add_attr<vec3f>("vel");
+
+    /// compute default normal
+    auto ompExec = zs::omp_exec();
+    ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
+      pos[pi] = sampled[pi];
+      vel[pi] = vec3f{0, 0, 0};
+      // nrm[pi] = calcNormal(pos[pi]);
+    });
+
+    fmt::print(fg(fmt::color::cyan), "done executing ZSPoissonDiskSample\n");
+    set_output("prim", std::move(prim));
+  }
+};
+ZENDEFNODE(ZSPoissonDiskSample,
+           {
+               {"ZSLevelSet", {"float", "dx", "0.1"}, {"float", "ppc", "8"}},
                {"prim"},
                {{"string", "path", ""}},
                {"MPM"},
@@ -136,7 +173,7 @@ ZENDEFNODE(ComputePrimitiveSequenceVelocity,
 struct ToZSLevelSet : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZSLevelSet\n");
-    auto ls = IObject::make<ZenoLevelSet>();
+    auto ls = std::make_shared<ZenoLevelSet>();
 
     using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
 
@@ -171,7 +208,7 @@ ZENDEFNODE(ToZSLevelSet, {
 struct ComposeSdfVelField : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ComposeSdfVelField\n");
-    auto ls = IObject::make<ZenoLevelSet>();
+    auto ls = std::make_shared<ZenoLevelSet>();
 
     std::shared_ptr<ZenoLevelSet> sdfLsPtr{};
     std::shared_ptr<ZenoLevelSet> velLsPtr{};
@@ -228,7 +265,7 @@ struct EnqueueLevelSetSequence : INode {
     if (has_input<ZenoLevelSet>("ZSLevelSetSequence"))
       zsls = get_input<ZenoLevelSet>("ZSLevelSetSequence");
     else {
-      zsls = IObject::make<ZenoLevelSet>();
+      zsls = std::make_shared<ZenoLevelSet>();
       zsls->levelset = const_transition_ls_t{};
     }
     auto &lsseq = zsls->getLevelSetSequence();
@@ -275,7 +312,7 @@ struct UpdateLevelSetSequence : INode {
     if (has_input<ZenoLevelSet>("ZSLevelSetSequence"))
       zsls = get_input<ZenoLevelSet>("ZSLevelSetSequence");
     else {
-      zsls = IObject::make<ZenoLevelSet>();
+      zsls = std::make_shared<ZenoLevelSet>();
       zsls->getLevelSet() = const_transition_ls_t{};
     }
     auto &lsseq = zsls->getLevelSetSequence();
@@ -304,7 +341,7 @@ ZENDEFNODE(UpdateLevelSetSequence, {
 struct ZSLevelSetToVDBGrid : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSLevelSetToVDBGrid\n");
-    auto vdb = IObject::make<VDBFloatGrid>();
+    auto vdb = std::make_shared<VDBFloatGrid>();
 
     if (has_input<ZenoLevelSet>("ZSLevelSet")) {
       auto ls = get_input<ZenoLevelSet>("ZSLevelSet");

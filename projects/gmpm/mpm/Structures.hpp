@@ -143,38 +143,6 @@ struct ZenoSparseLevelSet : IObject {
 };
 
 struct ZenoLevelSet : IObject {
-#if 0
-  using sdf_vel_t = zs::ConstSdfVelFieldPtr<float, 3>;
-  using transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
-  void test() {
-    zs::SparseLevelSetView<zs::execspace_e::cuda,
-                           zs::SparseLevelSet<3, zs::grid_e::collocated>, void>
-        a{};
-    zs::BasicLevelSet<float, 3> x{zs::DummyLevelSet<float, 3>{}};
-    zs::BasicLevelSet<float, 3> y{
-        std::make_shared<zs::DummyLevelSet<float, 3>>()};
-    // zs::name_that_type(typename sdf_vel_t::template sdf_vel_ls_view_t<
-    //                   zs::execspace_e::cuda>{});
-    sdf_vel_t z{y};
-    transition_ls_t zz{};
-    zz.push(x);
-    zz.push(z);
-
-#if 1
-#if 1
-    auto [lsvSrc, lsvDst] = zz.getView<zs::execspace_e::cuda>();
-    auto srcStr = zs::get_var_type_str(lsvSrc);
-    auto dstStr = zs::get_var_type_str(lsvDst);
-    zs::match([srcStr, dstStr](auto a, auto b) {
-      fmt::print("lsv src: [{}] ({}), \n\nlsv dst: [{}] ({})\n",
-                 zs::get_var_type_str(a), srcStr, zs::get_var_type_str(b),
-                 dstStr);
-    })(lsvSrc, lsvDst);
-#endif
-#endif
-  }
-#endif
-
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
   using const_sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
   using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
