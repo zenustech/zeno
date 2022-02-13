@@ -237,7 +237,7 @@ void GraphsModel::initDescriptors()
                 INPUT_SOCKET socket;
                 socket.info.type = type;
                 socket.info.name = name;
-                socket.info.defaultValue = UiHelper::_parseDefaultValue(defl);
+                socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
                 desc.inputs[name] = socket;
             }
             for (QString output : outputs.split("%", Qt::SkipEmptyParts))
@@ -251,7 +251,7 @@ void GraphsModel::initDescriptors()
                 OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl);
+				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
                 desc.outputs[name] = socket;
             }
             for (QString param : params.split("%", Qt::SkipEmptyParts))
@@ -264,7 +264,7 @@ void GraphsModel::initDescriptors()
                 PARAM_INFO paramInfo;
                 paramInfo.name = name;
                 paramInfo.typeDesc = type;
-                paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl);
+                paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
                 desc.params[name] = paramInfo;
             }
             desc.categories = z_categories;

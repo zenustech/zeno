@@ -3,7 +3,7 @@
 #include <QUuid>
 
 
-NODE_DESCS UiHelper::loadDescsFromTempFile()
+/*NODE_DESCS UiHelper::loadDescsFromTempFile()
 {
     QFile file(":/templates/tmp-descs.json");
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -12,7 +12,7 @@ NODE_DESCS UiHelper::loadDescsFromTempFile()
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
     return UiHelper::parseDescs(doc);
-}
+}*/
 
 NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 {
@@ -43,9 +43,10 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 inputSocket.info = SOCKET_INFO("", socketName, QPointF(), true);
                 inputSocket.info.type = socketType;
                 inputSocket.info.control = _getControlType(socketType);
-                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
+                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
+                Q_ASSERT(inputs[i].IsNull());
             }
         }
 
@@ -61,9 +62,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 paramInfo.control = ctrlType;
                 paramInfo.name = socketName;
                 paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = _parseDefaultValue(socketDefl);
+                paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.params.insert(socketName, paramInfo);
+            } else {
+                Q_ASSERT(params[i].IsNull());
             }
         }
 
@@ -78,10 +81,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 outputSocket.info = SOCKET_INFO("", socketName, QPointF(), false);
                 outputSocket.info.type = socketType;
                 outputSocket.info.control = _getControlType(socketType);
-                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl);
+                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
             } else {
+                Q_ASSERT(outputs[i].IsNull());
             }
         }
         
@@ -95,18 +99,26 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
     return _descs;
 }
 
-QVariant UiHelper::_parseDefaultValue(const QString &defaultValue)
+QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
-    //some data like vec3f, cast to string first.
-    bool bOk = false;
-    double val = defaultValue.toDouble(&bOk);
-    QVariant var;
-    if (bOk) {
-        var = val;
-    } else {
-        var = defaultValue;
-    }
-    return var;
+    auto control = _getControlType(type);
+    switch (control) {
+    case CONTROL_INT:
+        return defaultValue.toInt();
+    case CONTROL_BOOL:
+        return (bool)defaultValue.toInt();
+    case CONTROL_FLOAT:
+        return defaultValue.toDouble();
+    case CONTROL_STRING:
+    case CONTROL_WRITEPATH:
+    case CONTROL_READPATH:
+    case CONTROL_MULTILINE_STRING:
+    case CONTROL_HEAPMAP:
+    case CONTROL_ENUM:
+        return defaultValue;
+    default:
+        return QVariant();
+    };
 }
 
 QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
@@ -189,7 +201,10 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_HEAPMAP;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
+    } else if (type.isEmpty()) {
+        return CONTROL_NONE;
     } else {
+        zeno::log_info("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
     }
 }
