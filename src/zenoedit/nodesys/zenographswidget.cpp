@@ -5,6 +5,7 @@
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"
 #include <zenoui/util/uihelper.h>
+#include <zeno/utils/log.h>
 
 
 ZenoGraphsWidget::ZenoGraphsWidget(QWidget* parent)
@@ -73,7 +74,7 @@ QList<QAction*> ZenoGraphsWidget::getCategoryActions(QPointF scenePos)
 }
 
 void ZenoGraphsWidget::onNewNodeCreated(const QString& descName, const QPointF& pt)
-{
+{//completely not called
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC &desc = descs[descName];
 

@@ -11,6 +11,7 @@
 #include <zenoui/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include <zeno/utils/log.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -45,7 +46,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
 	disconnect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
     for (int r = 0; r < pGraphsModel->itemCount(m_subgIdx); r++)
-    {
+    {//loaded nodes goes here
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
         ZenoNode* pNode = createNode(idx, m_nodeParams);
         pNode->initUI(m_subgIdx, idx);
@@ -538,18 +539,52 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
 }
 
 void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last)
-{
+{//right click goes here
     if (subgIdx != m_subgIdx)
         return;
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
-    ZenoNode *pNode = new ZenoNode(m_nodeParams);
+    ZenoNode *pNode = createNode(idx, m_nodeParams);
     pNode->initUI(m_subgIdx, idx);
-    QString id = pNode->nodeId();
     addItem(pNode);
+    QString id = pNode->nodeId();
     m_nodes[id] = pNode;
 	connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
 		this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
+        //const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
+        //ZenoNode* pNode = createNode(idx, m_nodeParams);
+        //pNode->initUI(m_subgIdx, idx);
+        //addItem(pNode);
+        //const QString& nodeid = pNode->nodeId();
+        //m_nodes[nodeid] = pNode;
+        //connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
+                //this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
+
+    /*{//cuz PRY(please-repeat-yourself) is a great cpp design pattern to luzh
+        ZenoNode *node = pNode;
+        const QString& id = node->nodeId();
+        const INPUT_SOCKETS& inputs = node->inputParams();
+        for (QString inSock : inputs.keys())
+        {
+            const INPUT_SOCKET& inputSocket = inputs[inSock];
+            for (QString outId : inputSocket.outNodes.keys())
+            {
+                for (QString outSock : inputSocket.outNodes[outId].keys())
+                {
+                    ZenoNode* outNode = m_nodes[outId];
+                    const QPointF &outSockPos = outNode->getPortPos(false, outSock);
+                    EdgeInfo info(outId, id, outSock, inSock);
+                    ZenoFullLink *pEdge = new ZenoFullLink(info);
+                    pEdge->updatePos(outSockPos, node->getPortPos(true, inSock));
+                    addItem(pEdge);
+                    m_links.insert(std::make_pair(info, pEdge));
+                    outNode->toggleSocket(false, outSock, true);
+                }
+            }
+            if (!inputSocket.outNodes.isEmpty())
+                node->toggleSocket(true, inSock, true);
+        }
+    }*/
 }
 
 void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput)

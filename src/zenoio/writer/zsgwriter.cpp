@@ -188,7 +188,7 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else {
-                zeno::log_warn("bad qt variant type {}", defl.typeName());
+                zeno::log_warn("bad qt variant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				socketInfo.push_back("");
             }
 

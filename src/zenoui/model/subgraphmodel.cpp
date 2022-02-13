@@ -2,6 +2,7 @@
 #include "subgraphmodel.h"
 #include "modelrole.h"
 #include "modeldata.h"
+#include <zeno/utils/log.h>
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
