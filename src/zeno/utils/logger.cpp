@@ -16,7 +16,7 @@ ZENO_API spdlog::logger *get_spdlog_logger() {
 }
 
 static void initialize_spdlog() {
-    spdlog::set_pattern("%^[%L %X.%e] (%s:%#) %v%$");
+    spdlog::set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
     if (auto env = getenv("ZENO_LOGLEVEL"); env) {
         if (0) {
 #define _PER_LEVEL(x, y) } else if (!strcmp(env, #x)) { spdlog::set_level(spdlog::level::y);

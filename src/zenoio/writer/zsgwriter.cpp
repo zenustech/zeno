@@ -1,5 +1,6 @@
 #include "zsgwriter.h"
 #include <zenoui/model/modelrole.h>
+#include <zeno/utils/logger.h>
 
 
 ZsgWriter::ZsgWriter()
@@ -183,9 +184,13 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			if (defl.type() == QVariant::String)
 				socketInfo.push_back(defl.toString());
 			else if (defl.type() == QMetaType::Float)
-				socketInfo.push_back(defl.toFloat());
-			else
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QVariant::Int)
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
+			else {
+                zeno::log_warn("bad qt variant type {}", defl.typeName());
 				socketInfo.push_back("");
+            }
 
 			inputs.push_back(socketInfo);
 		}
@@ -201,7 +206,9 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			if (defl.type() == QVariant::String)
 				paramInfo.push_back(defl.toString());
 			else if (defl.type() == QMetaType::Float)
-				paramInfo.push_back(defl.toFloat());
+				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QVariant::Int)
+				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else
 				paramInfo.push_back("");
 
@@ -219,7 +226,9 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			if (defl.type() == QVariant::String)
 				socketInfo.push_back(defl.toString());
 			else if (defl.type() == QMetaType::Float)
-				socketInfo.push_back(defl.toFloat());
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toFloat())));
+			else if (defl.type() == QVariant::Int)
+				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
 			else
 				socketInfo.push_back("");
 

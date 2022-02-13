@@ -245,6 +245,10 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     {
 		return val.GetBool();
 	}
+	else if (val.GetType() == rapidjson::kNullType)
+    {
+		return QVariant();
+    }
 	else
     {
         zeno::log_warn("bad rapidjson value type {}", val.GetType());
@@ -361,6 +365,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 auto input_triple = inputs[i].GetArray();
                 const QString& socketType = input_triple[0].GetString();
                 const QString& socketName = input_triple[1].GetString();
+                //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
                 const QString& socketDefl = input_triple[2].GetString();
                 PARAM_CONTROL ctrlType = _getControlType(socketType);
                 INPUT_SOCKET inputSocket;
@@ -379,6 +384,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 auto param_triple = params[i].GetArray();
                 const QString& socketType = param_triple[0].GetString();
                 const QString& socketName = param_triple[1].GetString();
+                //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
                 const QString& socketDefl = param_triple[2].GetString();
                 PARAM_CONTROL ctrlType = _getControlType(socketType);
                 PARAM_INFO paramInfo;

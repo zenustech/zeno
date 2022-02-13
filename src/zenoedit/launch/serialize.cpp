@@ -101,6 +101,10 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			{
 				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toFloat()}));
 			}
+			else if (varType == QVariant::Int)
+			{
+				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toInt()}));
+			}
 			else if (varType == QVariant::String)
 			{
 				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toString()}));
