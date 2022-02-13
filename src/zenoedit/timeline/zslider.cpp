@@ -2,9 +2,9 @@
 
 ZSlider::ZSlider(QWidget* parent)
     : QWidget(parent)
-    , m_left(0.)
-    , m_right(100.)
-    , m_value(0.)
+    , m_left(0)
+    , m_right(1)
+    , m_value(0)
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }

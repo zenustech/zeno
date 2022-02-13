@@ -99,7 +99,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue)
 {
     //some data like vec3f, cast to string first.
     bool bOk = false;
-    float val = defaultValue.toFloat(&bOk);
+    double val = defaultValue.toDouble(&bOk);
     QVariant var;
     if (bOk) {
         var = val;

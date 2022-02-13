@@ -30,7 +30,7 @@ std::unique_ptr<IGraphic> makeGraphic(std::shared_ptr<IObject> obj) {
     }
 #endif
 
-    log_info("load_object: unexpected view object {}", cppdemangle(typeid(*obj)));
+    log_debug("load_object: unexpected view object {}", cppdemangle(typeid(*obj)));
 
     //printf("%s\n", ext.c_str());
     //assert(0 && "bad file extension name");

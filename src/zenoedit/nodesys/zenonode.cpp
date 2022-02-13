@@ -444,6 +444,11 @@ QGraphicsLayout* ZenoNode::initParams()
             {
                 value = QString::number(val.toInt());
             }
+            else if (val.type() == QVariant::Invalid)
+            {
+                zeno::log_info("got null qt variant");
+                value = "";
+            }
             else zeno::log_warn("bad qt variant {}", val.typeName());
 
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -520,6 +525,7 @@ QGraphicsLayout* ZenoNode::initParams()
                 }
                 default:
                 {
+                    zeno::log_info("got undefined control type {}", param.control);
                     ZenoTextLayoutItem *pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
                     pParamLayout->addItem(pValueItem);
                     break;

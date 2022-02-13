@@ -183,7 +183,7 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 			const QVariant& defl = inSock.info.defaultValue;
 			if (defl.type() == QVariant::String)
 				socketInfo.push_back(defl.toString());
-			else if (defl.type() == QMetaType::Double)
+			else if (defl.type() == QVariant::Double)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));

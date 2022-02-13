@@ -201,7 +201,10 @@ PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
         return CONTROL_HEAPMAP;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
+    } else if (type == "") {
+        return CONTROL_NONE;
     } else {
+        zeno::log_debug("got undefined type {}", type.toStdString());
         return CONTROL_NONE;
     }
 }
