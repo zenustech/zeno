@@ -9,6 +9,7 @@
 #include <comctrl/zlabel.h>
 #include <zenoui/model/modelrole.h>
 #include <zenoui/include/igraphsmodel.h>
+#include <zeno/utils/logger.h>
 
 
 ZSubnetListModel::ZSubnetListModel(IGraphsModel* pModel, QObject* parent)
@@ -37,6 +38,7 @@ QVariant ZSubnetListModel::data(const QModelIndex& index, int role) const
         }
         else
         {
+            zeno::log_warn("not display role");
             Q_ASSERT(false);
             return QVariant();
         }

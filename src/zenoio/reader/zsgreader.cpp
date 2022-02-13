@@ -1,4 +1,5 @@
 #include "zsgreader.h"
+#include <zeno/utils/logger.h>
 
 
 ZsgReader::ZsgReader()
@@ -227,7 +228,14 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     }
 	else if (val.GetType() == rapidjson::kNumberType)
     {
-		return val.GetFloat();
+        if (val.IsFloat())
+            return val.GetFloat();
+        else if (val.IsInt())
+            return val.GetInt();
+        else {
+            zeno::log_warn("bad rapidjson number type {}", val.GetType());
+            return QVariant();
+        }
 	}
 	else if (val.GetType() == rapidjson::kTrueType)
     {
@@ -239,6 +247,7 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
 	}
 	else
     {
+        zeno::log_warn("bad rapidjson value type {}", val.GetType());
 		return QVariant();
 	}
 }

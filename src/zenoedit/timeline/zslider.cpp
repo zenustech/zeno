@@ -11,7 +11,7 @@ ZSlider::ZSlider(QWidget* parent)
 
 QSize ZSlider::sizeHint() const
 {
-    return QSize(256, 64);
+    return QSize(0, 64);
 }
 
 void ZSlider::mousePressEvent(QMouseEvent* event)

@@ -7,6 +7,7 @@
 #include "zenoheatmapitem.h"
 #include <zenoui/util/uihelper.h>
 #include <zenoui/include/igraphsmodel.h>
+#include <zeno/utils/logger.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 
@@ -435,14 +436,15 @@ QGraphicsLayout* ZenoNode::initParams()
             {
                 value = val.toString();
             }
-            else if (val.type() == QVariant::Double)
+            else if (val.type() == QMetaType::Float)
             {
-                value = QString::number(val.toDouble());
+                value = QString::number(val.toFloat());
             }
             else if (val.type() == QVariant::Int)
             {
                 value = QString::number(val.toInt());
             }
+            else zeno::log_warn("bad qt variant {}", val.typeName());
 
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 

@@ -252,7 +252,7 @@ void DisplayWidget::init()
 QSize DisplayWidget::sizeHint() const
 {
     //¿¼ÂÇnoviewµÄÇé¿ö¡£
-    return QSize(1200, 400);
+    return QSize(12, 400);
 }
 
 void DisplayWidget::updateFrame()

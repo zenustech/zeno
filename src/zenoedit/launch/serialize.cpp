@@ -1,5 +1,6 @@
 #include "serialize.h"
 #include <model/graphsmodel.h>
+#include <zeno/utils/logger.h>
 #include <model/modeldata.h>
 #include <model/modelrole.h>
 
@@ -67,6 +68,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 					}
 					else
 					{
+                        zeno::log_warn("bad qt variant type {}", defl.typeName());
 						Q_ASSERT(false);
 					}
 				}
@@ -95,7 +97,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 				j = 0;
 			}
 
-			if (varType == QVariant::Double || varType == QMetaType::Float)
+			if (varType == QMetaType::Float)
 			{
 				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toFloat()}));
 			}
@@ -109,6 +111,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			}
 			else
 			{
+                zeno::log_warn("bad qt variant type {}", value.typeName());
 				Q_ASSERT(false);
 			}
 		}
