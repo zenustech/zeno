@@ -146,7 +146,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
             for (OUTPUT_SOCKET output : outputs)
             {
                 if (output.info.name == "DST") continue;//wanglin wants to put DST/SRC as first socket, skip it
-                auto viewerIdent = ident + ".VIEW";
+                auto viewerIdent = ident + ".TOVIEW";
                 ret.push_back(QJsonArray({"addNode", "ToView", viewerIdent}));
                 ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", ident, output.info.name}));
                 ret.push_back(QJsonArray({"completeNode", viewerIdent}));
