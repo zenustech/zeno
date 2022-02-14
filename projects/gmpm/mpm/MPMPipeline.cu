@@ -174,7 +174,7 @@ struct UpdateZSGrid : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing UpdateZSGrid\n");
     // auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
-    auto maxVelSqr = IObject::make<NumericObject>();
+    auto maxVelSqr = std::make_shared<NumericObject>();
 
     auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");

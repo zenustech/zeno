@@ -120,7 +120,7 @@ struct ToZSParticles : INode {
     auto &tris = inParticles->tris;
     auto &lines = inParticles->lines;
 
-    auto outParticles = IObject::make<ZenoParticles>();
+    auto outParticles = std::make_shared<ZenoParticles>();
 
     // primitive binding
     outParticles->prim = inParticles;
@@ -510,7 +510,7 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
 
 struct MakeZSPartition : INode {
   void apply() override {
-    auto partition = IObject::make<ZenoPartition>();
+    auto partition = std::make_shared<ZenoPartition>();
     partition->get() =
         typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::um, 0};
     set_output("ZSPartition", partition);
@@ -529,7 +529,7 @@ struct MakeZSGrid : INode {
 
     std::vector<zs::PropertyTag> tags{{"m", 1}, {"v", 3}};
 
-    auto grid = IObject::make<ZenoGrid>();
+    auto grid = std::make_shared<ZenoGrid>();
     grid->transferScheme = get_input2<std::string>("transfer");
     // default is "apic"
     if (grid->transferScheme == "flip")
@@ -559,7 +559,7 @@ ZENDEFNODE(MakeZSGrid,
 struct ToZSBoundary : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZSBoundary\n");
-    auto boundary = zeno::IObject::make<ZenoBoundary>();
+    auto boundary = std::make_shared<ZenoBoundary>();
 
     auto type = get_param<std::string>("type");
     auto queryType = [&type]() -> zs::collider_e {
@@ -658,7 +658,7 @@ struct ZSParticlesToPrimitiveObject : INode {
     auto &zspars = get_input<ZenoParticles>("ZSParticles")->getParticles();
     const auto size = zspars.size();
 
-    auto prim = IObject::make<PrimitiveObject>();
+    auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(size);
 
     using namespace zs;
