@@ -124,16 +124,27 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		}
 
 		if (opts & OPT_VIEW) {
-		const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+            const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
             for (OUTPUT_SOCKET output : outputs)
             {
+                if (output.info.name == "DST") continue;//wanglin wants to put DST/SRC as first socket, skip it
                 auto viewerIdent = ident + ".VIEW";
                 ret.push_back(QJsonArray({"addNode", "ToView", viewerIdent}));
                 ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", ident, output.info.name}));
-                ret.push_back(QJsonArray({"completeNode", "ToView", viewerIdent}));
+                ret.push_back(QJsonArray({"completeNode", viewerIdent}));
                 break;
             }
         }
+
+		/*if (opts & OPT_MUTE) {//TODO
+            const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+            auto inputIt = inputs.begin();
+            for (OUTPUT_SOCKET output : outputs)
+            {
+                if (inputIt == inputs.end()) break;
+                break;
+            }
+        }*/
 
         // mock options at editor side, done
 		/*for (QString optionName : options)
