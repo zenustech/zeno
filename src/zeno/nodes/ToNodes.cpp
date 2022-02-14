@@ -41,7 +41,8 @@ ZENDEFNODE(ToView, {
 struct HelperMute : zeno::INode {
     virtual void apply() override {
         for (auto const &[name, _]: this->inputs) {
-            set_output(name == "SRC" ? "DST" : name, get_input(name));
+            if (name == "SRC") continue;//sk
+            set_output(name, get_input(name));
         }
     }
 };
@@ -65,7 +66,8 @@ struct HelperOnce : zeno::INode {
 
     virtual void apply() override {
         for (auto const &[name, _]: this->inputs) {
-            set_output(name == "SRC" ? "DST" : name, get_input(name));
+            if (name == "SRC") continue;//sk
+            set_output(name, get_input(name));
         }
     }
 };

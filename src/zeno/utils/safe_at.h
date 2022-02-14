@@ -17,7 +17,7 @@ T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
   auto it = m.find(key);
   if (it == m.end()) {
     auto extra_ = extra;
-    if (extra.size()) extra_ = " for `" + extra + "`";
+    if (extra.size()) extra_ = "of `" + extra + "`";
     throw KeyError(key, msg, extra_);
   }
   return it->second.get();
@@ -29,7 +29,7 @@ T const &safe_at(std::map<std::string, T> const &m, std::string const &key,
   auto it = m.find(key);
   if (it == m.end()) {
     auto extra_ = extra;
-    if (extra.size()) extra_ = " for `" + extra + "`";
+    if (extra.size()) extra_ = "of `" + extra + "`";
     throw KeyError(key, msg, extra_);
   }
   return it->second;

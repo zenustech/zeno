@@ -36,6 +36,10 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		{
 			options.push_back("VIEW");
 		}*/
+        QString noOnceIdent = ident;
+        if (opts & OPT_ONCE) {
+            ident = ident + ".RUNONCE";
+        }
 
         if (opts & OPT_MUTE) {
             ret.push_back(QJsonArray({ "addNode", "HelperMute", ident }));
@@ -142,13 +146,20 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			}
 		}
 
+        if (opts & OPT_ONCE) {
+            ret.push_back(QJsonArray({ "addNode", "HelperOnce", noOnceIdent }));
+            for (OUTPUT_SOCKET output : outputs) {
+                ret.push_back(QJsonArray({"bindNodeInput", ident, output.info.name, noOnceIdent, output.info.name}));
+            }
+        }
+
 		if (opts & OPT_VIEW) {
             for (OUTPUT_SOCKET output : outputs)
             {
-                if (output.info.name == "DST") continue;//wanglin wants to put DST/SRC as first socket, skip it
-                auto viewerIdent = ident + ".TOVIEW";
+                //if (output.info.name == "DST") continue;//qmap wants to put DST/SRC as first socket, skip it</del> fixed
+                auto viewerIdent = noOnceIdent + ".TOVIEW";
                 ret.push_back(QJsonArray({"addNode", "ToView", viewerIdent}));
-                ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", ident, output.info.name}));
+                ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", noOnceIdent, output.info.name}));
                 ret.push_back(QJsonArray({"completeNode", viewerIdent}));
                 break;
             }
