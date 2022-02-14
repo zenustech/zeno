@@ -2,6 +2,7 @@
 #define __MODEL_DATA_H__
 
 #include <QtWidgets>
+#include "zenoui/util/fuckqmap.h"
 
 enum PARAM_CONTROL {
     CONTROL_NONE,
@@ -119,7 +120,7 @@ struct INPUT_SOCKET
     SOCKET_INFO info;
     QMap<QString, SOCKETS_INFO> outNodes;      //describe the connection with this socket.
 };
-typedef QMap<QString, INPUT_SOCKET> INPUT_SOCKETS;
+typedef FuckQMap<QString, INPUT_SOCKET> INPUT_SOCKETS;
 Q_DECLARE_METATYPE(INPUT_SOCKETS)
 
 
@@ -128,7 +129,7 @@ struct OUTPUT_SOCKET
     SOCKET_INFO info;
     QMap<QString, SOCKETS_INFO> inNodes;
 };
-typedef QMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
+typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
 Q_DECLARE_METATYPE(OUTPUT_SOCKETS)
 
 struct COLOR_RAMP
