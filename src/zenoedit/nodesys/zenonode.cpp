@@ -415,6 +415,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
 
 QGraphicsLayout* ZenoNode::initParams()
 {
+    //m_index.find(ROLE_PAR
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
     int r = 0, n = names.length();
@@ -446,7 +447,7 @@ QGraphicsLayout* ZenoNode::initParams()
             }
             else if (val.type() == QVariant::Invalid)
             {
-                zeno::log_info("got null qt variant");
+                zeno::log_warn("got null qt variant");
                 value = "";
             }
             else zeno::log_warn("bad qt variant {}", val.typeName());
@@ -525,7 +526,7 @@ QGraphicsLayout* ZenoNode::initParams()
                 }
                 default:
                 {
-                    zeno::log_info("got undefined control type {}", param.control);
+                    zeno::log_warn("got undefined control type {}", param.control);
                     ZenoTextLayoutItem *pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
                     pParamLayout->addItem(pValueItem);
                     break;

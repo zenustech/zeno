@@ -1,6 +1,7 @@
 #include "nodesmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "nodeitem.h"
+#include <zeno/utils/log.h>
 
 
 NodesModel::NodesModel(QObject *parent)

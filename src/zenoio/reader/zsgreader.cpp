@@ -296,6 +296,8 @@ void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonPara
             QVariant var = _parseToVariant(val);
             pAcceptor->setParamValue(id, name, var);
         }
+    } else {
+        zeno::log_warn("not object json param");
     }
 }
 

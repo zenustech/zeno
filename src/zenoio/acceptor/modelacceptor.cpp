@@ -66,7 +66,7 @@ void ModelAcceptor::switchSubGraph(const QString& graphName)
 }
 
 void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors)
-{
+{// called on load-zsg!!
 	NODE_DATA data;
 	data[ROLE_OBJID] = nodeid;
 	data[ROLE_OBJNAME] = name;
@@ -88,6 +88,9 @@ void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
 		data[ROLE_NODETYPE] = NORMAL_NODE;
 	}
 
+    //Q_ASSERT(data.find(ROLE_INPUTS) == data.end());
+
+    //zeno::log_warn("zsg has Inputs {}", data.find(ROLE_PARAMETERS) != data.end());
 	m_currentGraph->appendItem(data, false);
 }
 

@@ -6,6 +6,7 @@
 #include <zenoio/acceptor/modelacceptor.h>
 #include <zenoui/util/uihelper.h>
 #include "nodesys/zenosubgraphscene.h"
+#include <zeno/utils/log.h>
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
@@ -128,7 +129,8 @@ QList<QAction*> GraphsManagment::getCategoryActions(QModelIndex subgIdx, QPointF
 }
 
 void GraphsManagment::onNewNodeCreated(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
-{
+{//called on right-click!!
+    zeno::log_info("onNewNodeCreated");
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC& desc = descs[descName];
 
@@ -142,6 +144,29 @@ void GraphsManagment::onNewNodeCreated(QModelIndex subgIdx, const QString& descN
     node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
     node[ROLE_OBJPOS] = pt;
 
+    /*
+	NODE_DATA data;
+	data[ROLE_OBJID] = nodeid;
+	data[ROLE_OBJNAME] = name;
+	data[ROLE_COLLASPED] = false;
+	if (name == "Blackboard")
+	{
+		data[ROLE_NODETYPE] = BLACKBOARD_NODE;
+	}
+	else if (name == "SubInput")
+	{
+		data[ROLE_NODETYPE] = SUBINPUT_NODE;
+	}
+	else if (name == "SubOutput")
+	{
+		data[ROLE_NODETYPE] = SUBOUTPUT_NODE;
+	}
+	else
+	{
+		data[ROLE_NODETYPE] = NORMAL_NODE;
+	}*/
+
+    //zeno::log_warn("rclk has Inputs {}", node.find(ROLE_PARAMETERS) != node.end());
     m_model->appendItem(node, subgIdx);
 }
 

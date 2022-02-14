@@ -12,7 +12,7 @@ ZTimeline::ZTimeline(QWidget* parent)
     pLayout->setMargin(0);
 
     QLineEdit* pFrame = new QLineEdit;
-    pFrame->setText("100");
+    pFrame->setText("1");
     pFrame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
     QPushButton* pRun = new QPushButton(tr("Run"));
     pRun->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);

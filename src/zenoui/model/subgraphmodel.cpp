@@ -87,7 +87,7 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
 }
 
 void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction)
-{
+{//called on both right-click and load-zsg, both enabletrans=false
     int nRow = m_nodes.size();
     if (enableTransaction)
     {
@@ -97,6 +97,7 @@ void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction
     }
     else
     {
+    //zeno::log_warn("both has Inputs {}", nodeData.find(ROLE_PARAMETERS) != nodeData.end());
         insertRow(nRow, nodeData);
     }
 }
@@ -107,6 +108,7 @@ void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransa
     //add nodes.
     for (auto node : nodes)
     {
+        // never called
         appendItem(node, true);
     }
 
