@@ -262,9 +262,13 @@ void GraphsModel::initDescriptors()
 				name = _arr[1];
 				defl = _arr[2];
                 PARAM_INFO paramInfo;
+                paramInfo.bEnableConnect = false;
                 paramInfo.name = name;
                 paramInfo.typeDesc = type;
+                paramInfo.control = UiHelper::_getControlType(type);
                 paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+                //thers is no "value" in descriptor, but it's convient to initialize param value. 
+                paramInfo.value = paramInfo.defaultValue;
                 desc.params[name] = paramInfo;
             }
             desc.categories = z_categories;

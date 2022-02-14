@@ -89,15 +89,12 @@ struct SOCKET_INFO {
     QString type;
     QVariant defaultValue;
 
-    //only used to paint link at gv:
-    QPointF pos;
-    bool binsock;
-
-    SOCKET_INFO() : binsock(true) {}
-    SOCKET_INFO(const QString& id, const QString& name) : nodeid(id), name(name) {}
-    SOCKET_INFO(const QString& id, const QString& name, bool inSock) : nodeid(id), name(name), binsock(inSock) {}
-    SOCKET_INFO(const QString &id, const QString &name, const QPointF &p, bool bIn)
-        : nodeid(id), name(name), pos(p), binsock(bIn) {}
+    SOCKET_INFO() : control(CONTROL_NONE) {}
+    SOCKET_INFO(const QString& id, const QString& name)
+        : nodeid(id)
+        , name(name)
+        , control(CONTROL_NONE)
+    {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {
 		return nodeid == rhs.nodeid && name == rhs.name;
