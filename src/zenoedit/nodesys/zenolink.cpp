@@ -62,21 +62,24 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(SOCKET_INFO sockInfo)
+ZenoTempLink::ZenoTempLink(QString nodeId, QString sockName, QPointF fixedPos, bool fixInput)
     : ZenoLink(nullptr)
-    , m_info(sockInfo)
-    , m_floatingPos(sockInfo.pos)
+    , m_fixedPos(fixedPos)
+    , m_floatingPos(fixedPos)
+    , m_bfixInput(fixInput)
+    , m_nodeId(nodeId)
+    , m_sockName(sockName)
 {
 }
 
 QPointF ZenoTempLink::getSrcPos() const
 {
-    return m_info.binsock ? m_floatingPos : m_info.pos;
+    return m_bfixInput ? m_floatingPos : m_fixedPos;
 }
 
 QPointF ZenoTempLink::getDstPos() const
 {
-    return m_info.binsock ? m_info.pos : m_floatingPos;
+    return m_bfixInput ? m_fixedPos : m_floatingPos;
 }
 
 void ZenoTempLink::setFloatingPos(QPointF pos)
@@ -85,9 +88,12 @@ void ZenoTempLink::setFloatingPos(QPointF pos)
     update();
 }
 
-void ZenoTempLink::getFixedInfo(SOCKET_INFO& info)
+void ZenoTempLink::getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput)
 {
-    info = m_info;
+    nodeId = m_nodeId;
+    fixedPos = m_fixedPos;
+    bFixedInput = m_bfixInput;
+    sockName = m_sockName;
 }
 
 int ZenoTempLink::type() const

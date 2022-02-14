@@ -38,11 +38,11 @@ class ZenoTempLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoTempLink(SOCKET_INFO sockInfo);
+    ZenoTempLink(QString nodeId, QString sockName, QPointF fixedPos, bool fixInput);
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
-    void getFixedInfo(SOCKET_INFO& info);
+    void getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput);
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
@@ -51,8 +51,12 @@ protected:
     int type() const override;
 
 private:
+    QString m_sockName;
+    QString m_nodeId;
     QPointF m_floatingPos;
     SOCKET_INFO m_info;
+    QPointF m_fixedPos;
+    bool m_bfixInput;
 };
 
 class ZenoFullLink : public ZenoLink

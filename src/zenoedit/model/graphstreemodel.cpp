@@ -16,16 +16,14 @@ GraphsTreeModel::~GraphsTreeModel()
 
 void GraphsTreeModel::init(GraphsModel* pModel)
 {
-	//TODO
-	//clear();
-	//SubGraphModel* pSubModel = pModel->subGraph("main");
-	//QStandardItem* pItem = appendSubModel(pModel, pSubModel);
-	//appendRow(pItem);
+    clear();
+    SubGraphModel* pSubModel = pModel->subGraph("main");
+    QStandardItem* pItem = appendSubModel(pModel, pSubModel);
+    appendRow(pItem);
 }
 
 QStandardItem* GraphsTreeModel::appendSubModel(GraphsModel* pTreeModel, SubGraphModel* pModel)
 {
-	/*
 	QStandardItem* pItem = new QStandardItem(pModel->name());
 	for (int r = 0; r < pModel->rowCount(); r++)
 	{
@@ -47,6 +45,5 @@ QStandardItem* GraphsTreeModel::appendSubModel(GraphsModel* pTreeModel, SubGraph
 	}
 	pItem->setData(pModel->name(), ROLE_OBJNAME);
 	return pItem;
-	*/
 	return nullptr;
 }

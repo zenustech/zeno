@@ -62,7 +62,11 @@ ZenoSubnetTreeView::~ZenoSubnetTreeView()
 
 void ZenoSubnetTreeView::initModel(IGraphsModel* pModel)
 {
-    setModel(pModel);
+	GraphsModel* pPlainModel = qobject_cast<GraphsModel*>(pModel);
+	Q_ASSERT(pPlainModel);
+    GraphsTreeModel* pTreeModel = new GraphsTreeModel(pPlainModel, this);    //todo: put in managment.
+    pTreeModel->init(pPlainModel);
+    setModel(pTreeModel);
 }
 
 void ZenoSubnetTreeView::paintEvent(QPaintEvent* e)

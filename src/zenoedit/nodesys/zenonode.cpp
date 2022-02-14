@@ -36,10 +36,10 @@ void ZenoNode::_initSocketItemPos()
 {
     //need to optimizize
     QString nodeid = nodeId();
-    for (auto sockName : m_inSockNames.keys())
+    for (auto sockName : m_inSockets.keys())
     {
-        auto sockLabelItem = m_inSockNames[sockName];
-        auto socketItem = m_inSocks[sockName];
+        auto sockLabelItem = m_inSockets[sockName].socket_text;
+        auto socketItem = m_inSockets[sockName].socket;
         QPointF scenePos = sockLabelItem->scenePos();
         QRectF sRect = sockLabelItem->sceneBoundingRect();
         QPointF pos = this->mapFromScene(scenePos);
@@ -54,10 +54,10 @@ void ZenoNode::_initSocketItemPos()
         socketItem->setPos(pos);
         emit socketPosInited(nodeid, sockName, true);
     }
-    for (auto sockName : m_outSockNames.keys())
+    for (auto sockName : m_outSockets.keys())
     {
-        auto sockLabelItem = m_outSockNames[sockName];
-        auto socketItem = m_outSocks[sockName];
+        auto sockLabelItem = m_outSockets[sockName].socket_text;
+        auto socketItem = m_outSockets[sockName].socket;
         QRectF sRect = sockLabelItem->sceneBoundingRect();
         QPointF scenePos = sRect.topRight();
         sRect = mapRectFromScene(sRect);
@@ -539,6 +539,11 @@ QGraphicsLayout* ZenoNode::initParams()
     return pParamsLayout;
 }
 
+QPersistentModelIndex ZenoNode::subGraphIndex() const
+{
+    return m_subGpIndex;
+}
+
 void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
 {
     const QString nodeid = nodeId();
@@ -580,6 +585,28 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
     }
 }
 
+void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
+{
+    const QString& oldName = info.oldinfo.name;
+    const QString& newName = info.newInfo.name;
+    if (info.bInput)
+    {
+        Q_ASSERT(m_inSockets.find(oldName) != m_inSockets.end());
+        m_inSockets[newName] = m_inSockets[oldName];
+        m_inSockets[newName].socket_text->setPlainText(newName);
+        m_inSockets.remove(oldName);
+    }
+    else
+    {
+        Q_ASSERT(m_outSockets.find(oldName) != m_outSockets.end());
+        m_outSockets[newName] = m_outSockets[oldName];
+        m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
+        m_outSockets.remove(oldName);
+    }
+
+    
+}
+
 void ZenoNode::onNameUpdated(const QString& newName)
 {
     m_NameItem->setPlainText(newName);
@@ -594,13 +621,17 @@ QGraphicsGridLayout* ZenoNode::initSockets()
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         int r = 0;
         for (auto inSock : inputs.keys()) {
-            ZenoSocketItem *socket = new ZenoSocketItem(SOCKET_INFO(nodeid, inSock, QPointF(), true), m_renderParams.socket, m_renderParams.szSocket, this);
-            m_inSocks.insert(std::make_pair(inSock, socket));
+            //SOCKET_INFO(nodeid, inSock, QPointF(), true)
+            ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
 
             ZenoTextLayoutItem *pSocketItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
             pSocketsLayout->addItem(pSocketItem, r, 0);
-            m_inSockNames.insert(inSock, pSocketItem);
+
+            _socket_ctrl socket_ctrl;
+            socket_ctrl.socket = socket;
+            socket_ctrl.socket_text = pSocketItem;
+            m_inSockets.insert(inSock, socket_ctrl);
 
             r++;
         }
@@ -614,11 +645,14 @@ QGraphicsGridLayout* ZenoNode::initSockets()
             pMiniLayout->addItem(pSocketItem);
             pSocketsLayout->addItem(pMiniLayout, r, 1);
 
-            m_outSockNames.insert(outSock, pSocketItem);
-
-            ZenoSocketItem *socket = new ZenoSocketItem(SOCKET_INFO(nodeid, outSock, QPointF(), false), m_renderParams.socket, m_renderParams.szSocket, this);
-            m_outSocks.insert(std::make_pair(outSock, socket));
+            //SOCKET_INFO(nodeid, outSock, QPointF(), false), 
+            ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
+
+            _socket_ctrl socket_ctrl;
+            socket_ctrl.socket = socket;
+            socket_ctrl.socket_text = pSocketItem;
+            m_outSockets[outSock] = socket_ctrl;
 
             r++;
         }
@@ -626,16 +660,40 @@ QGraphicsGridLayout* ZenoNode::initSockets()
     return pSocketsLayout;
 }
 
+void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput)
+{
+    for (auto name : m_inSockets.keys())
+    {
+        auto ctrl = m_inSockets[name];
+        if (ctrl.socket == pSocketItem)
+        {
+            bInput = true;
+            sockName = name;
+            scenePos = pSocketItem->sceneBoundingRect().center();
+            return;
+        }
+    }
+    for (auto name : m_outSockets.keys())
+    {
+        auto ctrl = m_outSockets[name];
+        if (ctrl.socket == pSocketItem)
+        {
+            bInput = false;
+            sockName = name;
+            scenePos = pSocketItem->sceneBoundingRect().center();
+            return;
+        }
+    }
+}
+
 void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected)
 {
     if (bInput) {
-        auto itPort = m_inSocks.find(sockName);
-        Q_ASSERT(itPort != m_inSocks.end());
-        itPort->second->toggle(bSelected);
+        Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
+        m_inSockets[sockName].socket->toggle(bSelected);
     } else {
-        auto itPort = m_outSocks.find(sockName);
-        Q_ASSERT(itPort != m_outSocks.end());
-        itPort->second->toggle(bSelected);
+        Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
+        m_outSockets[sockName].socket->toggle(bSelected);
     }
 }
 
@@ -658,14 +716,12 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
     {
         QString id = nodeId();
         if (bInput) {
-            auto itPort = m_inSocks.find(portName);
-            Q_ASSERT(itPort != m_inSocks.end());
-            QPointF pos = itPort->second->sceneBoundingRect().center();
+            Q_ASSERT(m_inSockets.find(portName) != m_inSockets.end());
+            QPointF pos = m_inSockets[portName].socket->sceneBoundingRect().center();
             return pos;
         } else {
-            auto itPort = m_outSocks.find(portName);
-            Q_ASSERT(itPort != m_outSocks.end());
-            QPointF pos = itPort->second->sceneBoundingRect().center();
+            Q_ASSERT(m_outSockets.find(portName) != m_outSockets.end());
+            QPointF pos = m_outSockets[portName].socket->sceneBoundingRect().center();
             return pos;
         }
     }
@@ -758,7 +814,6 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-	//QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	Q_ASSERT(pGraphsModel);
     bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
@@ -817,11 +872,12 @@ void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
     {
         m_headerWidget->hide();
         m_bodyWidget->hide();
-        for (auto p : m_inSocks) {
-            p.second->hide();
+        //socket icon item is out of the layout.
+        for (auto p : m_inSockets) {
+            p.socket->hide();
         }
-        for (auto p : m_outSocks) {
-            p.second->hide();
+        for (auto p : m_outSockets) {
+            p.socket->hide();
         }
         m_mute->hide();
         m_view->hide();
@@ -833,11 +889,11 @@ void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
     else
     {
         m_bodyWidget->show();
-        for (auto p : m_inSocks) {
-            p.second->show();
+        for (auto p : m_inSockets) {
+            p.socket->show();
         }
-        for (auto p : m_outSocks) {
-            p.second->show();
+        for (auto p : m_outSockets) {
+            p.socket->show();
         }
         m_mute->show();
         m_view->show();
@@ -854,23 +910,24 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     if (collasped)
     {
         m_bodyWidget->hide();
-		for (auto p : m_inSocks) {
-			p.second->hide();
-		}
-		for (auto p : m_outSocks) {
-			p.second->hide();
-		}
+        //socket icon item is out of the layout.
+        for (auto p : m_inSockets) {
+            p.socket->hide();
+        }
+        for (auto p : m_outSockets) {
+            p.socket->hide();
+        }
         m_pMainLayout->setSpacing(0);
     }
     else
     {
 		m_bodyWidget->show();
-		for (auto p : m_inSocks) {
-			p.second->show();
-		}
-		for (auto p : m_outSocks) {
-			p.second->show();
-		}
+        for (auto p : m_inSockets) {
+            p.socket->show();
+        }
+        for (auto p : m_outSockets) {
+            p.socket->show();
+        }
         m_pMainLayout->setSpacing(1);
     }
     update();

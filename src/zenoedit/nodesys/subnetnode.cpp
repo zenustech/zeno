@@ -17,36 +17,36 @@ SubInputNode::~SubInputNode()
 
 void SubInputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
 {
+    //get old name first.
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    Q_ASSERT(pModel);
+	QModelIndex subgIdx = this->subGraphIndex();
+    const PARAMS_INFO& subInputs = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();
+    const QString& oldName = subInputs["name"].value.toString();
+
 	_base::onParamEditFinished(editCtrl, paramName, textValue);
 
-	/*
-	QAbstractItemModel* pSubModel_ = const_cast<QAbstractItemModel*>(index().model());
-	SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(pSubModel_);
-	const QString& name = pSubModel->name();
-
-	//get old name first.
-	const PARAMS_INFO& subInputs = pSubModel->data(pSubModel->index(nodeId()), ROLE_PARAMETERS).value<PARAMS_INFO>();
-	const QString& oldName = subInputs["name"].value.toString();
+	const QString& name = pModel->name(subgIdx);
 
 	if (paramName != "name")
 		return;
 
-	auto graphsGM = zenoApp->graphsManagment();
-	GraphsModel* pModel = graphsGM->currentModel();
-
 	for (int r = 0; r < pModel->rowCount(); r++)
 	{
-		QModelIndex index = pModel->index(r, 0);
-		Q_ASSERT(index.isValid());
-		SubGraphModel* pSubModel = static_cast<SubGraphModel*>(index.data(ROLE_GRAPHPTR).value<void*>());
+		subgIdx = pModel->index(r, 0);
+		QModelIndexList m_results = pModel->searchInSubgraph(name, subgIdx);
+        for (auto idx : m_results)
+        {
+            SOCKET_INFO sock;
+			sock.name = textValue;
+			//todo: type 
 
-		QModelIndexList m_results = pSubModel->match(pSubModel->index(0, 0), ROLE_OBJNAME, name, -1, Qt::MatchContains);
-		for (auto idx : m_results)
-		{
-			SOCKET_INFO info;
+			SOCKET_UPDATE_INFO info;
+			info.bInput = true;
+			info.oldinfo.name = oldName;
 			info.name = textValue;
-			pSubModel->updateSocket(idx.data(ROLE_OBJID).toString(), oldName, info);
-		}
+			info.newInfo = sock;
+			pModel->updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+        }
 	}
-	*/
 }

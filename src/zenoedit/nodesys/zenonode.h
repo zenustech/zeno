@@ -16,6 +16,11 @@ class ZenoNode : public QGraphicsWidget
 {
     Q_OBJECT
     typedef QGraphicsWidget _base;
+    struct _socket_ctrl
+    {
+        ZenoSocketItem* socket;
+        ZenoTextLayoutItem* socket_text;
+    };
 
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
@@ -33,6 +38,7 @@ public:
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
+    void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput);
 
     QString nodeId() const;
     QString nodeName() const;
@@ -55,6 +61,7 @@ public slots:
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
+    void onSocketUpdated(const SOCKET_UPDATE_INFO& info);
     void onNameUpdated(const QString& newName);
 
 protected:
@@ -71,6 +78,7 @@ protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
     //ZenoNode:
     virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue);
+    QPersistentModelIndex subGraphIndex() const;
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
@@ -87,10 +95,9 @@ private:
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
     NodeUtilParam m_renderParams;
-    std::map<QString, ZenoSocketItem*> m_inSocks;
-    std::map<QString, ZenoSocketItem*> m_outSocks;
-    QMap<QString, ZenoTextLayoutItem*> m_inSockNames;
-    QMap<QString, ZenoTextLayoutItem*> m_outSockNames;
+    QMap<QString, _socket_ctrl> m_inSockets;
+    QMap<QString, _socket_ctrl> m_outSockets;
+
     QMap<QString, ZenoParamWidget*> m_paramControls;
 
     QGraphicsTextItem* m_nameItem;

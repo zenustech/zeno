@@ -3,17 +3,6 @@
 #include <QUuid>
 
 
-/*NODE_DESCS UiHelper::loadDescsFromTempFile()
-{
-    QFile file(":/templates/tmp-descs.json");
-    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    rapidjson::Document doc;
-    QByteArray bytes = file.readAll();
-    doc.Parse(bytes);
-    return UiHelper::parseDescs(doc);
-}*/
-
 NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 {
     NODE_DESCS _descs;

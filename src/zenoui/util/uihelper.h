@@ -8,7 +8,6 @@ class UiHelper
 {
 public:
     static NODE_DESCS parseDescs(const rapidjson::Value &descs);
-    //static NODE_DESCS loadDescsFromTempFile();
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
     static QVariant _parseDefaultValue(const QString& defaultValue, const QString &type);
