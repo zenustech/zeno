@@ -29,7 +29,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketDefl = input_triple[2].GetString();
                 PARAM_CONTROL ctrlType = _getControlType(socketType);
                 INPUT_SOCKET inputSocket;
-                inputSocket.info = SOCKET_INFO("", socketName, QPointF(), true);
+                inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
                 inputSocket.info.control = _getControlType(socketType);
                 inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
@@ -67,7 +67,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketDefl = output_triple[2].GetString();
                 PARAM_CONTROL ctrlType = _getControlType(socketType);
                 OUTPUT_SOCKET outputSocket;
-                outputSocket.info = SOCKET_INFO("", socketName, QPointF(), false);
+                outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
                 outputSocket.info.control = _getControlType(socketType);
                 outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);

@@ -107,7 +107,6 @@ void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_S
 		for (const QString& key : socketKeys)
 		{
 			INPUT_SOCKET inputSock;
-			inputSock.info.binsock = true;
 			inputSock.info.name = key;
 			inputSock.info.nodeid = id;
 			inputs[key] = inputSock;
@@ -165,7 +164,6 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 	for (INPUT_SOCKET descInput : descs[name].inputs)
 	{
 		INPUT_SOCKET input;
-		input.info.binsock = true;
 		input.info.nodeid = id;
 		input.info.control = descInput.info.control;
 		input.info.type = descInput.info.type;
@@ -192,7 +190,6 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 	for (OUTPUT_SOCKET descOutput : descs[name].outputs)
 	{
 		OUTPUT_SOCKET output;
-		output.info.binsock = false;
 		output.info.nodeid = id;
 		output.info.control = descOutput.info.control;
 		output.info.type = descOutput.info.type;

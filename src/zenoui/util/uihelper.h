@@ -13,8 +13,7 @@ public:
     static QVariant _parseDefaultValue(const QString& defaultValue, const QString &type);
     static QVariant parseVariantValue(const rapidjson::Value& val);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
-
-    static PARAM_CONTROL _getControlType(const QString &type);
+    static PARAM_CONTROL _getControlType(const QString& type);
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
