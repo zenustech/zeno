@@ -18,7 +18,7 @@ struct ProgramRunData {
     int nframes;
     //std::set<std::string> applies;
 
-    void operator()() {
+    void operator()() const {
         std::unique_lock _(g_mtx);
 
         zeno::log_info("launching program JSON: {}", progJson);

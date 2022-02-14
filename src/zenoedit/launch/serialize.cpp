@@ -5,7 +5,7 @@
 #include <model/modelrole.h>
 
 
-static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, QJsonArray& ret)
+static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, QJsonArray& ret, QString const &graphIdPrefix)
 {
 	const QString& name = pModel->name();
 	const NODES_DATA& nodes = pModel->nodes();
@@ -13,11 +13,12 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 	for (const NODE_DATA& node : nodes)
 	{
 		QString ident = node[ROLE_OBJID].toString();
+        ident = graphIdPrefix + ident;
 		QString name = node[ROLE_OBJNAME].toString();
 		const INPUT_SOCKETS& inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
 		PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
 		int opts = node[ROLE_OPTIONS].toInt();
-		QStringList options;
+		/*QStringList options;
 		if (opts & OPT_ONCE)
 		{
 			options.push_back("ONCE");
@@ -33,14 +34,16 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		if (opts & OPT_VIEW)
 		{
 			options.push_back("VIEW");
-		}
+		}*/
 
 		if (graphNames.indexOf(name) != -1)
 		{
+            auto nextGraphIdPrefix = ident + "/";
             SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
-            ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
-            serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
-            ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
+            serializeGraph(pSubModel, pGraphsModel, graphNames, ret, nextGraphIdPrefix);
+            //ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
+            //serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
+            //ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
 
 		} else {
             ret.push_back(QJsonArray({ "addNode", name, ident }));
@@ -120,7 +123,19 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			}
 		}
 
-        // TODO(bate): luzh please mock options at editor side!
+		if (opts & OPT_VIEW) {
+		const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+            for (OUTPUT_SOCKET output : outputs)
+            {
+                auto viewerIdent = ident + ".VIEW";
+                ret.push_back(QJsonArray({"addNode", "ToView", viewerIdent}));
+                ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", ident, output.info.name}));
+                ret.push_back(QJsonArray({"completeNode", "ToView", viewerIdent}));
+                break;
+            }
+        }
+
+        // mock options at editor side, done
 		/*for (QString optionName : options)
 		{
 			ret.push_back(QJsonArray({"setNodeOption", ident, optionName}));
@@ -140,5 +155,5 @@ void serializeScene(GraphsModel* pModel, QJsonArray& ret)
 		graphs.push_back(pModel->subGraph(i)->name());
 
     SubGraphModel* pSubModel = pModel->subGraph("main");
-    serializeGraph(pSubModel, pModel, graphs, ret);
+    serializeGraph(pSubModel, pModel, graphs, ret, "");
 }
