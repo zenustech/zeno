@@ -16,6 +16,22 @@ class FuckQMap
         operator T &() noexcept {
             return this->second;
         }
+
+        T const &value() const noexcept {
+            return this->second;
+        }
+
+        T &value() noexcept {
+            return this->second;
+        }
+
+        K const &key() const noexcept {
+            return this->first;
+        }
+
+        K &key() noexcept {
+            return this->first;
+        }
     };
 
     QList<FuckQPair> mother;
@@ -27,7 +43,7 @@ public:
         for (typename std::initializer_list<std::pair<K,T> >::const_iterator it = list.begin(); it != list.end(); ++it)
             insert(it->first, it->second);
     }
-    FuckQMap(const FuckQMap<K, T> &other);
+    FuckQMap(const FuckQMap<K, T> &other)=default;
 
     inline ~FuckQMap() = default;
 
@@ -58,17 +74,19 @@ public:
     bool contains(const K &key) const { return std::find_if(mother.begin(), mother.end(), [&] (auto &&a) { return a.first == key; }) != mother.end(); }
     const K key(const T &value, const K &defaultKey = K()) const;
     const T value(const K &key, const T &defaultValue = T()) const;
-    T &operator[](const K &key);
-    const T operator[](const K &key) const;
+    T &operator[](const K &key) { if (auto it = this->find(key); it != mother.end()) { return it->second; } else { return this->insert(key, T{})->second; }}
+    const T operator[](const K &key) const{ if (auto it = this->find(key); it != mother.end()) { return it->second; } else { return T{}; }}
 
-    QList<K> keys() const;
-    QList<K> keys(const T &value) const;
-    QList<T> values() const;
-#if QT_DEPRECATED_SINCE(5, 15)
-    QT_DEPRECATED_VERSION_X_5_15("Use QMultiMap for maps storing multiple values with the same key.") QList<K> uniqueKeys() const;
-    QT_DEPRECATED_VERSION_X_5_15("Use QMultiMap for maps storing multiple values with the same key.") QList<T> values(const K &key) const;
-#endif
-    int count(const K &key) const;
+    QList<K> keys() const
+    { QList<K> ret; for (auto &&p: mother) { ret.push_back(p.first); }; return ret; }
+    template <int mama = 1>
+    QList<K> keys(const T &value) const
+    { QList<K> ret; for (auto &&p: mother) { if (p.second == value && mama) ret.push_back(p.first); }; return ret; }
+    QList<T> values() const
+    { QList<T> ret; for (auto &&p: mother) { ret.push_back(p.second); }; return ret; }
+    template <int mama = 1>
+    int count(const K &key) const
+    { int ret=0; for (auto &&p: mother) { if (p.first == key) { ret++; }; }; return ret; }
 
     auto begin() { return mother.begin(); }
     auto begin() const { return mother.begin(); }

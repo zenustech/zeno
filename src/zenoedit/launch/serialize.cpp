@@ -63,7 +63,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 
             if (opts & OPT_MUTE) {
                 if (outputIt != outputs.end()) {
-                    auto output = *outputIt++;
+                    OUTPUT_SOCKET output = *outputIt++;
                     inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
                 } else {
                     inputName += ".DUMMYDEP";

@@ -575,7 +575,7 @@ void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const 
         if (pOutputNode)
         {
             auto const &outSocks = pOutputNode->outputParams();
-            if (outSocks.find(outputSock).value().inNodes.isEmpty()) {
+            if (outSocks.find(outputSock)->value().inNodes.isEmpty()) {
                 pOutputNode->toggleSocket(false, outputSock, false);
             }
         }

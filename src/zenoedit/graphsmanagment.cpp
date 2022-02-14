@@ -130,7 +130,7 @@ QList<QAction*> GraphsManagment::getCategoryActions(QModelIndex subgIdx, QPointF
 
 void GraphsManagment::onNewNodeCreated(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {//called on right-click!!
-    zeno::log_info("onNewNodeCreated");
+    zeno::log_debug("onNewNodeCreated");
     NODE_DESCS descs = m_model->descriptors();
     const NODE_DESC& desc = descs[descName];
 
