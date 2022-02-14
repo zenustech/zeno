@@ -16,6 +16,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
         ident = graphIdPrefix + ident;
 		QString name = node[ROLE_OBJNAME].toString();
 		const INPUT_SOCKETS& inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
 		PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
 		int opts = node[ROLE_OPTIONS].toInt();
 		/*QStringList options;
@@ -36,58 +37,76 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			options.push_back("VIEW");
 		}*/
 
-		if (graphNames.indexOf(name) != -1)
-		{
-            auto nextGraphIdPrefix = ident + "/";
-            SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
-            serializeGraph(pSubModel, pGraphsModel, graphNames, ret, nextGraphIdPrefix);
-            //ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
-            //serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
-            //ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
+        if (opts & OPT_MUTE) {
+            ret.push_back(QJsonArray({ "addNode", "HelperMute", ident }));
+        } else {
 
-		} else {
-            ret.push_back(QJsonArray({ "addNode", name, ident }));
+            if (graphNames.indexOf(name) != -1)
+            {
+                auto nextGraphIdPrefix = ident + "/";
+                SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
+                serializeGraph(pSubModel, pGraphsModel, graphNames, ret, nextGraphIdPrefix);
+                //ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
+                //serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
+                //ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
+
+            } else {
+                ret.push_back(QJsonArray({ "addNode", name, ident }));
+            }
         }
 
-		for (INPUT_SOCKET input : inputs)
-		{
-			if (input.outNodes.isEmpty())
-			{
-				const QVariant& defl = input.info.defaultValue;
-				if (!defl.isNull())
-				{
-					QVariant::Type varType = defl.type();
-					if (varType == QVariant::Double)
-					{
-						ret.push_back(QJsonArray({ "setNodeInput", ident, input.info.name, defl.toDouble() }));
-					}
-					else if (varType == QVariant::String)
-					{
-						ret.push_back(QJsonArray({ "setNodeInput", ident, input.info.name, defl.toString() }));
-					}
-					else if (varType == QVariant::Bool)
-					{
-						ret.push_back(QJsonArray({ "setNodeInput", ident, input.info.name, defl.toBool() }));
-					}
-					else
-					{
+        auto outputIt = outputs.begin();
+
+        for (INPUT_SOCKET input : inputs)
+        {
+            auto inputName = input.info.name;
+
+            if (opts & OPT_MUTE) {
+                if (outputIt != outputs.end()) {
+                    auto output = *outputIt++;
+                    inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
+                } else {
+                    inputName += ".DUMMYDEP";
+                }
+            }
+
+            if (input.outNodes.isEmpty())
+            {
+                const QVariant& defl = input.info.defaultValue;
+                if (!defl.isNull())
+                {
+                    QVariant::Type varType = defl.type();
+                    if (varType == QVariant::Double)
+                    {
+                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toDouble() }));
+                    }
+                    else if (varType == QVariant::String)
+                    {
+                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toString() }));
+                    }
+                    else if (varType == QVariant::Bool)
+                    {
+                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toBool() }));
+                    }
+                    else
+                    {
                         zeno::log_warn("bad qt variant type {}", defl.typeName());
-						Q_ASSERT(false);
-					}
-				}
-			}
-			else
-			{
-				for (QString outId : input.outNodes.keys())
-				{
-					Q_ASSERT(!input.outNodes[outId].isEmpty());
-					for (SOCKET_INFO outSock : input.outNodes[outId])
-					{
-						ret.push_back(QJsonArray({"bindNodeInput", ident, input.info.name, outId, outSock.name}));
-					}
-				}
-			}
-		}
+                        Q_ASSERT(false);
+                    }
+                }
+            }
+            else
+            {
+                for (QString outId : input.outNodes.keys())
+                {
+                    Q_ASSERT(!input.outNodes[outId].isEmpty());
+                    for (SOCKET_INFO outSock : input.outNodes[outId])
+                    {
+                        ret.push_back(QJsonArray({"bindNodeInput", ident, inputName, outId, outSock.name}));
+                    }
+                }
+            }
+        }
 
 		for (PARAM_INFO param_info : params)
 		{
@@ -124,7 +143,6 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		}
 
 		if (opts & OPT_VIEW) {
-            const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
             for (OUTPUT_SOCKET output : outputs)
             {
                 if (output.info.name == "DST") continue;//wanglin wants to put DST/SRC as first socket, skip it
@@ -136,13 +154,13 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
             }
         }
 
-		/*if (opts & OPT_MUTE) {//TODO
-            const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+		/*if (opts & OPT_MUTE) {
             auto inputIt = inputs.begin();
             for (OUTPUT_SOCKET output : outputs)
             {
                 if (inputIt == inputs.end()) break;
-                break;
+                INPUT_SOCKET input = *++inputIt;
+                input.info.name
             }
         }*/
 

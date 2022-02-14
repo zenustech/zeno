@@ -187,8 +187,10 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
+			else if (defl.type() == QVariant::Bool)
+				socketInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
 			else {
-                zeno::log_warn("bad qt variant type {}", defl.typeName() ? defl.typeName() : "(null)");
+                zeno::log_warn("bad input qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				socketInfo.push_back("");
             }
 
@@ -209,8 +211,12 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				paramInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
-			else
+			else if (defl.type() == QVariant::Bool)
+				paramInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
+			else {
+                zeno::log_warn("bad param qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				paramInfo.push_back("");
+            }
 
 			params.push_back(paramInfo);
 		}
@@ -229,8 +235,12 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toDouble())));
 			else if (defl.type() == QVariant::Int)
 				socketInfo.push_back(QString::fromStdString(std::to_string(defl.toInt())));
-			else
+			else if (defl.type() == QVariant::Bool)
+				socketInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
+			else {
+                zeno::log_warn("bad output qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				socketInfo.push_back("");
+            }
 
 			outputs.push_back(socketInfo);
 		}

@@ -35,7 +35,46 @@ ZENDEFNODE(ToView, {
     {"object"},
     {"object"},
     {},
-    {"frame"},
+    {"graphtool"},
+});
+
+struct HelperMute : zeno::INode {
+    virtual void apply() override {
+        for (auto const &[name, _]: this->inputs) {
+            set_output(name == "SRC" ? "DST" : name, get_input(name));
+        }
+    }
+};
+
+ZENDEFNODE(HelperMute, {
+    {},
+    {},
+    {{"string", "NOTE", "Dont-use-this-node-directly"}},
+    {"graphtool"},
+});
+
+struct HelperOnce : zeno::INode {
+    bool m_done = false;
+
+    virtual void preApply() override {
+        if (!m_done) {
+            INode::preApply();
+            m_done = true;
+        }
+    }
+
+    virtual void apply() override {
+        for (auto const &[name, _]: this->inputs) {
+            set_output(name == "SRC" ? "DST" : name, get_input(name));
+        }
+    }
+};
+
+ZENDEFNODE(HelperOnce, {
+    {},
+    {},
+    {{"string", "NOTE", "Dont-use-this-node-directly"}},
+    {"graphtool"},
 });
 
 }
