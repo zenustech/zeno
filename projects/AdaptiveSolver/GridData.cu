@@ -211,8 +211,8 @@ namespace zeno
 
             intepolateValue(data.vel[dim], final_pos, vel + dim);
 
-            for(int pro_indx = 0;pro_indx<data.vel[dim].prosNum;++pro_indx)
-                data.data_buf.data
+            //for(int pro_indx = 0;pro_indx<data.vel[dim].prosNum;++pro_indx)
+            //    data.data_buf.data
             //indx[0] = vel.x;indx[1] = vel.y;indx[2] = vel.z;
             int bufDrift = baseDrift + sizeof(float) * i;
             *(float*)(data.buffer + bufDrift) = indx[dim];
