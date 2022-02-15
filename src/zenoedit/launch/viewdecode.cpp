@@ -1,64 +1,131 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include <zeno/utils/log.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/types/ObjectCodec.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <type_traits>
+#include <cassert>
 #include <vector>
 #include <string>
 
 namespace {
 
-void viewDecodePacket(const char *buf, size_t n) {
+//using RapidjsonObject = std::decay_t<decltype(std::declval<rapidjson::Value>().GetObject())>;
+
+bool processPacket(std::string const &action, const char *buf, size_t len) {
+    if (action == "viewObject") {
+
+        auto object = zeno::decodeObject(buf, len);
+        if (!object) {
+            zeno::log_warn("failed to decode view object");
+            return false;
+        }
+        zeno::getSession().globalState->addViewObject(object);
+
+    } else {
+        zeno::log_warn("unknown packet action type {}", action);
+        return false;
+    }
+    return true;
 }
 
+struct Header {
+    size_t total_size;
+    size_t info_size;
+};
+
+bool parsePacket(const char *buf, Header const &header) {
+    zeno::log_info("viewDecodePacket: {}", std::string(buf, header.total_size));
+    if (header.total_size < header.info_size) {
+        zeno::log_warn("total_size < info_size");
+        return false;
+    }
+
+    rapidjson::Document doc;
+    doc.Parse(buf, header.info_size);
+
+    if (!doc.IsObject()) {
+        zeno::log_warn("document root not object");
+        return false;
+    }
+    auto root = doc.GetObject();
+    auto it = root.FindMember("action");
+    if (it == root.MemberEnd() || !it->value.IsString()) {
+        zeno::log_warn("no string entry named 'action'");
+        return false;
+    }
+    std::string action{it->value.GetString(), it->value.GetStringLength()};
+
+    const char *data = buf + header.info_size;
+    size_t size = header.total_size - header.info_size;
+
+    return processPacket(action, data, size);
 }
 
-namespace {
 
-std::vector<char> buffer;
-int phase = 0;
-size_t count = 0;
-size_t curr = 0;
-size_t countercount = 0;
-char counter[sizeof(size_t)] = {};
+struct ViewDecodeData {
+
+    std::vector<char> buffer;
+    int phase = 0;
+    size_t buffercurr = 0;
+    size_t headercurr = 0;
+    char headerbuf[sizeof(Header)] = {};
+
+    void clear()
+    {
+        buffer.clear();
+        phase = 0;
+        buffercurr = 0;
+        headercurr = 0;
+        std::memset(headerbuf, 0, sizeof(headerbuf));
+    }
+
+    auto const &header() const
+    {
+        return *(Header const *)headerbuf;
+    }
+
+    // encode rule: \a, then 8-byte of SIZE, then the SIZE-byte of DATA
+    void append(const char *buf, size_t n)
+    {
+        for (auto p = buf; p < buf + n; p++) {
+            if (phase == 2) {
+                buffer[buffercurr++] = *p;
+                if (buffercurr >= header().total_size) {
+                    parsePacket(buffer.data(), header());
+                    phase = 0;
+                }
+            } else if (phase == 0) {
+                if (*p == '\a') {
+                    phase = 1;
+                }
+            } else if (phase == 1) {
+                headerbuf[headercurr++] = *p;
+                if (headercurr >= sizeof(headerbuf)) {
+                    headercurr = 0;
+                    phase = 2;
+                    buffer.resize(header().total_size);
+                }
+            } else {
+                phase = 0;
+            }
+        }
+    }
+
+} viewDecodeData;
 
 }
 
 void viewDecodeClear()
 {
-    phase = 0;
-    count = 0;
-    curr = 0;
-    countercount = 0;
-    std::memset(counter, 0, sizeof(counter));
-    buffer.clear();
+    viewDecodeData.clear();
 }
 
-// encode rule: \a, then 8-byte of SIZE, then the SIZE-byte of DATA
 void viewDecodeAppend(const char *buf, size_t n)
 {
-    zeno::log_info("viewDecodeAppend: {}", std::string(buf, n));
-    for (auto p = buf; p < buf + n; p++) {
-        if (phase == 2) {
-            buffer[curr++] = *p;
-            if (curr >= count) {
-                viewDecodePacket(buffer.data(), count);
-                phase = 0;
-            }
-        } else if (phase == 0) {
-            if (*p == '\a') {
-                phase = 1;
-            }
-        } else if (phase == 1) {
-            counter[countercount - 1] = *p;
-            countercount++;
-            if (countercount == sizeof(size_t)) {
-                countercount = 0;
-                phase = 2;
-                count = *(size_t *)counter;
-                buffer.resize(count);
-            }
-        } else {
-            phase = 0;
-        }
-    }
+    viewDecodeData.append(buf, n);
 }
 #endif
