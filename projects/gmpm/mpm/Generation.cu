@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/VdbSampler.h"
@@ -616,7 +616,7 @@ ZENDEFNODE(MakeZSLevelSet, {
                                 {"string", "category", "cellcentered"}},
                                {"ZSLevelSet"},
                                {},
-                               {"MPM"},
+                               {"SOP"},
                            });
 
 struct ToZSBoundary : INode {
