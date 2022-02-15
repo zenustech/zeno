@@ -22,10 +22,6 @@ public:
     bool saveCurrent();
     void clear();
     void removeCurrent();
-    QList<QAction*> getCategoryActions(QModelIndex subgIdx, QPointF scenePos);
-
-public slots:
-    void onNewNodeCreated(QModelIndex subgIdx, const QString& descName, const QPointF& pt);
 
 private:
     IGraphsModel *m_model;

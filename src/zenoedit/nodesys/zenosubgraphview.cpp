@@ -6,6 +6,7 @@
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
 #include "zenonode.h"
+#include "zenonewmenu.h"
 
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
@@ -14,7 +15,7 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
 	, _modifiers(Qt::ControlModifier)
 	, m_factor(1.)
 	, m_dragMove(false)
-	, m_menu(nullptr)
+    , m_menu(nullptr)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -236,14 +237,10 @@ void ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
 
 void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
 {
-    if (m_menu)
-    {
-        delete m_menu;
-        m_menu = nullptr;
-    }
-    //todo
-    m_menu = new QMenu(this);
-    QList<QAction*> actions = zenoApp->graphsManagment()->getCategoryActions(m_scene->subGraphIndex(), mapToScene(pos));
-    m_menu->addActions(actions);
+    delete m_menu;
+    m_menu = nullptr;
+
+    NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+    m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
     m_menu->exec(QCursor::pos());
 }
