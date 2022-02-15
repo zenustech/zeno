@@ -10,29 +10,29 @@
 #include <mutex>
 #ifdef ZENO_MULTIPROCESS
 #include "TinyProcessLib/process.hpp"
+#include "viewdecode.h"
 #endif
 
 namespace {
+#ifndef ZENO_MULTIPROCESS
 
 struct ProgramRunData {
     inline static std::mutex g_mtx;
 
     std::string progJson;
-    int nframes;
 
     void operator()() const {
         std::unique_lock _(g_mtx);
 
         zeno::log_info("launching program JSON: {}", progJson);
 
-#ifdef ZENO_MULTIPROCESS
-#else
         auto session = &zeno::getSession();
         session->globalState->clearState();
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
 
+        auto nframes = graph->adhocNumFrames;
         for (int i = 0; i < nframes; i++) {
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
@@ -42,13 +42,10 @@ struct ProgramRunData {
             }
             session->globalState->frameEnd();
         }
-#endif
     }
 };
 
-}
-
-void launchProgram(GraphsModel* pModel, int nframes)
+void launchProgramJSON(std::string progJson)
 {
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
@@ -56,12 +53,78 @@ void launchProgram(GraphsModel* pModel, int nframes)
         return;
     }
 
+    std::thread thr(ProgramRunData{std::move(progJson)});
+    thr.detach();
+}
+
+
+void waitProgramJSON()
+{
+    std::unique_lock lck(ProgramRunData::g_mtx);
+}
+
+void killProgramJSON()
+{
+    zeno::log_warn("cannot perform kill when ZENO_MULTIPROCESS is OFF");
+}
+
+#else
+
+std::unique_ptr<TinyProcessLib::Process> g_proc;
+
+void killProgramJSON();
+
+void launchProgramJSON(std::string progJson)
+{
+    killProgramJSON();
+    zeno::log_info("launching program JSON: {}", progJson);
+
+    viewDecodeClear();
+    std::string runnerCommand = "sleep 5 && echo helloworld";
+    g_proc = std::make_unique<TinyProcessLib::Process>
+        ( /*command=*/runnerCommand
+        , /*path=*/""
+        , /*read_stdout=*/[] (const char *buf, size_t n) {
+            viewDecodeAppend(buf, n);
+        }
+        , /*read_stderr=*/nullptr
+        , /*open_stdin=*/true
+        );
+    g_proc->write(progJson.data(), progJson.size());
+    g_proc->close_stdin();
+}
+
+void waitProgramJSON()
+{
+    if (!g_proc) return;
+    int status = g_proc->get_exit_status();
+    zeno::log_info("runner process exited with {}", status);
+    g_proc = nullptr;
+}
+
+void killProgramJSON()
+{
+    if (g_proc) {
+        zeno::log_info("killing existing runner process...");
+        g_proc->kill(true);
+        waitProgramJSON();
+    }
+}
+
+#endif
+}
+
+void launchProgram(GraphsModel* pModel, int nframes)
+{
     QJsonArray ret;
+    ret.push_back(QJsonArray({"setAdhocNumFrames", nframes}));
     serializeScene(pModel, ret);
 
     QJsonDocument doc(ret);
     std::string progJson = doc.toJson(QJsonDocument::Compact).toStdString();
+    launchProgramJSON(std::move(progJson));
+}
 
-    std::thread thr(ProgramRunData{std::move(progJson), nframes});
-    thr.detach();
+void killProgram() {
+    killProgramJSON();
 }

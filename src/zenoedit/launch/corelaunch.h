@@ -6,5 +6,6 @@
 class GraphsModel;
 
 void launchProgram(GraphsModel* pModel, int nframes);
+void killProgram();
 
 #endif
