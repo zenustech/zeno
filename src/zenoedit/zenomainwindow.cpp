@@ -13,6 +13,7 @@
 #include "nodesview/zenographseditor.h"
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/utils/log.h>
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -319,10 +320,12 @@ void ZenoMainWindow::openFileDialog()
     openFile(filePath);
 }
 
-void ZenoMainWindow::openFile(QString filePath)
+bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
     IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
+    if (!pModel)
+        return false;
     pModel->initDescriptors();
 
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
@@ -334,6 +337,7 @@ void ZenoMainWindow::openFile(QString filePath)
         }
     }
     currFilePath = filePath;
+    return true;
 }
 
 void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
@@ -366,7 +370,7 @@ void ZenoMainWindow::save()
     saveFile(currFilePath);
 }
 
-void ZenoMainWindow::saveFile(QString filePath)
+bool ZenoMainWindow::saveFile(QString filePath)
 {
     //temp:
     GraphsModel* pModel = qobject_cast<GraphsModel*>(zenoApp->graphsManagment()->currentModel());
@@ -374,10 +378,13 @@ void ZenoMainWindow::saveFile(QString filePath)
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
         qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
-        return;
+        zeno::log_warn("Failed to open zsg for write: {} ({})",
+                       filePath.toStdString(), f.errorString().toStdString());
+        return false;
     }
     f.write(strContent.toUtf8());
     f.close();
+    return true;
 }
 
 void ZenoMainWindow::saveAs()

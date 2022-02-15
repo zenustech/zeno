@@ -27,7 +27,9 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     ModelAcceptor acceptor(pModel);
     m_model = pModel;
 
-    ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
+    bool ret = ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
+    if (!ret) return nullptr;
+
     pModel->clearDirty();
     for (int row = 0; row < pModel->rowCount(); row++)
     {
@@ -44,6 +46,10 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 IGraphsModel* GraphsManagment::importGraph(const QString& fn)
 {
     IGraphsModel *pModel = openZsgFile(fn);
+    if (!pModel) {
+        zeno::log_warn("failed to open zsg file: {}", fn.toStdString());
+        return nullptr;
+    }
     Q_ASSERT(pModel);
     m_model->setDescriptors(pModel->descriptors());
     for (int i = 0; i < pModel->rowCount(); i++)

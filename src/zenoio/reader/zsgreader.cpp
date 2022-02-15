@@ -13,12 +13,15 @@ ZsgReader& ZsgReader::getInstance()
     return reader;
 }
 
-void ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
+bool ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    if (!ret)
-        return;
+    if (!ret) {
+        zeno::log_warn("canot open zsg file: {} ({})", fn.toStdString(),
+                       file.errorString().toStdString());
+        return false;
+    }
 
     pAcceptor->setFilePath(fn);
 
@@ -27,8 +30,10 @@ void ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
     doc.Parse(bytes);
 
     const rapidjson::Value& graph = doc["graph"];
-    if (graph.IsNull())
-        return;
+    if (graph.IsNull()) {
+        zeno::log_warn("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
 
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
     pAcceptor->setDescriptors(nodesDescs);
@@ -39,6 +44,7 @@ void ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
         _parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor);
     }
     pAcceptor->switchSubGraph("main");
+    return true;
 }
 
 void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)

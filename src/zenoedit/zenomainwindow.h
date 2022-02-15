@@ -26,8 +26,8 @@ public:
 public slots:
     void onRunClicked(int nFrames);
     void openFileDialog();
-    void openFile(QString filePath);
-    void saveFile(QString filePath);
+    bool openFile(QString filePath);
+    bool saveFile(QString filePath);
     void saveQuit();
     void save();
     void saveAs();

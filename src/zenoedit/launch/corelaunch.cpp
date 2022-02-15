@@ -56,8 +56,9 @@ void launchProgram(GraphsModel* pModel, int nframes)
 
     QJsonDocument doc(ret);
     QString strJson(doc.toJson(QJsonDocument::Compact));
-    QByteArray bytes = strJson.toUtf8();
-    std::string progJson = bytes.data();
+    std::string progJson = strJson.toStdString();
+    //QByteArray bytes = strJson.toUtf8();
+    //std::string progJson = bytes.data();
 
     /*SubGraphModel* pMain = pModel->subGraph("main");
     NODES_DATA nodes = pMain->nodes();

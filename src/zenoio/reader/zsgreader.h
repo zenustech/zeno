@@ -13,7 +13,7 @@ class ZsgReader
 {
 public:
     static ZsgReader& getInstance();
-    void loadZsgFile(const QString& fn, IAcceptor* pAcceptor);
+    bool loadZsgFile(const QString& fn, IAcceptor* pAcceptor);
 
 private:
     ZsgReader();
