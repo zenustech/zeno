@@ -59,21 +59,42 @@ QList<QAction*> NodesMgr::getCategoryActions(IGraphsModel* pModel, QModelIndex s
 		return acts;
 	}
 
-	for (const NODE_CATE& cate : cates)
+	if (!filter.isEmpty())
 	{
-		QAction* pAction = new QAction(cate.name);
-		QMenu* pChildMenu = new QMenu;
-		pChildMenu->setToolTipsVisible(true);
-		for (const QString& name : cate.nodes)
+		for (const NODE_CATE& cate : cates)
 		{
-			QAction* pChildAction = pChildMenu->addAction(name);
-			//todo: tooltip
-			connect(pChildAction, &QAction::triggered, [=]() {
-				createNewNode(pModel, subgIdx, name, scenePos);
-			});
+			for (const QString& name : cate.nodes)
+			{
+				if (name.indexOf(filter, 0, Qt::CaseInsensitive) != -1)
+				{
+					QAction* pAction = new QAction(name);
+					connect(pAction, &QAction::triggered, [=]() {
+						createNewNode(pModel, subgIdx, name, scenePos);
+					});
+					acts.push_back(pAction);
+				}
+			}
 		}
-		pAction->setMenu(pChildMenu);
-		acts.push_back(pAction);
+		return acts;
+	}
+	else
+	{
+		for (const NODE_CATE& cate : cates)
+		{
+			QAction* pAction = new QAction(cate.name);
+			QMenu* pChildMenu = new QMenu;
+			pChildMenu->setToolTipsVisible(true);
+			for (const QString& name : cate.nodes)
+			{
+				QAction* pChildAction = pChildMenu->addAction(name);
+				//todo: tooltip
+				connect(pChildAction, &QAction::triggered, [=]() {
+					createNewNode(pModel, subgIdx, name, scenePos);
+				});
+			}
+			pAction->setMenu(pChildMenu);
+			acts.push_back(pAction);
+		}
 	}
 	return acts;
 }

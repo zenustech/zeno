@@ -242,5 +242,6 @@ void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
 
     NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
     m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
+    m_menu->setEditorFocus();
     m_menu->exec(QCursor::pos());
 }

@@ -3,6 +3,7 @@
 #include "../graphsmanagment.h"
 #include "zenoapplication.h"
 #include "nodesmgr.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
 
 
 ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent)
@@ -14,22 +15,36 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
 	, m_pWAction(nullptr)
 {
 	QVBoxLayout* pLayout = new QVBoxLayout;
-	m_searchEdit = new QLineEdit;
 
 	m_pWAction = new QWidgetAction(this);
-	QLineEdit* pSearchEdit = new QLineEdit;
-	m_pWAction->setDefaultWidget(pSearchEdit);
+	m_searchEdit = new ZenoGvLineEdit;
+	m_searchEdit->setAutoFillBackground(false);
+	m_searchEdit->setTextMargins(QMargins(8, 0, 0, 0));
+
+	QPalette palette;
+	palette.setColor(QPalette::Base, QColor(37, 37, 37));
+	QColor clr = QColor(255, 255, 255);
+	palette.setColor(QPalette::Text, clr);
+
+	m_searchEdit->setPalette(palette);
+	m_searchEdit->setFont(QFont("HarmonyOS Sans SC", 10));
+	m_pWAction->setDefaultWidget(m_searchEdit);
 	addAction(m_pWAction);
 
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
 	QList<QAction*> actions = NodesMgr::getCategoryActions(pModel, m_subgIdx, "", m_scenePos);
 	addActions(actions);
 
-	connect(pSearchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
+	connect(m_searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
 }
 
 ZenoNewnodeMenu::~ZenoNewnodeMenu()
 {
+}
+
+void ZenoNewnodeMenu::setEditorFocus()
+{
+	m_searchEdit->setFocus();
 }
 
 void ZenoNewnodeMenu::onTextChanged(const QString& text)
@@ -46,4 +61,5 @@ void ZenoNewnodeMenu::onTextChanged(const QString& text)
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
 	QList<QAction*> actions = NodesMgr::getCategoryActions(pModel, m_subgIdx, text, m_scenePos);
 	addActions(actions);
+	setEditorFocus();
 }

@@ -4,12 +4,15 @@
 #include <QtWidgets>
 #include <zenoui/model/modeldata.h>
 
+class ZenoGvLineEdit;
+
 class ZenoNewnodeMenu : public QMenu
 {
 	Q_OBJECT
 public:
 	ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent = nullptr);
 	~ZenoNewnodeMenu();
+	void setEditorFocus();
 
 public slots:
 	void onTextChanged(const QString& text);
@@ -18,7 +21,7 @@ private:
 	const NODE_CATES m_cates;
 	const QModelIndex m_subgIdx;
 	const QPointF m_scenePos;
-	QLineEdit* m_searchEdit;
+	ZenoGvLineEdit* m_searchEdit;
 	QWidgetAction* m_pWAction;
 };
 
