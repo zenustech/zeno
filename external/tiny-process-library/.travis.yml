@@ -1,0 +1,18 @@
+sudo: required
+
+services:
+  - docker
+
+script:
+  - sudo docker run -it -v "$PWD:/repository" eidheim/testing sh -c "
+      cd /repository && mkdir build && cd build &&
+      scan-build cmake -DCMAKE_CXX_FLAGS=-Werror .. &&
+      scan-build --status-bugs make &&
+      rm -r * &&
+      CXX=clang++ cmake -DCMAKE_CXX_FLAGS=-Werror .. &&
+      make &&
+      rm -r * &&
+      CXX=g++ cmake -DCMAKE_CXX_FLAGS=-Werror .. &&
+      make &&
+      CTEST_OUTPUT_ON_FAILURE=1 make test
+      "

@@ -5,11 +5,11 @@ set(CMAKE_MODULE_PATH /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAK
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning)
 #set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)  # Please `rm -rf build` if you changed this list, otherwise it won't update
 
-add_library(zeno_nodep INTERFACE)
-if (ZENO_HIDE_SYMBOLS AND UNIX)
-    message("Hidding symbols from ZENO libraries...")
-    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../misc/linker.map)
-endif()
+add_library(zeno_nodep INTERFACE)  # no longer used anymore
+#if (ZENO_HIDE_SYMBOLS AND UNIX)
+    #message("Hidding symbols from ZENO libraries...")
+    #target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../misc/linker.map)
+#endif()
 
 add_library(zenoprojects INTERFACE)
 foreach (name IN ITEMS ${EXTENSIONS_LIST})

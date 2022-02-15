@@ -1,2 +1,2 @@
-add_library(zeno_external_include INTERFACE)
-target_include_directories(zeno_external_include INTERFACE .)
+add_library(zenoinclude INTERFACE)
+target_include_directories(zenoinclude INTERFACE .)

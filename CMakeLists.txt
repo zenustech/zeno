@@ -30,9 +30,9 @@ option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
-option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
-option(ZENO_FIXED_OUTPUT "Output files to fixed position" ON)
+option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" ON)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
+option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" ON)
 
@@ -54,7 +54,7 @@ if (ZENO_NO_WARNING)
     endif()
 endif()
 
-if (ZENO_FIXED_OUTPUT)
+if (ZENO_OUT_TO_BIN)
     # Otherwise Windows (which doesn't support RPATH) cannot find the DLLs at runtime
     set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -67,8 +67,7 @@ if (ZENO_FIXED_OUTPUT)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
     if (WIN32)
-        # No more annoying zeno_d.dll
-        set(CMAKE_DEBUG_POSTFIX "")
+        set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
     endif()
 endif()
 
@@ -76,8 +75,15 @@ if (ZENO_FAULTHANDLER)
     add_subdirectory(external/backward-cpp)
 endif()
 
+if (ZENO_MULTIPROCESS)
+    add_subdirectory(external/tiny-process-library)
+endif()
+
+if (ZENO_ENABLE_SPDLOG)
+    add_subdirectory(external/spdlog)
+endif()
+
 add_subdirectory(external/include)
-add_subdirectory(external/spdlog)
 add_subdirectory(src/zeno)
 
 if (ZENO_BUILD_EXTENSIONS)

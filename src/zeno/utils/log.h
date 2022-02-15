@@ -3,24 +3,24 @@
 #include <zeno/utils/api.h>
 #include <zeno/utils/source_location.h>
 #include <zeno/utils/format.h>
+#ifdef ZENO_ENABLE_SPDLOG
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/core.h>
+#endif
 #include <string_view>
 #include <sstream>
 #include <memory>
 
 namespace zeno {
 
-ZENO_API spdlog::logger *get_spdlog_logger();
-
 template <class T>
-class with_source_location {
+class __with_source_location {
     T m_value;
     source_location m_loc;
 
 public:
     template <class Arg>
-    with_source_location(Arg &&arg, source_location loc = source_location::current())
+    __with_source_location(Arg &&arg, source_location loc = source_location::current())
         : m_value(std::forward<Arg>(arg)), m_loc(loc) {}
 
     operator auto const &() const { return m_value; }
@@ -31,20 +31,35 @@ public:
     auto &location() { return m_loc; }
 };
 
+#ifdef ZENO_ENABLE_SPDLOG
+ZENO_API spdlog::logger *__get_spdlog_logger();
+
+namespace log_level = spdlog::level;
+
 template <class ...Args>
-static void log_print(spdlog::level::level_enum log_level, with_source_location<std::string_view> const &fmt, Args &&...args) {
+static void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
     spdlog::source_loc loc(fmt.location().file_name(), fmt.location().line(), fmt.location().function_name());
-    get_spdlog_logger()->log(loc, log_level, fmt::format(fmt.value(), std::forward<Args>(args)...));
+    __get_spdlog_logger()->log(loc, level, fmt::format(fmt.value(), std::forward<Args>(args)...));
 }
+
+#else
+namespace log_level {
+enum level_enum { trace, debug, info, critical, warn, err };
+};
+
+template <class ...Args>
+static void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
+}
+#endif
 
 #define _PER_LOG_LEVEL(x, y) \
 template <class ...Args> \
-void log_##x(with_source_location<std::string_view> const &fmt, Args &&...args) { \
-    log_print(spdlog::level::y, fmt, std::forward<Args>(args)...); \
+void log_##x(__with_source_location<std::string_view> const &fmt, Args &&...args) { \
+    log_print(log_level::y, fmt, std::forward<Args>(args)...); \
 } \
 template <class ...Args> \
-void log_##x##f(with_source_location<const char *> const &fmt, Args &&...args) { \
-    log_print(spdlog::level::y, "{}", format(fmt, std::forward<Args>(args)...)); \
+void log_##x##f(__with_source_location<const char *> const &fmt, Args &&...args) { \
+    log_print(log_level::y, "{}", format(fmt, std::forward<Args>(args)...)); \
 }
 _PER_LOG_LEVEL(trace, trace)
 _PER_LOG_LEVEL(debug, debug)
@@ -102,7 +117,7 @@ static inline struct __logger_ostream {
 } cout, cerr, clog;
 
 template <class ...Ts>
-void log_printf(with_source_location<const char *> fmt, Ts &&...ts) {
+void log_printf(__with_source_location<const char *> fmt, Ts &&...ts) {
     auto s = cformat(fmt, std::forward<Ts>(ts)...);
     if (s.size() && s[s.size() - 1] == '\n')
         s.resize(s.size() - 1);
