@@ -1052,7 +1052,13 @@ struct TransformZSLevelSet : INode {
       match(
           [&b](basic_ls_t &basicLs) {
             match(
-                [b](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                [b](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) {
+                  lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+                },
+                [b](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) {
+                  lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
+                },
+                [b](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) {
                   lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
                 },
                 [](auto &lsPtr) {
@@ -1074,7 +1080,13 @@ struct TransformZSLevelSet : INode {
       match(
           [&s](basic_ls_t &basicLs) {
             match(
-                [s](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                [s](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) {
+                  lsPtr->scale(s);
+                },
+                [s](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) {
+                  lsPtr->scale(s);
+                },
+                [s](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) {
                   lsPtr->scale(s);
                 },
                 [](auto &lsPtr) {
@@ -1097,7 +1109,13 @@ struct TransformZSLevelSet : INode {
       match(
           [&rot](basic_ls_t &basicLs) {
             match(
-                [rot](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
+                [rot](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) {
+                  lsPtr->rotate(rot.transpose());
+                },
+                [rot](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) {
+                  lsPtr->rotate(rot.transpose());
+                },
+                [rot](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) {
                   lsPtr->rotate(rot.transpose());
                 },
                 [](auto &lsPtr) {
