@@ -17,7 +17,10 @@ struct AttrVector {
         , std::vector<vec3i>
         , std::vector<int>
         >;
-    using ValueType = ValT;
+
+    using value_type = ValT;
+    using iterator = typename std::vector<ValT>::iterator;
+    using const_iterator = typename std::vector<ValT>::const_iterator;
 
     std::vector<ValT> values;
     std::map<std::string, VariantType> attrs;

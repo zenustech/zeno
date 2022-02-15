@@ -42,8 +42,8 @@ bool decodeAttrVector(AttrVector<T0> &arr, It it) {
     std::copy_n(it, sizeof(header), (char *)&header);
     it += sizeof(header);
     arr.reserve(header.size);
-    std::copy_n(it, header.size, std::back_inserter(arr));
-    it += header.size;
+    std::copy_n((T0 const *)it, header.size, std::back_inserter(arr.values));
+    it += sizeof(T0) * header.size;
 
     for (int a = 0; a < header.nattrs; a++) {
         AttributeHeader header;
@@ -52,10 +52,10 @@ bool decodeAttrVector(AttrVector<T0> &arr, It it) {
         std::string key{header.name, header.namelen};
         index_switch<std::tuple_size_v<AttrTypesTuple>>((size_t)header.type, [&] (auto type) {
             using T = std::tuple_element_t<type.value, AttrTypesTuple>;
-            auto &attr = arr.template add_attr<T>();
+            auto &attr = arr.template add_attr<T>(key);
             attr.reserve(header.size);
-            std::copy_n(it, header.size, std::back_inserter(attr));
-            it += header.size;
+            std::copy_n((T const *)it, header.size, std::back_inserter(attr));
+            it += sizeof(T) * header.size;
         });
     }
 }
@@ -66,7 +66,7 @@ bool encodeAttrVector(AttrVector<T0> const &arr, It it) {
     header.size = arr.size();
     header.nattrs = arr.num_attrs();
     it = std::copy_n((char *)&header, sizeof(header), it);
-    it = std::copy_n(arr.data(), arr.size(), it);
+    it = std::copy_n((char *)arr.data(), sizeof(T0) * arr.size(), it);
 
     arr.foreach_attr([&] (auto const &key, auto const &attr) {
         AttributeHeader header;
@@ -82,7 +82,7 @@ bool encodeAttrVector(AttrVector<T0> const &arr, It it) {
         header.namelen = key.size();
         std::strncpy(header.name, key.c_str(), sizeof(header.name));
         it = std::copy_n((char *)&header, sizeof(header), it);
-        std::copy_n(attr.data(), attr.size(), it);
+        it = std::copy_n((char *)attr.data(), sizeof(T) * attr.size(), it);
     });
 }
 
