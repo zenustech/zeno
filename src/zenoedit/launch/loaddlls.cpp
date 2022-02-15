@@ -1,3 +1,4 @@
+#if 0
 #include "corelaunch.h"
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -19,3 +20,4 @@ static int load_dlls() {
 }
 
 static int load_dlls_helper = load_dlls();
+#endif

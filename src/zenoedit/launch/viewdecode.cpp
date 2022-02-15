@@ -5,7 +5,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ObjectCodec.h>
 #include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
 #include <type_traits>
 #include <cassert>
 #include <vector>
@@ -121,11 +120,13 @@ struct ViewDecodeData {
 
 void viewDecodeClear()
 {
+    zeno::log_debug("viewDecodeClear");
     viewDecodeData.clear();
 }
 
 void viewDecodeAppend(const char *buf, size_t n)
 {
+    zeno::log_debug("viewDecodeAppend n={}", n);
     viewDecodeData.append(buf, n);
 }
 #endif

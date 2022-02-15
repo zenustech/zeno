@@ -11,6 +11,45 @@
 #ifdef ZENO_MULTIPROCESS
 #include "TinyProcessLib/process.hpp"
 #include "viewdecode.h"
+
+/*#ifdef _WIN32
+#include <windows.h>
+#undef min
+#undef max
+static std::string get_exec_path() {
+	char szFilePath[MAX_PATH + 1] = { 0 };
+	GetModuleFileNameA(NULL, szFilePath, MAX_PATH);
+	(strrchr(szFilePath, '\\'))[0] = 0;
+	string path = szFilePath;
+	return path;
+}
+#define PATH_SEP '\\'
+#define SH_QUOTE '"'
+#else
+#include <unistd.h>
+#include <stdio.h>
+static std::string get_exec_path() {
+    auto link = "/proc/" + std::to_string(getpid()) + "/exe";
+    ssize_t len = readlink(link.c_str(), NULL, 0);
+    if (len < 0) {
+        perror("readlink");
+        return {};
+    }
+    std::string path;
+    path.resize(len);
+    if (readlink(link.c_str(), path.data(), len) < 0) {
+        return {};
+    }
+	return path;
+}
+#define PATH_SEP '/'
+#define SH_QUOTE '\''
+#endif
+
+static std::string get_exec_dir() {
+    auto path = get_exec_path();
+    return path.substr(0, path.find_last_of(PATH_SEP));
+}*/
 #endif
 
 namespace {
@@ -80,7 +119,12 @@ void launchProgramJSON(std::string progJson)
     zeno::log_info("launching program JSON: {}", progJson);
 
     viewDecodeClear();
-    std::string runnerCommand = "sleep 5 && echo helloworld";
+    auto execdir = QCoreApplication::applicationDirPath().toStdString();
+#if defined(Q_OS_WIN)
+    auto runnerCommand = "\"" + execdir + "\\zenorunner.exe" + "\"";
+#else
+    auto runnerCommand = "'" + execdir + "/zenorunner" + "'";
+#endif
     g_proc = std::make_unique<TinyProcessLib::Process>
         ( /*command=*/runnerCommand
         , /*path=*/""

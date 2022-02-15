@@ -3,6 +3,7 @@
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/log.h>
+#include <algorithm>
 #include <cstring>
 
 namespace zeno {
@@ -37,7 +38,7 @@ struct AttrVectorHeader {
 };
 
 template <class T0, class It>
-bool decodeAttrVector(AttrVector<T0> &arr, It it) {
+void decodeAttrVector(AttrVector<T0> &arr, It it) {
     AttrVectorHeader header;
     std::copy_n(it, sizeof(header), (char *)&header);
     it += sizeof(header);
@@ -61,7 +62,7 @@ bool decodeAttrVector(AttrVector<T0> &arr, It it) {
 }
 
 template <class T0, class It>
-bool encodeAttrVector(AttrVector<T0> const &arr, It it) {
+void encodeAttrVector(AttrVector<T0> const &arr, It it) {
     AttrVectorHeader header;
     header.size = arr.size();
     header.nattrs = arr.num_attrs();

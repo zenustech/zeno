@@ -91,6 +91,11 @@ if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
 endif()
 
+if (ZENO_MULTIPROCESS)
+    message(STATUS "Building Zeno Runner")
+    add_subdirectory(src/zenorunner)
+endif()
+
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
     add_subdirectory(src/zenoui)
