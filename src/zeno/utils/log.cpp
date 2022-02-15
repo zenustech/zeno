@@ -1,3 +1,4 @@
+#ifdef ZENO_ENABLE_SPDLOG
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -10,7 +11,7 @@ namespace zeno {
 
 std::shared_ptr<spdlog::logger> g_logger;
 
-ZENO_API spdlog::logger *get_spdlog_logger() {
+ZENO_API spdlog::logger *__get_spdlog_logger() {
     assert(g_logger);
     return g_logger.get();
 }
@@ -39,3 +40,4 @@ static void initialize_spdlog() {
 static int initialize_spdlog_helper = (initialize_spdlog(), 0);
 
 }
+#endif

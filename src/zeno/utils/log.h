@@ -37,7 +37,7 @@ ZENO_API spdlog::logger *__get_spdlog_logger();
 namespace log_level = spdlog::level;
 
 template <class ...Args>
-static void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
+void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
     spdlog::source_loc loc(fmt.location().file_name(), fmt.location().line(), fmt.location().function_name());
     __get_spdlog_logger()->log(loc, level, fmt::format(fmt.value(), std::forward<Args>(args)...));
 }
@@ -48,7 +48,7 @@ enum level_enum { trace, debug, info, critical, warn, err };
 };
 
 template <class ...Args>
-static void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
+void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &fmt, Args &&...args) {
 }
 #endif
 
