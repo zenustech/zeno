@@ -9,7 +9,8 @@
 #include <thread>
 #include <mutex>
 #ifdef ZENO_MULTIPROCESS
-#include "TinyProcessLib/process.hpp"
+#include <QProcess>
+#include <QThread>
 #include "viewdecode.h"
 
 /*#ifdef _WIN32
@@ -97,19 +98,16 @@ void launchProgramJSON(std::string progJson)
 }
 
 
-void waitProgramJSON()
-{
-    std::unique_lock lck(ProgramRunData::g_mtx);
-}
-
 void killProgramJSON()
 {
+    //std::unique_lock lck(ProgramRunData::g_mtx);
     zeno::log_warn("cannot perform kill when ZENO_MULTIPROCESS is OFF");
 }
 
 #else
 
-std::unique_ptr<TinyProcessLib::Process> g_proc;
+std::unique_ptr<QProcess> g_proc;
+std::mutex g_proc_mtx;
 
 void killProgramJSON();
 
@@ -121,37 +119,57 @@ void launchProgramJSON(std::string progJson)
     viewDecodeClear();
     auto execdir = QCoreApplication::applicationDirPath().toStdString();
 #if defined(Q_OS_WIN)
-    auto runnerCommand = "\"" + execdir + "\\zenorunner.exe" + "\"";
+    auto runnerCommand = execdir + "\\zenorunner.exe";
 #else
-    auto runnerCommand = "'" + execdir + "/zenorunner" + "'";
+    auto runnerCommand = execdir + "/zenorunner";
 #endif
-    g_proc = std::make_unique<TinyProcessLib::Process>
-        ( /*command=*/runnerCommand
-        , /*path=*/""
-        , /*read_stdout=*/[] (const char *buf, size_t n) {
-            viewDecodeAppend(buf, n);
-        }
-        , /*read_stderr=*/nullptr
-        , /*open_stdin=*/true
-        );
+    std::unique_lock lck(g_proc_mtx);
+    if (g_proc) return;
+    g_proc = std::make_unique<QProcess>();
+    g_proc->start(QString::fromStdString(runnerCommand), QStringList());
+    if (!g_proc->waitForStarted()) {
+        zeno::log_warn("still not started in 3s, giving up");
+        return;
+    }
     g_proc->write(progJson.data(), progJson.size());
-    g_proc->close_stdin();
-}
+    g_proc->closeWriteChannel();
 
-void waitProgramJSON()
-{
-    if (!g_proc) return;
-    int status = g_proc->get_exit_status();
-    zeno::log_info("runner process exited with {}", status);
-    g_proc = nullptr;
+    std::thread thr([] {
+        std::vector<char> buf(1<<20);
+        std::unique_lock lck(g_proc_mtx);
+        g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        while (g_proc && !g_proc->atEnd()) {
+            qint64 redSize = g_proc->read(buf.data(), buf.size() / 2);
+            lck.unlock();
+            zeno::log_warn("g_proc->read got {} bytes", redSize);
+            if (redSize > 0) {
+                viewDecodeAppend(buf.data(), redSize);
+            }
+            lck.lock();
+        }
+        buf.clear();
+        if (!g_proc->waitForFinished()) {
+            zeno::log_warn("still not finished in 3s, terminating");
+            g_proc->terminate();
+        }
+        int code = g_proc->exitCode();
+        g_proc = nullptr;
+        lck.unlock();
+        zeno::log_info("runner process exited with {}", code);
+    });
+    thr.detach();
 }
 
 void killProgramJSON()
 {
+    std::unique_lock lck(g_proc_mtx);
     if (g_proc) {
         zeno::log_info("killing existing runner process...");
-        g_proc->kill(true);
-        waitProgramJSON();
+        g_proc->terminate();
+        g_proc->waitForFinished(-1);
+        int code = g_proc->exitCode();
+        zeno::log_info("killed runner process exited with {}", code);
+        g_proc = nullptr;
     }
 }
 

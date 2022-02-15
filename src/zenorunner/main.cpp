@@ -4,8 +4,6 @@
 
 int main() {
     fprintf(stderr, "Zeno runner started...\n");
-    stdout = stderr;
-    std::cout = std::cerr;
 
     printf("Hello, C!\n");
     std::cout << "Hello, C++!" << std::endl;

@@ -75,10 +75,6 @@ if (ZENO_FAULTHANDLER)
     add_subdirectory(external/backward-cpp)
 endif()
 
-if (ZENO_MULTIPROCESS)
-    add_subdirectory(external/tiny-process-library)
-endif()
-
 if (ZENO_ENABLE_SPDLOG)
     add_subdirectory(external/spdlog)
 endif()
