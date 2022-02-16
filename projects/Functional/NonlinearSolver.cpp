@@ -110,17 +110,23 @@ struct SolveNonlinearProblem2 : zeno::INode {
         auto jfnk_solver = get_input<JFNKSolverObject2>("JFNKSolverObject2");
         auto nlp = get_input<NonlinearProblemObject2>("NonlinearProblemObject2");
 
-        double x = 0;
-        double r = 0;
-        for (size_t i = 0; i < 100; i++)    
-            nlp->Residual(x, r);
+        auto args = std::make_shared<zeno::DictObject>();
+        auto rets = std::make_shared<zeno::DictObject>();
+        
+
+        auto function = get_input<zeno::FunctionObject>("function");
+        for (size_t i = 0; i < 100; i++){
+            std::cout << " Before calling func. \n"; 
+            rets->lut = function->call(args->lut);
+            std::cout << " After calling func. \n"; 
+        }  
     }
 };
 
 
 ZENDEFNODE(SolveNonlinearProblem2,
         { /* inputs: */ {
-            "JFNKSolverObject2", "NonlinearProblemObject2",
+            "JFNKSolverObject2", "NonlinearProblemObject2", "function",
         }, /* outputs: */ {
         }, /* params: */ {
         {},  // defl min max; defl min; defl
