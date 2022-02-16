@@ -5,11 +5,12 @@
 #include "modeldata.h"
 
 class SubGraphModel;
+class GraphsModel;
 
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(int row, const QString& id, const NODE_DATA& data, SubGraphModel *pModel);
+    AddNodeCommand(int row, const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
     void redo();
     void undo();
@@ -17,8 +18,9 @@ public:
 private:
     int m_row;
     QString m_id;
-    SubGraphModel* m_model;
     NODE_DATA m_data;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
 };
 
 class RemoveNodeCommand : public QUndoCommand

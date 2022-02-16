@@ -283,13 +283,14 @@ void ZenoSubGraphScene::select(const QString& id)
 
 void ZenoSubGraphScene::undo()
 {
-    //todo
-    //m_subgraphModel->undo();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    pGraphsModel->undo();
 }
 
 void ZenoSubGraphScene::redo()
 {
-    //todo
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    pGraphsModel->redo();
 }
 
 void ZenoSubGraphScene::copy()

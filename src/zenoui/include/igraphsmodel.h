@@ -20,7 +20,7 @@ public:
 	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
 	virtual void setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role) = 0;
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
-	virtual void appendItem(const NODE_DATA& nodeData, const QModelIndex& subGpIdx) = 0;
+	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx) = 0;
 	virtual void removeNode(int row, const QModelIndex& subGpIdx) = 0;

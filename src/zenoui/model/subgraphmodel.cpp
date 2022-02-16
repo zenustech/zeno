@@ -120,19 +120,11 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
 }
 
 void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction)
-{//called on both right-click and load-zsg, both enabletrans=false
-    int nRow = m_nodes.size();
-    if (enableTransaction)
-    {
-        QString id = nodeData[ROLE_OBJID].toString();
-        AddNodeCommand *pCmd = new AddNodeCommand(nRow, id, nodeData, this);
-        m_stack->push(pCmd);
-    }
-    else
-    {
+{
+    //called on both right-click and load-zsg, both enabletrans=false
     //zeno::log_warn("both has Inputs {}", nodeData.find(ROLE_PARAMETERS) != nodeData.end());
-        insertRow(nRow, nodeData);
-    }
+    int nRow = m_nodes.size();
+    insertRow(nRow, nodeData);
 }
 
 void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction)

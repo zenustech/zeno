@@ -63,7 +63,7 @@ public:
 	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
 	void setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
-	void appendItem(const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
+	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx) override;
 	void removeNode(int row, const QModelIndex& subGpIdx) override;
@@ -113,6 +113,7 @@ private:
     NODE_DESCS m_nodesDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
+    QUndoStack* m_stack;
     bool m_dirty;
 };
 

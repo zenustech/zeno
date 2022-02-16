@@ -1,13 +1,15 @@
 #include "command.h"
 #include "subgraphmodel.h"
+#include "graphsmodel.h"
 
 
-AddNodeCommand::AddNodeCommand(int row, const QString& id, const NODE_DATA& data, SubGraphModel* pModel)
+AddNodeCommand::AddNodeCommand(int row, const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
     , m_row(row)
     , m_id(id)
     , m_model(pModel)
     , m_data(data)
+    , m_subgIdx(subgIdx)
 {
 }
 
@@ -17,12 +19,12 @@ AddNodeCommand::~AddNodeCommand()
 
 void AddNodeCommand::redo()
 {
-    m_model->insertRow(m_row, m_data);
+    m_model->addNode(m_data, m_subgIdx);
 }
 
 void AddNodeCommand::undo()
 {
-    m_model->removeNode(m_id);
+    m_model->removeNode(m_id, m_subgIdx);
 }
 
 

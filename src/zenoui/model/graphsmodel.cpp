@@ -10,6 +10,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_selection(nullptr)
     , m_dirty(false)
     , m_linkModel(new QStandardItemModel(this))
+    , m_stack(new QUndoStack(this))
 {
     m_selection = new QItemSelectionModel(this);
 
@@ -525,13 +526,22 @@ int GraphsModel::itemCount(const QModelIndex& subGpIdx) const
     return 0;
 }
 
-void GraphsModel::appendItem(const NODE_DATA& nodeData, const QModelIndex& subGpIdx)
+void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction)
 {
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph);
-    if (pGraph)
+    if (enableTransaction)
     {
-        pGraph->appendItem(nodeData);
+        QString id = nodeData[ROLE_OBJID].toString();
+        AddNodeCommand* pCmd = new AddNodeCommand(-1, id, nodeData, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        SubGraphModel* pGraph = subGraph(subGpIdx.row());
+        Q_ASSERT(pGraph);
+        if (pGraph)
+        {
+            pGraph->appendItem(nodeData);
+        }
     }
 }
 
@@ -579,6 +589,9 @@ void GraphsModel::removeLinks(const QList<QPersistentModelIndex>& info, const QM
 
 void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx)
 {
+    if (!linkIdx.isValid())
+        return;
+
     //todo: transaction.
 
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
@@ -745,12 +758,12 @@ void GraphsModel::onModelInited()
 
 void GraphsModel::undo()
 {
-    //todo
+    m_stack->undo();
 }
 
 void GraphsModel::redo()
 {
-    //todo
+    m_stack->redo();
 }
 
 QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
