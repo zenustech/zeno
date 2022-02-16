@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "modeldata.h"
 #include <zeno/utils/log.h>
+#include <zenoui/util/uihelper.h>
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
@@ -35,6 +36,38 @@ void SubGraphModel::onModelInited()
     connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_rowsInserted);
     connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeRemoved);
     connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_rowsRemoved);
+}
+
+void SubGraphModel::setInputSocket(const QString& inNode, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
+{
+	QModelIndex idx = index(inNode);
+	Q_ASSERT(idx.isValid());
+	INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+	if (inputs.find(inSock) != inputs.end())
+	{
+		if (!defaultValue.isNull())
+			inputs[inSock].info.defaultValue = defaultValue;	//default value?
+		if (!outId.isEmpty() && !outSock.isEmpty())
+		{
+            SOCKET_INFO info(outId, outSock);
+
+            //because of initialization, we had to add index to input socket first,
+            //later the index will be appended into output socket.
+            QStandardItemModel* pModel = m_pGraphsModel->linkModel();   //it's not a good habit to expose linkModel
+
+            QStandardItem* pItem = new QStandardItem;
+            pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
+            pItem->setData(inNode, ROLE_INNODE);
+            pItem->setData(inSock, ROLE_INSOCK);
+            pItem->setData(outId, ROLE_OUTNODE);
+            pItem->setData(outSock, ROLE_OUTSOCK);
+            pModel->appendRow(pItem);
+
+            QModelIndex linkIdx = pModel->indexFromItem(pItem);
+            inputs[inSock].linkIndice.push_back(QPersistentModelIndex(linkIdx));
+			setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+		}
+	}
 }
 
 NODES_DATA SubGraphModel::nodes()
@@ -118,13 +151,19 @@ void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransa
         QString inNode = node[ROLE_OBJID].toString();
         for (INPUT_SOCKET inSock : inputs)
         {
-            for (QString outNode : inSock.outNodes.keys())
+            for (const QPersistentModelIndex& linkIdx : inSock.linkIndice)
             {
-                for (SOCKET_INFO outSock : inSock.outNodes[outNode])
-                {
-                    addLink(EdgeInfo(outNode, inNode, outSock.name, inSock.info.name), true);
-                }
+                //todo
+               // addLink(EdgeInfo(), true);
             }
+
+            //for (QString outNode : inSock.outNodes.keys())
+            //{
+            //    for (SOCKET_INFO outSock : inSock.outNodes[outNode])
+            //    {
+            //        addLink(EdgeInfo(outNode, inNode, outSock.name, inSock.info.name), true);
+            //    }
+            //}
         }
     }
     m_stack->endMacro();
@@ -160,40 +199,28 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
         return false;
 
     QString currNode = index.data(ROLE_OBJID).toString();
+    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
 
     const INPUT_SOCKETS& inputs = nodeData[ROLE_INPUTS].value<INPUT_SOCKETS>();
     for (QString inSock : inputs.keys())
     {
-        for (QString outNode : inputs[inSock].outNodes.keys())
-        {
-            SOCKETS_INFO outSocks = inputs[inSock].outNodes[outNode];
-            for (QString outSock : outSocks.keys())
-            {
-                EdgeInfo info(outNode, currNode, outSock, inSock);
-                removeLink(info, true);
-            }
-        }
+        INPUT_SOCKET inputSocket = inputs[inSock];
+        m_pGraphsModel->removeLinks(inputSocket.linkIndice, subgIdx);
     }
 
     // in this loop, output refers to current node's output, input refers to what output points to.
     const OUTPUT_SOCKETS& outputs = index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
     for (QString outSock : outputs.keys())
     {
-        for (QString inNode : outputs[outSock].inNodes.keys())
-        {
-            SOCKETS_INFO sockets = outputs[outSock].inNodes[inNode];
-            for (QString inSock : sockets.keys())
-            {
-                EdgeInfo info(currNode, inNode, outSock, inSock);
-                removeLink(info, true);
-            }
-        }
+        OUTPUT_SOCKET outputSocket = outputs[outSock];
+        m_pGraphsModel->removeLinks(outputSocket.linkIndice, subgIdx);
     }
 
     int row = index.row();
     QString id = m_row2Key[row];
     Q_ASSERT(!id.isEmpty());
-    for (int r = row + 1; r < rowCount(); r++) {
+    for (int r = row + 1; r < rowCount(); r++)
+    {
         const QString &key = m_row2Key[r];
         m_row2Key[r - 1] = key;
         m_key2Row[key] = r - 1;
@@ -204,72 +231,6 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_nodes.remove(id);
     m_pGraphsModel->markDirty();
     return true;
-}
-
-void SubGraphModel::addLink(const EdgeInfo& info, bool enableTransaction)
-{
-    if (enableTransaction)
-    {
-        AddRemoveLinkCommand *pCmd = new AddRemoveLinkCommand(info, true, this);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        _addLink(info);
-    }
-}
-
-void SubGraphModel::_addLink(const EdgeInfo& info)
-{
-    const QModelIndex &outIdx = this->index(info.outputNode);
-    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    outputs[info.outputSock].inNodes[info.inputNode][info.inputSock] = SOCKET_INFO(info.inputNode, info.inputSock);
-    setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-
-    const QModelIndex &inIdx = this->index(info.inputNode);
-    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    inputs[info.inputSock].outNodes[info.outputNode][info.outputSock] = SOCKET_INFO(info.outputNode, info.outputSock);
-    setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-
-    //synchronize link change
-    setData(inIdx, QVariant::fromValue(info), ROLE_ADDLINK);
-}
-
-void SubGraphModel::removeLink(const EdgeInfo& info, bool enableTransaction)
-{
-    if (enableTransaction)
-    {
-        m_stack->beginMacro("remove one link");
-        AddRemoveLinkCommand* pCmd = new AddRemoveLinkCommand(info, false, this);
-        m_stack->push(pCmd);
-        m_stack->endMacro();
-    }
-    else
-    {
-        _removeLink(info);
-    }
-}
-
-void SubGraphModel::_removeLink(const EdgeInfo &info)
-{
-    const QModelIndex &outIdx = this->index(info.outputNode);
-    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    auto &delInItem = outputs[info.outputSock].inNodes[info.inputNode];
-    delInItem.remove(info.inputSock);
-    if (delInItem.isEmpty())
-        outputs[info.outputSock].inNodes.remove(info.inputNode);
-    setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-
-    const QModelIndex& inIdx = this->index(info.inputNode);
-    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto &delOutItem = inputs[info.inputSock].outNodes[info.outputNode];
-    delOutItem.remove(info.outputSock);
-    if (delOutItem.isEmpty())
-        inputs[info.inputSock].outNodes.remove(info.outputNode);
-    setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-
-    //synchronize link change
-    setData(inIdx, QVariant::fromValue(info), ROLE_REMOVELINK);
 }
 
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const
@@ -348,6 +309,7 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
 
 void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)
 {
+    /*
     if (info.bInput)
     {
         QModelIndex idx = index(nodeid);
@@ -381,6 +343,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
         }
     }
+    */
 }
 
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)

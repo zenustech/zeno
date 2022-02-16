@@ -108,9 +108,9 @@ void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 }
 
 
-ZenoFullLink::ZenoFullLink(const EdgeInfo& info)
+ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx)
     : ZenoLink(nullptr)
-    , m_linkInfo(info)
+    , m_index(idx)
 {
     setZValue(ZVALUE_LINK);
     setFlag(QGraphicsItem::ItemIsSelectable);
@@ -135,15 +135,9 @@ void ZenoFullLink::initDstPos(const QPointF& dstPos)
     update();
 }
 
-void ZenoFullLink::updateLink(const EdgeInfo& info)
+QPersistentModelIndex ZenoFullLink::linkInfo() const
 {
-    m_linkInfo = info;
-    update();
-}
-
-EdgeInfo ZenoFullLink::linkInfo() const
-{
-    return m_linkInfo;
+    return m_index;
 }
 
 QPointF ZenoFullLink::getSrcPos() const

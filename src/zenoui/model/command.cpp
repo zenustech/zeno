@@ -59,18 +59,22 @@ AddRemoveLinkCommand::AddRemoveLinkCommand(EdgeInfo info, bool bAdded, SubGraphM
 
 void AddRemoveLinkCommand::redo()
 {
+    /*
     if (m_bAdded)
         m_model->addLink(m_info);
     else
         m_model->removeLink(m_info);
+    */
 }
 
 void AddRemoveLinkCommand::undo()
 {
+    /*
     if (m_bAdded)
         m_model->removeLink(m_info);
     else
         m_model->addLink(m_info);
+    */
 }
 
 

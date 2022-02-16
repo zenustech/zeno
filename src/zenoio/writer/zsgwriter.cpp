@@ -17,7 +17,7 @@ QString ZsgWriter::dumpProgramStr(GraphsModel* pModel)
 {
 	QJsonObject obj = dumpGraphs(pModel);
 	QJsonDocument doc(obj);
-	QString strJson(doc.toJson(QJsonDocument::Compact));
+	QString strJson(doc.toJson(QJsonDocument::Indented));
 	return strJson;
 }
 
@@ -25,7 +25,7 @@ QString ZsgWriter::dumpSubGraph(SubGraphModel* pSubModel)
 {
 	QJsonObject obj = _dumpSubGraph(pSubModel);
 	QJsonDocument doc(obj);
-	QString strJson(doc.toJson(QJsonDocument::Compact));
+	QString strJson(doc.toJson(QJsonDocument::Indented));
 	return strJson;
 }
 
@@ -87,22 +87,27 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 	QJsonObject inputsArr;
 	for (const INPUT_SOCKET& inSock : inputs)
 	{
-		if (!inSock.outNodes.isEmpty())
+		if (!inSock.linkIndice.isEmpty())
 		{
-			for (const SOCKETS_INFO& outSocks : inSock.outNodes) {
-				for (const SOCKET_INFO& outSock : outSocks) {
-					QJsonArray arr;
-					arr.push_back(outSock.nodeid);
-					arr.push_back(outSock.name);
-					const QVariant& defl = outSock.defaultValue;
-					if (defl.type() == QVariant::String)
-						arr.push_back(defl.toString());
-					else if (defl.type() == QVariant::Double)
-						arr.push_back(defl.toDouble());
-					else
-						arr.push_back(QJsonValue::Null);
-					inputsArr.insert(inSock.info.name, arr);
-				}
+			for (QPersistentModelIndex linkIdx : inSock.linkIndice)
+			{
+				QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+				QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+
+				QJsonArray arr;
+				arr.push_back(outNode);
+				arr.push_back(outSock);
+
+				//todo: deflValue:
+				/*
+				const QVariant& defl = outSock.defaultValue;
+				if (defl.type() == QVariant::String)
+					arr.push_back(defl.toString());
+				else if (defl.type() == QVariant::Double)
+					arr.push_back(defl.toDouble());
+				else*/
+					arr.push_back(QJsonValue::Null);
+				inputsArr.insert(inSock.info.name, arr);
 			}
 		}
 		else

@@ -75,7 +75,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 }
             }
 
-            if (input.outNodes.isEmpty())
+            if (input.linkIndice.isEmpty())
             {
                 const QVariant& defl = input.info.defaultValue;
                 if (!defl.isNull())
@@ -102,13 +102,12 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
             }
             else
             {
-                for (QString outId : input.outNodes.keys())
+                for (QPersistentModelIndex linkIdx : input.linkIndice)
                 {
-                    Q_ASSERT(!input.outNodes[outId].isEmpty());
-                    for (SOCKET_INFO outSock : input.outNodes[outId])
-                    {
-                        ret.push_back(QJsonArray({"bindNodeInput", ident, inputName, outId, outSock.name}));
-                    }
+                    Q_ASSERT(linkIdx.isValid());
+                    const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                    const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+                    ret.push_back(QJsonArray({ "bindNodeInput", ident, inputName, outId, outSock }));
                 }
             }
         }
