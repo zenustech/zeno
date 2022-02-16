@@ -82,9 +82,77 @@ ZENDEFNODE(MarkZSLevelSet, {
                                {},
                                {"Volume"},
                            });
-/// extend domain (by vel field)
-/// match topology
+
+/// match topology (partition union, ignore transformation difference)
+struct MatchZSLevelSetTopology : INode {
+  template <typename SplsT, typename TableT>
+  void topologyUnion(SplsT &ls, const TableT &refTable) {
+    using namespace zs;
+    auto cudaPol = cuda_exec().device(0);
+
+    cudaPol(range(refTable.size()),
+            [ls = proxy<execspace_e::cuda>(ls),
+             refTable = proxy<execspace_e::cuda>(
+                 refTable)] __device__(typename RM_CVREF_T(ls)::size_type
+                                           bi) mutable {
+              using ls_t = RM_CVREF_T(ls);
+              using table_t = RM_CVREF_T(refTable);
+              auto blockid = refTable._activeKeys[bi];
+              if (auto blockno = ls._table.insert(blockid);
+                  blockno !=
+                  table_t::sentinel_v) { // initialize newly inserted block
+                auto block = ls._grid.block(blockno);
+                for (typename ls_t::channel_counter_type chn = 0;
+                     chn != ls.numChannels(); ++chn)
+                  for (typename ls_t::cell_index_type ci = 0;
+                       ci != ls.block_size; ++ci)
+                    block(chn, ci) = 0;
+              }
+            });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing MatchZSLevelSetTopology\n");
+
+    using namespace zs;
+
+    // this could possibly be the same staggered velocity field too
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+    auto refZsField = get_input<ZenoLevelSet>("RefZSField");
+    auto &refField = refZsField->getBasicLevelSet()._ls;
+
+    match(
+        [this](auto &lsPtr, const auto &refLsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type>> {
+          auto &table = lsPtr->_table;
+          const auto &refTable = refLsPtr->_table;
+          auto numBlocks = lsPtr->numBlocks();
+          auto numRefBlocks = refLsPtr->numBlocks();
+          auto cudaPol = cuda_exec().device(0);
+          /// reserve enough memory
+          lsPtr->resize(cudaPol, numBlocks + numRefBlocks);
+          topologyUnion(*lsPtr, refTable);
+        },
+        [](...) { throw std::runtime_error("not both fields are spls!"); })(
+        field, refField);
+    fmt::print(fg(fmt::color::cyan),
+               "done executing MatchZSLevelSetTopology\n");
+    set_output("ZSField", std::move(zsfield));
+  }
+};
+
+ZENDEFNODE(MatchZSLevelSetTopology, {
+                                        {"ZSField", "RefZSField"},
+                                        {"ZSField"},
+                                        {},
+                                        {"Volume"},
+                                    });
+/// resample
 /// binary operation
+/// extend domain (by vel field)
 /// advection
 struct AdvectZSLevelSet : INode {
   void apply() override {
