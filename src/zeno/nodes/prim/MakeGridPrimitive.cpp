@@ -3,6 +3,7 @@
 #include <cstring>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 

@@ -205,7 +205,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
 void GraphsModel::initDescriptors()
 {
     NODE_DESCS descs;
-    QString strDescs = QString::fromStdString(zeno::dumpDescriptors());
+    QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
     QStringList L = strDescs.split("\n");
     for (int i = 0; i < L.size(); i++)
     {

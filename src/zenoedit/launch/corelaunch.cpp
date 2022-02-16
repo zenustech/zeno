@@ -4,6 +4,7 @@
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/logger.h>
+#include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
 #include "serialize.h"
 #include <thread>

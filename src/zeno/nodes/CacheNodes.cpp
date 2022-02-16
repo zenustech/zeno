@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/evaluate_condition.h>
+#include <zeno/core/Graph.h>
 
 
 namespace zeno {

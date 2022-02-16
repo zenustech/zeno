@@ -1,3 +1,4 @@
+#include <zeno/core/Graph.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <zeno/funcs/LiterialConverter.h>

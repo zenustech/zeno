@@ -28,7 +28,6 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, zany> inputs;
     std::map<std::string, zany> outputs;
-    //std::set<std::string> options;
     zany muted_output;
 
     ZENO_API INode();
@@ -43,7 +42,6 @@ public:
     ZENO_API void doApply();
 
 protected:
-    //ZENO_API bool checkApplyCondition();
     ZENO_API bool requireInput(std::string const &ds);
 
     ZENO_API virtual void preApply();
@@ -54,7 +52,6 @@ protected:
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 
-    //ZENO_API bool has_option(std::string const &id) const;
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output(std::string const &id, zany obj);

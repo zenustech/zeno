@@ -4,6 +4,7 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/core/Graph.h>
 
 namespace zeno {
 

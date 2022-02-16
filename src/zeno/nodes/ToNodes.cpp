@@ -5,6 +5,7 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/cppdemangle.h>
+#include <zeno/core/Graph.h>
 
 namespace zeno {
 namespace {
