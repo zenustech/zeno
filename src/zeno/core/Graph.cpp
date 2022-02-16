@@ -6,7 +6,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/core/Descriptor.h>
-#include <zeno/types/LiterialConverter.h>
+#include <zeno/funcs/LiterialConverter.h>
 #include <iostream>
 
 namespace zeno {

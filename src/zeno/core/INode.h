@@ -4,7 +4,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/Exception.h>
 #include <zeno/utils/safe_dynamic_cast.h>
-#include <zeno/types/LiterialConverter.h>
+#include <zeno/funcs/LiterialConverter.h>
 #include <variant>
 #include <memory>
 #include <string>

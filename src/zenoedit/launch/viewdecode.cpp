@@ -3,7 +3,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/types/ObjectCodec.h>
+#include <zeno/funcs/ObjectCodec.h>
 #include <rapidjson/document.h>
 #include <type_traits>
 #include <cassert>
@@ -11,8 +11,6 @@
 #include <string>
 
 namespace {
-
-//using RapidjsonObject = std::decay_t<decltype(std::declval<rapidjson::Value>().GetObject())>;
 
 bool processPacket(std::string const &action, const char *buf, size_t len) {
     if (action == "viewObject") {

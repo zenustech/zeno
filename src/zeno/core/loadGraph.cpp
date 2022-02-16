@@ -1,6 +1,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
-#include <zeno/types/LiterialConverter.h>
+#include <zeno/funcs/LiterialConverter.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
