@@ -85,8 +85,9 @@ struct PrimitiveColorByHeatmap : zeno::INode {
         auto &src = prim->attr<float>(attrName);
         #pragma omp parallel for //ideally this could be done in opengl
         for (int i = 0; i < src.size(); i++) {
-            src[i] = (src[i]-minv)/(maxv-minv);
-            clr[i] = heatmap->interp(src[i]);
+            auto x = (src[i]-minv)/(maxv-minv);
+            // src[i] = (src[i]-minv)/(maxv-minv);
+            clr[i] = heatmap->interp(x);
         }
 
         set_output("prim", std::move(prim));
