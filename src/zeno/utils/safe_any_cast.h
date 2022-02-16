@@ -12,7 +12,7 @@ T safe_any_cast(std::any &&a, std::string const &msg = {}) {
     try {
         return std::any_cast<T>(std::forward<std::any>(a));
     } catch (std::bad_any_cast const &e) {
-        throw TypeError(typeid(T), a.type(), "safe_any_cast");
+        throw makeError<TypeError>(typeid(T), a.type(), "safe_any_cast");
     }
 }
 

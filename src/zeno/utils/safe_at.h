@@ -18,7 +18,7 @@ T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
   if (it == m.end()) {
     auto extra_ = extra;
     if (extra.size()) extra_ = "of `" + extra + "`";
-    throw KeyError(key, msg, extra_);
+    throw makeError<KeyError>(key, msg, extra_);
   }
   return it->second.get();
 }
@@ -30,7 +30,7 @@ T const &safe_at(std::map<std::string, T> const &m, std::string const &key,
   if (it == m.end()) {
     auto extra_ = extra;
     if (extra.size()) extra_ = "of `" + extra + "`";
-    throw KeyError(key, msg, extra_);
+    throw makeError<KeyError>(key, msg, extra_);
   }
   return it->second;
 }
@@ -39,7 +39,7 @@ template <class T, class S>
 T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
-    throw KeyError(key);
+    throw makeError<KeyError>(key);
   }
   return it->second;
 }

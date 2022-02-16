@@ -7,6 +7,8 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/funcs/LiterialConverter.h>
+#include <zeno/utils/Error.h>
+#include <zeno/utils/log.h>
 #include <iostream>
 
 namespace zeno {
@@ -56,8 +58,8 @@ ZENO_API Status Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
-    } catch (...) {
-        return Status{node, std::current_exception()};
+    } catch (std::exception const &e) {
+        return Status{node, std::make_shared<StdError>(e.what())};
     }
     return {};
 }

@@ -35,8 +35,8 @@ struct ProgramRunData {
 
     void operator()() const {
         std::unique_lock lck(g_mtx);
-
         start();
+        zeno::log_debug("program finished");
         g_state = STOPPED;
     }
 

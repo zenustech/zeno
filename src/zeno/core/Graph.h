@@ -4,6 +4,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/types/UserData.h>
+#include <zeno/utils/Error.h>
 #include <functional>
 #include <variant>
 #include <memory>
@@ -32,7 +33,7 @@ struct Context {
 
 struct Status {
     INode *node = nullptr;
-    std::any eptr;
+    std::shared_ptr<Error> eptr;
 
     bool failed() const {
         return node != nullptr;
