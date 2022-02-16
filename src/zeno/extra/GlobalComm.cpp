@@ -33,4 +33,8 @@ ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects(int fr
     return frames[frameid].view_objects;
 }
 
+ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects() {
+    return getViewObjects(m_state->frameid);
+}
+
 }

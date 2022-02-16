@@ -23,6 +23,7 @@ struct GlobalComm {
     ZENO_API int countFrames();
     ZENO_API void clearState();
     ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects(int frameid);
+    ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects();
 };
 
 }

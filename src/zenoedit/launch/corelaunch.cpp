@@ -101,7 +101,7 @@ struct ProgramRunData {
             if (g_state == KILLING)
                 return;
             qint64 redSize = g_proc->read(buf.data(), buf.size());
-            zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
+            zeno::log_debug("g_proc->read got {} bytes (ping test has 19) [[{}]]", redSize, std::string(buf.data(), 90));
             if (redSize > 0) {
                 viewDecodeAppend(buf.data(), redSize);
             }

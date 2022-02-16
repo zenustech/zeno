@@ -33,6 +33,13 @@ bool processPacket(std::string const &action, const char *buf, size_t len) {
 struct Header {
     size_t total_size;
     size_t info_size;
+    size_t magicnum;
+    size_t checksum;
+
+    bool isValid() const {
+        if (magicnum != 314159265) return 0;
+        return (total_size ^ info_size ^ magicnum ^ checksum) == 0;
+    }
 };
 
 bool parsePacket(const char *buf, Header const &header) {
@@ -86,30 +93,54 @@ struct ViewDecodeData {
         return *(Header const *)headerbuf;
     }
 
-    // encode rule: \a, \b, then 8-byte of SIZE, then the SIZE-byte of DATA
+    // encode rule: \a, \b, \r, \t, then 8-byte of SIZE, then the SIZE-byte of DATA
     void append(const char *buf, size_t n)
     {
         for (auto p = buf; p < buf + n; p++) {
-            if (phase == 3) {
+            if (phase == 5) {
                 buffer[buffercurr++] = *p;
                 if (buffercurr >= header().total_size) {
+                    zeno::log_debug("finish rx, parsing packet of size {}", header().total_size);
                     parsePacket(buffer.data(), header());
                     phase = 0;
                 }
             } else if (phase == 0) {
                 if (*p == '\a') {
                     phase = 1;
+                } else {
+                    phase = 0;
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {
                     phase = 2;
+                } else {
+                    phase = 0;
                 }
             } else if (phase == 2) {
-                headerbuf[headercurr++] = *p;
-                if (headercurr >= sizeof(headerbuf)) {
-                    headercurr = 0;
+                if (*p == '\r') {
                     phase = 3;
-                    buffer.resize(header().total_size);
+                } else {
+                    phase = 0;
+                }
+            } else if (phase == 3) {
+                if (*p == '\t') {
+                    zeno::log_debug("got abrt sequence, entering phase-4");
+                    phase = 4;
+                } else {
+                    phase = 0;
+                }
+            } else if (phase == 4) {
+                headerbuf[headercurr++] = *p;
+                if (headercurr >= sizeof(Header)) {
+                    headercurr = 0;
+                    phase = 5;
+                    zeno::log_debug("got header: total_size={}, info_size={}, magicnum={}", header().total_size, header().info_size, header().magicnum);
+                    if (!header().isValid()) {
+                        zeno::log_debug("header checksum invalid, giving up");
+                        phase = 0;
+                    } else {
+                        buffer.resize(header().total_size);
+                    }
                 }
             } else {
                 phase = 0;
