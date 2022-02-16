@@ -3,33 +3,33 @@
 
 namespace zeno {
 
-ZENO_API ZenoException(std::unique_ptr<Error> &&err) noexcept
+ZENO_API ZenoException::ZenoException(std::unique_ptr<Error> &&err) noexcept
     : err(std::move(err)) {
 }
 
-ZENO_API ~ZenoException() = default;
+ZENO_API ZenoException::~ZenoException() = default;
 
 ZENO_API char const *ZenoException::what() const noexcept
 {
     return this->err->what().c_str();
 }
 
-ZENO_API Error(std::string_view message) noexcept
+ZENO_API Error::Error(std::string_view message) noexcept
     : message(message) {
 }
 
-ZENO_API ~Error() = default;
+ZENO_API Error::~Error() = default;
 
 ZENO_API std::string const &Error::what() const {
     return message;
 }
 
 ZENO_API StdError::StdError(const char *what) noexcept
-    : Error((std::string)"e.what(): `" + what "`")
+    : Error((std::string)"e.what(): `" + what + "`")
 {
 }
 
-ZENO_API ~StdError() = default;
+ZENO_API StdError::~StdError() = default;
 
 ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const &got, std::string const &hint) noexcept
     : Error((std::string)"expect `" + cppdemangle(expect) + "` got `" + cppdemangle(got) + "` (" + hint + ")")
@@ -39,7 +39,7 @@ ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const
 {
 }
 
-ZENO_API ~TypeError() = default;
+ZENO_API TypeError::~TypeError() = default;
 
 ZENO_API KeyError::KeyError(std::string const &key, std::string const &type, std::string const &hint) noexcept
     : Error((std::string)"invalid " + type + " name `" + key + "` (" + hint + ")")
@@ -49,6 +49,6 @@ ZENO_API KeyError::KeyError(std::string const &key, std::string const &type, std
 {
 }
 
-ZENO_API ~KeyError() = default;
+ZENO_API KeyError::~KeyError() = default;
 
 }
