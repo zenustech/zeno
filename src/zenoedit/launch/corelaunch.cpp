@@ -49,7 +49,7 @@ struct ProgramRunData {
 
     void start() const {
         zeno::log_info("launching program...");
-        zeno::log_debug("launching program JSON: {}", progJson);
+        zeno::log_debug("program JSON: {}", progJson);
 
 #ifndef ZENO_MULTIPROCESS
         auto session = &zeno::getSession();
@@ -97,7 +97,7 @@ struct ProgramRunData {
         g_proc->write(progJson.data(), progJson.size());
         g_proc->closeWriteChannel();
 
-        std::vector<char> buf(2<<20); // 2MB
+        std::vector<char> buf(1<<20); // 1MB
         viewDecodeClear();
 
         while (g_proc->waitForReadyRead(-1)) {

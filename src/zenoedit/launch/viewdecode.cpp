@@ -46,7 +46,7 @@ struct Header {
 };
 
 bool parsePacket(const char *buf, Header const &header) {
-    zeno::log_info("viewDecodePacket: n={}", header.total_size);
+    zeno::log_debug("viewDecodePacket: n={}", header.total_size);
     if (header.total_size < header.info_size) {
         zeno::log_warn("total_size < info_size");
         return false;

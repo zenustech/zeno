@@ -9,7 +9,7 @@
 #include <string>
 
 static FILE *old_stdout;
-static char stdout_buf[2<<20]; // 2MB
+static char stdout_buf[1<<20]; // 1MB
 
 struct Header { // sync with viewdecode.cpp
     size_t total_size;
@@ -63,7 +63,7 @@ static void runner_main(std::string const &progJson) {
 
     auto nframes = graph->adhocNumFrames;
     for (int frame = 0; frame < nframes; frame++) {
-        zeno::log_debug("begin of frame {}", frame);
+        zeno::log_info("begin frame {}", frame);
         session->globalState->frameBegin();
         session->globalComm->newFrame();
         while (session->globalState->substepBegin())
@@ -75,7 +75,7 @@ static void runner_main(std::string const &progJson) {
         auto viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
         session->globalState->frameEnd();
-        zeno::log_debug("end of frame {}", frame);
+        zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", {});
 
