@@ -117,24 +117,23 @@ void launchProgramJSON(std::string progJson)
     zeno::log_info("launching program JSON: {}", progJson);
 
     viewDecodeClear();
-    auto execdir = QCoreApplication::applicationDirPath().toStdString();
+    auto execDir = QCoreApplication::applicationDirPath().toStdString();
 #if defined(Q_OS_WIN)
-    auto runnerCommand = execdir + "\\zenorunner.exe";
+    auto runnerCmd = execDir + "\\zenorunner.exe";
 #else
-    auto runnerCommand = execdir + "/zenorunner";
+    auto runnerCmd = execDir + "/zenorunner";
 #endif
     std::unique_lock lck(g_proc_mtx);
     if (g_proc) return;
-    g_proc = std::make_unique<QProcess>();
-    g_proc->start(QString::fromStdString(runnerCommand), QStringList());
-    if (!g_proc->waitForStarted()) {
-        zeno::log_warn("still not started in 3s, giving up");
-        return;
-    }
-    g_proc->write(progJson.data(), progJson.size());
-    g_proc->closeWriteChannel();
 
-    std::thread thr([] {
+    std::thread thr([runnerCmd = std::move(runnerCmd), progJson = std::move(progJson)] {
+        g_proc = std::make_unique<QProcess>();
+        g_proc->start(QString::fromStdString(runnerCmd), QStringList());
+        if (!g_proc->waitForStarted()) {
+            zeno::log_warn("still not started in 3s");
+            g_proc->waitForStarted(-1);
+        }
+
         std::vector<char> buf(1<<20);
         std::unique_lock lck(g_proc_mtx);
         g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
@@ -151,6 +150,7 @@ void launchProgramJSON(std::string progJson)
         if (!g_proc->waitForFinished()) {
             zeno::log_warn("still not finished in 3s, terminating");
             g_proc->terminate();
+            g_proc->waitForFinished(-1);
         }
         int code = g_proc->exitCode();
         g_proc = nullptr;
@@ -160,7 +160,7 @@ void launchProgramJSON(std::string progJson)
     thr.detach();
 }
 
-void killProgramJSON()
+void killProgramJSON()//TODO: send to queue, QProcess cannot be called from another thread
 {
     std::unique_lock lck(g_proc_mtx);
     if (g_proc) {
