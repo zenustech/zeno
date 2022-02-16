@@ -2,7 +2,6 @@
 
 #include <matrix_helper.hpp>
 #include <Eigen/Jacobi>
-#include <
 #include <igl/polar_svd.h>
 /**
  * @class <DiffSVD>
@@ -21,8 +20,7 @@
  * P = U * Diag(p) * V' and p = p(s) which is defined by specific isotropic hyper elastic force model. We provide the computation of the gradient of P w.r.t (i,j) entry of F, i.e
  * (dP)/(dF(i,j)), and user has to provide the SVD of F as well as the principal stress p and tha gradient of p over s(a 3x3 matrix) which are defined by specific force model as the input.
  */
-class DiffSVD
-{
+class DiffSVD{
 private:
     friend class SVD_UNITTEST;
     /**
