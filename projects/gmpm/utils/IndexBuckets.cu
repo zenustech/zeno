@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "../mpm/Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/tpls/fmt/color.h"
@@ -21,7 +21,7 @@ struct MakeZSBuckets : zeno::INode {
 
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
-    spatial_hashing(cudaPol, pars, radius, ibs);
+    spatial_hashing(cudaPol, pars, radius + radius, ibs);
 
     fmt::print("done building index buckets with {} entries, {} buckets\n",
                ibs.numEntries(), ibs.numBuckets());

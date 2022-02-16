@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/wrangler/Wrangler.hpp" //
 #include "zensim/tpls/fmt/color.h"
@@ -8,11 +8,11 @@
 // from projects/ZenoFX/pw.cpp : ParticlesWrangle
 #include <cassert>
 #include <cuda.h>
-#include <zeno/DictObject.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/zeno.h>
 #include <zfx/cuda.h>
 #include <zfx/zfx.h>
@@ -149,13 +149,12 @@ struct ZSParticlesWrangler : zeno::INode {
                    pars.numChannels());
 #endif
         haccessors[i] = zs::AccessorAoSoA{
-            zs::aosoa_v,
+            zs::aosoa_c,
             (void *)pars.data(),
             (unsigned short)unitBytes,
             (unsigned short)tileSize,
             (unsigned short)pars.numChannels(),
-            (unsigned short)pars.getChannelOffset(name.substr(1)) +
-                (unsigned short)dimid,
+            (unsigned short)(pars.getChannelOffset(name.substr(1)) + dimid),
             (unsigned short)0};
 
 #if 0

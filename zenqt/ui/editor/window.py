@@ -39,6 +39,7 @@ class QDMEditMenu(QMenu):
                 ('&Paste', QKeySequence.Paste),
                 (None, None),
                 ('&Find', QKeySequence.Find),
+                ('Easy Subgraph', 'Alt+S'),
         ]
         
         for name, shortcut in acts:
@@ -94,6 +95,9 @@ class NodeEditor(QWidget):
 
         self.window = window
 
+        self.always_run = False
+        self.target_frame = 0
+
         self.current_path = None
         self.clipboard = QApplication.clipboard()
 
@@ -128,6 +132,14 @@ class NodeEditor(QWidget):
         self.newProgram()
 
         self.startTimer(1000 * 10)
+
+    def try_run_this_frame(self, frame=None):
+        if frame != None:
+            self.target_frame = frame
+        if self.always_run:
+            prog = self.dumpProgram()
+            go(launch.launchProgram, prog, nframes=1, start_frame=self.target_frame)
+            print('run_this_frame')
 
     @property
     def current_path(self):
@@ -179,6 +191,7 @@ class NodeEditor(QWidget):
             scene.editor = self
             scene.record()
             scene.setContentChanged(False)
+            scene.name = name
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
@@ -238,7 +251,7 @@ class NodeEditor(QWidget):
 
         self.find_bar = QDMFindBar(self)
         self.find_bar.move(400, 40)
-        self.find_bar.resize(300, 30)
+        self.find_bar.resize(320, 30)
         self.find_bar.hide()
 
         self.subgraphHistoryStack = SubgraphHistoryStack(self)
@@ -390,7 +403,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes)
+        go(launch.launchProgram, prog, nframes, start_frame=0)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -462,6 +475,9 @@ class NodeEditor(QWidget):
         elif name == '&Find':
             self.find_bar.show()
 
+        elif name == 'Easy Subgraph':
+            self.easy_subgraph()
+
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
                 '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
@@ -525,7 +541,7 @@ ZENDEFNODE(''' + key + ''', {
             nodes = json.loads(self.clipboard.text())
             nid_map = {}
             for nid in nodes:
-                nid_map[nid] = gen_unique_ident()
+                nid_map[nid] = gen_unique_ident(nodes[nid]['name'])
             new_nodes = {}
             pos = self.view.mapToScene(self.view.mapFromGlobal(QCursor.pos()))
             coors = [n['uipos'] for n in nodes.values()]
@@ -555,6 +571,14 @@ ZENDEFNODE(''' + key + ''', {
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
+
+    def easy_subgraph(self):
+        self.do_copy()
+        name, okPressed = QInputDialog.getText(self, "New Subgraph", "Subgraph Name:", QLineEdit.Normal, "")
+        if okPressed == False:
+            return
+        self.on_switch_graph(name)
+        self.do_paste()
 
     def do_save(self, path, auto_save=False):
         prog = self.dumpProgram()

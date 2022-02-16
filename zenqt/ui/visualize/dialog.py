@@ -70,14 +70,19 @@ class RecordVideoDialog(QDialog):
         bit_rate = QLabel('Bit rate:')
         self.bit_rate_editor = QLineEdit('20000')
 
+        presets = QLabel('Presets:')
+        res_combo = self.build_res_combobox()
+
+        path_button = QPushButton('Path:')
+        path_button.clicked.connect(self.path_button_callback)
+        self.path_text = QLineEdit()
+        self.path_text.setPlaceholderText('(Option)')
+
         ok_button = QPushButton('OK')
         cancel_button = QPushButton('Cancel')
 
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
-
-        presets = QLabel('Presets:')
-        res_combo = self.build_res_combobox()
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -103,8 +108,11 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(viewport_height, 7, 0)
         grid.addWidget(self.viewport_height_editor, 7, 1)
 
-        grid.addWidget(ok_button, 8, 0)
-        grid.addWidget(cancel_button, 8, 1)
+        grid.addWidget(path_button, 8, 0)
+        grid.addWidget(self.path_text, 8, 1)
+
+        grid.addWidget(ok_button, 9, 0)
+        grid.addWidget(cancel_button, 9, 1)
 
         self.setLayout(grid) 
 
@@ -121,6 +129,7 @@ class RecordVideoDialog(QDialog):
         r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
+        r['path'] = self.path_text.text()
         super().accept()
 
     def build_res_combobox(self):
@@ -189,7 +198,11 @@ class RecordVideoDialog(QDialog):
             old_path = os.path.join(tmp_path, old_name)
             new_path = os.path.join(tmp_path, new_name)
             os.rename(old_path, new_path)
-        path = display.get_output_path('.mp4')
+
+        if params['path']:
+            path = params['path']
+        else:
+            path = display.get_output_path('.mp4')
         png_paths = os.path.join(tmp_path, '%07d.png')
         cmd = [
             'ffmpeg', '-y',
@@ -209,6 +222,10 @@ class RecordVideoDialog(QDialog):
             QMessageBox.critical(display, 'Record Video', msg)
         finally:
             shutil.rmtree(tmp_path, ignore_errors=True)
+
+    def path_button_callback(self):
+        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save', '', 'MP4(*.mp4);;')
+        self.path_text.setText(path)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

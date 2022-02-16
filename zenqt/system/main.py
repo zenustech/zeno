@@ -15,11 +15,12 @@ def main():
             scene = json.load(f)
         nframes = int(sys.argv[2]) if len(sys.argv) > 2 else 1
         iopath = sys.argv[3] if len(sys.argv) > 3 else '/tmp'
+        start_frame = int(sys.argv[4]) if len(sys.argv) > 4 else 0
         if 'graph' in scene:
             scene = scene['graph']
         if 'main' not in scene:
             scene = {'main': scene}
-        run.runScene(scene, nframes, iopath)
+        run.runScene(scene, nframes, iopath, start_frame)
     else:
         print('Please specify the .zsg file name to run', file=sys.stderr)
         return 1

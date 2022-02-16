@@ -66,6 +66,9 @@ class QDMFindBar(QWidget):
         self.prevButton.setFixedWidth(50)
         self.nextButton = QPushButton('Next', self)
         self.nextButton.setFixedWidth(50)
+        self.globalSearchCheck = QPushButton('Global', self)
+        self.globalSearchCheck.setFixedWidth(60)
+        self.globalSearchCheck.setCheckable(True)
         self.closeButton = QPushButton('X', self)
         self.closeButton.setFixedWidth(30)
 
@@ -75,6 +78,7 @@ class QDMFindBar(QWidget):
         self.layout.addWidget(self.resultLabel)
         self.layout.addWidget(self.prevButton)
         self.layout.addWidget(self.nextButton)
+        self.layout.addWidget(self.globalSearchCheck)
         self.layout.addWidget(self.closeButton)
         self.setLayout(self.layout)
 
@@ -86,6 +90,12 @@ class QDMFindBar(QWidget):
         self.prevButton.clicked.connect(self.jump_prev)
         self.nextButton.clicked.connect(self.jump_next)
         self.closeButton.clicked.connect(self.close)
+        self.globalSearchCheck.clicked.connect(self.globalSearchCheck_callback)
+
+    def globalSearchCheck_callback(self):
+        self.current_index = 0
+        self.total_count = 0
+        self.textChanged(self.lineEdit.text())
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -94,19 +104,30 @@ class QDMFindBar(QWidget):
         p.drawRect(self.rect())
 
     def do_search(self, text):
-        scene = self.window.view.scene()
+        global_search = self.globalSearchCheck.isChecked()
         text = text.lower()
+        if global_search:
+            result = []
+            for _, scene in self.window.scenes.items():
+                result += self.one_scene_search(text, scene)
+            return result
+        else:
+            scene = self.window.view.scene()
+            return self.one_scene_search(text, scene)
+
+    def one_scene_search(self, text, scene):
         result = []
         for n in scene.nodes:
             if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
                 name = n.params['name'].getValue().lower()
                 if text in name:
-                    result.append(n)
+                    result.append((scene.name, n))
                     continue
 
             name = n.name.lower()
-            if text in name:
-                result.append(n)
+            ident = n.ident.lower()
+            if text in name or text in ident:
+                result.append((scene.name, n))
 
         return result
 
@@ -121,14 +142,18 @@ class QDMFindBar(QWidget):
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-        self.on_jump()
+        self.on_jump(ns)
 
-    def on_jump(self):
+    def on_jump(self, ns=None):
         self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
 
         text = self.lineEdit.text()
-        ns = self.do_search(text)
-        n = ns[self.current_index]
+        if ns == None:
+            ns = self.do_search(text)
+        scene_name, n = ns[self.current_index]
+        if self.window.scene.name != scene_name:
+            self.window.switchScene(scene_name)
+            self.window.edit_graphname.setCurrentText(scene_name)
 
         view = self.window.view
         rect = view.scene()._scene_rect
@@ -169,6 +194,12 @@ class QDMFindBar(QWidget):
         self.hide()
         self.window.view.setFocus()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
+        super().keyPressEvent(event)
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -199,8 +230,10 @@ class QDMGraphicsScene(QGraphicsScene):
     def descs_comment(self):
         return self.editor.descs_comment
 
-    def setContentChanged(self, flag):
+    def setContentChanged(self, flag, important=True):
         self.contentChanged = flag
+        if flag and important:
+            self.editor.try_run_this_frame()
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
@@ -321,9 +354,9 @@ class QDMGraphicsScene(QGraphicsScene):
         self.nodes.append(node)
         self.addItem(node)
 
-    def record(self):
+    def record(self, important=True):
         self.history_stack.record()
-        self.setContentChanged(True)
+        self.setContentChanged(True, important)
 
     def undo(self):
         self.history_stack.undo()
@@ -621,7 +654,7 @@ class QDMGraphicsView(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
 
         if self.scene().moved:
-            self.scene().record()
+            self.scene().record(important=False)
             self.scene().moved = False
 
     def wheelEvent(self, event):

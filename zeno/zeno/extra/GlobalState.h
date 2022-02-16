@@ -36,6 +36,7 @@ struct GlobalState {
     ZENO_API void substepEnd();
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
+    ZENO_API void setFrameid(int _frameid);
     ZENO_API void setIOPath(std::string const &iopath_);
 };
 

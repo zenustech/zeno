@@ -69,12 +69,6 @@ class MainWindow(QWidget):
             title = '{} - [{}]'.format(title, postfix)
         self.setWindowTitle(title)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
-
-        super().keyPressEvent(event)
-
     def on_update(self):
         if hasattr(self, 'viewport'):
             self.viewport.on_update()

@@ -115,7 +115,7 @@ struct CombineVDB : zeno::INode{
               openvdb::tools::csgIntersection(*(target->m_grid), *(srcgrid));
             } else if(OpType=="CSGDifference") {
               openvdb::tools::csgDifference(*(target->m_grid), *(srcgrid));
-            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
+            }
             set_output("FieldOut", get_input("FieldA"));
         } else {
             auto result = std::make_shared<VDBFloatGrid>();
@@ -125,7 +125,7 @@ struct CombineVDB : zeno::INode{
               result->m_grid = openvdb::tools::csgIntersectionCopy(*(target->m_grid), *(source->m_grid));
             } else if(OpType=="CSGDifference") {
               result->m_grid = openvdb::tools::csgDifferenceCopy(*(target->m_grid), *(source->m_grid));
-            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
+            }
             set_output("FieldOut", result);
         }
     }

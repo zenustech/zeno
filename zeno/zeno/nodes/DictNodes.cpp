@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
@@ -134,6 +135,27 @@ struct ExtractDict : zeno::INode {
 ZENDEFNODE(ExtractDict, {
     {{"DictObject", "dict"}},
     {},
+    {},
+    {"dict"},
+});
+
+
+struct DictGetKeyList : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict1");
+        auto keys = std::make_shared<zeno::ListObject>();
+        for (auto const &[k, v]: dict->lut) {
+            auto so = std::make_shared<zeno::StringObject>();
+            so->set(k);
+            keys->get().push_back(std::move(so));
+        }
+        set_output("keys", std::move(keys));
+    }
+};
+
+ZENDEFNODE(DictGetKeyList, {
+    {{"DictObject", "dict"}},
+    {{"ListObject", "keys"}},
     {},
     {"dict"},
 });

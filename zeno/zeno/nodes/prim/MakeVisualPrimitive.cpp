@@ -12,7 +12,7 @@ namespace zeno {
 struct MakeVisualAABBPrimitive : INode {
     virtual void apply() override {
         auto topless = get_input<NumericObject>("OpenTop")->get<int>();
-        auto dx = get_input<NumericObject>("dx")->get<float>();
+        auto dx = get_input<NumericObject>("dx")->get<float>();//zhxxhappy
         auto a = has_input("boundMin")
             ? get_input<NumericObject>("boundMin")->get<vec3f>()
             : vec3f(-0.5, -0.5, -0.5) * dx;
