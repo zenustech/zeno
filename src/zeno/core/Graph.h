@@ -29,6 +29,15 @@ struct Context {
     ZENO_API ~Context();
 };
 
+struct Status {
+    INode *node = nullptr;
+    std::exception_ptr err;
+
+    bool failed() const {
+        return node != nullptr;
+    }
+};
+
 struct Graph {
     Session *session = nullptr;
     SubgraphNode *subgraphNode = nullptr;
@@ -50,10 +59,10 @@ struct Graph {
     Graph &operator=(Graph &&) = delete;
 
     ZENO_API void clearNodes();
-    ZENO_API void applyNodesToExec();
-    ZENO_API void applyNodes(std::set<std::string> const &ids);
+    ZENO_API Status applyNodesToExec();
+    ZENO_API Status applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
-    ZENO_API void applyNode(std::string const &id);
+    ZENO_API Status applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);

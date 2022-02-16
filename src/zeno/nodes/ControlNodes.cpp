@@ -184,13 +184,13 @@ struct EndForEach : EndFor {
         if (get_param<bool>("doConcat")) {
             decltype(result) newres;
             for (auto &xs: result) {
-                for (auto &x: safe_any_cast<std::shared_ptr<ListObject>>(xs, "do concat ")->arr)
+                for (auto &x: safe_dynamic_cast<ListObject>(xs, "do concat ")->arr)
                     newres.push_back(std::move(x));
             }
             result = std::move(newres);
             decltype(dropped_result) dropped_newres;
             for (auto &xs: dropped_result) {
-                for (auto &x: safe_any_cast<std::shared_ptr<ListObject>>(xs, "do concat ")->arr)
+                for (auto &x: safe_dynamic_cast<ListObject>(xs, "do concat ")->arr)
                     dropped_newres.push_back(std::move(x));
             }
             dropped_result = std::move(dropped_newres);

@@ -48,37 +48,33 @@ ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node")->doComplete();
 }
 
-ZENO_API void Graph::applyNode(std::string const &id) {
+ZENO_API Status Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
-        return;
+        return {};
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
-    } catch (std::exception const &e) {  // TODO(bate): better ways to get a backtrace?
-        throw zeno::BaseException("During evaluation of `"
-                + node->myname + "`:\n" + e.what());
+    } catch (...) {
+        return Status{node, std::current_exception()};
     }
+    return {};
 }
 
-ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
-    try {
-        ctx = std::make_unique<Context>();
-        for (auto const &id: ids) {
-            applyNode(id);
+ZENO_API Status Graph::applyNodes(std::set<std::string> const &ids) {
+    ctx = std::make_unique<Context>();
+    for (auto const &id: ids) {
+        Status stat = applyNode(id);
+        if (stat.failed()) {
+            return stat;
         }
-        ctx = nullptr;
-    } catch (std::exception const &e) {
-        ctx = nullptr;
-        throw zeno::BaseException(
-                (std::string)"ZENO Traceback (most recent call last):\n"
-                + e.what());
     }
+    ctx = nullptr;
 }
 
-ZENO_API void Graph::applyNodesToExec() {
-    applyNodes(nodesToExec);
+ZENO_API Status Graph::applyNodesToExec() {
+    return applyNodes(nodesToExec);
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
