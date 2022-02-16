@@ -28,6 +28,7 @@ public:
 class Exception : public BaseException {
 public:
 #ifndef ZENO_APIFREE
+  [[deprecated("use makeError(...) in <zeno/utils/Error.h> instead")]]
   ZENO_API Exception(std::string_view msg) noexcept;
 #else
   Exception(std::string_view msg) noexcept : BaseException(msg) {}

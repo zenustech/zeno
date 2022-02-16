@@ -61,7 +61,7 @@ public:
     ErrorException &operator=(ErrorException &&) = default;
 };
 
-template <class T, class ...Ts>
+template <class T = Error, class ...Ts>
 static ErrorException makeError(Ts &&...ts) {
     return ErrorException(std::make_shared<T>(std::forward<Ts>(ts)...));
 }
