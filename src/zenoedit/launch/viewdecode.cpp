@@ -85,11 +85,11 @@ struct ViewDecodeData {
         return *(Header const *)headerbuf;
     }
 
-    // encode rule: \a, then 8-byte of SIZE, then the SIZE-byte of DATA
+    // encode rule: \a, \b, then 8-byte of SIZE, then the SIZE-byte of DATA
     void append(const char *buf, size_t n)
     {
         for (auto p = buf; p < buf + n; p++) {
-            if (phase == 2) {
+            if (phase == 3) {
                 buffer[buffercurr++] = *p;
                 if (buffercurr >= header().total_size) {
                     parsePacket(buffer.data(), header());
@@ -100,10 +100,14 @@ struct ViewDecodeData {
                     phase = 1;
                 }
             } else if (phase == 1) {
+                if (*p == '\b') {
+                    phase = 2;
+                }
+            } else if (phase == 2) {
                 headerbuf[headercurr++] = *p;
                 if (headercurr >= sizeof(headerbuf)) {
                     headercurr = 0;
-                    phase = 2;
+                    phase = 3;
                     buffer.resize(header().total_size);
                 }
             } else {

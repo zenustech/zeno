@@ -1,7 +1,6 @@
 #include "corelaunch.h"
 #include <zenoui/model/graphsmodel.h>
 #include <zenoui/model/modelrole.h>
-#include <zenoio/writer/zsgwriter.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
@@ -76,7 +75,9 @@ struct ProgramRunData {
 #endif
 
         g_proc = std::make_unique<QProcess>();
-        viewDecodeClear();
+        g_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+        g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        g_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
         g_proc->start(QString::fromStdString(runnerCmd), QStringList());
         while (!g_proc->waitForStarted()) {
             zeno::log_warn("still not started in 3s");
@@ -84,13 +85,23 @@ struct ProgramRunData {
                 return;
         }
 
-        std::vector<char> buf(1<<20);
-        g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-        while (g_proc && !g_proc->atEnd()) {
+        g_proc->write(progJson.data(), progJson.size());
+        g_proc->closeWriteChannel();
+
+        std::vector<char> buf(4<<20); // 4MB
+        viewDecodeClear();
+
+        while (!g_proc->waitForReadyRead()) {
+            zeno::log_warn("still not ready-read in 3s");
             if (g_state == KILLING)
                 return;
-            qint64 redSize = g_proc->read(buf.data(), buf.size() / 2);
-            zeno::log_warn("g_proc->read got {} bytes", redSize);
+        }
+
+        while (!g_proc->atEnd()) {
+            if (g_state == KILLING)
+                return;
+            qint64 redSize = g_proc->read(buf.data(), buf.size());
+            zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
             if (redSize > 0) {
                 viewDecodeAppend(buf.data(), redSize);
             }
@@ -127,6 +138,7 @@ void launchProgramJSON(std::string progJson)
 
 void killProgramJSON()
 {
+    zeno::log_info("killing current program");
     ProgramRunData::g_state = ProgramRunData::KILLING;
 }
 
