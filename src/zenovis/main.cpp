@@ -7,6 +7,7 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
+#include <zeno/utils/logger.h>
 
 namespace zenvis {
 
@@ -103,7 +104,7 @@ void initialize() {
   gladLoadGL();
 
   auto version = (const char *)glGetString(GL_VERSION);
-  printf("OpenGL version: %s\n", version ? version : "null");
+  zeno::log_info("OpenGL version: {}\n", version ? version : "(null)");
 
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
