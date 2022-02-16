@@ -1,6 +1,7 @@
 #include "modelacceptor.h"
 #include <zenoui/model/graphsmodel.h>
 #include <zenoui/model/modelrole.h>
+#include "../nodesys/nodesmgr.h"
 #include <zeno/utils/logger.h>
 #include "magic_enum.hpp"
 
@@ -71,22 +72,7 @@ void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
 	data[ROLE_OBJID] = nodeid;
 	data[ROLE_OBJNAME] = name;
 	data[ROLE_COLLASPED] = false;
-	if (name == "Blackboard")
-	{
-		data[ROLE_NODETYPE] = BLACKBOARD_NODE;
-	}
-	else if (name == "SubInput")
-	{
-		data[ROLE_NODETYPE] = SUBINPUT_NODE;
-	}
-	else if (name == "SubOutput")
-	{
-		data[ROLE_NODETYPE] = SUBOUTPUT_NODE;
-	}
-	else
-	{
-		data[ROLE_NODETYPE] = NORMAL_NODE;
-	}
+	data[ROLE_NODETYPE] = NodesMgr::nodeType(name);
 
     //Q_ASSERT(data.find(ROLE_INPUTS) == data.end());
 
@@ -101,6 +87,7 @@ void ModelAcceptor::setViewRect(const QRectF& rc)
 
 void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs)
 {
+	//TODO
 	if (name == "MakeDict")
 	{
 		const QStringList& socketKeys = m_currentGraph->data(m_currentGraph->index(id), ROLE_SOCKET_KEYS).toStringList();

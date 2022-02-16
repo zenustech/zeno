@@ -1,7 +1,7 @@
 #ifndef __MODEL_ACCEPTOR_H__
 #define __MODEL_ACCEPTOR_H__
 
-#include "iacceptor.h"
+#include <zenoio/acceptor/iacceptor.h>
 
 class SubGraphModel;
 class GraphsModel;

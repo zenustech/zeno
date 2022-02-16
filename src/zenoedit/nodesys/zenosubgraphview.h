@@ -5,6 +5,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 
 class ZenoSubGraphScene;
+class ZenoNewnodeMenu;
 
 class ZenoSubGraphView : public QGraphicsView
 {
@@ -52,7 +53,7 @@ private:
     bool m_dragMove;
 
     ZenoSubGraphScene* m_scene;
-    QMenu* m_menu;
+    ZenoNewnodeMenu* m_menu;
 };
 
 #endif
