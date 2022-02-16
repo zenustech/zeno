@@ -6,7 +6,7 @@ namespace zeno {
 
 ZENO_API GlobalState state;
 
-ZENO_API GlobalState::GlobalState() : globalComm(new GlobalComm{this}) {}
+ZENO_API GlobalState::GlobalState() {}
 ZENO_API GlobalState::~GlobalState() = default;
 
 ZENO_API bool GlobalState::substepBegin() {
@@ -29,7 +29,6 @@ ZENO_API void GlobalState::frameBegin() {
     has_substep_executed = false;
     time_step_integrated = false;
     frame_time_elapsed = 0;
-    globalComm->onFrameBegin();
 }
 
 ZENO_API void GlobalState::frameEnd() {
@@ -37,7 +36,6 @@ ZENO_API void GlobalState::frameEnd() {
 }
 
 ZENO_API void GlobalState::clearState() {
-    globalComm->clearState();
     frameid = 0;
     frameid = 0;
     substepid = 0;

@@ -26,7 +26,7 @@ struct ToView : zeno::INode {
                 log_warn("ToView: given object doesn't support clone");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
-                getGlobalState()->globalComm->addViewObject(pp);
+                getThisSession()->globalComm->addViewObject(pp);
             }
         }
         set_output("object", std::move(p));

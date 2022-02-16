@@ -62,7 +62,7 @@ int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
         frameid = 0;
-    int nFrames = zeno::getSession().globalState->globalComm->countFrames();
+    int nFrames = zeno::getSession().globalComm->countFrames();
     if (frameid >= nFrames)
         frameid = nFrames - 1;
     int cur_frameid = zenvis::get_curr_frameid();
@@ -108,7 +108,7 @@ void Zenovis::_frameUpdate()
     //zenvis::auto_gc_frame_data(m_cache_frames);
     zenvis::set_show_grid(m_show_grid);
 
-    auto viewObjs = zeno::getSession().globalState->globalComm->getViewObjects(frameid);
+    auto viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
 
     zeno::log_trace("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
     zenvis::clear_graphics();

@@ -4,17 +4,14 @@
 
 namespace zeno {
 
-ZENO_API void GlobalComm::onFrameBegin() {
+ZENO_API void GlobalComm::newFrame() {
     frames.emplace_back();
+    log_info("GlobalComm::newFrame");
 }
 
 ZENO_API void GlobalComm::addViewObject(std::shared_ptr<IObject> const &object) {
     std::lock_guard lck(mtx);
-    if (m_state->frameid >= frames.size()) {
-        log_warn("bad frameid in addViewObject");
-        return;
-    }
-    frames[m_state->frameid].view_objects.push_back(object);
+    frames.back().view_objects.push_back(object);
 }
 
 ZENO_API void GlobalComm::clearState() {
@@ -34,7 +31,7 @@ ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects(int fr
 }
 
 ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects() {
-    return getViewObjects(m_state->frameid);
+    return frames.back().view_objects;
 }
 
 }

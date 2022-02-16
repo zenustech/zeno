@@ -9,6 +9,7 @@
 #include <string>
 
 static FILE *old_stdout;
+static char stdout_buf[2<<20]; // 2MB
 
 struct Header { // sync with viewdecode.cpp
     size_t total_size;
@@ -22,8 +23,35 @@ struct Header { // sync with viewdecode.cpp
     }
 };
 
+static void send_packet(std::string const &info, std::vector<char> const &buffer) {
+    Header header;
+    header.total_size = info.size() + buffer.size();
+    header.info_size = info.size();
+    header.makeValid();
+
+    std::vector<char> headbuffer(4 + sizeof(Header) + info.size());
+    headbuffer[0] = '\a';
+    headbuffer[1] = '\b';
+    headbuffer[2] = '\r';
+    headbuffer[3] = '\t';
+    std::memcpy(headbuffer.data() + 4, &header, sizeof(Header));
+    std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
+
+    zeno::log_debug("runner tx head-buffer size {}", headbuffer.size());
+    for (char c: headbuffer) {
+        fputc(c, old_stdout);
+    }
+
+    zeno::log_debug("runner tx data-buffer size {}", buffer.size());
+    for (char c: buffer) {
+        fputc(c, old_stdout);
+    }
+}
+
 static void runner_main(std::string const &progJson) {
     zeno::log_debug("runner got program JSON: {}", progJson);
+
+    setvbuf(old_stdout, stdout_buf, _IOFBF, sizeof(stdout_buf));
 
     auto session = &zeno::getSession();
     session->globalState->clearState();
@@ -31,50 +59,30 @@ static void runner_main(std::string const &progJson) {
     auto graph = session->createGraph();
     graph->loadGraph(progJson.c_str());
 
-    std::vector<char> buffer, headbuffer;
+    std::vector<char> buffer;
 
     auto nframes = graph->adhocNumFrames;
     for (int frame = 0; frame < nframes; frame++) {
         zeno::log_debug("begin of frame {}", frame);
         session->globalState->frameBegin();
+        session->globalComm->newFrame();
         while (session->globalState->substepBegin())
         {
             graph->applyNodesToExec();
             session->globalState->substepEnd();
         }
 
-        auto viewObjs = session->globalState->globalComm->getViewObjects();
+        auto viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
         session->globalState->frameEnd();
         zeno::log_debug("end of frame {}", frame);
 
+        send_packet("{\"action\":\"newFrame\"}", {});
+
         for (auto const &obj: viewObjs) {
-            std::string info = "{\"action\":\"viewObject\"}";
-
+            buffer.clear();
             zeno::encodeObject(obj.get(), buffer);
-
-            Header header;
-            header.total_size = info.size() + buffer.size();
-            header.info_size = info.size();
-            header.makeValid();
-
-            headbuffer.resize(4 + sizeof(Header) + info.size());
-            headbuffer[0] = '\a';
-            headbuffer[1] = '\b';
-            headbuffer[2] = '\r';
-            headbuffer[3] = '\t';
-            std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
-            std::memcpy(headbuffer.data() + 4, &header, sizeof(Header));
-
-            zeno::log_debug("runner tx head-buffer size {}", headbuffer.size());
-            for (char c: headbuffer) {
-                fputc(c, old_stdout);
-            }
-
-            zeno::log_debug("runner tx data-buffer size {}", buffer.size());
-            for (char c: buffer) {
-                fputc(c, old_stdout);
-            }
+            send_packet("{\"action\":\"viewObject\"}", buffer);
         }
     }
 }

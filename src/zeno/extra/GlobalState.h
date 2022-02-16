@@ -8,11 +8,8 @@
 namespace zeno {
 
 struct IObject;
-struct GlobalComm;
 
 struct GlobalState {
-    std::unique_ptr<GlobalComm> const globalComm;
-
     int frameid = 0;
     int substepid = 0;
     float frame_time = 0.03f;

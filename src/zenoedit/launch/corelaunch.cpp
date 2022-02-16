@@ -45,6 +45,7 @@ struct ProgramRunData {
 
 #ifndef ZENO_MULTIPROCESS
         auto session = &zeno::getSession();
+        session->globalComm->clearState();
         session->globalState->clearState();
 
         auto graph = session->createGraph();
@@ -54,6 +55,7 @@ struct ProgramRunData {
 
         auto nframes = graph->adhocNumFrames;
         for (int i = 0; i < nframes; i++) {
+            session->globalComm->newFrame();
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
@@ -78,11 +80,10 @@ struct ProgramRunData {
         g_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         g_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
-        g_proc->start(QString::fromStdString(runnerCmd), QStringList());
-        while (!g_proc->waitForStarted()) {
-            zeno::log_warn("still not started in 3s");
-            if (g_state == KILLING)
-                return;
+    g_proc->start(QString::fromStdString(runnerCmd), QStringList());
+        if (!g_proc->waitForStarted(-1)) {
+            zeno::log_warn("process failed to get started, giving up");
+            return;
         }
 
         g_proc->write(progJson.data(), progJson.size());
@@ -92,19 +93,14 @@ struct ProgramRunData {
         viewDecodeClear();
 
         while (1) {
-            while (!g_proc->waitForReadyRead()) {
-                zeno::log_warn("still not ready-read in 3s");
-                if (g_state == KILLING)
-                    return;
-            }
-            if (!g_proc->isReadable()) {
-                zeno::log_info("no longer readable, giving up");
+            if (!g_proc->waitForReadyRead(-1)) {
+                zeno::log_debug("still not ready-read in 3s, stopping");
                 break;
             }
 
             while (!g_proc->atEnd()) {
                 if (g_state == KILLING)
-                    return;
+                    break;
                 qint64 redSize = g_proc->read(buf.data(), buf.size());
                 zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
                 if (redSize > 0) {
@@ -112,15 +108,14 @@ struct ProgramRunData {
                 }
             }
             if (g_state == KILLING)
-                return;
+                break;
         }
 
         buf.clear();
-        while (!g_proc->waitForFinished()) {
+        if (!g_proc->waitForFinished()) {
             zeno::log_warn("still not finished in 3s, terminating");
             g_proc->terminate();
-            if (g_state == KILLING)
-                return;
+            g_proc->waitForFinished(-1);
         }
         int code = g_proc->exitCode();
         g_proc = nullptr;

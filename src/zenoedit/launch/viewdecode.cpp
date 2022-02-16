@@ -21,7 +21,16 @@ bool processPacket(std::string const &action, const char *buf, size_t len) {
             zeno::log_warn("failed to decode view object");
             return false;
         }
-        zeno::getSession().globalState->globalComm->addViewObject(object);
+        zeno::getSession().globalComm->addViewObject(object);
+
+    } else if (action == "newFrame") {
+
+        auto object = zeno::decodeObject(buf, len);
+        if (!object) {
+            zeno::log_warn("failed to decode view object");
+            return false;
+        }
+        zeno::getSession().globalComm->newFrame();
 
     } else {
         zeno::log_warn("unknown packet action type {}", action);
@@ -43,7 +52,7 @@ struct Header {
 };
 
 bool parsePacket(const char *buf, Header const &header) {
-    zeno::log_info("viewDecodePacket: {}", std::string(buf, header.total_size));
+    zeno::log_info("viewDecodePacket: n={}", header.total_size);
     if (header.total_size < header.info_size) {
         zeno::log_warn("total_size < info_size");
         return false;
@@ -156,6 +165,7 @@ void viewDecodeClear()
 {
     zeno::log_debug("viewDecodeClear");
     viewDecodeData.clear();
+    zeno::getSession().globalComm->clearState();
 }
 
 void viewDecodeAppend(const char *buf, size_t n)
