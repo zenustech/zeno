@@ -39,7 +39,7 @@ static const char *get_eptr_what(std::exception_ptr const &eptr) {
 }
 
 ZENO_API StdError::StdError(std::exception_ptr &&eptr) noexcept
-    : Error((std::string)"e.what(): `" + get_eptr_what(eptr) + "`"), eptr(std::move(eptr))
+    : Error((std::string)"std::exception::what(): `" + get_eptr_what(eptr) + "`"), eptr(std::move(eptr))
 {
 }
 

@@ -37,7 +37,6 @@ struct TypeError : Error {
     ZENO_API ~TypeError() override;
 };
 
-
 struct KeyError : Error {
     std::string key;
     std::string type;
@@ -56,8 +55,8 @@ public:
     ZENO_API char const *what() const noexcept;
     ZENO_API std::shared_ptr<Error> get() const noexcept;
 
-    ErrorException(ErrorException const &) = delete;
-    ErrorException &operator=(ErrorException const &) = delete;
+    ErrorException(ErrorException const &) = default;
+    ErrorException &operator=(ErrorException const &) = default;
     ErrorException(ErrorException &&) = default;
     ErrorException &operator=(ErrorException &&) = default;
 };

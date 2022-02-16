@@ -60,7 +60,7 @@ ZENO_API Status Graph::applyNode(std::string const &id) {
         node->doApply();
     } catch (ErrorException const &e) {
         return Status{node, e.get()};
-    } catch (std::exception const &e) {
+    } catch (...) {
         return Status{node, std::make_shared<StdError>(std::current_exception())};
     }
     return {};

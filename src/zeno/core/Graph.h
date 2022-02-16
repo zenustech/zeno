@@ -33,14 +33,10 @@ struct Context {
 
 struct Status {
     INode *node = nullptr;
-    std::shared_ptr<Error> eptr;
+    std::shared_ptr<Error> error;
 
     bool failed() const {
         return node != nullptr;
-    }
-
-    std::exception_ptr exception() const {
-        return std::any_cast<std::exception_ptr>(eptr);
     }
 };
 
