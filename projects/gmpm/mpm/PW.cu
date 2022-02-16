@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/wrangler/Wrangler.hpp" //
 #include "zensim/tpls/fmt/color.h"

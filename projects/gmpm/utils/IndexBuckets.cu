@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "../mpm/Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/tpls/fmt/color.h"
