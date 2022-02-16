@@ -14,8 +14,8 @@
 namespace {
 
 bool processPacket(std::string const &action, const char *buf, size_t len) {
-    if (action == "viewObject") {
 
+    if (action == "viewObject") {
         auto object = zeno::decodeObject(buf, len);
         if (!object) {
             zeno::log_warn("failed to decode view object");
@@ -24,12 +24,6 @@ bool processPacket(std::string const &action, const char *buf, size_t len) {
         zeno::getSession().globalComm->addViewObject(object);
 
     } else if (action == "newFrame") {
-
-        auto object = zeno::decodeObject(buf, len);
-        if (!object) {
-            zeno::log_warn("failed to decode view object");
-            return false;
-        }
         zeno::getSession().globalComm->newFrame();
 
     } else {
@@ -62,7 +56,7 @@ bool parsePacket(const char *buf, Header const &header) {
     doc.Parse(buf, header.info_size);
 
     if (!doc.IsObject()) {
-        zeno::log_warn("document root not object");
+        zeno::log_warn("document root not object: {}", std::string(buf, header.info_size));
         return false;
     }
     auto root = doc.GetObject();
@@ -109,6 +103,7 @@ struct ViewDecodeData {
             if (phase == 5) {
                 buffer[buffercurr++] = *p;
                 if (buffercurr >= header().total_size) {
+                    buffercurr = 0;
                     zeno::log_debug("finish rx, parsing packet of size {}", header().total_size);
                     parsePacket(buffer.data(), header());
                     phase = 0;

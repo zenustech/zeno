@@ -35,6 +35,14 @@ struct ProgramRunData {
     void operator()() const {
         std::unique_lock lck(g_mtx);
         start();
+        if (g_proc) {
+            zeno::log_warn("terminating runner process");
+            g_proc->terminate();
+            g_proc->waitForFinished(-1);
+            int code = g_proc->exitCode();
+            g_proc = nullptr;
+            zeno::log_info("runner process terminated with {}", code);
+        }
         zeno::log_debug("program finished");
         g_state = STOPPED;
     }
@@ -80,7 +88,7 @@ struct ProgramRunData {
         g_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         g_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
-    g_proc->start(QString::fromStdString(runnerCmd), QStringList());
+        g_proc->start(QString::fromStdString(runnerCmd), QStringList());
         if (!g_proc->waitForStarted(-1)) {
             zeno::log_warn("process failed to get started, giving up");
             return;
@@ -92,15 +100,10 @@ struct ProgramRunData {
         std::vector<char> buf(2<<20); // 2MB
         viewDecodeClear();
 
-        while (1) {
-            if (!g_proc->waitForReadyRead(-1)) {
-                zeno::log_debug("still not ready-read in 3s, stopping");
-                break;
-            }
-
+        while (g_proc->waitForReadyRead(-1)) {
             while (!g_proc->atEnd()) {
                 if (g_state == KILLING)
-                    break;
+                    return;
                 qint64 redSize = g_proc->read(buf.data(), buf.size());
                 zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
                 if (redSize > 0) {
@@ -108,15 +111,16 @@ struct ProgramRunData {
                 }
             }
             if (g_state == KILLING)
-                break;
+                return;
         }
+        zeno::log_debug("still not ready-read, assume exited");
 
         buf.clear();
-        if (!g_proc->waitForFinished()) {
+        /*if (!g_proc->waitForFinished()) {
             zeno::log_warn("still not finished in 3s, terminating");
             g_proc->terminate();
             g_proc->waitForFinished(-1);
-        }
+        }*/
         int code = g_proc->exitCode();
         g_proc = nullptr;
         zeno::log_info("runner process exited with {}", code);

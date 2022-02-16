@@ -80,9 +80,9 @@ static void runner_main(std::string const &progJson) {
         send_packet("{\"action\":\"newFrame\"}", {});
 
         for (auto const &obj: viewObjs) {
-            buffer.clear();
             zeno::encodeObject(obj.get(), buffer);
             send_packet("{\"action\":\"viewObject\"}", buffer);
+            buffer.clear();
         }
     }
 }
