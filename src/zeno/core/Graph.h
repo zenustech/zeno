@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <set>
+#include <any>
 #include <map>
 
 namespace zeno {
@@ -31,10 +32,14 @@ struct Context {
 
 struct Status {
     INode *node = nullptr;
-    std::exception_ptr err;
+    std::any eptr;
 
     bool failed() const {
         return node != nullptr;
+    }
+
+    std::exception_ptr exception() const {
+        return std::any_cast<std::exception_ptr>(eptr);
     }
 };
 

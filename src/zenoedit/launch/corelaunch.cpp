@@ -44,7 +44,7 @@ struct ProgramRunData {
         zeno::log_info("launching program...");
         zeno::log_debug("launching program JSON: {}", progJson);
 
-#ifdef ZENO_MULTIPROCESS
+#ifndef ZENO_MULTIPROCESS
         auto session = &zeno::getSession();
         session->globalState->clearState();
 
