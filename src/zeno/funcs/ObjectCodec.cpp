@@ -46,7 +46,7 @@ std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
 }
 
 bool encodeObject(IObject const *object, std::vector<char> &buf) {
-    buf.resize(buf.size() + sizeof(ObjectHeader));
+    buf.resize(sizeof(ObjectHeader));
     auto &header = *(ObjectHeader *)buf.data();
     auto it = std::back_inserter(buf);
 

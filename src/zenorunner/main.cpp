@@ -31,7 +31,7 @@ static void runner_main(std::string const &progJson) {
     auto graph = session->createGraph();
     graph->loadGraph(progJson.c_str());
 
-    std::vector<char> buffer;
+    std::vector<char> buffer, headbuffer;
 
     auto nframes = graph->adhocNumFrames;
     for (int frame = 0; frame < nframes; frame++) {
@@ -51,22 +51,27 @@ static void runner_main(std::string const &progJson) {
         for (auto const &obj: viewObjs) {
             std::string info = "{\"action\":\"viewObject\"}";
 
-            buffer.resize(4 + sizeof(Header) + info.size());
-            buffer[0] = '\a';
-            buffer[1] = '\b';
-            buffer[2] = '\r';
-            buffer[3] = '\t';
-            std::memcpy(buffer.data() + 4 + sizeof(Header), info.data(), info.size());
-
             zeno::encodeObject(obj.get(), buffer);
 
             Header header;
-            header.total_size = buffer.size();
+            header.total_size = info.size() + buffer.size();
             header.info_size = info.size();
             header.makeValid();
-            std::memcpy(buffer.data() + 4, &header, sizeof(Header));
 
-            zeno::log_debug("runner tx buffer size {}", buffer.size());
+            headbuffer.resize(4 + sizeof(Header) + info.size());
+            headbuffer[0] = '\a';
+            headbuffer[1] = '\b';
+            headbuffer[2] = '\r';
+            headbuffer[3] = '\t';
+            std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
+            std::memcpy(headbuffer.data() + 4, &header, sizeof(Header));
+
+            zeno::log_debug("runner tx head-buffer size {}", headbuffer.size());
+            for (char c: headbuffer) {
+                fputc(c, old_stdout);
+            }
+
+            zeno::log_debug("runner tx data-buffer size {}", buffer.size());
             for (char c: buffer) {
                 fputc(c, old_stdout);
             }

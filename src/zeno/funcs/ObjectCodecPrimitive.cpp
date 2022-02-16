@@ -34,7 +34,7 @@ void decodeAttrVector(AttrVector<T0> &arr, It it) {
     AttrVectorHeader header;
     std::copy_n(it, sizeof(header), (char *)&header);
     it += sizeof(header);
-    arr.reserve(header.size);
+    arr.values.reserve(header.size);
     std::copy_n((T0 const *)it, header.size, std::back_inserter(arr.values));
     it += sizeof(T0) * header.size;
 
@@ -46,11 +46,13 @@ void decodeAttrVector(AttrVector<T0> &arr, It it) {
         index_switch<std::tuple_size_v<AttrTypesTuple>>((size_t)header.type, [&] (auto type) {
             using T = std::tuple_element_t<type.value, AttrTypesTuple>;
             auto &attr = arr.template add_attr<T>(key);
+            attr.clear();
             attr.reserve(header.size);
             std::copy_n((T const *)it, header.size, std::back_inserter(attr));
             it += sizeof(T) * header.size;
         });
     }
+    arr.update();
 }
 
 template <class T0, class It>

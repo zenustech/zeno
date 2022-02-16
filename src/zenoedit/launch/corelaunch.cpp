@@ -88,26 +88,33 @@ struct ProgramRunData {
         g_proc->write(progJson.data(), progJson.size());
         g_proc->closeWriteChannel();
 
-        std::vector<char> buf(4<<20); // 4MB
+        std::vector<char> buf(2<<20); // 2MB
         viewDecodeClear();
 
-        while (!g_proc->waitForReadyRead()) {
-            zeno::log_warn("still not ready-read in 3s");
+        while (1) {
+            while (!g_proc->waitForReadyRead()) {
+                zeno::log_warn("still not ready-read in 3s");
+                if (g_state == KILLING)
+                    return;
+            }
+            if (!g_proc->isReadable()) {
+                zeno::log_info("no longer readable, giving up");
+                break;
+            }
+
+            while (!g_proc->atEnd()) {
+                if (g_state == KILLING)
+                    return;
+                qint64 redSize = g_proc->read(buf.data(), buf.size());
+                zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
+                if (redSize > 0) {
+                    viewDecodeAppend(buf.data(), redSize);
+                }
+            }
             if (g_state == KILLING)
                 return;
         }
 
-        while (!g_proc->atEnd()) {
-            if (g_state == KILLING)
-                return;
-            qint64 redSize = g_proc->read(buf.data(), buf.size());
-            zeno::log_debug("g_proc->read got {} bytes (ping test has 19) [[{}]]", redSize, std::string(buf.data(), 90));
-            if (redSize > 0) {
-                viewDecodeAppend(buf.data(), redSize);
-            }
-        }
-        if (g_state == KILLING)
-            return;
         buf.clear();
         while (!g_proc->waitForFinished()) {
             zeno::log_warn("still not finished in 3s, terminating");
