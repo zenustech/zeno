@@ -9,6 +9,7 @@
 #include "serialize.h"
 #include <thread>
 #include <mutex>
+#include <atomic>
 #ifdef ZENO_MULTIPROCESS
 #include <QProcess>
 #include "viewdecode.h"
@@ -17,7 +18,14 @@
 namespace {
 
 struct ProgramRunData {
+    enum ProgramState {
+        STOPPED = 0,
+        RUNNING,
+        KILLING,
+    };
+
     inline static std::mutex g_mtx;
+    inline static std::atomic<ProgramState> g_state{STOPPED};
 
     std::string progJson;
 
@@ -26,9 +34,15 @@ struct ProgramRunData {
 #endif
 
     void operator()() const {
-        std::unique_lock _(g_mtx);
+        std::unique_lock lck(g_mtx);
 
-        zeno::log_info("launching program JSON: {}", progJson);
+        start();
+        g_state = STOPPED;
+    }
+
+    void start() const {
+        zeno::log_info("launching program...");
+        zeno::log_debug("launching program JSON: {}", progJson);
 
 #ifdef ZENO_MULTIPROCESS
         auto session = &zeno::getSession();
@@ -36,60 +50,63 @@ struct ProgramRunData {
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
+        if (g_state == KILLING)
+            return;
 
         auto nframes = graph->adhocNumFrames;
         for (int i = 0; i < nframes; i++) {
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
+                if (g_state == KILLING)
+                    return;
                 graph->applyNodesToExec();
                 session->globalState->substepEnd();
             }
+            if (g_state == KILLING)
+                return;
             session->globalState->frameEnd();
         }
 #else
-        if (g_proc) return;
-
-        std::thread thr([progJson = std::move(progJson)] {
-            auto execDir = QCoreApplication::applicationDirPath().toStdString();
+        auto execDir = QCoreApplication::applicationDirPath().toStdString();
 #if defined(Q_OS_WIN)
-            auto runnerCmd = execDir + "\\zenorunner.exe";
+        auto runnerCmd = execDir + "\\zenorunner.exe";
 #else
-            auto runnerCmd = execDir + "/zenorunner";
+        auto runnerCmd = execDir + "/zenorunner";
 #endif
 
-            g_proc = std::make_unique<QProcess>();
-            viewDecodeClear();
-            g_proc->start(QString::fromStdString(runnerCmd), QStringList());
-            if (!g_proc->waitForStarted()) {
-                zeno::log_warn("still not started in 3s");
-                g_proc->waitForStarted(-1);
-            }
+        g_proc = std::make_unique<QProcess>();
+        viewDecodeClear();
+        g_proc->start(QString::fromStdString(runnerCmd), QStringList());
+        while (!g_proc->waitForStarted()) {
+            zeno::log_warn("still not started in 3s");
+            if (g_state == KILLING)
+                return;
+        }
 
-            std::vector<char> buf(1<<20);
-            std::unique_lock lck(g_proc_mtx);
-            g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-            while (g_proc && !g_proc->atEnd()) {
-                qint64 redSize = g_proc->read(buf.data(), buf.size() / 2);
-                lck.unlock();
-                zeno::log_warn("g_proc->read got {} bytes", redSize);
-                if (redSize > 0) {
-                    viewDecodeAppend(buf.data(), redSize);
-                }
-                lck.lock();
+        std::vector<char> buf(1<<20);
+        g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        while (g_proc && !g_proc->atEnd()) {
+            if (g_state == KILLING)
+                return;
+            qint64 redSize = g_proc->read(buf.data(), buf.size() / 2);
+            zeno::log_warn("g_proc->read got {} bytes", redSize);
+            if (redSize > 0) {
+                viewDecodeAppend(buf.data(), redSize);
             }
-            buf.clear();
-            if (!g_proc->waitForFinished()) {
-                zeno::log_warn("still not finished in 3s, terminating");
-                g_proc->terminate();
-                g_proc->waitForFinished(-1);
-            }
-            int code = g_proc->exitCode();
-            g_proc = nullptr;
-            lck.unlock();
-            zeno::log_info("runner process exited with {}", code);
-        });
-        thr.detach();
+        }
+        if (g_state == KILLING)
+            return;
+        buf.clear();
+        while (!g_proc->waitForFinished()) {
+            zeno::log_warn("still not finished in 3s, terminating");
+            g_proc->terminate();
+            if (g_state == KILLING)
+                return;
+        }
+        int code = g_proc->exitCode();
+        g_proc = nullptr;
+        zeno::log_info("runner process exited with {}", code);
 #endif
     }
 };
@@ -102,6 +119,7 @@ void launchProgramJSON(std::string progJson)
         return;
     }
 
+    ProgramRunData::g_state = ProgramRunData::RUNNING;
     std::thread thr(ProgramRunData{std::move(progJson)});
     thr.detach();
 }
@@ -109,7 +127,7 @@ void launchProgramJSON(std::string progJson)
 
 void killProgramJSON()
 {
-    //std::unique_lock lck(ProgramRunData::g_mtx);//TODO
+    ProgramRunData::g_state = ProgramRunData::KILLING;
 }
 
 }
