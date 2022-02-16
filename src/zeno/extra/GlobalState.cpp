@@ -1,21 +1,12 @@
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
-#include <mutex>
 
 namespace zeno {
 
-struct GlobalState::Impl {
-    struct FrameData {
-        std::vector<std::shared_ptr<IObject>> view_objects;
-    };
-
-    std::vector<FrameData> frames;
-    std::mutex mtx;
-};
-
 ZENO_API GlobalState state;
 
-ZENO_API GlobalState::GlobalState() : m_impl(std::make_unique<Impl>()) {}
+ZENO_API GlobalState::GlobalState() : globalComm(new GlobalComm{this}) {}
 ZENO_API GlobalState::~GlobalState() = default;
 
 ZENO_API bool GlobalState::substepBegin() {
@@ -38,25 +29,15 @@ ZENO_API void GlobalState::frameBegin() {
     has_substep_executed = false;
     time_step_integrated = false;
     frame_time_elapsed = 0;
-    m_impl->frames.emplace_back();
+    globalComm->onFrameBegin();
 }
 
 ZENO_API void GlobalState::frameEnd() {
     frameid++;
 }
 
-ZENO_API void GlobalState::addViewObject(std::shared_ptr<IObject> const &object) {
-    std::lock_guard lck(m_impl->mtx);
-    if (frameid >= m_impl->frames.size()) {
-        log_warn("bad frameid in addViewObject");
-        return;
-    }
-    m_impl->frames[frameid].view_objects.push_back(object);
-}
-
 ZENO_API void GlobalState::clearState() {
-    std::lock_guard lck(m_impl->mtx);
-    m_impl->frames.clear();
+    globalComm->clearState();
     frameid = 0;
     frameid = 0;
     substepid = 0;
@@ -65,17 +46,6 @@ ZENO_API void GlobalState::clearState() {
     has_frame_completed = false;
     has_substep_executed = false;
     time_step_integrated = false;
-}
-
-ZENO_API int GlobalState::countFrames() {
-    std::lock_guard lck(m_impl->mtx);
-    return m_impl->frames.size();
-}
-
-ZENO_API std::vector<std::shared_ptr<IObject>> GlobalState::getViewObjects(int frame_) {
-    std::lock_guard lck(m_impl->mtx);
-    if (frame_ < 0 || frame_ >= m_impl->frames.size()) return {};
-    return m_impl->frames[frame_].view_objects;
 }
 
 }

@@ -3,6 +3,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <rapidjson/document.h>
 #include <type_traits>
@@ -20,7 +21,7 @@ bool processPacket(std::string const &action, const char *buf, size_t len) {
             zeno::log_warn("failed to decode view object");
             return false;
         }
-        zeno::getSession().globalState->addViewObject(object);
+        zeno::getSession().globalState->globalComm->addViewObject(object);
 
     } else {
         zeno::log_warn("unknown packet action type {}", action);

@@ -8,10 +8,10 @@
 namespace zeno {
 
 struct IObject;
+struct GlobalComm;
 
 struct GlobalState {
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    std::unique_ptr<GlobalComm> const globalComm;
 
     int frameid = 0;
     int substepid = 0;
@@ -45,10 +45,7 @@ struct GlobalState {
     ZENO_API void substepEnd();
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
-    ZENO_API void addViewObject(std::shared_ptr<IObject> const &object);
     ZENO_API void clearState();
-    ZENO_API int countFrames();
-    ZENO_API std::vector<std::shared_ptr<IObject>> getViewObjects(int frame);
 };
 
 }

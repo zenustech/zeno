@@ -4,6 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/core/Graph.h>
 
@@ -25,7 +26,7 @@ struct ToView : zeno::INode {
                 log_warn("ToView: given object doesn't support clone");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
-                getGlobalState()->addViewObject(pp);
+                getGlobalState()->globalComm->addViewObject(pp);
             }
         }
         set_output("object", std::move(p));
