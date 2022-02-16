@@ -138,7 +138,7 @@ struct ZenoIndexBuckets : IObject {
 struct ZenoLevelSet : IObject {
   // this supports a wide range of grid types (not just collocated)
   // default channel contains "sdf"
-  // default transfer scheme is "flip"
+  // default transfer scheme is "unknown"
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
   using const_sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
   using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
