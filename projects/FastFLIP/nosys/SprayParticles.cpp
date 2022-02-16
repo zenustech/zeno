@@ -217,4 +217,49 @@ ZENDEFNODE(InterpMeshBarycentric, {
     {"primitive"},
     });
 
+struct PrimFindTriangle : INode{
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("MeshPrim");
+    auto points = get_input<PrimitiveObject>("Particles");
+    auto triIndex = points->add_attr<zeno::vec3f>("TriIndex");
+    for(auto key:prim->attr_keys())
+    { 
+        if(key!="pos")
+       std::visit([&points, key](auto &&ref) {
+                    using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                    points->add_attr<T>(key);
+                }, prim->attr(key));
+    }
+//#pragma omp parallel for
+  tbb::parallel_for((size_t)0, (size_t)(points->size()), (size_t)1, [&](size_t index) 
+  {
+    float mind = 999999999.0;
+    for(auto tidx:prim->tris ){
+      int v0 = tidx[0], v1 = tidx[1], v2 = tidx[2];
+      zeno::vec3f c = (prim->verts[v0] + prim->verts[v1] + prim->verts[v2])/3.0;
+      float d = zeno::length(points->verts[index] - c);
+      if(d<mind)
+      {
+        points->attr<zeno::vec3f>("TriIndex")[index] = zeno::vec3f(v0,v1,v2);
+        mind = d;
+      }
+    }
+  });
+
+    set_output("oParticles", get_input("Particles"));
+
+  }
+};
+
+ZENDEFNODE(PrimFindTriangle, {
+    {
+      "MeshPrim",
+      "Particles",
+    },
+    {
+      "oParticles"
+    },
+    {},
+    {"primitive"},
+    });
 } // namespace zeno
