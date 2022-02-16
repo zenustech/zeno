@@ -3,15 +3,18 @@
 
 namespace zeno {
 
-ZENO_API ZenoException::ZenoException(std::unique_ptr<Error> &&err) noexcept
+ZENO_API ErrorException::ErrorException(std::shared_ptr<Error> &&err) noexcept
     : err(std::move(err)) {
 }
 
-ZENO_API ZenoException::~ZenoException() = default;
+ZENO_API ErrorException::~ErrorException() = default;
 
-ZENO_API char const *ZenoException::what() const noexcept
-{
+ZENO_API char const *ErrorException::what() const noexcept {
     return this->err->what().c_str();
+}
+
+ZENO_API std::shared_ptr<Error> ErrorException::get() const noexcept {
+    return err;
 }
 
 ZENO_API Error::Error(std::string_view message) noexcept
@@ -24,8 +27,19 @@ ZENO_API std::string const &Error::what() const {
     return message;
 }
 
-ZENO_API StdError::StdError(const char *what) noexcept
-    : Error((std::string)"e.what(): `" + what + "`")
+static const char *get_eptr_what(std::exception_ptr const &eptr) {
+    try {
+        if (eptr) {
+            std::rethrow_exception(eptr);
+        }
+    } catch (std::exception const &e) {
+        return e.what();
+    }
+    return "(no error)";
+}
+
+ZENO_API StdError::StdError(std::exception_ptr &&eptr) noexcept
+    : Error((std::string)"e.what(): `" + get_eptr_what(eptr) + "`"), eptr(std::move(eptr))
 {
 }
 

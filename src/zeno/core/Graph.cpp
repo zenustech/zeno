@@ -58,8 +58,10 @@ ZENO_API Status Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
+    } catch (ErrorException const &e) {
+        return Status{node, e.get()};
     } catch (std::exception const &e) {
-        return Status{node, std::make_shared<StdError>(e.what())};
+        return Status{node, std::make_shared<StdError>(std::current_exception())};
     }
     return {};
 }
@@ -73,6 +75,7 @@ ZENO_API Status Graph::applyNodes(std::set<std::string> const &ids) {
         }
     }
     ctx = nullptr;
+    return {};
 }
 
 ZENO_API Status Graph::applyNodesToExec() {
