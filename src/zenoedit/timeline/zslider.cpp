@@ -97,7 +97,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
     painter.setFont(font);
     painter.setPen(QPen(QColor(153, 153, 153)));
 
-    for (int i = m_left, j = 0; i <= m_right; i += (n / frames), j++)
+    for (int i = m_left, j = 0; i <= m_right; i += (n / std::max(1, frames)), j++)
     {
         int h = 0, ytext = height() / 2 - h / 2;
         int x = _frameToPos(i);

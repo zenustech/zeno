@@ -1,16 +1,26 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/cppdemangle.h>
+#ifdef ZENO_FAULTHANDLER
+#include <backward.hpp>
+#endif
 
 namespace zeno {
 
 ZENO_API ErrorException::ErrorException(std::shared_ptr<Error> &&err) noexcept
     : err(std::move(err)) {
+#ifdef ZENO_FAULTHANDLER
+    backward::StackTrace st;
+    st.load_here(32);
+    st.skip_n_firsts(3);
+    backward::Printer p;
+    p.print(st);
+#endif
 }
 
 ZENO_API ErrorException::~ErrorException() = default;
 
 ZENO_API char const *ErrorException::what() const noexcept {
-    return this->err->what().c_str();
+    return err->what().c_str();
 }
 
 ZENO_API std::shared_ptr<Error> ErrorException::get() const noexcept {

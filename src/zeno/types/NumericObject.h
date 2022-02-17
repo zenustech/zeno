@@ -29,9 +29,15 @@ struct NumericObject : IObjectClone<NumericObject> {
 
   template <class T>
   T get() const {
-    if (!is<T>())
-        throw makeError<TypeError>(typeid(T), typeid_of_variant<NumericValue>(value), "NumericObject::get<T>");
-    return std::get<T>(value);
+    return std::visit([] (auto const &val) -> T {
+        using V = std::decay_t<decltype(val)>;
+        if constexpr (!std::is_constructible_v<T, V>) {
+            throw makeError<TypeError>(typeid(T), typeid(V), "NumericObject::get<T>");
+            return T{};
+        } else {
+            return T(val);
+        }
+    }, value);
   }
 
   template <class T>
