@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/wrangler/Wrangler.hpp"
 #include "zensim/tpls/fmt/color.h"
@@ -204,7 +204,7 @@ struct ZSParticleNeighborWrangler : INode {
       }
 
       haccessors[i] = zs::AccessorAoSoA{
-          zs::aosoa_v,
+          zs::aosoa_c,
           (void *)targetParPtr->data(),
           (unsigned short)unitBytes,
           (unsigned short)tileSize,

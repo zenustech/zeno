@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/VdbSampler.h"
@@ -120,7 +120,7 @@ struct ToZSParticles : INode {
     auto &tris = inParticles->tris;
     auto &lines = inParticles->lines;
 
-    auto outParticles = IObject::make<ZenoParticles>();
+    auto outParticles = std::make_shared<ZenoParticles>();
 
     // primitive binding
     outParticles->prim = inParticles;
@@ -481,11 +481,10 @@ struct UpdatePrimitiveFromZSParticles : INode {
 
       // const auto category = parObjPtr->category;
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
       if (parObjPtr->prim->has_attr("vel"))
         velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
-
-      auto size = pars.size();
 
       // currently only write back pos and vel (if has)
       ompExec(range(size),
@@ -511,7 +510,7 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
 
 struct MakeZSPartition : INode {
   void apply() override {
-    auto partition = IObject::make<ZenoPartition>();
+    auto partition = std::make_shared<ZenoPartition>();
     partition->get() =
         typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::um, 0};
     set_output("ZSPartition", partition);
@@ -530,7 +529,7 @@ struct MakeZSGrid : INode {
 
     std::vector<zs::PropertyTag> tags{{"m", 1}, {"v", 3}};
 
-    auto grid = IObject::make<ZenoGrid>();
+    auto grid = std::make_shared<ZenoGrid>();
     grid->transferScheme = get_input2<std::string>("transfer");
     // default is "apic"
     if (grid->transferScheme == "flip")
@@ -557,10 +556,79 @@ ZENDEFNODE(MakeZSGrid,
                {"MPM"},
            });
 
+struct MakeZSLevelSet : INode {
+  void apply() override {
+    auto dx = get_input2<float>("dx");
+
+    std::vector<zs::PropertyTag> tags{{"sdf", 1}};
+
+    auto ls = std::make_shared<ZenoLevelSet>();
+    ls->transferScheme = get_input2<std::string>("transfer");
+    auto cateStr = get_input2<std::string>("category");
+
+    // default is "cellcentered"
+    if (cateStr == "staggered")
+      tags.emplace_back(zs::PropertyTag{"vel", 3});
+    // default is "unknown"
+    if (ls->transferScheme == "unknown")
+      ;
+    else if (ls->transferScheme == "flip")
+      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+    else if (ls->transferScheme == "apic")
+      ;
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized transfer scheme [{}]\n", ls->transferScheme));
+
+    if (cateStr == "collocated") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "cellcentered") {
+      auto tmp =
+          typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{
+              tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "staggered") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else
+      throw std::runtime_error(
+          fmt::format("unknown levelset (grid) category [{}].", cateStr));
+
+    zs::match([](const auto &lsPtr) {
+      if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
+        using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
+        fmt::print(
+            "levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n",
+            spls_t::category, lsPtr->_i2wShat(0, 0), lsPtr->_grid.dx,
+            spls_t::side_length, spls_t::block_size);
+      } else {
+        throw std::runtime_error(
+            fmt::format("invalid levelset [{}] initialized in basicls.",
+                        zs::get_var_type_str(lsPtr)));
+      }
+    })(ls->getBasicLevelSet()._ls);
+    set_output("ZSLevelSet", std::move(ls));
+  }
+};
+ZENDEFNODE(MakeZSLevelSet, {
+                               {{"float", "dx", "0.1"},
+                                {"string", "transfer", "unknown"},
+                                {"string", "category", "cellcentered"}},
+                               {"ZSLevelSet"},
+                               {},
+                               {"SOP"},
+                           });
+
 struct ToZSBoundary : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZSBoundary\n");
-    auto boundary = zeno::IObject::make<ZenoBoundary>();
+    auto boundary = std::make_shared<ZenoBoundary>();
 
     auto type = get_param<std::string>("type");
     auto queryType = [&type]() -> zs::collider_e {
@@ -601,7 +669,7 @@ struct ToZSBoundary : INode {
     if (has_input("ypr_angles")) {
       auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
-                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+                                        yprAngles[2], zs::degree_c, zs::ypr_c};
       boundary->R = rot;
     }
     { boundary->omega = zs::AngularVelocity<float, 3>{}; }
@@ -659,7 +727,7 @@ struct ZSParticlesToPrimitiveObject : INode {
     auto &zspars = get_input<ZenoParticles>("ZSParticles")->getParticles();
     const auto size = zspars.size();
 
-    auto prim = IObject::make<PrimitiveObject>();
+    auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(size);
 
     using namespace zs;

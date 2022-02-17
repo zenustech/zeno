@@ -7,7 +7,7 @@
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include <zeno/ZenoInc.h>
-
+#include <openvdb/tools/LevelSetUtil.h> 
 //#include <tl/function_ref.hpp>
 //openvdb::FloatGrid::Ptr grid = 
 //openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>
@@ -116,6 +116,24 @@ static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSD
     "openvdb",
     }});
 
-
-
+struct SDFToFog : INode 
+{
+    virtual void apply() override {
+        auto sdf = get_input("SDF")->as<VDBFloatGrid>();
+        auto result = zeno::IObject::make<VDBFloatGrid>();
+        auto dx = sdf->m_grid->voxelSize()[0];
+        result->m_grid = sdf->m_grid->deepCopy();
+        openvdb::tools::sdfToFogVolume(*(result->m_grid));
+        set_output("oSDF", result);
+    }
+};
+static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
+    { /* inputs: */ {
+        "SDF",
+    }, /* outputs: */ {
+        "oSDF",
+    }, /* params: */ {
+    }, /* category: */ {
+    "openvdb",
+    }});
 }
