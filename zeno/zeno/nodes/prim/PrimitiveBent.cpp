@@ -36,19 +36,20 @@ struct PrimitiveBent : zeno::INode {
         direction = orb.normal;
         tangent = orb.tangent;
 
-        if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f) {
+        if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f && prim->size() != 0) {
             angle *= -M_PI / 180;
             angle /= limitMax - limitMin;
 
-            auto acc = parallel_reduce_array(prim->size(), vec2f(prim->size() ? dot(tangent, prim->verts[0]) : 0.f), [&] (size_t i) {
-                return vec2f(dot(tangent, prim->verts[i]));
-            }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
-            auto accDir = parallel_reduce_array(prim->size(), vec2f(prim->size() ? dot(direction, prim->verts[0]) : 0.f), [&] (size_t i) {
-                return vec2f(dot(direction, prim->verts[i]));
-            }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
+            auto tanv0 = dot(tangent, prim->verts[0]);
+            auto dirv0 = dot(direction, prim->verts[0]);
+            auto acc = parallel_reduce_array(prim->size(), vec4f(tanv0, tanv0, dirv0, dirv0), [&] (size_t i) {
+                auto tanv = dot(tangent, prim->verts[i]);
+                auto dirv = dot(direction, prim->verts[i]);
+                return vec4f(tanv, tanv, dirv, dirv);
+            }, [&] (auto a, auto b) { return vec4f(std::min(a[0], b[0]), std::max(a[1], b[1]), std::min(a[2], b[2]), std::max(a[3], b[3])); });
 
             if (get_param<bool>("useOrigin")) {
-                biasDir = (dot(direction, origin) - accDir[0]) / (accDir[1] - accDir[0]);
+                biasDir = (dot(direction, origin) - acc[2]) / (acc[3] - acc[2]);
                 midPoint = (dot(tangent, origin) - acc[0]) / (acc[1] - acc[0]);
             }
 
@@ -59,13 +60,14 @@ struct PrimitiveBent : zeno::INode {
             auto radius = height / angle;
             auto inv_height = 1 / height;
 
-            biasDir = (accDir[1] + accDir[0]) * 0.5f + (biasDir - 0.5f) * (accDir[1] - accDir[0]);
+            auto avgDir = (acc[3] + acc[2]) * 0.5f;
+            biasDir = (biasDir - 0.5f) * (acc[3] - acc[2]);
             limitMin -= midPoint;
             limitMax -= midPoint;
 
 #pragma omp parallel for
             for (int i = 0; i < prim->verts.size(); i++) {
-                auto pos = prim->verts[i] + biasDir * direction;
+                auto pos = prim->verts[i] + (biasDir - avgDir) * direction;
                 auto tanpos = dot(tangent, pos);
                 auto dirpos = dot(direction, pos);
                 auto fac = (tanpos - middle) * inv_height;
@@ -85,7 +87,7 @@ struct PrimitiveBent : zeno::INode {
                 newdirpos -= radius;
                 pos += (newtanpos - tanpos) * tangent + (newdirpos - dirpos) * direction;
 
-                prim->verts[i] = pos + biasDir * direction + tangent * average;
+                prim->verts[i] = (biasDir + avgDir) * direction + tangent * average + pos;
             }
 
         }
@@ -110,7 +112,7 @@ ZENDEFNODE(PrimitiveBent, {
     {"PrimitiveObject", "prim"},
     },
     {
-    {"bool", "useOrigin", "0"},
+    {"bool", "useOrigin", "1"},
     },
     {"primitive"},
 });
