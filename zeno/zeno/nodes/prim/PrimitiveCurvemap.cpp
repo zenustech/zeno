@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cmath>
 
-namespace zeno {
+namespace zeno { // credits by zhouhang
     using zeno::vec2f;
     static float epsilon = 0.00001;
 

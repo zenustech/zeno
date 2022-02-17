@@ -66,7 +66,7 @@ struct PrimitiveBent : zeno::INode {
             limitMax -= midPoint;
 
 #pragma omp parallel for
-            for (int i = 0; i < prim->verts.size(); i++) {
+            for (intptr_t i = 0; i < prim->verts.size(); i++) {
                 auto pos = prim->verts[i] + (biasDir - avgDir) * direction;
                 auto tanpos = dot(tangent, pos);
                 auto dirpos = dot(direction, pos);

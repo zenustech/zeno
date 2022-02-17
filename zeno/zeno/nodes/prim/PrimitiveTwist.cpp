@@ -13,7 +13,7 @@
 
 namespace zeno {
 
-struct PrimitiveTwist : zeno::INode {
+struct PrimitiveTwist : zeno::INode { // todo: also add PrimitiveStretch and PrimitiveTaper
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
@@ -51,7 +51,7 @@ struct PrimitiveTwist : zeno::INode {
             auto inv_height = 1 / height;
 
 #pragma omp parallel for
-            for (int i = 0; i < prim->verts.size(); i++) {
+            for (intptr_t i = 0; i < prim->verts.size(); i++) {
                 auto pos = prim->verts[i] - origin;
 
                 auto dirpos = dot(pos, direction);
