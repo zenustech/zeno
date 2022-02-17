@@ -51,11 +51,14 @@ namespace zeno {
                 }
 
                 srcArr.reserve(refAttrSrc.size() + 1);
+                auto maxval = getAxis(refAttrSrc[0], refAxisSrc);
                 for (size_t i = 0; i < refAttrSrc.size(); i++) {
-                    srcArr.push_back(getAxis(refAttrSrc[i], refAxisSrc));
+                    auto val = getAxis(refAttrSrc[i], refAxisSrc);
+                    maxval = std::max(maxval, val);
+                    srcArr.push_back(maxval);
                 }
-                srcArr.push_back(getAxis(refAttrSrc.back(), refAxisSrc));
-                srcArr.push_back(getAxis(refAttrSrc.back(), refAxisSrc));
+                srcArr.push_back(maxval);
+                srcArr.push_back(maxval);
 
                 refPrim->attr_visit(refAttrNameDst, [&] (auto &refAttrDst) {
                     if (refAttrDst.size() != refAttrSrc.size()) {
