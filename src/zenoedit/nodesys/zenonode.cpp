@@ -552,7 +552,8 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
     switch (editCtrl) {
         case CONTROL_INT: varValue = textValue.isEmpty() ? 0 : std::stoi(textValue.toStdString()); break;
         case CONTROL_FLOAT: varValue = textValue.isEmpty() ? 0.0 : std::stod(textValue.toStdString()); break;
-        case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : (bool)std::stoi(textValue.toStdString()); break;
+        case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : textValue == "true" ? true :
+                           (textValue == "false" ? false : (bool)std::stoi(textValue.toStdString())); break;
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
         case CONTROL_MULTILINE_STRING:
