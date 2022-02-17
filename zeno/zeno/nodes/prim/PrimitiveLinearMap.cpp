@@ -20,10 +20,12 @@ namespace zeno {
         virtual void apply() override {
             auto prim = get_input<zeno::PrimitiveObject>("prim");
             auto refPrim = get_input<zeno::PrimitiveObject>("refPrim");
-            auto attrName = get_input<zeno::StringObject>("attrName")->get();
+            auto attrNameDst = get_input<zeno::StringObject>("attrNameSrc")->get();
+            auto attrNameSrc = get_input<zeno::StringObject>("attrNameDst")->get();
             auto refAttrNameSrc = get_input<zeno::StringObject>("refAttrNameSrc")->get();
             auto refAttrNameDst = get_input<zeno::StringObject>("refAttrNameDst")->get();
-            auto axis = axisIndex(get_input<zeno::StringObject>("axis")->get());
+            auto axisSrc = axisIndex(get_input<zeno::StringObject>("axisSrc")->get());
+            auto axisDst = axisIndex(get_input<zeno::StringObject>("axisDst")->get());
             auto refAxisSrc = axisIndex(get_input<zeno::StringObject>("refAxisSrc")->get());
             auto refAxisDst = axisIndex(get_input<zeno::StringObject>("refAxisDst")->get());
             auto minVal = get_input<zeno::NumericObject>("minVal")->get<float>();
@@ -39,13 +41,15 @@ namespace zeno {
                 }
             };
 
+            std::vector<float> srcArr;
+            std::vector<float> dstArr;
+
             refPrim->attr_visit(refAttrNameSrc, [&] (auto &refAttrSrc) {
                 if (refAttrSrc.empty()) {
                     log_warn("src array is empty");
                     return;
                 }
 
-                std::vector<float> srcArr;
                 srcArr.reserve(refAttrSrc.size() + 1);
                 for (size_t i = 0; i < refAttrSrc.size(); i++) {
                     srcArr.push_back(getAxis(refAttrSrc[i], refAxisSrc));
@@ -59,45 +63,45 @@ namespace zeno {
                         return;
                     }
 
-                    std::vector<float> dstArr;
                     dstArr.reserve(refAttrDst.size());
                     for (size_t i = 0; i < refAttrDst.size(); i++) {
                         dstArr.push_back(getAxis(refAttrDst[i], refAxisDst));
                     }
                     dstArr.push_back(getAxis(refAttrDst.back(), refAxisDst));
                     dstArr.push_back(getAxis(refAttrDst.back(), refAxisDst));
+                });
+            });
 
-                    auto linmap = [&] (float src) {
-                        auto it = std::lower_bound(srcArr.begin(), srcArr.end() - 2, src);
-                        size_t index = it - srcArr.begin();
-                        auto nit = it + 1;
-                        auto fac = std::clamp((src - *it) / std::max(1e-8f, *nit - *it), 0.f, 1.f);
-                        auto dst = dstArr[index] + (dstArr[index + 1] - dstArr[index]) * fac;
-                        return dst;
-                    };
+            auto linmap = [&] (float src) {
+                auto it = std::lower_bound(srcArr.begin(), srcArr.end() - 2, src);
+                size_t index = it - srcArr.begin();
+                auto nit = it + 1;
+                auto fac = std::clamp((src - *it) / std::max(1e-8f, *nit - *it), 0.f, 1.f);
+                auto dst = dstArr[index] + (dstArr[index + 1] - dstArr[index]) * fac;
+                return dst;
+            };
 
-                    prim->attr_visit(attrName, [&] (auto &attr) {
-                        using T = std::decay_t<decltype(attr[0])>;
-
-                        if (get_param<bool>("autoMinMax")) {
-                            auto minv = getAxis(attr[0], axis);
-                            auto maxv = getAxis(attr[0], axis);
+            prim->attr_visit(attrNameSrc, [&] (auto &attrSrc) {
+                if (get_param<bool>("autoMinMax")) {
+                    auto minv = getAxis(attrSrc[0], axisSrc);
+                    auto maxv = getAxis(attrSrc[0], axisSrc);
 #pragma omp parallel for reduction(min:minv) reduction(max:maxv)
-                            for (intptr_t i = 0; i < attr.size(); ++i) {
-                                auto val = getAxis(attr[i], axis);
-                                maxv = std::max(maxv, val);
-                                minv = std::min(minv, val);
-                            }
-                            minVal = minv + (maxv - minv) * minVal;
-                            maxVal = minv + (maxv - minv) * maxVal;
-                        }
+                    for (intptr_t i = 0; i < attrSrc.size(); ++i) {
+                        auto val = getAxis(attrSrc[i], axisSrc);
+                        maxv = std::max(maxv, val);
+                        minv = std::min(minv, val);
+                    }
+                    minVal = minv + (maxv - minv) * minVal;
+                    maxVal = minv + (maxv - minv) * maxVal;
+                }
 
+                prim->attr_visit(attrNameDst, [&] (auto &attrDst) {
 #pragma omp parallel for
-                        for (intptr_t i = 0; i < attr.size(); ++i) {
-                            auto &val = getAxis(attr[i], axis);
-                            val = linmap((val - minVal) / (maxVal - minVal));
-                        }
-                    });
+                    for (intptr_t i = 0; i < attrSrc.size(); ++i) {
+                        auto src = getAxis(attrSrc[i], axisSrc);
+                        auto dst = linmap((src - minVal) / (maxVal - minVal));
+                        getAxis(attrDst[i], axisDst) = dst;
+                    }
                 });
             });
 
@@ -108,12 +112,14 @@ ZENDEFNODE(PrimitiveLinearMap, {
     {
     {"PrimitiveObject", "prim"},
     {"PrimitiveObject", "refPrim"},
-    {"string", "attrName", "pos"},
+    {"string", "attrNameSrc", "pos"},
+    {"string", "attrNameDst", "pos"},
     {"string", "refAttrNameSrc", "pos"},
     {"string", "refAttrNameDst", "pos"},
-    {"int", "minVal", "0"},
-    {"int", "maxVal", "1"},
-    {"enum X Y Z", "axis", "X"},
+    {"float", "minVal", "0"},
+    {"float", "maxVal", "1"},
+    {"enum X Y Z", "axisSrc", "X"},
+    {"enum X Y Z", "axisDst", "Y"},
     {"enum X Y Z", "refAxisSrc", "X"},
     {"enum X Y Z", "refAxisDst", "Y"},
     },
