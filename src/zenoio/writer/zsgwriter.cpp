@@ -127,7 +127,7 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 		else if (val.type() == QVariant::Bool)
 			paramsObj.insert(info.name, val.toBool());
         else if (val.type() != QVariant::Invalid)
-                zeno::log_warn("bad param info qvariant type {}", val.typeName() ?: "(null)");
+                zeno::log_warn("bad param info qvariant type {}", val.typeName() ? val.typeName() : "(null)");
 	}
 	obj.insert("params", paramsObj);
 
@@ -195,7 +195,7 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				socketInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
 			else {
                 if (defl.type() != QVariant::Invalid)
-                    zeno::log_warn("bad input qvariant type {}", defl.typeName() ?: "(null)");
+                    zeno::log_warn("bad input qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				socketInfo.push_back("");
             }
 
@@ -220,7 +220,7 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				paramInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
 			else {
                 if (defl.type() != QVariant::Invalid)
-                    zeno::log_warn("bad param qvariant type {}", defl.typeName() ?: "(null)");
+                    zeno::log_warn("bad param qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				paramInfo.push_back("");
             }
 
@@ -245,7 +245,7 @@ QJsonObject ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs)
 				socketInfo.push_back(QString::fromStdString(std::to_string((int)defl.toBool())));
 			else {
                 if (defl.type() != QVariant::Invalid)
-                    zeno::log_warn("bad output qvariant type {}", defl.typeName() ?: "(null)");
+                    zeno::log_warn("bad output qvariant type {}", defl.typeName() ? defl.typeName() : "(null)");
 				socketInfo.push_back("");
             }
 

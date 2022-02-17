@@ -104,7 +104,7 @@ void initialize() {
   gladLoadGL();
 
   auto version = (const char *)glGetString(GL_VERSION);
-  zeno::log_info("OpenGL version: {}", version ?: "(null)");
+  zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));

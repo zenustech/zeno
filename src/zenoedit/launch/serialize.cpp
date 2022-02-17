@@ -99,7 +99,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                     }
                     else if (varType != QVariant::Invalid)
                     {
-                        zeno::log_warn("bad qt variant type {}", defl.typeName() ?: "(null)");
+                        zeno::log_warn("bad qt variant type {}", defl.typeName() ? defl.typeName() : "(null)");
                         Q_ASSERT(false);
                     }
                 }
@@ -146,7 +146,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			}
 			else if (varType != QVariant::Invalid)
 			{
-                zeno::log_warn("bad qt variant type {}", value.typeName() ?: "(null)");
+                zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
 				Q_ASSERT(false);
 			}
 		}
