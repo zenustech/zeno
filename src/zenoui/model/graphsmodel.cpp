@@ -623,6 +623,16 @@ void GraphsModel::updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const
     }
 }
 
+void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pSubg = subGraph(subGpIdx.row());
+	Q_ASSERT(pSubg);
+	if (pSubg)
+	{
+		pSubg->updateSocketDefl(id, info);
+	}
+}
+
 NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());

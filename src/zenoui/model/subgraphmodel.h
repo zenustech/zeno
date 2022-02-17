@@ -70,6 +70,7 @@ public:
     void addLink(const EdgeInfo& info, bool enableTransaction = false);
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
     void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);
+    void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA itemData(const QModelIndex &index) const override;
     QVariant getParamValue(const QString& nodeid, const QString& paramName);

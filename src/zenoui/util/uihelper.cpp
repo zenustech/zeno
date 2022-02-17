@@ -198,6 +198,39 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
     }
 }
 
+QString UiHelper::variantToString(const QVariant& var)
+{
+	QString value;
+	if (var.type() == QVariant::String)
+	{
+		value = var.toString();
+	}
+	else if (var.type() == QVariant::Double)
+	{
+		value = QString::number(var.toDouble());
+	}
+	else if (var.type() == QVariant::Int)
+	{
+		value = QString::number(var.toInt());
+	}
+	else if (var.type() == QVariant::Bool)
+	{
+		value = var.toBool() ? "true" : "false";
+	}
+	else if (var.type() == QVariant::Invalid)
+	{
+		zeno::log_warn("got null qt variant");
+		value = "";
+	}
+	else if (var.type() == QVariant::Bool)
+	{
+		value = var.toBool() ? "true" : "false";
+	}
+	else zeno::log_warn("bad qt variant {}", var.typeName());
+
+    return value;
+}
+
 std::pair<qreal, qreal> UiHelper::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize)
 {
     if (AbsoluteSize) {

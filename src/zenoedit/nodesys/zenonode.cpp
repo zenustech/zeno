@@ -431,34 +431,7 @@ QGraphicsLayout* ZenoNode::initParams()
             if (param.bEnableConnect)
                 continue;
 
-            QVariant val = param.value;
-            QString value;
-            if (val.type() == QVariant::String)
-            {
-                value = val.toString();
-            }
-            else if (val.type() == QVariant::Double)
-            {
-                value = QString::number(val.toDouble());
-            }
-            else if (val.type() == QVariant::Int)
-            {
-                value = QString::number(val.toInt());
-            }
-            else if (val.type() == QVariant::Bool)
-            {
-                value = val.toBool() ? "true" : "false";
-            }
-            else if (val.type() == QVariant::Invalid)
-            {
-                zeno::log_warn("got null qt variant");
-                value = "";
-            }
-            else if (val.type() == QVariant::Bool)
-            {
-                value = val.toBool() ? "true" : "false";
-            }
-            else zeno::log_warn("bad qt variant {}", val.typeName());
+            QString value = UiHelper::variantToString(param.value);
 
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
@@ -636,6 +609,30 @@ QGraphicsGridLayout* ZenoNode::initSockets()
 
             ZenoTextLayoutItem *pSocketItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
             pSocketsLayout->addItem(pSocketItem, r, 0);
+
+            const INPUT_SOCKET& inSocket = inputs[inSock];
+            if (!inSocket.info.type.isEmpty())
+            {
+				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), m_renderParams.lineEditParam);
+				pSocketsLayout->addItem(pSocketEditor, r, 1);
+                connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]()
+                {
+                    const QString& textValue = pSocketEditor->text();
+                    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+                    PARAM_UPDATE_INFO info;
+                    info.name = inSock;
+                    info.oldValue = inputs[inSock].info.defaultValue;
+                    info.newValue = UiHelper::_parseDefaultValue(textValue, inSocket.info.type);
+
+                    if (info.oldValue != info.newValue)
+                    {
+						IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+						Q_ASSERT(pGraphsModel);
+						pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex);
+                    }
+				});
+            }
 
             _socket_ctrl socket_ctrl;
             socket_ctrl.socket = socket;

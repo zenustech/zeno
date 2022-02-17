@@ -383,6 +383,16 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
     }
 }
 
+void SubGraphModel::updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info)
+{
+	QModelIndex idx = index(nodeid);
+    Q_ASSERT(idx.isValid());
+	INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+    Q_ASSERT(inputs.find(info.name) != inputs.end());
+    inputs[info.name].info.defaultValue = info.newValue;
+    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+}
+
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
 {
     QVariant var;

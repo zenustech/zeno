@@ -71,6 +71,7 @@ public:
 	void addLink(const EdgeInfo& info, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
 	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
+    void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	QString name(const QModelIndex& subGpIdx) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;

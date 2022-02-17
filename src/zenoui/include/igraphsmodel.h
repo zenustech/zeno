@@ -27,6 +27,7 @@ public:
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual void addLink(const EdgeInfo& info, const QModelIndex& subGpIdx) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
+	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual QString name(const QModelIndex& subGpIdx) const = 0;

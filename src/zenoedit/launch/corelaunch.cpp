@@ -2,6 +2,7 @@
 #include <zenoui/model/graphsmodel.h>
 #include <zenoui/model/modelrole.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
@@ -35,6 +36,7 @@ struct ProgramRunData {
     void operator()() const {
         std::unique_lock lck(g_mtx);
         start();
+#ifdef ZENO_MULTIPROCESS
         if (g_proc) {
             zeno::log_warn("terminating runner process");
             g_proc->terminate();
@@ -43,6 +45,7 @@ struct ProgramRunData {
             g_proc = nullptr;
             zeno::log_info("runner process terminated with {}", code);
         }
+#endif
         zeno::log_debug("program finished");
         g_state = STOPPED;
     }
