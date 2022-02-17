@@ -50,14 +50,14 @@ namespace zeno {
                     return;
                 }
 
-                srcArr.reserve(refAttrSrc.size() + 1);
-                auto maxval = getAxis(refAttrSrc[0], refAxisSrc);
+                srcArr.reserve(refAttrSrc.size() + 2);
+                auto maxval = getAxis(refAttrSrc[0], refAxisSrc), minval = maxval;
+                srcArr.push_back(minval);
                 for (size_t i = 0; i < refAttrSrc.size(); i++) {
                     auto val = getAxis(refAttrSrc[i], refAxisSrc);
                     maxval = std::max(maxval, val);
                     srcArr.push_back(maxval);
                 }
-                srcArr.push_back(maxval);
                 srcArr.push_back(maxval);
 
                 refPrim->attr_visit(refAttrNameDst, [&] (auto &refAttrDst) {
@@ -66,21 +66,21 @@ namespace zeno {
                         return;
                     }
 
-                    dstArr.reserve(refAttrDst.size());
+                    dstArr.reserve(refAttrDst.size() + 2);
+                    dstArr.push_back(getAxis(refAttrDst[0], refAxisDst));
                     for (size_t i = 0; i < refAttrDst.size(); i++) {
                         dstArr.push_back(getAxis(refAttrDst[i], refAxisDst));
                     }
                     dstArr.push_back(getAxis(refAttrDst.back(), refAxisDst));
-                    dstArr.push_back(getAxis(refAttrDst.back(), refAxisDst));
                 });
             });
 
-            auto linmap = [&] (float src) {
-                auto it = std::lower_bound(srcArr.begin(), srcArr.end() - 2, src);
-                size_t index = it - srcArr.begin();
-                auto nit = it + 1;
-                auto fac = std::clamp((src - *it) / std::max(1e-8f, *nit - *it), 0.f, 1.f);
-                auto dst = dstArr[index] + (dstArr[index + 1] - dstArr[index]) * fac;
+            auto linmap = [&] (float src) -> float {
+                auto nit = std::lower_bound(srcArr.begin() + 1, srcArr.end(), src);
+                auto it = nit - 1;
+                size_t index = nit - (srcArr.begin() + 1);
+                float fac = (src - *it) / std::max(1e-8f, *nit - *it);
+                float dst = dstArr[index] + (dstArr[index + 1] - dstArr[index]) * fac;
                 return dst;
             };
 
