@@ -17,7 +17,7 @@ QString ZsgWriter::dumpProgramStr(GraphsModel* pModel)
 {
 	QJsonObject obj = dumpGraphs(pModel);
 	QJsonDocument doc(obj);
-	QString strJson(doc.toJson(QJsonDocument::Compact));
+	QString strJson(doc.toJson(QJsonDocument::Indented));
 	return strJson;
 }
 
@@ -25,7 +25,7 @@ QString ZsgWriter::dumpSubGraph(SubGraphModel* pSubModel)
 {
 	QJsonObject obj = _dumpSubGraph(pSubModel);
 	QJsonDocument doc(obj);
-	QString strJson(doc.toJson(QJsonDocument::Compact));
+	QString strJson(doc.toJson(QJsonDocument::Indented));
 	return strJson;
 }
 
@@ -124,6 +124,8 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 			paramsObj.insert(info.name, val.toDouble());
 		else if (val.type() == QVariant::Int)
 			paramsObj.insert(info.name, val.toInt());
+		else if (val.type() == QVariant::Bool)
+			paramsObj.insert(info.name, val.toBool());
 	}
 	obj.insert("params", paramsObj);
 

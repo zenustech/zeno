@@ -450,6 +450,10 @@ QGraphicsLayout* ZenoNode::initParams()
                 zeno::log_warn("got null qt variant");
                 value = "";
             }
+            else if (val.type() == QVariant::Bool)
+            {
+                value = val.toBool() ? "1" : "0";
+            }
             else zeno::log_warn("bad qt variant {}", val.typeName());
 
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -572,7 +576,7 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
         ZenoParamWidget* pWidget = m_paramControls[paramName];
         if (ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget))
         {
-            plineEdit->setText(val.toString());
+            plineEdit->setText(val.toBool() ? "1" : "0");
         }
         else if (ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget))
         {
