@@ -4,11 +4,11 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <unordered_map>
+#include <cassert>
 
 namespace zeno {
 
 void primLineSort(PrimitiveObject *prim) {
-    std::vector<int> sorted;
     std::vector<int> visited;
     {
         std::unordered_multimap<int, int> v2l;
@@ -24,15 +24,14 @@ void primLineSort(PrimitiveObject *prim) {
             tovisit.push_back(line[0]);
         }
 
+        int nsorted = 0;
         visited.resize(prim->verts.size(), -1);
-        sorted.reserve(prim->verts.size());
         while (!tovisit.empty()) {
             int vert = tovisit.back();
             tovisit.pop_back();
             if (visited.at(vert) != -1)
                 continue;
-            visited[vert] = sorted.size();
-            sorted.push_back(vert);
+            visited[vert] = nsorted++;
             auto [it0, it1] = v2l.equal_range(vert);
             for (auto it = it0; it != it1; ++it) {
                 auto line = prim->lines[it->second];
@@ -40,10 +39,16 @@ void primLineSort(PrimitiveObject *prim) {
                 tovisit.push_back(next);
             }
         }
+        for (int i = 0; i < visited.size(); i++) {
+            if (visited[i] == -1) {
+                visited[i] = nsorted++;
+            }
+        }
+        assert(nsorted == visited.size());
     }
 
     {
-        auto revamp = [&] (int &x) { x = visited.at(x); };
+        auto revamp = [&] (int &x) { x = visited[x]; };
         for (auto &point: prim->points) {
             revamp(point);
         }
@@ -67,16 +72,17 @@ void primLineSort(PrimitiveObject *prim) {
     }
 
     {
-        auto revamp = [&] (auto &arr) {
-            std::vector<std::decay_t<decltype(arr[0])>> newArr;
-            for (int i = 0; i < std::min(sorted.size(), arr.size()); i++) {
-                newArr[i] = arr[sorted[i]];
+        auto revampvec = [&] (auto &arr) {
+            std::vector<std::decay_t<decltype(arr[0])>> newArr(arr.size());
+            for (int i = 0; i < arr.size(); i++) {
+                int j = visited[i];
+                newArr[j] = arr[i];
             }
             std::swap(arr, newArr);
         };
-        revamp(prim->verts.values);
+        revampvec(prim->verts.values);
         prim->foreach_attr([&] (auto const &key, auto &attr) {
-            revamp(attr);
+            revampvec(attr);
         });
     }
 }
