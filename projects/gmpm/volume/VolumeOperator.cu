@@ -167,13 +167,31 @@ struct ResampleZSLevelSet : INode {
                          typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
           using ls_t = RM_CVREF_T(ls);
           using grid_t = RM_CVREF_T(ls._grid);
+          using vec3 = zs::vec<float, 3>;
           auto blockid = ls._table._activeKeys[bi];
           auto cellid = grid_traits<grid_t>::cellid_to_coord(ci);
-          auto x = ls.indexToWorld(blockid + cellid);
-          // not quite efficient
-          for (typename ls_t::channel_counter_type chn = 0;
-               chn != tag.numChannels; ++chn)
-            ls._grid(tag.name, chn, bi, ci) = refLs.wsample(chn, x, 0);
+          const auto propOffset = ls.propertyOffset(tag.name);
+          const auto refPropOffset = refLs.propertyOffset(tag.name);
+          if constexpr (ls_t::category == grid_e::staggered) {
+            zs::vec<typename ls_t::TV, 3> Xs{
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.f, 0.5f, 0.5f})),
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.f, 0.5f})),
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.5f, 0.f}))};
+            for (typename ls_t::channel_counter_type chn = 0;
+                 chn != tag.numChannels; ++chn)
+              ls._grid(propOffset + chn, bi, ci) =
+                  refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
+          } else {
+            auto X = refLs.worldToIndex(ls.indexToWorld(blockid + cellid));
+            // not quite efficient
+            for (typename ls_t::channel_counter_type chn = 0;
+                 chn != tag.numChannels; ++chn)
+              ls._grid(propOffset + chn, bi, ci) =
+                  refLs.isample(refPropOffset + chn, X, 0);
+          }
         });
   }
   void apply() override {
