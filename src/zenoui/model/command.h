@@ -10,13 +10,12 @@ class GraphsModel;
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(int row, const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
     void redo();
     void undo();
 
 private:
-    int m_row;
     QString m_id;
     NODE_DATA m_data;
     QPersistentModelIndex m_subgIdx;
@@ -26,15 +25,17 @@ private:
 class RemoveNodeCommand : public QUndoCommand
 {
 public:
-    RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphModel* pModel);
+    RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~RemoveNodeCommand();
     void redo();
     void undo();
 
 private:
+    QString m_id;
     NODE_DATA m_data;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
     int m_row;
-    SubGraphModel* m_model;
 };
 
 class AddRemoveLinkCommand : public QUndoCommand

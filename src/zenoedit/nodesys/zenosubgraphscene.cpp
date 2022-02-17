@@ -713,7 +713,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
         for (auto item : nodes)
         {
             const QPersistentModelIndex &index = item->index();
-            pGraphsModel->removeNode(index.row(), m_subgIdx);
+            pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
         }
         //pGraphsModel->endMacro();
     }

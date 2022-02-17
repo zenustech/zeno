@@ -64,8 +64,9 @@ public:
 	void setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
-	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx) override;
+	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx) override;
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx) override;
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx) override;

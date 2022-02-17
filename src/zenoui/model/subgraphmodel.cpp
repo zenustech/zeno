@@ -165,17 +165,7 @@ void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
 {
     Q_ASSERT(m_key2Row.find(nodeid) != m_key2Row.end());
     int row = m_key2Row[nodeid];
-    if (enableTransaction)
-    {
-        m_stack->beginMacro("remove single node");
-        RemoveNodeCommand *pCmd = new RemoveNodeCommand(row, m_nodes[nodeid], this);
-        m_stack->push(pCmd);
-        m_stack->endMacro();
-    }
-    else
-    {
-        removeRows(row, 0);
-    }
+    removeRows(row, 0);
 }
 
 void SubGraphModel::removeNode(int row, bool enableTransaction)

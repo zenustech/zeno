@@ -531,7 +531,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
     if (enableTransaction)
     {
         QString id = nodeData[ROLE_OBJID].toString();
-        AddNodeCommand* pCmd = new AddNodeCommand(-1, id, nodeData, this, subGpIdx);
+        AddNodeCommand* pCmd = new AddNodeCommand(id, nodeData, this, subGpIdx);
         m_stack->push(pCmd);
     }
     else
@@ -545,6 +545,17 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
     }
 }
 
+void GraphsModel::insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx)
+{
+    //only implementation, no transaction.
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (pGraph)
+    {
+        pGraph->insertRow(row, nodeData);
+    }
+}
+
 void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
@@ -555,14 +566,26 @@ void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& 
     }
 }
 
-void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx)
+void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
 	Q_ASSERT(pGraph);
-    if (pGraph)
+    if (!pGraph)
+        return;
+
+    if (enableTransaction)
     {
-        //todo: transaction.
         QModelIndex idx = pGraph->index(nodeid);
+        int row = idx.row();
+        const NODE_DATA& data = pGraph->itemData(idx);
+
+        m_stack->beginMacro("remove single node");
+        RemoveNodeCommand* pCmd = new RemoveNodeCommand(row, data, this, subGpIdx);
+        m_stack->push(pCmd);
+        m_stack->endMacro();
+    }
+    else
+    {
         pGraph->removeNode(nodeid, false);
     }
 }

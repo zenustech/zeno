@@ -1,11 +1,11 @@
 #include "command.h"
 #include "subgraphmodel.h"
 #include "graphsmodel.h"
+#include "modelrole.h"
 
 
-AddNodeCommand::AddNodeCommand(int row, const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
-    , m_row(row)
     , m_id(id)
     , m_model(pModel)
     , m_data(data)
@@ -28,12 +28,14 @@ void AddNodeCommand::undo()
 }
 
 
-RemoveNodeCommand::RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphModel* pModel)
+RemoveNodeCommand::RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
-    , m_row(row)
     , m_data(data)
     , m_model(pModel)
+    , m_subgIdx(subgIdx)
+    , m_row(row)
 {
+    m_id = data[ROLE_OBJID].toString();
 }
 
 RemoveNodeCommand::~RemoveNodeCommand()
@@ -42,12 +44,12 @@ RemoveNodeCommand::~RemoveNodeCommand()
 
 void RemoveNodeCommand::redo()
 {
-    m_model->removeNode(m_row);
+    m_model->removeNode(m_id, m_subgIdx);
 }
 
 void RemoveNodeCommand::undo()
 {
-    m_model->insertRow(m_row, m_data);
+    m_model->insertRow(m_row, m_data, m_subgIdx);
 }
 
 
