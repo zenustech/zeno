@@ -97,9 +97,9 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                     {
                         ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toBool() }));
                     }
-                    else
+                    else if (varType != QVariant::Invalid)
                     {
-                        zeno::log_warn("bad qt variant type {}", defl.typeName());
+                        zeno::log_warn("bad qt variant type {}", defl.typeName() ?: "(null)");
                         Q_ASSERT(false);
                     }
                 }
@@ -144,9 +144,9 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 			{
 				ret.push_back(QJsonArray({ "setNodeParam", ident, param_info.name, value.toBool() }));
 			}
-			else
+			else if (varType != QVariant::Invalid)
 			{
-                zeno::log_warn("bad qt variant type {}", value.typeName());
+                zeno::log_warn("bad qt variant type {}", value.typeName() ?: "(null)");
 				Q_ASSERT(false);
 			}
 		}
@@ -157,8 +157,11 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 if (output.info.name == "DST") continue;
                 ret.push_back(QJsonArray({"bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name}));
             }
+            ret.push_back(QJsonArray({"completeNode", ident}));
             ident = noOnceIdent;//must before OPT_VIEW branch
         }
+
+		ret.push_back(QJsonArray({"completeNode", ident}));
 
 		if (opts & OPT_VIEW) {
             for (OUTPUT_SOCKET output : outputs)
@@ -187,8 +190,6 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		{
 			ret.push_back(QJsonArray({"setNodeOption", ident, optionName}));
 		}*/
-
-		ret.push_back(QJsonArray({"completeNode", ident}));
 	}
 }
 
