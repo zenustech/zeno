@@ -28,8 +28,8 @@ namespace zeno {
             auto axisDst = axisIndex(get_input<zeno::StringObject>("axisDst")->get());
             auto refAxisSrc = axisIndex(get_input<zeno::StringObject>("refAxisSrc")->get());
             auto refAxisDst = axisIndex(get_input<zeno::StringObject>("refAxisDst")->get());
-            auto minVal = get_input<zeno::NumericObject>("minVal")->get<float>();
-            auto maxVal = get_input<zeno::NumericObject>("maxVal")->get<float>();
+            auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
+            auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
 
 
             auto getAxis = [] (auto &val, int axis) -> auto & {
@@ -76,9 +76,9 @@ namespace zeno {
             });
 
             auto linmap = [&] (float src) -> float {
-                auto nit = std::lower_bound(srcArr.begin() + 1, srcArr.end(), src);
+                auto nit = std::lower_bound(srcArr.begin() + 1, srcArr.end() - 1, src);
                 auto it = nit - 1;
-                size_t index = nit - (srcArr.begin() + 1);
+                size_t index = it - srcArr.begin();
                 float fac = (src - *it) / std::max(1e-8f, *nit - *it);
                 float dst = dstArr[index] + (dstArr[index + 1] - dstArr[index]) * fac;
                 return dst;
@@ -94,15 +94,15 @@ namespace zeno {
                         maxv = std::max(maxv, val);
                         minv = std::min(minv, val);
                     }
-                    minVal = minv + (maxv - minv) * minVal;
-                    maxVal = minv + (maxv - minv) * maxVal;
+                    limitMin = minv + (maxv - minv) * limitMin;
+                    limitMax = minv + (maxv - minv) * limitMax;
                 }
 
                 prim->attr_visit(attrNameDst, [&] (auto &attrDst) {
 #pragma omp parallel for
                     for (intptr_t i = 0; i < attrSrc.size(); ++i) {
                         auto src = getAxis(attrSrc[i], axisSrc);
-                        auto dst = linmap((src - minVal) / (maxVal - minVal));
+                        auto dst = linmap((src - limitMin) / (limitMax - limitMin));
                         getAxis(attrDst[i], axisDst) = dst;
                     }
                 });
@@ -119,8 +119,8 @@ ZENDEFNODE(PrimitiveLinearMap, {
     {"string", "attrNameDst", "pos"},
     {"string", "refAttrNameSrc", "pos"},
     {"string", "refAttrNameDst", "pos"},
-    {"float", "minVal", "0"},
-    {"float", "maxVal", "1"},
+    {"float", "limitMin", "0"},
+    {"float", "limitMax", "1"},
     {"enum X Y Z", "axisSrc", "X"},
     {"enum X Y Z", "axisDst", "Y"},
     {"enum X Y Z", "refAxisSrc", "X"},
