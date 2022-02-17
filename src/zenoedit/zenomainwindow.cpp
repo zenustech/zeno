@@ -378,7 +378,7 @@ bool ZenoMainWindow::saveFile(QString filePath)
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
         qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
-        zeno::log_warn("Failed to open zsg for write: {} ({})",
+        zeno::log_error("Failed to open zsg for write: {} ({})",
                        filePath.toStdString(), f.errorString().toStdString());
         return false;
     }

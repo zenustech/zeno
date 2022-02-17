@@ -30,7 +30,7 @@ using namespace _implObjectCodec;
 
 std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
     if (len < sizeof(ObjectHeader)) {
-        log_warn("data too short, giving up");
+        log_error("data too short, giving up");
         return nullptr;
     }
     auto &header = *(ObjectHeader *)buf;
@@ -40,7 +40,7 @@ std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
         return decodePrimitiveObject(it);
 
     } else {
-        log_warn("invalid object type {}", header.type);
+        log_error("invalid object type {}", header.type);
         return nullptr;
     }
 }
@@ -55,7 +55,7 @@ bool encodeObject(IObject const *object, std::vector<char> &buf) {
         return encodePrimitiveObject(obj, it);
 
     } else {
-        log_warn("invalid object type `{}`", cppdemangle(typeid(*object)));
+        log_error("invalid object type `{}`", cppdemangle(typeid(*object)));
         return false;
     }
 }

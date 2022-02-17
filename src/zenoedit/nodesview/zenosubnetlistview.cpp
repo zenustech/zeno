@@ -38,7 +38,7 @@ QVariant ZSubnetListModel::data(const QModelIndex& index, int role) const
         }
         else
         {
-            zeno::log_warn("not display role");
+            zeno::log_error("not display role");
             Q_ASSERT(false);
             return QVariant();
         }

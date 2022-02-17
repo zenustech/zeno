@@ -89,7 +89,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
-            log_warn("exception executing command {} ({}): {}",
+            log_error("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
 #endif

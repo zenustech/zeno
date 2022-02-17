@@ -18,7 +18,7 @@ bool ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     if (!ret) {
-        zeno::log_warn("canot open zsg file: {} ({})", fn.toStdString(),
+        zeno::log_error("canot open zsg file: {} ({})", fn.toStdString(),
                        file.errorString().toStdString());
         return false;
     }
@@ -31,7 +31,7 @@ bool ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
 
     const rapidjson::Value& graph = doc["graph"];
     if (graph.IsNull()) {
-        zeno::log_warn("json format incorrect in zsg file: {}", fn.toStdString());
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
         return false;
     }
 

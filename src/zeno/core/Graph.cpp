@@ -59,10 +59,10 @@ ZENO_API Status Graph::applyNode(std::string const &id) {
     try {
         node->doApply();
     } catch (ErrorException const &e) {
-        log_warn("==> error during {}: {}", node->myname, e.what());
+        log_error("==> error during {}: {}", node->myname, e.what());
         return Status{node, e.get()};
     } catch (std::exception const &e) {
-        log_warn("==> exception during {}: {}", node->myname, e.what());
+        log_error("==> exception during {}: {}", node->myname, e.what());
         return Status{node, std::make_shared<StdError>(std::current_exception())};
     }
     return {};

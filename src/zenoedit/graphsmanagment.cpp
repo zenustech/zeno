@@ -47,7 +47,7 @@ IGraphsModel* GraphsManagment::importGraph(const QString& fn)
 {
     IGraphsModel *pModel = openZsgFile(fn);
     if (!pModel) {
-        zeno::log_warn("failed to open zsg file: {}", fn.toStdString());
+        zeno::log_error("failed to open zsg file: {}", fn.toStdString());
         return nullptr;
     }
     Q_ASSERT(pModel);
