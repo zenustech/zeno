@@ -13,6 +13,7 @@ namespace {
 
 struct ToView : zeno::INode {
     virtual void complete() override {
+        log_debug("ToView: {}", myname);
         graph->nodesToExec.insert(myname);
     }
 
