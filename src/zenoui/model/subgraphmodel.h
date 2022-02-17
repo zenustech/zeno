@@ -66,8 +66,6 @@ public:
     void appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
-    void removeLink(const EdgeInfo& info, bool enableTransaction = false);
-    void addLink(const EdgeInfo& info, bool enableTransaction = false);
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
     void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);
     void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
@@ -76,6 +74,7 @@ public:
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
     void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);
     SubGraphModel* clone(GraphsModel* parent);
+    GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
 
     void beginMacro(const QString& name);
     void endMacro();
@@ -91,6 +90,7 @@ public:
     void clear();
     void reload();
     void onModelInited();
+    void setInputSocket(const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue);
 
 public slots:
     void onDoubleClicked(const QString &nodename);
@@ -103,8 +103,6 @@ private:
     bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
     bool itemFromIndex(const QModelIndex &index, NODE_DATA& retNode) const;
     bool _removeRow(const QModelIndex &index);
-    void _addLink(const EdgeInfo &info);
-    void _removeLink(const EdgeInfo& info);
 
     QString m_name;
     QMap<QString, int> m_key2Row;

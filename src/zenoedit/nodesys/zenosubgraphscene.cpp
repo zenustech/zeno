@@ -64,23 +64,23 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         const INPUT_SOCKETS& inputs = node->inputParams();
         for (QString inSock : inputs.keys())
         {
+            QPointF inSockPos = node->getPortPos(true, inSock);
             const INPUT_SOCKET& inputSocket = inputs[inSock];
-            for (QString outId : inputSocket.outNodes.keys())
+            for (const QPersistentModelIndex& linkIdx : inputSocket.linkIndice)
             {
-                for (QString outSock : inputSocket.outNodes[outId].keys())
-                {
-                    ZenoNode* outNode = m_nodes[outId];
-                    const QPointF &outSockPos = outNode->getPortPos(false, outSock);
-                    EdgeInfo info(outId, id, outSock, inSock);
-                    ZenoFullLink *pEdge = new ZenoFullLink(info);
-                    pEdge->updatePos(outSockPos, node->getPortPos(true, inSock));
-                    addItem(pEdge);
-                    m_links[info] = pEdge;
-                    outNode->toggleSocket(false, outSock, true);
-                }
+                ZenoFullLink* pEdge = new ZenoFullLink(linkIdx);
+
+                const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+                const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+                const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                ZenoNode* outNode = m_nodes[outId];
+                const QPointF& outSockPos = outNode->getPortPos(false, outSock);
+
+                pEdge->updatePos(outSockPos, inSockPos);
+                addItem(pEdge);
+                m_links[linkId] = pEdge;
+                outNode->toggleSocket(false, outSock, true);
             }
-            if (!inputSocket.outNodes.isEmpty())
-                node->toggleSocket(true, inSock, true);
         }
     }
 
@@ -90,6 +90,14 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     connect(pGraphsModel, SIGNAL(_dataChanged(const QModelIndex&, const QModelIndex&, int)), this, SLOT(onDataChanged(const QModelIndex&, const QModelIndex&, int)));
     connect(pGraphsModel, SIGNAL(_rowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)));
     connect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
+
+    //link sync:
+    connect(pGraphsModel, &IGraphsModel::linkDataChanged, this, &ZenoSubGraphScene::onLinkDataChanged);
+    connect(pGraphsModel, &IGraphsModel::linkAboutToBeInserted, this, &ZenoSubGraphScene::onLinkAboutToBeInserted);
+    connect(pGraphsModel, &IGraphsModel::linkInserted, this, &ZenoSubGraphScene::onLinkInserted);
+    connect(pGraphsModel, &IGraphsModel::linkAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
+    connect(pGraphsModel, &IGraphsModel::linkRemoved, this, &ZenoSubGraphScene::onLinkRemoved);
+
 }
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
@@ -119,37 +127,9 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 	}
 	if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
 	{
-				//it's diffcult to detect which link has changed on this method.
-                //use ROLE_ADDLINK/ROLE_REMOVELINK instead.
+	    //it's diffcult to detect which link has changed on this method.
+        //but link sync is managed by linkModel
 	}
-    if (role == ROLE_ADDLINK)
-    {
-        EdgeInfo info = idx.data(role).value<EdgeInfo>();
-        if (info.inputNode.isEmpty() || info.inputSock.isEmpty() || info.outputNode.isEmpty() || info.outputSock.isEmpty())
-        {
-            return;
-        }
-
-	    Q_ASSERT(m_links.find(info) == m_links.end());
-		if (m_links.find(info) == m_links.end())
-		{
-			onLinkChanged(true, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
-		}
-    }
-    if (role == ROLE_REMOVELINK)
-    {
-        EdgeInfo info = idx.data(ROLE_REMOVELINK).value<EdgeInfo>();
-		if (info.inputNode.isEmpty() || info.inputSock.isEmpty() || info.outputNode.isEmpty() || info.outputSock.isEmpty())
-		{
-            return;
-		}
-
-        Q_ASSERT(m_links.find(info) != m_links.end());
-        if (m_links.find(info) != m_links.end())
-        {
-            onLinkChanged(false, info.outputNode, info.outputSock, info.inputNode, info.inputSock);
-        }
-    }
 	if (role == ROLE_OPTIONS)
 	{
         Q_ASSERT(m_nodes.find(id) != m_nodes.end());
@@ -180,6 +160,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         const QString& newName = info.newInfo.name;
         
         //update links
+        /*
         for (const EdgeInfo& edgeInfo : m_links.keys())
         {
             if (info.bInput)
@@ -207,12 +188,75 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
                 }
             }
         }
+        */
     }
     if (role == ROLE_OBJNAME)
     {
         Q_ASSERT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
     }
+}
+
+void ZenoSubGraphScene::onLinkDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
+{
+	if (subGpIdx != m_subgIdx)
+		return;
+}
+
+void ZenoSubGraphScene::onLinkAboutToBeInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
+{
+	if (subGpIdx != m_subgIdx)
+		return;
+}
+
+void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
+{
+	if (subGpIdx != m_subgIdx)
+		return;
+
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+
+	ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx));
+
+	const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+
+    const QString& inId = linkIdx.data(ROLE_INNODE).toString();
+    const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
+	const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+	const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+
+    ZenoNode* pNode = m_nodes[inId];
+    const QPointF& inSockPos = pNode->getPortPos(true, inSock);
+	const QPointF& outSockPos = m_nodes[outId]->getPortPos(false, outSock);
+
+	pEdge->updatePos(outSockPos, inSockPos);
+	addItem(pEdge);
+	m_links[linkId] = pEdge;
+	
+    //outNode->toggleSocket(false, outSock, true);
+}
+
+void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last)
+{
+	if (subGpIdx != m_subgIdx)
+		return;
+
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+	Q_ASSERT(linkIdx.isValid());
+
+    const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+    Q_ASSERT(m_links.find(linkId) != m_links.end());
+    
+    delete m_links[linkId];
+	m_links.remove(linkId);
+}
+
+void ZenoSubGraphScene::onLinkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
+{
+	if (subGpIdx != m_subgIdx)
+		return;
 }
 
 QRectF ZenoSubGraphScene::nodesBoundingRect() const
@@ -239,13 +283,14 @@ void ZenoSubGraphScene::select(const QString& id)
 
 void ZenoSubGraphScene::undo()
 {
-    //todo
-    //m_subgraphModel->undo();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    pGraphsModel->undo();
 }
 
 void ZenoSubGraphScene::redo()
 {
-    //todo
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    pGraphsModel->redo();
 }
 
 void ZenoSubGraphScene::copy()
@@ -259,6 +304,7 @@ void ZenoSubGraphScene::copy()
     QMap<EdgeInfo, ZenoFullLink *> selLinks;
     QMap<QString, ZenoNode*> selNodes;
 
+    /*
     for (auto item : selItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -370,10 +416,12 @@ void ZenoSubGraphScene::copy()
     QMimeData *pMimeData = new QMimeData;
     pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
     QApplication::clipboard()->setMimeData(pMimeData);
+    */
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
+    /*
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
@@ -405,6 +453,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
 
         //pGraphsModel->endMacro();
     }
+    */
 }
 
 QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)
@@ -488,7 +537,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
             EdgeInfo info(outId, inId, outPort, inPort);
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            pGraphsModel->addLink(info, m_subgIdx);
+            pGraphsModel->addLink(info, m_subgIdx, true);
 
             removeItem(m_tempLink);
             delete m_tempLink;
@@ -538,50 +587,6 @@ void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)
     }
 }
 
-void ZenoSubGraphScene::onLinkChanged(bool bAdd, const QString& outputId, const QString& outputSock, const QString& inputId, const QString& inputSock)
-{
-    ZenoNode *pInputNode = m_nodes[inputId];
-    ZenoNode *pOutputNode = m_nodes[outputId];
-    if (bAdd)
-    {
-        EdgeInfo info(outputId, inputId, outputSock, inputSock);
-        ZenoFullLink *pEdge = new ZenoFullLink(info);
-        const QPointF &outPos = pOutputNode->getPortPos(false, outputSock);
-        const QPointF &inPos = pInputNode->getPortPos(true, inputSock);
-        pEdge->updatePos(outPos, inPos);
-        addItem(pEdge);
-
-        m_links[info] = pEdge;
-        pInputNode->toggleSocket(true, inputSock, true);
-        pOutputNode->toggleSocket(false, outputSock, true);
-    }
-    else
-    {
-        EdgeInfo info(outputId, inputId, outputSock, inputSock);
-        ZenoFullLink *pLink = m_links[info];
-        removeItem(pLink);
-        delete pLink;
-
-        m_links.remove(info);
-
-        if (pInputNode)
-        {
-            auto const &inSocks = pInputNode->inputParams();
-            const auto inSock = inSocks[inputSock];
-            if (inSock.outNodes.isEmpty()) {
-                pInputNode->toggleSocket(true, inputSock, false);
-            }
-        }
-        if (pOutputNode)
-        {
-            auto const &outSocks = pOutputNode->outputParams();
-            if (outSocks.find(outputSock)->value().inNodes.isEmpty()) {
-                pOutputNode->toggleSocket(false, outputSock, false);
-            }
-        }
-    }
-}
-
 void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last)
 {
     if (subgIdx != m_subgIdx)
@@ -612,40 +617,6 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     m_nodes[id] = pNode;
 	connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
 		this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
-        //const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
-        //ZenoNode* pNode = createNode(idx, m_nodeParams);
-        //pNode->initUI(m_subgIdx, idx);
-        //addItem(pNode);
-        //const QString& nodeid = pNode->nodeId();
-        //m_nodes[nodeid] = pNode;
-        //connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
-                //this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
-
-    /*{//cuz PRY(please-repeat-yourself) is a great cpp design pattern to luzh
-        ZenoNode *node = pNode;
-        const QString& id = node->nodeId();
-        const INPUT_SOCKETS& inputs = node->inputParams();
-        for (QString inSock : inputs.keys())
-        {
-            const INPUT_SOCKET& inputSocket = inputs[inSock];
-            for (QString outId : inputSocket.outNodes.keys())
-            {
-                for (QString outSock : inputSocket.outNodes[outId].keys())
-                {
-                    ZenoNode* outNode = m_nodes[outId];
-                    const QPointF &outSockPos = outNode->getPortPos(false, outSock);
-                    EdgeInfo info(outId, id, outSock, inSock);
-                    ZenoFullLink *pEdge = new ZenoFullLink(info);
-                    pEdge->updatePos(outSockPos, node->getPortPos(true, inSock));
-                    addItem(pEdge);
-                    m_links.insert(std::make_pair(info, pEdge));
-                    outNode->toggleSocket(false, outSock, true);
-                }
-            }
-            if (!inputSocket.outNodes.isEmpty())
-                node->toggleSocket(true, inSock, true);
-        }
-    }*/
 }
 
 void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput)
@@ -655,24 +626,24 @@ void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& 
     {
         ZenoNode* pInputNode = m_nodes[nodeid];
         QPointF pos = pInputNode->getPortPos(true, sockName);
-        for (const EdgeInfo& info : m_links.keys())
+        const INPUT_SOCKET inputSocket = pInputNode->inputParams()[sockName];
+        for (QPersistentModelIndex index : inputSocket.linkIndice)
         {
-            if (info.inputNode == nodeid && info.inputSock == sockName)
-            {
-                m_links[info]->initDstPos(pos);
-            }
+            Q_ASSERT(index.isValid());
+            const QString& linkId = index.data(ROLE_OBJID).toString();
+            m_links[linkId]->initDstPos(pos);
         }
     }
     else
     {
         ZenoNode* pOutputNode = m_nodes[nodeid];
         QPointF pos = pOutputNode->getPortPos(false, sockName);
-        for (const EdgeInfo& info : m_links.keys())
+        const OUTPUT_SOCKET outputSocket = pOutputNode->outputParams()[sockName];
+        for (QPersistentModelIndex index : outputSocket.linkIndice)
         {
-            if (info.outputNode == nodeid && info.outputSock == sockName)
-            {
-                m_links[info]->initSrcPos(pos);
-            }
+            Q_ASSERT(index.isValid());
+			const QString& linkId = index.data(ROLE_OBJID).toString();
+			m_links[linkId]->initSrcPos(pos);
         }
     }
 }
@@ -686,20 +657,18 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
     const INPUT_SOCKETS& inputs = pNode->inputParams();
     for (QString inSock : inputs.keys())
     {
-        const auto& outNodes = inputs[inSock].outNodes;
-        for (QString outNode : outNodes.keys())
+        const QPointF& inputPos = pNode->getPortPos(true, inSock);
+        for (QPersistentModelIndex index : inputs[inSock].linkIndice)
         {
-            for (QString outSock : outNodes[outNode].keys())
-            {
-                const SOCKET_INFO& socketinfo = outNodes[outNode][outSock];
-                const QPointF &outputPos = m_nodes[outNode]->getPortPos(false, outSock);
-                const QPointF &inputPos = pNode->getPortPos(true, inSock);
+            const QString& linkId = index.data(ROLE_OBJID).toString();
+            const QString& outNode = index.data(ROLE_OUTNODE).toString();
+            const QString& outSock = index.data(ROLE_OUTSOCK).toString();
 
-                EdgeInfo info(outNode, currNode, outSock, inSock);
-                ZenoFullLink *pLink = m_links[info];
-                Q_ASSERT(pLink);
-                pLink->updatePos(outputPos, inputPos);
-            }
+            const QPointF& outputPos = m_nodes[outNode]->getPortPos(false, outSock);
+
+            ZenoFullLink* pLink = m_links[linkId];
+			Q_ASSERT(pLink);
+			pLink->updatePos(outputPos, inputPos);
         }
     }
 
@@ -707,17 +676,16 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
     for (QString outputPort : outputs.keys())
     {
         const QPointF &outputPos = pNode->getPortPos(false, outputPort);
-        for (QString inNode : outputs[outputPort].inNodes.keys())
-        {
-            const SOCKETS_INFO& sockets = outputs[outputPort].inNodes[inNode];
-            for (QString inSock : sockets.keys())
-            {
-                QPointF sockPos = m_nodes[inNode]->getPortPos(true, inSock);
 
-                EdgeInfo info(currNode, inNode, outputPort, inSock);
-                ZenoFullLink *pLink = m_links[info];
-                pLink->updatePos(outputPos, sockPos);
-            }
+        for (QPersistentModelIndex index : outputs[outputPort].linkIndice)
+        {
+            const QString& linkId = index.data(ROLE_OBJID).toString();
+            const QString& inNode = index.data(ROLE_INNODE).toString();
+            const QString& inSock = index.data(ROLE_INSOCK).toString();
+
+            QPointF inputPos = m_nodes[inNode]->getPortPos(true, inSock);
+            ZenoFullLink* pLink = m_links[linkId];
+            pLink->updatePos(outputPos, inputPos);
         }
     }
 }
@@ -738,19 +706,17 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             }
         }
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        //todo:
-        //pGraphsModel->beginMacro("remove nodes and links");
+        pGraphsModel->beginTransaction("remove nodes and links");
         for (auto item : links)
         {
-            const EdgeInfo &info = item->linkInfo();
-            pGraphsModel->removeLink(info, m_subgIdx);
+            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx, true);
         }
         for (auto item : nodes)
         {
             const QPersistentModelIndex &index = item->index();
-            pGraphsModel->removeNode(index.row(), m_subgIdx);
+            pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
         }
-        //pGraphsModel->endMacro();
+        pGraphsModel->endTransaction();
     }
     QGraphicsScene::keyPressEvent(event);
 }

@@ -63,7 +63,7 @@ class ZenoFullLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoFullLink(const EdgeInfo& info);
+    ZenoFullLink(const QPersistentModelIndex& idx);
 
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
@@ -72,14 +72,13 @@ public:
     void updatePos(const QPointF& srcPos, const QPointF& dstPos);
     void initSrcPos(const QPointF& srcPos);
     void initDstPos(const QPointF& dstPos);
-    void updateLink(const EdgeInfo& info);
-    EdgeInfo linkInfo() const;
+    QPersistentModelIndex linkInfo() const;
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
 
 private:
-    EdgeInfo m_linkInfo;
+    QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
 };
 

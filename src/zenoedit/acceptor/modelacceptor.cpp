@@ -39,14 +39,19 @@ void ModelAcceptor::EndSubgraph()
 		foreach(const QString & inSockName, inputs.keys())
 		{
 			const INPUT_SOCKET& inSocket = inputs[inSockName];
+
+			//init connection
 			for (const QString& outNode : inSocket.outNodes.keys())
 			{
 				for (const QString& outSock : inSocket.outNodes[outNode].keys())
 				{
 					const QModelIndex& outIdx = m_currentGraph->index(outNode);
-					OUTPUT_SOCKETS outputs = m_currentGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-					outputs[outSock].inNodes[inNode][inSockName] = SOCKET_INFO(inNode, inSockName);
-					m_currentGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+					if (outIdx.isValid())
+					{
+						GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
+						const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
+						pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
+					}
 				}
 			}
 		}

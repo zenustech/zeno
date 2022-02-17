@@ -5,46 +5,65 @@
 #include "modeldata.h"
 
 class SubGraphModel;
+class GraphsModel;
 
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(int row, const QString& id, const NODE_DATA& data, SubGraphModel *pModel);
+    AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
     void redo();
     void undo();
 
 private:
-    int m_row;
     QString m_id;
-    SubGraphModel* m_model;
     NODE_DATA m_data;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
 };
 
 class RemoveNodeCommand : public QUndoCommand
 {
 public:
-    RemoveNodeCommand(int row, const NODE_DATA& data, SubGraphModel* pModel);
+    RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~RemoveNodeCommand();
     void redo();
     void undo();
 
 private:
+    QString m_id;
     NODE_DATA m_data;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
     int m_row;
-    SubGraphModel* m_model;
 };
 
-class AddRemoveLinkCommand : public QUndoCommand
+class AddLinkCommand : public QUndoCommand
 {
 public:
-    AddRemoveLinkCommand(EdgeInfo info, bool bAdded, SubGraphModel *pModel);
+    AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+	void redo();
+	void undo();
+
+private:
+	EdgeInfo m_info;
+	GraphsModel* m_model;
+	QPersistentModelIndex m_subgIdx;
+	QPersistentModelIndex m_linkIdx;
+};
+
+class RemoveLinkCommand : public QUndoCommand
+{
+public:
+    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     void redo();
     void undo();
 
 private:
     EdgeInfo m_info;
-    SubGraphModel* m_model;
+    GraphsModel* m_model;
+    QPersistentModelIndex m_subgIdx;
+    QPersistentModelIndex m_linkIdx;
     bool m_bAdded;
 };
 

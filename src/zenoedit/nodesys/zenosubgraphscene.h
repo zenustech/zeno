@@ -39,8 +39,13 @@ public slots:
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
     void onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);
-    void onLinkChanged(bool bAdd, const QString &outputId, const QString &outputPort, const QString &inputId, const QString &inputPort);
     void onViewTransformChanged(qreal factor);
+
+	void onLinkDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
+	void onLinkAboutToBeInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
+	void onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
+	void onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
+	void onLinkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
 
 private slots:
     void reload(const QModelIndex& subGpIdx);
@@ -55,7 +60,7 @@ private:
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
     std::map<QString, ZenoNode*> m_nodes;
-    QMap<EdgeInfo, ZenoFullLink*> m_links;
+    QMap<QString, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
 };
 

@@ -48,6 +48,7 @@ public:
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex index(const QString& subGraphName) const;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
+    QModelIndex linkIndex(int r);
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -55,20 +56,22 @@ public:
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
     //IGraphsModel
-	void beginTransaction(const QModelIndex& subGpIdx) override;
-	void endTransaction(const QModelIndex& subGpIdx) override;
+	void beginTransaction(const QString& name) override;
+	void endTransaction() override;
 	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
 	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
 	void setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
-	void appendItem(const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
+	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
-	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx) override;
+	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx) override;
-	void removeLink(const EdgeInfo& info, const QModelIndex& subGpIdx) override;
+    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-	void addLink(const EdgeInfo& info, const QModelIndex& subGpIdx) override;
+    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
 	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
@@ -83,6 +86,8 @@ public:
 	void undo() override;
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
+    QStandardItemModel* linkModel() const;
+    QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -97,12 +102,20 @@ public slots:
     void on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void on_rowsRemoved(const QModelIndex& parent, int first, int last);
 
+    void on_linkDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+	void on_linkAboutToBeInserted(const QModelIndex& parent, int first, int last);
+	void on_linkInserted(const QModelIndex& parent, int first, int last);
+	void on_linkAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+	void on_linkRemoved(const QModelIndex& parent, int first, int last);
+
 private:
     QVector<SubGraphModel*> m_subGraphs;
     QItemSelectionModel* m_selection;
+    QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
+    QUndoStack* m_stack;
     bool m_dirty;
 };
 

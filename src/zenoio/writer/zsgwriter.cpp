@@ -88,18 +88,18 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 	for (const INPUT_SOCKET& inSock : inputs)
 	{
 		QJsonValue deflVal = QJsonValue::fromVariant(inSock.info.defaultValue);
-		if (!inSock.outNodes.isEmpty())
+		if (!inSock.linkIndice.isEmpty())
 		{
-			for (const SOCKETS_INFO& outSocks : inSock.outNodes)
+			for (QPersistentModelIndex linkIdx : inSock.linkIndice)
 			{
-				for (const SOCKET_INFO& outSock : outSocks)
-				{
-					QJsonArray arr;
-					arr.push_back(outSock.nodeid);
-					arr.push_back(outSock.name);
-					arr.push_back(deflVal);
-					inputsArr.insert(inSock.info.name, arr);
-				}
+				QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+				QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+
+				QJsonArray arr;
+				arr.push_back(outNode);
+				arr.push_back(outSock);
+				arr.push_back(deflVal);
+				inputsArr.insert(inSock.info.name, arr);
 			}
 		}
 		else

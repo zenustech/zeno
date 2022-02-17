@@ -89,6 +89,7 @@ struct SOCKET_INFO {
     PARAM_CONTROL control;
     QString type;
     QVariant defaultValue;
+    QPersistentModelIndex index;
 
     SOCKET_INFO() : control(CONTROL_NONE) {}
     SOCKET_INFO(const QString& id, const QString& name)
@@ -118,7 +119,8 @@ typedef QMap<QString, SOCKET_INFO> SOCKETS_INFO;
 struct INPUT_SOCKET
 {
     SOCKET_INFO info;
-    QMap<QString, SOCKETS_INFO> outNodes;      //describe the connection with this socket.
+    QMap<QString, SOCKETS_INFO> outNodes;      //temp structure, for init all links, will be destroied after inited.
+    QList<QPersistentModelIndex> linkIndice;
 };
 typedef FuckQMap<QString, INPUT_SOCKET> INPUT_SOCKETS;
 Q_DECLARE_METATYPE(INPUT_SOCKETS)
@@ -127,7 +129,7 @@ Q_DECLARE_METATYPE(INPUT_SOCKETS)
 struct OUTPUT_SOCKET
 {
     SOCKET_INFO info;
-    QMap<QString, SOCKETS_INFO> inNodes;
+    QList<QPersistentModelIndex> linkIndice;
 };
 typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
 Q_DECLARE_METATYPE(OUTPUT_SOCKETS)

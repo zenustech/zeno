@@ -20,7 +20,7 @@ void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QS
 	node[ROLE_OBJPOS] = pt;
 	node[ROLE_COLLASPED] = false;
 
-	pModel->appendItem(node, subgIdx);
+	pModel->addNode(node, subgIdx, true);
 }
 
 NODE_TYPE NodesMgr::nodeType(const QString& name)
