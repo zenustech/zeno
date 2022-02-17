@@ -2,13 +2,14 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/variantswitch.h>
 #include <zeno/utils/logger.h>
 #include <unordered_map>
 #include <cassert>
 
 namespace zeno {
 
-void primLineSort(PrimitiveObject *prim) {
+void primLineSort(PrimitiveObject *prim, bool reversed) {
     std::vector<int> visited;
     {
         std::unordered_multimap<int, int> v2l;
@@ -82,10 +83,14 @@ void primLineSort(PrimitiveObject *prim) {
     {
         auto revampvec = [&] (auto &arr) {
             std::vector<std::decay_t<decltype(arr[0])>> newArr(arr.size());
-            for (int i = 0; i < arr.size(); i++) {
-                int j = visited[i];
-                newArr[j] = arr[i];
-            }
+            boolean_switch(reversed, [&] (auto reversed) {
+                for (int i = 0; i < arr.size(); i++) {
+                    int j = visited[i];
+                    if constexpr (reversed.value)
+                        j = arr.size() - 1 - j;
+                    newArr[j] = arr[i];
+                }
+            });
             /*if constexpr (std::is_same_v<vec3f, std::decay_t<decltype(arr[0])>>) {
                 for (int i = 0; i < newArr.size(); i++) {
                     log_info("{} = {} {} {}", i, newArr[i][0], newArr[i][1], newArr[i][2]);
@@ -107,7 +112,7 @@ void primLineSort(PrimitiveObject *prim) {
 struct PrimitiveLineSort : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        primLineSort(prim.get());
+        primLineSort(prim.get(), get_param<bool>("reversed"));
         set_output("prim", std::move(prim));
     }
 };
@@ -120,6 +125,7 @@ ZENDEFNODE(PrimitiveLineSort, {
     {"PrimitiveObject", "prim"},
     },
     {
+    {"bool", "reversed", "0"},
     },
     {"primitive"},
 });
