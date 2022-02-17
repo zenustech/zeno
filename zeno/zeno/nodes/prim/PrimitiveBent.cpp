@@ -19,10 +19,11 @@ struct PrimitiveBent : zeno::INode {
         auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
         auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
         auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
+        auto midPoint = get_input<zeno::NumericObject>("midPoint")->get<float>();
         limitMin = std::min(1.f, std::max(0.f, limitMin));
         limitMax = std::min(1.f, std::max(0.f, limitMax));
-        limitMin -= 0.5f;
-        limitMax -= 0.5f;
+        limitMin -= midPoint;
+        limitMax -= midPoint;
 
         auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
         auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<vec3f>() : vec3f(0, 1, 0);
@@ -40,7 +41,8 @@ struct PrimitiveBent : zeno::INode {
                 return vec2f(dot(tangent, prim->verts[i] - origin));
             }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
             auto height = acc[1] - acc[0];
-            auto middle = (acc[1] + acc[0]) * 0.5f;
+            auto middle = acc[1] * midPoint + acc[0] * (1 - midPoint);
+            auto truemid = height * (0.5f - midPoint);
             auto radius = height / angle;
             auto inv_height = 1 / height;
 
@@ -62,6 +64,7 @@ struct PrimitiveBent : zeno::INode {
                 newtanpos -= diff * cosang;
                 newdirpos += diff * sinang;
 
+                newtanpos -= truemid;
                 newdirpos -= radius;
                 pos += (newtanpos - tanpos) * tangent + (newdirpos - dirpos) * direction;
 
@@ -83,6 +86,7 @@ ZENDEFNODE(PrimitiveBent, {
     {"float", "angle", "45"},
     {"float", "limitMin", "0"},
     {"float", "limitMax", "1"},
+    {"float", "midPoint", "0.5"},
     },
     {
     {"PrimitiveObject", "prim"},
