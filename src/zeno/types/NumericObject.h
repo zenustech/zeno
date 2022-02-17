@@ -33,7 +33,6 @@ struct NumericObject : IObjectClone<NumericObject> {
         using V = std::decay_t<decltype(val)>;
         if constexpr (!std::is_constructible_v<T, V>) {
             throw makeError<TypeError>(typeid(T), typeid(V), "NumericObject::get<T>");
-            return T{};
         } else {
             return T(val);
         }

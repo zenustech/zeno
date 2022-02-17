@@ -445,6 +445,10 @@ QGraphicsLayout* ZenoNode::initParams()
             {
                 value = QString::number(val.toInt());
             }
+            else if (val.type() == QVariant::Bool)
+            {
+                value = val.toBool() ? "true" : "false";
+            }
             else if (val.type() == QVariant::Invalid)
             {
                 zeno::log_warn("got null qt variant");

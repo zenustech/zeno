@@ -124,6 +124,10 @@ QJsonObject ZsgWriter::dumpNode(const NODE_DATA& data)
 			paramsObj.insert(info.name, val.toDouble());
 		else if (val.type() == QVariant::Int)
 			paramsObj.insert(info.name, val.toInt());
+		else if (val.type() == QVariant::Bool)
+			paramsObj.insert(info.name, val.toBool());
+        else if (val.type() != QVariant::Invalid)
+                zeno::log_warn("bad param info qvariant type {}", val.typeName() ?: "(null)");
 	}
 	obj.insert("params", paramsObj);
 
