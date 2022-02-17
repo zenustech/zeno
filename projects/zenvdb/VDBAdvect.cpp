@@ -121,8 +121,10 @@ struct VolumeAdvect : zeno::INode {
         auto field = vecField->m_grid;
         auto timeStep = get_input<NumericObject>("TimeStep")->get<float>();
         //auto velField = openvdb::tools::DiscreteField<openvdb::Vec3SGrid>(*field);
-        auto advection = openvdb::tools::VolumeAdvection< openvdb::Vec3fGrid, true, openvdb::util::NullInterrupter >(*field);
-
+        using VolumeAdvection =
+        openvdb::tools::VolumeAdvection< openvdb::Vec3fGrid, true>;
+        VolumeAdvection advection(*field);
+        
         auto spatialScheme = get_input<StringObject>("Integrator")->get();
         if (spatialScheme == std::string("SemiLagrangian")) {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::SEMI);
@@ -159,32 +161,47 @@ struct VolumeAdvect : zeno::INode {
         else {
             throw zeno::Exception("VolumeAdvect Node: wrong parameter for Limitter: " + temporalScheme);
         }
+
         advection.setSubSteps(get_input<NumericObject>("SubSteps")->get<int>());
-        if(get_input("InoutField")->as<VDBGrid>()->getType()=="FloatGrid")
+        
+        if(get_input("InField")->as<VDBGrid>()->getType()=="FloatGrid")
         {
-            auto f = get_input("InoutField")->as<VDBFloatGrid>()->m_grid;
-            f = (advection.advect<openvdb::FloatGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep))->deepCopy();
+            
+            auto f = get_input("InField")->as<VDBFloatGrid>();
+            auto f2 = f->m_grid->deepCopy();
+            //auto result = std::make_shared<VDBFloatGrid>();
+            auto res = advection.template advect<openvdb::FloatGrid,
+                    openvdb::tools::Sampler<1, false>>(*f2, timeStep);
+            f->m_grid = res->deepCopy();
+            //set_output("outField", get_input("InField"));
         }
-        else if(get_input("InoutField")->as<VDBGrid>()->getType()=="Vec3Grid")
+        else if(get_input("InField")->as<VDBGrid>()->getType()=="Vec3Grid")
         {
-            auto f = get_input("InoutField")->as<VDBFloat3Grid>()->m_grid;
-            f = (advection.advect<openvdb::Vec3fGrid, openvdb::tools::BoxSampler>(*f, (double)timeStep))->deepCopy();
+            auto f = get_input("InField")->as<VDBFloat3Grid>();
+            auto f2 = f->m_grid->deepCopy();
+            auto res = advection.template advect<openvdb::Vec3fGrid,
+                    openvdb::tools::Sampler<1, true>>(*f2, timeStep);
+            f->m_grid = res->deepCopy();
+            //set_output("outField", get_input("InField"));
         }
         //advection.advect(0.0, timeStep);
-        set_output("InoutField", get_input("InoutField"));
+        auto layers_to_ext = zeno::IObject::make<zeno::NumericObject>();
+        layers_to_ext->set<int>(advection.getMaxDistance(*field, timeStep));
+        set_output("extend", layers_to_ext);
     }
 };
 
 ZENO_DEFNODE(VolumeAdvect)(
     { /* inputs: */ {
-        "InoutField",
+        "InField",
         "VecField",
         {"float", "TimeStep", "0.04"},
         {"int", "SubSteps", "1"},
         {"enum SemiLagrangian  MidPoint RK3 RK4 MacCormack BFECC", "Integrator", "BFECC"},
         {"enum None Clamp Revert", "Limiter", "Revert"},
     }, /* outputs: */ {
-        "InoutField"
+        //"outField"
+        "extend",
     }, /* params: */ {
     }, /* category: */ {
         "openvdb",

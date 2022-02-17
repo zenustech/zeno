@@ -88,7 +88,13 @@ struct VDBPointsToPrimitive : zeno::INode {
     auto &retpos = ret->add_attr<zeno::vec3f>("pos");
     auto &retvel = ret->add_attr<zeno::vec3f>("vel");
 
-    tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
+    //tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
+    std::vector<std::vector<std::tuple<zeno::vec3f,zeno::vec3f>>> data(leafs.size());
+    for(int i=0;i<leafs.size();i++)
+    {
+      data[i].resize(0);
+      data[i].reserve(512*16);
+    }
     tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
     //for (auto const &leaf: leafs)
     {
@@ -116,15 +122,29 @@ struct VDBPointsToPrimitive : zeno::INode {
         openvdb::Vec3R v = velocityHandle.get(*iter);
         //retpos.emplace_back(p[0], p[1], p[2]);
         //retvel.emplace_back(v[0], v[1], v[2]);
-        data.emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
+        data[index].emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
       }
     });
-    ret->resize(data.size());
+    std::vector<int> sum_table(data.size()+1);
+    sum_table[0] = 0;
+    for(int i=0;i<data.size();i++)
+    {
+      sum_table[i+1] = sum_table[i] +data[i].size();
+    }
+    int count = sum_table[sum_table.size()-1];
+    std::vector<std::tuple<zeno::vec3f,zeno::vec3f>> data2;
+    data2.resize(0);
+    data2.reserve(count);
+    ret->resize(count);
+    for(int i=0;i<data.size();i++)
+    {
+      data2.insert(data2.end(), data[i].begin(), data[i].end());
+    }
     tbb::parallel_for((size_t)0, (size_t)ret->size(), (size_t)1, 
     [&](size_t index)
     {
-      retpos[index] = std::get<0>(data[index]);
-      retvel[index] = std::get<1>(data[index]);
+      retpos[index] = std::get<0>(data2[index]);
+      retvel[index] = std::get<1>(data2[index]);
     });
     set_output("prim", ret);
   }

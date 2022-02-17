@@ -48,7 +48,31 @@ bool ptInTriangle(zeno::vec3f p, zeno::vec3f p0, zeno::vec3f p1,
   {return false;}
   return true;
 }
-
+bool pointInTriangle(const zeno::vec3f& query_point,
+                     const zeno::vec3f& triangle_vertex_0,
+                     const zeno::vec3f& triangle_vertex_1,
+                     const zeno::vec3f& triangle_vertex_2,
+                     zeno::vec3f &weights)
+{
+    // u=P2−P1
+    zeno::vec3f u = triangle_vertex_1 - triangle_vertex_0;
+    // v=P3−P1
+    zeno::vec3f v = triangle_vertex_2 - triangle_vertex_0;
+    // n=u×v
+    zeno::vec3f n = zeno::cross(u,v);
+    // w=P−P1
+    zeno::vec3f w = query_point - triangle_vertex_0;
+    // Barycentric coordinates of the projection P′of P onto T:
+    // γ=[(u×w)⋅n]/n²
+    float gamma = zeno::dot(n, zeno::cross(u,w)) / zeno::dot(n,n);
+    // β=[(w×v)⋅n]/n²
+    float beta = zeno::dot(zeno::cross(w, v),n) / zeno::dot(n,n);
+    float alpha = 1 - gamma - beta;
+    // The point P′ lies inside T if:
+    return ((0 <= alpha) && (alpha <= 1) &&
+            (0 <= beta)  && (beta  <= 1) &&
+            (0 <= gamma) && (gamma <= 1));
+}
 // to do where to put this func??
 template <class T>
 T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
@@ -162,7 +186,7 @@ zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2)
 {
   for(auto key:src->attr_keys())
   {
-      if (key != "pos")
+      if (key!="TriIndex")
       std::visit([i, v0, v1, v2, &pdst, &pos0, &pos1, &pos2](auto &&dst, auto &&src) {
           using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
           using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
@@ -170,9 +194,11 @@ zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2)
               auto val1 = src[v0];
               auto val2 = src[v1];
               auto val3 = src[v2];
-              auto val = baryCentricInterpolation(val1, val2, val3, pdst, 
-                           pos0, pos1, pos2);
-              dst[i] = val;
+              // auto val = baryCentricInterpolation(val1, val2, val3, pdst, 
+              //              pos0, pos1, pos2);
+              zeno::vec3f w;
+              pointInTriangle(pdst, pos0, pos1, pos2, w);
+              dst[i] = w[0]*val1 + w[1]*val2 + w[2]*val3;
           } else  {
               throw std::runtime_error("the same attr of both primitives are of different types.");
           }
@@ -186,7 +212,7 @@ struct InterpMeshBarycentric : INode{
     auto triIndex = points->attr<zeno::vec3f>("TriIndex");
     for(auto key:prim->attr_keys())
     { 
-        if(key!="pos")
+        if(key!="pos"&&key!="TriIndex")
        std::visit([&points, key](auto &&ref) {
                     using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
                     points->add_attr<T>(key);
@@ -217,4 +243,50 @@ ZENDEFNODE(InterpMeshBarycentric, {
     {"primitive"},
     });
 
+struct PrimFindTriangle : INode{
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("MeshPrim");
+    auto points = get_input<PrimitiveObject>("Particles");
+    auto triIndex = points->add_attr<zeno::vec3f>("TriIndex");
+    for(auto key:prim->attr_keys())
+    { 
+        if(key!="pos")
+       std::visit([&points, key](auto &&ref) {
+                    using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                    points->add_attr<T>(key);
+                }, prim->attr(key));
+    }
+//#pragma omp parallel for
+  tbb::parallel_for((size_t)0, (size_t)(points->size()), (size_t)1, [&](size_t index) 
+  {
+    float mind = 999999999.0;
+    for(auto tidx:prim->tris ){
+      int v0 = tidx[0], v1 = tidx[1], v2 = tidx[2];
+      zeno::vec3f c = (prim->verts[v0] + prim->verts[v1] + prim->verts[v2])/3.0;
+      float d = zeno::length(points->verts[index] - c);
+      zeno::vec3f w;
+      if(d<mind && pointInTriangle(points->verts[index], prim->verts[v0], prim->verts[v1], prim->verts[v2], w))
+      {
+        points->attr<zeno::vec3f>("TriIndex")[index] = zeno::vec3f(v0,v1,v2);
+        mind = d;
+      }
+    }
+  });
+
+    set_output("oParticles", get_input("Particles"));
+
+  }
+};
+
+ZENDEFNODE(PrimFindTriangle, {
+    {
+      "MeshPrim",
+      "Particles",
+    },
+    {
+      "oParticles"
+    },
+    {},
+    {"primitive"},
+    });
 } // namespace zeno

@@ -135,21 +135,21 @@ struct ZenoIndexBuckets : IObject {
   buckets_t ibs;
 };
 
-struct ZenoSparseLevelSet : IObject {
-  using spls_t = zs::SparseLevelSet<3>;
-  auto &get() noexcept { return ls; }
-  const auto &get() const noexcept { return ls; }
-  spls_t ls;
-};
-
 struct ZenoLevelSet : IObject {
+  // this supports a wide range of grid types (not just collocated)
+  // default channel contains "sdf"
+  // default transfer scheme is "unknown"
   using basic_ls_t = zs::BasicLevelSet<float, 3>;
   using const_sdf_vel_ls_t = zs::ConstSdfVelFieldPtr<float, 3>;
   using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
   using levelset_t =
       zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
 
-  using spls_t = typename basic_ls_t::spls_t;
+  template <zs::grid_e category = zs::grid_e::collocated>
+  using spls_t = typename basic_ls_t::template spls_t<category>;
+  using clspls_t = typename basic_ls_t::clspls_t;
+  using ccspls_t = typename basic_ls_t::ccspls_t;
+  using sgspls_t = typename basic_ls_t::sgspls_t;
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
@@ -157,10 +157,11 @@ struct ZenoLevelSet : IObject {
   bool holdsBasicLevelSet() const noexcept {
     return std::holds_alternative<basic_ls_t>(levelset);
   }
-  bool holdsSparseLevelSet() const noexcept {
+  template <zs::grid_e category = zs::grid_e::collocated>
+  bool holdsSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
     return zs::match([](const auto &ls) {
       if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
-        return ls.template holdsLevelSet<spls_t>();
+        return ls.template holdsLevelSet<spls_t<category>>();
       else
         return false;
     })(levelset);
@@ -177,14 +178,17 @@ struct ZenoLevelSet : IObject {
   decltype(auto) getLevelSetSequence() noexcept {
     return std::get<const_transition_ls_t>(levelset);
   }
-  decltype(auto) getSparseLevelSet() const noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
+  template <zs::grid_e category = zs::grid_e::collocated>
+  decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
   }
-  decltype(auto) getSparseLevelSet() noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t>();
+  template <zs::grid_e category = zs::grid_e::collocated>
+  decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) noexcept {
+    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
   }
 
   levelset_t levelset;
+  std::string transferScheme;
 };
 
 struct ZenoBoundary : IObject {
