@@ -20,13 +20,13 @@ struct PrimitiveBent : zeno::INode {
         auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
         auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
         auto midPoint = get_input<zeno::NumericObject>("midPoint")->get<float>();
+        auto biasDir = get_input<zeno::NumericObject>("biasDir")->get<float>();
         limitMin = std::min(1.f, std::max(0.f, limitMin));
         limitMax = std::min(1.f, std::max(0.f, limitMax));
         if (limitMin > limitMax)
             std::swap(limitMin, limitMax);
         midPoint = std::min(limitMax, std::max(limitMin, midPoint));
-        limitMin -= midPoint;
-        limitMax -= midPoint;
+        biasDir = std::min(1.f, std::max(0.f, biasDir));
 
         auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
         auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<vec3f>() : vec3f(0, 1, 0);
@@ -36,24 +36,38 @@ struct PrimitiveBent : zeno::INode {
         direction = orb.normal;
         tangent = orb.tangent;
 
-        if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f) {
-            angle *= M_PI / 180;
+        if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f && prim->size() != 0) {
+            angle *= -M_PI / 180;
             angle /= limitMax - limitMin;
 
-            auto acc = parallel_reduce_array(prim->size(), vec2f(prim->size() ? dot(tangent, prim->verts[0] + origin) : 0.f), [&] (size_t i) {
-                return vec2f(dot(tangent, prim->verts[i] + origin));
-            }, [&] (auto a, auto b) { return vec2f(std::min(a[0], b[0]), std::max(a[1], b[1])); });
+            auto tanv0 = dot(tangent, prim->verts[0]);
+            auto dirv0 = dot(direction, prim->verts[0]);
+            auto acc = parallel_reduce_array(prim->size(), vec4f(tanv0, tanv0, dirv0, dirv0), [&] (size_t i) {
+                auto tanv = dot(tangent, prim->verts[i]);
+                auto dirv = dot(direction, prim->verts[i]);
+                return vec4f(tanv, tanv, dirv, dirv);
+            }, [&] (auto a, auto b) { return vec4f(std::min(a[0], b[0]), std::max(a[1], b[1]), std::min(a[2], b[2]), std::max(a[3], b[3])); });
+
+            if (get_param<bool>("useOrigin")) {
+                biasDir = (dot(direction, origin) - acc[2]) / (acc[3] - acc[2]);
+                midPoint = (dot(tangent, origin) - acc[0]) / (acc[1] - acc[0]);
+            }
+
             auto height = acc[1] - acc[0];
             auto average = (acc[1] + acc[0]) * 0.5f;
             auto middle = acc[1] * midPoint + acc[0] * (1 - midPoint);
             auto truemid = height * (0.5f - midPoint);
             auto radius = height / angle;
             auto inv_height = 1 / height;
-            auto delta = dot(direction, origin) * direction - dot(orb.bitangent, origin) * orb.bitangent + tangent * average;
+
+            auto avgDir = (acc[3] + acc[2]) * 0.5f;
+            biasDir = (biasDir - 0.5f) * (acc[3] - acc[2]);
+            limitMin -= midPoint;
+            limitMax -= midPoint;
 
 #pragma omp parallel for
-            for (int i = 0; i < prim->verts.size(); i++) {
-                auto pos = prim->verts[i] + origin;
+            for (intptr_t i = 0; i < prim->verts.size(); i++) {
+                auto pos = prim->verts[i] + (biasDir - avgDir) * direction;
                 auto tanpos = dot(tangent, pos);
                 auto dirpos = dot(direction, pos);
                 auto fac = (tanpos - middle) * inv_height;
@@ -73,7 +87,7 @@ struct PrimitiveBent : zeno::INode {
                 newdirpos -= radius;
                 pos += (newtanpos - tanpos) * tangent + (newdirpos - dirpos) * direction;
 
-                prim->verts[i] = pos + delta;
+                prim->verts[i] = (biasDir + avgDir) * direction + tangent * average + pos;
             }
 
         }
@@ -92,11 +106,13 @@ ZENDEFNODE(PrimitiveBent, {
     {"float", "limitMin", "0"},
     {"float", "limitMax", "1"},
     {"float", "midPoint", "0.5"},
+    {"float", "biasDir", "0.5"},
     },
     {
     {"PrimitiveObject", "prim"},
     },
     {
+    {"bool", "useOrigin", "1"},
     },
     {"primitive"},
 });

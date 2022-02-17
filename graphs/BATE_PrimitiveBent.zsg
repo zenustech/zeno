@@ -2,23 +2,103 @@
  "graph": {
   "main": {
    "nodes": {
+    "4316a47e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      598.3873291015625,
+      -403.9639587402344
+     ],
+     "options": []
+    },
+    "4cffb27b-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 4.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -600.0,
+      0.0
+     ],
+     "options": []
+    },
+    "603acf11-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      287.8506774902344,
+      83.33446502685547
+     ],
+     "options": []
+    },
+    "7f91c4bd-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      625.6821899414062,
+      -147.8121795654297
+     ],
+     "options": []
+    },
     "9c3016b9-Make3DGridPrimitive": {
      "name": "Make3DGridPrimitive",
      "inputs": {
       "nx": [
-       null,
-       null,
-       16
+       "c9f2f119-NumericInt",
+       "value",
+       2
       ],
       "ny": [
        null,
        null,
-       64
+       0
       ],
       "nz": [
        null,
        null,
-       16
+       0
       ],
       "sizeX": [
        null,
@@ -38,7 +118,7 @@
       "scale": [
        null,
        null,
-       2.0
+       1.0
       ],
       "origin": [
        null,
@@ -55,8 +135,46 @@
       "isCentered": true
      },
      "uipos": [
-      -56.34760298929325,
-      -239.41475726913438
+      -56.34760284423828,
+      -239.41476440429688
+     ],
+     "options": []
+    },
+    "c9f2f119-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 32
+     },
+     "uipos": [
+      -400.0,
+      -250.0
+     ],
+     "options": []
+    },
+    "cf97814c-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      677.75244140625,
+      97.00173950195312
      ],
      "options": []
     },
@@ -86,7 +204,7 @@
       "angle": [
        null,
        null,
-       32.0
+       90.0
       ],
       "limitMin": [
        null,
@@ -101,7 +219,12 @@
       "midPoint": [
        null,
        null,
-       1.0
+       0.5
+      ],
+      "biasDir": [
+       null,
+       null,
+       0.5
       ],
       "SRC": [
        null,
@@ -109,94 +232,16 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "useOrigin": true
+     },
      "uipos": [
-      898.3306617906959,
-      -206.96787346892276
+      1050.0,
+      -200.0
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "4316a47e-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      598.3873517786559,
-      -403.9639525691699
-     ],
-     "options": []
-    },
-    "7f91c4bd-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 1.0,
-      "z": 0.0
-     },
-     "uipos": [
-      625.6822134387348,
-      -147.81217391304344
-     ],
-     "options": []
-    },
-    "cf97814c-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 1.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      677.7524110671933,
-      97.00173913043477
-     ],
-     "options": []
-    },
-    "4cffb27b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 4.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -381.77756102395807,
-      -156.43655522857588
-     ],
-     "options": []
     },
     "f4d13d9f-TranslatePrimitive": {
      "name": "TranslatePrimitive",
@@ -219,37 +264,17 @@
      },
      "params": {},
      "uipos": [
-      288.80567338282066,
-      -132.0254506892894
-     ],
-     "options": []
-    },
-    "603acf11-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 4.0,
-      "z": 0.0
-     },
-     "uipos": [
-      287.85068928950153,
-      83.33446447507953
+      300.0,
+      -100.0
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -344.8344598552691,
-    "y": -576.4264025879299,
-    "width": 1499.999999999999,
-    "height": 829.9999999999997
+    "x": -171.1980685806526,
+    "y": -477.9771290184341,
+    "width": 1200.0,
+    "height": 664.0
    }
   }
  },
@@ -4839,6 +4864,11 @@
      "0.5"
     ],
     [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -4856,7 +4886,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -5723,6 +5759,87 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "int",
+     "minVal",
+     "0"
+    ],
+    [
+     "int",
+     "maxVal",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axis",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
