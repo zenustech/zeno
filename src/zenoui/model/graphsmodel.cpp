@@ -449,25 +449,14 @@ void GraphsModel::onRemoveCurrentItem()
         m_selection->setCurrentIndex(index(lst[0].row(), 0), QItemSelectionModel::Current);
 }
 
-
-void GraphsModel::beginTransaction(const QModelIndex& subGpIdx)
+void GraphsModel::beginTransaction(const QString& name)
 {
-    SubGraphModel* pGraph = subGraph(subGpIdx.row());
-    Q_ASSERT(pGraph);
-    if (pGraph)
-    {
-
-    }
+    m_stack->beginMacro(name);
 }
 
-void GraphsModel::endTransaction(const QModelIndex& subGpIdx)
+void GraphsModel::endTransaction()
 {
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-    Q_ASSERT(pGraph);
-	if (pGraph)
-	{
-
-	}
+    m_stack->endMacro();
 }
 
 QModelIndex GraphsModel::index(const QString& id, const QModelIndex& subGpIdx)
@@ -602,70 +591,85 @@ void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 }
 
 
-void GraphsModel::removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx)
+void GraphsModel::removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     for (const QPersistentModelIndex& linkIdx : info)
     {
-        removeLink(linkIdx, subGpIdx);
+        removeLink(linkIdx, subGpIdx, enableTransaction);
     }
 }
 
-void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx)
+void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     if (!linkIdx.isValid())
         return;
 
-    //todo: transaction.
-
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph && linkIdx.isValid());
-    if (pGraph)
+    if (enableTransaction)
     {
-        const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-        const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-        const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
-        const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
-
-        const QModelIndex& outIdx = pGraph->index(outNode);
-        const QModelIndex& inIdx = pGraph->index(inNode);
-
-        OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        outputs[outSock].linkIndice.removeOne(linkIdx);
-        pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-
-        INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-        inputs[inSock].linkIndice.removeOne(linkIdx);
-        pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+		RemoveLinkCommand* pCmd = new RemoveLinkCommand(linkIdx, this, subGpIdx);
+		m_stack->push(pCmd);
     }
-    m_linkModel->removeRow(linkIdx.row());
+    else
+    {
+		SubGraphModel* pGraph = subGraph(subGpIdx.row());
+		Q_ASSERT(pGraph && linkIdx.isValid());
+		if (pGraph)
+		{
+			const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
+			const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+			const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
+			const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+			const QModelIndex& outIdx = pGraph->index(outNode);
+			const QModelIndex& inIdx = pGraph->index(inNode);
+
+			OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+			outputs[outSock].linkIndice.removeOne(linkIdx);
+			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+
+			INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+			inputs[inSock].linkIndice.removeOne(linkIdx);
+			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+		}
+		m_linkModel->removeRow(linkIdx.row());
+    }
 }
 
-void GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpIdx)
+QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph);
-	if (pGraph)
-	{
-		QStandardItem* pItem = new QStandardItem;
-		pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
-		pItem->setData(info.inputNode, ROLE_INNODE);
-		pItem->setData(info.inputSock, ROLE_INSOCK);
-		pItem->setData(info.outputNode, ROLE_OUTNODE);
-		pItem->setData(info.outputSock, ROLE_OUTSOCK);
+    if (enableTransaction)
+    {
+        AddLinkCommand* pCmd = new AddLinkCommand(info, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		SubGraphModel* pGraph = subGraph(subGpIdx.row());
+		Q_ASSERT(pGraph);
+		if (pGraph)
+		{
+			QStandardItem* pItem = new QStandardItem;
+			pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
+			pItem->setData(info.inputNode, ROLE_INNODE);
+			pItem->setData(info.inputSock, ROLE_INSOCK);
+			pItem->setData(info.outputNode, ROLE_OUTNODE);
+			pItem->setData(info.outputSock, ROLE_OUTSOCK);
 
-        m_linkModel->appendRow(pItem);
-        QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
+			m_linkModel->appendRow(pItem);
+			QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
 
-        const QModelIndex& inIdx = pGraph->index(info.inputNode);
-        const QModelIndex& outIdx = pGraph->index(info.outputNode);
+			const QModelIndex& inIdx = pGraph->index(info.inputNode);
+			const QModelIndex& outIdx = pGraph->index(info.outputNode);
 
-        INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-        outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-        pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-        pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-	}
+			INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+			OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+			inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+			outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+            return linkIdx;
+		}
+    }
 }
 
 void GraphsModel::removeSubGraph(const QString& name)

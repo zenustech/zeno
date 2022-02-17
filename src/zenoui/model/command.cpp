@@ -35,7 +35,18 @@ RemoveNodeCommand::RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pMode
     , m_subgIdx(subgIdx)
     , m_row(row)
 {
-    m_id = data[ROLE_OBJID].toString();
+    m_id = m_data[ROLE_OBJID].toString();
+
+    //all links will be removed when remove node, for caching other type data,
+    //we have to clean the data here.
+    OUTPUT_SOCKETS outputs = m_data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+    INPUT_SOCKETS inputs = m_data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    for (auto it = outputs.begin(); it != outputs.end(); it++)
+        it->second.linkIndice.clear();
+    for (auto it = inputs.begin(); it != inputs.end(); it++)
+        it->second.linkIndice.clear();
+    m_data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    m_data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
 }
 
 RemoveNodeCommand::~RemoveNodeCommand()
@@ -53,32 +64,49 @@ void RemoveNodeCommand::undo()
 }
 
 
-AddRemoveLinkCommand::AddRemoveLinkCommand(EdgeInfo info, bool bAdded, SubGraphModel *pModel)
+AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
     , m_info(info)
-    , m_bAdded(bAdded)
+	, m_model(pModel)
+	, m_subgIdx(subgIdx)
+{
+}
+
+void AddLinkCommand::redo()
+{
+    QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
+	Q_ASSERT(idx.isValid());
+	m_linkIdx = QPersistentModelIndex(idx);
+}
+
+void AddLinkCommand::undo()
+{
+    m_model->removeLink(m_linkIdx, m_subgIdx);
+}
+
+
+RemoveLinkCommand::RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+    : QUndoCommand()
+    , m_linkIdx(linkIdx)
     , m_model(pModel)
+    , m_subgIdx(subgIdx)
 {
+    m_info.inputNode = linkIdx.data(ROLE_INNODE).toString();
+    m_info.inputSock = linkIdx.data(ROLE_INSOCK).toString();
+    m_info.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
+    m_info.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
 }
 
-void AddRemoveLinkCommand::redo()
+void RemoveLinkCommand::redo()
 {
-    /*
-    if (m_bAdded)
-        m_model->addLink(m_info);
-    else
-        m_model->removeLink(m_info);
-    */
+    m_model->removeLink(m_linkIdx, m_subgIdx);
 }
 
-void AddRemoveLinkCommand::undo()
+void RemoveLinkCommand::undo()
 {
-    /*
-    if (m_bAdded)
-        m_model->removeLink(m_info);
-    else
-        m_model->addLink(m_info);
-    */
+	QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
+	Q_ASSERT(idx.isValid());
+	m_linkIdx = QPersistentModelIndex(idx);
 }
 
 

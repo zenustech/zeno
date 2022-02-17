@@ -10,8 +10,8 @@ class IGraphsModel : public QAbstractItemModel
 	Q_OBJECT
 public:
 	explicit IGraphsModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
-	virtual void beginTransaction(const QModelIndex& subGpIdx) = 0;
-	virtual void endTransaction(const QModelIndex& subGpIdx) = 0;
+	virtual void beginTransaction(const QString& name) = 0;
+	virtual void endTransaction() = 0;
 	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const = 0;
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
@@ -25,10 +25,10 @@ public:
 	virtual void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeNode(int row, const QModelIndex& subGpIdx) = 0;
-	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx) = 0;
-	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx) = 0;
+	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
+	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
-	virtual void addLink(const EdgeInfo& info, const QModelIndex& subGpIdx) = 0;
+	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;

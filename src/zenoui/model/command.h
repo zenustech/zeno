@@ -38,16 +38,32 @@ private:
     int m_row;
 };
 
-class AddRemoveLinkCommand : public QUndoCommand
+class AddLinkCommand : public QUndoCommand
 {
 public:
-    AddRemoveLinkCommand(EdgeInfo info, bool bAdded, SubGraphModel *pModel);
+    AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+	void redo();
+	void undo();
+
+private:
+	EdgeInfo m_info;
+	GraphsModel* m_model;
+	QPersistentModelIndex m_subgIdx;
+	QPersistentModelIndex m_linkIdx;
+};
+
+class RemoveLinkCommand : public QUndoCommand
+{
+public:
+    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     void redo();
     void undo();
 
 private:
     EdgeInfo m_info;
-    SubGraphModel* m_model;
+    GraphsModel* m_model;
+    QPersistentModelIndex m_subgIdx;
+    QPersistentModelIndex m_linkIdx;
     bool m_bAdded;
 };
 

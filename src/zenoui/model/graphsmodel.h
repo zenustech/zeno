@@ -56,8 +56,8 @@ public:
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
     //IGraphsModel
-	void beginTransaction(const QModelIndex& subGpIdx) override;
-	void endTransaction(const QModelIndex& subGpIdx) override;
+	void beginTransaction(const QString& name) override;
+	void endTransaction() override;
 	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
 	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
@@ -68,10 +68,10 @@ public:
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx) override;
-    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx) override;
-    void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx) override;
+    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-	void addLink(const EdgeInfo& info, const QModelIndex& subGpIdx) override;
+    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
 	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;

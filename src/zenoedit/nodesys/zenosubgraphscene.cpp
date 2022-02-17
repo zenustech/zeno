@@ -537,7 +537,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
             EdgeInfo info(outId, inId, outPort, inPort);
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            pGraphsModel->addLink(info, m_subgIdx);
+            pGraphsModel->addLink(info, m_subgIdx, true);
 
             removeItem(m_tempLink);
             delete m_tempLink;
@@ -629,6 +629,7 @@ void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& 
         const INPUT_SOCKET inputSocket = pInputNode->inputParams()[sockName];
         for (QPersistentModelIndex index : inputSocket.linkIndice)
         {
+            Q_ASSERT(index.isValid());
             const QString& linkId = index.data(ROLE_OBJID).toString();
             m_links[linkId]->initDstPos(pos);
         }
@@ -640,6 +641,7 @@ void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& 
         const OUTPUT_SOCKET outputSocket = pOutputNode->outputParams()[sockName];
         for (QPersistentModelIndex index : outputSocket.linkIndice)
         {
+            Q_ASSERT(index.isValid());
 			const QString& linkId = index.data(ROLE_OBJID).toString();
 			m_links[linkId]->initSrcPos(pos);
         }
@@ -704,18 +706,17 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             }
         }
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        //todo:
-        //pGraphsModel->beginMacro("remove nodes and links");
+        pGraphsModel->beginTransaction("remove nodes and links");
         for (auto item : links)
         {
-            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx);
+            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx, true);
         }
         for (auto item : nodes)
         {
             const QPersistentModelIndex &index = item->index();
             pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
         }
-        //pGraphsModel->endMacro();
+        pGraphsModel->endTransaction();
     }
     QGraphicsScene::keyPressEvent(event);
 }

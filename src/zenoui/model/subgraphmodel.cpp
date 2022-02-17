@@ -187,7 +187,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     for (QString inSock : inputs.keys())
     {
         INPUT_SOCKET inputSocket = inputs[inSock];
-        m_pGraphsModel->removeLinks(inputSocket.linkIndice, subgIdx);
+        m_pGraphsModel->removeLinks(inputSocket.linkIndice, subgIdx, true);
     }
 
     // in this loop, output refers to current node's output, input refers to what output points to.
@@ -195,7 +195,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     for (QString outSock : outputs.keys())
     {
         OUTPUT_SOCKET outputSocket = outputs[outSock];
-        m_pGraphsModel->removeLinks(outputSocket.linkIndice, subgIdx);
+        m_pGraphsModel->removeLinks(outputSocket.linkIndice, subgIdx, true);
     }
 
     int row = index.row();
