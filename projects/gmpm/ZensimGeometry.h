@@ -20,12 +20,6 @@ struct ZenoParticles : zeno::IObject {
   zs::ConstitutiveModelConfig model;
 };
 
-struct ZenoGrid : zeno::IObject {
-  auto &get() noexcept { return grid; }
-  const auto &get() const noexcept { return grid; }
-  zs::GeneralGridBlocks grid;
-};
-
 struct ZenoSparseLevelSet : zeno::IObject {
   auto &get() noexcept { return ls; }
   const auto &get() const noexcept { return ls; }

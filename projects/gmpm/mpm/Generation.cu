@@ -481,11 +481,10 @@ struct UpdatePrimitiveFromZSParticles : INode {
 
       // const auto category = parObjPtr->category;
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
       if (parObjPtr->prim->has_attr("vel"))
         velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
-
-      auto size = pars.size();
 
       // currently only write back pos and vel (if has)
       ompExec(range(size),
@@ -601,7 +600,7 @@ struct ToZSBoundary : INode {
     if (has_input("ypr_angles")) {
       auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
       auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1],
-                                        yprAngles[2], zs::degree_v, zs::ypr_v};
+                                        yprAngles[2], zs::degree_c, zs::ypr_c};
       boundary->R = rot;
     }
     { boundary->omega = zs::AngularVelocity<float, 3>{}; }
