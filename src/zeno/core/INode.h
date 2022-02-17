@@ -2,7 +2,6 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/Exception.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <variant>
@@ -91,21 +90,8 @@ protected:
         return get_input2<T>(id + ':');
     }
 
-    template <int = 0>
     [[deprecated("use get_param<T>")]]
-    std::variant<int, float, std::string> get_param(std::string const &id) const {
-        auto nid = id + ':';
-        if (has_input2<int>(nid)) {
-            return get_input2<int>(nid);
-        }
-        if (has_input2<float>(nid)) {
-            return get_input2<float>(nid);
-        }
-        if (has_input2<std::string>(nid)) {
-            return get_input2<std::string>(nid);
-        }
-        throw Exception("bad get_param (variant mode)");
-    }
+    ZENO_API std::variant<int, float, std::string> get_param(std::string const &id) const;
 };
 
 }

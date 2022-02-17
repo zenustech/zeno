@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zeno/utils/vec.h>
-#include <zeno/utils/Exception.h>
+#include <zeno/utils/Error.h>
 #include <zeno/utils/type_traits.h>
 #include <variant>
 #include <vector>
@@ -197,7 +197,7 @@ struct AttrVector {
         _ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw Exception("invalid primitive attribute name: `" + name + "`");
+            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
         return it->second;
     }
 
@@ -205,7 +205,7 @@ struct AttrVector {
         _ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw Exception("invalid primitive attribute name: `" + name + "`");
+            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
         return it->second;
     }
 

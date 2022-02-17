@@ -6,6 +6,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/Error.h>
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
 #endif
@@ -126,6 +127,20 @@ ZENO_API zany INode::get_input(std::string const &id) const {
 
 ZENO_API void INode::set_output(std::string const &id, zany obj) {
     outputs[id] = std::move(obj);
+}
+
+ZENO_API std::variant<int, float, std::string> INode::get_param(std::string const &id) const {
+    auto nid = id + ':';
+    if (has_input2<int>(nid)) {
+        return get_input2<int>(nid);
+    }
+    if (has_input2<float>(nid)) {
+        return get_input2<float>(nid);
+    }
+    if (has_input2<std::string>(nid)) {
+        return get_input2<std::string>(nid);
+    }
+    throw makeError("bad get_param (variant mode)");
 }
 
 }
