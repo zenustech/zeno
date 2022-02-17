@@ -234,7 +234,7 @@ ZENDEFNODE(Make3DGridPrimitive,
         }});
 
 
-struct Make3DGridPointsInAABB : INode {
+struct Make3DGridPointsInAABB : INode {//xubenhappy
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
         size_t ny = has_input("ny") ?

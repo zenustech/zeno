@@ -55,8 +55,8 @@
       "isCentered": true
      },
      "uipos": [
-      347.9803397466556,
-      -299.92642216839204
+      -56.34760298929325,
+      -239.41475726913438
      ],
      "options": []
     },
@@ -64,7 +64,7 @@
      "name": "PrimitiveBent",
      "inputs": {
       "prim": [
-       "9c3016b9-Make3DGridPrimitive",
+       "f4d13d9f-TranslatePrimitive",
        "prim",
        null
       ],
@@ -86,17 +86,22 @@
       "angle": [
        null,
        null,
-       90.0
+       32.0
       ],
       "limitMin": [
        null,
        null,
-       0.3
+       0.0
       ],
       "limitMax": [
        null,
        null,
-       0.7
+       1.0
+      ],
+      "midPoint": [
+       null,
+       null,
+       1.0
       ],
       "SRC": [
        null,
@@ -106,8 +111,8 @@
      },
      "params": {},
      "uipos": [
-      897.0692636144041,
-      -209.49066982150634
+      898.3306617906959,
+      -206.96787346892276
      ],
      "options": [
       "VIEW"
@@ -188,17 +193,63 @@
       "z": 0.0
      },
      "uipos": [
-      87.18784194528871,
-      -164.6881458966565
+      -381.77756102395807,
+      -156.43655522857588
+     ],
+     "options": []
+    },
+    "f4d13d9f-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "9c3016b9-Make3DGridPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "603acf11-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      288.80567338282066,
+      -132.0254506892894
+     ],
+     "options": []
+    },
+    "603acf11-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 4.0,
+      "z": 0.0
+     },
+     "uipos": [
+      287.85068928950153,
+      83.33446447507953
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 317.11035806515724,
-    "y": -338.7083500286326,
-    "width": 767.9999999999995,
-    "height": 424.95999999999987
+    "x": -344.8344598552691,
+    "y": -576.4264025879299,
+    "width": 1499.999999999999,
+    "height": 829.9999999999997
    }
   }
  },
@@ -2283,6 +2334,67 @@
     "list"
    ]
   },
+  "Make1DLinePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "n",
+     "2"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum X Y Z",
+     "Direction",
+     "X"
+    ],
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasLines",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "Make2DGridPrimitive": {
    "inputs": [
     [
@@ -2851,6 +2963,36 @@
     [
      "int",
      "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakePrimitiveFromList": {
+   "inputs": [
+    [
+     "ListObject",
+     "list",
      ""
     ],
     [
@@ -3944,6 +4086,108 @@
     "numeric"
    ]
   },
+  "PackNumericVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum float vec2f vec3f vec4f",
+     "type",
+     "vec3f"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PackNumericVecInt": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ],
+    [
+     "int",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "veci",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum int vec2i vec3i vec4i",
+     "type",
+     "vec3i"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "ParticleParticleWrangle": {
    "inputs": [
     [
@@ -4588,6 +4832,11 @@
      "float",
      "limitMax",
      "1"
+    ],
+    [
+     "float",
+     "midPoint",
+     "0.5"
     ],
     [
      "",
@@ -5393,6 +5642,91 @@
     "primitive"
    ]
   },
+  "PrimitiveLineSimpleLink": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSolidify": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "count",
+     "4"
+    ],
+    [
+     "float",
+     "radius",
+     "0.1"
+    ],
+    [
+     "string",
+     "radiusAttr",
+     ""
+    ],
+    [
+     "bool",
+     "isTri",
+     "1"
+    ],
+    [
+     "bool",
+     "sealEnd",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveMerge": {
    "inputs": [
     [
@@ -6096,6 +6430,66 @@
     "primitive"
    ]
   },
+  "PrimitiveTwist": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveUnaryOp": {
    "inputs": [
     [
@@ -6628,6 +7022,36 @@
     "openvdb"
    ]
   },
+  "SDFToFog": {
+   "inputs": [
+    [
+     "",
+     "SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "SDFToPoly": {
    "inputs": [
     [
@@ -6645,6 +7069,52 @@
     [
      "",
      "Mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "isoValue",
+     "0"
+    ],
+    [
+     "float",
+     "adaptivity",
+     "0"
+    ],
+    [
+     "bool",
+     "allowQuads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SDFToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
      ""
     ],
     [
@@ -8326,6 +8796,51 @@
     "visualize"
    ]
   },
+  "VDBWrangle": {
+   "inputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "enum true false",
+     "ModifyActive",
+     "false"
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "VectorFieldAnalyzer": {
    "inputs": [
     [
@@ -8358,6 +8873,61 @@
      "Divergence"
     ]
    ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VolumeAdvect": {
+   "inputs": [
+    [
+     "",
+     "InField",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "int",
+     "SubSteps",
+     "1"
+    ],
+    [
+     "enum SemiLagrangian  MidPoint RK3 RK4 MacCormack BFECC",
+     "Integrator",
+     "BFECC"
+    ],
+    [
+     "enum None Clamp Revert",
+     "Limiter",
+     "Revert"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "extend",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "openvdb"
    ]
