@@ -576,7 +576,10 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
         ZenoParamWidget* pWidget = m_paramControls[paramName];
         if (ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget))
         {
-            plineEdit->setText(val.toBool() ? "1" : "0");
+            if (val.type() == QVariant::Bool)
+                plineEdit->setText(val.toBool() ? "1" : "0");
+            else
+                plineEdit->setText(val.toString());
         }
         else if (ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget))
         {
@@ -624,8 +627,8 @@ QGraphicsGridLayout* ZenoNode::initSockets()
     {
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         int r = 0;
-        for (auto inSock : inputs.keys()) {
-            //SOCKET_INFO(nodeid, inSock, QPointF(), true)
+        for (auto inSock : inputs.keys())
+        {
             ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
 
@@ -649,7 +652,6 @@ QGraphicsGridLayout* ZenoNode::initSockets()
             pMiniLayout->addItem(pSocketItem);
             pSocketsLayout->addItem(pMiniLayout, r, 1);
 
-            //SOCKET_INFO(nodeid, outSock, QPointF(), false), 
             ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
 
