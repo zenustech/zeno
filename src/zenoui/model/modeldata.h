@@ -119,7 +119,7 @@ typedef QMap<QString, SOCKET_INFO> SOCKETS_INFO;
 struct INPUT_SOCKET
 {
     SOCKET_INFO info;
-    QMap<QString, SOCKETS_INFO> outNodes;      //temp structure, for init all links, will be destroied after inited.
+    QMap<QString, SOCKETS_INFO> outNodes;      //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
     QList<QPersistentModelIndex> linkIndice;
 };
 typedef FuckQMap<QString, INPUT_SOCKET> INPUT_SOCKETS;
@@ -129,6 +129,7 @@ Q_DECLARE_METATYPE(INPUT_SOCKETS)
 struct OUTPUT_SOCKET
 {
     SOCKET_INFO info;
+    QMap<QString, SOCKETS_INFO> inNodes;    //structure for storing temp link info...
     QList<QPersistentModelIndex> linkIndice;
 };
 typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;

@@ -545,13 +545,16 @@ void GraphsModel::insertRow(int row, const NODE_DATA& nodeData, const QModelInde
     }
 }
 
-void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx)
+void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
 	Q_ASSERT(pGraph);
-    if (pGraph)
+    if (!pGraph)
+        return;
+
+    for (const NODE_DATA& nodeData : nodes)
     {
-        pGraph->appendNodes(nodes);
+        addNode(nodeData, subGpIdx, enableTransaction);
     }
 }
 
@@ -750,6 +753,18 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
 			pSubg->updateNodeStatus(nodeid, info);
 		}
     }
+}
+
+QVariant GraphsModel::getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+	QVariant var;
+	if (pGraph)
+	{
+		var = pGraph->getNodeStatus(id, role);
+	}
+	return var;
 }
 
 NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const

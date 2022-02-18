@@ -337,6 +337,12 @@ QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& para
     return info[paramName].value;
 }
 
+QVariant SubGraphModel::getNodeStatus(const QString& nodeid, int role)
+{
+    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    return m_nodes[nodeid][role];
+}
+
 void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info)
 {
     auto it = m_nodes.find(nodeid);

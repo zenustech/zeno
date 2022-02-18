@@ -22,7 +22,7 @@ public:
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) = 0;
-	virtual void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) = 0;
+	virtual void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeNode(int row, const QModelIndex& subGpIdx) = 0;
 	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
@@ -33,6 +33,7 @@ public:
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
+	virtual QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual QString name(const QModelIndex& subGpIdx) const = 0;

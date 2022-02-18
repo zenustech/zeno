@@ -980,9 +980,14 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         {
             pos.setX(x);
             pos.setY(y);
-			IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-			Q_ASSERT(pGraphsModel);
-            pGraphsModel->setData2(m_subGpIndex, m_index, pos, ROLE_OBJPOS);
+            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+            QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
+
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OBJPOS;
+            info.newValue = pos;
+            info.oldValue = oldPos;
+            pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
         }
     }
     return value;

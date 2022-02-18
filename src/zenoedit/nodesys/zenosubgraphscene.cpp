@@ -301,10 +301,9 @@ void ZenoSubGraphScene::copy()
 
     //todo: write json format data to clipboard.
 
-    QMap<EdgeInfo, ZenoFullLink *> selLinks;
+    QList<QPersistentModelIndex> selLinks;
     QMap<QString, ZenoNode*> selNodes;
 
-    /*
     for (auto item : selItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -316,15 +315,18 @@ void ZenoSubGraphScene::copy()
     {
         if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
         {
-            const EdgeInfo& info = pLink->linkInfo();
-            if (selNodes.find(info.inputNode) == selNodes.end() ||
-                selNodes.find(info.outputNode) == selNodes.end())
+            const QPersistentModelIndex& index = pLink->linkInfo();
+            const QString& inputNode = index.data(ROLE_INNODE).toString();
+            const QString& outputNode = index.data(ROLE_OUTNODE).toString();
+            if (selNodes.find(inputNode) == selNodes.end() ||
+                selNodes.find(outputNode) == selNodes.end())
             {
                 continue;
             }
-            selLinks[info] = pLink;
+            selLinks.append(index);
         }
     }
+
     if (selNodes.isEmpty())
     {
         QApplication::clipboard()->clear();
@@ -346,36 +348,33 @@ void ZenoSubGraphScene::copy()
         oldToNew[oldId] = newId;
 
         //clear any connections.
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        INPUT_SOCKETS newInputs;
-        for (auto inSock : inputs.keys())
-        {
-            INPUT_SOCKET& socket = inputs[inSock];
-            socket.outNodes.clear();
+		OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+		INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+		for (auto it = outputs.begin(); it != outputs.end(); it++)
+		{
+            it->second.linkIndice.clear();
+            it->second.inNodes.clear();
         }
+        for (auto it = inputs.begin(); it != inputs.end(); it++)
+        {
+            it->second.linkIndice.clear();
+            it->second.outNodes.clear();
+        }
+
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (auto outSock : outputs.keys())
-        {
-            OUTPUT_SOCKET& socket = outputs[outSock];
-            socket.inNodes.clear();
-        }
         data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
         newNodes[newId] = data;
     }
 
-    for (auto edge : selLinks.keys())
+    for (const QPersistentModelIndex& linkIdx : selLinks)
     {
-        const QString &outOldId = edge.outputNode;
-        const QString &inOldId = edge.inputNode;
+        const QString& outOldId = linkIdx.data(ROLE_OUTNODE).toString();
+        const QString& inOldId = linkIdx.data(ROLE_INNODE).toString();
+		const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+		const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
 
         const QString &outId = oldToNew[outOldId];
         const QString &inId = oldToNew[inOldId];
-
-        const QString& outSock = edge.outputSock;
-        const QString& inSock = edge.inputSock;
 
         //out link
         NODE_DATA& outData = newNodes[outId];
@@ -383,7 +382,7 @@ void ZenoSubGraphScene::copy()
         SOCKET_INFO &newOutSocket = outputs[outSock].inNodes[inId][inSock];
 
         QModelIndex tempIdx = pGraphsModel->index(outOldId, m_subgIdx);
-        
+
         NODE_DATA outOldData = pGraphsModel->itemData(tempIdx, m_subgIdx);
         OUTPUT_SOCKETS oldOutputs = outOldData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         const SOCKET_INFO &oldOutSocket = oldOutputs[outSock].inNodes[inOldId][inSock];
@@ -416,12 +415,10 @@ void ZenoSubGraphScene::copy()
     QMimeData *pMimeData = new QMimeData;
     pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
     QApplication::clipboard()->setMimeData(pMimeData);
-    */
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
-    /*
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
@@ -433,7 +430,8 @@ void ZenoSubGraphScene::paste(QPointF pos)
 
         QPointF offset = pos - pNodesData->m_vecNodes[0][ROLE_OBJPOS].toPointF();
 
-        //todo: pGraphsModel->beginMacro("paste nodes");
+        pGraphsModel->beginTransaction("paste nodes");
+
         QList<NODE_DATA> datas;
         for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
         {
@@ -441,7 +439,30 @@ void ZenoSubGraphScene::paste(QPointF pos)
             QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
             data[ROLE_OBJPOS] = orginalPos + offset;
         }
-        pGraphsModel->appendNodes(pNodesData->m_vecNodes, m_subgIdx);
+        pGraphsModel->appendNodes(pNodesData->m_vecNodes, m_subgIdx, true);
+
+        //add links for pasted node.
+		for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
+		{
+			NODE_DATA& data = pNodesData->m_vecNodes[i];
+			const QString& inNode = data[ROLE_OBJID].toString();
+			INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+			foreach(const QString & inSockName, inputs.keys())
+			{
+				const INPUT_SOCKET& inSocket = inputs[inSockName];
+				for (const QString& outNode : inSocket.outNodes.keys())
+				{
+					for (const QString& outSock : inSocket.outNodes[outNode].keys())
+					{
+						const QModelIndex& outIdx = pGraphsModel->index(outNode, m_subgIdx);
+						if (outIdx.isValid())
+						{
+                            pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), m_subgIdx, true);
+						}
+					}
+				}
+			}
+		}
 
         clearSelection();
         for (auto node : pNodesData->m_vecNodes)
@@ -451,9 +472,8 @@ void ZenoSubGraphScene::paste(QPointF pos)
             m_nodes[id]->setSelected(true);
         }
 
-        //pGraphsModel->endMacro();
+        pGraphsModel->endTransaction();
     }
-    */
 }
 
 QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)

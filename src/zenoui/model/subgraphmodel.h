@@ -75,6 +75,7 @@ public:
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA itemData(const QModelIndex &index) const override;
 
+    QVariant getNodeStatus(const QString& nodeid, int role);
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
