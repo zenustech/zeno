@@ -95,4 +95,5 @@ private:
     GraphsModel* m_pModel;
 };
 
+
 #endif

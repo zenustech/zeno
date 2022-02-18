@@ -675,6 +675,21 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     }
 }
 
+void GraphsModel::updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+
+    }
+    else
+    {
+        m_linkModel->setData(linkIdx, info.newEdge.inputNode, ROLE_INNODE);
+        m_linkModel->setData(linkIdx, info.newEdge.inputSock, ROLE_INSOCK);
+        m_linkModel->setData(linkIdx, info.newEdge.outputNode, ROLE_OUTNODE);
+        m_linkModel->setData(linkIdx, info.newEdge.outputSock, ROLE_OUTSOCK);
+    }
+}
+
 void GraphsModel::removeSubGraph(const QString& name)
 {
 	for (int i = 0; i < m_subGraphs.size(); i++)

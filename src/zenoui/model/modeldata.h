@@ -197,6 +197,11 @@ struct STATUS_UPDATE_INFO {
 };
 Q_DECLARE_METATYPE(STATUS_UPDATE_INFO)
 
+struct LINK_UPDATE_INFO {
+    EdgeInfo oldEdge;
+    EdgeInfo newEdge;
+};
+
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 
 #endif

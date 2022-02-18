@@ -587,8 +587,6 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
         m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
         m_outSockets.remove(oldName);
     }
-
-    
 }
 
 void ZenoNode::onNameUpdated(const QString& newName)
