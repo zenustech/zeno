@@ -155,3 +155,27 @@ void UpdateStateCommand::undo()
     info.oldValue = m_info.newValue;
     m_pModel->updateNodeStatus(m_nodeid, info, m_subgIdx);
 }
+
+
+UpdateSocketCommand::UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+    : m_nodeid(nodeid)
+    , m_info(info)
+    , m_pModel(pModel)
+    , m_subgIdx(subgIdx)
+{
+}
+
+void UpdateSocketCommand::redo()
+{
+    m_pModel->updateSocket(m_nodeid, m_info, m_subgIdx);
+}
+
+void UpdateSocketCommand::undo()
+{
+    SOCKET_UPDATE_INFO revertInfo;
+    revertInfo.bInput = m_info.bInput;
+    revertInfo.name = m_info.name;
+    revertInfo.newInfo = m_info.oldInfo;
+    revertInfo.oldInfo = m_info.newInfo;
+    m_pModel->updateSocket(m_nodeid, revertInfo, m_subgIdx);
+}

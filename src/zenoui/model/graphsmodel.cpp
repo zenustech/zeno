@@ -732,13 +732,21 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
-void GraphsModel::updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx)
+void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
-	SubGraphModel* pSubg = subGraph(subGpIdx.row());
-	Q_ASSERT(pSubg);
-    if (pSubg)
+    if (enableTransaction)
     {
-        pSubg->updateSocket(id, info);
+        UpdateSocketCommand* pCmd = new UpdateSocketCommand(nodeid, info, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		SubGraphModel* pSubg = subGraph(subGpIdx.row());
+		Q_ASSERT(pSubg);
+		if (pSubg)
+		{
+			pSubg->updateSocket(nodeid, info);
+		}
     }
 }
 

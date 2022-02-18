@@ -95,5 +95,19 @@ private:
     GraphsModel* m_pModel;
 };
 
+class UpdateSocketCommand : public QUndoCommand
+{
+public:
+    UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    void redo();
+    void undo();
+
+private:
+    SOCKET_UPDATE_INFO m_info;
+    QString m_nodeid;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_pModel;
+};
+
 
 #endif

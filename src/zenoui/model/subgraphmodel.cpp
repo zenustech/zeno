@@ -287,7 +287,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
     {
         QModelIndex idx = index(nodeid);
         INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-        const QString& oldName = info.oldinfo.name;
+        const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
         Q_ASSERT(inputs.find(oldName) != inputs.end());
 

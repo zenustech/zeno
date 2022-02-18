@@ -184,7 +184,7 @@ Q_DECLARE_METATYPE(PARAM_UPDATE_INFO)
 
 struct SOCKET_UPDATE_INFO {
     QString name;
-    SOCKET_INFO oldinfo;
+    SOCKET_INFO oldInfo;
     SOCKET_INFO newInfo;
     bool bInput;
 };
