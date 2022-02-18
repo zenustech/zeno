@@ -273,20 +273,12 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     if (it == m_nodes.end())
         return;
 
-    if (enableTransaction)
-    {
-        UpdateDataCommand *pCmd = new UpdateDataCommand(nodeid, paramName, var, this);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        PARAMS_INFO info = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
-        info[paramName].value = var;
+    PARAMS_INFO info = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
+    info[paramName].value = var;
 
-        const QModelIndex& idx = index(nodeid);
-        setData(idx, QVariant::fromValue(info), ROLE_PARAMETERS);
-        setData(idx, QVariant::fromValue(info[paramName]), ROLE_MODIFY_PARAM);
-    }
+    const QModelIndex& idx = index(nodeid);
+    setData(idx, QVariant::fromValue(info), ROLE_PARAMETERS);
+    setData(idx, QVariant::fromValue(info[paramName]), ROLE_MODIFY_PARAM);
 }
 
 void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)
@@ -345,22 +337,15 @@ QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& para
     return info[paramName].value;
 }
 
-void SubGraphModel::updateNodeState(const QString& nodeid, int role, const QVariant& val, bool enableTransaction)
+void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info)
 {
     auto it = m_nodes.find(nodeid);
     if (it == m_nodes.end())
         return;
-    if (enableTransaction)
-    {
-        UpdateStateCommand *pCmd = new UpdateStateCommand(nodeid, role, val, this);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        m_nodes[nodeid][role] = val;
-        const QModelIndex& idx = index(nodeid);
-        emit dataChanged(idx, idx, QVector<int>{role});
-    }
+
+    m_nodes[nodeid][info.role] = info.newValue;
+    const QModelIndex& idx = index(nodeid);
+    emit dataChanged(idx, idx, QVector<int>{info.role});
 }
 
 bool SubGraphModel::hasChildren(const QModelIndex& parent) const

@@ -70,31 +70,29 @@ private:
 class UpdateDataCommand : public QUndoCommand
 {
 public:
-    UpdateDataCommand(const QString& nodeid, const QString& paramName, const QVariant& newValue, SubGraphModel* pModel);
+    UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     void redo();
     void undo();
 
 private:
-    QVariant m_newValue;
-    QVariant m_oldValue;
-    QString m_name;
+    PARAM_UPDATE_INFO m_updateInfo;
     QString m_nodeid;
-    SubGraphModel *m_model;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
 };
 
 class UpdateStateCommand : public QUndoCommand
 {
 public:
-    UpdateStateCommand(const QString& nodeid, int role, const QVariant& val, SubGraphModel* pModel);
+    UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     void redo();
     void undo();
 
 private:
     QString m_nodeid;
-    QVariant m_value;
-    QVariant m_oldValue;
-    int m_role;
-    SubGraphModel* m_pModel;
+    STATUS_UPDATE_INFO m_info;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_pModel;
 };
 
 #endif

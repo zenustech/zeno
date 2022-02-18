@@ -462,8 +462,9 @@ QGraphicsLayout* ZenoNode::initParams()
                         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                         PARAM_UPDATE_INFO info;
                         info.name = paramName;
+                        info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
                         info.newValue = textValue;
-                        pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex);
+                        pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
                     });
                     m_paramControls[paramName] = pComboBox;
                     break;
@@ -540,11 +541,12 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
         case CONTROL_MULTILINE_STRING:
         case CONTROL_STRING: varValue = textValue; break;
     }
+
     PARAM_UPDATE_INFO info;
+    info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
     info.newValue = varValue;
     info.name = paramName;
-    pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex);
-
+    pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
 }
 
 void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
@@ -822,7 +824,12 @@ void ZenoNode::onCollaspeBtnClicked()
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	Q_ASSERT(pGraphsModel);
     bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
-    pGraphsModel->setData2(m_subGpIndex, m_index, !bCollasped, ROLE_COLLASPED);
+
+    STATUS_UPDATE_INFO info;
+    info.role = ROLE_COLLASPED;
+    info.newValue = !bCollasped;
+    info.oldValue = bCollasped;
+    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
 }
 
 void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
@@ -833,6 +840,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 	Q_ASSERT(pGraphsModel);
 
     int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
+    int oldOpts = options;
 
     if (btn == STATUS_MUTE)
     {
@@ -868,7 +876,12 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 		}
     }
 
-    pGraphsModel->setData2(m_subGpIndex, m_index, options, ROLE_OPTIONS);
+    STATUS_UPDATE_INFO info;
+    info.role = ROLE_OPTIONS;
+    info.newValue = options;
+    info.oldValue = oldOpts;
+
+    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
 }
 
 void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
@@ -940,7 +953,9 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
 
 void ZenoNode::onOptionsUpdated(int options)
 {
+    m_pStatusWidgets->blockSignals(true);
     m_pStatusWidgets->setOptions(options);
+    m_pStatusWidgets->blockSignals(false);
 }
 
 QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)

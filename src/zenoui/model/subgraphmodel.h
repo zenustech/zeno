@@ -66,13 +66,16 @@ public:
     void appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
+
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
+    QVariant getParamValue(const QString& nodeid, const QString& paramName);
+
     void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);
     void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA itemData(const QModelIndex &index) const override;
-    QVariant getParamValue(const QString& nodeid, const QString& paramName);
-    void updateNodeState(const QString& nodeid, int role, const QVariant& newValue, bool enableTransaction = false);
+
+    void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
 

@@ -189,6 +189,13 @@ struct SOCKET_UPDATE_INFO {
 };
 Q_DECLARE_METATYPE(SOCKET_UPDATE_INFO)
 
+struct STATUS_UPDATE_INFO {
+    QVariant oldValue;
+    QVariant newValue;
+    int role;
+};
+Q_DECLARE_METATYPE(STATUS_UPDATE_INFO)
+
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 
 #endif

@@ -110,44 +110,48 @@ void RemoveLinkCommand::undo()
 }
 
 
-UpdateDataCommand::UpdateDataCommand(const QString& nodeid, const QString& paramName, const QVariant& newValue, SubGraphModel* pModel)
+UpdateDataCommand::UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
     , m_nodeid(nodeid)
-    , m_name(paramName)
-    , m_newValue(newValue)
+    , m_updateInfo(updateInfo)
+    , m_subgIdx(subgIdx)
     , m_model(pModel)
 {
-    //should get from data(param).
-    m_oldValue = m_model->getParamValue(nodeid, paramName);
 }
 
 void UpdateDataCommand::redo()
 {
-    m_model->updateParam(m_nodeid, m_name, m_newValue);
+    m_model->updateParamInfo(m_nodeid, m_updateInfo, m_subgIdx);
 }
 
 void UpdateDataCommand::undo()
 {
-    m_model->updateParam(m_nodeid, m_name, m_oldValue);
+    PARAM_UPDATE_INFO revertInfo;
+    revertInfo.name = m_updateInfo.name;
+    revertInfo.newValue = m_updateInfo.oldValue;
+    revertInfo.oldValue = m_updateInfo.newValue;
+    m_model->updateParamInfo(m_nodeid, revertInfo, m_subgIdx);
 }
 
 
-UpdateStateCommand::UpdateStateCommand(const QString& nodeid, int role, const QVariant& val, SubGraphModel* pModel)
+UpdateStateCommand::UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : m_nodeid(nodeid)
-    , m_role(role)
-    , m_value(val)
+    , m_info(info)
     , m_pModel(pModel)
+    , m_subgIdx(subgIdx)
 {
-    QModelIndex idx = m_pModel->index(nodeid);
-    m_oldValue = m_pModel->data(idx, role);
 }
 
 void UpdateStateCommand::redo()
 {
-    m_pModel->updateNodeState(m_nodeid, m_role, m_value);
+    m_pModel->updateNodeStatus(m_nodeid, m_info, m_subgIdx);
 }
 
 void UpdateStateCommand::undo()
 {
-    m_pModel->updateNodeState(m_nodeid, m_role, m_oldValue);
+    STATUS_UPDATE_INFO info;
+    info.role = m_info.role;
+    info.newValue = m_info.oldValue;
+    info.oldValue = m_info.newValue;
+    m_pModel->updateNodeStatus(m_nodeid, info, m_subgIdx);
 }

@@ -485,18 +485,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
 
 void ZenoMinStatusBtnItem::setOptions(int options)
 {
-    if (options & OPT_ONCE)
-    {
-        setChecked(STATUS_ONCE, true);
-    }
-    else if (options & OPT_MUTE)
-    {
-        setChecked(STATUS_MUTE, true);
-    }
-    else if (options & OPT_VIEW)
-    {
-        setChecked(STATUS_VIEW, true);
-    }
+    setChecked(STATUS_ONCE, options & OPT_ONCE);
+    setChecked(STATUS_MUTE, options & OPT_MUTE);
+    setChecked(STATUS_VIEW, options & OPT_VIEW);
 }
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)

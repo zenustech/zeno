@@ -684,13 +684,33 @@ void GraphsModel::removeSubGraph(const QString& name)
 	}
 }
 
-void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx)
+QVariant GraphsModel::getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
 	Q_ASSERT(pGraph);
+    QVariant var;
     if (pGraph)
     {
-        pGraph->updateParam(id, info.name, info.newValue);
+        var = pGraph->getParamValue(id, name);
+    }
+    return var;
+}
+
+void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        UpdateDataCommand* pCmd = new UpdateDataCommand(id, info, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		SubGraphModel* pGraph = subGraph(subGpIdx.row());
+		Q_ASSERT(pGraph);
+		if (pGraph)
+		{
+			pGraph->updateParam(id, info.name, info.newValue);
+		}
     }
 }
 
@@ -712,6 +732,24 @@ void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, co
 	{
 		pSubg->updateSocketDefl(id, info);
 	}
+}
+
+void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        UpdateStateCommand* pCmd = new UpdateStateCommand(nodeid, info, this, subgIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		SubGraphModel* pSubg = subGraph(subgIdx.row());
+		Q_ASSERT(pSubg);
+		if (pSubg)
+		{
+			pSubg->updateNodeStatus(nodeid, info);
+		}
+    }
 }
 
 NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const
