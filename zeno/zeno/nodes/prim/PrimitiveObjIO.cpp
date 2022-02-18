@@ -29,8 +29,12 @@ static zeno::vec3i read_index(std::string str) {
 }
 static zeno::vec3f read_vec3f(std::vector<std::string> items) {
     zeno::vec3f vec(0, 0, 0);
-    for (auto i = 0; i < items.size(); i++) {
-        vec[i] = std::stof(items[i]);
+    int i = 0;
+    for (auto item: items) {
+        if (item.size() != 0) {
+            vec[i] = std::stof(item);
+            i += 1;
+        }
     }
     return vec;
 }
