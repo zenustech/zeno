@@ -196,8 +196,7 @@ struct AttrVector {
         //suppose "pos" = {}
         //        "clr" = {}
         //attr<vec3f>("clr").emplace_back(val)
-        //attr<vec3f>("clr").emplace_back(val)
-        //attr<vec3f>("clr") will resize "clr" back to 0
+        //attr<vec3f>("pos").emplace_back(val)<---this will resize "clr" to zero first and then push_back to "pos"
         //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
