@@ -48,6 +48,10 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
     return getSession().getDefaultScene().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
+inline void setNodeInputString(std::string const &id, std::string const &par, std::string const &val) {
+    return getSession().getDefaultScene().getGraph().setNodeInputString(id, par, val);
+}
+
 inline void setNodeInput(std::string const &id, std::string const &par,
         zany const &val) {
     return getSession().getDefaultScene().getGraph().setNodeInput(id, par, val);
