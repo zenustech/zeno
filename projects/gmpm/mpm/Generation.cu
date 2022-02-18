@@ -569,8 +569,10 @@ struct MakeZSLevelSet : INode {
     // default is "cellcentered"
     if (cateStr == "staggered")
       tags.emplace_back(zs::PropertyTag{"vel", 3});
-    // default is "flip"
-    if (ls->transferScheme == "flip")
+    // default is "unknown"
+    if (ls->transferScheme == "unknown")
+      ;
+    else if (ls->transferScheme == "flip")
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (ls->transferScheme == "apic")
       ;
@@ -578,19 +580,23 @@ struct MakeZSLevelSet : INode {
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", ls->transferScheme));
 
-    if (cateStr == "collocated")
-      ls->getLevelSet() =
-          typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
-              tags, dx, 1, zs::memsrc_e::um, 0};
-    else if (cateStr == "cellcentered")
-      ls->getLevelSet() =
+    if (cateStr == "collocated") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "cellcentered") {
+      auto tmp =
           typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{
               tags, dx, 1, zs::memsrc_e::um, 0};
-    else if (cateStr == "staggered")
-      ls->getLevelSet() =
-          typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
-              tags, dx, 1, zs::memsrc_e::um, 0};
-    else
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "staggered") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else
       throw std::runtime_error(
           fmt::format("unknown levelset (grid) category [{}].", cateStr));
 
@@ -612,7 +618,7 @@ struct MakeZSLevelSet : INode {
 };
 ZENDEFNODE(MakeZSLevelSet, {
                                {{"float", "dx", "0.1"},
-                                {"string", "transfer", "flip"},
+                                {"string", "transfer", "unknown"},
                                 {"string", "category", "cellcentered"}},
                                {"ZSLevelSet"},
                                {},
