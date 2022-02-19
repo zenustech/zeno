@@ -32,7 +32,7 @@ struct RetrieveDisplacementField : zeno::INode {
 
 ZENDEFNODE(RetrieveDisplacementField,{
     {"shape"},
-    {"disp_field"},
+    {"shape"},
     {},
     {"Skinning"},
 });

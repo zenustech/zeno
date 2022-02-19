@@ -151,7 +151,7 @@ struct SolveFEM : zeno::INode {
         }
 
         set_output("shape",shape); 
-        std::cout << "FINISH STEPPING " << "\t" << iter_idx << "\t" << r.norm() << std::endl;
+        // std::cout << "FINISH STEPPING " << "\t" << iter_idx << "\t" << r.norm() << std::endl;
     }
 
     static void UpdateCurrentShape(std::shared_ptr<PrimitiveObject> prim,const VecXd& dp,double alpha){

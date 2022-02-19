@@ -27,6 +27,7 @@ set(SKINNING_SOURCE_FILES
     gradient.cpp
     deformation_field.cpp
     extract_tetrahedra_surface.cpp
+    triangularize_quads_surf.cpp
 )
 
 add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})

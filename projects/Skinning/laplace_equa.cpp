@@ -105,6 +105,9 @@ ZENDEFNODE(SolveLaplaceEquaOnAttr, {
     {"Skinning"},
 });
 
+
+// mark the boundary vertices' btags as 1.0
+// assign the fixed value to the specified attributes
 struct SolveLaplaceEquation : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("primIn");
