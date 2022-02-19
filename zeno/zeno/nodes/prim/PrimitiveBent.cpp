@@ -37,7 +37,7 @@ struct PrimitiveBent : zeno::INode {
         tangent = orb.tangent;
 
         if (std::abs(angle) > 0.005f && limitMax - limitMin > 0.001f && prim->size() != 0) {
-            angle *= -M_PI / 180;
+            angle *= M_PI / 180;
             angle /= limitMax - limitMin;
 
             auto tanv0 = dot(tangent, prim->verts[0]);
@@ -85,9 +85,10 @@ struct PrimitiveBent : zeno::INode {
 
                 newtanpos -= truemid;
                 newdirpos -= radius;
-                pos += (newtanpos - tanpos) * tangent + (newdirpos - dirpos) * direction;
+                pos += (newtanpos - tanpos + average) * tangent;
+                pos += (biasDir + avgDir - newdirpos - dirpos) * direction;
 
-                prim->verts[i] = (biasDir + avgDir) * direction + tangent * average + pos;
+                prim->verts[i] = pos;
             }
 
         }
@@ -112,7 +113,7 @@ ZENDEFNODE(PrimitiveBent, {
     {"PrimitiveObject", "prim"},
     },
     {
-    {"bool", "useOrigin", "1"},
+    {"bool", "useOrigin", "0"},
     },
     {"primitive"},
 });
