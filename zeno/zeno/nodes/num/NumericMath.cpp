@@ -1,10 +1,9 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/random.h>
+#include <zeno/utils/orthonormal.h>
 
+namespace zeno {
 namespace {
-
-using namespace zeno;
 
 struct MakeOrthonormalBase : INode {
     virtual void apply() override {
@@ -39,6 +38,32 @@ ZENDEFNODE(MakeOrthonormalBase, {
 });
 
 
+struct OrthonormalBase : INode {
+    virtual void apply() override {
+        std::unique_ptr<orthonormal> orb;
+
+        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        if (has_input("tangent")) {
+            auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            orb = std::make_unique<orthonormal>(normal, tangent);
+        } else {
+            orb = std::make_unique<orthonormal>(normal);
+        }
+
+        set_output("normal", std::make_shared<NumericObject>(orb->normal));
+        set_output("tangent", std::make_shared<NumericObject>(orb->tangent));
+        set_output("bitangent", std::make_shared<NumericObject>(orb->bitangent));
+    }
+};
+
+ZENDEFNODE(OrthonormalBase, {
+    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {},
+    {"math"},
+});
+
+
 struct AABBCollideDetect : INode {
     virtual void apply() override {
         auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
@@ -63,112 +88,56 @@ ZENDEFNODE(AABBCollideDetect, {
     {"math"},
 });
 
-
-struct UnpackNumericVec : INode {
+struct ProjectedAngleAndLength : INode {
     virtual void apply() override {
-        auto vec = get_input<NumericObject>("vec")->value;
-        NumericValue x = 0, y = 0, z = 0, w = 0;
-        std::visit([&x, &y, &z, &w] (auto const &vec) {
-            using T = std::decay_t<decltype(vec)>;
-            if constexpr (!is_vec_v<T>) {
-                x = vec;
-            } else {
-                if constexpr (is_vec_n<T> > 0) x = vec[0];
-                if constexpr (is_vec_n<T> > 1) y = vec[1];
-                if constexpr (is_vec_n<T> > 2) z = vec[2];
-                if constexpr (is_vec_n<T> > 3) w = vec[3];
-            }
-        }, vec);
-        set_output("X", std::make_shared<NumericObject>(x));
-        set_output("Y", std::make_shared<NumericObject>(y));
-        set_output("Z", std::make_shared<NumericObject>(z));
-        set_output("W", std::make_shared<NumericObject>(w));
+        auto vec = get_input<NumericObject>("vec")->get<vec3f>();
+        auto plane = get_input2<std::string>("plane");
+
+        orthonormal orb;
+        vec3f X(1, 0, 0), Y(0, 1, 0), Z(0, 0, 1);
+        if (plane == "XY")
+            orb = {X, Y};
+        else if (plane == "YX")
+            orb = {Y, X};
+        else if (plane == "YZ")
+            orb = {Y, Z};
+        else if (plane == "ZY")
+            orb = {Z, Y};
+        else if (plane == "ZX")
+            orb = {Z, X};
+        else if (plane == "XZ")
+            orb = {X, Z};
+        else
+            throw Exception("bad plane enum: " + plane);
+
+        vec -= dot(vec, orb.normal);
+        auto tanv = dot(orb.tangent, vec);
+        auto bitanv = dot(orb.bitangent, vec);
+        auto angle = std::atan2(bitanv, tanv);
+        auto length = std::hypot(bitanv, tanv);
+        if (dot(vec, vec) != 0)
+            vec = normalize(vec);
+
+        set_output("direction", std::make_shared<NumericObject>(vec));
+        set_output("angle", std::make_shared<NumericObject>(angle));
+        set_output("length", std::make_shared<NumericObject>(length));
     }
 };
 
-ZENDEFNODE(UnpackNumericVec, {
-    {{"vec3f", "vec"}},
-    {{"float", "X"}, {"float", "Y"},
-     {"float", "Z"}, {"float", "W"}},
+ZENDEFNODE(ProjectedAngleAndLength, {
+    {
+    {"vec3f", "vec"},
+    {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
+    {"enum radians degrees", "angleUnit", "degrees"},
+    },
+    {
+    {"vec3f", "direction"},
+    {"float", "angle"},
+    {"float", "length"},
+    },
     {},
-    {"numeric"},
-}); // TODO: add PackNumericVec too.
-
-
-struct NumericRandom : INode {
-    virtual void apply() override {
-        auto value = std::make_shared<NumericObject>();
-        auto dim = get_param<int>("dim");
-        auto symmetric = get_param<bool>("symmetric");
-        auto scale = has_input("scale") ?
-            get_input<NumericObject>("scale")->get<float>()
-            : 1.0f;
-        float offs = 0.0f;
-        if (symmetric) {
-            offs = -scale;
-            scale *= 2.0f;
-        }
-        if (dim == 1) {
-            value->set(offs + scale * float(frand()));
-        } else if (dim == 2) {
-            value->set(offs + scale * zeno::vec2f(frand(), frand()));
-        } else if (dim == 3) {
-            value->set(offs + scale * zeno::vec3f(frand(), frand(), frand()));
-        } else if (dim == 4) {
-            value->set(offs + scale * zeno::vec4f(frand(), frand(), frand(), frand()));
-        } else {
-            char buf[1024];
-            sprintf(buf, "invalid dim for NumericRandom: %d\n", dim);
-            throw Exception(buf);
-        }
-        set_output("value", std::move(value));
-    }
-};
-
-ZENDEFNODE(NumericRandom, {
-    {{"float", "scale", "1"}},
-    {{"NumericObject", "value"}},
-    {{"int", "dim", "1"}, {"bool", "symmetric", "0"}},
-    {"numeric"},
+    {"math"},
 });
 
-
-struct SetRandomSeed : INode {
-    virtual void apply() override {
-        auto seed = get_input<NumericObject>("seed")->get<int>();
-        sfrand(seed);
-        if (has_input2("routeIn")) {
-            set_output2("routeOut", get_input2("routeIn"));
-        } else {
-            set_output2("routeOut", std::make_shared<NumericObject>(seed));
-        }
-    }
-};
-
-ZENDEFNODE(SetRandomSeed, {
-    {"routeIn", {"int", "seed", "0"}},
-    {"routeOut"},
-    {},
-    {"numeric"},
-});
-
-
-struct NumericCounter : INode {
-    int counter = 0;
-
-    virtual void apply() override {
-        auto count = std::make_shared<NumericObject>();
-        count->value = counter++;
-        set_output("count", std::move(count));
-    }
-};
-
-ZENDEFNODE(NumericCounter, {
-    {},
-    {{"int", "count"}},
-    {},
-    {"numeric"},
-});
-
-
+}
 }

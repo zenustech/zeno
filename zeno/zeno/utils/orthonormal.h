@@ -8,6 +8,8 @@ namespace zeno {
 struct orthonormal {
     vec3f normal, tangent, bitangent;
 
+    orthonormal() = default;
+
     explicit orthonormal(vec3f const &normal_)
         : normal(normal_) {
         normal = normalize(normal);
@@ -24,7 +26,7 @@ struct orthonormal {
         bitangent = vec3f(b, 1.0f - normal[1]*normal[1]*a, -normal[1]);
     }
 
-    explicit orthonormal(vec3f const &normal_, vec3f const &tangent_)
+    orthonormal(vec3f const &normal_, vec3f const &tangent_)
         : normal(normal_), tangent(tangent_) {
         bitangent = cross(normal, tangent);
         bitangent = normalize(bitangent);
