@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/orthonormal.h>
+//#include <zeno/utils/logger.h>
 
 namespace zeno {
 namespace {
@@ -88,12 +89,12 @@ ZENDEFNODE(AABBCollideDetect, {
     {"math"},
 });
 
-struct ProjectedAngleAndLength : INode {
+struct ProjectAndNormalize : INode {
     virtual void apply() override {
         auto vec = get_input<NumericObject>("vec")->get<vec3f>();
         auto plane = get_input2<std::string>("plane");
 
-        orthonormal orb;
+        std::array<vec3f, 2> orb;
         vec3f X(1, 0, 0), Y(0, 1, 0), Z(0, 0, 1);
         if (plane == "XY")
             orb = {X, Y};
@@ -110,30 +111,42 @@ struct ProjectedAngleAndLength : INode {
         else
             throw Exception("bad plane enum: " + plane);
 
-        vec -= dot(vec, orb.normal);
-        auto tanv = dot(orb.tangent, vec);
-        auto bitanv = dot(orb.bitangent, vec);
-        auto angle = std::atan2(bitanv, tanv);
-        auto length = std::hypot(bitanv, tanv);
-        if (dot(vec, vec) != 0)
-            vec = normalize(vec);
+        auto orb0v = dot(orb[0], vec);
+        auto orb1v = dot(orb[1], vec);
+        auto height = dot(cross(orb[0], orb[1]), vec);
+        auto phase = std::atan2(orb1v, orb0v);
+        auto length = std::hypot(orb1v, orb0v);
+        auto direction = orb[0] * orb0v + orb[1] * orb1v;
+        if (length != 0) direction /= length;
+        direction *= get_input2<float>("directionScale");
+        length *= get_input2<float>("lengthScale");
+        height *= get_input2<float>("heightScale");
+        height += get_input2<float>("heightOffset");
 
-        set_output("direction", std::make_shared<NumericObject>(vec));
-        set_output("angle", std::make_shared<NumericObject>(angle));
+        //log_info("length: {}", length);
+        //log_info("direction: {} {} {}", direction[0], direction[1], direction[2]);
+
+        set_output("direction", std::make_shared<NumericObject>(direction));
         set_output("length", std::make_shared<NumericObject>(length));
+        set_output("height", std::make_shared<NumericObject>(height));
+        set_output("phase", std::make_shared<NumericObject>(phase));
     }
 };
 
-ZENDEFNODE(ProjectedAngleAndLength, {
+ZENDEFNODE(ProjectAndNormalize, {
     {
     {"vec3f", "vec"},
     {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
-    {"enum radians degrees", "angleUnit", "degrees"},
+    {"float", "directionScale", "1"},
+    {"float", "lengthScale", "1"},
+    {"float", "heightScale", "1"},
+    {"float", "heightOffset", "0"},
     },
     {
     {"vec3f", "direction"},
-    {"float", "angle"},
     {"float", "length"},
+    {"float", "height"},
+    {"float", "phase"},
     },
     {},
     {"math"},
