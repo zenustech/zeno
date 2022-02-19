@@ -156,39 +156,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
             return;
         SOCKET_UPDATE_INFO info = var.value<SOCKET_UPDATE_INFO>();
         m_nodes[id]->onSocketUpdated(info);
-        const QString& oldName = info.oldinfo.name;
-        const QString& newName = info.newInfo.name;
-        
-        //update links
-        /*
-        for (const EdgeInfo& edgeInfo : m_links.keys())
-        {
-            if (info.bInput)
-            {
-                if (edgeInfo.inputNode == id && edgeInfo.inputSock == oldName)
-                {
-                    EdgeInfo _edgeInfo(edgeInfo);
-                    ZenoFullLink* pLink = m_links[edgeInfo];
-                    _edgeInfo.inputSock = newName;
-                    pLink->updateLink(_edgeInfo);
-                    m_links[_edgeInfo] = pLink;
-                    m_links.remove(edgeInfo);
-                }
-            }
-            else
-            {
-                if (edgeInfo.outputNode == id && edgeInfo.outputSock == oldName)
-                {
-                    EdgeInfo _edgeInfo(edgeInfo);
-                    ZenoFullLink* pLink = m_links[edgeInfo];
-                    _edgeInfo.outputSock = newName;
-                    pLink->updateLink(_edgeInfo);
-                    m_links[_edgeInfo] = pLink;
-                    m_links.remove(edgeInfo);
-                }
-            }
-        }
-        */
     }
     if (role == ROLE_OBJNAME)
     {

@@ -676,6 +676,21 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     }
 }
 
+void GraphsModel::updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+
+    }
+    else
+    {
+        m_linkModel->setData(linkIdx, info.newEdge.inputNode, ROLE_INNODE);
+        m_linkModel->setData(linkIdx, info.newEdge.inputSock, ROLE_INSOCK);
+        m_linkModel->setData(linkIdx, info.newEdge.outputNode, ROLE_OUTNODE);
+        m_linkModel->setData(linkIdx, info.newEdge.outputSock, ROLE_OUTSOCK);
+    }
+}
+
 void GraphsModel::removeSubGraph(const QString& name)
 {
 	for (int i = 0; i < m_subGraphs.size(); i++)
@@ -718,13 +733,21 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
-void GraphsModel::updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx)
+void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
-	SubGraphModel* pSubg = subGraph(subGpIdx.row());
-	Q_ASSERT(pSubg);
-    if (pSubg)
+    if (enableTransaction)
     {
-        pSubg->updateSocket(id, info);
+        UpdateSocketCommand* pCmd = new UpdateSocketCommand(nodeid, info, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		SubGraphModel* pSubg = subGraph(subGpIdx.row());
+		Q_ASSERT(pSubg);
+		if (pSubg)
+		{
+			pSubg->updateSocket(nodeid, info);
+		}
     }
 }
 

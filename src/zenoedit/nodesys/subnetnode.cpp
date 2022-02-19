@@ -43,10 +43,11 @@ void SubInputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& pa
 
 			SOCKET_UPDATE_INFO info;
 			info.bInput = true;
-			info.oldinfo.name = oldName;
+			info.oldInfo.name = oldName;
 			info.name = textValue;
 			info.newInfo = sock;
-			pModel->updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+			if (info.newInfo.name != info.oldInfo.name)
+				pModel->updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
         }
 	}
 }

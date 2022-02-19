@@ -184,7 +184,7 @@ Q_DECLARE_METATYPE(PARAM_UPDATE_INFO)
 
 struct SOCKET_UPDATE_INFO {
     QString name;
-    SOCKET_INFO oldinfo;
+    SOCKET_INFO oldInfo;
     SOCKET_INFO newInfo;
     bool bInput;
 };
@@ -196,6 +196,11 @@ struct STATUS_UPDATE_INFO {
     int role;
 };
 Q_DECLARE_METATYPE(STATUS_UPDATE_INFO)
+
+struct LINK_UPDATE_INFO {
+    EdgeInfo oldEdge;
+    EdgeInfo newEdge;
+};
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 

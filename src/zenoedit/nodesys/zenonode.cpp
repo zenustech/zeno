@@ -23,6 +23,10 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_pMainLayout(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
+    , m_mute(nullptr)
+    , m_view(nullptr)
+    , m_once(nullptr)
+    , m_collaspe(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -571,7 +575,7 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
 
 void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 {
-    const QString& oldName = info.oldinfo.name;
+    const QString& oldName = info.oldInfo.name;
     const QString& newName = info.newInfo.name;
     if (info.bInput)
     {
@@ -587,8 +591,6 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
         m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
         m_outSockets.remove(oldName);
     }
-
-    
 }
 
 void ZenoNode::onNameUpdated(const QString& newName)

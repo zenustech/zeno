@@ -278,6 +278,7 @@ ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, c
     
     setGraphicsItem(this);
     setFlags(ItemSendsScenePositionChanges);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 }
 
 void ZenoTextLayoutItem::setGeometry(const QRectF& geom)
@@ -296,8 +297,6 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    //painter->setBrush(Qt::black);
-    //painter->drawRect(boundingRect());  //FOR DEBUG LAOUT POSITION
     QGraphicsTextItem::paint(painter, option, widget);
 }
 
