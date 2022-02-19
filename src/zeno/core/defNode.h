@@ -34,7 +34,7 @@ inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
 }
 
 [[deprecated("use ZENO_DEFNODE(T)(...)")]]
-static int _deprecated_ZENDEFNODE_helper() {}
+static int _deprecated_ZENDEFNODE_helper() { return 1; }
 
 #define ZENDEFNODE(Class, ...) \
     ZENO_DEFNODE(Class)(__VA_ARGS__), _deprecatedDef##Class = ::zeno::_deprecated_ZENDEFNODE_helper();

@@ -6,6 +6,7 @@
 #include <vector>
 #include <QtWidgets>
 #include <zenoui/model/modelrole.h>
+#include <zenoui/util/cihou.h>
 
 struct SocketItem
 {
@@ -30,7 +31,7 @@ typedef NodeItem* WP_NODEITEM;
 
 struct NodeItem
 {
-    typedef std::unordered_map<QString, NodeItem *> MAPPER;
+    typedef qt_unordered_map<QString, NodeItem*> MAPPER;
 
 	NodeItem() = default;
 
@@ -143,9 +144,9 @@ struct NodeItem
 
     std::map<QString, int> m_key2Row;
     std::map<int, QString> m_row2Key;
-    std::unordered_map<QString, QString> m_name2Id;
+    qt_unordered_map<QString, QString> m_name2Id;
     WP_NODEITEM m_parent;
-    std::unordered_map<QString, SP_NODE_ITEM> m_childrens;
+    qt_unordered_map<QString, SP_NODE_ITEM> m_childrens;
     std::map<int, QVariant> m_datas;
 };
 

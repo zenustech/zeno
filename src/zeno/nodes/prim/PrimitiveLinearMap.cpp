@@ -88,7 +88,9 @@ namespace zeno {
                 if (get_param<bool>("autoMinMax")) {
                     auto minv = getAxis(attrSrc[0], axisSrc);
                     auto maxv = getAxis(attrSrc[0], axisSrc);
+#ifndef _MSC_VER
 #pragma omp parallel for reduction(min:minv) reduction(max:maxv)
+#endif
                     for (intptr_t i = 0; i < attrSrc.size(); ++i) {
                         auto val = getAxis(attrSrc[i], axisSrc);
                         maxv = std::max(maxv, val);

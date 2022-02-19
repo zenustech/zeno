@@ -68,10 +68,15 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
             //for (auto const &val: arr) outarr.push_back(val);
             //end fix pyb
         });
+#if defined(_MSC_VER) && defined(_OPENMP)
+#define omp_size_t intptr_t
+#else
+#define omp_size_t size_t
+#endif
 #if defined(_OPENMP)
         auto concat = [&](auto &dst, const auto &src, size_t &offset) {
 #pragma omp parallel for
-            for (size_t i = 0; i < src.size(); ++i) {
+            for (omp_size_t i = 0; i < src.size(); ++i) {
                 dst[offset + i] = src[i] + len;
             }
             offset += src.size();
@@ -83,7 +88,7 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
         concat(outprim->quads, prim->quads, nCurQuads);
         // exception: poly
 #pragma omp parallel for
-        for (size_t i = 0; i < prim->polys.size(); ++i) {
+        for (omp_size_t i = 0; i < prim->polys.size(); ++i) {
             const auto &poly = prim->polys[i];
             outprim->polys[nCurPolys + i] = std::make_pair(poly.first + nCurLoops, poly.second);
         }

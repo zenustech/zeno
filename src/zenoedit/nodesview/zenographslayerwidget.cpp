@@ -5,6 +5,7 @@
 #include "../zenoapplication.h"
 #include "../graphsmanagment.h"
 #include "../nodesys/zenosubgraphview.h"
+#include <zeno/utils/msvc.h>
 
 
 LayerPathWidget::LayerPathWidget(QWidget* parent)
@@ -114,7 +115,7 @@ void ZenoGraphsLayerWidget::resetPath(const QString& path, const QString& nodeId
 {
 	m_pPathWidget->setPath(path);
 	m_pPathWidget->show();
-	QStringList L = path.split("/", Qt::SkipEmptyParts);
+	QStringList L = path.split("/", QtSkipEmptyParts);
 	const QString& subGraph = L[L.length() - 1];
 	m_graphsWidget->activate(subGraph, nodeId);
 }

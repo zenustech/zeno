@@ -75,7 +75,7 @@ NODES_DATA SubGraphModel::nodes()
     NODES_DATA datas;
     for (auto iter = m_nodes.keyValueBegin(); iter != m_nodes.keyValueEnd(); iter++)
     {
-        datas[iter->first] = iter->second;
+        datas[(*iter).first] = (*iter).second;//cihou wendous, he doesn't support ->
     }
     return datas;
 }

@@ -9,7 +9,7 @@ Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 9 || Clang >= 
 
 ### Windows
 
-1. Download and install Git: https://git-scm.com/download/win
+1. Download and install Git: https://github.com/git-for-windows/git/releases/download/v2.35.1.windows.2/Git-2.35.1.2-64-bit.exe
 
 2. Download and install CMake: https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-windows-x86_64.zip
 

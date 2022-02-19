@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include <zenoui/util/uihelper.h>
 #include <zeno/zeno.h>
+#include <zenoui/util/cihou.h>
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -220,11 +221,11 @@ void GraphsModel::initDescriptors()
             Q_ASSERT(rest.startsWith("{") && rest.endsWith("}"));
             auto _L = rest.mid(1, rest.length() - 2).split("}{");
             QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
-            QStringList z_categories = categories.split('%', Qt::SkipEmptyParts);
+            QStringList z_categories = categories.split('%', QtSkipEmptyParts);
             QJsonArray z_inputs;
 
             NODE_DESC desc;
-            for (QString input : inputs.split("%", Qt::SkipEmptyParts))
+            for (QString input : inputs.split("%", QtSkipEmptyParts))
             {
                 QString type, name, defl;
                 auto _arr = input.split('@');
@@ -238,7 +239,7 @@ void GraphsModel::initDescriptors()
                 socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
                 desc.inputs[name] = socket;
             }
-            for (QString output : outputs.split("%", Qt::SkipEmptyParts))
+            for (QString output : outputs.split("%", QtSkipEmptyParts))
             {
                 QString type, name, defl;
 				auto _arr = output.split('@');
@@ -252,7 +253,7 @@ void GraphsModel::initDescriptors()
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
                 desc.outputs[name] = socket;
             }
-            for (QString param : params.split("%", Qt::SkipEmptyParts))
+            for (QString param : params.split("%", QtSkipEmptyParts))
             {
                 QString type, name, defl;
                 auto _arr = param.split('@');

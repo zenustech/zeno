@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.15)
 
 # Please use VS2019+ or GCC 9+
 set(CMAKE_CXX_STANDARD 17)

@@ -30,7 +30,7 @@ static inline T frand() {
 
 static inline void sfrand(unsigned long i) {
     srand(i);
-#ifndef __linux__
+#ifdef __linux__
     srand48(i);
 #endif
 }

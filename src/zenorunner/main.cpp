@@ -92,7 +92,11 @@ int main() {
     fprintf(stdout, "(stdout ping test)\n");
 
     old_stdout = stdout;
+#ifdef __linux__
     stdout = stderr;
+#else
+    //(void)freopen("/dev/stderr", "w", stdout);
+#endif
     std::cout.rdbuf(std::cerr.rdbuf());
 
     std::string progJson;
