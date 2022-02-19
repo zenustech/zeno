@@ -151,6 +151,88 @@ ZENDEFNODE(MatchZSLevelSetTopology, {
                                         {"Volume"},
                                     });
 /// resample
+struct ResampleZSLevelSet : INode {
+  template <typename SplsT, typename RefSplsT>
+  void resample(SplsT &ls, const RefSplsT &refLs, const zs::PropertyTag &tag) {
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+    ls.append_channels(cudaPol, {tag}); // would also check channel dimension
+
+    cudaPol(
+        {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
+        [ls = proxy<execspace_e::cuda>(ls),
+         refLs = proxy<execspace_e::cuda>(refLs),
+         tag] __device__(typename RM_CVREF_T(ls)::size_type bi,
+                         typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
+          using ls_t = RM_CVREF_T(ls);
+          using grid_t = RM_CVREF_T(ls._grid);
+          using vec3 = zs::vec<float, 3>;
+          auto blockid = ls._table._activeKeys[bi];
+          auto cellid = grid_traits<grid_t>::cellid_to_coord(ci);
+          const auto propOffset = ls.propertyOffset(tag.name);
+          const auto refPropOffset = refLs.propertyOffset(tag.name);
+          if constexpr (ls_t::category == grid_e::staggered) {
+            zs::vec<typename ls_t::TV, 3> Xs{
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.f, 0.5f, 0.5f})),
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.f, 0.5f})),
+                refLs.worldToIndex(
+                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.5f, 0.f}))};
+            for (typename ls_t::channel_counter_type chn = 0;
+                 chn != tag.numChannels; ++chn)
+              ls._grid(propOffset + chn, bi, ci) =
+                  refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
+          } else {
+            auto X = refLs.worldToIndex(ls.indexToWorld(blockid + cellid));
+            // not quite efficient
+            for (typename ls_t::channel_counter_type chn = 0;
+                 chn != tag.numChannels; ++chn)
+              ls._grid(propOffset + chn, bi, ci) =
+                  refLs.isample(refPropOffset + chn, X, 0);
+          }
+        });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ResampleZSLevelSet\n");
+
+    using namespace zs;
+
+    // this could possibly be the same staggered velocity field too
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+    auto refZsField = get_input<ZenoLevelSet>("RefZSField");
+    auto &refField = refZsField->getBasicLevelSet()._ls;
+    auto propertyName = get_input2<std::string>("property");
+
+    match(
+        [this, propertyName](auto &lsPtr, const auto &refLsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type>> {
+          PropertyTag tag{};
+          tag.name = propertyName;
+          tag.numChannels = refLsPtr->getChannelSize(propertyName);
+          if (tag.numChannels == 0)
+            throw std::runtime_error(fmt::format(
+                "property [{}] not exists in the source field", propertyName));
+          resample(*lsPtr, *refLsPtr, tag);
+        },
+        [](...) { throw std::runtime_error("not both fields are spls!"); })(
+        field, refField);
+    fmt::print(fg(fmt::color::cyan), "done executing ResampleZSLevelSet\n");
+    set_output("ZSField", std::move(zsfield));
+  }
+};
+
+ZENDEFNODE(ResampleZSLevelSet,
+           {
+               {"ZSField", "RefZSField", {"float", "property", "sdf"}},
+               {"ZSField"},
+               {},
+               {"Volume"},
+           });
 /// binary operation
 /// extend domain (by vel field)
 /// advection

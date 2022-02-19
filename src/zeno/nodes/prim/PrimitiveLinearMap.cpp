@@ -30,7 +30,8 @@ namespace zeno {
             auto refAxisDst = axisIndex(get_input<zeno::StringObject>("refAxisDst")->get());
             auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
             auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
-
+            auto autoMinMax = get_param<bool>("autoMinMax");
+            auto autoSort = get_param<bool>("autoSort");
 
             auto getAxis = [] (auto &val, int axis) -> auto & {
                 using T = std::decay_t<decltype(val)>;
@@ -51,14 +52,29 @@ namespace zeno {
                 }
 
                 srcArr.reserve(refAttrSrc.size() + 2);
-                auto maxval = getAxis(refAttrSrc[0], refAxisSrc), minval = maxval;
-                srcArr.push_back(minval);
+                srcArr.push_back(getAxis(refAttrSrc[0], refAxisSrc));
                 for (size_t i = 0; i < refAttrSrc.size(); i++) {
-                    auto val = getAxis(refAttrSrc[i], refAxisSrc);
-                    maxval = std::max(maxval, val);
-                    srcArr.push_back(maxval);
+                    srcArr.push_back(getAxis(refAttrSrc[i], refAxisSrc));
                 }
-                srcArr.push_back(maxval);
+                srcArr.push_back(getAxis(refAttrSrc.back(), refAxisSrc));
+
+                std::vector<size_t> indices;
+                indices.reserve(srcArr.size());
+                for (size_t i = 0; i < srcArr.size(); i++) {
+                    indices.push_back(i);
+                }
+                std::sort(indices.begin(), indices.end(), [&] (int pos1, int pos2) {
+                    return srcArr[pos1] < srcArr[pos2];
+                });
+
+                if (autoSort) {
+                    std::vector<float> srcArr2;
+                    srcArr2.reserve(srcArr.size());
+                    for (size_t i = 0; i < srcArr.size(); i++) {
+                        srcArr2.push_back(srcArr[indices[i]]);
+                    }
+                    srcArr = std::move(srcArr2);
+                }
 
                 refPrim->attr_visit(refAttrNameDst, [&] (auto &refAttrDst) {
                     if (refAttrDst.size() != refAttrSrc.size()) {
@@ -72,6 +88,15 @@ namespace zeno {
                         dstArr.push_back(getAxis(refAttrDst[i], refAxisDst));
                     }
                     dstArr.push_back(getAxis(refAttrDst.back(), refAxisDst));
+
+                    if (autoSort) {
+                        std::vector<float> dstArr2;
+                        dstArr2.reserve(dstArr.size());
+                        for (size_t i = 0; i < dstArr.size(); i++) {
+                            dstArr2.push_back(dstArr[indices[i]]);
+                        }
+                        dstArr = std::move(dstArr2);
+                    }
                 });
             });
 
@@ -85,7 +110,7 @@ namespace zeno {
             };
 
             prim->attr_visit(attrNameSrc, [&] (auto &attrSrc) {
-                if (get_param<bool>("autoMinMax")) {
+                if (autoMinMax) {
                     auto minv = getAxis(attrSrc[0], axisSrc);
                     auto maxv = getAxis(attrSrc[0], axisSrc);
 #ifndef _MSC_VER
@@ -105,6 +130,7 @@ namespace zeno {
                     for (intptr_t i = 0; i < attrSrc.size(); ++i) {
                         auto src = getAxis(attrSrc[i], axisSrc);
                         auto dst = linmap((src - limitMin) / (limitMax - limitMin));
+                        dst = dst * (limitMax - limitMin) + limitMin;
                         getAxis(attrDst[i], axisDst) = dst;
                     }
                 });
@@ -133,6 +159,7 @@ ZENDEFNODE(PrimitiveLinearMap, {
     },
     {
     {"bool", "autoMinMax", "1"},
+    {"bool", "autoSort", "1"},
     },
     {"primitive"},
 });

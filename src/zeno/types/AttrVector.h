@@ -194,7 +194,14 @@ struct AttrVector {
     }
 
     auto const &attr(std::string const &name) const {
-        _ensure_update();
+        //this causes bug in primitive clip
+        //reason: in primitiveClip, we will emplace back to attr by
+        //means like attr<T>.emplace_back(val)
+        //suppose "pos" = {}
+        //        "clr" = {}
+        //attr<vec3f>("clr").emplace_back(val)
+        //attr<vec3f>("pos").emplace_back(val)<---this will resize "clr" to zero first and then push_back to "pos"
+        //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
@@ -202,7 +209,7 @@ struct AttrVector {
     }
 
     auto &attr(std::string const &name) {
-        _ensure_update();
+        //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");

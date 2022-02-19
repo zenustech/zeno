@@ -82,7 +82,7 @@ ZENDEFNODE(PrimitiveTwist, {
     {"PrimitiveObject", "prim"},
     {"vec3f", "origin", "0,0,0"},
     {"vec3f", "direction", "0,1,0"},
-    {"vec3f", "tangent"},
+    {"tangent"},
     {"float", "angle", "45"},
     {"float", "limitMin", "0"},
     {"float", "limitMax", "1"},
