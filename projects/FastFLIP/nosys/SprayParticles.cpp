@@ -186,7 +186,7 @@ zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2)
 {
   for(auto key:src->attr_keys())
   {
-      if (key!="TriIndex")
+      if (key!="TriIndex"&&key!="pos")
       std::visit([i, v0, v1, v2, &pdst, &pos0, &pos1, &pos2](auto &&dst, auto &&src) {
           using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
           using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
