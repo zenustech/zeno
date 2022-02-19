@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include "PrimitiveLineSort.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -50,6 +51,9 @@ struct PrimitiveLineSolidify : zeno::INode {
         auto radiusAttr = get_input<zeno::StringObject>("radiusAttr")->get();
         bool isTri = get_input2<bool>("isTri");
         bool sealEnd = get_input2<bool>("sealEnd");
+
+        if (get_input2<bool>("lineSort"))
+            primLineSort(prim.get());
 
         intptr_t n = prim->verts.size();
         if (n >= 2 && count >= 2) {
@@ -195,6 +199,7 @@ ZENDEFNODE(PrimitiveLineSolidify, {
     {"string", "radiusAttr", ""},
     {"bool", "isTri", "1"},
     {"bool", "sealEnd", "1"},
+    {"bool", "lineSort", "1"},
     },
     {
     {"PrimitiveObject", "prim"},
