@@ -40,8 +40,8 @@
       "path": ""
      },
      "uipos": [
-      818.518846207128,
-      655.2746069208008
+      860.1121046340945,
+      732.6791013028233
      ],
      "options": [
       "ONCE"
@@ -63,8 +63,8 @@
      },
      "params": {},
      "uipos": [
-      1421.6345641801872,
-      855.1243995330719
+      1419.670184548344,
+      1239.210223104672
      ],
      "options": [
       "ONCE"
@@ -109,8 +109,8 @@
      },
      "params": {},
      "uipos": [
-      815.9286202377714,
-      967.4586741699178
+      329.6004952377714,
+      1533.1169188507686
      ],
      "options": [
       "ONCE"
@@ -137,8 +137,8 @@
      },
      "params": {},
      "uipos": [
-      1658.8252103697598,
-      1075.9033559629052
+      1172.4970853697598,
+      1641.561600643756
      ],
      "options": []
     },
@@ -160,8 +160,8 @@
       "path": ""
      },
      "uipos": [
-      1360.0781165821575,
-      1191.4330061041246
+      873.7499915821575,
+      1757.0912507849755
      ],
      "options": []
     },
@@ -178,8 +178,8 @@
       "value": "assets/character/humanAnimationVelSDF_v01.00{frame+24}.vdb"
      },
      "uipos": [
-      188.92602443267174,
-      933.7844286398253
+      -297.4021005673283,
+      1499.4426733206762
      ],
      "options": [
       "ONCE"
@@ -198,8 +198,8 @@
       "value": "assets/character/humanAnimationVelSDF_v01.00{frame+25}.vdb"
      },
      "uipos": [
-      1088.2323139221628,
-      1194.824993852576
+      601.9041889221628,
+      1760.4832385334269
      ],
      "options": []
     },
@@ -221,8 +221,8 @@
       "path": ""
      },
      "uipos": [
-      488.9704403145515,
-      936.3289910433496
+      2.6423153145515244,
+      1501.9872357242004
      ],
      "options": [
       "ONCE"
@@ -257,7 +257,7 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "53faa0d7-ZSPoissonDiskSample",
+       "e8004994-ZSPoissonDiskSample",
        "prim",
        null
       ],
@@ -279,8 +279,8 @@
      },
      "params": {},
      "uipos": [
-      2417.844082446809,
-      536.2913183890576
+      3416.2387374367086,
+      666.862847456056
      ],
      "options": [
       "ONCE",
@@ -435,8 +435,8 @@
       "path": ""
      },
      "uipos": [
-      1858.7059523894409,
-      706.653892314227
+      2943.8176411524037,
+      660.1480519421539
      ],
      "options": [
       "ONCE"
@@ -545,8 +545,223 @@
       "path": ""
      },
      "uipos": [
-      1831.015415549598,
-      363.18699731903484
+      2912.595189418944,
+      357.29817822355744
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4e618e4d-MarkZSLevelSet": {
+     "name": "MarkZSLevelSet",
+     "inputs": {
+      "ZSField": [
+       "b6700ea2-ResampleZSLevelSet",
+       "ZSField",
+       null
+      ],
+      "threshold": [
+       null,
+       null,
+       1e-06
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2404.80624954575,
+      871.5023223036042
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "69812e26-MakeZSLevelSet": {
+     "name": "MakeZSLevelSet",
+     "inputs": {
+      "dx": [
+       "7c191f52-NumericFloat",
+       "value",
+       0.1
+      ],
+      "transfer": [
+       null,
+       null,
+       "unknown"
+      ],
+      "category": [
+       null,
+       null,
+       "collocated"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      876.9793339934192,
+      978.873425102803
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "b6700ea2-ResampleZSLevelSet": {
+     "name": "ResampleZSLevelSet",
+     "inputs": {
+      "ZSField": [
+       "31f97d54-ZSLevelSetTopologyUnion",
+       "ZSField",
+       null
+      ],
+      "RefZSField": [
+       "354f9af2-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "property": [
+       null,
+       null,
+       "sdf"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1962.5455707964652,
+      885.6953364300065
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "bc485ecc-ZSLevelSetToVDBGrid": {
+     "name": "ZSLevelSetToVDBGrid",
+     "inputs": {
+      "ZSLevelSet": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2359.147440150188,
+      1482.4317488072375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "cf588f1c-PoissonDiskSample": {
+     "name": "PoissonDiskSample",
+     "inputs": {
+      "VDBGrid": [
+       "bc485ecc-ZSLevelSetToVDBGrid",
+       "VDBFloatGrid",
+       null
+      ],
+      "dx": [
+       "7c191f52-NumericFloat",
+       "value",
+       0.1
+      ],
+      "ppc": [
+       null,
+       null,
+       16.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      2932.8688209304933,
+      1476.9814001538589
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "e8004994-ZSPoissonDiskSample": {
+     "name": "ZSPoissonDiskSample",
+     "inputs": {
+      "ZSLevelSet": [
+       "b6700ea2-ResampleZSLevelSet",
+       "ZSField",
+       null
+      ],
+      "dx": [
+       "7c191f52-NumericFloat",
+       "value",
+       0.1
+      ],
+      "ppc": [
+       null,
+       null,
+       16.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      2911.99438202247,
+      1119.1011235955057
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "31f97d54-ZSLevelSetTopologyUnion": {
+     "name": "ZSLevelSetTopologyUnion",
+     "inputs": {
+      "ZSField": [
+       "69812e26-MakeZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "RefZSField": [
+       "354f9af2-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1438.5112359550558,
+      920.9269662921345
      ],
      "options": [
       "ONCE"
@@ -554,10 +769,10 @@
     }
    },
    "view_rect": {
-    "x": -222.94681225100408,
-    "y": -220.3818252630948,
-    "width": 2929.6875,
-    "height": 1621.09375
+    "x": 403.3529022793996,
+    "y": -182.418438982721,
+    "width": 3662.1093749999977,
+    "height": 2026.3671874999989
    }
   }
  },
@@ -727,6 +942,52 @@
    "params": [],
    "categories": [
     "FEM"
+   ]
+  },
+  "AdvectZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "ZSVelField",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "Volume"
    ]
   },
   "AppendList": {
@@ -6330,6 +6591,46 @@
     "MPM"
    ]
   },
+  "MakeZSLevelSet": {
+   "inputs": [
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "string",
+     "transfer",
+     "unknown"
+    ],
+    [
+     "string",
+     "category",
+     "cellcentered"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "SOP"
+   ]
+  },
   "MakeZSPartition": {
    "inputs": [
     [
@@ -6353,6 +6654,41 @@
    "params": [],
    "categories": [
     "MPM"
+   ]
+  },
+  "MarkZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "float",
+     "threshold",
+     "1e-6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
    ]
   },
   "MeshCopy": {
@@ -8095,6 +8431,41 @@
     "portal"
    ]
   },
+  "PrimFindTriangle": {
+   "inputs": [
+    [
+     "",
+     "MeshPrim",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimSprayParticles": {
    "inputs": [
     [
@@ -8254,6 +8625,16 @@
      "1"
     ],
     [
+     "float",
+     "midPoint",
+     "0.5"
+    ],
+    [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -8271,7 +8652,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -9218,6 +9605,138 @@
     "primitive"
    ]
   },
+  "PrimitiveLineSort": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reversed",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveListBoolOp": {
    "inputs": [
     [
@@ -10096,7 +10615,7 @@
      "0,1,0"
     ],
     [
-     "vec3f",
+     "",
      "tangent",
      ""
     ],
@@ -10740,6 +11259,46 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ResampleZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "RefZSField",
+     ""
+    ],
+    [
+     "string",
+     "property",
+     "sdf"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
    ]
   },
   "ResizeList": {
@@ -14848,7 +15407,7 @@
    "inputs": [
     [
      "",
-     "InoutField",
+     "InField",
      ""
     ],
     [
@@ -14885,7 +15444,7 @@
    "outputs": [
     [
      "",
-     "InoutField",
+     "extend",
      ""
     ],
     [
@@ -15293,6 +15852,41 @@
    "params": [],
    "categories": [
     "MPM"
+   ]
+  },
+  "ZSLevelSetTopologyUnion": {
+   "inputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "RefZSField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
    ]
   },
   "ZSParticleNeighborWrangler": {

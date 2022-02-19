@@ -84,13 +84,15 @@ ZENDEFNODE(MarkZSLevelSet, {
                            });
 
 /// match topology (partition union, ignore transformation difference)
-struct MatchZSLevelSetTopology : INode {
+struct ZSLevelSetTopologyUnion : INode {
   template <typename SplsT, typename TableT>
   void topologyUnion(SplsT &ls, const TableT &refTable) {
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
 
-    cudaPol(range(refTable.size()),
+    const auto numInBlocks = refTable.size();
+    const auto numPrevBlocks = ls.numBlocks();
+    cudaPol(range(numInBlocks),
             [ls = proxy<execspace_e::cuda>(ls),
              refTable = proxy<execspace_e::cuda>(
                  refTable)] __device__(typename RM_CVREF_T(ls)::size_type
@@ -106,13 +108,16 @@ struct MatchZSLevelSetTopology : INode {
                      chn != ls.numChannels(); ++chn)
                   for (typename ls_t::cell_index_type ci = 0;
                        ci != ls.block_size; ++ci)
-                    block(chn, ci) = 0;
+                    block(chn, ci) = ls._backgroundValue;
               }
             });
+    fmt::print("levelset of [{}] blocks inserted [{}] blocks, eventually [{}] "
+               "blocks\n",
+               numPrevBlocks, numInBlocks, ls.numBlocks());
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
-               "begin executing MatchZSLevelSetTopology\n");
+               "begin executing ZSLevelSetTopologyUnion\n");
 
     using namespace zs;
 
@@ -134,17 +139,34 @@ struct MatchZSLevelSetTopology : INode {
           auto cudaPol = cuda_exec().device(0);
           /// reserve enough memory
           lsPtr->resize(cudaPol, numBlocks + numRefBlocks);
+          /// assume sharing the same transformation
+          lsPtr->_backgroundValue = refLsPtr->_backgroundValue;
+          lsPtr->_backgroundVecValue = refLsPtr->_backgroundVecValue;
+
+          using TV = RM_CVREF_T(lsPtr->_min);
+          lsPtr->_min = TV::init([&a = lsPtr->_min, &b = refLsPtr->_min](
+                                     int i) { return std::min(a(i), b(i)); });
+          lsPtr->_max = TV::init([&a = lsPtr->_max, &b = refLsPtr->_max](
+                                     int i) { return std::max(a(i), b(i)); });
+          if constexpr (true) {
+            lsPtr->_i2wT = refLsPtr->_i2wT;
+            lsPtr->_i2wRinv = refLsPtr->_i2wRinv;
+            lsPtr->_i2wSinv = refLsPtr->_i2wSinv;
+            lsPtr->_i2wRhat = refLsPtr->_i2wRhat;
+            lsPtr->_i2wShat = refLsPtr->_i2wShat;
+            lsPtr->_grid.dx = refLsPtr->_grid.dx;
+          }
           topologyUnion(*lsPtr, refTable);
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
         field, refField);
     fmt::print(fg(fmt::color::cyan),
-               "done executing MatchZSLevelSetTopology\n");
+               "done executing ZSLevelSetTopologyUnion\n");
     set_output("ZSField", std::move(zsfield));
   }
 };
 
-ZENDEFNODE(MatchZSLevelSetTopology, {
+ZENDEFNODE(ZSLevelSetTopologyUnion, {
                                         {"ZSField", "RefZSField"},
                                         {"ZSField"},
                                         {},
@@ -159,6 +181,11 @@ struct ResampleZSLevelSet : INode {
     auto cudaPol = cuda_exec().device(0);
     ls.append_channels(cudaPol, {tag}); // would also check channel dimension
 
+    fmt::print(
+        "tag: [{}, {}] at {} (out of {}) in dst, [{}] (out of {}) in ref.\n",
+        tag.name, tag.numChannels, ls.getChannelOffset(tag.name),
+        ls.numChannels(), refLs.getChannelOffset(tag.name),
+        refLs.numChannels());
     cudaPol(
         {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
         [ls = proxy<execspace_e::cuda>(ls),
@@ -168,29 +195,33 @@ struct ResampleZSLevelSet : INode {
           using ls_t = RM_CVREF_T(ls);
           using grid_t = RM_CVREF_T(ls._grid);
           using vec3 = zs::vec<float, 3>;
+#if 0
+          if (ls.hasProperty("mark")) {
+            if ((int)ls._grid("mark", bi, ci) == 0)
+              return; // skip inactive voxels
+          }
+#endif
           auto blockid = ls._table._activeKeys[bi];
-          auto cellid = grid_traits<grid_t>::cellid_to_coord(ci);
+          auto cellid = ls_t::cellid_to_coord(ci);
           const auto propOffset = ls.propertyOffset(tag.name);
           const auto refPropOffset = refLs.propertyOffset(tag.name);
           if constexpr (ls_t::category == grid_e::staggered) {
             zs::vec<typename ls_t::TV, 3> Xs{
-                refLs.worldToIndex(
-                    ls.indexToWorld(blockid + cellid + vec3{0.f, 0.5f, 0.5f})),
-                refLs.worldToIndex(
-                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.f, 0.5f})),
-                refLs.worldToIndex(
-                    ls.indexToWorld(blockid + cellid + vec3{0.5f, 0.5f, 0.f}))};
+                refLs.worldToIndex(ls.indexToWorld(blockid + cellid, 0)),
+                refLs.worldToIndex(ls.indexToWorld(blockid + cellid, 1)),
+                refLs.worldToIndex(ls.indexToWorld(blockid + cellid, 2))};
             for (typename ls_t::channel_counter_type chn = 0;
                  chn != tag.numChannels; ++chn)
               ls._grid(propOffset + chn, bi, ci) =
                   refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
           } else {
-            auto X = refLs.worldToIndex(ls.indexToWorld(blockid + cellid));
+            auto x = ls.indexToWorld(blockid + cellid);
+            auto X = refLs.worldToIndex(x);
             // not quite efficient
             for (typename ls_t::channel_counter_type chn = 0;
                  chn != tag.numChannels; ++chn)
               ls._grid(propOffset + chn, bi, ci) =
-                  refLs.isample(refPropOffset + chn, X, 0);
+                  refLs.isample(refPropOffset + chn, X, refLs._backgroundValue);
           }
         });
   }
@@ -203,7 +234,7 @@ struct ResampleZSLevelSet : INode {
     auto zsfield = get_input<ZenoLevelSet>("ZSField");
     auto &field = zsfield->getBasicLevelSet()._ls;
     auto refZsField = get_input<ZenoLevelSet>("RefZSField");
-    auto &refField = refZsField->getBasicLevelSet()._ls;
+    const auto &refField = refZsField->getBasicLevelSet()._ls;
     auto propertyName = get_input2<std::string>("property");
 
     match(
@@ -217,6 +248,8 @@ struct ResampleZSLevelSet : INode {
           if (tag.numChannels == 0)
             throw std::runtime_error(fmt::format(
                 "property [{}] not exists in the source field", propertyName));
+          lsPtr->printTransformation("dst");
+          refLsPtr->printTransformation("ref");
           resample(*lsPtr, *refLsPtr, tag);
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
@@ -228,7 +261,7 @@ struct ResampleZSLevelSet : INode {
 
 ZENDEFNODE(ResampleZSLevelSet,
            {
-               {"ZSField", "RefZSField", {"float", "property", "sdf"}},
+               {"ZSField", "RefZSField", {"string", "property", "sdf"}},
                {"ZSField"},
                {},
                {"Volume"},

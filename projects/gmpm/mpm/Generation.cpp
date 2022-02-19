@@ -83,7 +83,8 @@ struct ZSPoissonDiskSample : INode {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
     const auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getSparseLevelSet();
-    auto spls = ls.clone({memsrc_e::host, -1});
+    const auto &spls =
+        ls.memspace() == memsrc_e::host ? ls.clone({memsrc_e::host, -1}) : ls;
 
     auto dx = get_input2<float>("dx");
 
