@@ -53,7 +53,7 @@ sudo pacman -S qt5
 
 Please refer to this video for installation guide :) https://www.bilibili.com/video/BV1uT4y1P7CX
 
-## Building Zeno from Source
+## Building Zeno
 
 ### Clone source code
 
@@ -116,6 +116,8 @@ build\bin\zenoedit.exe
 ```bash
 build/bin/zenoedit
 ```
+
+This should shows up an node editor window if everything is working well.
 
 ## References
 

@@ -47,13 +47,12 @@ jobs:
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build/tests
-      run: ctest --build-config ${{env.BUILD_TYPE}} --parallel
-
     - name: Packaging
-      id: packaging
-      run: python .github/get_ver.py
+      run: python misc/ci/package.py
+
+    - name: Versioning
+      id: versioning
+      run: python misc/ci/get_ver.py
 
     - name: Upload Release Asset
       id: upload_release_asset
@@ -62,6 +61,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/packaged.zip
-        asset_name: zeno-${{ github.ref }}-${{ steps.packaging.outputs.arch }}.zip
+        asset_path: ${{github.workspace}}/build/bin.zip
+        asset_name: ${{ steps.versioning.outputs.filename }}
         asset_content_type: application/zip

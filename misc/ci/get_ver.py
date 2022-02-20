@@ -20,7 +20,5 @@ if osys == 'windows':
 else:
     libc = ''.join(platform.libc_ver())
 
-arch = '{}-{}-{}'.format(mach, osys, libc)
-
-print('::set-output name=date::{}'.format(date))
-print('::set-output name=arch::{}'.format(arch))
+filename = '{}-{}'.format(osys, date)
+print('::set-output name=filename::{}'.format(filename))
