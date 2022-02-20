@@ -2,9 +2,9 @@ name: Intergrated Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ zeno2 ]
   pull_request:
-    branches: [ master ]
+    branches: [ zeno2 ]
 
 env:
   BUILD_TYPE: Debug
@@ -21,6 +21,8 @@ jobs:
     continue-on-error: true
 
     steps:
+    - uses: actions/checkout@v2
+    - uses: jwsi/submodule-checkout@v1
 
     - name: Cache Qt
       id: cache-qt
@@ -35,9 +37,6 @@ jobs:
       setup-python: false
       with:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
-
-    - uses: actions/checkout@v2
-    - uses: jwsi/submodule-checkout@v1
 
     - name: Configure CMake
       run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
