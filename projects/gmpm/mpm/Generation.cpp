@@ -82,27 +82,39 @@ struct ZSPoissonDiskSample : INode {
   void apply() override {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
-    const auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getSparseLevelSet();
-    const auto &spls =
-        ls.memspace() == memsrc_e::host ? ls.clone({memsrc_e::host, -1}) : ls;
-
-    auto dx = get_input2<float>("dx");
-
-    auto sampled = zs::sample_from_levelset(
-        zs::proxy<zs::execspace_e::openmp>(spls), dx, get_input2<float>("ppc"));
-
     auto prim = std::make_shared<PrimitiveObject>();
-    prim->resize(sampled.size());
-    auto &pos = prim->attr<vec3f>("pos");
-    auto &vel = prim->add_attr<vec3f>("vel");
 
-    /// compute default normal
-    auto ompExec = zs::omp_exec();
-    ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
-      pos[pi] = sampled[pi];
-      vel[pi] = vec3f{0, 0, 0};
-      // nrm[pi] = calcNormal(pos[pi]);
-    });
+    auto zsfield = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+
+    match(
+        [&prim, this](auto &lsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+          const auto &ls = *lsPtr;
+          const auto &spls = ls.memspace() == memsrc_e::host
+                                 ? ls.clone({memsrc_e::host, -1})
+                                 : ls;
+
+          auto dx = get_input2<float>("dx");
+
+          auto sampled =
+              zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls),
+                                       dx, get_input2<float>("ppc"));
+
+          prim->resize(sampled.size());
+          auto &pos = prim->attr<vec3f>("pos");
+          auto &vel = prim->add_attr<vec3f>("vel");
+
+          /// compute default normal
+          auto ompExec = zs::omp_exec();
+          ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
+            pos[pi] = sampled[pi];
+            vel[pi] = vec3f{0, 0, 0};
+            // nrm[pi] = calcNormal(pos[pi]);
+          });
+        },
+        [](...) {})(field);
 
     fmt::print(fg(fmt::color::cyan), "done executing ZSPoissonDiskSample\n");
     set_output("prim", std::move(prim));
