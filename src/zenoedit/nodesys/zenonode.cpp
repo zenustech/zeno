@@ -360,11 +360,6 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 
 QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
 {
-    if ("1d9489c4-zelloWorld" == nodeId())
-    {
-        int j;
-        j = 0;
-    }
     QSizeF sz = _base::sizeHint(which, constraint);
     return sz;
 }
@@ -534,21 +529,10 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
 {
     const QString nodeid = nodeId();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    QVariant varValue;
-    switch (editCtrl) {
-        case CONTROL_INT: varValue = textValue.isEmpty() ? 0 : std::stoi(textValue.toStdString()); break;
-        case CONTROL_FLOAT: varValue = textValue.isEmpty() ? 0.0 : std::stod(textValue.toStdString()); break;
-        case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : textValue == "true" ? true :
-                           (textValue == "false" ? false : (bool)std::stoi(textValue.toStdString())); break;
-        case CONTROL_READPATH:
-        case CONTROL_WRITEPATH:
-        case CONTROL_MULTILINE_STRING:
-        case CONTROL_STRING: varValue = textValue; break;
-    }
 
     PARAM_UPDATE_INFO info;
     info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
-    info.newValue = varValue;
+    info.newValue = UiHelper::parseTextValue(editCtrl, textValue);;
     info.name = paramName;
     pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
 }

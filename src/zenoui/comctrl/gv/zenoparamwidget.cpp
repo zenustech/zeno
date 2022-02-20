@@ -423,9 +423,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minView(nullptr)
     , m_minOnce(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, QSizeF(33, 42), this);
-    m_minView = new ZenoImageItem(statusComp.view, QSizeF(25, 42), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, QSizeF(33, 42), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(25, 42)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
 	m_once = new ZenoImageItem(":/icons/ONCE_dark.svg", ":/icons/ONCE_light.svg", ":/icons/ONCE_light.svg", QSize(50, 42), this);
 	m_mute = new ZenoImageItem(":/icons/MUTE_dark.svg", ":/icons/MUTE_light.svg", ":/icons/MUTE_light.svg", QSize(50, 42), this);
 	m_view = new ZenoImageItem(":/icons/VIEW_dark.svg", ":/icons/VIEW_light.svg", ":/icons/VIEW_light.svg", QSize(50, 42), this);
@@ -440,15 +440,16 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_view->hide();
 
     m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(20, 0));
-    m_minView->setPos(QPointF(40, 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(20), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(40), 0));
 
     QSizeF sz2 = m_once->size();
-	QPointF base = QPointF(12, -sz2.height() - 8);
+    //todo: kill these magin number.
+	QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
 	m_once->setPos(base);
-	base += QPointF(38, 0);
+	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_mute->setPos(base);
-	base += QPointF(38, 0);
+	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_view->setPos(base);
 
     m_minOnce->setZValue(ZVALUE_ELEMENT);
