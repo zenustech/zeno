@@ -21,6 +21,21 @@ jobs:
     continue-on-error: true
 
     steps:
+
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      version: 5.15.15
+      setup-python: false
+      with:
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+
     - uses: actions/checkout@v2
     - uses: jwsi/submodule-checkout@v1
 
