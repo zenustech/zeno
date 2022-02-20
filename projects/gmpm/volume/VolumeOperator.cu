@@ -28,20 +28,45 @@ struct MarkZSLevelSet : INode {
                                    typename RM_CVREF_T(
                                        ls)::cell_index_type ci) mutable {
               using ls_t = RM_CVREF_T(ls);
-              auto block = ls._grid.block(bi);
-              // const auto nchns = ls.numChannels();
-              for (typename ls_t::channel_counter_type propNo = 0;
-                   propNo != ls.numProperties(); ++propNo) {
-                if (ls.getPropertyNames()[propNo] == "mark")
-                  continue; // skip property ["mark"]
-                auto propOffset = ls.getPropertyOffsets()[propNo];
-                auto propSize = ls.getPropertySizes()[propNo];
-                for (typename ls_t::channel_counter_type chn = 0;
-                     chn != propSize; ++chn) {
-                  if (zs::abs(block(propOffset + chn, ci)) > threshold) {
-                    block("mark", ci) = (u64)1;
-                    atomic_add(exec_cuda, cnt, (u64)1);
-                    break; // no need further checking
+              if constexpr (ls_t::category == grid_e::staggered) {
+                for (typename ls_t::channel_counter_type propNo = 0;
+                     propNo != ls.numProperties(); ++propNo) {
+                  if (ls.getPropertyNames()[propNo] == "mark")
+                    continue; // skip property ["mark"]
+                  auto propOffset = ls.getPropertyOffsets()[propNo];
+                  auto propSize = ls.getPropertySizes()[propNo];
+                  auto coord =
+                      ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
+                  // usually this is
+                  for (typename ls_t::channel_counter_type chn = 0;
+                       chn != propSize; ++chn) {
+                    auto f = chn % (ls_t::dim + ls_t::dim);
+                    if (zs::abs(ls.value_or(propOffset + chn, coord, chn % 3,
+                                            0)) > threshold ||
+                        zs::abs(ls.value_or(propOffset + chn, coord,
+                                            chn % 3 + 3, 0)) > threshold) {
+                      ls._grid("mark", bi, ci) = (u64)1;
+                      atomic_add(exec_cuda, cnt, (u64)1);
+                      break; // no need further checking
+                    }
+                  }
+                }
+              } else {
+                auto block = ls._grid.block(bi);
+                // const auto nchns = ls.numChannels();
+                for (typename ls_t::channel_counter_type propNo = 0;
+                     propNo != ls.numProperties(); ++propNo) {
+                  if (ls.getPropertyNames()[propNo] == "mark")
+                    continue; // skip property ["mark"]
+                  auto propOffset = ls.getPropertyOffsets()[propNo];
+                  auto propSize = ls.getPropertySizes()[propNo];
+                  for (typename ls_t::channel_counter_type chn = 0;
+                       chn != propSize; ++chn) {
+                    if (zs::abs(block(propOffset + chn, ci)) > threshold) {
+                      block("mark", ci) = (u64)1;
+                      atomic_add(exec_cuda, cnt, (u64)1);
+                      break; // no need further checking
+                    }
                   }
                 }
               }
@@ -429,7 +454,8 @@ struct AdvectZSLevelSet : INode {
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                 is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
-          dstZsField->getBasicLevelSet() = typename RM_CVREF_T(lsPtr)::element_type{};
+          dstZsField->getBasicLevelSet() =
+              typename RM_CVREF_T(lsPtr)::element_type{};
           auto &dstLsPtr = std::get<
               std::shared_ptr<typename RM_CVREF_T(lsPtr)::element_type>>(
               dstZsField->getBasicLevelSet()._ls);
