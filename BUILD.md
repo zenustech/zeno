@@ -4,7 +4,7 @@
 
 To work with Zeno, you need:
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
 ```
 
 ### Windows
@@ -19,13 +19,21 @@ Git >= 2.0 && CMake >= 3.18 && Qt == 5 && (MSVC >= 2019 || GCC >= 9 || Clang >= 
 
 > It's recommended to install Visual Studio in trivial locations, like `C:/Programs Files (x86)/xxx` or at least `D:/Program Files (x86)/xxx`, so that VCPKG can find it easier.
 
-4. Download and install Qt via their online installer: https://www.qt.io/download-qt-installer
+> If you use VCPKG, you need to select the 'English Language Pack' when install, otherwise VCPKG will fail to work (it doesn't support Chinese characters in path).
 
-> WARN: You must click the `Qt 5.12.11` option to install the prebuilt Qt binaries, otherwise only the Qt Creator is selected by default.
+4. Download and install Qt 5 via their installer: https://mirror.tuna.tsinghua.edu.cn/qt/archive/qt/5.12/5.12.12/qt-opensource-windows-x86-5.12.12.exe
+
+> WARN: You must click the `Qt 5.12.12` option to install the prebuilt Qt binaries, otherwise only the Qt Creator is selected by default.
 
 > JOKE: Yes, we have to register a Qt account to install Qt... because the Qt company sucks :)
 
+5. If the install location is `C:\Qt\Qt5.12.12`, then add `C:\Qt\Qt5.12.12\msvc2017_64\bin` to the `PATH` environment variable.
+
+> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.12.12\bin\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
+
 ### Ubuntu
+
+If you use Linux the setup would be much easier, simply run these commands:
 
 ```bash
 sudo apt-get install -y git cmake make g++
@@ -60,7 +68,7 @@ cd zeno
 
 ### Fetch submodules (optional)
 
-Update the submodules of Zeno (for some extension modules):
+You may optionally get the submodules of Zeno as well (for some extension modules):
 ```bash
 git submodule update --init --recursive
 ```
@@ -70,6 +78,16 @@ git submodule update --init --recursive
 > If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
 
 ### Configure CMake
+
+### Windows
+
+```bash
+cmake -B build -DQt5_DIR="C:/Qt/Qt5.12.12/msvc2017_64/lib/cmake"
+```
+
+Please replace the `C:/Qt/Qt5.12.12` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
+
+### Linux
 
 ```bash
 cmake -B build
@@ -85,13 +103,15 @@ cmake --build build --parallel 4
 
 ## Run Zeno
 
-### Windows (cmd)
+After build, you will find all the EXE and DLL files in `build/bin` directory.
+
+### Windows
 
 ```cmd
 build\bin\zenoedit.exe
 ```
 
-### Linux (bash)
+### Linux
 
 ```bash
 build/bin/zenoedit
@@ -107,6 +127,5 @@ build/bin/zenoedit
 - [C++ references](https://en.cppreference.com/w/)
 - [TBB tutorial](https://www.inf.ed.ac.uk/teaching/courses/ppls/TBBtutorial.pdf)
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
-- [hipSYCL install guide](https://github.com/illuhad/hipSYCL/blob/develop/doc/installing.md)
 - [Jiayao's learning materials](https://github.com/jiayaozhang/OpenVDB_and_TBB)
-- [Zeno bug report](https://github.com/zenustech/zeno/issues)
+- [ZENO bug report & feedback](https://github.com/zenustech/zeno/issues)

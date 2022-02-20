@@ -2,7 +2,7 @@
 
 [![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
 
-[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [Bug report](https://github.com/zenustech/zeno/issues)
+[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
 [国内高速下载](https://gitee.com/zenustech/zeno/releases) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
@@ -53,15 +53,15 @@ Fig.6 - Large scale Fluids in ZENO
 
 ## Download binary release
 
-Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
-Then, extract this archive, and simply run `./launcher` (`launcher.exe` for Windows), then the node editor window will shows up if everything is working well.
+Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-windows-20xx.x.x.zip` (`zeno-linux-20xx.x.x.tar.gz` for Linux).
+Then, extract this archive, and simply run `launcher.exe` (`./launcher` for Linux), then the node editor window will shows up if everything is working well.
 
 ## How to play
 
 There are some example graphs in the `graphs/` folder, you may open them in the editor and have fun!
 Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Run`.
 Also MMB to drag in the node editor, LMB click on sockets to create connections. MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
-More details are available in [our official tutorial](https://zenustech.com/tutorial).
+More details are available in [our official tutorial](https://zenustech.com/tutorial) and [my video tutorials](https://space.bilibili.com/263032155).
 
 ## Bug report
 
@@ -70,7 +70,7 @@ If you find the binary version didn't worked properly or some error message has 
 
 # Developer Build
 
-To build ZENO, you need:
+To build ZENO from source, you need:
 
 - GCC 9+ or MSVC 19.28+, and CMake 3.18+ to build ZENO.
 - (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
