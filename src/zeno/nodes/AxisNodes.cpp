@@ -26,7 +26,7 @@ ZENDEFNODE(ExtractAxis, {
     {"vec3f", "axisZ"},
     },
     {},
-    {"math"},
+    {"axis"},
 });
 
 struct MakeAxis : zeno::INode {
@@ -35,7 +35,7 @@ struct MakeAxis : zeno::INode {
         auto axisX = get_input2<vec3f>("axisX");
         auto axisY = get_input2<vec3f>("axisY");
         auto axisZ = get_input2<vec3f>("axisZ");
-        auto p = std::make_shared<AxisObject>(AxisObject{origin, axisX, axisY, axisZ});
+        auto p = std::make_shared<AxisObject>(origin, axisX, axisY, axisZ);
         auto by = get_param<std::string>("normalize");
         if (by == "X")
             p->renormalizeByX();
@@ -60,7 +60,7 @@ ZENDEFNODE(MakeAxis, {
     {
     {"enum off X Y Z", "normalize", "off"},
     },
-    {"math"},
+    {"axis"},
 });
 
 }

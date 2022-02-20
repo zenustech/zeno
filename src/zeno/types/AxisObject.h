@@ -9,6 +9,8 @@ namespace zeno {
 struct AxisObject : IObjectClone<AxisObject> {
     vec3f origin, axisX, axisY, axisZ;
 
+    AxisObject() : origin(0, 0, 0), axisX(1, 0, 0), axisY(0, 1, 0), axisZ(0, 0, 1) {}
+
     AxisObject(vec3f const &origin, vec3f const &axisX, vec3f const &axisY, vec3f const &axisZ)
         : origin(origin), axisX(axisX), axisY(axisY), axisZ(axisZ) {}
 
