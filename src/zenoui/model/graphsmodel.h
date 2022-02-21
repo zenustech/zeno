@@ -84,7 +84,8 @@ public:
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
 	void replaceSubGraphNode(const QString& oldName, const QString& newName, const QModelIndex& subGpIdx) override;
 	NODES_DATA nodes(const QModelIndex& subGpIdx) override;
-	void clear(const QModelIndex& subGpIdx) override;
+	void clearSubGraph(const QModelIndex& subGpIdx) override;
+    void clear() override;
 	void reload(const QModelIndex& subGpIdx) override;
 	void onModelInited();
 	void undo() override;
