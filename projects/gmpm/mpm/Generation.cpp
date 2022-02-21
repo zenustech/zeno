@@ -1,6 +1,7 @@
 #include "../Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
+#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/VDBGrid.h>
@@ -198,8 +199,9 @@ struct ToZSLevelSet : INode {
     } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
-      ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+      ls->getLevelSet() =
+          basic_ls_t{zs::convert_vec3fgrid_to_sparse_staggered_grid(
+              gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
