@@ -360,8 +360,12 @@ void ZenoMainWindow::saveQuit()
     IGraphsModel* pModel = pGraphsMgm->currentModel();
     if (pModel && pModel->isDirty())
     {
-		int flag = QMessageBox::question(this, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-		if (flag & QMessageBox::Yes)
+        QMessageBox msgBox = QMessageBox(QMessageBox::Question, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, this);
+        QPalette pal = msgBox.palette();
+        pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
+        msgBox.setPalette(pal);
+        int ret = msgBox.exec();
+		if (ret & QMessageBox::Yes)
 		{
 			saveAs();
 		}
