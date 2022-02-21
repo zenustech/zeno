@@ -605,7 +605,7 @@ struct MakeZSLevelSet : INode {
         using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
         fmt::print(
             "levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n",
-            spls_t::category, lsPtr->_i2wShat(0, 0), lsPtr->_grid.dx,
+            spls_t::category, 1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx,
             spls_t::side_length, spls_t::block_size);
       } else {
         throw std::runtime_error(
