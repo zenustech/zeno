@@ -327,8 +327,10 @@ struct ExtendZSLevelSet : INode {
               });
             }
             // auto lengths = upper - corner;
-            corner = (corner + coord) & (ls_t::side_length - 1);
-            upper = (upper + coord) & (ls_t::side_length - 1);
+            corner += coord;
+            corner -= corner & (ls_t::side_length - 1);
+            upper += coord;
+            upper -= upper & (ls_t::side_length - 1);
           } else {
             auto vi = velLs.getMaterialVelocity(ls.indexToWorld(coord));
             auto box = get_bounding_box(vi * dt / ls._grid.dx, vec3::zeros());
@@ -337,9 +339,18 @@ struct ExtendZSLevelSet : INode {
             upper = vec3i::init(
                 [&ma = get<1>(box)](int d) { return lower_trunc(ma(d)) + 1; });
             // auto lengths = upper - corner;
-            corner = (corner + coord) & (ls_t::side_length - 1);
-            upper = (upper + coord) & (ls_t::side_length - 1);
+            corner += coord;
+            corner -= corner & (ls_t::side_length - 1);
+            upper += coord;
+            upper -= upper & (ls_t::side_length - 1);
           }
+#if 0
+          if (bi < 10 && ci == 0) {
+            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d]\n", (int)bi,
+                   (int)corner[0], (int)corner[1], (int)corner[2],
+                   (int)upper[0], (int)upper[1], (int)upper[2]);
+          }
+#endif
           for (int x = corner[0]; x != upper[0]; x += ls_t::side_length)
             for (int y = corner[1]; y != upper[1]; y += ls_t::side_length)
               for (int z = corner[2]; z != upper[2]; z += ls_t::side_length)
