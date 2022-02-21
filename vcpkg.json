@@ -1,0 +1,10 @@
+{
+  "name": "zeno",
+  "version": "0.0.1",
+  "dependencies": [
+    {
+        "name": "qt",
+        "version>=": "5.12.12"
+    }
+  ]
+}

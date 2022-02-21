@@ -2,9 +2,9 @@ name: Intergrated Test
 
 on:
   push:
-    branches: [ zeno2 ]
+    branches: [ master ]
   pull_request:
-    branches: [ zeno2 ]
+    branches: [ master ]
 
 env:
   BUILD_TYPE: Debug
