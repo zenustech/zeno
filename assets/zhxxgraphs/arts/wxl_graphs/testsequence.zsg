@@ -1352,8 +1352,8 @@
      },
      "params": {},
      "uipos": [
-      4282.275810088085,
-      3355.2607836968655
+      4271.088449909114,
+      3302.9912087527937
      ],
      "options": []
     },
@@ -1452,8 +1452,8 @@
       "valToAttr": "sdf"
      },
      "uipos": [
-      5272.705340289426,
-      3555.0549671420567
+      5272.705340289427,
+      3468.0163765380303
      ],
      "options": [
       "VIEW"
@@ -1495,37 +1495,6 @@
      ],
      "options": []
     },
-    "6965ca41-AdvectZSLevelSet": {
-     "name": "AdvectZSLevelSet",
-     "inputs": {
-      "ZSField": [
-       null,
-       null,
-       null
-      ],
-      "ZSVelField": [
-       null,
-       null,
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       0.1
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4653.863282123881,
-      3735.166823965323
-     ],
-     "options": []
-    },
     "27d618bd-MakeZSLevelSet": {
      "name": "MakeZSLevelSet",
      "inputs": {
@@ -1552,8 +1521,8 @@
      },
      "params": {},
      "uipos": [
-      3099.9993000209715,
-      3925.4540722874726
+      2403.690575188757,
+      3881.934776985459
      ],
      "options": [
       "ONCE"
@@ -1577,8 +1546,8 @@
       "path": ""
      },
      "uipos": [
-      3097.622566240211,
-      3705.309105844518
+      2392.817018141778,
+      3653.6494973434005
      ],
      "options": [
       "ONCE"
@@ -1605,8 +1574,8 @@
      },
      "params": {},
      "uipos": [
-      3428.137107627234,
-      3688.0035130033525
+      2727.3720069560936,
+      3619.2314212807573
      ],
      "options": [
       "ONCE"
@@ -1638,8 +1607,8 @@
      },
      "params": {},
      "uipos": [
-      3764.593483466165,
-      3776.0169358221465
+      3070.1415819001695,
+      3736.211287052571
      ],
      "options": [
       "ONCE"
@@ -1649,23 +1618,22 @@
      "name": "ZSLevelSetToVDBGrid",
      "inputs": {
       "ZSLevelSet": [
-       "04907ee4-ExtendZSLevelSet",
+       "20dd7f25-AdvectZSLevelSet",
        "ZSField",
        null
       ],
       "SRC": [
-       null,
-       null,
+       "20dd7f25-AdvectZSLevelSet",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4886.114736262581,
-      3989.922976090602
+      5069.7471299986,
+      3761.2217680369113
      ],
      "options": [
-      "ONCE",
       "VIEW"
      ]
     },
@@ -1690,12 +1658,10 @@
      },
      "params": {},
      "uipos": [
-      4051.2869957704124,
-      3787.90060472595
+      3412.762610982939,
+      3726.1844414149878
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "04907ee4-ExtendZSLevelSet": {
      "name": "ExtendZSLevelSet",
@@ -1716,19 +1682,17 @@
        0.3
       ],
       "SRC": [
-       null,
-       null,
+       "6d6ec7b8-MarkZSLevelSet",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4349.492812325221,
-      3801.6410968959735
+      4104.653953264819,
+      3702.304765799775
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "eb222862-MakeZSLevelSet": {
      "name": "MakeZSLevelSet",
@@ -1784,8 +1748,8 @@
      },
      "params": {},
      "uipos": [
-      3435.5872483221465,
-      3401.7930648769557
+      3453.041387024606,
+      3355.0011185682315
      ],
      "options": [
       "ONCE"
@@ -1832,7 +1796,7 @@
       "property": [
        null,
        null,
-       "sdf"
+       "vel"
       ],
       "SRC": [
        null,
@@ -1842,17 +1806,48 @@
      },
      "params": {},
      "uipos": [
-      3763.7807606263978,
-      3516.823266219238
+      3764.003579418344,
+      3401.6259507829955
      ],
      "options": [
       "ONCE"
      ]
+    },
+    "20dd7f25-AdvectZSLevelSet": {
+     "name": "AdvectZSLevelSet",
+     "inputs": {
+      "ZSField": [
+       "04907ee4-ExtendZSLevelSet",
+       "ZSField",
+       null
+      ],
+      "ZSVelField": [
+       "18b6b181-ResampleZSLevelSet",
+       "ZSField",
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.3
+      ],
+      "SRC": [
+       "04907ee4-ExtendZSLevelSet",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4574.227483221476,
+      3678.2991163310935
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 3129.4623149190793,
-    "y": 3143.5929469817534,
+    "x": 3051.104373084599,
+    "y": 3298.0806427312073,
     "width": 1499.999999999999,
     "height": 829.9999999999997
    }

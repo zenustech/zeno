@@ -338,6 +338,17 @@ struct ExtendZSLevelSet : INode {
                 [&mi = get<0>(box)](int d) { return lower_trunc(mi(d)); });
             upper = vec3i::init(
                 [&ma = get<1>(box)](int d) { return lower_trunc(ma(d)) + 1; });
+#if 0
+            if (bi < 10 && ci == 0) {
+              auto &mi = get<0>(box);
+              auto &ma = get<1>(box);
+              printf("block[%d] [%f, %f, %f] - [%f, %f, %f], dis %f, dx %f\n",
+                     (int)bi, (float)mi[0], (float)mi[1], (float)mi[2],
+                     (float)ma[0], (float)ma[1], (float)ma[2],
+                     (float)(vi * dt / ls._grid.dx).length(),
+                     (float)ls._grid.dx);
+            }
+#endif
             // auto lengths = upper - corner;
             corner += coord;
             corner -= corner & (ls_t::side_length - 1);
@@ -346,11 +357,14 @@ struct ExtendZSLevelSet : INode {
           }
 #if 0
           if (bi < 10 && ci == 0) {
-            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d]\n", (int)bi,
-                   (int)corner[0], (int)corner[1], (int)corner[2],
-                   (int)upper[0], (int)upper[1], (int)upper[2]);
+            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d], corner "
+                   "index: %d\n",
+                   (int)bi, (int)corner[0], (int)corner[1], (int)corner[2],
+                   (int)upper[0], (int)upper[1], (int)upper[2],
+                   (int)ls._table.query(corner));
           }
 #endif
+          upper += ls_t::side_length;
           for (int x = corner[0]; x != upper[0]; x += ls_t::side_length)
             for (int y = corner[1]; y != upper[1]; y += ls_t::side_length)
               for (int z = corner[2]; z != upper[2]; z += ls_t::side_length)
@@ -383,7 +397,10 @@ struct ExtendZSLevelSet : INode {
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                 is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
+          // fmt::print("before expanding: {} blocks\n", lsPtr->numBlocks());
+          lsPtr->resize(cuda_exec().device(0), lsPtr->numBlocks() * 2);
           extend(*lsPtr, *velLsPtr, dt);
+          // fmt::print("after expanding: {} blocks\n", lsPtr->numBlocks());
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
         field, velField);
@@ -399,51 +416,139 @@ ZENDEFNODE(ExtendZSLevelSet,
                {},
                {"Volume"},
            });
-/// advection
-struct AdvectZSLevelSet : INode {
-  template <typename SplsT, typename VelSplsT>
-  void advect(SplsT &ls, SplsT &lsOut, const VelSplsT &velLs, const float dt) {
+
+#if 0
+/// dilate levelset
+struct DilateZSLevelSet : INode {
+  template <typename SplsT> void dilate(SplsT &ls, int nlayers) {
     using namespace zs;
 
     auto cudaPol = cuda_exec().device(0);
-    cudaPol(
-        {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
-        [ls = proxy<execspace_e::cuda>(ls),
-         lsOut = proxy<execspace_e::cuda>(lsOut),
-         velLs = proxy<execspace_e::cuda>(velLs),
-         dt] __device__(typename RM_CVREF_T(ls)::size_type bi,
-                        typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
-          using ls_t = RM_CVREF_T(ls);
-          using vel_ls_t = RM_CVREF_T(velLs);
-          using vec3 = zs::vec<float, 3>;
-#if 0
-      if (ls.hasProperty("mark")) {
-        if ((int)ls._grid("mark", bi, ci) == 0)
-          return; // skip inactive voxels
-      }
-#endif
-          auto coord = lsOut._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
-          if constexpr (ls_t::category == grid_e::staggered) {
-            for (int d = 0; d != 3; ++d) {
-              auto x = lsOut.indexToWorld(coord, d);
-              auto vi = velLs.getMaterialVelocity(x);
-              auto xn = x - vi * dt;
-              auto Xn = ls.worldToIndex(xn);
-
-              lsOut._grid("vel", d, bi, ci) =
-                  ls.isample("vel", d, Xn, ls._backgroundValue);
+    while (nlayers--) {
+      cudaPol(
+          {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
+          [ls = proxy<execspace_e::cuda>(ls)] __device__(
+              typename RM_CVREF_T(ls)::size_type bi,
+              typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
+            using ls_t = RM_CVREF_T(ls);
+            using vec3 = zs::vec<float, 3>;
+            using vec3i = zs::vec<int, 3>;
+            using table_t = RM_CVREF_T(ls._table);
+            if (ls.hasProperty("mark"))
+              if ((int)ls._grid("mark", bi, ci) == 0)
+                return; // skip inactive voxels
+            auto coord = ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
+            auto corner = vec3i::uniform(limits<int>::max());
+            auto upper = vec3i::uniform(limits<int>::lowest());
+            {
+              auto box = get_bounding_box(vi * dt / ls._grid.dx, vec3::zeros());
+              corner = vec3i::init(
+                  [&mi = get<0>(box)](int d) { return lower_trunc(mi(d)); });
+              upper = vec3i::init([&ma = get<1>(box)](int d) {
+                return lower_trunc(ma(d)) + 1;
+              });
+              // auto lengths = upper - corner;
+              corner += coord;
+              corner -= corner & (ls_t::side_length - 1);
+              upper += coord;
+              upper -= upper & (ls_t::side_length - 1);
             }
-          } else {
-            auto x = lsOut.indexToWorld(coord);
-            auto vi = velLs.getMaterialVelocity(x);
-            auto xn = x - vi * dt;
-            auto Xn = ls.worldToIndex(xn);
-            for (typename ls_t::channel_counter_type chn = 0;
-                 chn != ls.numChannels(); ++chn)
-              lsOut._grid(chn, bi, ci) =
-                  ls.isample(chn, Xn, ls._backgroundValue);
+#if 0
+          if (bi < 10 && ci == 0) {
+            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d]\n", (int)bi,
+                   (int)corner[0], (int)corner[1], (int)corner[2],
+                   (int)upper[0], (int)upper[1], (int)upper[2]);
           }
-        });
+#endif
+            for (int x = corner[0]; x != upper[0]; x += ls_t::side_length)
+              for (int y = corner[1]; y != upper[1]; y += ls_t::side_length)
+                for (int z = corner[2]; z != upper[2]; z += ls_t::side_length)
+                  if (auto blockno = ls._table.insert(vec3i{x, y, z});
+                      blockno !=
+                      table_t::sentinel_v) { // initialize newly inserted block
+                    auto block = ls._grid.block(blockno);
+                    for (typename ls_t::channel_counter_type chn = 0;
+                         chn != ls.numChannels(); ++chn)
+                      for (typename ls_t::cell_index_type ci = 0;
+                           ci != ls.block_size; ++ci)
+                        block(chn, ci) = ls._backgroundValue;
+                  }
+          });
+    }
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing DilateZSLevelSet\n");
+
+    using namespace zs;
+
+    // this could possibly be the same staggered velocity field too
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+    auto nlayers = get_input2<int>("layers");
+
+    match(
+        [this, nlayers](auto &lsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+          dilate(*lsPtr, nlayers);
+        },
+        [](...) { throw std::runtime_error("not both fields are spls!"); })(
+        field);
+    fmt::print(fg(fmt::color::cyan), "done executing DilateZSLevelSet\n");
+    set_output("ZSField", std::move(zsfield));
+  }
+};
+
+ZENDEFNODE(DilateZSLevelSet, {
+                                 {"ZSField", {"int", "layers", "16"}},
+                                 {"ZSField"},
+                                 {},
+                                 {"Volume"},
+                             });
+#endif
+
+/// advection
+struct AdvectZSLevelSet : INode {
+  template <typename SplsT, typename VelSplsT>
+  void advect(const SplsT &ls, SplsT &lsOut, const VelSplsT &velLs,
+              const float dt) {
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+    // fmt::print("advecting {} blocks\n", lsOut.numBlocks());
+    cudaPol({(std::size_t)lsOut.numBlocks(), (std::size_t)lsOut.block_size},
+            [ls = proxy<execspace_e::cuda>(ls),
+             lsOut = proxy<execspace_e::cuda>(lsOut),
+             velLs = proxy<execspace_e::cuda>(velLs),
+             dt] __device__(typename RM_CVREF_T(lsOut)::size_type bi,
+                            typename RM_CVREF_T(
+                                lsOut)::cell_index_type ci) mutable {
+              using ls_t = RM_CVREF_T(ls);
+              using vel_ls_t = RM_CVREF_T(velLs);
+              using vec3 = zs::vec<float, 3>;
+              auto coord =
+                  lsOut._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
+              if constexpr (ls_t::category == grid_e::staggered) {
+                for (int d = 0; d != 3; ++d) {
+                  auto x = lsOut.indexToWorld(coord, d);
+                  auto vi = velLs.getMaterialVelocity(x);
+                  auto xn = x - vi * dt;
+                  auto Xn = ls.worldToIndex(xn);
+
+                  lsOut._grid("vel", d, bi, ci) =
+                      ls.isample("vel", d, Xn, ls._backgroundValue);
+                }
+              } else {
+                auto x = lsOut.indexToWorld(coord);
+                auto vi = velLs.getMaterialVelocity(x);
+                auto xn = x - vi * dt;
+                auto Xn = ls.worldToIndex(xn);
+                for (typename ls_t::channel_counter_type chn = 0;
+                     chn != ls.numChannels(); ++chn)
+                  lsOut._grid(chn, bi, ci) =
+                      ls.isample(chn, Xn, ls._backgroundValue);
+              }
+            });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing AdvectZSLevelSet\n");
@@ -454,17 +559,16 @@ struct AdvectZSLevelSet : INode {
     auto zsfield = get_input<ZenoLevelSet>("ZSField");
     auto &field = zsfield->getBasicLevelSet()._ls;
 
-    auto dstZsField = std::make_shared<ZenoLevelSet>();
-
     auto velZsField = get_input<ZenoLevelSet>("ZSVelField");
     const auto &velField = velZsField->getBasicLevelSet()._ls;
     auto dt = get_input2<float>("dt");
 
     match(
-        [this, dt, &dstZsField](auto &lsPtr, const auto &velLsPtr)
+        [this, dt](auto &lsPtr, const auto &velLsPtr)
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                 is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
+#if 0
           dstZsField->getBasicLevelSet() =
               typename RM_CVREF_T(lsPtr)::element_type{};
           auto &dstLsPtr = std::get<
@@ -472,12 +576,16 @@ struct AdvectZSLevelSet : INode {
               dstZsField->getBasicLevelSet()._ls);
           *dstLsPtr = *lsPtr; // first clone from input field
           advect(*lsPtr, *dstLsPtr, *velLsPtr, dt);
+#else
+          auto prevLs = lsPtr->clone(lsPtr->get_allocator());
+          advect(prevLs, *lsPtr, *velLsPtr, dt);
+#endif
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
         field, velField);
 
     fmt::print(fg(fmt::color::cyan), "done executing AdvectZSLevelSet\n");
-    set_output("ZSField", std::move(dstZsField));
+    set_output("ZSField", std::move(zsfield));
   }
 };
 
