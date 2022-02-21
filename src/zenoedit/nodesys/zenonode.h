@@ -38,7 +38,7 @@ public:
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
-    void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput);
+    void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
 
     QString nodeId() const;
     QString nodeName() const;

@@ -653,7 +653,7 @@ QGraphicsGridLayout* ZenoNode::initSockets()
     return pSocketsLayout;
 }
 
-void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput)
+void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx)
 {
     for (auto name : m_inSockets.keys())
     {
@@ -663,6 +663,9 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
             bInput = true;
             sockName = name;
             scenePos = pSocketItem->sceneBoundingRect().center();
+            INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+            if (!inputs[name].linkIndice.isEmpty())
+                linkIdx = inputs[name].linkIndice[0];
             return;
         }
     }
@@ -674,6 +677,9 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
             bInput = false;
             sockName = name;
             scenePos = pSocketItem->sceneBoundingRect().center();
+            OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+            if (!outputs[name].linkIndice.isEmpty())
+                linkIdx = outputs[name].linkIndice[0];
             return;
         }
     }

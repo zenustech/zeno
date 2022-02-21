@@ -479,74 +479,84 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
     else
     {
         pNode = qgraphicsitem_cast<ZenoNode*>(pSocket->parentItem());
+        const QString& nodeid = pNode->nodeId();
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
-        //find zeno node.
         QString sockName;
         bool bInput = false;
         QPointF socketPos;
-        pNode->getSocketInfoByItem(pSocket, sockName, socketPos, bInput);
-        QString nodeid = pNode->nodeId();
+        QPersistentModelIndex linkIdx;
+        pNode->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
 
-        if (!m_tempLink && pSocket)
-        {
-            m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
-            addItem(m_tempLink);
-            pSocket->toggle(true);
-            return;
-        }
-        else if (m_tempLink && pSocket)
-        {
-            QString fixedNodeId, fixedSocket;
-            bool fixedInput = false;
-            QPointF fixedPos;
-            m_tempLink->getFixedInfo(fixedNodeId, fixedSocket, fixedPos, fixedInput);
+		if (!m_tempLink)
+		{
+            if (linkIdx.isValid() && bInput)
+            {
+                //disconnect the old link.
+                const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
+                const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
-            if (fixedInput == bInput)
-                return;
+				pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
 
-            QString outId, outPort, inId, inPort;
-            QPointF outPos, inPos;
-            if (fixedInput) {
-                outId = nodeid;
-                outPort = sockName;
-                outPos = socketPos;
-                inId = fixedNodeId;
-                inPort = fixedSocket;
-                inPos = fixedPos;
+                socketPos = m_nodes[outNode]->getPortPos(false, outSock);
+                m_tempLink = new ZenoTempLink(outNode, outSock, socketPos, false);
+                addItem(m_tempLink);
             }
-            else {
-                outId = fixedNodeId;
-                outPort = fixedSocket;
-                outPos = fixedPos;
-                inId = nodeid;
-                inPort = sockName;
-                inPos = socketPos;
+            else
+            {
+		        m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
+				addItem(m_tempLink);
+				pSocket->toggle(true);
+            }
+            return;
+		}
+		else if (m_tempLink)
+		{
+		    QString fixedNodeId, fixedSocket;
+			bool fixedInput = false;
+			QPointF fixedPos;
+			m_tempLink->getFixedInfo(fixedNodeId, fixedSocket, fixedPos, fixedInput);
+
+			if (fixedInput == bInput)
+				return;
+
+			QString outNode, outSock, inNode, inSock;
+			QPointF outPos, inPos;
+			if (fixedInput) {
+				outNode = nodeid;
+				outSock = sockName;
+				outPos = socketPos;
+				inNode = fixedNodeId;
+				inSock = fixedSocket;
+				inPos = fixedPos;
+			}
+			else {
+				outNode = fixedNodeId;
+				outSock = fixedSocket;
+				outPos = fixedPos;
+				inNode = nodeid;
+				inSock = sockName;
+				inPos = socketPos;
+			}
+
+            //remove the edge in inNode:inSock, if exists.
+            if (bInput)
+            {
+                QPersistentModelIndex linkIdx;
+                m_nodes[inNode]->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
+                if (linkIdx.isValid())
+                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
             }
 
-            EdgeInfo info(outId, inId, outPort, inPort);
-            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            pGraphsModel->addLink(info, m_subgIdx, true);
+			EdgeInfo info(outNode, inNode, outSock, inSock);
+			IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+			pGraphsModel->addLink(info, m_subgIdx, true);
 
-            removeItem(m_tempLink);
-            delete m_tempLink;
-            m_tempLink = nullptr;
-            return;
-        }
-        else if (m_tempLink)
-        {
-            bool fixedInput = false;
-            QPointF fixedPos;
-            QString fixedNodeId, fixedSocket;
-            m_tempLink->getFixedInfo(fixedNodeId, fixedSocket, fixedPos, fixedInput);
-
-            const QString& nodeId = pNode->nodeId();
-            m_nodes[nodeId]->toggleSocket(fixedInput, sockName, false);
-
-            removeItem(m_tempLink);
-            delete m_tempLink;
-            m_tempLink = nullptr;
-            return;
-        }
+			removeItem(m_tempLink);
+			delete m_tempLink;
+			m_tempLink = nullptr;
+			return;
+		}
     }
     QGraphicsScene::mousePressEvent(event);
 }
