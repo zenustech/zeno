@@ -2,6 +2,7 @@
 #include <model/graphsmodel.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include <zenoui/util/uihelper.h>
 
 
 SubInputNode::SubInputNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -20,16 +21,23 @@ void SubInputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& pa
     //get old name first.
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     Q_ASSERT(pModel);
+	const QString& nodeid = nodeId();
 	QModelIndex subgIdx = this->subGraphIndex();
     const PARAMS_INFO& subInputs = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();
     const QString& oldName = subInputs["name"].value.toString();
-
-	_base::onParamEditFinished(editCtrl, paramName, textValue);
-
 	const QString& name = pModel->name(subgIdx);
-
-	if (paramName != "name")
+	if (paramName != "name" || oldName == textValue)
 		return;
+
+	QVariant newValue = UiHelper::parseTextValue(editCtrl, textValue);
+
+	pModel->beginTransaction("update socket");
+
+	PARAM_UPDATE_INFO info;
+	info.oldValue = pModel->getParamValue(nodeid, paramName, subgIdx);
+	info.newValue = newValue;
+	info.name = paramName;
+	pModel->updateParamInfo(nodeid, info, subgIdx, true);
 
 	for (int r = 0; r < pModel->rowCount(); r++)
 	{
@@ -46,8 +54,9 @@ void SubInputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& pa
 			info.oldInfo.name = oldName;
 			info.name = textValue;
 			info.newInfo = sock;
-			if (info.newInfo.name != info.oldInfo.name)
-				pModel->updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
+			pModel->updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
         }
 	}
+
+	pModel->endTransaction();
 }

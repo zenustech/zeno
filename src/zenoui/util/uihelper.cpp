@@ -136,6 +136,22 @@ QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
     }
 }
 
+QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue)
+{
+	QVariant varValue;
+	switch (editCtrl) {
+	case CONTROL_INT: varValue = textValue.isEmpty() ? 0 : std::stoi(textValue.toStdString()); break;
+	case CONTROL_FLOAT: varValue = textValue.isEmpty() ? 0.0 : std::stod(textValue.toStdString()); break;
+	case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : textValue == "true" ? true :
+		(textValue == "false" ? false : (bool)std::stoi(textValue.toStdString())); break;
+	case CONTROL_READPATH:
+	case CONTROL_WRITEPATH:
+	case CONTROL_MULTILINE_STRING:
+	case CONTROL_STRING: varValue = textValue; break;
+	}
+    return varValue;
+}
+
 QSizeF UiHelper::viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight, int* lastVisibleLine)
 {
 	if (lastVisibleLine)
