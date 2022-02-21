@@ -734,7 +734,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
-void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const QString& newName, const QString& oldName, bool input)
+void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const SOCKET_UPDATE_INFO& info)
 {
     static const QString paramName("name");
 
@@ -742,11 +742,11 @@ void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& s
 
     const QString& subnetNodeName = this->name(subgIdx);
 
-	PARAM_UPDATE_INFO info;
-	info.oldValue = getParamValue(subNodeId, paramName, subgIdx);
-	info.newValue = newName;
-	info.name = paramName;
-	updateParamInfo(subNodeId, info, subgIdx, true);
+	PARAM_UPDATE_INFO paramInfo;
+    paramInfo.oldValue = getParamValue(subNodeId, paramName, subgIdx);
+    paramInfo.newValue = info.newInfo.name;
+    paramInfo.name = paramName;
+	updateParamInfo(subNodeId, paramInfo, subgIdx, true);
 
 	for (int r = 0; r < rowCount(); r++)
 	{
@@ -754,14 +754,6 @@ void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& s
 		QModelIndexList m_results = searchInSubgraph(subnetNodeName, subgIdx);
 		for (auto idx : m_results)
 		{
-			SOCKET_INFO sock;
-			sock.name = newName;
-			//todo: type 
-
-			SOCKET_UPDATE_INFO info;
-			info.bInput = input;
-			info.oldInfo.name = oldName;
-			info.newInfo = sock;
 			updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
 		}
 	}

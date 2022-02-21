@@ -75,7 +75,7 @@ public:
     void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false) override;
     QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const QString& newName, const QString& oldName, bool input) override;
+    void updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const SOCKET_UPDATE_INFO& info) override;
 	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
     QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;

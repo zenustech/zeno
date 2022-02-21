@@ -31,7 +31,7 @@ public:
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-	virtual void updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const QString& newName, const QString& oldName, bool input) = 0;
+	virtual void updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const SOCKET_UPDATE_INFO& info) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) = 0;
 	virtual void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) = 0;

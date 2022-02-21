@@ -26,10 +26,26 @@ void SubInputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& pa
     const PARAMS_INFO& subInputs = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();
     const QString& oldName = subInputs["name"].value.toString();
 	const QString& name = pModel->name(subgIdx);
-	if (paramName != "name" || oldName == textValue)
+	if (oldName == textValue)
 		return;
 
-	pModel->updateSubnetIO(subgIdx, nodeid, textValue, oldName, true);
+	SOCKET_UPDATE_INFO info;
+	info.bInput = true;
+
+	if (paramName == "name")
+	{
+		info.oldInfo.name = oldName;
+		info.newInfo.name = textValue;
+		pModel->updateSubnetIO(subgIdx, nodeid, info);
+	}
+	else if (paramName == "type")
+	{
+		//todo
+	}
+	else if (paramName == "defl")
+	{
+		//todo
+	}
 }
 
 
@@ -54,8 +70,23 @@ void SubOutputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& p
 	const PARAMS_INFO& subOutputs = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();
 	const QString& oldName = subOutputs["name"].value.toString();
 	const QString& name = pModel->name(subgIdx);
-	if (paramName != "name" || oldName == textValue)
+	if (oldName == textValue)
 		return;
 
-	pModel->updateSubnetIO(subgIdx, nodeid, textValue, oldName, false);
+	SOCKET_UPDATE_INFO info;
+	info.bInput = false;
+	if (paramName == "name")
+	{
+		info.oldInfo.name = oldName;
+		info.newInfo.name = textValue;
+		pModel->updateSubnetIO(subgIdx, nodeid, info);
+	}
+	else if (paramName == "type")
+	{
+		//todo
+	}
+	else if (paramName == "defl")
+	{
+		//todo
+	}
 }

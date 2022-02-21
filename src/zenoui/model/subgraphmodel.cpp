@@ -291,28 +291,38 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
         const QString& newName = info.newInfo.name;
         Q_ASSERT(inputs.find(oldName) != inputs.end());
 
-        INPUT_SOCKET inputSock = inputs[oldName];
-        inputSock.info.name = newName;
-
-		inputs.remove(oldName);
-		inputs[newName] = inputSock;
-		setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-        setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
-
-        for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
+        if (oldName != newName)
         {
-            //modify link info.
-            QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-            QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-            QString inNode = linkIdx.data(ROLE_INNODE).toString();
-            QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+            INPUT_SOCKET inputSock = inputs[oldName];
+			inputSock.info.name = newName;
 
-            Q_ASSERT(inSock == oldName);
-            LINK_UPDATE_INFO updateInfo;
-            updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
-            updateInfo.newEdge = EdgeInfo(outNode, inNode, outSock, newName);
+			inputs.remove(oldName);
+			inputs[newName] = inputSock;
+			setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+			setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
 
-            m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+			for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
+			{
+				//modify link info.
+				QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+				QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+				QString inNode = linkIdx.data(ROLE_INNODE).toString();
+				QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+				Q_ASSERT(inSock == oldName);
+				LINK_UPDATE_INFO updateInfo;
+				updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
+				updateInfo.newEdge = EdgeInfo(outNode, inNode, outSock, newName);
+
+				m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+			}
+        }
+        else
+        {
+            INPUT_SOCKET& inputSock = inputs[oldName];
+            inputSock.info = info.newInfo;
+			setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+			setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
         }
     }
     else
@@ -323,28 +333,38 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
         const QString& newName = info.newInfo.name;
         Q_ASSERT(outputs.find(oldName) != outputs.end());
 
-        OUTPUT_SOCKET outputSock = outputs[oldName];
-        outputSock.info.name = newName;
-
-        outputs.remove(oldName);
-        outputs[newName] = outputSock;
-        setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-        setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
-
-        for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+        if (oldName != newName)
         {
-			//modify link info.
-			QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-			QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-			QString inNode = linkIdx.data(ROLE_INNODE).toString();
-			QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+            OUTPUT_SOCKET outputSock = outputs[oldName];
+            outputSock.info.name = newName;
 
-            Q_ASSERT(outSock == oldName);
-            LINK_UPDATE_INFO updateInfo;
-            updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
-            updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
+            outputs.remove(oldName);
+            outputs[newName] = outputSock;
+            setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+            setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
 
-            m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+            for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+            {
+                //modify link info.
+                QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+                QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                QString inNode = linkIdx.data(ROLE_INNODE).toString();
+                QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+                Q_ASSERT(outSock == oldName);
+                LINK_UPDATE_INFO updateInfo;
+                updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
+                updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
+
+                m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+            }
+        }
+        else
+        {
+            OUTPUT_SOCKET& outputSock = outputs[oldName];
+            outputSock.info = info.newInfo;
+			setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+			setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
         }
     }
 }
