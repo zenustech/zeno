@@ -317,7 +317,35 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
     }
     else
     {
-        //suboutput todo:
+        QModelIndex idx = index(nodeid);
+        OUTPUT_SOCKETS outputs = data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        const QString& oldName = info.oldInfo.name;
+        const QString& newName = info.newInfo.name;
+        Q_ASSERT(outputs.find(oldName) != outputs.end());
+
+        OUTPUT_SOCKET outputSock = outputs[oldName];
+        outputSock.info.name = newName;
+
+        outputs.remove(oldName);
+        outputs[newName] = outputSock;
+        setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+        setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+
+        for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+        {
+			//modify link info.
+			QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+			QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+			QString inNode = linkIdx.data(ROLE_INNODE).toString();
+			QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+            Q_ASSERT(outSock == oldName);
+            LINK_UPDATE_INFO updateInfo;
+            updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
+            updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
+
+            m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+        }
     }
 }
 

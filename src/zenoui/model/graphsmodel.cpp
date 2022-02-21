@@ -734,6 +734,41 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
+void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const QString& newName, const QString& oldName, bool input)
+{
+    static const QString paramName("name");
+
+    beginTransaction("update socket");
+
+    const QString& subnetNodeName = this->name(subgIdx);
+
+	PARAM_UPDATE_INFO info;
+	info.oldValue = getParamValue(subNodeId, paramName, subgIdx);
+	info.newValue = newName;
+	info.name = paramName;
+	updateParamInfo(subNodeId, info, subgIdx, true);
+
+	for (int r = 0; r < rowCount(); r++)
+	{
+		subgIdx = index(r, 0);
+		QModelIndexList m_results = searchInSubgraph(subnetNodeName, subgIdx);
+		for (auto idx : m_results)
+		{
+			SOCKET_INFO sock;
+			sock.name = newName;
+			//todo: type 
+
+			SOCKET_UPDATE_INFO info;
+			info.bInput = input;
+			info.oldInfo.name = oldName;
+			info.newInfo = sock;
+			updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
+		}
+	}
+
+	endTransaction();
+}
+
 void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     if (enableTransaction)

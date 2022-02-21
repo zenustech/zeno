@@ -174,7 +174,6 @@ void UpdateSocketCommand::undo()
 {
     SOCKET_UPDATE_INFO revertInfo;
     revertInfo.bInput = m_info.bInput;
-    revertInfo.name = m_info.name;
     revertInfo.newInfo = m_info.oldInfo;
     revertInfo.oldInfo = m_info.newInfo;
     m_pModel->updateSocket(m_nodeid, revertInfo, m_subgIdx);

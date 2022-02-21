@@ -106,6 +106,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     switch (type)
     {
         case SUBINPUT_NODE: return new SubInputNode(params);
+        case SUBOUTPUT_NODE: return new SubOutputNode(params);
         default:
             return new ZenoNode(params);
     }
