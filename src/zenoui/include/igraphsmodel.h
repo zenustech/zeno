@@ -43,7 +43,8 @@ public:
 	virtual NODES_DATA nodes(const QModelIndex& subGpIdx) = 0;
 	virtual NODE_DESCS descriptors() const = 0;
 	virtual void setDescriptors(const NODE_DESCS& nodesParams) = 0;
-	virtual void clear(const QModelIndex& subGpIdx) = 0;
+	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
+	virtual void clear() = 0;
 	virtual void reload(const QModelIndex& subGpIdx) = 0;
 	virtual void onModelInited() {};
 	virtual void undo() = 0;
@@ -63,6 +64,7 @@ public:
 
 signals:
 	void clearLayout2();
+	void modelClear();
 	void reloaded(const QModelIndex& subGpIdx);
 	void clearLayout(const QModelIndex& subGpIdx);
 	void _dataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);

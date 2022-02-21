@@ -90,8 +90,9 @@ bool GraphsManagment::saveCurrent()
 
 void GraphsManagment::clear()
 {
-    if (m_model) {
-        //m_model->clear();
+    if (m_model)
+    {
+        m_model->clear();
         delete m_model;
         m_model = nullptr;
     }

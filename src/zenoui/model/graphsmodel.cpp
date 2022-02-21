@@ -25,6 +25,7 @@ GraphsModel::GraphsModel(QObject *parent)
 
 GraphsModel::~GraphsModel()
 {
+    clear();
 }
 
 QItemSelectionModel* GraphsModel::selectionModel() const
@@ -844,7 +845,7 @@ NODES_DATA GraphsModel::nodes(const QModelIndex& subGpIdx)
     return NODES_DATA();
 }
 
-void GraphsModel::clear(const QModelIndex& subGpIdx)
+void GraphsModel::clearSubGraph(const QModelIndex& subGpIdx)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
 	Q_ASSERT(pGraph);
@@ -852,6 +853,16 @@ void GraphsModel::clear(const QModelIndex& subGpIdx)
     {
         pGraph->clear();
     }
+}
+
+void GraphsModel::clear()
+{
+    for (int r = 0; r < this->rowCount(); r++)
+    {
+        const QModelIndex& subgIdx = this->index(r, 0);
+        clearSubGraph(subgIdx);
+    }
+    emit modelClear();
 }
 
 void GraphsModel::reload(const QModelIndex& subGpIdx)

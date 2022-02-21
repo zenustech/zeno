@@ -41,6 +41,7 @@ void ZenoMainWindow::init()
     initMenu();
     initDocks();
     simpleLayout();
+    //onlyEditorLayout();
 }
 
 void ZenoMainWindow::initMenu()
@@ -311,12 +312,12 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    saveQuit();
+	QString filePath = getOpenFileByDialog();
+	if (filePath.isEmpty())
+		return;
 
-    QString filePath = getOpenFileByDialog();
-    if (filePath.isEmpty())
-        return;
     //todo: path validation
+    saveQuit();
     openFile(filePath);
 }
 
@@ -354,12 +355,18 @@ void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
 
 void ZenoMainWindow::saveQuit()
 {
-    auto pGraphs = zenoApp->graphsManagment();
-    if (pGraphs->saveCurrent())
+    auto pGraphsMgm = zenoApp->graphsManagment();
+    Q_ASSERT(pGraphsMgm);
+    IGraphsModel* pModel = pGraphsMgm->currentModel();
+    if (pModel && pModel->isDirty())
     {
-        saveAs();
+		int flag = QMessageBox::question(this, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+		if (flag & QMessageBox::Yes)
+		{
+			saveAs();
+		}
     }
-    pGraphs->clear();
+    pGraphsMgm->clear();
     currFilePath.clear();
 }
 
@@ -429,6 +436,19 @@ void ZenoMainWindow::simpleLayout()
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Horizontal);
     splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
+}
+
+void ZenoMainWindow::onlyEditorLayout()
+{
+    simpleLayout();
+	for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
+	{
+		ZenoDockWidget* pDock = it.value();
+		if (pDock != m_editor)
+		{
+			pDock->close();
+		}
+	}
 }
 
 void ZenoMainWindow::simpleLayout2()

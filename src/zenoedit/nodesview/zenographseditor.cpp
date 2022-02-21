@@ -135,7 +135,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 	m_pSideBar->show();
 	m_pSubnetBtn->setChecked(true);
 	m_pSubnetList->show();
-    connect(pModel, SIGNAL(modelReset()), this, SLOT(onCurrentModelClear()));
+    connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()

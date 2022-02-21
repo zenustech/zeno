@@ -41,6 +41,7 @@ private:
     void initDocks();
     void houdiniStyleLayout();
     void simpleLayout();
+    void onlyEditorLayout();
     void simpleLayout2();
     void arrangeDocks2();
     void arrangeDocks3();
