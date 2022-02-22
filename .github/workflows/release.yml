@@ -1,10 +1,10 @@
 name: Automated Release
 
 on:
-  schedule:
-    - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
-  #push:
-    #branches: [ zeno2-ci ]
+  #schedule:
+  #- cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
+  push:
+    branches: [ stable ]
     #tags: [ 'v*' ]
 
 env:
@@ -86,7 +86,7 @@ jobs:
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: ${{github.workspace}}/build/bin.zip
-        asset_name: ${{ steps.versioning.outputs.filename }}
+        asset_name: zeno-${{ steps.versioning.outputs.filename }}.zip
         asset_content_type: application/zip
 
     # todo: wanglin, please tell me your restful API for upload files
