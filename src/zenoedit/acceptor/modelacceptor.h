@@ -9,7 +9,7 @@ class GraphsModel;
 class ModelAcceptor : public IAcceptor
 {
 public:
-	ModelAcceptor(GraphsModel* pModel);
+	ModelAcceptor(GraphsModel* pModel, bool bImport);
 
 	//IAcceptor
 	void setDescriptors(const NODE_DESCS& nodesParams) override;
@@ -33,6 +33,7 @@ private:
 
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;
+	bool m_bImport;
 };
 
 

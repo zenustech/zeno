@@ -14,18 +14,20 @@ class GraphsManagment : public QObject
     Q_OBJECT
 public:
     GraphsManagment(QObject *parent = nullptr);
+    void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
     IGraphsModel* openZsgFile(const QString &fn);
-    IGraphsModel* importGraph(const QString &fn);
+    void importGraph(const QString &fn);
     ZenoSubGraphScene* scene(const QString& subGraphName);
     void reloadGraph(const QString& graphName);
     bool saveCurrent();
     void clear();
     void removeCurrent();
+    void initScenes(IGraphsModel* m_model);
 
 private:
     IGraphsModel *m_model;
-    QMap<QString, ZenoSubGraphScene*> m_scenes;
+    QMap<QString, ZenoSubGraphScene*> m_scenes;     //key may be subgraph name or path if treemodel enable.
     QString m_currFile;
 };
 

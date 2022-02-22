@@ -13,7 +13,7 @@ ZsgReader& ZsgReader::getInstance()
     return reader;
 }
 
-bool ZsgReader::loadZsgFile(const QString& fn, IAcceptor* pAcceptor)
+bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);

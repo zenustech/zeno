@@ -193,12 +193,14 @@ void ZenoParamComboBox::setText(const QString& text)
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-ZenoParamPushButton::ZenoParamPushButton(const QString &name, QGraphicsItem *parent)
+ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePolicy::Policy hor, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
+    , m_width(width)
 {
     QPushButton* pBtn = new QPushButton(name);
-    //temp code:
-    pBtn->setFixedWidth(20);
+    if (hor == QSizePolicy::Fixed)
+        pBtn->setFixedWidth(width);
+    pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
     QPalette palette;
     palette.setColor(QPalette::Base, QColor(50, 50, 50));
     palette.setColor(QPalette::Window, QColor(50, 50, 50));
@@ -278,7 +280,7 @@ ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, c
     
     setGraphicsItem(this);
     setFlags(ItemSendsScenePositionChanges);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 
 void ZenoTextLayoutItem::setGeometry(const QRectF& geom)

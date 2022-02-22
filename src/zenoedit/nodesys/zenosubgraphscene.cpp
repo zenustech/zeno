@@ -2,6 +2,7 @@
 #include <zenoui/model/subgraphmodel.h>
 #include "zenonode.h"
 #include "subnetnode.h"
+#include "heatmapnode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -107,6 +108,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         case SUBINPUT_NODE: return new SubInputNode(params);
         case SUBOUTPUT_NODE: return new SubOutputNode(params);
+        case HEATMAP_NODE: return new MakeHeatMapNode(params);
         default:
             return new ZenoNode(params);
     }

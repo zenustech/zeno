@@ -34,6 +34,7 @@ public slots:
     void onMaximumTriggered();
     void onSplitDock(bool);
     void onToggleDockWidget(DOCK_TYPE, bool);
+    void importGraph();
 
 private:
     void init();

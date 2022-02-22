@@ -321,13 +321,25 @@ void ZenoMainWindow::openFileDialog()
     openFile(filePath);
 }
 
+void ZenoMainWindow::importGraph()
+{
+	QString filePath = getOpenFileByDialog();
+	if (filePath.isEmpty())
+		return;
+
+	//todo: path validation
+    auto pGraphs = zenoApp->graphsManagment();
+    pGraphs->importGraph(filePath);
+}
+
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
     IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
-    pModel->initDescriptors();
+
+    pGraphs->setCurrentModel(pModel);
 
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
     {

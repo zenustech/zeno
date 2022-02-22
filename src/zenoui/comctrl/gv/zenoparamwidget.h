@@ -125,9 +125,10 @@ class ZenoParamPushButton : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamPushButton(const QString& name, QGraphicsItem* parent = nullptr);
+    ZenoParamPushButton(const QString& name, int width, QSizePolicy::Policy hor, QGraphicsItem* parent = nullptr);
 
 private:
+    int m_width;
 };
 
 class ZenoParamOpenPath : public ZenoParamWidget

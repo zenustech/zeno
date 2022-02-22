@@ -8,6 +8,7 @@
 #include <zenoui/util/uihelper.h>
 #include <zenoui/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
+#include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 
@@ -389,6 +390,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
             pVLayout->addItem(pSocketsLayout);
         }
 
+        /*
         //heapmap stays at the bottom of node layout.
         COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
         if (!ramps.isEmpty()) {
@@ -396,6 +398,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
             pVLayout->addItem(pItem);
         }
         bodyWidget->setZValue(ZVALUE_ELEMENT);
+        */
     }
     else
     {
@@ -414,7 +417,6 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
 
 QGraphicsLayout* ZenoNode::initParams()
 {
-    //m_index.find(ROLE_PAR
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
     int r = 0, n = names.length();
@@ -430,94 +432,121 @@ QGraphicsLayout* ZenoNode::initParams()
             if (param.bEnableConnect)
                 continue;
 
-            QString value = UiHelper::variantToString(param.value);
-
             QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-
-            ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-            pParamLayout->addItem(pNameItem);
-
-            switch (param.control)
-            {
-                case CONTROL_STRING:
-                case CONTROL_INT:
-                case CONTROL_FLOAT:
-                case CONTROL_BOOL:
-                {
-                    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
-                    pParamLayout->addItem(pLineEdit);
-                    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        onParamEditFinished(param.control, paramName, pLineEdit->text());
-                    });
-                    m_paramControls[paramName] = pLineEdit;
-                    break;
-                }
-                case CONTROL_ENUM:
-                {
-                    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-                    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
-                    pParamLayout->addItem(pComboBox);
-                    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
-                        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-                        PARAM_UPDATE_INFO info;
-                        info.name = paramName;
-                        info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
-                        info.newValue = textValue;
-                        pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
-                    });
-                    m_paramControls[paramName] = pComboBox;
-                    break;
-                }
-                case CONTROL_READPATH:
-                {
-                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
-                    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...");
-                    pParamLayout->addItem(pFileWidget);
-                    pParamLayout->addItem(pBtn);
-                    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        onParamEditFinished(param.control, paramName, pFileWidget->text());
-                    });
-                    break;
-                }
-                case CONTROL_WRITEPATH:
-                {
-                    ZenoParamLineEdit *pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
-                    ZenoParamPushButton *pBtn = new ZenoParamPushButton("...");
-                    pParamLayout->addItem(pFileWidget);
-                    pParamLayout->addItem(pBtn);
-                    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-                        onParamEditFinished(param.control, paramName, pFileWidget->text());
-                    });
-                    break;
-                }
-                case CONTROL_MULTILINE_STRING:
-                {
-                    ZenoParamMultilineStr *pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
-                    pParamLayout->addItem(pMultiStrEdit);
-                    connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
-                        onParamEditFinished(param.control, paramName, pMultiStrEdit->text());
-                    });
-                    m_paramControls[paramName] = pMultiStrEdit;
-                    break;
-                }
-                case CONTROL_HEAPMAP:
-                {
-                    m_bHeapMap = true;
-                    //break;
-                }
-                default:
-                {
-                    zeno::log_warn("got undefined control type {}", param.control);
-                    ZenoTextLayoutItem *pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
-                    pParamLayout->addItem(pValueItem);
-                    break;
-                }
-            }
+            initParam(param.control, pParamLayout, paramName, param);
             pParamsLayout->addItem(pParamLayout);
             r++;
         }
     }
+    QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
+    if (pCustomParams)
+        pParamsLayout->addItem(pCustomParams);
     return pParamsLayout;
+}
+
+QGraphicsLinearLayout* ZenoNode::initCustomParamWidgets()
+{
+    return nullptr;
+}
+
+void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& paramName, const PARAM_INFO& param)
+{
+    const QString& value = UiHelper::variantToString(param.value);
+
+	switch (param.control)
+	{
+	    case CONTROL_STRING:
+	    case CONTROL_INT:
+	    case CONTROL_FLOAT:
+	    case CONTROL_BOOL:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    pParamLayout->addItem(pLineEdit);
+		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pLineEdit->text());
+			    });
+		    m_paramControls[paramName] = pLineEdit;
+		    break;
+	    }
+	    case CONTROL_ENUM:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+		    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+		    pParamLayout->addItem(pComboBox);
+		    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
+			    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+			    PARAM_UPDATE_INFO info;
+			    info.name = paramName;
+			    info.oldValue = pGraphsModel->getParamValue(nodeId(), paramName, m_subGpIndex);
+			    info.newValue = textValue;
+			    pGraphsModel->updateParamInfo(nodeId(), info, m_subGpIndex, true);
+			    });
+		    m_paramControls[paramName] = pComboBox;
+		    break;
+	    }
+	    case CONTROL_READPATH:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...", ZenoStyle::dpiScaled(32), QSizePolicy::Fixed);
+		    pParamLayout->addItem(pFileWidget);
+		    pParamLayout->addItem(pBtn);
+		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pFileWidget->text());
+			    });
+		    break;
+	    }
+	    case CONTROL_WRITEPATH:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...", ZenoStyle::dpiScaled(32), QSizePolicy::Fixed);
+		    pParamLayout->addItem(pFileWidget);
+		    pParamLayout->addItem(pBtn);
+		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pFileWidget->text());
+			    });
+		    break;
+	    }
+	    case CONTROL_MULTILINE_STRING:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    ZenoParamMultilineStr* pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
+		    pParamLayout->addItem(pMultiStrEdit);
+		    connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pMultiStrEdit->text());
+			    });
+		    m_paramControls[paramName] = pMultiStrEdit;
+		    break;
+	    }
+	    case CONTROL_HEAPMAP:
+	    {
+		    m_bHeapMap = true;
+		    //break;
+	    }
+	    default:
+	    {
+		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pNameItem);
+
+		    zeno::log_warn("got undefined control type {}", param.control);
+		    ZenoTextLayoutItem* pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pValueItem);
+		    break;
+	    }
+	}
 }
 
 QPersistentModelIndex ZenoNode::subGraphIndex() const

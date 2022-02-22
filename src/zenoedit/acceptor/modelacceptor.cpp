@@ -6,9 +6,10 @@
 #include "magic_enum.hpp"
 
 
-ModelAcceptor::ModelAcceptor(GraphsModel* pModel)
+ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
 	: m_pModel(pModel)
 	, m_currentGraph(nullptr)
+	, m_bImport(bImport)
 {
 }
 
@@ -20,6 +21,15 @@ void ModelAcceptor::setDescriptors(const NODE_DESCS& nodesParams)
 
 void ModelAcceptor::BeginSubgraph(const QString& name)
 {
+	if (m_bImport && name == "main")
+	{
+		m_currentGraph = nullptr;
+		return;
+	}
+
+	if (m_bImport)
+		zeno::log_info("Importing subgraph {}", name.toStdString());
+
 	Q_ASSERT(m_pModel && !m_currentGraph);
 	SubGraphModel* pSubModel = new SubGraphModel(m_pModel);
 	pSubModel->setName(name);
@@ -29,6 +39,9 @@ void ModelAcceptor::BeginSubgraph(const QString& name)
 
 void ModelAcceptor::EndSubgraph()
 {
+	if (!m_currentGraph)
+		return;
+
 	//init output ports for each node.
 	int n = m_currentGraph->rowCount();
 	for (int r = 0; r < n; r++)
@@ -63,7 +76,8 @@ void ModelAcceptor::EndSubgraph()
 
 void ModelAcceptor::setFilePath(const QString& fileName)
 {
-	m_pModel->setFilePath(fileName);
+	if (!m_bImport)
+		m_pModel->setFilePath(fileName);
 }
 
 void ModelAcceptor::switchSubGraph(const QString& graphName)
@@ -73,6 +87,9 @@ void ModelAcceptor::switchSubGraph(const QString& graphName)
 
 void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors)
 {// called on load-zsg!!
+	if (!m_currentGraph)
+		return;
+
 	NODE_DATA data;
 	data[ROLE_OBJID] = nodeid;
 	data[ROLE_OBJNAME] = name;
@@ -87,11 +104,15 @@ void ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
 
 void ModelAcceptor::setViewRect(const QRectF& rc)
 {
+	if (!m_currentGraph)
+		return;
 	m_currentGraph->setViewRect(rc);
 }
 
 void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs)
 {
+	if (!m_currentGraph)
+		return;
 	//TODO
 	if (name == "MakeDict")
 	{
@@ -132,16 +153,13 @@ void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_S
 
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& descs)
 {
+	if (!m_currentGraph)
+		return;
+
 	//params
 	INPUT_SOCKETS inputs;
 	PARAMS_INFO params;
 	OUTPUT_SOCKETS outputs;
-
-	if (id == "3e5f8949-MakeMultilineString")
-	{
-		int j;
-		j = 0;
-	}
 
 	for (PARAM_INFO descParam : descs[name].params)
 	{
@@ -198,11 +216,15 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 
 void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 {
+	if (!m_currentGraph)
+		return;
 	m_currentGraph->setData(m_currentGraph->index(id), keys, ROLE_SOCKET_KEYS);
 }
 
 void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
 {
+	if (!m_currentGraph)
+		return;
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
@@ -220,6 +242,8 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 
 void ModelAcceptor::setParamValue(const QString& id, const QString& name, const QVariant& var)
 {
+	if (!m_currentGraph)
+		return;
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();
@@ -242,6 +266,9 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
 
 void ModelAcceptor::setPos(const QString& id, const QPointF& pos)
 {
+	if (!m_currentGraph)
+		return;
+
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	m_currentGraph->setData(idx, pos, ROLE_OBJPOS);
@@ -249,6 +276,9 @@ void ModelAcceptor::setPos(const QString& id, const QPointF& pos)
 
 void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
 {
+	if (!m_currentGraph)
+		return;
+
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	int opts = 0;
@@ -285,6 +315,9 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
 
 void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps)
 {
+	if (!m_currentGraph)
+		return;
+
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	m_currentGraph->setData(idx, QVariant::fromValue(colorRamps), ROLE_COLORRAMPS);
@@ -292,6 +325,9 @@ void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRam
 
 void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard)
 {
+	if (!m_currentGraph)
+		return;
+
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	m_currentGraph->setData(idx, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
