@@ -4,20 +4,25 @@ import subprocess
 import shutil
 
 binpath = os.path.join('build', 'bin')
+targets = ['zenoedit']
+
 if sys.platform == 'windows':
-    subprocess.check_call([
-        'windeployqt',
-        os.path.join(binpath, 'zenoedit.exe'),
-    ])
+    for target in targets:
+        subprocess.check_call([
+            'windeployqt',
+            os.path.join(binpath, target + '.exe'),
+        ])
 elif sys.platform == 'linux':
     subprocess.check_call([
-        'wget',
+        'wget', '-c',
         'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
+        '-O', '../linuxdeployqt',
     ])
-    subprocess.check_call([
-        './linuxdeployqt-continuous-x86_64.AppImage',
-        os.path.join(binpath, 'zenoedit'),
-    ])
+    for target in targets:
+        subprocess.check_call([
+            '../linuxdeployqt',
+            os.path.join(binpath, target),
+        ])
 else:
     assert False, sys.platform
 

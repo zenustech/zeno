@@ -66,6 +66,21 @@ jobs:
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}}
 
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache
+
+    - name: Cache linuxdeployqt
+      id: cache-linuxdeployqt
+      if: ${{ runner.os == 'Linux' }}
+      uses: actions/cache@v1
+      with:
+        path: ../linuxdeployqt
+        key: ${{ runner.os }}-LinuxDeployQtCache
+
     - name: Packaging
       run: python misc/ci/package.py
 
