@@ -9,15 +9,22 @@ targets = ['zenoedit']
 if sys.platform == 'windows':
     for target in targets:
         subprocess.check_call([
-            'C:\\Qt\\Qt5.15.2\\5.15.2\\win64_msvc2019_64\\bin\\windeployqt.exe',
+            '..\\Qt\\5.15.2\\win64_msvc2019_64\\bin\\windeployqt.exe',
             os.path.join(binpath, target + '.exe'),
         ])
 elif sys.platform == 'linux':
-    subprocess.check_call([
-        'wget', '-c',
-        'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
-        '-O', '../linuxdeployqt',
-    ])
+    if not os.path.isfile('../linuxdeployqt'):
+        subprocess.check_call([
+            'wget',
+            'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
+            '-O',
+            '../linuxdeployqt',
+        ])
+        subprocess.check_call([
+            'chmod',
+            '+x',
+            '../linuxdeployqt',
+        ])
     for target in targets:
         subprocess.check_call([
             '../linuxdeployqt',

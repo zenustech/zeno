@@ -25,7 +25,7 @@ if (WIN32)
 endif()
 
 option(ZENO_BUILD_EDITOR "Build ZENO Editor" ON)
-option(ZENO_BUILD_DESIGNER "Build ZENO Designer" ON)
+option(ZENO_BUILD_DESIGNER "Build ZENO Designer" OFF)
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
