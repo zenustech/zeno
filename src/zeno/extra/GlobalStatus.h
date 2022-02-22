@@ -10,11 +10,11 @@ namespace zeno {
 struct INode;
 
 struct GlobalStatus {
-    INode *node = nullptr;
+    std::string nodeName;
     std::shared_ptr<Error> error;
 
     bool failed() const {
-        return node != nullptr;
+        return !nodeName.empty();
     }
 
     ZENO_API std::string toJson() const;

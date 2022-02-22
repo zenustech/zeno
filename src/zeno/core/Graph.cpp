@@ -61,13 +61,13 @@ struct GraphApplyException {
             std::rethrow_exception(ep);
         } catch (ErrorException const &e) {
             log_error("==> error during {}: {}", node->myname, e.what());
-            return {node, e.getError()};
+            return {node->myname, e.getError()};
         } catch (std::exception const &e) {
             log_error("==> exception during {}: {}", node->myname, e.what());
-            return {node, std::make_shared<StdError>(std::current_exception())};
+            return {node->myname, std::make_shared<StdError>(std::current_exception())};
         } catch (...) {
             log_error("==> unknown exception during {}", node->myname);
-            return {node, std::make_shared<StdError>(std::current_exception())};
+            return {node->myname, std::make_shared<StdError>(std::current_exception())};
         }
         return {};
     }
