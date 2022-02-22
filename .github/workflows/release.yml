@@ -1,8 +1,10 @@
 name: Automated Release
 
 on:
-  push:
-    tags: [ 'v*' ]
+  schedule:
+    - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
+  #push:
+    #tags: [ 'v*' ]
     #branches: [ zeno2-ci ]
 
 env:
@@ -24,8 +26,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         draft: true
-        tag_name: v${{ steps.versioning.outputs.filename }}
-        release_name: ${{ steps.versioning.outputs.filename }}
+        tag_name: v${{ steps.get_date.outputs.date }}
+        release_name: ${{ steps.get_date.outputs.date }}
         body: "(Automated Release by Github Actions)"
 
     outputs:
