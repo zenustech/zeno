@@ -2,8 +2,8 @@ name: Automated Release
 
 on:
   push:
-    #tags: [ 'v*' ]
-    branches: [ zeno2-ci ]
+    tags: [ 'v*' ]
+    #branches: [ zeno2-ci ]
 
 env:
   BUILD_TYPE: Release
@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Get Date
+      id: get_date
+      run: python -c "import datetime; d = datetime.datetime.now(); print('::set-output name=date::{}.{}.{}'.format(d.year, d.month, d.day))"
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -20,8 +24,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         draft: true
-        tag_name: rel-${{ github.ref }}
-        release_name: ${{ github.ref }}
+        tag_name: v${{ steps.versioning.outputs.filename }}
+        release_name: ${{ steps.versioning.outputs.filename }}
         body: "(Automated Release by Github Actions)"
 
     outputs:
@@ -51,7 +55,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 5.15.15
+        version: 5.14.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Configure CMake
