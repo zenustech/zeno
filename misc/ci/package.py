@@ -9,7 +9,7 @@ targets = ['zenoedit']
 if sys.platform == 'win32':
     for target in targets:
         subprocess.check_call([
-            '..\\Qt\\5.15.2\\win64_msvc2019_64\\bin\\windeployqt.exe',
+            '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
             os.path.join(binpath, target + '.exe'),
         ])
 elif sys.platform == 'linux':
