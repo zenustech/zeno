@@ -73,13 +73,12 @@ jobs:
         path: ../Qt
         key: ${{ runner.os }}-QtCache
 
-    - name: Cache linuxdeployqt
-      id: cache-linuxdeployqt
+    - name: Cache Linuxdeployqt
       if: ${{ runner.os == 'Linux' }}
       uses: actions/cache@v1
       with:
         path: ../linuxdeployqt
-        key: ${{ runner.os }}-LinuxDeployQtCache
+        key: LinuxDeployQtCache
 
     - name: Packaging
       run: python misc/ci/package.py
