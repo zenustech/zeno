@@ -1,0 +1,9 @@
+
+
+Please run on a system with a glibc version no newer than what comes with the oldest
+currently still-supported mainstream distribution (Ubuntu Bionic), which is glibc 2.27.
+This is so that the resulting bundle will work on most still-supported Linux distributions.
+
+
+When you type `python` in Windows shell, you will be redirected to Microsoft Store, suggesting
+you to install Python (which is free software) with their stupid Store (which implies money).

@@ -13,18 +13,17 @@ if sys.platform == 'win32':
             os.path.join(binpath, target + '.exe'),
         ])
 elif sys.platform == 'linux':
-    if not os.path.isfile('../linuxdeployqt'):
-        subprocess.check_call([
-            'wget',
-            'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
-            '-O',
-            '../linuxdeployqt',
-        ])
-        subprocess.check_call([
-            'chmod',
-            '+x',
-            '../linuxdeployqt',
-        ])
+    subprocess.check_call([
+        'wget',
+        'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
+        '-O',
+        '../linuxdeployqt',
+    ])
+    subprocess.check_call([
+        'chmod',
+        '+x',
+        '../linuxdeployqt',
+    ])
     for target in targets:
         subprocess.check_call([
             '../linuxdeployqt',
