@@ -1,10 +1,10 @@
 name: Automated Release
 
 on:
-  #schedule:
-  #  - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
-  push:
-    branches: [ zeno2-ci ]
+  schedule:
+    - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
+  #push:
+    #branches: [ zeno2-ci ]
     #tags: [ 'v*' ]
 
 env:
@@ -46,7 +46,8 @@ jobs:
     continue-on-error: true
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout Repo
+      uses: actions/checkout@v2
 
     - name: Cache Qt
       id: cache-qt

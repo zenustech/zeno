@@ -21,7 +21,8 @@ jobs:
     continue-on-error: true
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout Repo
+      uses: actions/checkout@v2
 
     - name: Cache Qt
       id: cache-qt
