@@ -1,11 +1,11 @@
 name: Automated Release
 
 on:
-  schedule:
-    - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
-  #push:
+  #schedule:
+  #  - cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
+  push:
+    branches: [ zeno2-ci ]
     #tags: [ 'v*' ]
-    #branches: [ zeno2-ci ]
 
 env:
   BUILD_TYPE: Release
