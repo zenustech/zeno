@@ -3,10 +3,11 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/core/Descriptor.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/core/Descriptor.h>
 #include <zeno/funcs/LiterialConverter.h>
+#include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <iostream>
@@ -55,7 +56,7 @@ struct GraphApplyException {
     INode *node;
     std::exception_ptr ep;
 
-    Status evalStatus() const {
+    GlobalStatus evalStatus() const {
         try {
             std::rethrow_exception(ep);
         } catch (ErrorException const &e) {
@@ -88,23 +89,21 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     }
 }
 
-ZENO_API Status Graph::applyNodes(std::set<std::string> const &ids) {
+ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
     ctx = std::make_unique<Context>();
-    Status ret = {};
     try {
         for (auto const &id: ids) {
             applyNode(id);
         }
     } catch (GraphApplyException const &gae) {
-        ret = gae.evalStatus();
+        *session->globalStatus = gae.evalStatus();
     }
     ctx = nullptr;
-    return ret;
 }
 
-ZENO_API Status Graph::applyNodesToExec() {
+ZENO_API void Graph::applyNodesToExec() {
     log_debug("{} nodes to exec", nodesToExec.size());
-    return applyNodes(nodesToExec);
+    applyNodes(nodesToExec);
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,

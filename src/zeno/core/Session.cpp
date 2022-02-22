@@ -2,6 +2,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -10,7 +11,11 @@
 
 namespace zeno {
 
-ZENO_API Session::Session() : globalState(std::make_unique<GlobalState>()), globalComm(std::make_unique<GlobalComm>()) {
+ZENO_API Session::Session()
+    : globalState(std::make_unique<GlobalState>())
+    , globalComm(std::make_unique<GlobalComm>())
+    , globalStatus(std::make_unique<GlobalStatus>())
+    {
 }
 
 ZENO_API Session::~Session() = default;

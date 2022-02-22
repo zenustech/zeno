@@ -4,6 +4,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
@@ -23,9 +24,9 @@ struct Header { // sync with viewdecode.cpp
     }
 };
 
-static void send_packet(std::string const &info, std::vector<char> const &buffer) {
+static void send_packet(std::string const &info, const char *buf, size_t len) {
     Header header;
-    header.total_size = info.size() + buffer.size();
+    header.total_size = info.size() + len;
     header.info_size = info.size();
     header.makeValid();
 
@@ -42,9 +43,9 @@ static void send_packet(std::string const &info, std::vector<char> const &buffer
         fputc(c, old_stdout);
     }
 
-    zeno::log_debug("runner tx data-buffer size {}", buffer.size());
-    for (char c: buffer) {
-        fputc(c, old_stdout);
+    zeno::log_debug("runner tx data-buffer size {}", len);
+    for (size_t i = 0; i < len; i++) {
+        fputc(buf[i], old_stdout);
     }
 }
 
@@ -70,6 +71,8 @@ static void runner_main(std::string const &progJson) {
         {
             graph->applyNodesToExec();
             session->globalState->substepEnd();
+            if (session->globalStatus->failed())
+                break;
         }
 
         auto viewObjs = session->globalComm->getViewObjects();
@@ -77,13 +80,21 @@ static void runner_main(std::string const &progJson) {
         session->globalState->frameEnd();
         zeno::log_debug("end frame {}", frame);
 
-        send_packet("{\"action\":\"newFrame\"}", {});
+        send_packet("{\"action\":\"newFrame\"}", "", 0);
 
         for (auto const &obj: viewObjs) {
             zeno::encodeObject(obj.get(), buffer);
-            send_packet("{\"action\":\"viewObject\"}", buffer);
+            send_packet("{\"action\":\"viewObject\"}", buffer.data(), buffer.size());
             buffer.clear();
         }
+
+        if (session->globalStatus->failed())
+            break;
+    }
+
+    if (session->globalStatus->failed()) {
+        auto statJson = session->globalStatus->toJson();
+        send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
     }
 }
 
@@ -95,7 +106,7 @@ int main() {
 #ifdef __linux__
     stdout = stderr;
 #else
-    //(void)freopen("/dev/stderr", "w", stdout);
+    //(void)freopen("/dev/stderr", "w", stdout);//todo
 #endif
     std::cout.rdbuf(std::cerr.rdbuf());
 

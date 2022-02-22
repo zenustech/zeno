@@ -4,7 +4,6 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/types/UserData.h>
-#include <zeno/utils/Error.h>
 #include <functional>
 #include <variant>
 #include <memory>
@@ -31,15 +30,6 @@ struct Context {
     ZENO_API ~Context();
 };
 
-struct Status {
-    INode *node = nullptr;
-    std::shared_ptr<Error> error;
-
-    bool failed() const {
-        return node != nullptr;
-    }
-};
-
 struct Graph {
     Session *session = nullptr;
     SubgraphNode *subgraphNode = nullptr;
@@ -61,8 +51,8 @@ struct Graph {
     Graph &operator=(Graph &&) = delete;
 
     ZENO_API void clearNodes();
-    ZENO_API Status applyNodesToExec();
-    ZENO_API Status applyNodes(std::set<std::string> const &ids);
+    ZENO_API void applyNodesToExec();
+    ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
     ZENO_API void applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);

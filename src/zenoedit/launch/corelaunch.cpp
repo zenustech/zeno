@@ -66,18 +66,28 @@ struct ProgramRunData {
 
         auto nframes = graph->adhocNumFrames;
         for (int i = 0; i < nframes; i++) {
+            zeno::log_info("begin frame {}", frame);
             session->globalComm->newFrame();
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
                 if (g_state == KILLING)
                     return;
-                graph->applyNodesToExec();
+                stat = graph->applyNodesToExec();
                 session->globalState->substepEnd();
+                if (session->globalStatus->failed())
+                    break;
             }
             if (g_state == KILLING)
                 return;
             session->globalState->frameEnd();
+            zeno::log_debug("end frame {}", frame);
+            if (session->globalStatus->failed())
+                break;
+        }
+        if (session->globalStatus->failed()) {
+            auto statJson = session->globalStatus->toJson();
+            reportStatus(statJson);
         }
 #else
         auto execDir = QCoreApplication::applicationDirPath().toStdString();

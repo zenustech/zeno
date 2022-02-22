@@ -36,11 +36,14 @@ struct ImplNodeClass : INodeClass {
 struct IObject;
 struct GlobalState;
 struct GlobalComm;
+struct GlobalStatus;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+
     std::unique_ptr<GlobalState> const globalState;
     std::unique_ptr<GlobalComm> const globalComm;
+    std::unique_ptr<GlobalStatus> const globalStatus;
 
     ZENO_API Session();
     ZENO_API ~Session();

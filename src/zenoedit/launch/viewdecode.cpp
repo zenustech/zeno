@@ -4,6 +4,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <rapidjson/document.h>
 #include <type_traits>
@@ -25,6 +26,10 @@ bool processPacket(std::string const &action, const char *buf, size_t len) {
 
     } else if (action == "newFrame") {
         zeno::getSession().globalComm->newFrame();
+
+    } else if (action == "reportStatus") {
+        std::string statJson{buf, len};
+        zeno::getSession().globalStatus->fromJson(statJson);
 
     } else {
         zeno::log_warn("unknown packet action type {}", action);
