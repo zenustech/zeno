@@ -15,14 +15,13 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
-        - os: windows-latest
+        #- os: windows-latest
 
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
+    continue-on-error: false
 
     steps:
     - uses: actions/checkout@v2
-    - uses: jwsi/submodule-checkout@v1
 
     - name: Cache Qt
       id: cache-qt
@@ -35,7 +34,6 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: 5.15.15
-        setup-python: false
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Configure CMake
