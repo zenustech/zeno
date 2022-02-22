@@ -38,6 +38,7 @@ jobs:
       matrix:
         include:
         - os: ubuntu-18.04  # cihou linuxdeployqt
+          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
         - os: windows-latest
 
     needs: release
@@ -65,7 +66,7 @@ jobs:
       run: sudo apt install g++-9
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.os == 'ubuntu-18.04' ? '-DCMAKE_CXX_COMPILER=g++-9' : ''}}
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
 
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}}
