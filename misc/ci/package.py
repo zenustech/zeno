@@ -6,7 +6,7 @@ import shutil
 binpath = os.path.join('build', 'bin')
 targets = ['zenoedit']
 
-if sys.platform == 'windows':
+if sys.platform == 'win32':
     for target in targets:
         subprocess.check_call([
             '..\\Qt\\5.15.2\\win64_msvc2019_64\\bin\\windeployqt.exe',
