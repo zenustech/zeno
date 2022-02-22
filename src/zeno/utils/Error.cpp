@@ -23,7 +23,7 @@ ZENO_API char const *ErrorException::what() const noexcept {
     return err->what().c_str();
 }
 
-ZENO_API std::shared_ptr<Error> ErrorException::get() const noexcept {
+ZENO_API std::shared_ptr<Error> ErrorException::getError() const noexcept {
     return err;
 }
 

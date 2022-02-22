@@ -64,7 +64,7 @@ struct Graph {
     ZENO_API Status applyNodesToExec();
     ZENO_API Status applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
-    ZENO_API Status applyNode(std::string const &id);
+    ZENO_API void applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);

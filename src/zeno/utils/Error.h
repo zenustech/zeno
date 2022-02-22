@@ -53,7 +53,7 @@ public:
     ZENO_API explicit ErrorException(std::shared_ptr<Error> &&err) noexcept;
     ZENO_API ~ErrorException() noexcept;
     ZENO_API char const *what() const noexcept;
-    ZENO_API std::shared_ptr<Error> get() const noexcept;
+    ZENO_API std::shared_ptr<Error> getError() const noexcept;
 
     ErrorException(ErrorException const &) = default;
     ErrorException &operator=(ErrorException const &) = default;

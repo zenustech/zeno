@@ -50,34 +50,56 @@ ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node")->doComplete();
 }
 
-ZENO_API Status Graph::applyNode(std::string const &id) {
-    if (ctx->visited.find(id) != ctx->visited.end()) {
+namespace {
+struct GraphApplyException {
+    INode *node;
+    std::exception_ptr ep;
+
+    Status evalStatus() const {
+        try {
+            std::rethrow_exception(ep);
+        } catch (ErrorException const &e) {
+            log_error("==> error during {}: {}", node->myname, e.what());
+            return {node, e.getError()};
+        } catch (std::exception const &e) {
+            log_error("==> exception during {}: {}", node->myname, e.what());
+            return {node, std::make_shared<StdError>(std::current_exception())};
+        } catch (...) {
+            log_error("==> unknown exception during {}", node->myname);
+            return {node, std::make_shared<StdError>(std::current_exception())};
+        }
         return {};
+    }
+};
+}
+
+ZENO_API void Graph::applyNode(std::string const &id) {
+    if (ctx->visited.find(id) != ctx->visited.end()) {
+        return;
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
-    } catch (ErrorException const &e) {
-        log_error("==> error during {}: {}", node->myname, e.what());
-        return Status{node, e.get()};
-    } catch (std::exception const &e) {
-        log_error("==> exception during {}: {}", node->myname, e.what());
-        return Status{node, std::make_shared<StdError>(std::current_exception())};
+    } catch (GraphApplyException const &gae) {
+        throw gae;
+    } catch (...) {
+        throw GraphApplyException{node, std::current_exception()};
     }
-    return {};
 }
 
 ZENO_API Status Graph::applyNodes(std::set<std::string> const &ids) {
     ctx = std::make_unique<Context>();
-    for (auto const &id: ids) {
-        Status stat = applyNode(id);
-        if (stat.failed()) {
-            return stat;
+    Status ret = {};
+    try {
+        for (auto const &id: ids) {
+            applyNode(id);
         }
+    } catch (GraphApplyException const &gae) {
+        ret = gae.evalStatus();
     }
     ctx = nullptr;
-    return {};
+    return ret;
 }
 
 ZENO_API Status Graph::applyNodesToExec() {
