@@ -28,7 +28,7 @@ jobs:
         draft: true
         tag_name: v${{ steps.get_date.outputs.date }}
         release_name: ${{ steps.get_date.outputs.date }}
-        body: Automated Release by Github Actions, commit ${{ github.ref }}
+        body: Automated Release by Github Actions, branch ${{ github.ref }}, commit ${{ github.sha }}, date ${{ steps.get_date.outputs.date }}
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -81,7 +81,6 @@ jobs:
       run: python misc/ci/get_ver.py
 
     - name: Upload Release Asset
-      id: upload_release_asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,3 +89,7 @@ jobs:
         asset_path: ${{github.workspace}}/build/bin.zip
         asset_name: ${{ steps.versioning.outputs.filename }}
         asset_content_type: application/zip
+
+    # todo: wanglin, please tell me your restful API for upload files
+    #- name: Upload To Server
+    #  run: python misc/ci/uploader.py ${{github.workspace}}/build/bin.zip ${{ steps.versioning.outputs.filename }}
