@@ -33,8 +33,9 @@ jobs:
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      version: 5.15.15
       with:
+        version: 5.15.15
+        setup-python: false
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Configure CMake
