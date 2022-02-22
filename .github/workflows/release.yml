@@ -28,7 +28,7 @@ jobs:
         draft: true
         tag_name: v${{ steps.get_date.outputs.date }}
         release_name: ${{ steps.get_date.outputs.date }}
-        body: "(Automated Release by Github Actions)"
+        body: Automated Release by Github Actions, commit ${{ github.ref }}
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -42,7 +42,7 @@ jobs:
 
     needs: release
     runs-on: ${{ matrix.os }}
-    continue-on-error: false
+    continue-on-error: true
 
     steps:
     - uses: actions/checkout@v2

@@ -9,10 +9,16 @@ if sys.platform == 'windows':
         'windeployqt',
         os.path.join(binpath, 'zenoedit.exe'),
     ])
-else:
+elif sys.platform == 'linux':
     subprocess.check_call([
-        'linuxdeployqt',
+        'wget',
+        'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
+    ])
+    subprocess.check_call([
+        './linuxdeployqt-continuous-x86_64.AppImage',
         os.path.join(binpath, 'zenoedit'),
     ])
+else:
+    assert False, sys.platform
 
 shutil.make_archive(binpath, 'zip', binpath, verbose=1)
