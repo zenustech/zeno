@@ -27,9 +27,11 @@ ZENO_API std::string GlobalStatus::toJson() const {
 }
 
 ZENO_API void GlobalStatus::fromJson(std::string_view json) {
+    if (json.empty()) { *this = {}; return; }
+
     rapidjson::Document doc;
     doc.Parse(json.data(), json.size());
-    log_critical("fromJson: {}", json);
+    log_debug("got error from json: {}", json);
 
     auto obj = doc.GetObject();
 

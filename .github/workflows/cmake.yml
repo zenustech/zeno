@@ -34,7 +34,6 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       version: 5.15.15
-      setup-python: false
       with:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
