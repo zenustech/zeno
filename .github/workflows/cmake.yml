@@ -15,7 +15,7 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
-        #- os: windows-latest
+        - os: windows-latest
 
     runs-on: ${{ matrix.os }}
     continue-on-error: false
@@ -37,7 +37,7 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Configure CMake
-      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
