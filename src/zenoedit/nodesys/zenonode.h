@@ -68,6 +68,7 @@ protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
     bool sceneEvent(QEvent *event) override;
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;

@@ -25,8 +25,7 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     setFrameShape(QFrame::NoFrame);
     viewport()->installEventFilter(this);
     setMouseTracking(true);
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
+    setContextMenuPolicy(Qt::DefaultContextMenu);
 
 	QAction* ctrlz = new QAction("Undo", this);
     ctrlz->setShortcut(QKeySequence::Undo);
@@ -203,7 +202,57 @@ void ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 
 void ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
-    QGraphicsView::contextMenuEvent(event);
+    QPoint pos = event->pos();
+
+    QList<QGraphicsItem*> seledItems = m_scene->selectedItems();
+    QSet<ZenoNode*> nodeSets;
+	for (QGraphicsItem* pItem : seledItems)
+	{
+		if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
+		{
+			nodeSets.insert(pNode);
+		}
+	}
+
+    if (nodeSets.size() > 1)
+    {
+        //todo: group operation.
+		QMenu* nodeMenu = new QMenu;
+		QAction* pCopy = new QAction("Copy");
+		QAction* pDelete = new QAction("Delete");
+
+		nodeMenu->addAction(pCopy);
+		nodeMenu->addAction(pDelete);
+
+		nodeMenu->exec(QCursor::pos());
+		nodeMenu->deleteLater();
+        return;
+    }
+
+    nodeSets.clear();
+    QList<QGraphicsItem*> tempList = this->items(pos);
+ 
+	for (QGraphicsItem* pItem : tempList)
+	{
+		if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
+		{
+            nodeSets.insert(pNode);
+		}
+	}
+
+	if (nodeSets.size() == 1)
+	{
+		//send to scene/ZenoNode.
+        QGraphicsView::contextMenuEvent(event);
+	}
+	else
+	{
+		NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        QPoint pos = event->pos();
+		m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
+		m_menu->setEditorFocus();
+		m_menu->exec(QCursor::pos());
+	}
 }
 
 void ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
@@ -233,15 +282,4 @@ void ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
     pen.setWidthF(pen.widthF() / scale);
     painter->setPen(pen);
     painter->drawLines(innerLines.data(), innerLines.size());
-}
-
-void ZenoSubGraphView::onCustomContextMenu(const QPoint& pos)
-{
-    delete m_menu;
-    m_menu = nullptr;
-
-    NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
-    m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
-    m_menu->setEditorFocus();
-    m_menu->exec(QCursor::pos());
 }

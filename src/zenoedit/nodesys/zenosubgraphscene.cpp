@@ -465,99 +465,102 @@ void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
 
 void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    QList<QGraphicsItem *> items = this->items(event->scenePos());
-    ZenoNode* pNode = nullptr;
-    ZenoSocketItem* pSocket = nullptr;
-    for (auto item : items)
+    if (event->button() == Qt::LeftButton)
     {
-        if (pSocket = qgraphicsitem_cast<ZenoSocketItem*>(item))
-            break;
-    }
-    if (!pSocket)
-    {
-        delete m_tempLink;
-        m_tempLink = nullptr;
-    }
-    else
-    {
-        pNode = qgraphicsitem_cast<ZenoNode*>(pSocket->parentItem());
-        const QString& nodeid = pNode->nodeId();
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-
-        QString sockName;
-        bool bInput = false;
-        QPointF socketPos;
-        QPersistentModelIndex linkIdx;
-        pNode->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
-
-		if (!m_tempLink)
+		QList<QGraphicsItem*> items = this->items(event->scenePos());
+		ZenoNode* pNode = nullptr;
+		ZenoSocketItem* pSocket = nullptr;
+		for (auto item : items)
 		{
-            if (linkIdx.isValid() && bInput)
-            {
-                //disconnect the old link.
-                const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-                const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-
-				pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
-
-                socketPos = m_nodes[outNode]->getPortPos(false, outSock);
-                m_tempLink = new ZenoTempLink(outNode, outSock, socketPos, false);
-                addItem(m_tempLink);
-            }
-            else
-            {
-		        m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
-				addItem(m_tempLink);
-				pSocket->toggle(true);
-            }
-            return;
+			if (pSocket = qgraphicsitem_cast<ZenoSocketItem*>(item))
+				break;
 		}
-		else if (m_tempLink)
+		if (!pSocket)
 		{
-		    QString fixedNodeId, fixedSocket;
-			bool fixedInput = false;
-			QPointF fixedPos;
-			m_tempLink->getFixedInfo(fixedNodeId, fixedSocket, fixedPos, fixedInput);
-
-			if (fixedInput == bInput)
-				return;
-
-			QString outNode, outSock, inNode, inSock;
-			QPointF outPos, inPos;
-			if (fixedInput) {
-				outNode = nodeid;
-				outSock = sockName;
-				outPos = socketPos;
-				inNode = fixedNodeId;
-				inSock = fixedSocket;
-				inPos = fixedPos;
-			}
-			else {
-				outNode = fixedNodeId;
-				outSock = fixedSocket;
-				outPos = fixedPos;
-				inNode = nodeid;
-				inSock = sockName;
-				inPos = socketPos;
-			}
-
-            //remove the edge in inNode:inSock, if exists.
-            if (bInput)
-            {
-                QPersistentModelIndex linkIdx;
-                m_nodes[inNode]->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
-                if (linkIdx.isValid())
-                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
-            }
-
-			EdgeInfo info(outNode, inNode, outSock, inSock);
-			IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-			pGraphsModel->addLink(info, m_subgIdx, true);
-
-			removeItem(m_tempLink);
 			delete m_tempLink;
 			m_tempLink = nullptr;
-			return;
+		}
+		else
+		{
+			pNode = qgraphicsitem_cast<ZenoNode*>(pSocket->parentItem());
+			const QString& nodeid = pNode->nodeId();
+			IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+
+			QString sockName;
+			bool bInput = false;
+			QPointF socketPos;
+			QPersistentModelIndex linkIdx;
+			pNode->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
+
+			if (!m_tempLink)
+			{
+				if (linkIdx.isValid() && bInput)
+				{
+					//disconnect the old link.
+					const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
+					const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+
+					pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+
+					socketPos = m_nodes[outNode]->getPortPos(false, outSock);
+					m_tempLink = new ZenoTempLink(outNode, outSock, socketPos, false);
+					addItem(m_tempLink);
+				}
+				else
+				{
+					m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
+					addItem(m_tempLink);
+					pSocket->toggle(true);
+				}
+				return;
+			}
+			else if (m_tempLink)
+			{
+				QString fixedNodeId, fixedSocket;
+				bool fixedInput = false;
+				QPointF fixedPos;
+				m_tempLink->getFixedInfo(fixedNodeId, fixedSocket, fixedPos, fixedInput);
+
+				if (fixedInput == bInput)
+					return;
+
+				QString outNode, outSock, inNode, inSock;
+				QPointF outPos, inPos;
+				if (fixedInput) {
+					outNode = nodeid;
+					outSock = sockName;
+					outPos = socketPos;
+					inNode = fixedNodeId;
+					inSock = fixedSocket;
+					inPos = fixedPos;
+				}
+				else {
+					outNode = fixedNodeId;
+					outSock = fixedSocket;
+					outPos = fixedPos;
+					inNode = nodeid;
+					inSock = sockName;
+					inPos = socketPos;
+				}
+
+				//remove the edge in inNode:inSock, if exists.
+				if (bInput)
+				{
+					QPersistentModelIndex linkIdx;
+					m_nodes[inNode]->getSocketInfoByItem(pSocket, sockName, socketPos, bInput, linkIdx);
+					if (linkIdx.isValid())
+						pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+				}
+
+				EdgeInfo info(outNode, inNode, outSock, inSock);
+				IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+				pGraphsModel->addLink(info, m_subgIdx, true);
+
+				removeItem(m_tempLink);
+				delete m_tempLink;
+				m_tempLink = nullptr;
+				return;
+			}
 		}
     }
     QGraphicsScene::mousePressEvent(event);
@@ -575,6 +578,12 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     QGraphicsScene::mouseReleaseEvent(event);
+}
+
+void ZenoSubGraphScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+    //send to ZenoNode.
+    QGraphicsScene::contextMenuEvent(event);
 }
 
 void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)

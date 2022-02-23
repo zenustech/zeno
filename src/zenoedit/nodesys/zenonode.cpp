@@ -795,6 +795,26 @@ bool ZenoNode::sceneEvent(QEvent *event)
     return _base::sceneEvent(event);
 }
 
+void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+    scene()->clearSelection();
+    this->setSelected(true);
+
+	QMenu* nodeMenu = new QMenu;
+	QAction* pCopy = new QAction("Copy");
+	QAction* pPaste = new QAction("Paste");
+	QAction* pDelete = new QAction("Delete");
+	QAction* pFork = new QAction("Fork");
+
+	nodeMenu->addAction(pCopy);
+	nodeMenu->addAction(pPaste);
+	nodeMenu->addAction(pDelete);
+	nodeMenu->addAction(pFork);
+
+	nodeMenu->exec(QCursor::pos());
+    nodeMenu->deleteLater();
+}
+
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);

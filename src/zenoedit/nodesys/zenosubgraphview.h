@@ -26,7 +26,6 @@ protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
 
 public slots:
-    void onCustomContextMenu(const QPoint& pos);
     void redo();
     void undo();
     void copy();
