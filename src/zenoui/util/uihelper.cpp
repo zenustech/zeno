@@ -1,5 +1,6 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
+#include <zenoui/model/modelrole.h>
 #include <QUuid>
 
 
@@ -245,6 +246,80 @@ QString UiHelper::variantToString(const QVariant& var)
 	else zeno::log_warn("bad qt variant {}", var.typeName());
 
     return value;
+}
+
+QMap<QString, NODE_DATA> UiHelper::dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx, 
+    const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice)
+{
+	QMap<QString, QString> oldToNew;
+	QMap<QString, NODE_DATA> newNodes;
+	QList<NODE_DATA> vecNodes;
+	for (const QModelIndex& index : nodesIndice)
+	{
+        const QString& currNode = index.data(ROLE_OBJID).toString();
+		NODE_DATA data = pGraphsModel->itemData(index, subgIdx);
+		QString oldId = data[ROLE_OBJID].toString();
+		const QString& newId = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
+		data[ROLE_OBJID] = newId;
+		oldToNew[oldId] = newId;
+
+		//clear any connections.
+		OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+		INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+		for (auto it = outputs.begin(); it != outputs.end(); it++)
+		{
+			it->second.linkIndice.clear();
+			it->second.inNodes.clear();
+		}
+		for (auto it = inputs.begin(); it != inputs.end(); it++)
+		{
+			it->second.linkIndice.clear();
+			it->second.outNodes.clear();
+		}
+
+		data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+		data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+		newNodes[newId] = data;
+	}
+
+	for (const QPersistentModelIndex& linkIdx : linkIndice)
+	{
+		const QString& outOldId = linkIdx.data(ROLE_OUTNODE).toString();
+		const QString& inOldId = linkIdx.data(ROLE_INNODE).toString();
+		const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+		const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+		const QString& outId = oldToNew[outOldId];
+		const QString& inId = oldToNew[inOldId];
+
+		//out link
+		NODE_DATA& outData = newNodes[outId];
+		OUTPUT_SOCKETS outputs = outData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+		SOCKET_INFO& newOutSocket = outputs[outSock].inNodes[inId][inSock];
+
+		QModelIndex tempIdx = pGraphsModel->index(outOldId, subgIdx);
+
+		NODE_DATA outOldData = pGraphsModel->itemData(tempIdx, subgIdx);
+		OUTPUT_SOCKETS oldOutputs = outOldData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+		const SOCKET_INFO& oldOutSocket = oldOutputs[outSock].inNodes[inOldId][inSock];
+		newOutSocket = oldOutSocket;
+		newOutSocket.nodeid = inId;
+		outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+		//in link
+		NODE_DATA& inData = newNodes[inId];
+		INPUT_SOCKETS inputs = inData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+		SOCKET_INFO& newInSocket = inputs[inSock].outNodes[outId][outSock];
+
+		tempIdx = pGraphsModel->index(inOldId, subgIdx);
+		NODE_DATA inOldData = pGraphsModel->itemData(tempIdx, subgIdx);
+		INPUT_SOCKETS oldInputs = inOldData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+		const SOCKET_INFO& oldInSocket = oldInputs[inSock].outNodes[outOldId][outSock];
+		newInSocket = oldInSocket;
+		newInSocket.nodeid = outId;
+		inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
+	}
+    return newNodes;
 }
 
 std::pair<qreal, qreal> UiHelper::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize)

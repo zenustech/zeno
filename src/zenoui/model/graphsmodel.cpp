@@ -380,16 +380,8 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
     int row = m_subGraphs.size();
 	beginInsertRows(QModelIndex(), row, row);
     m_subGraphs.append(pGraph);
+    pGraph->onModelInited();
 	endInsertRows();
-    return;
-
-    QStandardItem *pItem = new QStandardItem;
-    QString graphName = pGraph->name();
-    QVariant var(QVariant::fromValue(static_cast<void *>(pGraph)));
-    pItem->setText(graphName);
-    pItem->setData(var, ROLE_GRAPHPTR);
-    pItem->setData(graphName, ROLE_OBJNAME);
-    //appendRow(pItem);
 }
 
 void GraphsModel::removeGraph(int idx)
@@ -398,8 +390,55 @@ void GraphsModel::removeGraph(int idx)
     m_subGraphs.remove(idx);
     endRemoveRows();
     markDirty();
-    //removeRow(idx);
-    //markDirty();
+}
+
+QModelIndex GraphsModel::fork(const QString& subgName)
+{
+    SubGraphModel* pModel = subGraph(subgName);
+    Q_ASSERT(pModel);
+    if (!pModel)
+        return QModelIndex();
+
+	SubGraphModel* pForkModel = new SubGraphModel(this);
+    pForkModel->setName(subgName + " (copy)");
+    appendSubGraph(pForkModel);
+    QModelIndex newSubgIdx = indexBySubModel(pForkModel);
+
+    QModelIndex subgIdx = indexBySubModel(pModel);
+
+    QModelIndexList nodeIndice, linkIndice;
+    for (int r = 0; r < pModel->rowCount(); r++)
+    {
+        QModelIndex idx = pModel->index(r, 0);
+        nodeIndice.append(idx);
+
+        const INPUT_SOCKETS& inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        for (auto input : inputs.values())
+        {
+            for (auto linkIdx : input.linkIndice)
+            {
+                linkIndice.append(linkIdx);
+            }
+        }
+        const OUTPUT_SOCKETS& outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+		for (auto output : outputs.values())
+		{
+			for (auto linkIdx : output.linkIndice)
+			{
+				linkIndice.append(linkIdx);
+			}
+		}
+    }
+
+    QMap<QString, NODE_DATA> items = UiHelper::dumpItems(this, subgIdx, nodeIndice, linkIndice);
+    QList<NODE_DATA> datas;
+    for (NODE_DATA data : items)
+    {
+        datas.append(data);
+    }
+    importNodeLinks(datas, newSubgIdx);
+
+    return newSubgIdx;
 }
 
 NODE_CATES GraphsModel::getCates()
@@ -558,6 +597,36 @@ void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& 
     {
         addNode(nodeData, subGpIdx, enableTransaction);
     }
+}
+
+void GraphsModel::importNodeLinks(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx)
+{
+	beginTransaction("import nodes");
+
+	appendNodes(nodes, subGpIdx, true);
+	//add links for pasted node.
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		const NODE_DATA& data = nodes[i];
+		const QString& inNode = data[ROLE_OBJID].toString();
+		INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+		foreach(const QString & inSockName, inputs.keys())
+		{
+			const INPUT_SOCKET& inSocket = inputs[inSockName];
+			for (const QString& outNode : inSocket.outNodes.keys())
+			{
+				for (const QString& outSock : inSocket.outNodes[outNode].keys())
+				{
+					const QModelIndex& outIdx = index(outNode, subGpIdx);
+					if (outIdx.isValid())
+					{
+						addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subGpIdx, true);
+					}
+				}
+			}
+		}
+	}
+    endTransaction();
 }
 
 void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction)

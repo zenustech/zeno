@@ -23,11 +23,14 @@ public:
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) = 0;
 	virtual void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
+	virtual void importNodeLinks(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeNode(int row, const QModelIndex& subGpIdx) = 0;
 	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
+	virtual QModelIndex fork(const QString& subgName) = 0;	//fork is applied for legacy plain model.
+	//virtual QModelIndex clone()
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;

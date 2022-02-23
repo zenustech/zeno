@@ -40,6 +40,11 @@ elif sys.platform == 'linux':
         '-bundle-non-qt-libs',
     ])
     shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), os.path.join(binpath, '000_start.sh'))
+    subprocess.check_call([
+        'chmod',
+        '+x',
+        os.path.join(binpath, '000_start.sh'),
+    ])
     shutil.make_archive(binpath, 'gztar', binpath, verbose=1)
 else:
     assert False, sys.platform

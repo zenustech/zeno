@@ -88,6 +88,11 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 {
 }
 
+void ZenoGraphsEditor::onItemActivated(const QString& subGraphName)
+{
+    m_pTabWidget->activate(subGraphName);
+}
+
 void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
 {
     if (m_bListView)

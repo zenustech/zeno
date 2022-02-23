@@ -3,6 +3,7 @@
 
 #include "../model/modeldata.h"
 #include <rapidjson/document.h>
+#include <zenoui/include/igraphsmodel.h>
 
 class UiHelper
 {
@@ -16,6 +17,11 @@ public:
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL _getControlType(const QString& type);
     static QString variantToString(const QVariant& var);
+
+    //todo: place at other helper.
+    static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
+        const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
+
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };

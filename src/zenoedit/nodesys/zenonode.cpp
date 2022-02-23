@@ -10,7 +10,9 @@
 #include <zeno/utils/logger.h>
 #include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "graphsmanagment.h"
+#include "../nodesview/zenographseditor.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -142,7 +144,6 @@ void ZenoNode::initWangStyle(const QModelIndex& subGIdx, const QModelIndex& inde
 
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	Q_ASSERT(pGraphsModel);
-
 
     m_headerWidget = initHeaderWangStyle(type);
 	m_bodyWidget = initBodyWidget(type);
@@ -330,7 +331,6 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 
 	const QString& name = m_index.data(ROLE_OBJNAME).toString();
 	m_NameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
-	m_NameItem->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	QGraphicsLinearLayout* pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 	pNameLayout->addItem(m_NameItem);
 	pNameLayout->setContentsMargins(5, 5, 5, 5);
@@ -608,8 +608,14 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 
 void ZenoNode::onNameUpdated(const QString& newName)
 {
-    m_NameItem->setPlainText(newName);
-    update();
+    Q_ASSERT(m_NameItem);
+    if (m_NameItem)
+    {
+		m_NameItem->setPlainText(newName);
+		m_NameItem->updateGeometry();
+		if (auto layoutItem = m_NameItem->parentLayoutItem())
+			layoutItem->updateGeometry();
+	}
 }
 
 QGraphicsGridLayout* ZenoNode::initSockets()
@@ -795,6 +801,42 @@ bool ZenoNode::sceneEvent(QEvent *event)
     return _base::sceneEvent(event);
 }
 
+void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+    scene()->clearSelection();
+    this->setSelected(true);
+
+	QMenu* nodeMenu = new QMenu;
+	QAction* pCopy = new QAction("Copy");
+	QAction* pPaste = new QAction("Paste");
+	QAction* pDelete = new QAction("Delete");
+
+	nodeMenu->addAction(pCopy);
+	nodeMenu->addAction(pPaste);
+	nodeMenu->addAction(pDelete);
+
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    const QString& name = m_index.data(ROLE_OBJNAME).toString();
+    QModelIndex subgIdx = pGraphsModel->index(name);
+    if (subgIdx.isValid())
+    {
+        QAction* pFork = new QAction("Fork");
+        nodeMenu->addAction(pFork);
+        connect(pFork, &QAction::triggered, this, [=]() {
+            QModelIndex newSubgIdx = pGraphsModel->fork(name);
+            zenoApp->graphsManagment()->initScenes(pGraphsModel);
+            if (newSubgIdx.isValid())
+			{
+				const QString& subgName = pGraphsModel->name(newSubgIdx);
+				pGraphsModel->setData2(m_subGpIndex, m_index, subgName, ROLE_OBJNAME);
+            }
+        });
+    }
+
+	nodeMenu->exec(QCursor::pos());
+    nodeMenu->deleteLater();
+}
+
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
@@ -803,9 +845,24 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     {
         onCollaspeBtnClicked();
     }
-    else
+    else if (wtf.contains(m_bodyWidget))
     {
-        emit doubleClicked(nodeName());
+        const QString& name = nodeName();
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        QModelIndex subgIdx = pModel->index(name);
+        if (subgIdx.isValid())
+        {
+			const QWidgetList& list = QApplication::topLevelWidgets();
+			for (QWidget* w : list)
+			{
+				ZenoMainWindow* mainWindow = qobject_cast<ZenoMainWindow*>(w);
+				if (mainWindow)
+				{
+					ZenoGraphsEditor* pEditor = mainWindow->editor();
+					pEditor->onItemActivated(name);
+				}
+			}
+        }
     }
 }
 

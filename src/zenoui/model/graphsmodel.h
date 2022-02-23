@@ -36,6 +36,7 @@ public:
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
     void appendSubGraph(SubGraphModel* pGraph);
+    QModelIndex fork(const QString& subgName) override;
     void removeGraph(int idx) override;
     void initDescriptors() override;
     bool isDirty() const override;
@@ -66,6 +67,7 @@ public:
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void importNodeLinks(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx) override;
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

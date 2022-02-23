@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get Date
-      id: get_date
-      run: python -c "import datetime; d = datetime.datetime.now(); print('::set-output name=date::{}.{}.{}'.format(d.year, d.month, d.day))"
+    - name: Versioning
+      id: versioning
+      run: python -c "import datetime; d = datetime.datetime.now(); print('::set-output name=version::{}.{}.{}'.format(d.year, d.month, d.day))"
 
     - name: Create Release
       id: create_release
@@ -27,12 +27,13 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         draft: true
-        tag_name: ${{ steps.get_date.outputs.date }}
-        release_name: ${{ steps.get_date.outputs.date }}
+        tag_name: ${{ steps.versioning.outputs.version }}
+        release_name: ${{ steps.versioning.outputs.version }}
         body: "(Automated Release by Github Actions)\n\n- branch ${{ github.ref }}\n- commit ${{ github.sha }}\n- date ${{ steps.get_date.outputs.date }}\n\nWindows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n\nLinux: Our released binary support Ubuntu 18.04 and above (glibc >= 2.27), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit`, or simply extract it to the root so that it is `/usr/bin/zenoedit`. Try `chmod +x usr/bin/*` if they don't have execute permission.\n\n(由 GitHub CI/CD 自动化发布)\n\nWindows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n\nLinux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibc >= 2.27)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行 `usr/bin/zenoedit，或者直接把 tar.gz 文件解压到根目录变成 `/usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.versioning.outputs.version }}
 
   build:
     strategy:
@@ -42,7 +43,6 @@ jobs:
           cmake_args: -DCMAKE_CXX_COMPILER=g++-9
         - os: windows-latest
 
-    needs: release
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
@@ -72,9 +72,29 @@ jobs:
     - name: Packaging
       run: python misc/ci/package.py
 
-    - name: Versioning
-      id: versioning
-      run: python misc/ci/get_ver.py
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{runner.os}}-ReleaseArtifact
+        path: ${{github.workspace}}/build/bin.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
+
+  deploy:
+    strategy:
+      matrix:
+        include:
+        - os: Linux
+        - os: Windows
+
+    needs: [release, build]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    - name: Download Release Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{matrix.os}}-ReleaseArtifact
+        path: ${{github.workspace}}/release-artifact
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
@@ -82,10 +102,16 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/bin.${{ steps.versioning.outputs.fileext }}
-        asset_name: zeno-${{ steps.versioning.outputs.filename }}.${{ steps.versioning.outputs.fileext }}
-        asset_content_type: ${{ steps.versioning.outputs.mimetype }}
+        asset_path: ${{github.workspace}}/release-artifact
+        asset_name: zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        asset_content_type: ${{ matrix.os == 'Linux' && 'application/x-gzip' || 'application/zip' }}
 
-    # todo: wanglin, please tell me your restful API for upload files
-    #- name: Upload To Server
-    #  run: python misc/ci/uploader.py ${{github.workspace}}/build/bin.zip ${{ steps.versioning.outputs.filename }}
+    - name: Upload To Server
+      uses: easingthemes/ssh-deploy@v2.1.2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
+        ARGS: '-rltgoDzvO --delete'
+        SOURCE: release-artifact/bin.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}

@@ -21,11 +21,12 @@ public:
 
 public slots:
     void onCurrentModelClear();
+    void onItemActivated(const QModelIndex& index);
+    void onItemActivated(const QString& subGraphName);
 
 private slots:
     void onSubnetBtnClicked();
     void onViewBtnClicked();
-    void onItemActivated(const QModelIndex& index);
 
 private:
     QWidget* m_pSideBar;

@@ -34,6 +34,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event);
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 public slots:
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
