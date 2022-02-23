@@ -1,3 +1,4 @@
 #!/bin/bash
 
-exec "`dirname $0`/usr/bin/zenoedit" "$@"
+chmod +x "`dirname $0`"/usr/bin/*
+exec "`dirname $0`"/usr/bin/zenoedit "$@"

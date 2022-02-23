@@ -29,7 +29,7 @@ jobs:
         draft: true
         tag_name: v${{ steps.get_date.outputs.date }}
         release_name: ${{ steps.get_date.outputs.date }}
-        body: "(Automated Release by Github Actions)\n\n- branch ${{ github.ref }}\n- commit ${{ github.sha }}\n- date ${{ steps.get_date.outputs.date }}\n\nHint: After download, extract the zip file to a directory, then double-click 000_start.bat in that directory (or run `bash 000_start.sh` for Linux) to run the application."
+        body: "(Automated Release by Github Actions)\n\n- branch ${{ github.ref }}\n- commit ${{ github.sha }}\n- date ${{ steps.get_date.outputs.date }}\n\nWindows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting [a Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n\nLinux: We support Ubuntu 18.04 and above. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit`, or simply extract it to the root so that it is `/usr/bin/zenoedit`. Try `chmod +x usr/bin/*` if they don't have execute permission."
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -62,10 +62,6 @@ jobs:
       with:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
-
-    - name: Install GCC 9
-      if: ${{ matrix.os == 'ubuntu-18.04' }}
-      run: sudo apt install g++-9
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
