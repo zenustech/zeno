@@ -29,7 +29,10 @@ jobs:
         draft: true
         tag_name: v${{ steps.get_date.outputs.date }}
         release_name: ${{ steps.get_date.outputs.date }}
-        body: Automated Release by Github Actions, branch ${{ github.ref }}, commit ${{ github.sha }}, date ${{ steps.get_date.outputs.date }}
+        body:
+        - Automated Release by Github Actions
+        - branch ${{ github.ref }}, commit ${{ github.sha }}, date ${{ steps.get_date.outputs.date }}
+        - "Hint: After download, extract the zip file to a directory, then double-click 000_start.bat in it (or run `bash 000_start.sh` for Linux) to run the application."
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
