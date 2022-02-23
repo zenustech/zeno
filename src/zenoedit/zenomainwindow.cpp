@@ -40,8 +40,8 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    //simpleLayout();
-    onlyEditorLayout();
+    simpleLayout();
+    //onlyEditorLayout();
 }
 
 void ZenoMainWindow::initMenu()
