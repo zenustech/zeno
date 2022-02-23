@@ -1,7 +1,7 @@
 #pragma once
 
+#include <zeno/utils/Error.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/Exception.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 
@@ -22,19 +22,20 @@ bool objectIsLiterial(std::shared_ptr<IObject> const &ptr) {
 }
 
 template <class T>
-T objectToLiterial(std::shared_ptr<IObject> const &ptr) {
+T objectToLiterial(std::shared_ptr<IObject> const &ptr, std::string const &msg = "objectToLiterial") {
     if constexpr (std::is_same_v<std::string, T>) {
-        return safe_dynamic_cast<StringObject>(ptr.get())->get();
+        return safe_dynamic_cast<StringObject>(ptr.get(), msg)->get();
     } else if constexpr (std::is_same_v<NumericValue, T>) {
-        return safe_dynamic_cast<NumericObject>(ptr.get())->get();
+        return safe_dynamic_cast<NumericObject>(ptr.get(), msg)->get();
     } else {
         return std::visit([&] (auto const &val) -> T {
-            if constexpr (std::is_constructible_v<T, std::decay_t<decltype(val)>>) {
+            using T1 = std::decay_t<decltype(val)>;
+            if constexpr (std::is_constructible_v<T, T1>) {
                 return T(val);
             } else {
-                throw Exception((std::string)"invalid numeric cast to `" + typeid(T).name() + "`");
+                throw makeError<TypeError>(typeid(T), typeid(T1), msg);
             }
-        }, safe_dynamic_cast<NumericObject>(ptr.get())->get());
+        }, safe_dynamic_cast<NumericObject>(ptr.get(), msg)->get());
     }
 }
 

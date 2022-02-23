@@ -1,15 +1,12 @@
 #pragma once
 
-#include <zeno/utils/source_location.h>
-#include <string_view>
-#include <sstream>
-#include <memory>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
 namespace __logstd {
 
-static inline constexpr char endl = '\n';
+static inline constexpr char endl[] = "\n";
 
 static inline struct __logger_ostream {
     struct __logger_ostream_proxy {

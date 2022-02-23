@@ -40,7 +40,7 @@ struct NumericWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
+            auto par = zeno::objectToLiterial<zeno::NumericValue>(obj);
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {

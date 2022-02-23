@@ -8,7 +8,7 @@ template <class Func>
 struct scope_exit {
     Func func;
 
-    scope_exit(Func &&func) : func(std::forward<Func>(func)) {
+    constexpr scope_exit(Func &&func) : func(std::forward<Func>(func)) {
     }
 
     ~scope_exit() {
