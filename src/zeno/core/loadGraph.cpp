@@ -61,34 +61,36 @@ static T generic_get(Value const &x) {
 }
 
 ZENO_API void Graph::loadGraph(const char *json) {
-    Document d;
-    d.Parse(json);
+    GraphException::catched([&] {
+        Document d;
+        d.Parse(json);
 
-    for (int i = 0; i < d.Size(); i++) {
-        Value const &di = d[i];
-        std::string cmd = di[0].GetString();
-        const char *maybeNodeName = di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)";
-        GraphApplyException::translated([&] {
-            if (0) {
-            } else if (cmd == "addNode") {
-                addNode(di[1].GetString(), di[2].GetString());
-            } else if (cmd == "completeNode") {
-                completeNode(di[1].GetString());
-            } else if (cmd == "setNodeInput") {
-                setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
-            } else if (cmd == "setNodeParam") {
-                setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
-            /*} else if (cmd == "setNodeOption") {
-                setNodeOption(di[1].GetString(), di[2].GetString());*/
-            } else if (cmd == "bindNodeInput") {
-                bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
-            } else if (cmd == "setAdhocNumFrames") {
-                this->adhocNumFrames = di[1].GetInt();
-            } else {
-                log_warn("got unexpected command: {}", cmd);
-            }
-        }, maybeNodeName);
-    }
+        for (int i = 0; i < d.Size(); i++) {
+            Value const &di = d[i];
+            std::string cmd = di[0].GetString();
+            const char *maybeNodeName = di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)";
+            GraphException::translated([&] {
+                if (0) {
+                } else if (cmd == "addNode") {
+                    addNode(di[1].GetString(), di[2].GetString());
+                } else if (cmd == "completeNode") {
+                    completeNode(di[1].GetString());
+                } else if (cmd == "setNodeInput") {
+                    setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+                } else if (cmd == "setNodeParam") {
+                    setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
+                /*} else if (cmd == "setNodeOption") {
+                    setNodeOption(di[1].GetString(), di[2].GetString());*/
+                } else if (cmd == "bindNodeInput") {
+                    bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+                } else if (cmd == "setAdhocNumFrames") {
+                    this->adhocNumFrames = di[1].GetInt();
+                } else {
+                    log_warn("got unexpected command: {}", cmd);
+                }
+            }, maybeNodeName);
+        }
+    }, *session->globalStatus);
 }
 
 }

@@ -58,24 +58,27 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node");
-    GraphApplyException::translated([&] {
+    GraphException::translated([&] {
         node->doApply();
     }, node->myname);
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
     ctx = std::make_unique<Context>();
-    try {
+
+    struct guard_t {
+        Graph *that;
+
+        ~guard_t() {
+            that->ctx = nullptr;
+        }
+    } guard = {this};
+
+    GraphException::catched([&] {
         for (auto const &id: ids) {
             applyNode(id);
         }
-    } catch (GraphApplyException const &gae) {
-        *session->globalStatus = gae.evalStatus();
-    } catch (...) {
-        ctx = nullptr;
-        std::rethrow_exception(std::current_exception());
-    }
-    ctx = nullptr;
+    }, *session->globalStatus);
 }
 
 ZENO_API void Graph::applyNodesToExec() {

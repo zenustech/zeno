@@ -2,11 +2,13 @@
 
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/Error.h>
+#include <zeno/utils/log.h>
 #include <stdexcept>
 #include <string>
 
 namespace zeno {
-struct GraphApplyException {
+
+struct GraphException {
     std::string nodeName;
     std::exception_ptr ep;
 
@@ -30,11 +32,21 @@ struct GraphApplyException {
     static void translated(Func &&func, std::string const &nodeName) {
         try {
             func();
-        } catch (GraphApplyException const &gae) {
-            throw gae;
+        } catch (GraphException const &ge) {
+            throw ge;
         } catch (...) {
-            throw GraphApplyException{nodeName, std::current_exception()};
+            throw GraphException{nodeName, std::current_exception()};
+        }
+    }
+
+    template <class Func>
+    static void catched(Func &&func, GlobalStatus &globalStatus) {
+        try {
+            func();
+        } catch (GraphException const &ge) {
+            globalStatus = ge.evalStatus();
         }
     }
 };
+
 }
