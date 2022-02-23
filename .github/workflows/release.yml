@@ -4,8 +4,8 @@ on:
   #schedule:
   #- cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
   push:
-    branches: [ zeno2 ]
-    #branches: [ stable ]
+    #branches: [ zeno2 ]
+    branches: [ stable ]
     #tags: [ 'v*' ]
 
 env:
