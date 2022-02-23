@@ -4,7 +4,7 @@ import subprocess
 import shutil
 
 binpath = os.path.join('build', 'bin')
-targets = ['zenoedit']
+targets = ['zenoedit', 'zenorunner']
 
 if sys.platform == 'win32':
     for target in targets:

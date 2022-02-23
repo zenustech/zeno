@@ -37,8 +37,8 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04  # cihou linuxdeployqt
-          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
+        #- os: ubuntu-18.04  # cihou linuxdeployqt
+        #  cmake_args: -DCMAKE_CXX_COMPILER=g++-9
         - os: windows-latest
 
     needs: release
@@ -62,9 +62,9 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    - name: Install GCC 9
-      if: ${{ matrix.os == 'ubuntu-18.04' }}
-      run: sudo apt install g++-9
+    #- name: Install GCC 9
+    #  if: ${{ matrix.os == 'ubuntu-18.04' }}
+    #  run: sudo apt install g++-9
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
