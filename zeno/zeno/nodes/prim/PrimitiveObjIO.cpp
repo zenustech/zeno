@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/vec.h>
@@ -35,7 +36,8 @@ static zeno::vec3f read_vec3f(std::vector<std::string> items) {
     return vec;
 }
 
-void read_obj_file(
+std::shared_ptr<zeno::DictObject>
+read_obj_file(
         std::vector<zeno::vec3f> &vertices,
         //std::vector<zeno::vec3f> &uvs,
         //std::vector<zeno::vec3f> &normals,
@@ -44,6 +46,9 @@ void read_obj_file(
         //std::vector<zeno::vec3i> &normal_indices,
         const char *path)
 {
+    std::map<std::string, std::vector<zeno::vec3i>> dict;
+    std::string sub_name = "unnamed";
+    std::vector<zeno::vec3i> sub_indices;
 
 
     auto is = std::ifstream(path);
@@ -78,12 +83,29 @@ void read_obj_file(
                 //zeno::vec3i face_uv(first_index[1], last_index[1], index[1]);
                 //zeno::vec3i face_normal(first_index[2], last_index[2], index[2]);
                 indices.push_back(face);
+                sub_indices.push_back(face);
                 //uv_indices.push_back(face_uv);
                 //normal_indices.push_back(face_normal);
                 last_index = index;
             }
+        } else if (zeno::starts_with(line, "o ")) {
+            if (sub_indices.size() > 0) {
+                dict[sub_name] = std::move(sub_indices);
+            }
+            sub_name = items[0];
         }
     }
+    if (sub_indices.size() > 0) {
+        dict[sub_name] = std::move(sub_indices);
+    }
+    std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+    for(auto it : dict) {
+        auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+        sub_prim->verts = vertices;
+        sub_prim->tris = dict[it.first];
+        prims->lut[it.first] = sub_prim;
+    }
+    return prims;
 }
 
 
@@ -97,9 +119,9 @@ struct ReadObjPrimitive : zeno::INode {
         auto &tris = prim->tris;
         //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
-        read_obj_file(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
-        prim->resize(pos.size());
+        auto prims = read_obj_file(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
         set_output("prim", std::move(prim));
+        set_output("dict", std::move(prims));
     }
 };
 
@@ -108,6 +130,7 @@ ZENDEFNODE(ReadObjPrimitive,
         {"readpath", "path"},
         }, /* outputs: */ {
         "prim",
+        "dict",
         }, /* params: */ {
         }, /* category: */ {
         "primitive",
@@ -121,6 +144,7 @@ ZENDEFNODE(ImportObjPrimitive,
         {"readpath", "path"},
         }, /* outputs: */ {
         "prim",
+        "dict",
         }, /* params: */ {
         }, /* category: */ {
         "primitive",
