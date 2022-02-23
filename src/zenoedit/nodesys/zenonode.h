@@ -24,7 +24,7 @@ class ZenoNode : public QGraphicsWidget
 
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
-    ~ZenoNode();
+    virtual ~ZenoNode();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     QRectF boundingRect() const override;
 
@@ -79,13 +79,18 @@ protected:
     //ZenoNode:
     virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue);
     QPersistentModelIndex subGraphIndex() const;
+    virtual QGraphicsLayout* initParams();
+    virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
+    virtual QGraphicsLinearLayout* initCustomParamWidgets();
+
+protected:
+    NodeUtilParam m_renderParams;
 
 private:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
     ZenoBackgroundWidget* initHeaderLegacy(NODE_TYPE type);
     ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
-    QGraphicsLayout* initParams();
     QGraphicsGridLayout* initSockets();
     void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
@@ -94,7 +99,7 @@ private:
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
-    NodeUtilParam m_renderParams;
+
     QMap<QString, _socket_ctrl> m_inSockets;
     QMap<QString, _socket_ctrl> m_outSockets;
 

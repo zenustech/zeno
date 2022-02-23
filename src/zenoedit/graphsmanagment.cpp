@@ -21,49 +21,57 @@ IGraphsModel* GraphsManagment::currentModel()
     return m_model;
 }
 
+void GraphsManagment::setCurrentModel(IGraphsModel* model)
+{
+    m_model = model;
+    initScenes(m_model);
+}
+
 IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
     GraphsModel* pModel = new GraphsModel(this);
-    ModelAcceptor acceptor(pModel);
-    m_model = pModel;
-
-    bool ret = ZsgReader::getInstance().loadZsgFile(fn, &acceptor);
-    if (!ret) return nullptr;
+    ModelAcceptor acceptor(pModel, false);
+    if (!ZsgReader::getInstance().openFile(fn, &acceptor))
+        return nullptr;
 
     pModel->clearDirty();
-    for (int row = 0; row < pModel->rowCount(); row++)
-    {
-        SubGraphModel* pSubGraphModel = pModel->subGraph(row);
-        QModelIndex subgIdx = pModel->index(row, 0);
-        ZenoSubGraphScene* pScene = new ZenoSubGraphScene(this);
-        pScene->initModel(subgIdx);
-        m_scenes[pSubGraphModel->name()] = pScene;
-    }
-    m_model = pModel;
-    return m_model;
+    pModel->initDescriptors();
+    return pModel;
 }
 
-IGraphsModel* GraphsManagment::importGraph(const QString& fn)
+void GraphsManagment::initScenes(IGraphsModel* model)
 {
-    IGraphsModel *pModel = openZsgFile(fn);
-    if (!pModel) {
-        zeno::log_error("failed to open zsg file: {}", fn.toStdString());
-        return nullptr;
-    }
-    Q_ASSERT(pModel);
-    m_model->setDescriptors(pModel->descriptors());
-    for (int i = 0; i < pModel->rowCount(); i++)
-    {
-        QModelIndex subgIdx = pModel->index(i, 0, QModelIndex());
-        QString name = pModel->name(subgIdx);
-        //if (SubGraphModel *pExist = m_model->subGraph(name)) {
-        //    //todo: reload
-        //} else {
-        //    
-        //    //m_model->appendSubGraph(pSubGraphModel->clone(m_model));
-        //}
-    }
-    return m_model;
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(model);
+    if (!pModel)
+        return;
+	for (int row = 0; row < pModel->rowCount(); row++)
+	{
+		SubGraphModel* pSubGraphModel = pModel->subGraph(row);
+		QModelIndex subgIdx = pModel->index(row, 0);
+        const QString& graphName = pSubGraphModel->name();
+        if (m_scenes.find(graphName) != m_scenes.end())
+            continue;
+
+		ZenoSubGraphScene* pScene = new ZenoSubGraphScene(this);
+		pScene->initModel(subgIdx);
+		m_scenes[graphName] = pScene;
+	}
+}
+
+void GraphsManagment::importGraph(const QString& fn)
+{
+    if (!m_model)
+        return;
+
+	ModelAcceptor acceptor(qobject_cast<GraphsModel*>(m_model), true);
+	bool ret = ZsgReader::getInstance().openFile(fn, &acceptor);
+	if (!ret)
+	{
+		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
+		return;
+	}
+    initScenes(m_model);
+    m_model->initDescriptors();
 }
 
 void GraphsManagment::reloadGraph(const QString& graphName)

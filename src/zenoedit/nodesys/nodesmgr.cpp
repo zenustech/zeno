@@ -37,6 +37,10 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
 	{
 		return SUBOUTPUT_NODE;
 	}
+	else if (name == "MakeHeatmap")
+	{
+		return HEATMAP_NODE;
+	}
 	else
 	{
 		return NORMAL_NODE;
