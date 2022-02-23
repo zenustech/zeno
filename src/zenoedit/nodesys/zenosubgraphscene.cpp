@@ -269,15 +269,16 @@ void ZenoSubGraphScene::copy()
     if (selItems.isEmpty())
         return;
 
-    //todo: write json format data to clipboard.
-
     QList<QPersistentModelIndex> selLinks;
     QMap<QString, ZenoNode*> selNodes;
+
+    QModelIndexList nodesIndice, linkIndice;
 
     for (auto item : selItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
         {
+            nodesIndice.append(pNode->index());
             selNodes.insert(pNode->nodeId(), pNode);
         }
     }
@@ -294,6 +295,7 @@ void ZenoSubGraphScene::copy()
                 continue;
             }
             selLinks.append(index);
+            linkIndice.append(index);
         }
     }
 
@@ -304,81 +306,11 @@ void ZenoSubGraphScene::copy()
 
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	Q_ASSERT(pGraphsModel);
-
-    QMap<QString, QString> oldToNew;
-    QMap<QString, NODE_DATA> newNodes;
-    QList<NODE_DATA> vecNodes;
-    for (auto pNode : selNodes)
-    {
-        QString currNode = pNode->nodeId();
-        NODE_DATA data = pGraphsModel->itemData(pNode->index(), m_subgIdx);
-        QString oldId = data[ROLE_OBJID].toString();
-        const QString &newId = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
-        data[ROLE_OBJID] = newId;
-        oldToNew[oldId] = newId;
-
-        //clear any connections.
-		OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-		INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-		for (auto it = outputs.begin(); it != outputs.end(); it++)
-		{
-            it->second.linkIndice.clear();
-            it->second.inNodes.clear();
-        }
-        for (auto it = inputs.begin(); it != inputs.end(); it++)
-        {
-            it->second.linkIndice.clear();
-            it->second.outNodes.clear();
-        }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-        newNodes[newId] = data;
-    }
-
-    for (const QPersistentModelIndex& linkIdx : selLinks)
-    {
-        const QString& outOldId = linkIdx.data(ROLE_OUTNODE).toString();
-        const QString& inOldId = linkIdx.data(ROLE_INNODE).toString();
-		const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-		const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
-
-        const QString &outId = oldToNew[outOldId];
-        const QString &inId = oldToNew[inOldId];
-
-        //out link
-        NODE_DATA& outData = newNodes[outId];
-        OUTPUT_SOCKETS outputs = outData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        SOCKET_INFO &newOutSocket = outputs[outSock].inNodes[inId][inSock];
-
-        QModelIndex tempIdx = pGraphsModel->index(outOldId, m_subgIdx);
-
-        NODE_DATA outOldData = pGraphsModel->itemData(tempIdx, m_subgIdx);
-        OUTPUT_SOCKETS oldOutputs = outOldData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        const SOCKET_INFO &oldOutSocket = oldOutputs[outSock].inNodes[inOldId][inSock];
-        newOutSocket = oldOutSocket;
-        newOutSocket.nodeid = inId;
-        outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
-        //in link
-        NODE_DATA& inData = newNodes[inId];
-        INPUT_SOCKETS inputs = inData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        SOCKET_INFO &newInSocket = inputs[inSock].outNodes[outId][outSock];
-        
-        tempIdx = pGraphsModel->index(inOldId, m_subgIdx);
-        NODE_DATA inOldData = pGraphsModel->itemData(tempIdx, m_subgIdx);
-        INPUT_SOCKETS oldInputs = inOldData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        const SOCKET_INFO &oldInSocket = oldInputs[inSock].outNodes[outOldId][outSock];
-        newInSocket = oldInSocket;
-        newInSocket.nodeid = outId;
-        inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    }
+    QMap<QString, NODE_DATA> newNodes = UiHelper::dumpItems(pGraphsModel, m_subgIdx, nodesIndice, linkIndice);
 
     NODES_MIME_DATA* pNodesData = new NODES_MIME_DATA;
     for (auto node : newNodes)
     {
-        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         pNodesData->m_vecNodes.push_back(node);
     }
 
@@ -399,40 +331,14 @@ void ZenoSubGraphScene::paste(QPointF pos)
             return;
 
         QPointF offset = pos - pNodesData->m_vecNodes[0][ROLE_OBJPOS].toPointF();
-
-        pGraphsModel->beginTransaction("paste nodes");
-
-        QList<NODE_DATA> datas;
-        for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
-        {
-            NODE_DATA& data = pNodesData->m_vecNodes[i];
-            QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
-            data[ROLE_OBJPOS] = orginalPos + offset;
-        }
-        pGraphsModel->appendNodes(pNodesData->m_vecNodes, m_subgIdx, true);
-
-        //add links for pasted node.
 		for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
 		{
 			NODE_DATA& data = pNodesData->m_vecNodes[i];
-			const QString& inNode = data[ROLE_OBJID].toString();
-			INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-			foreach(const QString & inSockName, inputs.keys())
-			{
-				const INPUT_SOCKET& inSocket = inputs[inSockName];
-				for (const QString& outNode : inSocket.outNodes.keys())
-				{
-					for (const QString& outSock : inSocket.outNodes[outNode].keys())
-					{
-						const QModelIndex& outIdx = pGraphsModel->index(outNode, m_subgIdx);
-						if (outIdx.isValid())
-						{
-                            pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), m_subgIdx, true);
-						}
-					}
-				}
-			}
+			QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
+			data[ROLE_OBJPOS] = orginalPos + offset;
 		}
+
+        pGraphsModel->importNodeLinks(pNodesData->m_vecNodes, m_subgIdx);
 
         clearSelection();
         for (auto node : pNodesData->m_vecNodes)
@@ -441,8 +347,6 @@ void ZenoSubGraphScene::paste(QPointF pos)
             Q_ASSERT(m_nodes.find(id) != m_nodes.end());
             m_nodes[id]->setSelected(true);
         }
-
-        pGraphsModel->endTransaction();
     }
 }
 

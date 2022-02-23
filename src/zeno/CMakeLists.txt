@@ -25,7 +25,7 @@ if (ZENO_FAULTHANDLER)
 endif()
 
 # we are not using shared libraries now, so no need for this:
-#target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
+target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 target_include_directories(zeno PUBLIC ..)
 
 target_link_libraries(zeno PUBLIC zenoinclude)

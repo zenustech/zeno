@@ -40,8 +40,8 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    simpleLayout();
-    //onlyEditorLayout();
+    //simpleLayout();
+    onlyEditorLayout();
 }
 
 void ZenoMainWindow::initMenu()
@@ -250,7 +250,8 @@ void ZenoMainWindow::initDocks()
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(new ZenoGraphsEditor);
+    m_pEditor = new ZenoGraphsEditor;
+    m_editor->setWidget(m_pEditor);
     m_docks.insert(DOCK_EDITOR, m_editor);
 
     m_timelineDock = new ZenoDockWidget(this);
