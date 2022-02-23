@@ -36,7 +36,7 @@ elif sys.platform == 'linux':
             shutil.move(os.path.join(binpath, target), os.path.join(binpath, 'usr', 'lib', target))
     subprocess.check_call([
         '../linuxdeployqt',
-        os.path.join(binpath, 'usr', 'share', ', 'applications', 'zeno.desktop'),
+        os.path.join(binpath, 'usr', 'share', 'applications', 'zeno.desktop'),
         '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner')
         '-bundle-non-qt-libs',
     ])
