@@ -1,10 +1,45 @@
 {
   "name": "zeno",
   "version": "0.0.1",
-  "dependencies": [
-    {
-        "name": "qt",
-        "version>=": "5.12.12"
-    }
+  "features": [
+      "qt": {
+          "description": "Install Qt with vcpkg",
+          "dependencies": [
+            {
+                "name": "qt",
+                "version>=": "5.14.0"
+            }
+          ]
+      },
+      "openvdb": {
+          "description": "Enable volumetric nodes, including the FLIP solver",
+          "dependencies": [
+            "tbb",
+            "eigen3",
+            {
+                "name": "openvdb",
+                "version>=": "8.0.0"
+            }
+          ]
+      },
+      "cgmesh": {
+          "description": "Enable mesh processing nodes",
+          "dependencies": [
+            "openblas",
+            "lapack"
+          ]
+      },
+      "alembic": {
+          "description": "Enable Alembic nodes, for .abc format support",
+          "dependencies": [
+            {
+                "name": "alembic",
+                "features": "hdf5"
+            }
+          ]
+      }
+  ],
+  "default-features": [
+      "qt", "openvdb"
   ]
 }
