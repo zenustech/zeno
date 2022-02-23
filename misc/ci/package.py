@@ -6,11 +6,10 @@ import shutil
 binpath = os.path.join('build', 'bin')
 
 if sys.platform == 'win32':
-    for target in ['zenoedit', 'zenorunner']:
-        subprocess.check_call([
-            '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
-            os.path.join(binpath, target + '.exe'),
-        ])
+    subprocess.check_call([
+        '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
+        os.path.join(binpath, 'zenoedit.exe'),
+    ])
     shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.bat'), os.path.join(binpath, '000_start.bat'))
     shutil.make_archive(binpath, 'zip', binpath, verbose=1)
 elif sys.platform == 'linux':
