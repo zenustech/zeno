@@ -17,6 +17,7 @@ struct GlobalStatus {
         return !nodeName.empty();
     }
 
+    ZENO_API void clearState();
     ZENO_API std::string toJson() const;
     ZENO_API void fromJson(std::string_view json);
 };

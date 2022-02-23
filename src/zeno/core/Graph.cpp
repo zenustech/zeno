@@ -6,6 +6,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/extra/GraphException.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/Error.h>
@@ -51,42 +52,15 @@ ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node")->doComplete();
 }
 
-namespace {
-struct GraphApplyException {
-    INode *node;
-    std::exception_ptr ep;
-
-    GlobalStatus evalStatus() const {
-        try {
-            std::rethrow_exception(ep);
-        } catch (ErrorException const &e) {
-            log_error("==> error during {}: {}", node->myname, e.what());
-            return {node->myname, e.getError()};
-        } catch (std::exception const &e) {
-            log_error("==> exception during {}: {}", node->myname, e.what());
-            return {node->myname, std::make_shared<StdError>(std::current_exception())};
-        } catch (...) {
-            log_error("==> unknown exception during {}", node->myname);
-            return {node->myname, std::make_shared<StdError>(std::current_exception())};
-        }
-        return {};
-    }
-};
-}
-
 ZENO_API void Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node");
-    try {
+    GraphApplyException::translated([&] {
         node->doApply();
-    } catch (GraphApplyException const &gae) {
-        throw gae;
-    } catch (...) {
-        throw GraphApplyException{node, std::current_exception()};
-    }
+    }, node->myname);
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
@@ -97,6 +71,9 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         }
     } catch (GraphApplyException const &gae) {
         *session->globalStatus = gae.evalStatus();
+    } catch (...) {
+        ctx = nullptr;
+        std::rethrow_exception(std::current_exception());
     }
     ctx = nullptr;
 }

@@ -7,6 +7,11 @@
 
 namespace zeno {
 
+ZENO_API void GlobalStatus::clearState() {
+    nodeName = {};
+    error = nullptr;
+}
+
 ZENO_API std::string GlobalStatus::toJson() const {
     if (!failed()) return {};
 

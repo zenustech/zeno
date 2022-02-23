@@ -2,6 +2,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <zeno/funcs/LiterialConverter.h>
+#include <zeno/extra/GraphException.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -66,9 +67,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
-#ifdef ZENO_FAIL_SILENTLY
-        try {
-#endif
+        const char *maybeNodeName = di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)";
+        GraphApplyException::translated([&] {
             if (0) {
             } else if (cmd == "addNode") {
                 addNode(di[1].GetString(), di[2].GetString());
@@ -87,12 +87,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }
-#ifdef ZENO_FAIL_SILENTLY
-        } catch (BaseException const &e) {
-            log_error("exception executing command {} ({}): {}",
-                    i, cmd.c_str(), e.what());
-        }
-#endif
+        }, maybeNodeName);
     }
 }
 

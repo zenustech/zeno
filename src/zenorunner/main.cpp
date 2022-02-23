@@ -56,9 +56,18 @@ static void runner_main(std::string const &progJson) {
 
     auto session = &zeno::getSession();
     session->globalState->clearState();
-
+    session->globalComm->clearState();
+    session->globalStatus->clearState();
     auto graph = session->createGraph();
+
+    auto onfail = [&] {
+        auto statJson = session->globalStatus->toJson();
+        send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
+    };
+
     graph->loadGraph(progJson.c_str());
+    if (session->globalStatus->failed())
+        return onfail();
 
     std::vector<char> buffer;
 
@@ -72,7 +81,7 @@ static void runner_main(std::string const &progJson) {
             graph->applyNodesToExec();
             session->globalState->substepEnd();
             if (session->globalStatus->failed())
-                break;
+                return onfail();
         }
 
         auto viewObjs = session->globalComm->getViewObjects();
@@ -89,12 +98,7 @@ static void runner_main(std::string const &progJson) {
         }
 
         if (session->globalStatus->failed())
-            break;
-    }
-
-    if (session->globalStatus->failed()) {
-        auto statJson = session->globalStatus->toJson();
-        send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
+            return onfail();
     }
 }
 

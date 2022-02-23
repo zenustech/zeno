@@ -58,9 +58,14 @@ struct ProgramRunData {
         auto session = &zeno::getSession();
         session->globalComm->clearState();
         session->globalState->clearState();
+        session->globalStatus->clearState();
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
+        if (session->globalStatus->failed()) {
+            auto statJson = session->globalStatus->toJson();
+            reportStatus(statJson);
+        }
         if (g_state == KILLING)
             return;
 
