@@ -21,4 +21,6 @@ else:
     libc = ''.join(platform.libc_ver())
 
 filename = '{}-{}'.format(osys, date)
+fileext = 'tar.gz' if osys == 'linux' else 'zip'
 print('::set-output name=filename::{}'.format(filename))
+print('::set-output name=fileext::{}'.format(fileext))

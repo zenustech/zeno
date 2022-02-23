@@ -12,6 +12,7 @@ if sys.platform == 'win32':
             os.path.join(binpath, target + '.exe'),
         ])
     shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.bat'), binpath)
+    shutil.make_archive(binpath, 'zip', binpath, verbose=1)
 elif sys.platform == 'linux':
     subprocess.check_call([
         'wget',
@@ -27,20 +28,20 @@ elif sys.platform == 'linux':
     os.mkdir(os.path.join(binpath, 'usr'))
     os.mkdir(os.path.join(binpath, 'usr', 'lib'))
     os.mkdir(os.path.join(binpath, 'usr', 'bin'))
-    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), binpath)
     shutil.copytree(os.path.join('misc', 'ci', 'share'), os.path.join(binpath, 'usr', 'share'))
     for target in ['zenoedit', 'zenorunner']:
         shutil.move(os.path.join(binpath, target), os.path.join(binpath, 'usr', 'bin', target))
     for target in os.listdir(binpath):
         if 'so' in target.split('.'):
             shutil.move(os.path.join(binpath, target), os.path.join(binpath, 'usr', 'lib', target))
-        subprocess.check_call([
-            '../linuxdeployqt',
-            os.path.join(binpath, 'usr', 'share', ', 'applications', 'zeno.desktop'),
-            '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner')
-            '-bundle-non-qt-libs',
-        ])
+    subprocess.check_call([
+        '../linuxdeployqt',
+        os.path.join(binpath, 'usr', 'share', ', 'applications', 'zeno.desktop'),
+        '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner')
+        '-bundle-non-qt-libs',
+    ])
+    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), binpath)
+    shutil.make_archive(binpath, 'gztar', binpath, verbose=1)
 else:
     assert False, sys.platform
 
-shutil.make_archive(binpath, 'zip', binpath, verbose=1)

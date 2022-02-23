@@ -4,7 +4,8 @@ on:
   #schedule:
   #- cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
   push:
-    branches: [ stable ]
+    branches: [ zeno2 ]
+    #branches: [ stable ]
     #tags: [ 'v*' ]
 
 env:
@@ -37,8 +38,8 @@ jobs:
     strategy:
       matrix:
         include:
-        #- os: ubuntu-18.04  # cihou linuxdeployqt
-        #  cmake_args: -DCMAKE_CXX_COMPILER=g++-9
+        - os: ubuntu-18.04  # cihou linuxdeployqt
+          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
         - os: windows-latest
 
     needs: release
@@ -62,9 +63,9 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    #- name: Install GCC 9
-    #  if: ${{ matrix.os == 'ubuntu-18.04' }}
-    #  run: sudo apt install g++-9
+    - name: Install GCC 9
+      if: ${{ matrix.os == 'ubuntu-18.04' }}
+      run: sudo apt install g++-9
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
@@ -85,9 +86,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/build/bin.zip
-        asset_name: zeno-${{ steps.versioning.outputs.filename }}.zip
-        asset_content_type: application/zip
+        asset_path: ${{github.workspace}}/build/bin.${{ steps.versioning.outputs.fileext }}
+        asset_name: zeno-${{ steps.versioning.outputs.filename }}.${{ steps.versioning.outputs.fileext }}
 
     # todo: wanglin, please tell me your restful API for upload files
     #- name: Upload To Server
