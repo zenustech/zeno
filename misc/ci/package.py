@@ -11,7 +11,7 @@ if sys.platform == 'win32':
             '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
             os.path.join(binpath, target + '.exe'),
         ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.bat'), binpath)
+    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.bat'), os.path.join(binpath, '000_start.bat'))
     shutil.make_archive(binpath, 'zip', binpath, verbose=1)
 elif sys.platform == 'linux':
     subprocess.check_call([
@@ -40,7 +40,7 @@ elif sys.platform == 'linux':
         '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
     ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), binpath)
+    shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), os.path.join(binpath, '000_start.sh'))
     shutil.make_archive(binpath, 'gztar', binpath, verbose=1)
 else:
     assert False, sys.platform
