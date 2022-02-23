@@ -86,6 +86,12 @@ jobs:
         asset_name: zeno-${{ steps.versioning.outputs.filename }}.${{ steps.versioning.outputs.fileext }}
         asset_content_type: ${{ steps.versioning.outputs.mimetype }}
 
-    # todo: wanglin, please tell me your restful API for upload files
-    #- name: Upload To Server
-    #  run: python misc/ci/uploader.py ${{github.workspace}}/build/bin.zip ${{ steps.versioning.outputs.filename }}
+    - name: Upload To Server
+      uses: easingthemes/ssh-deploy@v2.1.2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
+        ARGS: '-rltgoDzvO --delete'
+        SOURCE: ${{github.workspace}}/build/bin.zip
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ steps.versioning.outputs.filename }}.${{ steps.versioning.outputs.fileext }}
