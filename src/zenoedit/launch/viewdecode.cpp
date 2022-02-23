@@ -106,7 +106,16 @@ struct ViewDecodeData {
     {
         for (auto p = buf; p < buf + n; p++) {
             if (phase == 5) {
+#if 1
+                size_t rest = std::min(size_t(buf + n - p), header().total_size - buffercurr);
+                if (rest) {
+                    std::memcpy(buffer.data() + buffercurr, p, rest);
+                    p += rest - 1;
+                    buffercurr += rest;
+                }
+#else
                 buffer[buffercurr++] = *p;
+#endif
                 if (buffercurr >= header().total_size) {
                     buffercurr = 0;
                     zeno::log_debug("finish rx, parsing packet of size {}", header().total_size);
@@ -117,7 +126,7 @@ struct ViewDecodeData {
                 if (*p == '\a') {
                     phase = 1;
                 } else {
-                    phase = 0;
+                    putchar(*p);
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {
