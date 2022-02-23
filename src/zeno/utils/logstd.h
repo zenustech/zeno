@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zeno/utils/source_location.h>
 #include <string_view>
 #include <sstream>
 #include <memory>

@@ -26,7 +26,6 @@ endif()
 
 option(ZENO_BUILD_EDITOR "Build ZENO Editor" ON)
 option(ZENO_BUILD_DESIGNER "Build ZENO Designer" OFF)
-option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
@@ -81,11 +80,7 @@ endif()
 
 add_subdirectory(external/include)
 add_subdirectory(src/zeno)
-
-if (ZENO_BUILD_EXTENSIONS)
-    message(STATUS "Building Zeno Extensions")
-    add_subdirectory(projects)
-endif()
+add_subdirectory(projects)
 
 if (ZENO_MULTIPROCESS)
     message(STATUS "Building Zeno Runner")

@@ -3,6 +3,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/utils/scope_exit.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
@@ -66,13 +67,9 @@ ZENO_API void Graph::applyNode(std::string const &id) {
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
     ctx = std::make_unique<Context>();
 
-    struct guard_t {
-        Graph *that;
-
-        ~guard_t() {
-            that->ctx = nullptr;
-        }
-    } guard = {this};
+    scope_exit _{[&] {
+        ctx = nullptr;
+    }};
 
     GraphException::catched([&] {
         for (auto const &id: ids) {
