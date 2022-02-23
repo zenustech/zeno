@@ -22,5 +22,7 @@ else:
 
 filename = '{}-{}'.format(osys, date)
 fileext = 'tar.gz' if osys == 'linux' else 'zip'
+mimetype = 'application/x-gzip' if osys == 'linux' else 'application/zip'
 print('::set-output name=filename::{}'.format(filename))
 print('::set-output name=fileext::{}'.format(fileext))
+print('::set-output name=mimetype::{}'.format(mimetype))
