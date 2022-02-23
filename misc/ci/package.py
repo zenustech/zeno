@@ -37,7 +37,7 @@ elif sys.platform == 'linux':
     subprocess.check_call([
         '../linuxdeployqt',
         os.path.join(binpath, 'usr', 'share', 'applications', 'zeno.desktop'),
-        '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner')
+        '-executable=' + os.path.join(binpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
     ])
     shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), binpath)
