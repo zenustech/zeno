@@ -101,6 +101,10 @@ struct Graph {
         std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);
 
+    ZENO_API void setNodeInputString(std::string const &id, std::string const &par, std::string const &val) {
+        setNodeInput(id, par, val);
+    }
+
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {
         auto parid = par + ":";
