@@ -6,10 +6,10 @@ on:
   #workflow_dispatch:
   push:
     branches: [ zeno2 ]
+  pull_request:
+    branches: [ zeno2 ]
     #branches: [ stable ]
     #tags: [ 'v*' ]
-
-env:
 
 jobs:
   check:
