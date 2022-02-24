@@ -10,7 +10,7 @@ find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
-add_library(zeno_Euler SHARED nodesys.cpp)
+add_library(zeno_Euler OBJECT nodesys.cpp)
 
 #simd compiler flags
 if (WIN32)

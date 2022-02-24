@@ -19,7 +19,7 @@ if (OPENMP_FOUND)
 endif()
 
 file (GLOB ZEN_MESHER_SOURCE *.cpp)
-add_library(zeno_mesher SHARED ${ZEN_MESHER_SOURCE})
+add_library(zeno_mesher OBJECT ${ZEN_MESHER_SOURCE})
 target_include_directories(zeno_mesher PRIVATE mpmmeshing/)
 
 

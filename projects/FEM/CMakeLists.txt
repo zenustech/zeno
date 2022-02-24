@@ -35,7 +35,7 @@ set(FEM_MUSCLE_SOURCE_FILES
     nodesys.cpp
 )
 
-add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
+add_library(zeno_FEM OBJECT ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
 

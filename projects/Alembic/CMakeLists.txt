@@ -4,7 +4,7 @@ project(zeno_Alembic)
 
 file(GLOB ABC_SOURCE *.cpp *.h)
 
-add_library(zeno_Alembic SHARED ${ABC_SOURCE})
+add_library(zeno_Alembic OBJECT ${ABC_SOURCE})
 
 target_include_directories(zeno_Alembic PRIVATE .)
 

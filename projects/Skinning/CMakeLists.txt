@@ -28,7 +28,7 @@ set(SKINNING_SOURCE_FILES
     deformation_field.cpp
 )
 
-add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})
+add_library(zeno_SKINNING OBJECT ${SKINNING_SOURCE_FILES})
 target_link_libraries(zeno_SKINNING PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_SKINNING PUBLIC OpenMP::OpenMP_CXX)
 

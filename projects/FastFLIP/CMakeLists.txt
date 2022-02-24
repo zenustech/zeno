@@ -37,7 +37,7 @@ endif()
 set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp )
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
-add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
+add_library(zeno_FastFLIP OBJECT ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
 if (MSVC)

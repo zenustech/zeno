@@ -57,7 +57,7 @@ void log_##x(__with_source_location<std::string_view> const &fmt, Args &&...args
 } \
 template <class ...Args> \
 void log_##x##f(__with_source_location<const char *> const &fmt, Args &&...args) { \
-    log_print(log_level::y, "{}", format(fmt, std::forward<Args>(args)...)); \
+    log_print(log_level::y, "{}", cformat(fmt, std::forward<Args>(args)...)); \
 }
 _PER_LOG_LEVEL(trace, trace)
 _PER_LOG_LEVEL(debug, debug)

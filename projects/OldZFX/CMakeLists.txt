@@ -1,5 +1,5 @@
 file (GLOB WRANGLE_SOURCE *.cpp)
-add_library(zeno_OldZFX SHARED ${WRANGLE_SOURCE})
+add_library(zeno_OldZFX OBJECT ${WRANGLE_SOURCE})
 target_include_directories(zeno_OldZFX PRIVATE .)
 
 target_link_libraries(zeno_OldZFX PUBLIC zeno)

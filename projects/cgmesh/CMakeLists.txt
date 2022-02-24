@@ -1,4 +1,4 @@
-add_library(zeno_cgmesh SHARED)
+add_library(zeno_cgmesh OBJECT)
 target_include_directories(zeno_cgmesh PRIVATE .)
 
 find_package(Eigen3 REQUIRED)

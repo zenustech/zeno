@@ -10,6 +10,6 @@ set_property(TARGET zenoio PROPERTY AUTOUIC ON)
 set_property(TARGET zenoio PROPERTY AUTOMOC ON)
 set_property(TARGET zenoio PROPERTY AUTORCC ON)
 
-target_link_libraries(zenoio PUBLIC Qt5::Widgets glad zeno zenoinclude)
+target_link_libraries(zenoio PUBLIC Qt5::Widgets glad zenodes zenoinclude)
 target_include_directories(zenoio PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 target_include_directories(zenoio PRIVATE ..)
