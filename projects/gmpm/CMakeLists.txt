@@ -55,6 +55,7 @@ add_library(zeno_zsfluid SHARED)
 target_sources(zeno_zsfluid PRIVATE
   volume/VolumeOperator.cu
 )
+set_source_files_properties(volume/VolumeOperator.cu PROPERTIES  LANGUAGE CUDA)
 target_link_libraries(zeno_zsfluid PRIVATE zensim)
 target_link_libraries(zeno_zsfluid PRIVATE zeno_nodep)
 target_link_libraries(zeno_zsfluid PUBLIC zeno ZFX)

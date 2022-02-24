@@ -180,11 +180,11 @@ struct ZenoLevelSet : IObject {
   }
   template <zs::grid_e category = zs::grid_e::collocated>
   decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
+    return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
   }
   template <zs::grid_e category = zs::grid_e::collocated>
   decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
+    return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
   }
 
   levelset_t levelset;
