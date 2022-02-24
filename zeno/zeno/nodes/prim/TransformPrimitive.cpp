@@ -43,7 +43,7 @@ ZENDEFNODE(MakeLocalSys, {
     {"primitive"},
 });
 
-struct TransformPrimitive : zeno::INode {
+struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
         auto vector4 = matrix * glm::vec4(vector, 1.0f);
         return glm::vec3(vector4) / vector4.w;
