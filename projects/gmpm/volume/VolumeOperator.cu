@@ -1,8 +1,8 @@
 #include "../Structures.hpp"
 #include "../Utils.hpp"
+#include "zensim/geometry/LevelSetUtils.tpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
-#include "zensim/io/ParticleIO.hpp"
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/Utils.hpp"
@@ -16,62 +16,6 @@ namespace zeno {
 
 /// mark activity
 struct MarkZSLevelSet : INode {
-  template <typename SplsT>
-  void mark(SplsT &ls, zs::Vector<zs::u64> &numActiveVoxels, float threshold) {
-    using namespace zs;
-    auto cudaPol = cuda_exec().device(0);
-    ls.append_channels(cudaPol, {{"mark", 1}});
-
-    cudaPol({(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
-            [ls = proxy<execspace_e::cuda>(ls), cnt = numActiveVoxels.data(),
-             threshold] __device__(typename RM_CVREF_T(ls)::size_type bi,
-                                   typename RM_CVREF_T(
-                                       ls)::cell_index_type ci) mutable {
-              using ls_t = RM_CVREF_T(ls);
-              if constexpr (ls_t::category == grid_e::staggered) {
-                for (typename ls_t::channel_counter_type propNo = 0;
-                     propNo != ls.numProperties(); ++propNo) {
-                  if (ls.getPropertyNames()[propNo] == "mark")
-                    continue; // skip property ["mark"]
-                  auto propOffset = ls.getPropertyOffsets()[propNo];
-                  auto propSize = ls.getPropertySizes()[propNo];
-                  auto coord =
-                      ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
-                  // usually this is
-                  for (typename ls_t::channel_counter_type chn = 0;
-                       chn != propSize; ++chn) {
-                    auto f = chn % (ls_t::dim + ls_t::dim);
-                    if (zs::abs(ls.value_or(propOffset + chn, coord, chn % 3,
-                                            0)) > threshold ||
-                        zs::abs(ls.value_or(propOffset + chn, coord,
-                                            chn % 3 + 3, 0)) > threshold) {
-                      ls._grid("mark", bi, ci) = (u64)1;
-                      atomic_add(exec_cuda, cnt, (u64)1);
-                      break; // no need further checking
-                    }
-                  }
-                }
-              } else {
-                auto block = ls._grid.block(bi);
-                // const auto nchns = ls.numChannels();
-                for (typename ls_t::channel_counter_type propNo = 0;
-                     propNo != ls.numProperties(); ++propNo) {
-                  if (ls.getPropertyNames()[propNo] == "mark")
-                    continue; // skip property ["mark"]
-                  auto propOffset = ls.getPropertyOffsets()[propNo];
-                  auto propSize = ls.getPropertySizes()[propNo];
-                  for (typename ls_t::channel_counter_type chn = 0;
-                       chn != propSize; ++chn) {
-                    if (zs::abs(block(propOffset + chn, ci)) > threshold) {
-                      block("mark", ci) = (u64)1;
-                      atomic_add(exec_cuda, cnt, (u64)1);
-                      break; // no need further checking
-                    }
-                  }
-                }
-              }
-            });
-  }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing MarkZSLevelSet\n");
 
@@ -83,18 +27,16 @@ struct MarkZSLevelSet : INode {
 
     auto threshold = std::abs(get_input2<float>("threshold"));
 
-    Vector<u64> numActiveVoxels{1, memsrc_e::device, 0};
-    numActiveVoxels.setVal(0);
     match(
-        [this, threshold, &numActiveVoxels](auto &lsPtr)
+        [this, threshold](auto &lsPtr)
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
           // using SplsT = typename RM_CVREF_T(lsPtr)::element_type;
-          mark(*lsPtr, numActiveVoxels, threshold);
+          auto cudaPol = cuda_exec().device(0);
+          mark_level_set(cudaPol, *lsPtr, threshold);
+          // refit_level_set_domain(cudaPol, *lsPtr, threshold);
         },
         [](...) { throw std::runtime_error("field is not spls!"); })(field);
-    auto n = numActiveVoxels.getVal();
-    fmt::print("[{}] active voxels in total.\n", n);
 
     fmt::print(fg(fmt::color::cyan), "done executing MarkZSLevelSet\n");
     set_output("ZSField", std::move(zsfield));
@@ -133,7 +75,7 @@ struct ZSLevelSetTopologyUnion : INode {
                      chn != ls.numChannels(); ++chn)
                   for (typename ls_t::cell_index_type ci = 0;
                        ci != ls.block_size; ++ci)
-                    block(chn, ci) = ls._backgroundValue;
+                    block(chn, ci) = 0; // ls._backgroundValue;
               }
             });
     fmt::print("levelset of [{}] blocks inserted [{}] blocks, eventually [{}] "
@@ -221,11 +163,12 @@ struct ResampleZSLevelSet : INode {
           using vec3 = zs::vec<float, 3>;
 #if 0
           if (ls.hasProperty("mark")) {
-            if ((int)ls._grid("mark", bi, ci) == 0)
+            if ((int)ls("mark", bi, ci) == 0)
               return; // skip inactive voxels
           }
 #endif
-          auto coord = ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
+          auto coord = ls._table._activeKeys[bi] +
+                       ls_t::grid_view_t::cellid_to_coord(ci);
           const auto propOffset = ls.propertyOffset(tag.name);
           const auto refPropOffset = refLs.propertyOffset(tag.name);
           if constexpr (ls_t::category == grid_e::staggered) {
@@ -244,7 +187,7 @@ struct ResampleZSLevelSet : INode {
             for (typename ls_t::channel_counter_type chn = 0;
                  chn != tag.numChannels; ++chn)
               ls._grid(propOffset + chn, bi, ci) =
-                  refLs.isample(refPropOffset + chn, X, refLs._backgroundValue);
+                  refLs.isample(refPropOffset + chn, X, 0);
           }
         });
   }
@@ -292,94 +235,6 @@ ZENDEFNODE(ResampleZSLevelSet,
 /// binary operation
 /// extend domain (by vel field)
 struct ExtendZSLevelSet : INode {
-  template <typename SplsT, typename VelSplsT>
-  void extend(SplsT &ls, const VelSplsT &velLs, const float dt) {
-    using namespace zs;
-
-    auto cudaPol = cuda_exec().device(0);
-    cudaPol(
-        {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
-        [ls = proxy<execspace_e::cuda>(ls),
-         velLs = proxy<execspace_e::cuda>(velLs),
-         dt] __device__(typename RM_CVREF_T(ls)::size_type bi,
-                        typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
-          using ls_t = RM_CVREF_T(ls);
-          using vel_ls_t = RM_CVREF_T(velLs);
-          using vec3 = zs::vec<float, 3>;
-          using vec3i = zs::vec<int, 3>;
-          using table_t = RM_CVREF_T(ls._table);
-          if (ls.hasProperty("mark")) {
-            if ((int)ls._grid("mark", bi, ci) == 0)
-              return; // skip inactive voxels
-          }
-          auto coord = ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
-          auto corner = vec3i::uniform(limits<int>::max());
-          auto upper = vec3i::uniform(limits<int>::lowest());
-          if constexpr (ls_t::category == grid_e::staggered) {
-            for (int d = 0; d != 3; ++d) {
-              auto vi = velLs.getMaterialVelocity(ls.indexToWorld(coord, d));
-              auto box = get_bounding_box(vi * dt / ls._grid.dx, vec3::zeros());
-              corner = vec3i::init([&mi = get<0>(box), &corner](int d) {
-                return math::min(corner(d), lower_trunc(mi(d)));
-              });
-              upper = vec3i::init([&ma = get<1>(box), &upper](int d) {
-                return math::max(upper(d), lower_trunc(ma(d)) + 1);
-              });
-            }
-            // auto lengths = upper - corner;
-            corner += coord;
-            corner -= corner & (ls_t::side_length - 1);
-            upper += coord;
-            upper -= upper & (ls_t::side_length - 1);
-          } else {
-            auto vi = velLs.getMaterialVelocity(ls.indexToWorld(coord));
-            auto box = get_bounding_box(vi * dt / ls._grid.dx, vec3::zeros());
-            corner = vec3i::init(
-                [&mi = get<0>(box)](int d) { return lower_trunc(mi(d)); });
-            upper = vec3i::init(
-                [&ma = get<1>(box)](int d) { return lower_trunc(ma(d)) + 1; });
-#if 0
-            if (bi < 10 && ci == 0) {
-              auto &mi = get<0>(box);
-              auto &ma = get<1>(box);
-              printf("block[%d] [%f, %f, %f] - [%f, %f, %f], dis %f, dx %f\n",
-                     (int)bi, (float)mi[0], (float)mi[1], (float)mi[2],
-                     (float)ma[0], (float)ma[1], (float)ma[2],
-                     (float)(vi * dt / ls._grid.dx).length(),
-                     (float)ls._grid.dx);
-            }
-#endif
-            // auto lengths = upper - corner;
-            corner += coord;
-            corner -= corner & (ls_t::side_length - 1);
-            upper += coord;
-            upper -= upper & (ls_t::side_length - 1);
-          }
-#if 0
-          if (bi < 10 && ci == 0) {
-            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d], corner "
-                   "index: %d\n",
-                   (int)bi, (int)corner[0], (int)corner[1], (int)corner[2],
-                   (int)upper[0], (int)upper[1], (int)upper[2],
-                   (int)ls._table.query(corner));
-          }
-#endif
-          upper += ls_t::side_length;
-          for (int x = corner[0]; x != upper[0]; x += ls_t::side_length)
-            for (int y = corner[1]; y != upper[1]; y += ls_t::side_length)
-              for (int z = corner[2]; z != upper[2]; z += ls_t::side_length)
-                if (auto blockno = ls._table.insert(vec3i{x, y, z});
-                    blockno !=
-                    table_t::sentinel_v) { // initialize newly inserted block
-                  auto block = ls._grid.block(blockno);
-                  for (typename ls_t::channel_counter_type chn = 0;
-                       chn != ls.numChannels(); ++chn)
-                    for (typename ls_t::cell_index_type ci = 0;
-                         ci != ls.block_size; ++ci)
-                      block(chn, ci) = ls._backgroundValue;
-                }
-        });
-  }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ExtendZSLevelSet\n");
 
@@ -397,10 +252,17 @@ struct ExtendZSLevelSet : INode {
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                 is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
-          // fmt::print("before expanding: {} blocks\n", lsPtr->numBlocks());
-          lsPtr->resize(cuda_exec().device(0), lsPtr->numBlocks() * 2);
-          extend(*lsPtr, *velLsPtr, dt);
-          // fmt::print("after expanding: {} blocks\n", lsPtr->numBlocks());
+          auto cudaPol = cuda_exec().device(0);
+          auto vm = get_level_set_max_speed(cudaPol, *velLsPtr);
+          int nvoxels = (int)std::ceil(vm * dt / lsPtr->_grid.dx);
+          auto nlayers = std::max(
+              (nvoxels + lsPtr->side_length - 1) / lsPtr->side_length, 2);
+          fmt::print("before expanding: {} blocks, max vel: {}, covering {} "
+                     "voxels, {} blocks\n",
+                     lsPtr->numBlocks(), vm, nvoxels, nlayers);
+          // mark_level_set(cudaPol, *lsPtr);
+          refit_level_set_domain(cudaPol, *lsPtr, 1e-6);
+          extend_level_set_domain(cudaPol, *lsPtr, nlayers);
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
         field, velField);
@@ -417,105 +279,27 @@ ZENDEFNODE(ExtendZSLevelSet,
                {"Volume"},
            });
 
-#if 0
-/// dilate levelset
-struct DilateZSLevelSet : INode {
-  template <typename SplsT> void dilate(SplsT &ls, int nlayers) {
-    using namespace zs;
-
-    auto cudaPol = cuda_exec().device(0);
-    while (nlayers--) {
-      cudaPol(
-          {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
-          [ls = proxy<execspace_e::cuda>(ls)] __device__(
-              typename RM_CVREF_T(ls)::size_type bi,
-              typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
-            using ls_t = RM_CVREF_T(ls);
-            using vec3 = zs::vec<float, 3>;
-            using vec3i = zs::vec<int, 3>;
-            using table_t = RM_CVREF_T(ls._table);
-            if (ls.hasProperty("mark"))
-              if ((int)ls._grid("mark", bi, ci) == 0)
-                return; // skip inactive voxels
-            auto coord = ls._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
-            auto corner = vec3i::uniform(limits<int>::max());
-            auto upper = vec3i::uniform(limits<int>::lowest());
-            {
-              auto box = get_bounding_box(vi * dt / ls._grid.dx, vec3::zeros());
-              corner = vec3i::init(
-                  [&mi = get<0>(box)](int d) { return lower_trunc(mi(d)); });
-              upper = vec3i::init([&ma = get<1>(box)](int d) {
-                return lower_trunc(ma(d)) + 1;
-              });
-              // auto lengths = upper - corner;
-              corner += coord;
-              corner -= corner & (ls_t::side_length - 1);
-              upper += coord;
-              upper -= upper & (ls_t::side_length - 1);
-            }
-#if 0
-          if (bi < 10 && ci == 0) {
-            printf("block[%d] extending [%d, %d, %d] - [%d, %d, %d]\n", (int)bi,
-                   (int)corner[0], (int)corner[1], (int)corner[2],
-                   (int)upper[0], (int)upper[1], (int)upper[2]);
-          }
-#endif
-            for (int x = corner[0]; x != upper[0]; x += ls_t::side_length)
-              for (int y = corner[1]; y != upper[1]; y += ls_t::side_length)
-                for (int z = corner[2]; z != upper[2]; z += ls_t::side_length)
-                  if (auto blockno = ls._table.insert(vec3i{x, y, z});
-                      blockno !=
-                      table_t::sentinel_v) { // initialize newly inserted block
-                    auto block = ls._grid.block(blockno);
-                    for (typename ls_t::channel_counter_type chn = 0;
-                         chn != ls.numChannels(); ++chn)
-                      for (typename ls_t::cell_index_type ci = 0;
-                           ci != ls.block_size; ++ci)
-                        block(chn, ci) = ls._backgroundValue;
-                  }
-          });
-    }
-  }
-  void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing DilateZSLevelSet\n");
-
-    using namespace zs;
-
-    // this could possibly be the same staggered velocity field too
-    auto zsfield = get_input<ZenoLevelSet>("ZSField");
-    auto &field = zsfield->getBasicLevelSet()._ls;
-    auto nlayers = get_input2<int>("layers");
-
-    match(
-        [this, nlayers](auto &lsPtr)
-            -> std::enable_if_t<
-                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
-          dilate(*lsPtr, nlayers);
-        },
-        [](...) { throw std::runtime_error("not both fields are spls!"); })(
-        field);
-    fmt::print(fg(fmt::color::cyan), "done executing DilateZSLevelSet\n");
-    set_output("ZSField", std::move(zsfield));
-  }
-};
-
-ZENDEFNODE(DilateZSLevelSet, {
-                                 {"ZSField", {"int", "layers", "16"}},
-                                 {"ZSField"},
-                                 {},
-                                 {"Volume"},
-                             });
-#endif
-
 /// advection
+// process: shrink, extend, advect
+// :
 struct AdvectZSLevelSet : INode {
   template <typename SplsT, typename VelSplsT>
-  void advect(const SplsT &ls, SplsT &lsOut, const VelSplsT &velLs,
-              const float dt) {
+  int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
     using namespace zs;
 
     auto cudaPol = cuda_exec().device(0);
-    // fmt::print("advecting {} blocks\n", lsOut.numBlocks());
+
+    auto vm = get_level_set_max_speed(cudaPol, velLs);
+    int nvoxels = (int)std::ceil(vm * dt / lsOut._grid.dx);
+    auto nlayers =
+        std::max((nvoxels + lsOut.side_length - 1) / lsOut.side_length, 2);
+    fmt::print("before expanding: {} blocks, max vel: {}, covering {} "
+               "voxels, {} blocks\n",
+               lsOut.numBlocks(), vm, nvoxels, nlayers);
+    refit_level_set_domain(cudaPol, lsOut, 1e-6);
+    extend_level_set_domain(cudaPol, lsOut, nlayers);
+
+    const auto ls = lsOut.clone(lsOut.get_allocator());
     cudaPol({(std::size_t)lsOut.numBlocks(), (std::size_t)lsOut.block_size},
             [ls = proxy<execspace_e::cuda>(ls),
              lsOut = proxy<execspace_e::cuda>(lsOut),
@@ -526,8 +310,8 @@ struct AdvectZSLevelSet : INode {
               using ls_t = RM_CVREF_T(ls);
               using vel_ls_t = RM_CVREF_T(velLs);
               using vec3 = zs::vec<float, 3>;
-              auto coord =
-                  lsOut._table._activeKeys[bi] + ls_t::cellid_to_coord(ci);
+              auto coord = lsOut._table._activeKeys[bi] +
+                           ls_t::grid_view_t::cellid_to_coord(ci);
               if constexpr (ls_t::category == grid_e::staggered) {
                 for (int d = 0; d != 3; ++d) {
                   auto x = lsOut.indexToWorld(coord, d);
@@ -535,8 +319,7 @@ struct AdvectZSLevelSet : INode {
                   auto xn = x - vi * dt;
                   auto Xn = ls.worldToIndex(xn);
 
-                  lsOut._grid("vel", d, bi, ci) =
-                      ls.isample("vel", d, Xn, ls._backgroundValue);
+                  lsOut._grid("vel", d, bi, ci) = ls.isample("vel", d, Xn, 0);
                 }
               } else {
                 auto x = lsOut.indexToWorld(coord);
@@ -545,10 +328,10 @@ struct AdvectZSLevelSet : INode {
                 auto Xn = ls.worldToIndex(xn);
                 for (typename ls_t::channel_counter_type chn = 0;
                      chn != ls.numChannels(); ++chn)
-                  lsOut._grid(chn, bi, ci) =
-                      ls.isample(chn, Xn, ls._backgroundValue);
+                  lsOut._grid(chn, bi, ci) = ls.isample(chn, Xn, 0);
               }
             });
+    return nvoxels;
   }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing AdvectZSLevelSet\n");
@@ -563,36 +346,28 @@ struct AdvectZSLevelSet : INode {
     const auto &velField = velZsField->getBasicLevelSet()._ls;
     auto dt = get_input2<float>("dt");
 
+    auto nvoxels = std::make_shared<NumericObject>();
+
     match(
-        [this, dt](auto &lsPtr, const auto &velLsPtr)
+        [this, dt, &nvoxels](auto &lsPtr, const auto &velLsPtr)
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                 is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
-#if 0
-          dstZsField->getBasicLevelSet() =
-              typename RM_CVREF_T(lsPtr)::element_type{};
-          auto &dstLsPtr = std::get<
-              std::shared_ptr<typename RM_CVREF_T(lsPtr)::element_type>>(
-              dstZsField->getBasicLevelSet()._ls);
-          *dstLsPtr = *lsPtr; // first clone from input field
-          advect(*lsPtr, *dstLsPtr, *velLsPtr, dt);
-#else
-          auto prevLs = lsPtr->clone(lsPtr->get_allocator());
-          advect(prevLs, *lsPtr, *velLsPtr, dt);
-#endif
+          nvoxels->set(advect(*lsPtr, *velLsPtr, dt));
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
         field, velField);
 
     fmt::print(fg(fmt::color::cyan), "done executing AdvectZSLevelSet\n");
     set_output("ZSField", std::move(zsfield));
+    set_output("nvoxels", std::move(nvoxels));
   }
 };
 
 ZENDEFNODE(AdvectZSLevelSet,
            {
                {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
-               {"ZSField"},
+               {"ZSField", "nvoxels"},
                {},
                {"Volume"},
            });
