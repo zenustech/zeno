@@ -1,15 +1,12 @@
 file(GLOB_RECURSE ZENO_SOURCE CONFIGURE_DEPENDS *.h *.cpp)
 
-add_library(zeno OBJECT ${ZENO_SOURCE})
+add_library(zeno SHARED ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)
         message(STATUS "Found OpenMP::OpenMP_CXX")
         target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
-        #target_compile_options(zeno # MSVC, GNU, Clang, Intel
-        #PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
-        #)
     else()
         message(WARNING "Not found OpenMP")
     endif()
