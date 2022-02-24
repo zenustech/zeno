@@ -36,8 +36,62 @@ static zeno::vec3f read_vec3f(std::vector<std::string> items) {
     return vec;
 }
 
-std::shared_ptr<zeno::DictObject>
+ZENO_API void
 read_obj_file(
+        std::vector<zeno::vec3f> &vertices,
+        //std::vector<zeno::vec3f> &uvs,
+        //std::vector<zeno::vec3f> &normals,
+        std::vector<zeno::vec3i> &indices,
+        //std::vector<zeno::vec3i> &uv_indices,
+        //std::vector<zeno::vec3i> &normal_indices,
+        const char *path,
+        std::shared_ptr<zeno::DictObject> dictp)
+{
+
+
+    auto is = std::ifstream(path);
+    while (!is.eof()) {
+        std::string line;
+        std::getline(is, line);
+        line = zeno::trim_string(line);
+        if (line.empty()) {
+            continue;
+        }
+        auto items = zeno::split_str(line, ' ');
+        items.erase(items.begin());
+
+        if (zeno::starts_with(line, "v ")) {
+            vertices.push_back(read_vec3f(items));
+
+        /*
+        } else if (zeno::starts_with(line, "vt ")) {
+            uvs.push_back(read_vec3f(items));
+
+        } else if (zeno::starts_with(line, "vn ")) {
+            normals.push_back(read_vec3f(items));
+        */
+
+        } else if (zeno::starts_with(line, "f ")) {
+            zeno::vec3i first_index = read_index(items[0]);
+            zeno::vec3i last_index = read_index(items[1]);
+
+            for (auto i = 2; i < items.size(); i++) {
+                zeno::vec3i index = read_index(items[i]);
+                zeno::vec3i face(first_index[0], last_index[0], index[0]);
+                //zeno::vec3i face_uv(first_index[1], last_index[1], index[1]);
+                //zeno::vec3i face_normal(first_index[2], last_index[2], index[2]);
+                indices.push_back(face);
+                //uv_indices.push_back(face_uv);
+                //normal_indices.push_back(face_normal);
+                last_index = index;
+            }
+        }
+    }
+}
+
+
+static std::shared_ptr<zeno::DictObject>
+read_obj_file2(
         std::vector<zeno::vec3f> &vertices,
         //std::vector<zeno::vec3f> &uvs,
         //std::vector<zeno::vec3f> &normals,
@@ -119,13 +173,39 @@ struct ReadObjPrimitive : zeno::INode {
         auto &tris = prim->tris;
         //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
-        auto prims = read_obj_file(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
+        read_obj_file(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(ReadObjPrimitive,
+        { /* inputs: */ {
+        {"readpath", "path"},
+        }, /* outputs: */ {
+        "prim",
+        }, /* params: */ {
+        }, /* category: */ {
+        "primitive",
+        }});
+
+
+struct ReadObjPrimitiveDict : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto &pos = prim->verts;
+        //auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        //auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &tris = prim->tris;
+        //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
+        //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
+        auto prims = read_obj_file2(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
         set_output("prim", std::move(prim));
         set_output("dict", std::move(prims));
     }
 };
 
-ZENDEFNODE(ReadObjPrimitive,
+ZENDEFNODE(ReadObjPrimitiveDict,
         { /* inputs: */ {
         {"readpath", "path"},
         }, /* outputs: */ {
