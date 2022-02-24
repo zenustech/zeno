@@ -26,16 +26,6 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     std::shared_ptr<MaterialObject> mtl;
 
-    auto getMaterial()
-    {
-        return mtl;
-    }
-
-    void setMaterial(decltype(mtl) mtl_)
-    {
-        mtl = mtl_;
-    }
-
     // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) {

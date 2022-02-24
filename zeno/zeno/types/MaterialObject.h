@@ -2,6 +2,8 @@
 
 #include <zeno/core/IObject.h>
 #include <string>
+#include <cstring>
+#include <cassert>
 
 namespace zeno
 {
@@ -12,34 +14,48 @@ namespace zeno
         std::string vert;
         std::string frag;
 
-        const std::string &getVert() const
+        size_t serialize(char buff[])
         {
-            return vert;
+            size_t i{0};
+
+            auto vertLen{vert.size()};
+            memcpy(buff + i, &vertLen, sizeof(vertLen));
+            i += sizeof(vertLen);
+
+            vert.copy(buff + i, vertLen);
+            i += vertLen;
+
+            auto fragLen{frag.size()};
+            memcpy(buff + i, &fragLen, sizeof(fragLen));
+            i += sizeof(fragLen);
+
+            frag.copy(buff + i, fragLen);
+            i += fragLen;
+
+            return i + 1;
         }
 
-        std::string &getVert()
+        static MaterialObject deserialize(char buff[], size_t size)
         {
-            return vert;
-        }
+            MaterialObject mtl;
 
-        void setVert(const std::string &vert_)
-        {
-            vert = vert_;
-        }
+            size_t i{0};
 
-        const std::string &getFrag() const
-        {
-            return frag;
-        }
+            size_t vertLen;
+            memcpy(&vertLen, buff + i, sizeof(vertLen));
+            i += sizeof(vertLen);
 
-        std::string &getFrag()
-        {
-            return frag;
-        }
+            mtl.vert = {std::string{buff + i, vertLen}};
+            i += vertLen;
 
-        void setFrag(const std::string &frag_)
-        {
-            frag = frag_;
+            size_t fragLen;
+            memcpy(&fragLen, buff + i, sizeof(fragLen));
+            i += sizeof(fragLen);
+
+            mtl.frag = {std::string{buff + i, fragLen}};
+            i += fragLen;
+
+            return mtl;
         }
 
     }; // struct Material

@@ -103,10 +103,9 @@ struct GraphicPrimitive : IGraphic {
     if (tris_count) {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        auto mtl = prim->getMaterial();
-        if (!mtl)
+        if (prim->mtl != nullptr)
         {
-          tris_prog = get_tris_program(mtl);
+          tris_prog = get_tris_program(prim->mtl);
         }
         else
         {
@@ -342,9 +341,7 @@ void main()
 
   Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl)
   {
-    auto vert = mtl->getVert();
-    auto frag = mtl->getFrag();
-    return compile_program(vert, frag);
+      return compile_program(mtl->vert, mtl->frag);
   }
 
   Program *get_tris_program(std::string const &path) {

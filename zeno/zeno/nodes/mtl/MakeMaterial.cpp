@@ -64,8 +64,8 @@ void main()
 }
 )";
 
-      mtl->setVert(vert);
-      mtl->setFrag(frag);
+      mtl->vert = vert;
+      mtl->frag = frag;
       set_output("mtl", std::move(mtl));
     }
   };
@@ -93,7 +93,7 @@ void main()
     {
       auto prim = get_input<zeno::PrimitiveObject>("prim");
       auto mtl = get_input<zeno::MaterialObject>("mtl");
-      prim->setMaterial(mtl);
+      prim->mtl = mtl;
       set_output("prim", std::move(prim));
     }
   };
