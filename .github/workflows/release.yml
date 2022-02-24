@@ -65,11 +65,17 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
+    - name: Prepare CCache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ${{ matrix.os }}-${{ env.BUILD_TYPE }}
+        max-size: 400M
 
-    - name: Build
-      run: cmake --build build --config ${{env.BUILD_TYPE}}
+    - name: Build with CMake
+      uses: lukka/run-cmake@v3
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeAppendedArgs: -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
 
     - name: Packaging
       run: python misc/ci/package.py
