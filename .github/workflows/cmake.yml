@@ -88,10 +88,11 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Prepare CCache
+      if: ${{ runner.os != 'Windows' }}
       uses: hendrikmuhs/ccache-action@v1
       with:
         key: ${{ matrix.os }}-${{ needs.check.outputs.type }}
-        max-size: 400M
+        max-size: 200M
 
     - name: Build with CMake
       uses: lukka/run-cmake@v3
