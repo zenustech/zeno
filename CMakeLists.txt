@@ -35,7 +35,7 @@ option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" ON)
 
-if (ZENO_USE_CCACHE)  # speed up compilation by cache
+if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
         message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
