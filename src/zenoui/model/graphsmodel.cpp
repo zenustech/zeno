@@ -171,7 +171,7 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
-    if (role == Qt::DisplayRole)
+    if (role == Qt::DisplayRole || role == ROLE_OBJNAME)
     {
         return m_subGraphs[index.row()]->name();
     }
@@ -380,7 +380,6 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
     int row = m_subGraphs.size();
 	beginInsertRows(QModelIndex(), row, row);
     m_subGraphs.append(pGraph);
-    pGraph->onModelInited();
 	endInsertRows();
 }
 

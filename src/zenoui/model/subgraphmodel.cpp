@@ -11,6 +11,11 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
 {
+	connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_dataChanged);
+	connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeInserted);
+	connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_rowsInserted);
+	connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeRemoved);
+	connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_rowsRemoved);
 }
 
 SubGraphModel::~SubGraphModel()
@@ -31,11 +36,6 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
 
 void SubGraphModel::onModelInited()
 {
-    connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_dataChanged);
-    connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeInserted);
-    connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_rowsInserted);
-    connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_rowsAboutToBeRemoved);
-    connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_rowsRemoved);
 }
 
 void SubGraphModel::setInputSocket(const QString& inNode, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
