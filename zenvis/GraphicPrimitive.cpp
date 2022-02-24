@@ -4,6 +4,7 @@
 #include "main.hpp"
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 
@@ -102,7 +103,15 @@ struct GraphicPrimitive : IGraphic {
     if (tris_count) {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        tris_prog = get_tris_program(path);
+        auto mtl = prim->getMaterial();
+        if (!mtl)
+        {
+          tris_prog = get_tris_program(mtl);
+        }
+        else
+        {
+          tris_prog = get_tris_program(path);
+        }
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -328,6 +337,13 @@ void main()
 )";
     }
 
+    return compile_program(vert, frag);
+  }
+
+  Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl)
+  {
+    auto vert = mtl->getVert();
+    auto frag = mtl->getFrag();
     return compile_program(vert, frag);
   }
 

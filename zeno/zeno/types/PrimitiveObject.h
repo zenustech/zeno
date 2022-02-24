@@ -4,6 +4,7 @@
 #include <zeno/types/AttrVector.h>
 #include <zeno/utils/type_traits.h>
 #include <zeno/utils/vec.h>
+#include <zeno/types/MaterialObject.h>
 #include <optional>
 #include <variant>
 #include <memory>
@@ -22,6 +23,18 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     AttrVector<int> loops;
     AttrVector<std::pair<int, int>> polys;
+
+    std::shared_ptr<MaterialObject> mtl;
+
+    auto getMaterial()
+    {
+        return mtl;
+    }
+
+    void setMaterial(decltype(mtl) mtl_)
+    {
+        mtl = mtl_;
+    }
 
     // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>
