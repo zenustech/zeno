@@ -6,6 +6,7 @@ import shutil
 binpath = os.path.join('build', 'bin')
 outpath = os.path.join('build', 'out')
 
+os.mkdir(outpath)
 if sys.platform == 'win32':
     shutil.move(os.path.join(binpath, 'zenoedit.exe'), os.path.join(outpath, 'zenoedit.exe'))
     shutil.move(os.path.join(binpath, 'zenorunner.exe'), os.path.join(outpath, 'zenorunner.exe'))
