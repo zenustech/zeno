@@ -14,7 +14,8 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-latest
+        - os: ubuntu-18.04  # cihou linuxdeployqt
+          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
         - os: windows-latest
 
     runs-on: ${{ matrix.os }}
@@ -38,7 +39,7 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.cmake_args}}
 
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}}
