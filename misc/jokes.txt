@@ -7,3 +7,5 @@ This is so that the resulting bundle will work on most still-supported Linux dis
 
 When you type `python` in Windows shell, you will be redirected to Microsoft Store, suggesting
 you to install Python (which is free software) with their stupid Store (which implies money).
+
+std::tm, std::size, std::data, std::ws, std::right, std::next
