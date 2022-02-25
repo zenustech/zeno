@@ -6,7 +6,9 @@
 #include <zeno/utils/UserData.h>
 #include <zeno/StringObject.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
-
+// #include <format>
+// #include <fmt>
+#include <sstream>
 namespace{
 using namespace zeno;
 
@@ -14,6 +16,7 @@ struct TetrahedralizeSurface : zeno::INode {
     virtual void apply() override {
         auto surf = get_input<zeno::PrimitiveObject>("surf");
         auto res = std::make_shared<zeno::PrimitiveObject>();
+        auto min_radius_edge_ratio = std::get<float>(get_param("mrer"));
 
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
@@ -29,7 +32,11 @@ struct TetrahedralizeSurface : zeno::INode {
         Eigen::MatrixXd TV;
         Eigen::MatrixXi TT;
         Eigen::MatrixXi TF;
-        igl::copyleft::tetgen::tetrahedralize(V,F,"pq1.414Y", TV,TT,TF);
+        // std::string switches = "pq" + std::to_string(min_radius_edge_ratio) + "Y";
+        // std::string switches = fmt::format("pq{}Y",min_radius_edge_ratio);
+        std::stringstream ss;
+        ss << "pq" << min_radius_edge_ratio << "Y";
+        igl::copyleft::tetgen::tetrahedralize(V,F,ss.str(), TV,TT,TF);
 
         res->resize(TV.rows());
         for(size_t i = 0;i < res->size();++i)
@@ -59,7 +66,7 @@ struct TetrahedralizeSurface : zeno::INode {
 ZENDEFNODE(TetrahedralizeSurface, {
     {"surf"},
     {"tets"},
-    {},
+    {{"float","mrer","2.0"}},
     {"Skinning"},
 });
 

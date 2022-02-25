@@ -49,15 +49,15 @@ struct FEMIntegrator : zeno::IObject {
     std::shared_ptr<MuscleModelObject> muscle;
     std::shared_ptr<DampingForceModel> damp;
 
-    std::vector<double> _elmYoungModulus;
-    std::vector<double> _elmPossonRatio;
-    std::vector<double> _elmDamp;
-    std::vector<double> _elmDensity;
+    // std::vector<double> _elmYoungModulus;
+    // std::vector<double> _elmPossonRatio;
+    // std::vector<double> _elmDamp;
+    // std::vector<double> _elmDensity;
 
-    std::vector<Vec3d> _elmFiberDir;
+    // std::vector<Vec3d> _elmFiberDir;
 
     // std::vector<double> _elmMass;
-    std::vector<double> _elmVolume;
+    // std::vector<double> _elmVolume;
     std::vector<Mat9x12d> _elmdFdx;
     std::vector<Mat4x4d> _elmMinv;
 
@@ -79,37 +79,37 @@ struct FEMIntegrator : zeno::IObject {
     void PrecomputeFEMInfo(const std::shared_ptr<zeno::PrimitiveObject>& prim){
         zeno::vec3f default_fdir = zeno::vec3f(1,0,0);
         size_t nm_elms = prim->quads.size();
-        _elmYoungModulus.resize(nm_elms);
-        _elmPossonRatio.resize(nm_elms);
-        _elmDamp.resize(nm_elms);
-        _elmDensity.resize(nm_elms);
-        _elmFiberDir.resize(nm_elms);
+        // _elmYoungModulus.resize(nm_elms);
+        // _elmPossonRatio.resize(nm_elms);
+        // _elmDamp.resize(nm_elms);
+        // _elmDensity.resize(nm_elms);
+        // _elmFiberDir.resize(nm_elms);
 
-        for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
-            const auto& tet = prim->quads[elm_id];
-            _elmDensity[elm_id] = 0;
-            _elmYoungModulus[elm_id] = 0;
-            _elmPossonRatio[elm_id] = 0;
-            _elmDamp[elm_id] = 0;
-            for(size_t i = 0;i < 4;++i){
-                size_t idx = tet[i];
-                _elmDensity[elm_id] += prim->attr<float>("phi")[idx];
-                _elmYoungModulus[elm_id] += prim->attr<float>("E")[idx];
-                _elmPossonRatio[elm_id] += prim->attr<float>("nu")[idx];
-                _elmDamp[elm_id] += prim->attr<float>("dampingCoeff")[idx];
-                zeno::vec3f fdir = prim->attr<zeno::vec3f>("fiberDir")[idx];
-                Vec3d fdir_vec = Vec3d(fdir[0],fdir[1],fdir[2]);
-                if(fdir_vec.norm() > 1e-5)
-                    fdir_vec /= fdir_vec.norm();
+        // for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+        //     const auto& tet = prim->quads[elm_id];
+        //     _elmDensity[elm_id] = 0;
+        //     _elmYoungModulus[elm_id] = 0;
+        //     _elmPossonRatio[elm_id] = 0;
+        //     _elmDamp[elm_id] = 0;
+        //     for(size_t i = 0;i < 4;++i){
+        //         size_t idx = tet[i];
+        //         _elmDensity[elm_id] += prim->attr<float>("phi")[idx];
+        //         _elmYoungModulus[elm_id] += prim->attr<float>("E")[idx];
+        //         _elmPossonRatio[elm_id] += prim->attr<float>("nu")[idx];
+        //         _elmDamp[elm_id] += prim->attr<float>("dampingCoeff")[idx];
+        //         zeno::vec3f fdir = prim->attr<zeno::vec3f>("fiberDir")[idx];
+        //         Vec3d fdir_vec = Vec3d(fdir[0],fdir[1],fdir[2]);
+        //         if(fdir_vec.norm() > 1e-5)
+        //             fdir_vec /= fdir_vec.norm();
 
-                _elmFiberDir[elm_id] += fdir_vec;
-            }
-            _elmDensity[elm_id] /= 4;
-            _elmYoungModulus[elm_id] /= 4;
-            _elmPossonRatio[elm_id] /= 4;
-            _elmDamp[elm_id] /= 4;   
-            _elmFiberDir[elm_id] /= _elmFiberDir[elm_id].norm();  
-        }
+        //         _elmFiberDir[elm_id] += fdir_vec;
+        //     }
+        //     _elmDensity[elm_id] /= 4;
+        //     _elmYoungModulus[elm_id] /= 4;
+        //     _elmPossonRatio[elm_id] /= 4;
+        //     _elmDamp[elm_id] /= 4;   
+        //     _elmFiberDir[elm_id] /= _elmFiberDir[elm_id].norm();  
+        // }
         // compute connectivity matrix
         std::set<Triplet,triplet_cmp> connTriplets;
         for (size_t elm_id = 0; elm_id < nm_elms; ++elm_id) {
@@ -134,7 +134,7 @@ struct FEMIntegrator : zeno::IObject {
         _connMatrix.setFromTriplets(connTriplets.begin(),connTriplets.end());
         _connMatrix.makeCompressed();
 
-        _elmVolume.resize(nm_elms);
+        // _elmVolume.resize(nm_elms);
         _elmdFdx.resize(nm_elms);
         _elmMinv.resize(nm_elms);
         _elmCharacteristicNorm.resize(nm_elms);
@@ -146,7 +146,7 @@ struct FEMIntegrator : zeno::IObject {
                 M.block(0,i,3,1) << vert[0],vert[1],vert[2];
             }
             M.bottomRows(1).setConstant(1.0);
-            _elmVolume[elm_id] = fabs(M.determinant()) / 6;
+            // _elmVolume[elm_id] = fabs(M.determinant()) / 6;
 
             Mat3x3d Dm;
             for(size_t i = 1;i < 4;++i){
@@ -207,6 +207,7 @@ struct FEMIntegrator : zeno::IObject {
     //      4> curPos               ------->    The current shape of the mesh
     void AssignElmAttribs(size_t elm_id,
             const std::shared_ptr<PrimitiveObject>& prim,
+            const std::shared_ptr<PrimitiveObject>& elmView,
             TetAttributes& attrbs) const {
         attrbs._elmID = elm_id;
         attrbs._Minv = _elmMinv[elm_id];
@@ -214,33 +215,42 @@ struct FEMIntegrator : zeno::IObject {
 
         const auto& tet = prim->quads[elm_id];
 
+        // nodal wise properties
         const auto& example_shape = prim->attr<zeno::vec3f>("examShape");
         const auto& example_weight = prim->attr<float>("examW");
-        const auto& activation_field = prim->attr<zeno::vec3f>("activation");
+
+        // elm-wise properties
+        // const auto& activation_field = prim->attr<zeno::vec3f>("activation");
+        const auto& activation_level = elmView->attr<zeno::vec3f>("activation");
+        const auto& fiber_dir = elmView->attr<zeno::vec3f>("fiberDir");
+        const auto& Es = elmView->attr<float>("E");
+        const auto& nus = elmView->attr<float>("nu");
+        const auto& vs = elmView->attr<float>("v");
+        const auto& phis = elmView->attr<float>("phi");
+        const auto& Vs = elmView->attr<float>("V");
 
 
-        // for uniform activation, we might need only the activation of a specific vertex.
-        Vec3d uniformAct = Vec3d::Zero();
+        // Now we support non-uniform activation
         for(size_t i = 0;i < 4;++i){
             attrbs._example_pos.segment(i*3,3) << example_shape[tet[i]][0],example_shape[tet[i]][1],example_shape[tet[i]][2];
             attrbs._example_pos_weight.segment(i*3,3).setConstant(example_weight[tet[i]]);
-
-            uniformAct += Vec3d(activation_field[tet[i]][0],activation_field[tet[i]][1],activation_field[tet[i]][2]) / 4;
         }
 
 
-        attrbs.emp.forient = _elmFiberDir[elm_id];
+        attrbs.emp.forient << fiber_dir[elm_id][0],fiber_dir[elm_id][1],fiber_dir[elm_id][2];
         Mat3x3d R = MatHelper::Orient2R(attrbs.emp.forient);
-        attrbs.emp.Act = R * uniformAct.asDiagonal() * R.transpose();
+        Vec3d al;al << activation_level[elm_id][0],activation_level[elm_id][1],activation_level[elm_id][2];
+        attrbs.emp.Act = R * al.asDiagonal() * R.transpose();
 
-        attrbs.emp.E = _elmYoungModulus[elm_id];
-        attrbs.emp.nu = _elmPossonRatio[elm_id];
-        attrbs.v = _elmDamp[elm_id];
-        attrbs._volume = _elmVolume[elm_id];
-        attrbs._density = _elmDensity[elm_id];
+        attrbs.emp.E = Es[elm_id];
+        attrbs.emp.nu = nus[elm_id];
+        attrbs.v = vs[elm_id];
+        attrbs._volume = Vs[elm_id];
+        attrbs._density = phis[elm_id];
     }
 
-    FEM_Scaler EvalObj(const std::shared_ptr<PrimitiveObject>& shape) {
+    FEM_Scaler EvalObj(const std::shared_ptr<PrimitiveObject>& shape,
+        const std::shared_ptr<PrimitiveObject>& elmView) {
             FEM_Scaler obj = 0;
             size_t nm_elms = shape->quads.size();
             std::vector<double> objBuffer(nm_elms);
@@ -251,7 +261,7 @@ struct FEMIntegrator : zeno::IObject {
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
                 TetAttributes attrbs;
-                AssignElmAttribs(elm_id,shape,attrbs);
+                AssignElmAttribs(elm_id,shape,elmView,attrbs);
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)
@@ -271,7 +281,9 @@ struct FEMIntegrator : zeno::IObject {
             return obj; 
     }
 
-    FEM_Scaler EvalObjDeriv(const std::shared_ptr<PrimitiveObject>& shape,VecXd& deriv) {
+    FEM_Scaler EvalObjDeriv(const std::shared_ptr<PrimitiveObject>& shape,
+        const std::shared_ptr<PrimitiveObject>& elmView,
+        VecXd& deriv) {
             FEM_Scaler obj = 0;
             size_t nm_elms = shape->quads.size();
             std::vector<double> objBuffer(nm_elms);
@@ -284,7 +296,7 @@ struct FEMIntegrator : zeno::IObject {
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
-                AssignElmAttribs(elm_id,shape,attrbs);
+                AssignElmAttribs(elm_id,shape,elmView,attrbs);
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)
@@ -307,7 +319,8 @@ struct FEMIntegrator : zeno::IObject {
     }
 
     FEM_Scaler EvalObjDerivHessian(const std::shared_ptr<PrimitiveObject>& shape,
-                VecXd& deriv,VecXd& HValBuffer,bool enforce_spd) {
+        const std::shared_ptr<PrimitiveObject>& elmView,
+        VecXd& deriv,VecXd& HValBuffer,bool enforce_spd) {
             FEM_Scaler obj = 0;
             size_t clen = _intPtr->GetCouplingLength();
             size_t nm_elms = shape->quads.size();
@@ -318,12 +331,12 @@ struct FEMIntegrator : zeno::IObject {
 
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
 
-            #pragma omp parallel for 
+            // #pragma omp parallel for 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
-                AssignElmAttribs(elm_id,shape,attrbs);     
+                AssignElmAttribs(elm_id,shape,elmView,attrbs);     
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)

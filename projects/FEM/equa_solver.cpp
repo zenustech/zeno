@@ -9,6 +9,7 @@ struct SolveFEM : zeno::INode {
 
         auto integrator = get_input<FEMIntegrator>("integrator");
         auto shape = get_input<PrimitiveObject>("shape");
+        auto elmView = get_input<PrimitiveObject>("elmView");
 
         int max_iters = get_param<int>("maxNRIters");
         int max_linesearch = get_param<int>("maxBTLs");
@@ -40,16 +41,16 @@ struct SolveFEM : zeno::INode {
         do{
             FEM_Scaler e0,e1,eg0;
 
-            e0 = integrator->EvalObjDerivHessian(shape,r,HBuffer,true);
+            e0 = integrator->EvalObjDerivHessian(shape,elmView,r,HBuffer,true);
             // break;
             if(iter_idx == 0)
                 r0 = r.norm();
 
             if(std::isnan(e0) || std::isnan(r.norm()) || std::isnan(HBuffer.norm())){
-                const auto& pos = shape->verts;
+                const auto& pos = cpos;
                 const auto& examShape = shape->attr<zeno::vec3f>("examShape");
                 const auto& examW = shape->attr<float>("examW");
-                const auto& interpWSum = shape->attr<float>("interpWSum");
+                const auto& interpWSum = shape->attr<float>("wsum");
                 for(size_t i = 0;i < shape->size();++i){
                     if(std::isnan(zeno::length(pos[i]))){
                         std::cout << "NAN POS : " << i << "\t" << pos[i][0] << "\t" << pos[i][1] << "\t" << pos[i][2] << std::endl;
@@ -61,6 +62,11 @@ struct SolveFEM : zeno::INode {
                     }
                 }
                 std::cerr << "NAN VALUE DETECTED : " << e0 << "\t" << r.norm() << "\t" << HBuffer.norm() << std::endl;
+                // std::cout << "R:" << std::endl << r.transpose() << std::endl;
+                for(size_t i = 0;i < shape->size();++i){
+                    if(std::isnan(r.segment(i*3,3).norm()))
+                        std::cout << "<" << i << "> : \t" << r.segment(i*3,3).transpose() << std::endl;
+                }
                 throw std::runtime_error("NAN VALUE DETECTED");
             }
 
@@ -75,7 +81,7 @@ struct SolveFEM : zeno::INode {
                     BaseIntegrator::ComputeDeformationGradient(integrator->_elmMinv[i],tet_shape,F);
 
                     TetAttributes attrs;
-                    integrator->AssignElmAttribs(i,shape,attrs);
+                    integrator->AssignElmAttribs(i,shape,elmView,attrs);
 
                     FEM_Scaler psi;
                     Vec9d dpsi;
@@ -126,7 +132,7 @@ struct SolveFEM : zeno::INode {
                         UpdateCurrentShape(shape,dp,-alpha);
                     alpha *= beta;
                     UpdateCurrentShape(shape,dp,alpha);
-                    e1 = integrator->EvalObj(shape);
+                    e1 = integrator->EvalObj(shape,elmView);
                     ++search_idx;
                     wolfeBuffer[search_idx-1](0) = (e1 - e0)/alpha;
                     wolfeBuffer[search_idx-1](1) = eg0;
@@ -162,7 +168,7 @@ struct SolveFEM : zeno::INode {
 };
 
 ZENDEFNODE(SolveFEM,{
-    {"integrator","shape"},
+    {"integrator","shape","elmView"},
     {"shape"},
     {{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
         {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},

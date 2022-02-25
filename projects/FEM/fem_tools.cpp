@@ -172,9 +172,6 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
                 M.col(3) << v3,1.0;
 
                 auto VM0 = M.determinant();
-
-                M.col(0) << v0,1.0;
-                M.col(1) << vp,1.0;
                 M.col(2) << v2,1.0;
                 M.col(3) << v3,1.0;
 
@@ -266,4 +263,95 @@ ZENDEFNODE(InterpolateEmbedPrimitive, {
     {"FEM"},
 });
 
+// Get the fem elm view of mesh
+struct GetTetMeshElementView : zeno::INode {
+    virtual void apply() override {
+        const auto& prim = get_input<zeno::PrimitiveObject>("prim");
+
+        auto elmView = std::make_shared<zeno::PrimitiveObject>();
+
+        auto& poss = elmView->add_attr<zeno::vec3f>("pos");
+        auto& Vs = elmView->add_attr<float>("V");
+        elmView->resize(prim->quads.size());
+        for(size_t elm_id = 0;elm_id < elmView->size();++elm_id){
+            const auto& tet = prim->quads[elm_id];
+            poss[elm_id] = zeno::vec3f(0);
+
+            Mat4x4d M;
+            for(size_t i = 0;i < 4;++i){
+                auto vert = prim->verts[tet[i]];
+                poss[elm_id] += vert;
+                M.block(0,i,3,1) << vert[0],vert[1],vert[2];
+            }
+            poss[elm_id] /= 4;
+            M.bottomRows(1).setConstant(1.0);
+            Vs[elm_id] = fabs(M.determinant()) / 6;
+        }
+
+        set_output("elmView",std::move(elmView));
+    }
 };
+
+ZENDEFNODE(GetTetMeshElementView, {
+    {"prim"},
+    {"elmView"},
+    {},
+    {"FEM"},
+});
+
+struct InterpolateElmAttrib : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto elmView = get_input<zeno::PrimitiveObject>("elmView");
+        auto attr_name = get_param<std::string>("attrName");
+        auto attr_type = std::get<std::string>(get_param("attrType"));
+
+        if(!prim->has_attr(attr_name)){
+            throw std::runtime_error("INPUT PRIMITIVE DOES NOT HAVE THE SPECIFIED ATTRIB");
+        }
+        if(elmView->size() != prim->quads.size()){
+            throw std::runtime_error("THE INPUT PRIMITIVE SHOULD HAVE THE SAME NUMBER OF ELEMENTS AS THE INPUT ELMVIEW");
+        }
+
+
+
+        // using T = std::decay_t(prim->attr(attr_name)[0])
+
+        if(prim->attr_is<float>(attr_name)){
+            const auto& interp_attr = prim->attr<float>(attr_name);
+            auto& elm_attr = elmView->add_attr<float>(attr_name);
+
+            #pragma omp parallel for 
+            for(size_t elm_id = 0;elm_id < elmView->size();++elm_id){
+                const auto& tet = prim->quads[elm_id];
+                elm_attr[elm_id] = 0;
+                for(size_t i = 0;i < 4;++i){
+                    elm_attr[elm_id] += interp_attr[tet[i]]/4;
+                }
+            }
+        }else if(prim->attr_is<zeno::vec3f>(attr_name)){
+            const auto& interp_attr = prim->attr<zeno::vec3f>(attr_name);
+            auto& elm_attr = elmView->add_attr<zeno::vec3f>(attr_name);
+
+            #pragma omp parallel for 
+            for(size_t elm_id = 0;elm_id < elmView->size();++elm_id){
+                const auto& tet = prim->quads[elm_id];
+                elm_attr[elm_id] = zeno::vec3f(0);
+                for(size_t i = 0;i < 4;++i){
+                    elm_attr[elm_id] += interp_attr[tet[i]]/4;
+                }
+            }            
+        }
+
+        set_output("elmView",elmView);
+    }
+};
+
+ZENDEFNODE(InterpolateElmAttrib, {
+    {"prim","elmView"},
+    {"elmView"},
+    {{"string","attrName","RENAME ME"},{"enum float vec3f","attrType","float"}},
+    {"FEM"},
+});
+
+}

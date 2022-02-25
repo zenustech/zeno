@@ -119,12 +119,24 @@ int ExamBasedQuasiStaticSolver::EvalElmObjDerivJacobi(const TetAttributes& attrs
 
     force_model->ComputePsiDerivHessian(attrs,F,psiE,dpsiE,ddpsiE,spd);
 
+    if(std::isnan(F.norm()) || std::isnan(psiE) || std::isnan(dpsiE.norm()) || std::isnan(ddpsiE.norm())){
+        std::cout << "F : " << std::endl << F << std::endl;
+        std::cout << "psiE : " << psiE << std::endl;
+        std::cout << "dpsiE : " << std::endl << dpsiE.transpose() << std::endl;
+        std::cout << "ddpsiE : " << std::endl << ddpsiE << std::endl;
+    }
+
     const Mat9x12d& dFdX = attrs._dFdX;
 
     Vec12d gravity_force = _gravity.replicate(4,1) * m;
     *elm_obj = (psiE * vol - u0.dot(gravity_force));
     elm_deriv = (vol * dFdX.transpose() * dpsiE - gravity_force);
     elm_H = (vol * dFdX.transpose() * ddpsiE * dFdX);
+
+    if(std::isnan(elm_deriv.norm()) || std::isnan(elm_H.norm())){
+        std::cout << "vol : " << vol << std::endl;
+        std::cout << "dFdX : " << std::endl << dFdX << std::endl;
+    }
 
 
     Vec12d example_diff = u0 - attrs._example_pos;
