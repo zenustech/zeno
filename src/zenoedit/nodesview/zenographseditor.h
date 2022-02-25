@@ -22,7 +22,7 @@ public:
 public slots:
     void onCurrentModelClear();
     void onItemActivated(const QModelIndex& index);
-    void onItemActivated(const QString& subGraphName);
+    void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
 
 private slots:
     void onSubnetBtnClicked();

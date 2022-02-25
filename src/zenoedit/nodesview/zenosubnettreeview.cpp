@@ -3,6 +3,8 @@
 #include <zenoui/model/graphsmodel.h>
 #include <model/graphstreemodel.h>
 #include <zenoui/include/igraphsmodel.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ZenoSubnetTreeView::ZenoSubnetTreeView(QWidget* parent)
@@ -64,9 +66,9 @@ void ZenoSubnetTreeView::initModel(IGraphsModel* pModel)
 {
 	GraphsModel* pPlainModel = qobject_cast<GraphsModel*>(pModel);
 	Q_ASSERT(pPlainModel);
-    GraphsTreeModel* pTreeModel = new GraphsTreeModel(pPlainModel, this);    //todo: put in managment.
-    pTreeModel->init(pPlainModel);
+    GraphsTreeModel* pTreeModel = zenoApp->graphsManagment()->treeModel();
     setModel(pTreeModel);
+	setSelectionMode(SingleSelection);
 }
 
 void ZenoSubnetTreeView::paintEvent(QPaintEvent* e)

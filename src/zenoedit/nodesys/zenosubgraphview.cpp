@@ -185,6 +185,11 @@ void ZenoSubGraphView::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
+void ZenoSubGraphView::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    QGraphicsView::mouseDoubleClickEvent(event);
+}
+
 void ZenoSubGraphView::wheelEvent(QWheelEvent* event)
 {
 	qreal zoomFactor = 1;

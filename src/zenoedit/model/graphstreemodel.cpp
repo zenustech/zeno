@@ -3,7 +3,7 @@
 #include <zenoui/model/modelrole.h>
 
 
-GraphsTreeModel::GraphsTreeModel(GraphsModel* pTreeModel, QObject* parent)
+GraphsTreeModel::GraphsTreeModel(QObject* parent)
 	: QStandardItemModel(parent)
 	, m_model(nullptr)
 {
@@ -15,10 +15,11 @@ GraphsTreeModel::~GraphsTreeModel()
 
 }
 
-void GraphsTreeModel::init(GraphsModel* pModel)
+void GraphsTreeModel::init(IGraphsModel* pModel)
 {
     clear();
-	m_model = pModel;
+	m_model = qobject_cast<GraphsModel*>(pModel);
+	Q_ASSERT(m_model);
     SubGraphModel* pSubModel = m_model->subGraph("main");
     QStandardItem* pItem = appendSubModel(pSubModel);
     appendRow(pItem);

@@ -12,6 +12,7 @@
 GraphsManagment::GraphsManagment(QObject* parent)
     : QObject(parent)
     , m_model(nullptr)
+    , m_pTreeModel(nullptr)
 {
 
 }
@@ -25,6 +26,13 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
 {
     m_model = model;
     initScenes(m_model);
+    m_pTreeModel = new GraphsTreeModel(this);
+    m_pTreeModel->init(model);
+}
+
+GraphsTreeModel* GraphsManagment::treeModel()
+{
+    return m_pTreeModel;
 }
 
 IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)

@@ -5,6 +5,7 @@
 
 class ZenoSubGraphView;
 class ZIconButton;
+class ZenoGraphsLayerWidget;
 
 class LayerPathWidget : public QWidget
 {
@@ -12,11 +13,16 @@ class LayerPathWidget : public QWidget
 public:
 	LayerPathWidget(QWidget* parent = nullptr);
 	void setPath(const QString& path);
+	QString path() const;
+
+private slots:
+	void onPathItemClicked();
 
 private:
 	QString m_path;
 	ZIconButton* m_pForward;
 	ZIconButton* m_pBackward;
+	ZenoGraphsLayerWidget* m_pLayerWidget;
 };
 
 class ZenoStackedViewWidget : public QStackedWidget
@@ -37,6 +43,8 @@ class ZenoGraphsLayerWidget : public QWidget
 public:
 	ZenoGraphsLayerWidget(QWidget* parent = nullptr);
 	void resetPath(const QString& path, const QString& nodeId);
+	void activeByPath(const QString& path);
+	QString path() const;
 
 private:
 	LayerPathWidget* m_pPathWidget;
