@@ -175,6 +175,8 @@ void viewDecodeClear()
     zeno::log_debug("viewDecodeClear");
     viewDecodeData.clear();
     zeno::getSession().globalComm->clearState();
+    zeno::getSession().globalState->clearState();
+    zeno::getSession().globalStatus->clearState();
 }
 
 void viewDecodeAppend(const char *buf, size_t n)

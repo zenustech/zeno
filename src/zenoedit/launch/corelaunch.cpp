@@ -3,6 +3,7 @@
 #include <zenoui/model/modelrole.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
@@ -50,6 +51,20 @@ struct ProgramRunData {
         g_state = STOPPED;
     }
 
+    void reportStatus(zeno::GlobalStatus const &stat) const {
+        if (!stat.failed()) return;
+        zeno::log_error("reportStatus: error in {}, message {}", stat.nodeName, stat.error->message);
+    }
+
+    bool chkfail() const {
+        auto globalStatus = zeno::getSession().globalStatus.get();
+        if (globalStatus->failed()) {
+            reportStatus(*globalStatus);
+            return true;
+        }
+        return false;
+    }
+
     void start() const {
         zeno::log_info("launching program...");
         zeno::log_debug("program JSON: {}", progJson);
@@ -62,15 +77,12 @@ struct ProgramRunData {
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
-        if (session->globalStatus->failed()) {
-            auto statJson = session->globalStatus->toJson();
-            reportStatus(statJson);
-        }
-        if (g_state == KILLING)
-            return;
+
+        if (chkfail()) return;
+        if (g_state == KILLING) return;
 
         auto nframes = graph->adhocNumFrames;
-        for (int i = 0; i < nframes; i++) {
+        for (int frame = 0; frame < nframes; frame++) {
             zeno::log_info("begin frame {}", frame);
             session->globalComm->newFrame();
             session->globalState->frameBegin();
@@ -78,21 +90,17 @@ struct ProgramRunData {
             {
                 if (g_state == KILLING)
                     return;
-                stat = graph->applyNodesToExec();
+                graph->applyNodesToExec();
                 session->globalState->substepEnd();
-                if (session->globalStatus->failed())
-                    break;
+                if (chkfail()) return;
             }
-            if (g_state == KILLING)
-                return;
+            if (g_state == KILLING) return;
             session->globalState->frameEnd();
             zeno::log_debug("end frame {}", frame);
-            if (session->globalStatus->failed())
-                break;
+            if (chkfail()) return;
         }
         if (session->globalStatus->failed()) {
-            auto statJson = session->globalStatus->toJson();
-            reportStatus(statJson);
+            reportStatus(*session->globalStatus);
         }
 #else
         auto execDir = QCoreApplication::applicationDirPath().toStdString();
@@ -120,25 +128,20 @@ struct ProgramRunData {
 
         while (g_proc->waitForReadyRead(-1)) {
             while (!g_proc->atEnd()) {
-                if (g_state == KILLING)
-                    return;
+                if (g_state == KILLING) return;
                 qint64 redSize = g_proc->read(buf.data(), buf.size());
                 zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
                 if (redSize > 0) {
                     viewDecodeAppend(buf.data(), redSize);
                 }
             }
-            if (g_state == KILLING)
-                return;
+            if (chkfail()) break;
+            if (g_state == KILLING) return;
         }
         zeno::log_debug("still not ready-read, assume exited");
 
         buf.clear();
-        /*if (!g_proc->waitForFinished()) {
-            zeno::log_warn("still not finished in 3s, terminating");
-            g_proc->terminate();
-            g_proc->waitForFinished(-1);
-        }*/
+        g_proc->terminate();
         int code = g_proc->exitCode();
         g_proc = nullptr;
         zeno::log_info("runner process exited with {}", code);
