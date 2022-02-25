@@ -160,7 +160,7 @@ void ZenoGraphsEditor::onCurrentModelClear()
 {
     m_pSubnetList->hide();
     m_pTabWidget->clear();
-    m_pLayerWidget;
+    m_pLayerWidget->clear();
     m_pSideBar->hide();
 }
 

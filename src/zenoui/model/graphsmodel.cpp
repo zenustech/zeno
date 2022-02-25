@@ -957,6 +957,7 @@ void GraphsModel::clear()
         const QModelIndex& subgIdx = this->index(r, 0);
         clearSubGraph(subgIdx);
     }
+    m_linkModel->clear();
     emit modelClear();
 }
 
