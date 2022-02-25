@@ -1,7 +1,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
 add_library(zeno_nodep INTERFACE)  # deprecated
 
-add_library(zenodes OBJECT dummy.cpp)
+add_library(zenodes SHARED dummy.cpp)
 target_link_libraries(zenodes PUBLIC zeno)
 
 set(extensions ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning)

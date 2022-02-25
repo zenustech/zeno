@@ -1,6 +1,6 @@
 file(GLOB_RECURSE ZENO_SOURCE CONFIGURE_DEPENDS *.h *.cpp)
 
-add_library(zeno SHARED ${ZENO_SOURCE})
+add_library(zeno OBJECT ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
