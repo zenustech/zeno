@@ -256,7 +256,7 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
 
 	if (params.find(name) != params.end())
 	{
-        zeno::log_debug("param name {}", name.toStdString());
+        zeno::log_trace("found param name {}", name.toStdString());
 		params[name].value = var;
 		m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
 	} else {

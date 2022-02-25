@@ -16,28 +16,40 @@ ZENO_API spdlog::logger *__get_spdlog_logger() {
     return g_logger.get();
 }
 
-static void initialize_spdlog() {
-    spdlog::set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
-    if (auto env = getenv("ZENO_LOGLEVEL"); env) {
-        if (0) {
+namespace {
+struct initialize_spdlog {
+    initialize_spdlog() {
+        spdlog::set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
+        if (auto env = std::getenv("ZENO_LOGLEVEL"); env) {
+            if (0) {
 #define _PER_LEVEL(x, y) } else if (!strcmp(env, #x)) { spdlog::set_level(spdlog::level::y);
-        _PER_LEVEL(trace, trace)
-        _PER_LEVEL(debug, debug)
-        _PER_LEVEL(info, info)
-        _PER_LEVEL(critical, critical)
-        _PER_LEVEL(warn, warn)
-        _PER_LEVEL(error, err)
+            _PER_LEVEL(trace, trace)
+            _PER_LEVEL(debug, debug)
+            _PER_LEVEL(info, info)
+            _PER_LEVEL(critical, critical)
+            _PER_LEVEL(warn, warn)
+            _PER_LEVEL(error, err)
 #undef _PER_LEVEL
+            }
         }
+        if (auto env = std::getenv("ZENO_LOGFILE"); env) {
+            g_logger = spdlog::basic_logger_mt("zeno", env);
+        } else {
+            g_logger = spdlog::stderr_color_mt("zeno");
+        }
+#if defined(__DATE__) && defined(__TIME__)
+        zeno::log_info("build date: {} {}", __DATE__, __TIME__);
+#endif
+#if defined(__GNUC__)
+        zeno::log_info("compiler: gcc version {}", __GNUC__);
+#elif defined(__clang__)
+        zeno::log_info("compiler: clang version {}", __clang__);
+#elif defined(_MSC_VER)
+        zeno::log_info("compiler: msvc version {}", _MSC_VER);
+#endif
     }
-    if (auto env = getenv("ZENO_LOGFILE"); env) {
-        g_logger = spdlog::basic_logger_mt("zeno", env);
-    } else {
-        g_logger = spdlog::stderr_color_mt("zeno");
-    }
+} initialize_spdlog_v;
 }
-
-static int initialize_spdlog_helper = (initialize_spdlog(), 0);
 
 }
 #endif

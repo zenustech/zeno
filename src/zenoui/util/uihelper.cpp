@@ -210,7 +210,7 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
     } else if (type.isEmpty()) {
         return CONTROL_NONE;
     } else {
-        zeno::log_debug("parse got undefined control type {}", type.toStdString());
+        zeno::log_trace("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
     }
 }
