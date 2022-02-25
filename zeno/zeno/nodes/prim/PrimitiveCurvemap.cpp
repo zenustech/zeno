@@ -339,10 +339,12 @@ ZENDEFNODE(PrimitiveCurvemap, {
     struct DynamicNumber : zeno::INode {
         virtual void apply() override {
             std::map<int, zeno::vec4f> keyframes;
+            auto type = get_param<std::string>("type");
             auto _points = get_param<std::string>("_POINTS");
             std::stringstream ss(_points);
             int count;
             ss >> count;
+            int max_frame = 0;
             for (int i = 0; i < count; i++) {
                 int f = 0;
                 float x = 0;
@@ -351,9 +353,22 @@ ZENDEFNODE(PrimitiveCurvemap, {
                 float w = 0;
                 ss >> f >> x >> y >> z >> w;
                 keyframes[f] = zeno::vec4f(x, y, z, w);
+                max_frame = f > max_frame? f : max_frame;
             }
             int cur_frame = zeno::state.frameid;
-            zeno::vec4f v = query_cur_value(std::move(keyframes), cur_frame);
+            zeno::vec4f v;
+            if (cur_frame > max_frame) {
+                if (type == "zero") {
+                    v = zeno::vec4f(0, 0, 0, 0);
+                } else if (type == "cycle") {
+                    cur_frame = cur_frame % max_frame;
+                    v = query_cur_value(std::move(keyframes), cur_frame);
+                } else {
+                    v = query_cur_value(std::move(keyframes), cur_frame);
+                }
+            } else {
+                v = query_cur_value(std::move(keyframes), cur_frame);
+            }
 
             set_output("x", std::make_shared<zeno::NumericObject>(v[0]));
             set_output("y", std::make_shared<zeno::NumericObject>(v[1]));
@@ -396,6 +411,11 @@ ZENDEFNODE(PrimitiveCurvemap, {
                     "float",
                     "w",
                     "0",
+                },
+                {
+                    "enum clamp zero cycle",
+                    "type",
+                    "clamp",
                 },
             },
             // category
