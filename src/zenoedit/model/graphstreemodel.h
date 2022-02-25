@@ -5,14 +5,15 @@
 
 class GraphsModel;
 class SubGraphModel;
+class IGraphsModel;
 
 class GraphsTreeModel : public QStandardItemModel
 {
 	Q_OBJECT
 public:
-	GraphsTreeModel(GraphsModel* pTreeModel, QObject* parent = nullptr);
+	GraphsTreeModel(QObject* parent = nullptr);
 	~GraphsTreeModel();
-	void init(GraphsModel* pModel);
+	void init(IGraphsModel* pModel);
 
 public slots:
 	void on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());

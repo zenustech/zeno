@@ -11,6 +11,7 @@
 #include <zenoui/model/modeldata.h>
 
 class SubGraphModel;
+class ZenoGraphsEditor;
 
 class ZenoNode : public QGraphicsWidget
 {
@@ -97,6 +98,7 @@ private:
     void _initSocketItemPos();
     void _initStatusBtnPos();
     void _drawBorderWangStyle(QPainter* painter);
+    ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

@@ -88,9 +88,22 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 {
 }
 
-void ZenoGraphsEditor::onItemActivated(const QString& subGraphName)
+void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)
 {
-    m_pTabWidget->activate(subGraphName);
+    if (m_bListView)
+    {
+        // subgraph node.
+        const QString& subgName = nodeIdx.data(ROLE_OBJNAME).toString();
+        m_pTabWidget->activate(subgName);
+    }
+    else
+    {
+		// subgraph node.
+		const QString& subgName = nodeIdx.data(ROLE_OBJNAME).toString();
+        QString path = m_pLayerWidget->path();
+        path += "/" + subgName;
+        m_pLayerWidget->resetPath(path, "");
+    }
 }
 
 void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)

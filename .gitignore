@@ -62,6 +62,9 @@ CMakeSettings.json
 /z
 .vim_localrc
 
+Debug/
+Release/
+
 # zhxx files
 assets/smoke
 projects/Euler

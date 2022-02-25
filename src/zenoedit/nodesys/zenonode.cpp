@@ -801,6 +801,18 @@ bool ZenoNode::sceneEvent(QEvent *event)
     return _base::sceneEvent(event);
 }
 
+ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
+{
+    QWidget* p = pWidget;
+    while (p)
+    {
+        if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(p))
+            return pEditor;
+        p = p->parentWidget();
+    }
+    return nullptr;
+}
+
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
     scene()->clearSelection();
@@ -852,16 +864,11 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         QModelIndex subgIdx = pModel->index(name);
         if (subgIdx.isValid())
         {
-			const QWidgetList& list = QApplication::topLevelWidgets();
-			for (QWidget* w : list)
-			{
-				ZenoMainWindow* mainWindow = qobject_cast<ZenoMainWindow*>(w);
-				if (mainWindow)
-				{
-					ZenoGraphsEditor* pEditor = mainWindow->editor();
-					pEditor->onItemActivated(name);
-				}
-			}
+            ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
+            if (pEditor)
+            {
+                pEditor->onPageActivated(subGraphIndex(), index());
+            }
         }
     }
 }

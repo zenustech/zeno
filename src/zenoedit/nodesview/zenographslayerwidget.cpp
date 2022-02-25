@@ -13,6 +13,7 @@ LayerPathWidget::LayerPathWidget(QWidget* parent)
 	, m_pForward(nullptr)
 	, m_pBackward(nullptr)
 {
+	m_pLayerWidget = qobject_cast<ZenoGraphsLayerWidget*>(parent);
 	QHBoxLayout* pLayout = new QHBoxLayout;
 	m_pForward = new ZIconButton(QIcon(":/icons/forward.svg"), QSize(28, 28), QColor(), QColor());
 	m_pBackward = new ZIconButton(QIcon(":/icons/backward.svg"), QSize(28, 28), QColor(), QColor());
@@ -36,11 +37,11 @@ void LayerPathWidget::setPath(const QString& path)
 		}
 	}
 
-	QStringList L = m_path.split("/");
-	for (QString item : L)
+	QStringList L = m_path.split("/", Qt::SkipEmptyParts);
+	for (int i = 0; i < L.length(); i++)
 	{
-		if (item.isEmpty())
-			continue;
+		const QString& item = L[i];
+		Q_ASSERT(!item.isEmpty());
 		QColor clrHovered, clrSelected;
 		clrHovered = QColor(67, 67, 67);
 		clrSelected = QColor(33, 33 ,33);
@@ -53,9 +54,54 @@ void LayerPathWidget::setPath(const QString& path)
 		pLayout->addWidget(pLabel);
 		if (L.indexOf(item) != L.length() - 1)
 			pLayout->addWidget(pArrow);
+
+		connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
 	}
 	pLayout->addStretch();
 	update();
+}
+
+QString LayerPathWidget::path() const
+{
+	return m_path;
+}
+
+void LayerPathWidget::onPathItemClicked()
+{
+	ZIconButton* pClicked = qobject_cast<ZIconButton*>(sender());
+	QString path;
+	QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(this->layout());
+
+	bool bStartDeleted = false;
+	for (int i = 0; i < pLayout->count();)
+	{
+		QLayoutItem* pItem = pLayout->itemAt(i);
+		QWidget* w = pItem->widget();
+		if (bStartDeleted)
+		{
+			if (qobject_cast<ZIconButton*>(w))
+			{
+				pLayout->removeItem(pItem);
+				delete w;
+				continue;
+			}
+		}
+		else
+		{
+			if (ZIconButton* pPathItem = qobject_cast<ZIconButton*>(w))
+			{
+				if (pPathItem != m_pForward && pPathItem != m_pBackward)
+					path += "/" + pPathItem->text();
+			}
+		}
+		if (w == pClicked)
+		{
+			bStartDeleted = true;
+		}
+		i++;
+	}
+	m_path = path;
+	m_pLayerWidget->activeByPath(path);
 }
 
 
@@ -102,7 +148,7 @@ ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent)
 	, m_graphsWidget(nullptr)
 {
 	QVBoxLayout* pLayout = new QVBoxLayout;
-	m_pPathWidget = new LayerPathWidget;
+	m_pPathWidget = new LayerPathWidget(this);
 	m_pPathWidget->hide();
 	pLayout->addWidget(m_pPathWidget);
 	m_graphsWidget = new ZenoStackedViewWidget;
@@ -118,4 +164,16 @@ void ZenoGraphsLayerWidget::resetPath(const QString& path, const QString& nodeId
 	QStringList L = path.split("/", QtSkipEmptyParts);
 	const QString& subGraph = L[L.length() - 1];
 	m_graphsWidget->activate(subGraph, nodeId);
+}
+
+void ZenoGraphsLayerWidget::activeByPath(const QString& path)
+{
+	QStringList L = path.split("/", QtSkipEmptyParts);
+	const QString& subGraph = L[L.length() - 1];
+	m_graphsWidget->activate(subGraph, "");
+}
+
+QString ZenoGraphsLayerWidget::path() const
+{
+	return m_pPathWidget->path();
 }

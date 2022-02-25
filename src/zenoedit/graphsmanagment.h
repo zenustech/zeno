@@ -16,6 +16,7 @@ public:
     GraphsManagment(QObject *parent = nullptr);
     void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
+    GraphsTreeModel* treeModel();
     IGraphsModel* openZsgFile(const QString &fn);
     void importGraph(const QString &fn);
     ZenoSubGraphScene* scene(const QString& subGraphName);
@@ -28,6 +29,7 @@ public:
 private:
     IGraphsModel *m_model;
     QMap<QString, ZenoSubGraphScene*> m_scenes;     //key may be subgraph name or path if treemodel enable.
+    GraphsTreeModel* m_pTreeModel;
     QString m_currFile;
 };
 
