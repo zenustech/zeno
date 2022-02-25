@@ -1,8 +1,8 @@
+#include <zeno/utils/log.h>
 #ifdef ZENO_ENABLE_SPDLOG
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <zeno/utils/logger.h>
 #include <cassert>
 #include <cstring>
 #include <cstdio>
@@ -49,6 +49,18 @@ struct initialize_spdlog {
 #endif
     }
 } initialize_spdlog_v;
+}
+
+}
+#else
+#include <zeno/utils/format.h>
+#include <iostream>
+
+namespace zeno {
+
+//enum level_enum { trace = 0, debug, info, critical, warn, err };
+ZENO_API void __impl_log_print(log_level::level_enum level, source_location const &loc, std::string_view msg) {
+    std::cerr << format("[{}] ({}:{}) {}", "TDICWE"[(int)level - (int)log_level::trace], loc.file_name(), loc.line(), msg) << std::endl;
 }
 
 }

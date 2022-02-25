@@ -5,8 +5,8 @@
 
 namespace zeno {
 
-template <class ...Ts>
-void tostr(T0 &&t0, Ts &&...ts) {
+template <class T0, class ...Ts>
+std::string tostr(T0 &&t0, Ts &&...ts) {
     std::ostringstream ss;
     ss << std::forward<T0>(t0);
     if constexpr (sizeof...(Ts))

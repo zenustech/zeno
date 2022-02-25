@@ -1,6 +1,6 @@
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
-#include <zeno/utils/format.h>
+#include <zeno/utils/cformat.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
