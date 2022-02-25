@@ -829,19 +829,15 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     const QString& name = m_index.data(ROLE_OBJNAME).toString();
-    QModelIndex subgIdx = pGraphsModel->index(name);
-    if (subgIdx.isValid())
+    QModelIndex subnetnodeIdx = pGraphsModel->index(name);
+    if (subnetnodeIdx.isValid())
     {
         QAction* pFork = new QAction("Fork");
         nodeMenu->addAction(pFork);
-        connect(pFork, &QAction::triggered, this, [=]() {
-            QModelIndex newSubgIdx = pGraphsModel->fork(name);
+        connect(pFork, &QAction::triggered, this, [=]()
+        {
+            pGraphsModel->fork(m_subGpIndex, index());
             zenoApp->graphsManagment()->initScenes(pGraphsModel);
-            if (newSubgIdx.isValid())
-			{
-				const QString& subgName = pGraphsModel->name(newSubgIdx);
-				pGraphsModel->setData2(m_subGpIndex, m_index, subgName, ROLE_OBJNAME);
-            }
         });
     }
 

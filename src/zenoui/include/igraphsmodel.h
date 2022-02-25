@@ -29,7 +29,12 @@ public:
 	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
-	virtual QModelIndex fork(const QString& subgName) = 0;	//fork is applied for legacy plain model.
+
+	/*
+	 fork subnet node indexed by subnetNodeIdx under subgIdx. 
+	 */
+	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
+
 	//virtual QModelIndex clone()
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;

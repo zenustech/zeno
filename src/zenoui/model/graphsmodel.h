@@ -36,7 +36,7 @@ public:
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
     void appendSubGraph(SubGraphModel* pGraph);
-    QModelIndex fork(const QString& subgName) override;
+    QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
     void removeGraph(int idx) override;
     void initDescriptors() override;
     bool isDirty() const override;
