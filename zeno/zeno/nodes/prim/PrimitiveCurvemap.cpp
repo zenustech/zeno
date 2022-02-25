@@ -393,22 +393,27 @@ ZENDEFNODE(PrimitiveCurvemap, {
             // params
             {
                 {
-                    "float",
+                    "enum 100 10 1 0.1 0.01 0.001",
+                    "speed",
+                    "1",
+                },
+                {
+                    "floatslider",
                     "x",
                     "0",
                 },
                 {
-                    "float",
+                    "floatslider",
                     "y",
                     "0",
                 },
                 {
-                    "float",
+                    "floatslider",
                     "z",
                     "0",
                 },
                 {
-                    "float",
+                    "floatslider",
                     "w",
                     "0",
                 },

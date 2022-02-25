@@ -5,6 +5,7 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.keyframes = {}
+        self.base_value = 1
 
     def initSockets(self):
         super().initSockets()
@@ -22,6 +23,11 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         button2.setWidthHeight(100, 20)
         button2.setText('Edit Curve')
         self.height += 60
+
+        def callback(text):
+            self.base_value = float(text)
+
+        self.params['speed'].edit.textActivated.connect(callback)
 
     def dump(self):
         ident, data = super().dump()
