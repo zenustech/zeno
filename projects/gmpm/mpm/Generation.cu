@@ -563,8 +563,8 @@ struct MakeZSLevelSet : INode {
     std::vector<zs::PropertyTag> tags{{"sdf", 1}};
 
     auto ls = std::make_shared<ZenoLevelSet>();
-    ls->transferScheme = get_input2<std::string>("transfer");
-    auto cateStr = get_input2<std::string>("category");
+    ls->transferScheme = get_param<std::string>("transfer");
+    auto cateStr = get_param<std::string>("category");
 
     // default is "cellcentered"
     if (cateStr == "staggered")
@@ -616,14 +616,15 @@ struct MakeZSLevelSet : INode {
     set_output("ZSLevelSet", std::move(ls));
   }
 };
-ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"},
-                                {"string", "transfer", "unknown"},
-                                {"string", "category", "cellcentered"}},
-                               {"ZSLevelSet"},
-                               {},
-                               {"SOP"},
-                           });
+ZENDEFNODE(MakeZSLevelSet,
+           {
+               {{"float", "dx", "0.1"}},
+               {"ZSLevelSet"},
+               {{"enum unknown apic flip", "transfer", "unknown"},
+                {"enum cellcentered collocated staggered", "category",
+                 "cellcentered"}},
+               {"SOP"},
+           });
 
 struct ToZSBoundary : INode {
   void apply() override {
