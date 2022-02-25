@@ -2,9 +2,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/extra/GlobalState.h>
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <map>
 
 namespace zeno { // credits by zhouhang
     using zeno::vec2f;
@@ -307,4 +309,99 @@ ZENDEFNODE(PrimitiveCurvemap, {
     },
     {"primitive"},
 });
+
+    static zeno::vec4f lerp4(zeno::vec4f src, zeno::vec4f dst, float t) {
+        return src + (dst - src) * t;
+    }
+
+    static zeno::vec4f query_cur_value(std::map<int, zeno::vec4f> keyframes, int cur_frame) {
+        std::vector<int> less;
+        std::vector<int> more;
+        for (auto it = keyframes.begin(); it != keyframes.end(); it++) {
+            if (it->first <= cur_frame) {
+                less.push_back(it->first);
+            } else {
+                more.push_back(it->first);
+            }
+        }
+        if (less.size() == 0) {
+            return zeno::vec4f(0, 0, 0, 0);
+        }
+        if (more.size() == 0 || less.back() == cur_frame) {
+            return keyframes[less.back()];
+        }
+        float t = (float)(cur_frame - less.back()) / (more.front() - less.back());
+
+        zeno::vec4f v = lerp4(keyframes[less.back()], keyframes[more.front()], t);
+        return v;
+
+    }
+    struct DynamicNumber : zeno::INode {
+        virtual void apply() override {
+            std::map<int, zeno::vec4f> keyframes;
+            auto _points = get_param<std::string>("_POINTS");
+            std::stringstream ss(_points);
+            int count;
+            ss >> count;
+            for (int i = 0; i < count; i++) {
+                int f = 0;
+                float x = 0;
+                float y = 0;
+                float z = 0;
+                float w = 0;
+                ss >> f >> x >> y >> z >> w;
+                keyframes[f] = zeno::vec4f(x, y, z, w);
+            }
+            int cur_frame = zeno::state.frameid;
+            zeno::vec4f v = query_cur_value(std::move(keyframes), cur_frame);
+
+            set_output("x", std::make_shared<zeno::NumericObject>(v[0]));
+            set_output("y", std::make_shared<zeno::NumericObject>(v[1]));
+            set_output("z", std::make_shared<zeno::NumericObject>(v[2]));
+            set_output("w", std::make_shared<zeno::NumericObject>(v[3]));
+        }
+    };
+    ZENDEFNODE(
+        DynamicNumber,
+        {
+            // inputs
+            {
+                "frame"
+            },
+            // outpus
+            {
+                "x",
+                "y",
+                "z",
+                "w",
+            },
+            // params
+            {
+                {
+                    "float",
+                    "x",
+                    "0",
+                },
+                {
+                    "float",
+                    "y",
+                    "0",
+                },
+                {
+                    "float",
+                    "z",
+                    "0",
+                },
+                {
+                    "float",
+                    "w",
+                    "0",
+                },
+            },
+            // category
+            {
+                "numeric",
+            }
+        }
+    );
 }
