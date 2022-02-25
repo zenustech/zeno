@@ -3,7 +3,7 @@
 #include <zeno/core/IObject.h>
 #include <string>
 #include <cstring>
-#include <cassert>
+#include <vector>
 
 namespace zeno
 {
@@ -14,45 +14,49 @@ namespace zeno
         std::string vert;
         std::string frag;
 
-        size_t serialize(char buff[])
+        std::vector<char> serialize()
         {
+            std::vector<char> str;
+
             size_t i{0};
 
             auto vertLen{vert.size()};
-            memcpy(buff + i, &vertLen, sizeof(vertLen));
+            auto fragLen{frag.size()};
+            str.resize(vertLen + sizeof(vertLen) + fragLen + sizeof(fragLen));
+
+            memcpy(str.data() + i, &vertLen, sizeof(vertLen));
             i += sizeof(vertLen);
 
-            vert.copy(buff + i, vertLen);
+            vert.copy(str.data() + i, vertLen);
             i += vertLen;
 
-            auto fragLen{frag.size()};
-            memcpy(buff + i, &fragLen, sizeof(fragLen));
+            memcpy(str.data() + i, &fragLen, sizeof(fragLen));
             i += sizeof(fragLen);
 
-            frag.copy(buff + i, fragLen);
+            frag.copy(str.data() + i, fragLen);
             i += fragLen;
 
-            return i + 1;
+            return str;
         }
 
-        static MaterialObject deserialize(char buff[], size_t size)
+        static MaterialObject deserialize(std::vector<char> str)
         {
             MaterialObject mtl;
 
             size_t i{0};
 
             size_t vertLen;
-            memcpy(&vertLen, buff + i, sizeof(vertLen));
+            memcpy(&vertLen, str.data() + i, sizeof(vertLen));
             i += sizeof(vertLen);
 
-            mtl.vert = {std::string{buff + i, vertLen}};
+            mtl.vert = std::string{str.data() + i, vertLen};
             i += vertLen;
 
             size_t fragLen;
-            memcpy(&fragLen, buff + i, sizeof(fragLen));
+            memcpy(&fragLen, str.data() + i, sizeof(fragLen));
             i += sizeof(fragLen);
 
-            mtl.frag = {std::string{buff + i, fragLen}};
+            mtl.frag = std::string{str.data() + i, fragLen};
             i += fragLen;
 
             return mtl;

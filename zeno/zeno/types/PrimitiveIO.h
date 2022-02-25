@@ -68,10 +68,10 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
 
     if (prim->mtl != nullptr)
     {
-        char buff[4096]{};
-        size = prim->mtl->serialize(buff);
+        auto mtlStr = prim->mtl->serialize();
+        size = mtlStr.size();
         fwrite(&size, sizeof(size_t), 1, fp);
-        fwrite(buff, sizeof(char), size, fp);
+        fwrite(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
     }
     else
     {
@@ -159,10 +159,10 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     fread(&size, sizeof(size_t), 1, fp);
     if (size != 0)
     {
-        char buff[4096]{};
-        fread(buff, sizeof(char), size, fp);
-        auto mtl = std::make_shared<MaterialObject>(MaterialObject::deserialize(buff, size));
-        prim->mtl = mtl;
+        std::vector<char> mtlStr;
+        mtlStr.resize(size);
+        fread(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
+        prim->mtl = std::make_shared<MaterialObject>(MaterialObject::deserialize(mtlStr));
     }
 
     fclose(fp);
