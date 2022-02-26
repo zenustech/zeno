@@ -386,6 +386,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
             set_output("y", std::make_shared<zeno::NumericObject>(v[1]));
             set_output("z", std::make_shared<zeno::NumericObject>(v[2]));
             set_output("w", std::make_shared<zeno::NumericObject>(v[3]));
+            set_output("vec3", std::make_shared<zeno::NumericObject>(zeno::vec3f(v[0], v[1], v[2])));
         }
     };
     ZENDEFNODE(
@@ -397,6 +398,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
             },
             // outpus
             {
+                "vec3",
                 "x",
                 "y",
                 "z",
