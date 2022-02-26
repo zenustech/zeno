@@ -14,7 +14,7 @@ namespace zeno
       auto frag = get_input<zeno::StringObject>("frag")->get();
       auto mtl = std::make_shared<zeno::MaterialObject>();
 
-      vert = R"(
+      if (vert.empty()) vert = R"(
 #version 120
 
 uniform mat4 mVP;
@@ -42,7 +42,7 @@ void main()
 }
 )";
 
-      frag = R"(
+      if (frag.empty()) frag = R"(
 #version 120
 
 uniform mat4 mVP;
