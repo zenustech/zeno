@@ -5,10 +5,13 @@
 
 namespace zeno {
 
-struct TreeNode : INode {
-    ZENO_API void settle(std::string output,
-                         std::vector<std::string> const &inputs,
-                         std::vector<std::string> const &params);
+struct TreeNode : std::enable_shared_from_this<TreeNode>, INode {
+    ZENO_API virtual void apply() override;
+    ZENO_API virtual int determineType() = 0;
+    ZENO_API static int determineTypeOf(IObject *object);
+
+    ZENO_API TreeNode();
+    ZENO_API ~TreeNode();
 };
 
 }
