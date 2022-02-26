@@ -22,8 +22,78 @@
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/ContextManaged.h>
+#include <zeno/types/NumericObject.h>
 
-using VectorType = StdVector<double,double2>;
+using VectorType = StdVector<double,double>;
+
+
+
+struct RawDoubleObject : zeno::IObject
+{
+    double * data = nullptr;
+    int num = 0;
+};
+
+
+struct VectorTypeObject : zeno::IObject
+{
+    std::shared_ptr<VectorType> vector = nullptr;
+};
+
+struct ConvertRawdataToVecotor : zeno::INode {
+    virtual void apply() override {
+
+        auto x_raw = get_input<RawDoubleObject>("RawDoubleObject");
+
+        auto vector_object = std::make_shared<VectorTypeObject>();
+        vector_object->vector = std::make_shared<VectorType>();
+        vector_object->vector->resize(x_raw->num);
+
+        for (size_t i = 0; i < x_raw->num; i++)
+        {
+            vector_object->vector->data()[i] = x_raw->data[i];
+        }
+        
+        set_output("VectorTypeObject", std::move(vector_object));
+    }
+};
+
+ZENDEFNODE(ConvertRawdataToVecotor,
+        { /* inputs: */ {
+            "RawDoubleObject",
+        }, /* outputs: */ {
+            "VectorTypeObject",
+        }, /* params: */ {
+            // defl min max; defl min; defl
+        }, /* category: */ {
+            "Zentricle",
+        }});
+
+struct MakeRawDoubleObject : zeno::INode {
+    virtual void apply() override {
+        auto raw_double_array = std::make_shared<RawDoubleObject>();
+
+        auto num = get_param<int>("value");
+        auto data = (double*)malloc(num*sizeof(double));
+        std::fill(data, data+num, 1.0);
+
+        raw_double_array->num = num;
+        raw_double_array->data = data;
+
+        set_output("RawDoubleObject", std::move(raw_double_array));
+    }
+};
+
+ZENDEFNODE(MakeRawDoubleObject,
+        { /* inputs: */ {
+        }, /* outputs: */ {
+        "RawDoubleObject",
+        }, /* params: */ {
+        {"int", "value", "0"},  // defl min max; defl min; defl
+        }, /* category: */ {
+        "Zentricle",
+        }});
+
 
 struct NonlinearProblemObject : zeno::IObject, NonlinearProblem<VectorType>
 {
@@ -50,12 +120,10 @@ struct CalculateResidual : zeno::INode {
         auto args = get_input<zeno::DictObject>("args");
         auto rets = std::make_shared<zeno::DictObject>();
 
-        // std::cout << " Calculate Residual 1 \n"; 
         auto x = zeno::safe_any_cast<VectorType>(args->lut.at("x"));
         VectorType r;
-        r.resize(1);
+        r.resize(x.size());
         CHECK_F(x.size() == r.size(), "Wrong size.");
-        // std::cout << " Calculate Residual 1 \n"; 
 
         auto _x = flatten(x).data;
         auto _r = flatten(r).data;
@@ -113,8 +181,8 @@ struct MakeJFNKSolver : zeno::INode {
     virtual void apply() override {
 
         // TODO : Need parameters such as problem size, line search newton solver, bicgstab
-
-        auto bicgstab = std::make_shared<BiCGSTAB<VectorType>>(1);
+        auto num = get_input<zeno::NumericObject>("num")->get<int>();
+        auto bicgstab = std::make_shared<BiCGSTAB<VectorType>>(num);
         auto ns = std::make_shared<NewtonSolver<VectorType>>(bicgstab);
         auto method = ns->method();
         LOG_F(INFO, "using %s. ", method.c_str());
@@ -128,6 +196,7 @@ struct MakeJFNKSolver : zeno::INode {
 
 ZENDEFNODE(MakeJFNKSolver,
         { /* inputs: */ {
+            "num",
         }, /* outputs: */ {
             "JFNKSolverObject",
         }, /* params: */ {
@@ -137,52 +206,20 @@ ZENDEFNODE(MakeJFNKSolver,
         }});
 
 
-struct RawDoubleObject : zeno::IObject
-{
-    double * data = nullptr;
-    int num = 0;
-};
-
-struct MakeRawDoubleObject : zeno::INode {
+struct PrintVectorTypeObject : zeno::INode {
     virtual void apply() override {
-        auto raw_double_array = std::make_shared<RawDoubleObject>();
+        auto x = get_input<VectorTypeObject>("VectorTypeObject")->vector;
 
-        auto num = get_param<int>("value");
-        auto data = (double*)malloc(num*sizeof(double));
-        std::fill(data, data+num, 1.0);
-
-        raw_double_array->num = num;
-        raw_double_array->data = data;
-
-        set_output("RawDoubleObject", std::move(raw_double_array));
-    }
-};
-
-ZENDEFNODE(MakeRawDoubleObject,
-        { /* inputs: */ {
-        }, /* outputs: */ {
-        "RawDoubleObject",
-        }, /* params: */ {
-        {"int", "value", "0"},  // defl min max; defl min; defl
-        }, /* category: */ {
-        "Zentricle",
-        }});
-
-
-struct PrintRawDoubleObject : zeno::INode {
-    virtual void apply() override {
-        auto x_raw = get_input<RawDoubleObject>("RawDoubleObject");
-
-        for (size_t i = 0; i < x_raw->num; i++)
+        for (size_t i = 0; i < x->size(); i++)
         {
-            printf("%lf\n", x_raw->data[i]);
+            printf("%lf\n", x->data()[i]);
         }
     }
 };
 
-ZENDEFNODE(PrintRawDoubleObject,
+ZENDEFNODE(PrintVectorTypeObject,
         { /* inputs: */ {
-        "RawDoubleObject",
+        "VectorTypeObject",
         }, /* outputs: */ {
         }, /* params: */ {
         // defl min max; defl min; defl
@@ -196,48 +233,35 @@ struct SolveNonlinearProblem : zeno::INode {
 
         auto jfnk_solver = get_input<JFNKSolverObject>("JFNKSolverObject");
         auto nlp = get_input<NonlinearProblemObject>("NonlinearProblemObject");
-        auto x_raw = get_input<RawDoubleObject>("RawDoubleObject");
+
+        auto x_vector_object = get_input<VectorTypeObject>("VectorTypeObject");
+        auto x_vector_ptr = x_vector_object->vector;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // NOTE : we solve F(x) = b here. But b is not necessary. b is to be removed. 
-        VectorType x0;
         VectorType bb;
-
-        auto size = x_raw->num/x0.value_size();
-        CHECK_F(x_raw->num%x0.value_size()==0, "Wrong size.");
-
-        x0.resize(size);
-        bb.resize(size);
-
-        auto _x0 = flatten(x0);
-        auto _bb = flatten(bb);
-
-        for (size_t i = 0; i < x_raw->num; i++)
-        {
-            _x0.data[i] = x_raw->data[i];
-            _bb.data[i] = 0.0;
-        }
+        bb.resize(x_vector_ptr->size());
         /////////////////////////////////////////////////////////////////////////////////////////////
 
-        auto nonlinear_result = jfnk_solver->ns->Solve(nlp, x0, bb);
-        for (size_t i = 0; i < x_raw->num; i++)
-        {
-            x_raw->data[i] = _x0.data[i];
-        }
+        auto nonlinear_result = jfnk_solver->ns->Solve(nlp, *x_vector_ptr, bb);
 
-        LOG_F(WARNING, "Noninear solver successful??????? %d", nonlinear_result.first);
-        LOG_F(WARNING, "residual : %lf, iter : %d", nonlinear_result.second.first, nonlinear_result.second.second);
-        
-        set_output("RawDoubleObject", std::move(x_raw));
+
+        if ( nonlinear_result.first) {
+            LOG_F(WARNING, "Noninear solver succeed");
+            LOG_F(WARNING, "residual : %lf, iter : %d", nonlinear_result.second.first, nonlinear_result.second.second);
+        }
+        else LOG_F(WARNING, "Noninear solver failed");
+
+        set_output("VectorTypeObject", std::move(x_vector_object));
     }
 };
 
 
 ZENDEFNODE(SolveNonlinearProblem,
         { /* inputs: */ {
-            "JFNKSolverObject", "NonlinearProblemObject", "RawDoubleObject",
+            "NonlinearProblemObject", "JFNKSolverObject", "VectorTypeObject",
         }, /* outputs: */ {
-            "RawDoubleObject",
+            "VectorTypeObject",
         }, /* params: */ {
         {},  // defl min max; defl min; defl
         }, /* category: */ {

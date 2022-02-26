@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      167.18541987169112,
-      689.0947667081855
+      -300.5532735956456,
+      541.4565757534112
      ],
      "options": []
     },
@@ -39,8 +39,8 @@
      },
      "params": {},
      "uipos": [
-      -31.94034056802775,
-      915.9211704855329
+      -580.6840591609928,
+      699.03674837498
      ],
      "options": []
     },
@@ -65,28 +65,10 @@
      },
      "params": {},
      "uipos": [
-      268.05965943197236,
-      915.9211704855329
+      -72.94536569365582,
+      746.071924254377
      ],
      "options": []
-    },
-    "c227fd2f-MakeJFNKSolver": {
-     "name": "MakeJFNKSolver",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      532.6876457800946,
-      696.0303855025977
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "7211c4a7-MakeNonlinearProblemObject": {
      "name": "MakeNonlinearProblemObject",
@@ -104,43 +86,12 @@
      },
      "params": {},
      "uipos": [
-      520.6057345172964,
-      985.190795058912
+      179.60070939166815,
+      815.3415488277561
      ],
      "options": [
       "ONCE"
      ]
-    },
-    "f09bc162-SolveNonlinearProblem": {
-     "name": "SolveNonlinearProblem",
-     "inputs": {
-      "JFNKSolverObject": [
-       "c227fd2f-MakeJFNKSolver",
-       "JFNKSolverObject",
-       null
-      ],
-      "NonlinearProblemObject": [
-       "7211c4a7-MakeNonlinearProblemObject",
-       "NonlinearProblemObject",
-       null
-      ],
-      "RawDoubleObject": [
-       "86a3b179-MakeRawDoubleObject",
-       "RawDoubleObject",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      841.5818437323131,
-      1180.9177575162494
-     ],
-     "options": []
     },
     "86a3b179-MakeRawDoubleObject": {
      "name": "MakeRawDoubleObject",
@@ -155,18 +106,57 @@
       "value": 2
      },
      "uipos": [
-      392.9402055070574,
-      1212.9348223626657
+      -570.3010005230933,
+      1253.7639680913087
      ],
      "options": [
       "ONCE"
      ]
     },
-    "28e77680-PrintRawDoubleObject": {
-     "name": "PrintRawDoubleObject",
+    "a0a524e0-MakeJFNKSolver": {
+     "name": "MakeJFNKSolver",
+     "inputs": {
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -133.5929648241207,
+      994.9246231155782
+     ],
+     "options": []
+    },
+    "f1a83977-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      -557.2361809045226,
+      943.3165829145727
+     ],
+     "options": []
+    },
+    "8bb99697-ConvertRawdataToVecotor": {
+     "name": "ConvertRawdataToVecotor",
      "inputs": {
       "RawDoubleObject": [
-       "f09bc162-SolveNonlinearProblem",
+       "86a3b179-MakeRawDoubleObject",
        "RawDoubleObject",
        null
       ],
@@ -178,19 +168,78 @@
      },
      "params": {},
      "uipos": [
-      1160.0581030150756,
-      1224.3640075376884
+      -147.6381909547739,
+      1229.4472361809046
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "7c6673db-PrintVectorTypeObject": {
+     "name": "PrintVectorTypeObject",
+     "inputs": {
+      "VectorTypeObject": [
+       "deb3c8a6-SolveNonlinearProblem",
+       "VectorTypeObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      979.8994974874373,
+      891.0552763819096
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "deb3c8a6-SolveNonlinearProblem": {
+     "name": "SolveNonlinearProblem",
+     "inputs": {
+      "NonlinearProblemObject": [
+       "7211c4a7-MakeNonlinearProblemObject",
+       "NonlinearProblemObject",
+       null
+      ],
+      "JFNKSolverObject": [
+       "a0a524e0-MakeJFNKSolver",
+       "JFNKSolverObject",
+       null
+      ],
+      "RawDoubleObject": [
+       null,
+       null,
+       null
+      ],
+      "VectorTypeObject": [
+       "8bb99697-ConvertRawdataToVecotor",
+       "VectorTypeObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      645.427135678392,
+      833.56783919598
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -282.0665515892738,
-    "y": 544.7659543646841,
-    "width": 1950.0,
-    "height": 884.9999999999985
+    "x": -433.0653015729266,
+    "y": 684.1846227882302,
+    "width": 1560.0,
+    "height": 707.9999999999985
    }
   }
  },
@@ -750,6 +799,36 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "ConvertRawdataToVecotor": {
+   "inputs": [
+    [
+     "",
+     "RawDoubleObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VectorTypeObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "CopyAllUserData": {
@@ -2482,6 +2561,11 @@
   },
   "MakeJFNKSolver": {
    "inputs": [
+    [
+     "",
+     "num",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -6089,31 +6173,6 @@
     "numeric"
    ]
   },
-  "PrintRawDoubleObject": {
-   "inputs": [
-    [
-     "",
-     "RawDoubleObject",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Zentricle"
-   ]
-  },
   "PrintString": {
    "inputs": [
     [
@@ -6137,6 +6196,31 @@
    "params": [],
    "categories": [
     "string"
+   ]
+  },
+  "PrintVectorTypeObject": {
+   "inputs": [
+    [
+     "",
+     "VectorTypeObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "RandomParticles": {
@@ -6502,17 +6586,22 @@
    "inputs": [
     [
      "",
-     "JFNKSolverObject",
-     ""
-    ],
-    [
-     "",
      "NonlinearProblemObject",
      ""
     ],
     [
      "",
+     "JFNKSolverObject",
+     ""
+    ],
+    [
+     "",
      "RawDoubleObject",
+     ""
+    ],
+    [
+     "",
+     "VectorTypeObject",
      ""
     ],
     [
@@ -6524,7 +6613,7 @@
    "outputs": [
     [
      "",
-     "RawDoubleObject",
+     "VectorTypeObject",
      ""
     ],
     [
