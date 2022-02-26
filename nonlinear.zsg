@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      -300.5532735956456,
-      541.4565757534112
+      54.810852248948095,
+      837.3037041317889
      ],
      "options": []
     },
@@ -27,8 +27,8 @@
      "name": "FuncBegin",
      "inputs": {
       "extraArgs": [
-       null,
-       null,
+       "5225ba97-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -39,8 +39,8 @@
      },
      "params": {},
      "uipos": [
-      -580.6840591609928,
-      699.03674837498
+      -234.28952791099368,
+      994.883876753358
      ],
      "options": []
     },
@@ -65,8 +65,8 @@
      },
      "params": {},
      "uipos": [
-      -72.94536569365582,
-      746.071924254377
+      328.76166555634313,
+      1031.4545256057277
      ],
      "options": []
     },
@@ -86,28 +86,8 @@
      },
      "params": {},
      "uipos": [
-      179.60070939166815,
-      815.3415488277561
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "86a3b179-MakeRawDoubleObject": {
-     "name": "MakeRawDoubleObject",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 2
-     },
-     "uipos": [
-      -570.3010005230933,
-      1253.7639680913087
+      580.1117946957213,
+      1099.528204233161
      ],
      "options": [
       "ONCE"
@@ -129,10 +109,12 @@
      },
      "params": {},
      "uipos": [
-      -133.5929648241207,
-      994.9246231155782
+      586.5346745339856,
+      1293.4626298723344
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "f1a83977-NumericInt": {
      "name": "NumericInt",
@@ -147,8 +129,8 @@
       "value": 2
      },
      "uipos": [
-      -557.2361809045226,
-      943.3165829145727
+      -855.1575280329002,
+      1422.442427509166
      ],
      "options": []
     },
@@ -156,7 +138,7 @@
      "name": "ConvertRawdataToVecotor",
      "inputs": {
       "RawDoubleObject": [
-       "86a3b179-MakeRawDoubleObject",
+       "c28fe426-MakeRawDoubleObject",
        "RawDoubleObject",
        null
       ],
@@ -168,18 +150,18 @@
      },
      "params": {},
      "uipos": [
-      -147.6381909547739,
-      1229.4472361809046
+      452.29688083576525,
+      1617.3822023971202
      ],
      "options": [
-      "VIEW"
+      "ONCE"
      ]
     },
     "7c6673db-PrintVectorTypeObject": {
      "name": "PrintVectorTypeObject",
      "inputs": {
       "VectorTypeObject": [
-       "deb3c8a6-SolveNonlinearProblem",
+       "eb17d827-SolveNonlinearProblem",
        "VectorTypeObject",
        null
       ],
@@ -191,14 +173,37 @@
      },
      "params": {},
      "uipos": [
-      979.8994974874373,
-      891.0552763819096
+      1423.4646368455442,
+      1425.1946344900164
      ],
      "options": [
       "VIEW"
      ]
     },
-    "deb3c8a6-SolveNonlinearProblem": {
+    "c28fe426-MakeRawDoubleObject": {
+     "name": "MakeRawDoubleObject",
+     "inputs": {
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      33.95365287162164,
+      1575.5092905405374
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "eb17d827-SolveNonlinearProblem": {
      "name": "SolveNonlinearProblem",
      "inputs": {
       "NonlinearProblemObject": [
@@ -209,11 +214,6 @@
       "JFNKSolverObject": [
        "a0a524e0-MakeJFNKSolver",
        "JFNKSolverObject",
-       null
-      ],
-      "RawDoubleObject": [
-       null,
-       null,
        null
       ],
       "VectorTypeObject": [
@@ -229,17 +229,49 @@
      },
      "params": {},
      "uipos": [
-      645.427135678392,
-      833.56783919598
+      1042.7340582770244,
+      1327.6494932432395
      ],
      "options": []
+    },
+    "5225ba97-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "num\nobj1"
+     },
+     "uipos": [
+      -497.64432010135005,
+      972.7525337837817
+     ],
+     "options": [],
+     "socket_keys": [
+      "num",
+      "obj1"
+     ]
     }
    },
    "view_rect": {
-    "x": -433.0653015729266,
-    "y": 684.1846227882302,
-    "width": 1560.0,
-    "height": 707.9999999999985
+    "x": -1151.5443495670536,
+    "y": 643.9201353021823,
+    "width": 3046.875,
+    "height": 1382.8124999999966
    }
   }
  },
@@ -2814,6 +2846,11 @@
    "inputs": [
     [
      "",
+     "num",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -2830,13 +2867,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "int",
-     "value",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "Zentricle"
    ]
@@ -6592,11 +6623,6 @@
     [
      "",
      "JFNKSolverObject",
-     ""
-    ],
-    [
-     "",
-     "RawDoubleObject",
      ""
     ],
     [

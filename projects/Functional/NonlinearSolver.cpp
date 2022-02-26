@@ -73,7 +73,9 @@ struct MakeRawDoubleObject : zeno::INode {
     virtual void apply() override {
         auto raw_double_array = std::make_shared<RawDoubleObject>();
 
-        auto num = get_param<int>("value");
+        // auto num = get_param<int>("value");
+        auto num = get_input<zeno::NumericObject>("num")->get<int>();
+
         auto data = (double*)malloc(num*sizeof(double));
         std::fill(data, data+num, 1.0);
 
@@ -86,10 +88,11 @@ struct MakeRawDoubleObject : zeno::INode {
 
 ZENDEFNODE(MakeRawDoubleObject,
         { /* inputs: */ {
+            "num",
         }, /* outputs: */ {
         "RawDoubleObject",
         }, /* params: */ {
-        {"int", "value", "0"},  // defl min max; defl min; defl
+        // defl min max; defl min; defl
         }, /* category: */ {
         "Zentricle",
         }});
@@ -105,7 +108,10 @@ struct NonlinearProblemObject : zeno::IObject, NonlinearProblem<VectorType>
         auto rets = std::make_shared<zeno::DictObject>();
 
         CHECK_F(x.size() == r.size(), "Wrong size.");
-        
+
+        // TODO : x should be a pointer!!!
+        // use std::shared_ptr<const VectorType> x; instead of const VectorType& x
+        // to avoid variable constructions and destructions.
         args->lut["x"] = x;                                             // 封装
         rets->lut = function->call(args->lut);                          // 调用
         r = zeno::safe_any_cast<VectorType>(rets->lut["r"]);            // 解封
@@ -121,6 +127,8 @@ struct CalculateResidual : zeno::INode {
         auto rets = std::make_shared<zeno::DictObject>();
 
         auto x = zeno::safe_any_cast<VectorType>(args->lut.at("x"));
+        // auto r = zeno::safe_any_cast<VectorType>(args->lut.at("x"));
+
         VectorType r;
         r.resize(x.size());
         CHECK_F(x.size() == r.size(), "Wrong size.");
