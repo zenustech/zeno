@@ -366,7 +366,7 @@ struct ZSLevelSetToVDBGrid : INode {
                 -> std::enable_if_t<
                     zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
               using LsT = typename RM_CVREF_T(lsPtr)::element_type;
-              vdb->m_grid = zs::convert_sparse_levelset_to_floatgrid(*lsPtr)
+              vdb->m_grid = zs::convert_sparse_levelset_to_vdbgrid(*lsPtr)
                                 .template as<openvdb::FloatGrid::Ptr>();
             },
             [](...) {})(ls->getBasicLevelSet()._ls);

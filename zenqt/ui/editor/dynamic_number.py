@@ -1,3 +1,4 @@
+from numpy import vdot
 from . import *
 from ..visualize import zenvis
 
@@ -6,6 +7,7 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         super().__init__(parent)
         self.keyframes = {}
         self.base_value = 1
+        self.tmp_value = None
 
     def initSockets(self):
         super().initSockets()
@@ -36,6 +38,8 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
             txt += " {} {} {} {} {}".format(k, v[0], v[1], v[2], v[3])
 
         data['params']['_POINTS'] = txt
+        v = self.tmp_value
+        data['params']['_TMP'] = '' if self.tmp_value == None else '{} {} {} {}'.format(v[0], v[1], v[2], v[3])
         return ident, data
 
     def load(self, ident, data):
@@ -50,3 +54,13 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         ]
         f = zenvis.status['target_frame']
         self.keyframes[f] = v
+        self.tmp_value = None
+
+    def value_modify(self):
+        v = [
+            self.params['x'].getValue(),
+            self.params['y'].getValue(),
+            self.params['z'].getValue(),
+            self.params['w'].getValue(),
+        ]
+        self.tmp_value = v
