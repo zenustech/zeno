@@ -6,17 +6,22 @@
 namespace zeno {
 
 static const char /* see https://docs.gl/sl4/trunc */
-    unops[] = "abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
+    unops[] = "copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees"
+              " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
+              " ceil trunc sign step length normalize",
     binops[] = "add sub mul div mod pow atan2 min max dot cross distance",
     ternops[] = "mix clamp smoothstep";
 
+
 struct TreeTernaryMath : TreeNode {
-    virtual int determineType() override {
+    virtual int determineType(EmissionPass *em) override {
         auto op = get_param<std::string>("op");
         auto in1 = get_input("in1");
         auto in2 = get_input("in2");
-        auto t1 = determineTypeOf(in1);
-        auto t2 = determineTypeOf(in2);
+        auto in3 = get_input("in3");
+        auto t1 = em->determineType(in1.get());
+        auto t2 = em->determineType(in2.get());
+        auto t3 = em->determineType(in3.get());
 
         if (t1 == 1 && t2 == t3) {
             return t2;
@@ -36,6 +41,15 @@ struct TreeTernaryMath : TreeNode {
             throw zeno::Exception("vector dimension mismatch: " + std::to_string(t1) + ", " + std::to_string(t2) + ", " + std::to_string(t3));
         }
     }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto op = get_param<std::string>("op");
+        auto in1 = em->determineExpr(get_input("in1").get());
+        auto in2 = em->determineExpr(get_input("in2").get());
+        auto in3 = em->determineExpr(get_input("in3").get());
+
+        em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ");");
+    }
 };
 
 ZENDEFNODE(TreeTernaryMath, {
@@ -52,12 +66,12 @@ ZENDEFNODE(TreeTernaryMath, {
 });
 
 struct TreeBinaryMath : TreeNode {
-    virtual int determineType() override {
+    virtual int determineType(EmissionPass *em) override {
         auto op = get_param<std::string>("op");
         auto in1 = get_input("in1");
         auto in2 = get_input("in2");
-        auto t1 = determineTypeOf(in1);
-        auto t2 = determineTypeOf(in2);
+        auto t1 = em->determineType(in1.get());
+        auto t2 = em->determineType(in2.get());
 
         if (op == "dot") {
             if (t1 != t2)
@@ -95,6 +109,24 @@ struct TreeBinaryMath : TreeNode {
             throw zeno::Exception("vector dimension mismatch: " + std::to_string(t1) + " != " + std::to_string(t2));
         }
     }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto op = get_param<std::string>("op");
+        auto in1 = em->determineExpr(get_input("in1").get());
+        auto in2 = em->determineExpr(get_input("in2").get());
+
+        if (op == "add") {
+            return em->emitCode(in1 + " + " + in2);
+        } else if (op == "sub") {
+            return em->emitCode(in1 + " - " + in2);
+        } else if (op == "mul") {
+            return em->emitCode(in1 + " * " + in2);
+        } else if (op == "div") {
+            return em->emitCode(in1 + " / " + in2);
+        } else {
+            return em->emitCode(op + "(" + in1 + ", " + in2 + ");");
+        }
+    }
 };
 
 ZENDEFNODE(TreeBinaryMath, {
@@ -111,12 +143,25 @@ ZENDEFNODE(TreeBinaryMath, {
 });
 
 struct TreeUnaryMath : TreeNode {
-    virtual int determineType() override {
+    virtual int determineType(EmissionPass *em) override {
         auto op = get_param<std::string>("op");
         auto in1 = get_input("in1");
-        auto t1 = determineTypeOf(in1);
+        auto t1 = em->determineType(in1.get());
 
         return t1;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto op = get_param<std::string>("op");
+        auto in1 = em->determineExpr(get_input("in1").get());
+
+        if (op == "copy") {
+            return em->emitCode(in1);
+        } else if (op == "neg") {
+            return em->emitCode("-" + in1);
+        } else {
+            return em->emitCode(op + "(" + in1 + ");");
+        }
     }
 };
 
