@@ -11,7 +11,6 @@ namespace zeno {
 struct TreeNode;
 
 struct TreeObject : IObjectClone<TreeObject> {
-    std::shared_ptr<TreeNode> mynode;
     std::vector<std::shared_ptr<IObject>> inputs;
     std::map<std::string, std::shared_ptr<IObject>> params;
 };

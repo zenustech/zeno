@@ -9,7 +9,6 @@ ZENO_API void TreeNode::settle(std::string output,
                                std::vector<std::string> const &inputs,
                                std::vector<std::string> const &params) {
     auto tree = std::make_shared<TreeObject>();
-    tree->mynode = shared_from_this();
     for (auto const &in: inputs) {
         tree->inputs.push_back(get_input(in));
     }
