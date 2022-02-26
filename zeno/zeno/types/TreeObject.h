@@ -11,9 +11,9 @@ namespace zeno {
 struct TreeNode;
 
 struct TreeObject : IObjectClone<TreeObject> {
-    std::shared_ptr<TreeNode> node;
+    TreeNode *node;
 
-    ZENO_API explicit TreeObject(std::shared_ptr<TreeNode> node) : node(std::move(node)) {}
+    ZENO_API explicit TreeObject(TreeNode *node) : node(std::move(node)) {}
 };
 
 }

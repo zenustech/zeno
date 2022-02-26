@@ -10,11 +10,11 @@ ZENO_API TreeNode::TreeNode() = default;
 ZENO_API TreeNode::~TreeNode() = default;
 
 ZENO_API void TreeNode::apply() {
-    auto tree = std::make_shared<TreeObject>(shared_from_this());
+    auto tree = std::make_shared<TreeObject>(this);
     set_output("out", std::move(tree));
 }
 
-ZENO_API EmissionPass::ShaderInfo EmissionPass::finalizeOutput(IObject *object) {
+ZENO_API EmissionPass::FinalCode EmissionPass::finalizeOutput(IObject *object) {
     int type = determineType(object);
     auto defs = collectDefs();
     for (auto const &var: variables) {
@@ -103,7 +103,7 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
 
 ZENO_API void EmissionPass::emitCode(std::string const &line) {
     int idx = lines.size();
-    lines.push_back("tmp" + std::to_string(idx) + " = " + line);
+    lines.push_back("tmp" + std::to_string(idx) + " = " + line + ";");
 }
 
 }

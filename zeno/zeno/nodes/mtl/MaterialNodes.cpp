@@ -15,7 +15,7 @@ static const char /* see https://docs.gl/sl4/trunc */
 
 struct TreeTernaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
         auto in2 = get_input("in2");
         auto in3 = get_input("in3");
@@ -43,12 +43,12 @@ struct TreeTernaryMath : TreeNode {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = em->determineExpr(get_input("in1").get());
         auto in2 = em->determineExpr(get_input("in2").get());
         auto in3 = em->determineExpr(get_input("in3").get());
 
-        em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ");");
+        em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
     }
 };
 
@@ -67,7 +67,7 @@ ZENDEFNODE(TreeTernaryMath, {
 
 struct TreeBinaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
         auto in2 = get_input("in2");
         auto t1 = em->determineType(in1.get());
@@ -111,7 +111,7 @@ struct TreeBinaryMath : TreeNode {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = em->determineExpr(get_input("in1").get());
         auto in2 = em->determineExpr(get_input("in2").get());
 
@@ -124,7 +124,7 @@ struct TreeBinaryMath : TreeNode {
         } else if (op == "div") {
             return em->emitCode(in1 + " / " + in2);
         } else {
-            return em->emitCode(op + "(" + in1 + ", " + in2 + ");");
+            return em->emitCode(op + "(" + in1 + ", " + in2 + ")");
         }
     }
 };
@@ -144,7 +144,7 @@ ZENDEFNODE(TreeBinaryMath, {
 
 struct TreeUnaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
         auto t1 = em->determineType(in1.get());
 
@@ -152,7 +152,7 @@ struct TreeUnaryMath : TreeNode {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto op = get_param<std::string>("op");
+        auto op = get_input2<std::string>("op");
         auto in1 = em->determineExpr(get_input("in1").get());
 
         if (op == "copy") {
@@ -160,7 +160,7 @@ struct TreeUnaryMath : TreeNode {
         } else if (op == "neg") {
             return em->emitCode("-" + in1);
         } else {
-            return em->emitCode(op + "(" + in1 + ");");
+            return em->emitCode(op + "(" + in1 + ")");
         }
     }
 };
@@ -173,6 +173,26 @@ ZENDEFNODE(TreeUnaryMath, {
     },
     {
         {"float", "out"},
+    },
+    {},
+    {"tree"},
+});
+
+struct TreeFinalize : INode {
+    virtual void apply() override {
+        auto in = get_input("in");
+        EmissionPass em;
+        auto info = em.finalizeOutput(in.get());
+        set_output2("code", info.code);
+    }
+};
+
+ZENDEFNODE(TreeFinalize, {
+    {
+        {"tree", "in"},
+    },
+    {
+        {"string", "code"},
     },
     {},
     {"tree"},
