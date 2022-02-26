@@ -115,7 +115,7 @@ class QDMSlider(QSlider):
     
     def try_run_this_frame(self):
         v = self.value()
-        if self.v != v:
+        if self.v != v and self.timeline.editor.always_run:
             self.timeline.editor.try_run_this_frame(v)
             zenvis.status['target_frame'] = int(v)
             self.v = v
