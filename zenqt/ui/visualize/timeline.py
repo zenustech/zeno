@@ -86,12 +86,18 @@ class QDMSlider(QSlider):
         super().__init__(type)
         self.timeline = timeline
         self.valueChanged.connect(self.valueChanged_callback)
+        self.v = None
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(lambda: self.try_run_this_frame())
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.timeline.stop_play()
         value = QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width())
         self.setValue(value)
+        self.timer.stop()
+        self.timer.start(100)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -104,9 +110,15 @@ class QDMSlider(QSlider):
 
     def mouseReleaseEvent(self, e):
         super().mouseReleaseEvent(e)
+        self.timer.stop()
+        self.try_run_this_frame()
+    
+    def try_run_this_frame(self):
         v = self.value()
-        self.timeline.editor.try_run_this_frame(v)
-        zenvis.status['target_frame'] = int(v)
+        if self.v != v:
+            self.timeline.editor.try_run_this_frame(v)
+            zenvis.status['target_frame'] = int(v)
+            self.v = v
 
 
 class TimelineWidget(QWidget):
