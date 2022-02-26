@@ -171,6 +171,7 @@ class FloatSliderEdit(QLineEdit):
         super().mouseReleaseEvent(e)
         self.old = None
         self.start = None
+        self.editingFinished.emit()
 
 class QDMGraphicsParam_floatslider(QDMGraphicsParam_float):
     def __init__(self, parent):
@@ -195,6 +196,10 @@ class QDMGraphicsParam_floatslider(QDMGraphicsParam_float):
 
     def get_base(self):
         return self.p.base_value
+
+    def edit_finished(self):
+        self.p.value_modify()
+        super().edit_finished()
 
 
 class QDMGraphicsParam_string(QDMGraphicsParam):
