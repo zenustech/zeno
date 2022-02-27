@@ -12,6 +12,7 @@
 #ifndef _LINEARPROBLEM_H_
 #define _LINEARPROBLEM_H_
 #include <Timer.h>
+#include <memory>
 
 template<typename VectorType>
 class LinearProblem
@@ -30,7 +31,7 @@ public:
 
     // Function called by matrix free linear solver.
     // must be supplied by the user.
-    virtual void form(const VectorType& x, VectorType& r) = 0;
+    virtual void form(std::shared_ptr<const VectorType> x, std::shared_ptr<VectorType> Ax) = 0;
 
 };
 

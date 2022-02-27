@@ -20,35 +20,42 @@ template<typename VectorType>
 class NonlinearProblem : public LinearProblem<VectorType>
 {
 private:
+
+    std::shared_ptr<VectorType> xk;
+    std::shared_ptr<VectorType> rhs;
+    std::shared_ptr<VectorType> delta_x;
+    std::shared_ptr<VectorType> residual;
     
-    VectorType xk;
-    VectorType rhs;
-    VectorType delta_x;
-    VectorType residual;
-    
-    VectorType r1;
-    VectorType r2;
-    VectorType xk_plus_epsilon_x;
+    std::shared_ptr<VectorType> r1;
+    std::shared_ptr<VectorType> r2;
+    std::shared_ptr<VectorType> xk_plus_epsilon_x;
 
     // used to calculate Jx = (h(x+epsilon*x0)-h(x))/epsilon
     double epsilon = 1e-6;
 
 public:
 
-    VectorType& get_xk()        { return xk; } 
-    VectorType& get_rhs()       { return rhs; } 
-    VectorType& get_delta_x()   { return delta_x; } 
-    VectorType& get_residual()  { return residual; } 
+    std::shared_ptr<VectorType> get_xk()        { return xk; } 
+    std::shared_ptr<VectorType> get_rhs()       { return rhs; } 
+    std::shared_ptr<VectorType> get_delta_x()   { return delta_x; } 
+    std::shared_ptr<VectorType> get_residual()  { return residual; } 
  
     void resize(size_t __size){
+        xk = std::make_shared<VectorType>();
+        rhs = std::make_shared<VectorType>();
+        delta_x = std::make_shared<VectorType>();
+        residual = std::make_shared<VectorType>();
+        r1 = std::make_shared<VectorType>();
+        r2 = std::make_shared<VectorType>();
+        xk_plus_epsilon_x = std::make_shared<VectorType>();
 
-        xk.resize(__size);
-        rhs.resize(__size);
-        delta_x.resize(__size);
-        residual.resize(__size);
-        r1.resize(__size);
-        r2.resize(__size);
-        xk_plus_epsilon_x.resize(__size);
+        xk->resize(__size);
+        rhs->resize(__size);
+        delta_x->resize(__size);
+        residual->resize(__size);
+        r1->resize(__size);
+        r2->resize(__size);
+        xk_plus_epsilon_x->resize(__size);
 
     }
     
@@ -59,44 +66,25 @@ public:
         
     }
 
-    virtual void form(const VectorType& x, VectorType& r) final {
-        
+    virtual void form(std::shared_ptr<const VectorType> x, std::shared_ptr<VectorType> r) final {
+
         // Timer timer("function residual in class MyProblem");
-        LOG_F(WARNING, "Nonlinear form.\n\n");
+        // LOG_F(WARNING, "Nonlinear form.\n\n");
+
+        CHECK_F(x->size() == r->size() && xk->size() == r->size(), "Wrong size.");
         
-        CHECK_F(x.size() == r.size(), "Wrong size.");
-        CHECK_F(xk.size() == r.size(), "Wrong size.");
+        xk_plus_epsilon_x->axpy(epsilon, *x, *xk);
 
-
-
-        // z = a*x + y
-        // z.axpy(a,x,y);
-        // x_k + \epsilon x = xk + epsilon * x;
-        xk_plus_epsilon_x.axpy(epsilon, x, xk);
-
-        // calculate residuals
         Residual(xk, r1);
         Residual(xk_plus_epsilon_x, r2);
 
-        // (h(x0+e*x)-h(x0))/e
-        // r = (r2 - r1)/epsilon
-        // divided into two steps :
-        // r = r2 - r1
-        // r = r*(1/epsilon) = r + (-1+1/epsilon)*r
-
-        // z = a*x + y
-        // z.axpy(a,x,y);
-        r.axpy(-1,r1,r2);
-
-        // x = a*x + y
-        // x.axpy(a,y);
-        r.axpy(1.0/epsilon-1,r);
+        r->axpy(-1,*r1,*r2);
+        r->axpy(1.0/epsilon-1,*r);
     }
 
+    virtual void Residual(std::shared_ptr<const VectorType> x, std::shared_ptr<VectorType> r) = 0;
 
-    virtual void Residual(const VectorType& x, VectorType& r) = 0;
-
-    void Residual(VectorType& r){
+    void Residual(std::shared_ptr<VectorType> r) {
         Residual(xk, r);
     }
     

@@ -39,21 +39,30 @@ class BiCGSTAB : public LinearSolver<VectorType>
 {
 private:
     double rho, alpha, omega, beta;
-    VectorType r, v, s, t, p, r0, temp;
+    std::shared_ptr<VectorType> r, v, s, t, p, r0, temp;
 public:
 
 
-    // Initial. Do not allocate memory inside the for loop for efficiency.
+    // Allocate memory.
     virtual void Initialize(size_t n) final {
 
-        // Set the size of intermediate variables.
-        r.resize(n);
-        r0.resize(n);
-        v.resize(n);
-        s.resize(n);
-        t.resize(n);
-        p.resize(n);
-        temp.resize(n);
+        this->_problem_size = n;
+
+        r = std::make_shared<VectorType>();
+        r0 = std::make_shared<VectorType>();
+        v = std::make_shared<VectorType>();
+        s = std::make_shared<VectorType>();
+        t = std::make_shared<VectorType>();
+        p = std::make_shared<VectorType>();
+        temp = std::make_shared<VectorType>();
+
+        r->resize(n);
+        r0->resize(n);
+        v->resize(n);
+        s->resize(n);
+        t->resize(n);
+        p->resize(n);
+        temp->resize(n);
 
     }
 
@@ -67,24 +76,24 @@ public:
     // NOTE : We use 2-norm of relative_error as return instead of relative error.
     virtual std::pair<bool, std::pair<double, int>> Solve(
         std::shared_ptr<LinearProblem<VectorType>> linear_problem, 
-        VectorType &x0, 
-        const VectorType &b) final {
-
-        // TODO : check if the sizes of rhs and linear_problem match the size of ref.
+        std::shared_ptr<VectorType> x0, 
+        std::shared_ptr<const VectorType> b) final {
+        
+        CHECK_F(r->size() == x0->size() && x0->size() == b->size(), "Wrong size!");
         
         // r0 = b - Ax
         linear_problem->form(x0,temp);   // temp = Ax
-        r0.axpy(-1.0,temp,b);            // r0 = -1.0*temp + b;
-        r = r0;                          // r = r0
-        p = r0;                          // p = r0
+        r0->axpy(-1.0,*temp,*b);         // r0 = -1.0*temp + b;
+        *r = *r0;                          // r = r0
+        *p = *r0;                          // p = r0
 
         int iter = 0;
-        double norm_b = std::sqrt(b.inner(b));
+        double norm_b = std::sqrt(b->inner(*b));
         if(norm_b == 0) {
-            x0 = 0.0;
+            *x0 = 0.0;
             return std::make_pair(true, std::make_pair(0.0, iter));
         }
-        double relative_error = std::sqrt(r.inner(r))/norm_b;
+        double relative_error = std::sqrt(r->inner(*r))/norm_b;
 
         double delta, gamma;
 
@@ -94,42 +103,42 @@ public:
             LOG_F(INFO, "BiCGSTAB solver(start) : iteration %d.", iter);    
 
             linear_problem->form(p,v);              // v = Ap
-            rho = r.inner(r0);                      // rho = (r,r0)
-            alpha = rho/v.inner(r0);                // alpha = rho/(v,r0)
+            rho = r->inner(*r0);                      // rho = (r,r0)
+            alpha = rho/v->inner(*r0);                // alpha = rho/(v,r0)
 
             if (!std::isnormal(alpha)) return std::make_pair(true, std::make_pair(relative_error,iter));
 
-            s.axpy(-alpha,v,r);                     // s = r - apha * v;
+            s->axpy(-alpha,*v,*r);                     // s = r - apha * v;
             linear_problem->form(s,t);              // t = As
             
-            gamma = t.inner(t);
-            delta = t.inner(s);
+            gamma = t->inner(*t);
+            delta = t->inner(*s);
             omega = delta / gamma;                  // omega = (t,s)/(t,t)
             
             if (!std::isnormal(omega)) return std::make_pair(true, std::make_pair(relative_error,iter));
                                                     // x = x + alpha*p + omega*s
-            temp.axpy(omega,s,x0);                  // temp = x + omega*s
-            x0.axpy(alpha,p,temp);                  // x = temp + alpha*p
+            temp->axpy(omega,*s,*x0);                  // temp = x + omega*s
+            x0->axpy(alpha,*p,*temp);                  // x = temp + alpha*p
                                                     // r = s - omega*t;
-            temp = r;                               // r_j
-            r.axpy(-omega, t, s);                   // r_{j+1}
+            *temp = *r;                               // r_j
+            r->axpy(-omega, *t, *s);                   // r_{j+1}
 
-            relative_error = std::sqrt(r.inner(r))/norm_b;
+            relative_error = std::sqrt(r->inner(*r))/norm_b;
             LOG_F(INFO, "BiCGSTAB solver(end) : iteration %d, relative_error norm : %.12lf.", iter, relative_error);    
             if (relative_error < LinearSolver<VectorType>::get_tolerance()) return std::make_pair(true, std::make_pair(relative_error,iter+1));
 
-            beta = r.inner(r0)/temp.inner(r0)*alpha/omega;  // (r,r0)/(temp,r0)*alpha/omega
+            beta = r->inner(*r0)/temp->inner(*r0)*alpha/omega;  // (r,r0)/(temp,r0)*alpha/omega
 
             if (!std::isnormal(beta)) return std::make_pair(true, std::make_pair(relative_error,iter+1));
 
-            temp.axpy(-omega, v, p);                 // p = r + beta*(p-omega*v);
-            p.axpy(beta,temp, r);
+            temp->axpy(-omega, *v, *p);                 // p = r + beta*(p-omega*v);
+            p->axpy(beta, *temp, *r);
 
             iter++;
         }
         return std::make_pair(false, std::make_pair(relative_error,iter));
-    }
 
+    }
 
     BiCGSTAB(size_t n){
         Initialize(n);

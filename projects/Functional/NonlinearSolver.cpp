@@ -102,23 +102,23 @@ struct NonlinearProblemObject : zeno::IObject, NonlinearProblem<VectorType>
 {
     std::shared_ptr<zeno::FunctionObject> function = nullptr;
 
-    virtual void Residual(const VectorType& x, VectorType& r){
+    virtual void Residual(std::shared_ptr<const VectorType> x, std::shared_ptr<VectorType> r) final {
 
         auto args = std::make_shared<zeno::DictObject>();
         auto rets = std::make_shared<zeno::DictObject>();
 
-        CHECK_F(x.size() == r.size(), "Wrong size.");
+        CHECK_F(x->size() == r->size(), "Wrong size.");
 
-        // TODO : x should be a pointer!!!
-        // use std::shared_ptr<const VectorType> x; instead of const VectorType& x
-        // to avoid variable constructions and destructions.
+        // x is a samrt pointer.
         args->lut["x"] = x;                                             // 封装
+        args->lut["r"] = r;                                             // 封装
         rets->lut = function->call(args->lut);                          // 调用
-        r = zeno::safe_any_cast<VectorType>(rets->lut["r"]);            // 解封
+        
+        // NOTE : It is unneccessary.
+        r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(rets->lut["r"]);         // 解封
 
     }
 };
-
 // User defined 
 struct CalculateResidual : zeno::INode {
     virtual void apply() override {
@@ -126,19 +126,16 @@ struct CalculateResidual : zeno::INode {
         auto args = get_input<zeno::DictObject>("args");
         auto rets = std::make_shared<zeno::DictObject>();
 
-        auto x = zeno::safe_any_cast<VectorType>(args->lut.at("x"));
-        // auto r = zeno::safe_any_cast<VectorType>(args->lut.at("x"));
+        auto x = zeno::safe_any_cast<std::shared_ptr<const VectorType>>(args->lut.at("x"));
+        auto r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(args->lut.at("r"));
 
-        VectorType r;
-        r.resize(x.size());
-        CHECK_F(x.size() == r.size(), "Wrong size.");
-
-        auto _x = flatten(x).data;
-        auto _r = flatten(r).data;
+        auto _x = flatten(*x).data;
+        auto _r = flatten(*r).data;
 
         _r[0] = std::exp(2.0*_x[0])/2.0 - _x[1];
         _r[1] = _x[0]*_x[0] + _x[1]*_x[1]-1.0;
 
+        // NOTE : It is unneccessary.
         rets->lut["r"] = r;
         set_output("rets", std::move(rets));
     }
@@ -241,17 +238,14 @@ struct SolveNonlinearProblem : zeno::INode {
 
         auto jfnk_solver = get_input<JFNKSolverObject>("JFNKSolverObject");
         auto nlp = get_input<NonlinearProblemObject>("NonlinearProblemObject");
-
         auto x_vector_object = get_input<VectorTypeObject>("VectorTypeObject");
+        
         auto x_vector_ptr = x_vector_object->vector;
+        auto b_vector_ptr = std::make_shared<VectorType>(); 
+        b_vector_ptr->resize(x_vector_ptr->size());
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        // NOTE : we solve F(x) = b here. But b is not necessary. b is to be removed. 
-        VectorType bb;
-        bb.resize(x_vector_ptr->size());
-        /////////////////////////////////////////////////////////////////////////////////////////////
-
-        auto nonlinear_result = jfnk_solver->ns->Solve(nlp, *x_vector_ptr, bb);
+        // NOTE : we solve F(x) = b here. But b is not necessary. b is to be removed.
+        auto nonlinear_result = jfnk_solver->ns->Solve(nlp, x_vector_ptr, b_vector_ptr);
 
 
         if ( nonlinear_result.first) {

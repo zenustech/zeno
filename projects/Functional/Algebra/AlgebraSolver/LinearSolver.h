@@ -20,9 +20,12 @@
 template<typename VectorType>
 class LinearSolver
 {
-private:
+protected:
     /* data */
+    size_t _problem_size;
+
 public:
+    size_t problem_size() const { return _problem_size; }
 
     // TODO : How to use initialize inside constructor.
     LinearSolver()
@@ -61,8 +64,8 @@ public:
      */
     virtual std::pair<bool, std::pair<double, int>> Solve(
         std::shared_ptr<LinearProblem<VectorType>> linear_problem, 
-        VectorType &x0, 
-        const VectorType &b) = 0;
+        std::shared_ptr<VectorType> x0, 
+        std::shared_ptr<const VectorType> b) = 0;
 
 private:
     int max_linear_iteration = 1000;

@@ -81,11 +81,10 @@ public:
 
     virtual std::string method() const = 0;
 
-
     virtual std::pair<bool, std::pair<double, int>> Solve(
         std::shared_ptr<NonlinearProblem<VectorType>> nonlinear_problem, 
-        VectorType &x0, 
-        const VectorType &b) = 0;
+        std::shared_ptr<VectorType> x0, 
+        std::shared_ptr<const VectorType> b) = 0;
     
     // 类声明外部的说明符无效
     virtual ~NonlinearSolver(){

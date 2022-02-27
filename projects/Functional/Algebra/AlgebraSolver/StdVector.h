@@ -22,12 +22,12 @@ private:
 
     using GenericVector<T, TV>::_dim;
 
-    std::vector<TV> _data;
     
     virtual void init() override { _data.resize(this->size()); }
 
 public:
 
+    std::vector<TV> _data;
 
     virtual bool use_gpu() const override { return false;}
 

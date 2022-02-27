@@ -41,25 +41,26 @@ public:
     // TODO : param b is useless here.
     virtual std::pair<bool, std::pair<double, int>> Solve(
         std::shared_ptr<NonlinearProblem<VectorType>> nonlinear_problem, 
-        VectorType &x0, 
-        const VectorType &b) final {
+        std::shared_ptr<VectorType> x0, 
+        std::shared_ptr<const VectorType> b) final {
+        
+        auto linear_solver = this->get_linear_solver();
+        CHECK_F(linear_solver->problem_size() == x0->size() && b->size() == x0->size(), "Wrong size!");
 
-        // NOTE : it will not the number of calls of cudaMalloc for GpuVector.
-        //        Therefore, it is not very expensive.
-        nonlinear_problem->resize(x0.size());
+        // NOTE : It will allocate memory for nonlinear_problem. For efficiency, it will not reallocate memory when VectorType = GpuVector if vectors exist.
+        nonlinear_problem->resize(x0->size());
 
-        auto& xk = nonlinear_problem->get_xk();
-        auto& rhs = nonlinear_problem->get_rhs();
-        auto& delta_x = nonlinear_problem->get_delta_x();
-        auto& residual = nonlinear_problem->get_residual();
+        auto xk = nonlinear_problem->get_xk();
+        auto rhs = nonlinear_problem->get_rhs();
+        auto delta_x = nonlinear_problem->get_delta_x();
+        auto residual = nonlinear_problem->get_residual();
 
-        auto   linear_solver = this->get_linear_solver();
-        double norm_b = std::sqrt(b.inner(b));
+        double norm_b = std::sqrt(b->inner(*b));
         double norm_r;
         int    iter = 0;
         
         // NOTE : Set initial value for newton iteration.
-        xk = x0;
+        *xk = *x0;
         
         do{
             iter++;         
@@ -67,7 +68,7 @@ public:
             nonlinear_problem->Residual(xk, rhs);
 
             // NOTE : initial guess for the linear solver.
-            delta_x = rhs;
+            *delta_x = *rhs;
 
             // solve delta_x, which is (-dx) actually.
             auto linear_result = linear_solver->Solve(nonlinear_problem, delta_x, rhs);
@@ -77,12 +78,12 @@ public:
             // LOG_F(WARNING, "xk: %.8lf, %.8lf", xk[0], xk[1]);
             
             // update xk = xk - (-dx);
-            xk.axpy(-1.0,delta_x, xk);
-            x0 = xk;
+            xk->axpy(-1.0,*delta_x, *xk);
+            *x0 = *xk;
 
             // calculate the residual.
             nonlinear_problem->Residual(residual);
-            norm_r = std::sqrt(residual.inner(residual));
+            norm_r = std::sqrt(residual->inner(*residual));
             LOG_F(WARNING, "norm_r : %lf", norm_r);
         
             // TODO : assuming norm_e = norm_r/norm_b
