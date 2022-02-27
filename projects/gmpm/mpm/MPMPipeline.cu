@@ -149,7 +149,7 @@ struct ZSGridFromZSPartition : INode {
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
     // clear grid
-    cudaPol({(int)cnt, (int)ZenoGrid::grid_t::block_space()},
+    cudaPol(Collapse{cnt, ZenoGrid::grid_t::block_space()},
             [grid = proxy<execspace_e::cuda>({}, grid)] __device__(
                 int bi, int ci) mutable {
               auto block = grid.block(bi);
@@ -195,10 +195,10 @@ struct UpdateZSGrid : INode {
     auto cudaPol = cuda_exec().device(0);
 
     if (zsgrid->transferScheme == "apic")
-      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                /*table = proxy<execspace_e::cuda>(partition), */ stepDt, accel,
-               ptr = velSqr.data()] __device__(int bi, int ci) mutable {
+               ptr = velSqr.data()] __device__(auto bi, auto ci) mutable {
                 auto block = grid.block(bi);
                 auto mass = block("m", ci);
                 if (mass != 0.f) {
@@ -221,7 +221,7 @@ struct UpdateZSGrid : INode {
                 }
               });
     else if (zsgrid->transferScheme == "flip")
-      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
                ptr = velSqr.data()] __device__(int bi, int ci) mutable {
                 auto block = grid.block(bi);
@@ -270,7 +270,7 @@ struct ApplyBoundaryOnZSGrid : INode {
     using namespace zs;
     auto collider = boundary.getBoundary(lsv);
     if (transferScheme == "apic")
-      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                table = proxy<execspace_e::cuda>(partition),
                boundary = collider] __device__(int bi, int ci) mutable {
@@ -286,7 +286,7 @@ struct ApplyBoundaryOnZSGrid : INode {
                 }
               });
     else if (transferScheme == "flip")
-      cudaPol({(int)partition.size(), (int)ZenoGrid::grid_t::block_space()},
+      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                table = proxy<execspace_e::cuda>(partition),
                boundary = collider] __device__(int bi, int ci) mutable {
