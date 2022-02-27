@@ -141,16 +141,59 @@ ZENDEFNODE(AssignUniformAffineToPrim,{
 
 
 struct EmbedPrimitiveToVolumeMesh : zeno::INode {
+    FEM_Scaler ComputeDistToTriangle(const Vec3d& vp,const Vec3d& v0,const Vec3d& v1,const Vec3d& v2){
+        auto v012 = (v0 + v1 + v2) / 3;
+        auto v01 = (v0 + v1) / 2;
+        auto v02 = (v0 + v2) / 2;
+        auto v12 = (v1 + v2) / 2;
+
+        FEM_Scaler dist = 1e6;
+        FEM_Scaler tdist = (v012 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v01 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v02 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v12 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+
+        tdist = (v0 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v1 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v2 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+
+        return dist;
+    }
+
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto vmesh = get_input<zeno::PrimitiveObject>("vmesh");
 
         auto& embed_id = prim->add_attr<float>("embed_id");
-        embed_id.resize(prim->size(),-1);
+        // embed_id.resize(prim->size(),-1);
+        // std::cout << "CHECK:" << embed_id[10641] << std::endl;
+        auto& elm_w = prim->add_attr<zeno::vec3f>("embed_w");
+        // elm_w.resize(prim->size(),zeno::vec3f(0));
+
+        auto& v0s = prim->add_attr<zeno::vec3f>("v0");
+        auto& v1s = prim->add_attr<zeno::vec3f>("v1");
+        auto& v2s = prim->add_attr<zeno::vec3f>("v2");
+        auto& v3s = prim->add_attr<zeno::vec3f>("v3");
+        // prim->resize(prim->size());
+
+        // std::cout << "CHECK:" << embed_id[10641] << std::endl;
 
         #pragma omp parallel for
         for(size_t i = 0;i < prim->size();++i){
             auto vp = Vec3d(prim->verts[i][0],prim->verts[i][1],prim->verts[i][2]);
+            embed_id[i] = -1;
+
+            FEM_Scaler closest_dist = 1e6;
+            int closest_tet_id;
+            Vec4d closest_tet_w;
+
             for(size_t j = 0;j < vmesh->quads.size();++j){
                 const auto& tet = vmesh->quads[j];
                 Vec3d v0 = Vec3d(vmesh->verts[tet[0]][0],vmesh->verts[tet[0]][1],vmesh->verts[tet[0]][2]);
@@ -164,6 +207,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
                 M.col(2) << v2,1.0;
                 M.col(3) << v3,1.0;
 
+
                 auto VMT = M.determinant();
 
                 M.col(0) << vp,1.0;
@@ -172,6 +216,9 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
                 M.col(3) << v3,1.0;
 
                 auto VM0 = M.determinant();
+
+                M.col(0) << v0,1.0;
+                M.col(1) << vp,1.0; 
                 M.col(2) << v2,1.0;
                 M.col(3) << v3,1.0;
 
@@ -191,23 +238,98 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
 
                 auto VM3 = M.determinant();
 
-                auto w0 = VM0 / VMT;
-                auto w1 = VM1 / VMT;
-                auto w2 = VM2 / VMT;
-                auto w3 = VM3 / VMT;
+                Vec4d w = Vec4d(VM0 / VMT,VM1 / VMT,VM2 / VMT,VM3 / VMT);
 
-                if(w0 > 0 && w1 > 0 && w2 > 0 && w3 > 0){
+                if(w[0] > 0 && w[1] > 0 && w[2] > 0 && w[3] > 0){
                     embed_id[i] = (float)j;
+                    elm_w[i][0] = w[0];
+                    elm_w[i][1] = w[1];
+                    elm_w[i][2] = w[2];
+                    if(fabs(1 - w[0] - w[1] - w[2] - w[3]) > 1e-6){
+                        std::cout << "INVALID : " << i << "\t" << j << "\t" << w.transpose() << std::endl;
+                        // throw std::runtime_error("INVALID W");
+                    }
+
+                    Vec3d interpPos = w[0] * v0 + w[1] * v1 + w[2] * v2 + w[3] * v3;
+                    FEM_Scaler interpError = (interpPos - vp).norm();
+                    if(interpError > 1e-6){
+                        std::cout << "INTERP ERROR : " << interpError << "\t" << interpPos.transpose() << "\t" << vp.transpose() << std::endl;
+                    }
+                    prim->verts[i] = zeno::vec3f(interpPos[0],interpPos[1],interpPos[2]);
+                    v0s[i] = zeno::vec3f(v0[0],v0[1],v0[2]);
+                    v1s[i] = zeno::vec3f(v1[0],v1[1],v1[2]);
+                    v2s[i] = zeno::vec3f(v2[0],v2[1],v2[2]);
+                    v3s[i] = zeno::vec3f(v3[0],v3[1],v3[2]);
+                    
+                    // if(i == 10641){
+                    //     std::cout << "FIND : " << i << "\t" << j << std::endl;
+                    // }
+                    // std::cout << "FIND : " << i << "\t" << j << "\t" << w0 << "\t" << w1 << "\t" << w2 << "\t" << w3 << std::endl;
+                    break;
                 }
+
+                if(w[0] < 0){
+                    FEM_Scaler dist = ComputeDistToTriangle(vp,v1,v2,v3);
+                    if(dist < closest_dist){
+                        closest_dist = dist;
+                        closest_tet_id = j;
+                        closest_tet_w = w;
+                    }
+                }
+
+                if(w[1] < 0){
+                    FEM_Scaler dist = ComputeDistToTriangle(vp,v0,v2,v3);
+                    if(dist < closest_dist){
+                        closest_dist = dist;
+                        closest_tet_id = j;
+                        closest_tet_w = w;
+                    }
+                }
+
+                if(w[2] < 0){
+                    FEM_Scaler dist = ComputeDistToTriangle(vp,v0,v1,v3);
+                    if(dist < closest_dist){
+                        closest_dist = dist;
+                        closest_tet_id = j;
+                        closest_tet_w = w;
+                    }
+                }
+
+                if(w[3] < 0){
+                    FEM_Scaler dist = ComputeDistToTriangle(vp,v0,v1,v2);
+                    if(dist < closest_dist){
+                        closest_dist = dist;
+                        closest_tet_id = j;
+                        closest_tet_w = w;
+                    }
+                }
+            }
+
+
+            if(embed_id[i] < -1e-3) {
+
+
+                embed_id[i] = closest_tet_id;
+                for(size_t i = 0;i < 4;++i)
+                    closest_tet_w[i] = closest_tet_w[i] < 0 ? 0 : closest_tet_w[i];
+                FEM_Scaler wsum = closest_tet_w.sum();
+                closest_tet_w /= wsum;
+
+                elm_w[i] = zeno::vec3f(closest_tet_w[0],closest_tet_w[1],closest_tet_w[2]);
+
+
+                std::cout << "CORRECT ID : " << i << "\t" << closest_tet_id << "\t" << closest_tet_w.transpose() << std::endl;
             }
         }
 
         for(size_t i = 0;i < embed_id.size();++i){
-            if(embed_id[i] == -1){
+            if(embed_id[i] < -1e-3){
                 std::cerr << "COULD NOT FIND EMBED TET FOR " << i << std::endl; 
                 throw std::runtime_error("COULD NOT FIND EMBED TET");
             }
         }
+
+        // std::cout << "CHECK_ID:" << embed_id[10641] << std::endl;
 
         set_output("prim",prim);
     }
@@ -219,37 +341,54 @@ ZENDEFNODE(EmbedPrimitiveToVolumeMesh, {
     {},
     {"FEM"},
 });
-
 struct InterpolateEmbedPrimitive : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("refPrim");
-        auto dmesh = get_input<zeno::PrimitiveObject>("deformedMesh");
-        auto rmesh = get_input<zeno::PrimitiveObject>("refMesh");
+        auto skin = get_input<zeno::PrimitiveObject>("skin");
+        auto volume = get_input<zeno::PrimitiveObject>("volume");
 
-        auto& embed_id = prim->attr<float>("embed_id");
+        auto& embed_ids = skin->attr<float>("embed_id");
+        auto& embed_ws = skin->attr<zeno::vec3f>("embed_w");
 
-        auto res = std::make_shared<zeno::PrimitiveObject>(*prim);
+        auto res = std::make_shared<zeno::PrimitiveObject>(*skin);
+        const auto& vposs = volume->attr<zeno::vec3f>("pos");
+        auto& eposs = res->attr<zeno::vec3f>("pos");
 
-        #pragma omp parallel for
-        for(size_t i = 0;i < prim->size();++i){
-            int elm_id = (int)embed_id[i];
-            const auto& tet = dmesh->quads[elm_id];
-            Mat4x4d dM,rM;
-            dM.col(0) << dmesh->verts[tet[0]][0],dmesh->verts[tet[0]][1],dmesh->verts[tet[0]][2],1.0;
-            dM.col(1) << dmesh->verts[tet[1]][0],dmesh->verts[tet[1]][1],dmesh->verts[tet[1]][2],1.0;
-            dM.col(2) << dmesh->verts[tet[2]][0],dmesh->verts[tet[2]][1],dmesh->verts[tet[2]][2],1.0;
-            dM.col(3) << dmesh->verts[tet[3]][0],dmesh->verts[tet[3]][1],dmesh->verts[tet[3]][2],1.0;
+        const auto& v0s = res->attr<zeno::vec3f>("v0");
+        const auto& v1s = res->attr<zeno::vec3f>("v1");
+        const auto& v2s = res->attr<zeno::vec3f>("v2");
+        const auto& v3s = res->attr<zeno::vec3f>("v3");
 
-            rM.col(0) << rmesh->verts[tet[0]][0],rmesh->verts[tet[0]][1],rmesh->verts[tet[0]][2],1.0;
-            rM.col(1) << rmesh->verts[tet[1]][0],rmesh->verts[tet[1]][1],rmesh->verts[tet[1]][2],1.0;
-            rM.col(2) << rmesh->verts[tet[2]][0],rmesh->verts[tet[2]][1],rmesh->verts[tet[2]][2],1.0;
-            rM.col(3) << rmesh->verts[tet[3]][0],rmesh->verts[tet[3]][1],rmesh->verts[tet[3]][2],1.0;
+        // #pragma omp parallel for
+        for(size_t i = 0;i < skin->size();++i){
+            int elm_id = (int)embed_ids[i];
+            // if(fabs(elm_id - embed_ids[i]) > 0.2){
+            //     std::cout << "ERROR\t" << elm_id << "\t" << embed_ids[i] << std::endl;
+            // }
+            auto embed_w = embed_ws[i];
+            const auto& tet = volume->quads[elm_id];
 
-            auto A = dM * rM.inverse();
+            double w0 = embed_w[0];
+            double w1 = embed_w[1];
+            double w2 = embed_w[2];
+            double w3 = 1 - w0 - w1 - w2;
+            zeno::vec3f epos_copy = eposs[i];
+            eposs[i] = zeno::vec3f(0);
+            eposs[i] += vposs[tet[0]] * embed_w[0];
+            eposs[i] += vposs[tet[1]] * embed_w[1];
+            eposs[i] += vposs[tet[2]] * embed_w[2];
+            eposs[i] += vposs[tet[3]] * (1 - embed_w[0] - embed_w[1] - embed_w[2]);
 
-            Vec4d v;v << prim->verts[i][0],prim->verts[i][1],prim->verts[i][2],1.0;
-            v = A * v;
-            res->verts[i] = zeno::vec3f(v[0],v[1],v[2]);
+            // auto error_pos = zeno::length(eposs[i] - epos_copy);
+            // if(error_pos > 1e-3){
+            //     std::cout << "ERROR : " << i << "\t" << embed_ids[i] << "\t" \
+            //         << eposs[i][0] << "\t" << eposs[i][1] << "\t" << eposs[i][2] << "\t" \
+            //         <<  epos_copy[0] << "\t" << epos_copy[1] << "\t" << epos_copy[2] << std::endl;
+            // }
+            // eposs[i] += v0s[i] * w0;
+            // eposs[i] += v1s[i] * embed_w[1];
+            // eposs[i] += v2s[i] * embed_w[2];
+            // eposs[i] += v3s[i] * (1 - embed_w[0] - embed_w[1] - embed_w[2]);
+            // eposs[i] = w0 * v0s[i] + w1 * v1s[i] + w2 * v2s[i] + w3 * v3s[i];
         }
 
         set_output("res",std::move(res));
@@ -257,7 +396,7 @@ struct InterpolateEmbedPrimitive : zeno::INode {
 };
 
 ZENDEFNODE(InterpolateEmbedPrimitive, {
-    {"refPrim","deformedMesh","refMesh"},
+    {"skin","volume"},
     {"res"},
     {},
     {"FEM"},
