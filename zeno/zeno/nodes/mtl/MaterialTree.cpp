@@ -54,9 +54,10 @@ struct TreeTernaryMath : TreeNode {
 
 ZENDEFNODE(TreeTernaryMath, {
     {
-        {"float", "in1"},
-        {"float", "in2"},
-        {(std::string)"enum " + ternops, "op", "add"},
+        {"float", "in1", "0"},
+        {"float", "in2", "0"},
+        {"float", "in3", "0"},
+        {(std::string)"enum " + ternops, "op", "mix"},
     },
     {
         {"float", "out"},
@@ -131,8 +132,8 @@ struct TreeBinaryMath : TreeNode {
 
 ZENDEFNODE(TreeBinaryMath, {
     {
-        {"float", "in1"},
-        {"float", "in2"},
+        {"float", "in1", "0"},
+        {"float", "in2", "0"},
         {(std::string)"enum " + binops, "op", "add"},
     },
     {
@@ -167,9 +168,8 @@ struct TreeUnaryMath : TreeNode {
 
 ZENDEFNODE(TreeUnaryMath, {
     {
-        {"float", "in1"},
-        {"float", "in2"},
-        {(std::string)"enum " + unops, "op", "add"},
+        {"float", "in1", "0"},
+        {(std::string)"enum " + unops, "op", "sqrt"},
     },
     {
         {"float", "out"},
