@@ -39,6 +39,10 @@ def runScene(graphs, nframes, iopath, start_frame):
                 continue
             name = data['name']
             inputs = data['inputs']
+            for name, value in inputs.items():
+                if type(value) is list and len(value) == 3 and type(value[2]) == str:
+                    value = evaluateExpr(value[2], frameid)
+                    core.setNodeInputString(ident, name, value)
             params = data['params']
             for name, value in params.items():
                 if type(value) is str:

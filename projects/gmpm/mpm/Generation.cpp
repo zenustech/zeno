@@ -1,6 +1,7 @@
-#include "Structures.hpp"
+#include "../Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
+#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/VDBGrid.h>
@@ -82,26 +83,39 @@ struct ZSPoissonDiskSample : INode {
   void apply() override {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
-    const auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getSparseLevelSet();
-    auto spls = ls.clone({memsrc_e::host, -1});
-
-    auto dx = get_input2<float>("dx");
-
-    auto sampled = zs::sample_from_levelset(
-        zs::proxy<zs::execspace_e::openmp>(spls), dx, get_input2<float>("ppc"));
-
     auto prim = std::make_shared<PrimitiveObject>();
-    prim->resize(sampled.size());
-    auto &pos = prim->attr<vec3f>("pos");
-    auto &vel = prim->add_attr<vec3f>("vel");
 
-    /// compute default normal
-    auto ompExec = zs::omp_exec();
-    ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
-      pos[pi] = sampled[pi];
-      vel[pi] = vec3f{0, 0, 0};
-      // nrm[pi] = calcNormal(pos[pi]);
-    });
+    auto zsfield = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+
+    match(
+        [&prim, this](auto &lsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+          const auto &ls = *lsPtr;
+          const auto &spls = ls.memspace() == memsrc_e::host
+                                 ? ls.clone({memsrc_e::host, -1})
+                                 : ls;
+
+          auto dx = get_input2<float>("dx");
+
+          auto sampled =
+              zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls),
+                                       dx, get_input2<float>("ppc"));
+
+          prim->resize(sampled.size());
+          auto &pos = prim->attr<vec3f>("pos");
+          auto &vel = prim->add_attr<vec3f>("vel");
+
+          /// compute default normal
+          auto ompExec = zs::omp_exec();
+          ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
+            pos[pi] = sampled[pi];
+            vel[pi] = vec3f{0, 0, 0};
+            // nrm[pi] = calcNormal(pos[pi]);
+          });
+        },
+        [](...) {})(field);
 
     fmt::print(fg(fmt::color::cyan), "done executing ZSPoissonDiskSample\n");
     set_output("prim", std::move(prim));
@@ -185,8 +199,9 @@ struct ToZSLevelSet : INode {
     } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
-      ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+      ls->getLevelSet() =
+          basic_ls_t{zs::convert_vec3fgrid_to_sparse_staggered_grid(
+              gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
@@ -345,10 +360,16 @@ struct ZSLevelSetToVDBGrid : INode {
 
     if (has_input<ZenoLevelSet>("ZSLevelSet")) {
       auto ls = get_input<ZenoLevelSet>("ZSLevelSet");
-      if (ls->holdsSparseLevelSet()) {
-        vdb->m_grid =
-            zs::convert_sparse_levelset_to_floatgrid(ls->getSparseLevelSet())
-                .as<openvdb::FloatGrid::Ptr>();
+      if (ls->holdsBasicLevelSet()) {
+        zs::match(
+            [&vdb](auto &lsPtr)
+                -> std::enable_if_t<
+                    zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              using LsT = typename RM_CVREF_T(lsPtr)::element_type;
+              vdb->m_grid = zs::convert_sparse_levelset_to_floatgrid(*lsPtr)
+                                .template as<openvdb::FloatGrid::Ptr>();
+            },
+            [](...) {})(ls->getBasicLevelSet()._ls);
       } else
         ZS_WARN("The current input levelset is not a sparse levelset!");
     }

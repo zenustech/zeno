@@ -106,6 +106,7 @@ class QDMSlider(QSlider):
         super().mouseReleaseEvent(e)
         v = self.value()
         self.timeline.editor.try_run_this_frame(v)
+        zenvis.status['target_frame'] = int(v)
 
 
 class TimelineWidget(QWidget):

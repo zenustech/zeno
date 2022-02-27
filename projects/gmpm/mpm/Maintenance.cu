@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/VdbSampler.h"
@@ -133,7 +133,7 @@ struct PushOutZSParticles : INode {
       match(
           [&](basic_ls_t &ls) {
             match([&](const auto &lsPtr) {
-              auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+              auto lsv = zs::get_level_set_view<execspace_e::cuda>(lsPtr);
               pushout(cudaPol, pars, lsv, dis);
             })(ls._ls);
           },

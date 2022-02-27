@@ -50,6 +50,21 @@ target_compile_options(zeno_mpm
   PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
 )
 
+# zeno_zsfluid
+add_library(zeno_zsfluid SHARED)
+target_sources(zeno_zsfluid PRIVATE
+  volume/VolumeOperator.cu
+)
+set_source_files_properties(volume/VolumeOperator.cu PROPERTIES  LANGUAGE CUDA)
+target_link_libraries(zeno_zsfluid PRIVATE zensim)
+target_link_libraries(zeno_zsfluid PRIVATE zeno_nodep)
+target_link_libraries(zeno_zsfluid PUBLIC zeno ZFX)
+target_include_directories(zeno_zsfluid PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_zsfluid PRIVATE ../zenvdb/include)
+target_compile_options(zeno_zsfluid
+  PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
+)
+
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
 

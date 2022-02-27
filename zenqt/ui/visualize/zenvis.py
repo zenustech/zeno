@@ -12,6 +12,7 @@ status = {
     'cache_frames': 10,
     'show_grid': True,
     'playing': True,
+    'target_frame': 0,
 }
 
 camera_keyframe = None

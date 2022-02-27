@@ -3344,9 +3344,9 @@
     }
    },
    "view_rect": {
-    "x": -1655.5997513962661,
-    "y": 2840.08459753343,
-    "width": 959.9999999999472,
+    "x": -5321.116992775563,
+    "y": 3156.0451886664328,
+    "width": 959.9999999999469,
     "height": 799.9999999999973
    }
   },
@@ -5121,7 +5121,7 @@
        null
       ],
       "FluidVel": [
-       "d75d928b-x",
+       "62ab70bb-x",
        "port",
        null
       ],
@@ -5694,8 +5694,8 @@
     }
    },
    "view_rect": {
-    "x": 523.2532864583296,
-    "y": 4216.813286549368,
+    "x": -1612.1654327534839,
+    "y": 3455.4832372883047,
     "width": 959.9999999999973,
     "height": 799.9999999999973
    }
@@ -8217,10 +8217,10 @@
     }
    },
    "view_rect": {
-    "x": 2269.2900623930504,
-    "y": -409.43105572171163,
-    "width": 767.9999999999995,
-    "height": 639.9999999999997
+    "x": 1426.3573994168491,
+    "y": -404.04195188873393,
+    "width": 1499.999999999999,
+    "height": 1249.9999999999993
    }
   },
   "RigidStepWorld": {
@@ -15920,6 +15920,77 @@
     "FEM"
    ]
   },
+  "AlignPrimitive": {
+   "inputs": [
+    [
+     "",
+     "ref_shape",
+     ""
+    ],
+    [
+     "",
+     "aligned_shape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
+  "AllAlembicPrim": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "triangulate",
+     "1"
+    ]
+   ],
+   "categories": [
+    "alembic"
+   ]
+  },
   "AppendList": {
    "inputs": [
     [
@@ -16169,36 +16240,6 @@
    "params": [],
    "categories": [
     "portal"
-   ]
-  },
-  "BackupField": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "BeginFor": {
@@ -17812,7 +17853,7 @@
      "1"
     ],
     [
-     "enum CSGUnion CSGIntersection CSGDifference Add",
+     "enum CSGUnion CSGIntersection CSGDifference Add Replace",
      "OpType",
      "CSGUnion"
     ],
@@ -17861,26 +17902,16 @@
     "MPM"
    ]
   },
-  "CompressibleAdvection": {
+  "ComputeParticleVolume": {
    "inputs": [
     [
-     "",
-     "inFlowData",
+     "ZenoParticles",
+     "ZSParticles",
      ""
     ],
     [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
-     "dt",
+     "ZenoGrid",
+     "ZSGrid",
      ""
     ],
     [
@@ -17891,8 +17922,8 @@
    ],
    "outputs": [
     [
-     "",
-     "outFlowData",
+     "ZenoParticles",
+     "ZSParticles",
      ""
     ],
     [
@@ -17903,60 +17934,25 @@
    ],
    "params": [],
    "categories": [
-    "CompressibleFlow"
+    "MPM"
    ]
   },
-  "CompressibleMarkDOF": {
+  "ComputePrimitiveSequenceVelocity": {
    "inputs": [
     [
      "",
-     "inFlowData",
+     "prim0",
      ""
     ],
     [
      "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
+     "prim1",
      ""
     ],
     [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
-  "CompressibleProjection": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
+     "float",
      "dt",
-     ""
+     "1"
     ],
     [
      "",
@@ -17967,18 +17963,13 @@
    "outputs": [
     [
      "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
    ],
    "params": [],
    "categories": [
-    "CompressibleFlow"
+    "primitive"
    ]
   },
   "ComputeVonMises": {
@@ -18020,50 +18011,6 @@
   "ConfigConstitutiveModel": {
    "inputs": [
     [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "ppc",
-     ""
-    ],
-    [
-     "",
-     "density",
-     ""
-    ],
-    [
-     "",
-     "E",
-     ""
-    ],
-    [
-     "",
-     "nu",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
      "float",
      "dx",
      "0.1"
@@ -18084,6 +18031,16 @@
      "fcr"
     ],
     [
+     "string",
+     "aniso",
+     "none"
+    ],
+    [
+     "string",
+     "plasticity",
+     "none"
+    ],
+    [
      "float",
      "E",
      "10000"
@@ -18092,8 +18049,31 @@
      "float",
      "nu",
      "0.4"
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
     ]
    ],
+   "outputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -18131,6 +18111,36 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "CountAlembicPrims": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
    ]
   },
   "Curvemap": {
@@ -18329,36 +18339,6 @@
     "portal"
    ]
   },
-  "DenseFieldToVDB": {
-   "inputs": [
-    [
-     "",
-     "inDenseField",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "VDBField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "DictGetItem": {
    "inputs": [
     [
@@ -18381,6 +18361,36 @@
     [
      "zany",
      "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictGetKeyList": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "keys",
      ""
     ],
     [
@@ -18508,17 +18518,17 @@
     ],
     [
      "",
-     "pose",
+     "Qs",
      ""
     ],
     [
      "",
-     "bones",
+     "Ts",
      ""
     ],
     [
      "",
-     "W",
+     "restBones",
      ""
     ],
     [
@@ -18535,11 +18545,6 @@
     ],
     [
      "",
-     "dbones",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
@@ -18548,7 +18553,17 @@
     [
      "enum LBS DQS",
      "algorithm",
-     "LBS"
+     "DQS"
+    ],
+    [
+     "string",
+     "attr_prefix",
+     "sw"
+    ],
+    [
+     "int",
+     "FK",
+     "0"
     ]
    ],
    "categories": [
@@ -18810,6 +18825,77 @@
    ],
    "categories": [
     "constitutive_model"
+   ]
+  },
+  "EvalBonesAngle": {
+   "inputs": [
+    [
+     "",
+     "bones",
+     ""
+    ],
+    [
+     "",
+     "bs_idx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
+  "EvalGradientOnPrimAttr": {
+   "inputs": [
+    [
+     "",
+     "primIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr_name",
+     "RENAME_ME"
+    ]
+   ],
+   "categories": [
+    "Skinning"
    ]
   },
   "ExitProcess": {
@@ -19208,36 +19294,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "FEMMeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "femmesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "FLIPApplyBoundary": {
@@ -20168,11 +20224,6 @@
    "outputs": [
     [
      "",
-     "W",
-     ""
-    ],
-    [
-     "",
      "mesh",
      ""
     ],
@@ -20182,7 +20233,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "attr_prefix",
+     "sw"
+    ]
+   ],
    "categories": [
     "Skinning"
    ]
@@ -20252,6 +20309,47 @@
     "trimesh"
    ]
   },
+  "GetAlembicPrim": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "triangulate",
+     "1"
+    ]
+   ],
+   "categories": [
+    "alembic"
+   ]
+  },
   "GetAverageAttrByTag": {
    "inputs": [
     [
@@ -20297,7 +20395,7 @@
    "inputs": [
     [
      "",
-     "femGeo",
+     "femmesh",
      ""
     ],
     [
@@ -20319,6 +20417,11 @@
     ],
     [
      "",
+     "fiberGeo",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -20326,42 +20429,6 @@
    "params": [],
    "categories": [
     "FEM"
-   ]
-  },
-  "GetDenseField": {
-   "inputs": [
-    [
-     "",
-     "inSolverData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outDenseField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "FieldName",
-     "p u rho"
-    ]
-   ],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "GetEffectiveStrain": {
@@ -21183,41 +21250,6 @@
     "primitive"
    ]
   },
-  "InitField": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "IntegrateFrameTime": {
    "inputs": [
     [
@@ -21447,46 +21479,6 @@
    "params": [],
    "categories": [
     "Skinning"
-   ]
-  },
-  "MPMStepping": {
-   "inputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "MPM"
    ]
   },
   "Make2DGridPrimitive": {
@@ -21771,51 +21763,6 @@
    ],
    "categories": [
     "primitive"
-   ]
-  },
-  "MakeCompressibleFlow": {
-   "inputs": [
-    [
-     "",
-     "bmin",
-     ""
-    ],
-    [
-     "",
-     "bmax",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "q_amb",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CompressibleFlow",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "MakeConstantSpline": {
@@ -22165,41 +22112,6 @@
     "FEM"
    ]
   },
-  "MakeFEMGeoFromFile": {
-   "inputs": [
-    [
-     "readpath",
-     "NodeFile",
-     ""
-    ],
-    [
-     "readpath",
-     "EleFile",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "geo",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "MakeFEMIntegrator": {
    "inputs": [
     [
@@ -22237,9 +22149,9 @@
    ],
    "params": [
     [
-     "enum BackwardEuler QuasiStatic",
+     "enum BE QS EBQS",
      "integType",
-     "BackwardEuler"
+     "QS"
     ]
    ],
    "categories": [
@@ -22553,6 +22465,61 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "MakeMPMMehser": {
+   "inputs": [
+    [
+     "",
+     "pathPreFix",
+     ""
+    ],
+    [
+     "",
+     "tet_path",
+     ""
+    ],
+    [
+     "",
+     "smooth_iter",
+     ""
+    ],
+    [
+     "",
+     "start",
+     ""
+    ],
+    [
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "edge_stretch",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MPMMehser",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -23107,41 +23074,6 @@
     "openvdb"
    ]
   },
-  "MakeVelocityPressure": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -23267,9 +23199,14 @@
   "MakeZSGrid": {
    "inputs": [
     [
-     "",
+     "float",
      "dx",
-     ""
+     "0.1"
+    ],
+    [
+     "string",
+     "transfer",
+     "apic"
     ],
     [
      "",
@@ -23289,13 +23226,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.1"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -23323,51 +23254,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "MarkMovingSolidCellsByVDB": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SDFVDBField",
-     ""
-    ],
-    [
-     "",
-     "SolidVelVDBField",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "MeshCopy": {
@@ -23514,6 +23400,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MesherProcessFrame": {
+   "inputs": [
+    [
+     "",
+     "Mesher",
+     ""
+    ],
+    [
+     "",
+     "frameNumber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePrimitive",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -24630,6 +24551,46 @@
     "openvdb"
    ]
   },
+  "ParticlesBuildBvh": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -24657,6 +24618,56 @@
     [
      "hashgrid",
      "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborBvhWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
@@ -24886,6 +24897,52 @@
     "math"
    ]
   },
+  "PoissonDiskSample": {
+   "inputs": [
+    [
+     "",
+     "VDBGrid",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "ppc",
+     "8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "PolyDuplicate": {
    "inputs": [
     [
@@ -25100,6 +25157,66 @@
      "float3"
     ]
    ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBent": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -25548,6 +25665,61 @@
    "params": [],
    "categories": [
     "Bullet"
+   ]
+  },
+  "PrimitiveCurvemap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "int",
+     "sourceX",
+     "0"
+    ],
+    [
+     "int",
+     "sourceY",
+     "1"
+    ],
+    [
+     "int",
+     "sourceZ",
+     "2"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "PrimitiveDuplicate": {
@@ -26017,6 +26189,11 @@
     [
      "",
      "listPrim",
+     ""
+    ],
+    [
+     "",
+     "dst",
      ""
     ],
     [
@@ -26821,6 +26998,66 @@
     "primitive"
    ]
   },
+  "PrimitiveTwist": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveUnaryOp": {
    "inputs": [
     [
@@ -27056,6 +27293,46 @@
     "FLIPSolver"
    ]
   },
+  "PushOutZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -27095,6 +27372,41 @@
    ],
    "categories": [
     "particles"
+   ]
+  },
+  "ReadAlembic": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "frameid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
    ]
   },
   "ReadMesh": {
@@ -27483,6 +27795,111 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "RetrieveAffineField": {
+   "inputs": [
+    [
+     "",
+     "ref_shape",
+     ""
+    ],
+    [
+     "",
+     "def_shape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "affine_field",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
+  "RetrieveDeformationField": {
+   "inputs": [
+    [
+     "",
+     "ref_shape",
+     ""
+    ],
+    [
+     "",
+     "def_shape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "def_field",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
+  "RetrieveDisplacementField": {
+   "inputs": [
+    [
+     "",
+     "ref_shape",
+     ""
+    ],
+    [
+     "",
+     "def_shape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "disp_field",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "RetrieveRigidTransform": {
@@ -28404,6 +28821,41 @@
     "openvdb"
    ]
   },
+  "ScalePrimitiveAlongNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dis",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SetBoundaryMotion": {
    "inputs": [
     [
@@ -28424,6 +28876,41 @@
     [
      "",
      "FT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "intOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
+  "SetExampleShape": {
+   "inputs": [
+    [
+     "",
+     "intIn",
+     ""
+    ],
+    [
+     "",
+     "examShape",
      ""
     ],
     [
@@ -29108,11 +29595,47 @@
     [
      "float",
      "epsilon",
-     "1e-6"
+     "1e-8"
     ]
    ],
    "categories": [
     "FEM"
+   ]
+  },
+  "SolveLaplaceEquaOnAttr": {
+   "inputs": [
+    [
+     "",
+     "primIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr_name",
+     "RENAME_ME"
+    ]
+   ],
+   "categories": [
+    "Skinning"
    ]
   },
   "SpatialPartitionForParticles": {
@@ -29326,9 +29849,9 @@
      ""
     ],
     [
-     "",
+     "float",
      "dt",
-     ""
+     "0"
     ],
     [
      "",
@@ -29348,13 +29871,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dt",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -29821,6 +30338,76 @@
     "FLIPSolver"
    ]
   },
+  "SyncPrimitiveAttributes": {
+   "inputs": [
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "TetrahedralizeSurface": {
+   "inputs": [
+    [
+     "",
+     "surf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "tets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "ToParticleObject": {
    "inputs": [
     [
@@ -29959,6 +30546,11 @@
      "",
      "prim",
      ""
+    ],
+    [
+     "int",
+     "category",
+     "0"
     ],
     [
      "",
@@ -30664,8 +31256,43 @@
     "FEM"
    ]
   },
+  "UpdatePrimitiveFromZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "UpdateZSGrid": {
    "inputs": [
+    [
+     "float",
+     "gravity",
+     "-9.8"
+    ],
     [
      "",
      "ZSPartition",
@@ -30709,13 +31336,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "gravity",
-     "-9.8"
-    ]
-   ],
+   "params": [],
    "categories": [
     "MPM"
    ]
@@ -31446,6 +32067,61 @@
     "openvdb"
    ]
   },
+  "VolumeAdvect": {
+   "inputs": [
+    [
+     "",
+     "InoutField",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "int",
+     "SubSteps",
+     "1"
+    ],
+    [
+     "enum SemiLagrangian  MidPoint RK3 RK4 MacCormack BFECC",
+     "Integrator",
+     "BFECC"
+    ],
+    [
+     "enum None Clamp Revert",
+     "Limiter",
+     "Revert"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "InoutField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "VoronoiFracture": {
    "inputs": [
     [
@@ -31796,6 +32472,11 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -32177,6 +32858,36 @@
     "MPM"
    ]
   },
+  "ZSReturnMapping": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
   "ZensimBoundary": {
    "inputs": [
     [
@@ -32211,41 +32922,6 @@
    ],
    "categories": [
     "GPUMPM"
-   ]
-  },
-  "makeCompressibleSim": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "SimParam",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "makeCollision": {

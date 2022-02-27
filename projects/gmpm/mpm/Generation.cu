@@ -1,5 +1,5 @@
+#include "../Structures.hpp"
 #include "../Utils.hpp"
-#include "Structures.hpp"
 
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/VdbSampler.h"
@@ -554,6 +554,76 @@ ZENDEFNODE(MakeZSGrid,
                {"ZSGrid"},
                {},
                {"MPM"},
+           });
+
+struct MakeZSLevelSet : INode {
+  void apply() override {
+    auto dx = get_input2<float>("dx");
+
+    std::vector<zs::PropertyTag> tags{{"sdf", 1}};
+
+    auto ls = std::make_shared<ZenoLevelSet>();
+    ls->transferScheme = get_param<std::string>("transfer");
+    auto cateStr = get_param<std::string>("category");
+
+    // default is "cellcentered"
+    if (cateStr == "staggered")
+      tags.emplace_back(zs::PropertyTag{"vel", 3});
+    // default is "unknown"
+    if (ls->transferScheme == "unknown")
+      ;
+    else if (ls->transferScheme == "flip")
+      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+    else if (ls->transferScheme == "apic")
+      ;
+    else
+      throw std::runtime_error(fmt::format(
+          "unrecognized transfer scheme [{}]\n", ls->transferScheme));
+
+    if (cateStr == "collocated") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "cellcentered") {
+      auto tmp =
+          typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{
+              tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "staggered") {
+      auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
+          tags, dx, 1, zs::memsrc_e::um, 0};
+      tmp.reset(zs::cuda_exec(), 0);
+      ls->getLevelSet() = std::move(tmp);
+    } else
+      throw std::runtime_error(
+          fmt::format("unknown levelset (grid) category [{}].", cateStr));
+
+    zs::match([](const auto &lsPtr) {
+      if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
+        using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
+        fmt::print(
+            "levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n",
+            spls_t::category, 1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx,
+            spls_t::side_length, spls_t::block_size);
+      } else {
+        throw std::runtime_error(
+            fmt::format("invalid levelset [{}] initialized in basicls.",
+                        zs::get_var_type_str(lsPtr)));
+      }
+    })(ls->getBasicLevelSet()._ls);
+    set_output("ZSLevelSet", std::move(ls));
+  }
+};
+ZENDEFNODE(MakeZSLevelSet,
+           {
+               {{"float", "dx", "0.1"}},
+               {"ZSLevelSet"},
+               {{"enum unknown apic flip", "transfer", "unknown"},
+                {"enum cellcentered collocated staggered", "category",
+                 "cellcentered"}},
+               {"SOP"},
            });
 
 struct ToZSBoundary : INode {
