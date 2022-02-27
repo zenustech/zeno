@@ -194,7 +194,7 @@ struct FEMIntegrator : zeno::IObject {
             FEM_Scaler A023 = MatHelper::Area(v0,v2,v3);
 
             // we denote the average surface area of a tet as the characteristic norm
-            _elmCharacteristicNorm[elm_id] = (A012 + A013 + A123 + A023) / 4;  
+            _elmCharacteristicNorm[elm_id] = (A012 + A013 + A123 + A023) / 4;
         }      
     }
 
@@ -216,31 +216,41 @@ struct FEMIntegrator : zeno::IObject {
         const auto& tet = prim->quads[elm_id];
 
         // nodal wise properties
-        const auto& example_shape = prim->attr<zeno::vec3f>("examShape");
-        const auto& example_weight = prim->attr<float>("examW");
-
         // elm-wise properties
         // const auto& activation_field = prim->attr<zeno::vec3f>("activation");
-        const auto& activation_level = elmView->attr<zeno::vec3f>("activation");
-        const auto& fiber_dir = elmView->attr<zeno::vec3f>("fiberDir");
         const auto& Es = elmView->attr<float>("E");
         const auto& nus = elmView->attr<float>("nu");
         const auto& vs = elmView->attr<float>("v");
         const auto& phis = elmView->attr<float>("phi");
         const auto& Vs = elmView->attr<float>("V");
 
-
-        // Now we support non-uniform activation
+        // Support for examShape-Driven Mechanics
         for(size_t i = 0;i < 4;++i){
-            attrbs._example_pos.segment(i*3,3) << example_shape[tet[i]][0],example_shape[tet[i]][1],example_shape[tet[i]][2];
-            attrbs._example_pos_weight.segment(i*3,3).setConstant(example_weight[tet[i]]);
+            if(prim->has_attr("examShape") && prim->has_attr("examW")){
+                const auto& example_shape = prim->attr<zeno::vec3f>("examShape");
+                const auto& example_weight = prim->attr<float>("examW");
+                attrbs._example_pos.segment(i*3,3) << example_shape[tet[i]][0],example_shape[tet[i]][1],example_shape[tet[i]][2];
+                attrbs._example_pos_weight.segment(i*3,3).setConstant(example_weight[tet[i]]);
+            }else{
+                attrbs._example_pos.segment(i*3,3) << 0,0,0;
+                attrbs._example_pos_weight.segment(i*3,3).setConstant(0);
+            }
         }
 
+        // Support non-uniform activation
+        if(elmView->has_attr("activation") && elmView->has_attr("fiberDir")){
+            const auto& activation_level = elmView->attr<zeno::vec3f>("activation");
+            const auto& fiber_dir = elmView->attr<zeno::vec3f>("fiberDir");
+            attrbs.emp.forient << fiber_dir[elm_id][0],fiber_dir[elm_id][1],fiber_dir[elm_id][2];
+            Mat3x3d R = MatHelper::Orient2R(attrbs.emp.forient);
+            Vec3d al;al << activation_level[elm_id][0],activation_level[elm_id][1],activation_level[elm_id][2];
+            attrbs.emp.Act = R * al.asDiagonal() * R.transpose();
+        }else{
+            attrbs.emp.forient << 1,0,0;
+            attrbs.emp.Act = Mat3x3d::Identity();
+        }
 
-        attrbs.emp.forient << fiber_dir[elm_id][0],fiber_dir[elm_id][1],fiber_dir[elm_id][2];
-        Mat3x3d R = MatHelper::Orient2R(attrbs.emp.forient);
-        Vec3d al;al << activation_level[elm_id][0],activation_level[elm_id][1],activation_level[elm_id][2];
-        attrbs.emp.Act = R * al.asDiagonal() * R.transpose();
+        // Support Interpolatee-Driven Mechanics
 
         attrbs.emp.E = Es[elm_id];
         attrbs.emp.nu = nus[elm_id];
@@ -249,19 +259,52 @@ struct FEMIntegrator : zeno::IObject {
         attrbs._density = phis[elm_id];
     }
 
+    void AssignElmInterpShape(size_t nm_elms,
+        const std::shared_ptr<PrimitiveObject>& interpShape,
+        std::vector<std::vector<Vec3d>>& interpPs,
+        std::vector<std::vector<Vec3d>>& interpWs){
+            interpPs.resize(nm_elms);
+            interpWs.resize(nm_elms);
+            for(size_t i = 0;i < nm_elms;++i){
+                interpPs[i].clear();
+                interpWs[i].clear();
+            }
+
+            if(interpShape && interpShape->has_attr("embed_id") && interpShape->has_attr("embed_w")){
+                const auto& elm_ids = interpShape->attr<float>("embed_id");
+                const auto& elm_ws = interpShape->attr<zeno::vec3f>("embed_w");
+                const auto& pos = interpShape->verts;
+                for(size_t i = 0;i < interpShape->size();++i){
+                    auto elm_id = elm_ids[i];
+                    const auto& pos = interpShape->verts[i];
+                    const auto& w = elm_ws[i];
+                    interpPs[elm_id].emplace_back(pos[0],pos[1],pos[2]);
+                    interpWs[elm_id].emplace_back(w[0],w[1],w[2]);
+                }
+            }
+    }
+
     FEM_Scaler EvalObj(const std::shared_ptr<PrimitiveObject>& shape,
-        const std::shared_ptr<PrimitiveObject>& elmView) {
+        const std::shared_ptr<PrimitiveObject>& elmView,
+        const std::shared_ptr<PrimitiveObject>& interpShape) {
             FEM_Scaler obj = 0;
             size_t nm_elms = shape->quads.size();
             std::vector<double> objBuffer(nm_elms);
 
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
+
+            std::vector<std::vector<Vec3d>> interpPs;
+            std::vector<std::vector<Vec3d>> interpWs;
+            AssignElmInterpShape(nm_elms,interpShape,interpPs,interpWs);
         
             #pragma omp parallel for 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
                 TetAttributes attrbs;
                 AssignElmAttribs(elm_id,shape,elmView,attrbs);
+                attrbs.interpPenaltyCoeff = elmView->has_attr("embed_PC") ? elmView->attr<float>("embed_PC")[elm_id] : 0;
+                attrbs.interpPs = interpPs[elm_id];
+                attrbs.interpWs = interpWs[elm_id];
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)
@@ -283,6 +326,7 @@ struct FEMIntegrator : zeno::IObject {
 
     FEM_Scaler EvalObjDeriv(const std::shared_ptr<PrimitiveObject>& shape,
         const std::shared_ptr<PrimitiveObject>& elmView,
+        const std::shared_ptr<PrimitiveObject>& interpShape,
         VecXd& deriv) {
             FEM_Scaler obj = 0;
             size_t nm_elms = shape->quads.size();
@@ -291,12 +335,19 @@ struct FEMIntegrator : zeno::IObject {
             
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
 
+            std::vector<std::vector<Vec3d>> interpPs;
+            std::vector<std::vector<Vec3d>> interpWs;
+            AssignElmInterpShape(nm_elms,interpShape,interpPs,interpWs);
+
             #pragma omp parallel for 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
                 AssignElmAttribs(elm_id,shape,elmView,attrbs);
+                attrbs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[elm_id] : 0;
+                attrbs.interpPs = interpPs[elm_id];
+                attrbs.interpWs = interpWs[elm_id];
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)
@@ -320,6 +371,7 @@ struct FEMIntegrator : zeno::IObject {
 
     FEM_Scaler EvalObjDerivHessian(const std::shared_ptr<PrimitiveObject>& shape,
         const std::shared_ptr<PrimitiveObject>& elmView,
+        const std::shared_ptr<PrimitiveObject>& interpShape,
         VecXd& deriv,VecXd& HValBuffer,bool enforce_spd) {
             FEM_Scaler obj = 0;
             size_t clen = _intPtr->GetCouplingLength();
@@ -331,12 +383,19 @@ struct FEMIntegrator : zeno::IObject {
 
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
 
-            // #pragma omp parallel for 
+            std::vector<std::vector<Vec3d>> interpPs;
+            std::vector<std::vector<Vec3d>> interpWs;
+            AssignElmInterpShape(nm_elms,interpShape,interpPs,interpWs);
+
+            #pragma omp parallel for 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
-                AssignElmAttribs(elm_id,shape,elmView,attrbs);     
+                AssignElmAttribs(elm_id,shape,elmView,attrbs);  
+                attrbs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[elm_id] : 0;
+                attrbs.interpPs = interpPs[elm_id];
+                attrbs.interpWs = interpWs[elm_id];   
 
                 std::vector<Vec12d> elm_traj(1);
                 for(size_t i = 0;i < 4;++i)

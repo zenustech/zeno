@@ -53,6 +53,11 @@ struct TetAttributes{
     ElastoMaterialParam emp;
     PlasticMaterialParam pmp;// trajectory dependent force model
     FEM_Scaler v;
+
+    // interpolation energy form
+    std::vector<Vec3d> interpWs;
+    std::vector<Vec3d> interpPs;
+    FEM_Scaler interpPenaltyCoeff;
 };
 
 /**

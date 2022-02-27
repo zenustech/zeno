@@ -10,6 +10,7 @@ struct SolveFEM : zeno::INode {
         auto integrator = get_input<FEMIntegrator>("integrator");
         auto shape = get_input<PrimitiveObject>("shape");
         auto elmView = get_input<PrimitiveObject>("elmView");
+        std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;
 
         int max_iters = get_param<int>("maxNRIters");
         int max_linesearch = get_param<int>("maxBTLs");
@@ -41,7 +42,7 @@ struct SolveFEM : zeno::INode {
         do{
             FEM_Scaler e0,e1,eg0;
 
-            e0 = integrator->EvalObjDerivHessian(shape,elmView,r,HBuffer,true);
+            e0 = integrator->EvalObjDerivHessian(shape,elmView,interpShape,r,HBuffer,true);
             // break;
             if(iter_idx == 0)
                 r0 = r.norm();
@@ -80,8 +81,16 @@ struct SolveFEM : zeno::INode {
                     Mat3x3d F;
                     BaseIntegrator::ComputeDeformationGradient(integrator->_elmMinv[i],tet_shape,F);
 
+                    std::vector<std::vector<Vec3d>> interpPs;
+                    std::vector<std::vector<Vec3d>> interpWs;
+                    integrator->AssignElmInterpShape(shape->quads.size(),interpShape,interpPs,interpWs);
+
                     TetAttributes attrs;
                     integrator->AssignElmAttribs(i,shape,elmView,attrs);
+                    attrs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[i] : 0;
+                    attrs.interpPs = interpPs[i];
+                    attrs.interpWs = interpWs[i]; 
+
 
                     FEM_Scaler psi;
                     Vec9d dpsi;
@@ -132,7 +141,7 @@ struct SolveFEM : zeno::INode {
                         UpdateCurrentShape(shape,dp,-alpha);
                     alpha *= beta;
                     UpdateCurrentShape(shape,dp,alpha);
-                    e1 = integrator->EvalObj(shape,elmView);
+                    e1 = integrator->EvalObj(shape,elmView,interpShape);
                     ++search_idx;
                     wolfeBuffer[search_idx-1](0) = (e1 - e0)/alpha;
                     wolfeBuffer[search_idx-1](1) = eg0;
@@ -168,7 +177,7 @@ struct SolveFEM : zeno::INode {
 };
 
 ZENDEFNODE(SolveFEM,{
-    {"integrator","shape","elmView"},
+    {"integrator","shape","elmView","skin"},
     {"shape"},
     {{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
         {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},
