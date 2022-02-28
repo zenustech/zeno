@@ -8,7 +8,10 @@ assignees: ''
 ---
 
 <!--
-Contributor guidelines: https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md
+Thank for you request!
+If this is your first issue to Zeno, make sure you've checked out the contributor guidelines:
+
+https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md
 -->
 
 **Is your feature request related to a problem? Please describe.**

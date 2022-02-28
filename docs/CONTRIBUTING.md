@@ -26,6 +26,19 @@ Make sure you choose the right *issue template* accordingly to your issue type, 
 Please take some time to fill the template completely, this help us understand your problem easier.
 Therefore *you get a better answer, faster*, thanks for your support!
 
+## Usage Tips
+
+The GitHub issue tracker is for *bug reports* and *features requests* for the
+Zeno project, and on-topic comments and follow-ups to them. It is not for
+general discussion, general support or for any other purpose.
+
+Issue titles are important. It's not usually helpful to write a title like
+`bug report` or `issue with Zeno` or even pasting an error message.
+Spend a minute to come up with a consise summary of the problem. This helps with
+management of issues, with triage, and above all with searching.
+
+## Attach the console output
+
 For bug reports, the *console output* is very helpful to us, make sure you attach it if possible.
 
 Hint: you may use triple back quotes to insert pretty-shown code (for console output) like this:
@@ -37,16 +50,31 @@ This is the Zeno log...
 \`\`\`
 ```
 
-## Discussions
+## Reproduce your issue with the minimal graph
 
-If you feel issues being too formal, check out our [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
-for discussing problems in Q&A style.
+Many problems can be caused by unexpected configuration or other node combinations.
+A too complicated graph in bug report can make us hard to figure out the real problem.
 
-## Usage Tips
+Therefore when raising an issue, you must attempt to reproduce your issue
+with the minimal graph provided, and to provide any additional changes required
+to that graph in order to reproduce it. The purpose of this is to ensure that
+the issue is not a mistake in another node, or a problem unique to your
+configuration.
 
-The GitHub issue tracker is for *bug reports* and *features requests* for the
-Zeno project, and on-topic comments and follow-ups to them. It is not for
-general discussion, general support or for any other purpose.
+If your issue does _not_ reproduce with the minimal graph, then you must say so
+in the issue report.
+
+## Fill the issue template
+
+But above all else, please *please* complete the *issue template*. I know it is a
+little tedious to get all the various diagnostics, but you *must* provide them,
+*even if you think they are irrelevant*. This is important, because the
+maintainer(s) can quickly cross-check theories by inspecting the provided
+diagnostics without having to spend time asking for them, and waiting for the
+response. This means *you get a better answer, faster*. So it's worth it,
+honestly.
+
+## Searching for similar issues
 
 Please **search the issue tracker for similar issues** before creating a new
 one. There's no point in duplication; if an existing open issue addresses your
@@ -65,42 +93,22 @@ the maintainers. Only post if it will aid the maintainers in solving the issue;
 if there are existing diagnostics requested in the thread, perform
 them and post the results.
 
+## Conclusion
+
 Please do not be offended if your Issue or comment is closed or hidden, for any
 of the following reasons:
 
 * The issue template was not completed
 * The issue or comment is off-topic
 * The issue does not represent a Zeno bug or feature request
-* The issue cannot be reasonably reproduced using the minimal vimrc
+* The issue cannot be reasonably reproduced using the minimal graph
 * The issue is a duplicate of an existing issue
 * etc.
 
-Issue titles are important. It's not usually helpful to write a title like
-`bug report` or `issue with Zeno` or even pasting an error message.
-Spend a minute to come up with a consise summary of the problem. This helps with
-management of issues, with triage, and above all with searching.
+# Discussions
 
-But above all else, please *please* complete the *issue template*. I know it is a
-little tedious to get all the various diagnostics, but you *must* provide them,
-*even if you think they are irrelevant*. This is important, because the
-maintainer(s) can quickly cross-check theories by inspecting the provided
-diagnostics without having to spend time asking for them, and waiting for the
-response. This means *you get a better answer, faster*. So it's worth it,
-honestly.
-
-<!--
-### Reproduce your issue with the minimal graph
-
-Many problems can be caused by unexpected configuration or other plugins.
-Therefore when raising an issue, you must attempt to reproduce your issue
-with the minimal vimrc provided, and to provide any additional changes required
-to that file in order to reproduce it. The purpose of this is to ensure that
-the issue is not a conflict with another plugin, or a problem unique to your
-configuration.
-
-If your issue does _not_ reproduce with the minimal vimrc, then you must say so
-in the issue report.
--->
+If you feel issues being too formal, check out our [GitHub discussion channel](https://github.com/zenustech/zeno/discussions)
+for discussing problems in Q&A style interactively.
 
 # Pull Requests
 
@@ -143,9 +151,10 @@ larger new features.
 
 When contributing pull requests for Zeno, I ask that:
 
-* You provide a clear and complete summary of the change, the use case and how the change was tested.
+* You provide a clear and complete summary of the change, the use case and how the change was tested either manually or automatically.
 * You follow the style of the code as-is; ref: [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
 * Your changes worked on both Linux and Windows (GitHub CI will automatically check this).
+* Referencing to the issue number this PR is related to (if any).
 
 # Coding
 
@@ -217,20 +226,16 @@ If you have trouble setting up developing environment, please let us help by ope
 
 ### Code Style
 
-Zeno is based on C++20, you may assume all C++17 features and some C++20 features to be available in coding.
-
-> Modules and coroutines are very nice feature in C++20, but we ain't using them for now due to compiler support.
-> As an oppisite, concepts and template-lambdas are widely used in the codebase.
+Zeno is based on C++17, you may assume all C++17 features to be available in coding.
 
 We generally follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), excepts a few differences:
 
-- We target C++20 instead of C++17.
 - We use `T const &t` instead of `const T& t`
 - We allow implicit conversions when used properly
 - We allow exceptions as we widely adopted smart pointers for exception-safety
-- We avoid using STL streams (`std::cout` and so on) -- use `zmt::format` instead
+- We avoid using STL streams (`std::cout` and so on) -- use `zeno::format` instead
 - We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
-- We mainly use `smallCamelCase` for function methods, `underline_case` for variables
+- We mainly use `smallCamelCase` for functions, `underline_case` for variables
 - We don't add trialling underscope like `m_google_style_`, we use `m_zeno_style`
 
 Code style is not forced, we also won't format every code merged in to the repo.
@@ -242,12 +247,12 @@ Example:
 #include <vector>            // system headers should use '<>' brackets
 #include <memory>
 #include <tbb/parallel_for_each.h>
-#include <zeno/zmt/log.h>    // project headers should also use '<>' for absolute pathing
-#include <zeno/zmt/format.h>
+#include <zeno/utils/log.h>    // project headers should also use '<>' for absolute pathing
+#include <zeno/utils/format.h>
 
-// and never use 'using namespace std', think about std::data, std::size, std::ref
+// never 'using namespace std', think about std::data, std::size, std::ref, std::ws, std::tm, std::next
 
-ZENO_NAMESPACE_BEGIN  // all codes should be wrapped with ZENO_NAMESPACE_BEGIN/END
+namespace zeno {  // all our code should be wrapped with 'namespace zeno'
 
 namespace myutils {   // '{' should stay in same line
                       // and namespaces does not indent
@@ -257,7 +262,7 @@ namespace {        // use an anonymous namespace for static functions
 auto staticFunc(int arg) {   // this function is visible only to this file
     std::vector<int> arr;        // tab size is 4
     for (auto const &x: arr) {   // C++11 range-based for loop when possible
-       ZENO_LOG_INFO("{}", x);   // use zeno logger for printing
+       zeno::log_info("{}", x);   // use zeno logger for printing
     }
     
     // ^^ may leave a blank line for logical separation
@@ -266,7 +271,7 @@ auto staticFunc(int arg) {   // this function is visible only to this file
         x = x * 2 + arg;  // leave two spaces between operators like '=', '*', '+'
     });
 
-    std::string expr = zmt::format("the answer is {}", 42);  // instead of fmt or std
+    std::string expr = zeno::format("the answer is {}", 42);  // instead of fmt or std
     
     return x;
 }
@@ -275,7 +280,7 @@ auto staticFunc(int arg) {   // this function is visible only to this file
 
 std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visible globally
    auto ret = staticFunc(arg);
-   auto ptr = std::make_shared<types::MyType>();  // use smart pointers instead of naked new/delete
+   auto ptr = std::make_shared<zeno::MyType>();   // use smart pointers instead of naked new/delete
    ptr->some_attr = std::move(ret);               // use std::move for optimal zero-copying
    return ptr;
 }
@@ -315,16 +320,10 @@ enum {
 
 }  // end of namespace awesomenamespace
 
-ZENO_NAMESPACE_END    // all code should be wrapped with ZENO_NAMESPACE_BEGIN/END
+}  // all our code should be wrapped with 'namespace zeno'
 ```
 
 See also [.clang-format](.clang-format) for automated formatting rules.
-
-### Write a custom node
-
-See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
-
-(TODO: more examples on our new node API).
 
 # Code of conduct
 

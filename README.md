@@ -4,7 +4,7 @@
 
 [Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
-[国内高速下载](https://gitee.com/zenustech/zeno/releases) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
+[国内高速下载](https://zenustech.com/d/) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -15,7 +15,7 @@ Aside of its simulation Tools, ZENO provides necessary visualization nodes for u
 
 - [Contributor guidelines](docs/CONTRIBUTING.md)
 - [How to build from source](BUILD.md)
-- [Why a new node system?](docs/introduction.md)
+- [Introduction on Zeno](docs/introduction.md)
 - [Tutorial on the editor (WIP)](docs/node_editor.md)
 
 ## Features
