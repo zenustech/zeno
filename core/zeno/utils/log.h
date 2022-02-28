@@ -43,7 +43,7 @@ static void set_log_level(log_level::level_enum level) {
 template <class ...Args>
 void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &msg, Args &&...args) {
     spdlog::source_loc loc(msg.location().file_name(), msg.location().line(), msg.location().function_name());
-    __get_spdlog_logger()->log(loc, level, fmt::format(msg.value(), std::forward<Args>(args)...));
+    __get_spdlog_logger()->log(loc, level, msg.value(), std::forward<Args>(args)...);
 }
 
 #else
@@ -52,11 +52,13 @@ enum level_enum { trace, debug, info, critical, warn, err };
 };
 
 ZENO_API void set_log_level(log_level::level_enum level);
+ZENO_API bool __check_log_level(log_level::level_enum level);
 ZENO_API void __impl_log_print(log_level::level_enum level, source_location const &loc, std::string_view msg);
 
 template <class ...Args>
 void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &msg, Args &&...args) {
-    __impl_log_print(level, msg.location(), format(msg.value(), std::forward<Args>(args)...));
+    if (__check_log_level(level))
+        __impl_log_print(level, msg.location(), format(msg.value(), std::forward<Args>(args)...));
 }
 #endif
 

@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 
+if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    message(STATUS "VCPKG_ROOT: $ENV{VCPKG_ROOT}")
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+endif()
+
+if (DEFINED ENV{VCPKG_TRIPLET} AND NOT DEFINED VCPKG_TARGET_TRIPLET)
+    message(STATUS "VCPKG_TRIPLET: $ENV{VCPKG_TRIPLET}")
+    set(VCPKG_TARGET_TRIPLET "$ENV{VCPKG_TRIPLET}" CACHE STRING "")
+endif()
+
 # Please use VS2019+ or GCC 9+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,6 +28,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (WIN32)
     # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'

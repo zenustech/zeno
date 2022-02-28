@@ -6,7 +6,7 @@
 namespace zeno {
 
 template <class T0, class ...Ts>
-std::string tostr(T0 &&t0, Ts &&...ts) {
+std::string pycatstr(T0 &&t0, Ts &&...ts) {
     std::ostringstream ss;
     ss << std::forward<T0>(t0);
     if constexpr (sizeof...(Ts))
@@ -15,7 +15,7 @@ std::string tostr(T0 &&t0, Ts &&...ts) {
 }
 
 template <class T0, class ...Ts>
-void print(T0 &&t0, Ts &&...ts) {
+void pyprint(T0 &&t0, Ts &&...ts) {
     std::cout << std::forward<T0>(t0);
     if constexpr (sizeof...(Ts))
         ((std::cout << std::forward<Ts>(ts) << ' '), ...);

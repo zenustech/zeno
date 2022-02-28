@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "vec.h"
 
-namespace zeno {
+namespace zeno::ndgrid {
 
 template <class T, size_t N>
 struct Grid {

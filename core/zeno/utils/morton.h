@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <tuple>
 
+namespace zeno {
+
 namespace morton2d {
 
 constexpr static uint64_t encode1(uint64_t x)
@@ -69,6 +71,8 @@ constexpr static uint64_t decode1(uint64_t x)
 constexpr static std::tuple<uint64_t, uint64_t, uint64_t> decode(uint64_t d)
 {
     return {decode1(d), decode1(d >> 1), decode1(d >> 2)};
+}
+
 }
 
 }
