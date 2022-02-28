@@ -46,17 +46,28 @@ ZENO_API void __impl_log_print(log_level::level_enum level, source_location cons
 }
 #endif
 
-namespace zeno {
-
 namespace { struct LogInitializer {
 #ifdef ZENO_ENABLE_SPDLOG
     std::shared_ptr<spdlog::logger> g_logger;
 #endif
 
     LogInitializer() {
+#ifdef ZENO_ENABLE_SPDLOG
+        if (auto env = std::getenv("ZENO_LOGFILE"); env) {
+            g_logger = spdlog::basic_logger_mt("zeno", env);
+        } else {
+            g_logger = spdlog::stderr_color_mt("zeno");
+        }
+        g_logger->set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
+#endif
+
         if (auto env = std::getenv("ZENO_LOGLEVEL"); env) {
             if (0) {
+#ifdef ZENO_ENABLE_SPDLOG
+#define _PER_LEVEL(x, y) } else if (!std::strcmp(env, #x)) { g_logger->set_level(log_level::y);
+#else
 #define _PER_LEVEL(x, y) } else if (!std::strcmp(env, #x)) { set_log_level(log_level::y);
+#endif
             _PER_LEVEL(trace, trace)
             _PER_LEVEL(debug, debug)
             _PER_LEVEL(info, info)
@@ -67,17 +78,13 @@ namespace { struct LogInitializer {
             }
         }
 
-#ifdef ZENO_ENABLE_SPDLOG
-        if (auto env = std::getenv("ZENO_LOGFILE"); env) {
-            g_logger = spdlog::basic_logger_mt("zeno", env);
-        } else {
-            g_logger = spdlog::stderr_color_mt("zeno");
-        }
-        g_logger->set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
-#endif
 
 #if defined(__DATE__) && defined(__TIME__)
+#ifdef ZENO_ENABLE_SPDLOG
+        g_logger->info("build date: {} {}", __DATE__, __TIME__);
+#else
         log_info("build date: {} {}", __DATE__, __TIME__);
+#endif
 #endif
     }
 }; }
@@ -86,6 +93,5 @@ ZENO_API spdlog::logger *__get_spdlog_logger() {
     static LogInitializer init;
     return init.g_logger.get();
 }
-
 
 }

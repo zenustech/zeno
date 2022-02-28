@@ -35,7 +35,7 @@ static bool starts_with(std::string const &line, std::string const &pattern) {
 	return line.find(pattern) == 0;
 }
 
-static std::string trim_string(std::string const &str) {
+static std::string trim_string(std::string str) {
 	while (str.size() != 0 && std::isspace(str[0])) {
 		str.erase(0, 1);
 	}
