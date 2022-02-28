@@ -140,6 +140,15 @@ void ZenoStackedViewWidget::activate(const QString& subGraph, const QString& nod
 	}
 }
 
+void ZenoStackedViewWidget::clear()
+{
+	for (ZenoSubGraphView* view : m_views)
+	{
+		removeWidget(view);
+	}
+	m_views.clear();
+}
+
 
 ///////////////////////////////////////////////////////////////////////
 ZenoGraphsLayerWidget::ZenoGraphsLayerWidget(QWidget* parent)
@@ -171,6 +180,12 @@ void ZenoGraphsLayerWidget::activeByPath(const QString& path)
 	QStringList L = path.split("/", QtSkipEmptyParts);
 	const QString& subGraph = L[L.length() - 1];
 	m_graphsWidget->activate(subGraph, "");
+}
+
+void ZenoGraphsLayerWidget::clear()
+{
+	m_pPathWidget->hide();
+	m_graphsWidget->clear();
 }
 
 QString ZenoGraphsLayerWidget::path() const

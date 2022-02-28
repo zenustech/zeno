@@ -109,8 +109,18 @@ void GraphsManagment::clear()
     if (m_model)
     {
         m_model->clear();
+
         delete m_model;
         m_model = nullptr;
+
+        delete m_pTreeModel;
+        m_pTreeModel = nullptr;
+
+        for (ZenoSubGraphScene* scene : m_scenes)
+        {
+            delete scene;
+        }
+        m_scenes.clear();
     }
 }
 

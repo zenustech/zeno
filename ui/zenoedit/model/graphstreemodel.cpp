@@ -59,7 +59,23 @@ QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
 
 void GraphsTreeModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-	//todo: rename
+	if (roles[0] == ROLE_OBJNAME)
+	{
+		SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
+		const QString& nodeId = topLeft.data(ROLE_OBJID).toString();
+		const QModelIndex& modelIdx = pModel->index(nodeId);
+		QModelIndexList lst = match(index(0, 0), ROLE_OBJID, nodeId, 1, Qt::MatchRecursive);
+		Q_ASSERT(lst.size() == 1);
+		QModelIndex treeIdx = lst[0];
+
+		const QString& oldName = treeIdx.data(ROLE_OBJNAME).toString();
+		const QString& newName = modelIdx.data(ROLE_OBJNAME).toString();
+		if (oldName != newName)
+		{
+			setData(treeIdx, newName, ROLE_OBJNAME);
+			setData(treeIdx, newName, Qt::DisplayRole);
+		}
+	}
 }
 
 void GraphsTreeModel::on_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)

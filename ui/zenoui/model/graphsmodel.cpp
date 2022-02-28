@@ -391,17 +391,18 @@ void GraphsModel::removeGraph(int idx)
     markDirty();
 }
 
-QModelIndex GraphsModel::fork(const QString& subgName)
+QModelIndex GraphsModel::fork(const QModelIndex& whichSubg, const QModelIndex& subnetNodeIdx)
 {
-    SubGraphModel* pModel = subGraph(subgName);
+    const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
+    SubGraphModel* pModel = subGraph(subnetName);
     Q_ASSERT(pModel);
     if (!pModel)
         return QModelIndex();
 
 	SubGraphModel* pForkModel = new SubGraphModel(this);
-    pForkModel->setName(subgName + " (copy)");
+    const QString& forkName = subnetName + " (copy)";
+    pForkModel->setName(forkName);
     appendSubGraph(pForkModel);
-    QModelIndex newSubgIdx = indexBySubModel(pForkModel);
 
     QModelIndex subgIdx = indexBySubModel(pModel);
 
@@ -435,7 +436,37 @@ QModelIndex GraphsModel::fork(const QString& subgName)
     {
         datas.append(data);
     }
+
+    QModelIndex newSubgIdx = indexBySubModel(pForkModel);
     importNodeLinks(datas, newSubgIdx);
+
+    //create the new fork subnet node at graph indexed by whichSubg.
+    NODE_DATA subnetData = itemData(subnetNodeIdx, whichSubg);
+    subnetData[ROLE_OBJID] = UiHelper::generateUuid(forkName);
+    subnetData[ROLE_OBJNAME] = forkName;
+
+    OUTPUT_SOCKETS outputs = subnetData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+	for (auto it = outputs.begin(); it != outputs.end(); it++)
+	{
+		it->second.linkIndice.clear();
+		it->second.inNodes.clear();
+	}
+    INPUT_SOCKETS inputs = subnetData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+	for (auto it = inputs.begin(); it != inputs.end(); it++)
+	{
+		it->second.linkIndice.clear();
+		it->second.outNodes.clear();
+	}
+    subnetData[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    subnetData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+    //temp code: node pos.
+    QPointF pos = subnetData[ROLE_OBJPOS].toPointF();
+    pos.setY(pos.y() + 100);
+    subnetData[ROLE_OBJPOS] = pos;
+
+    SubGraphModel* pCurrentModel = subGraph(whichSubg.row());
+    pCurrentModel->appendItem(subnetData, false);
 
     return newSubgIdx;
 }
@@ -957,6 +988,7 @@ void GraphsModel::clear()
         const QModelIndex& subgIdx = this->index(r, 0);
         clearSubGraph(subgIdx);
     }
+    m_linkModel->clear();
     emit modelClear();
 }
 

@@ -32,6 +32,7 @@ public:
 	ZenoStackedViewWidget(QWidget* parent = nullptr);
 	~ZenoStackedViewWidget();
 	void activate(const QString& subGraph, const QString& nodeId = "");
+	void clear();
 
 private:
 	QMap<QString, ZenoSubGraphView*> m_views;
@@ -44,6 +45,7 @@ public:
 	ZenoGraphsLayerWidget(QWidget* parent = nullptr);
 	void resetPath(const QString& path, const QString& nodeId);
 	void activeByPath(const QString& path);
+	void clear();
 	QString path() const;
 
 private:
