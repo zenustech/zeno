@@ -4,13 +4,13 @@ cmake_minimum_required(VERSION 3.15)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+project(zeno LANGUAGES C CXX)
+
 if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
     message(WARNING "The binary directory of CMake cannot be the same as source directory!"
         "Please consider use 'cmake -B build' to specify a different binary directory."
         "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
 endif()
-
-project(zeno LANGUAGES C CXX)
 
 # Otherwise we can't link SHARED libs with STATIC libs
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

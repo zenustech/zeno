@@ -36,5 +36,4 @@ if (WIN32)
   target_compile_options(zeno_zenvdb PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-target_link_libraries(zeno_zenvdb PUBLIC zeno)
-target_link_libraries(zeno_zenvdb PRIVATE zeno_nodep)
+target_link_libraries(zeno_zenvdb PUBLIC zenocore)

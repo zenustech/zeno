@@ -11,5 +11,4 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno_OldZMS PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(zeno_OldZMS PUBLIC zeno)
-target_link_libraries(zeno_OldZMS PRIVATE zeno_nodep)
+target_link_libraries(zeno_OldZMS PUBLIC zenocore)

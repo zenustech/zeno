@@ -47,7 +47,6 @@ target_include_directories(zeno_FEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bspline   
 )
 
-target_link_libraries(zeno_FEM PUBLIC zeno)
-target_link_libraries(zeno_FEM PRIVATE zeno_nodep)
+target_link_libraries(zeno_FEM PUBLIC zenocore)
 target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)

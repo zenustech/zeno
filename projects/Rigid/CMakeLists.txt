@@ -7,8 +7,7 @@ add_library(zeno_Rigid OBJECT ${ZEN_RIGID_SOURCE})
 target_include_directories(zeno_Rigid PRIVATE .)
 target_include_directories(zeno_Rigid PRIVATE bullet3/src)
 
-target_link_libraries(zeno_Rigid PUBLIC zeno)
-target_link_libraries(zeno_Rigid PRIVATE zeno_nodep)
+target_link_libraries(zeno_Rigid PUBLIC zenocore)
 target_link_libraries(zeno_Rigid PRIVATE spdlog)
 
 if (UNIX)

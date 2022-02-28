@@ -12,5 +12,4 @@ endif()
 #find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 #target_link_libraries(zeno_oldzenbase PRIVATE TBB::tbb TBB::tbbmalloc)
 
-target_link_libraries(zeno_oldzenbase PUBLIC zeno)
-target_link_libraries(zeno_oldzenbase PRIVATE zeno_nodep)
+target_link_libraries(zeno_oldzenbase PUBLIC zenocore)

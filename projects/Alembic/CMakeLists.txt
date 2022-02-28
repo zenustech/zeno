@@ -10,4 +10,4 @@ target_include_directories(zeno_Alembic PRIVATE .)
 
 find_package(Alembic REQUIRED)
 target_link_libraries(zeno_Alembic PRIVATE Alembic::Alembic)
-target_link_libraries(zeno_Alembic PRIVATE zeno)
+target_link_libraries(zeno_Alembic PRIVATE zenocore)

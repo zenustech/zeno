@@ -13,5 +13,4 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno_LSystem PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-# Finally don't forget to link zeno.dll
-target_link_libraries(zeno_LSystem PUBLIC zeno LSystem)
+target_link_libraries(zeno_LSystem PUBLIC zenocore LSystem)

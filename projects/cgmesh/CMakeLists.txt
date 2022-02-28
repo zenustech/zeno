@@ -59,5 +59,5 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno_cgmesh PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(zeno_cgmesh PUBLIC zeno)
-target_link_libraries(zeno_cgmesh PRIVATE zeno_nodep igl_cgal)
+target_link_libraries(zeno_cgmesh PUBLIC zenocore)
+target_link_libraries(zeno_cgmesh PRIVATE igl_cgal)

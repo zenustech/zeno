@@ -35,7 +35,6 @@ target_link_libraries(zeno_SKINNING PUBLIC OpenMP::OpenMP_CXX)
 target_link_libraries(zeno_SKINNING PRIVATE igl::core igl::cgal igl::tetgen)
 # target_link_libraries(zeno_SKINNING PRIVATE libTetWild)
 
-target_link_libraries(zeno_SKINNING PUBLIC zeno)
-target_link_libraries(zeno_SKINNING PRIVATE zeno_nodep)
+target_link_libraries(zeno_SKINNING PUBLIC zenocore)
 target_include_directories(zeno_SKINNING PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_SKINNING PRIVATE ../zenvdb/include)

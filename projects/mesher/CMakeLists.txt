@@ -25,5 +25,4 @@ target_include_directories(zeno_mesher PRIVATE mpmmeshing/)
 
 target_link_libraries(zeno_mesher PRIVATE mpmmeshing )
 target_link_libraries(zeno_mesher PRIVATE Eigen3::Eigen)
-target_link_libraries(zeno_mesher PUBLIC zeno)
-target_link_libraries(zeno_mesher PRIVATE zeno_nodep)
+target_link_libraries(zeno_mesher PUBLIC zenocore)
