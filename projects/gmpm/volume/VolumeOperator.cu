@@ -154,7 +154,7 @@ struct ResampleZSLevelSet : INode {
         ls.numChannels(), refLs.getChannelOffset(tag.name),
         refLs.numChannels());
     cudaPol(
-        {(std::size_t)ls.numBlocks(), (std::size_t)ls.block_size},
+        Collapse{ls.numBlocks(), ls.block_size},
         [ls = proxy<execspace_e::cuda>(ls),
          refLs = proxy<execspace_e::cuda>(refLs),
          tag] __device__(typename RM_CVREF_T(ls)::size_type bi,
@@ -300,7 +300,7 @@ struct AdvectZSLevelSet : INode {
     extend_level_set_domain(cudaPol, lsOut, nlayers);
 
     const auto ls = lsOut.clone(lsOut.get_allocator());
-    cudaPol({(std::size_t)lsOut.numBlocks(), (std::size_t)lsOut.block_size},
+    cudaPol(Collapse{lsOut.numBlocks(), lsOut.block_size},
             [ls = proxy<execspace_e::cuda>(ls),
              lsOut = proxy<execspace_e::cuda>(lsOut),
              velLs = proxy<execspace_e::cuda>(velLs),
