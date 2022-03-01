@@ -10,7 +10,7 @@
 namespace zeno {
 
 
-static inline auto split_str(std::string const &s, char delimiter) {
+static inline auto split_str(std::string const &s, char delimiter = ' ') {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream iss(s);

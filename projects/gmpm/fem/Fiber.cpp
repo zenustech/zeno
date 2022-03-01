@@ -1,10 +1,10 @@
 #include "../ZensimMesh.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
 #include <zeno/logger.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/zeno.h>
 
@@ -32,9 +32,9 @@ struct FiberParticleToFEMFiber2 : zeno::INode {
     ompExec(zs::range(meshTets.size()), [&](std::size_t elm_id) {
       fiberElmId[elm_id] = float(elm_id);
       auto tet = meshTets[elm_id];
-      // 
+      //
       auto &fpos = fiberPos[elm_id];
-      for (size_t i = 0; i != 4; ++i)  {
+      for (size_t i = 0; i != 4; ++i) {
         auto p = meshPos[tet[i]];
         fpos += zeno::vec3f{p[0], p[1], p[2]};
       }

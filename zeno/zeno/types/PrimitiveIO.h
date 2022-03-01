@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
@@ -64,6 +65,19 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
     size = prim->quads.size();
     fwrite(&size, sizeof(size_t), 1, fp);
     fwrite(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
+
+    if (prim->mtl != nullptr)
+    {
+        auto mtlStr = prim->mtl->serialize();
+        size = mtlStr.size();
+        fwrite(&size, sizeof(size_t), 1, fp);
+        fwrite(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
+    }
+    else
+    {
+        size = 0;
+        fwrite(&size, sizeof(size_t), 1, fp);
+    }
 
     fclose(fp);
 }
@@ -141,6 +155,15 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     fread(&size, sizeof(size_t), 1, fp);
     prim->quads.resize(size);
     fread(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
+
+    fread(&size, sizeof(size_t), 1, fp);
+    if (size != 0)
+    {
+        std::vector<char> mtlStr;
+        mtlStr.resize(size);
+        fread(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
+        prim->mtl = std::make_shared<MaterialObject>(MaterialObject::deserialize(mtlStr));
+    }
 
     fclose(fp);
 }
