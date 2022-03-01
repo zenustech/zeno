@@ -4,7 +4,6 @@
 #include <zeno/types/AttrVector.h>
 #include <zeno/utils/type_traits.h>
 #include <zeno/utils/vec.h>
-#include <zeno/types/MaterialObject.h>
 #include <optional>
 #include <variant>
 #include <memory>
@@ -13,6 +12,8 @@
 #include <map>
 
 namespace zeno {
+
+struct MaterialObject;
 
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec3f> verts;

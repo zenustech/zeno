@@ -1,14 +1,14 @@
+#include "../ZenoSimulation.h"
+#include "../ZensimGeometry.h"
 #include "../ZensimMesh.h"
 #include "../ZensimModel.h"
-#include "../ZensimGeometry.h"
-#include "../ZenoSimulation.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/fem/ElementToDof.hpp"
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
 #include <zeno/logger.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/zeno.h>
 
@@ -35,7 +35,6 @@ struct ExplicitTimeStepping : zeno::INode {
     using vec12 = zs::vec<value_type, 12>;
     using vec4 = zs::vec<value_type, 4>;
 
-
     auto ompExec = zs::omp_exec();
     // elm force
     ompExec(integrator->_f, [](vec3 &v) { v = vec3::zeros(); });
@@ -53,7 +52,12 @@ struct ExplicitTimeStepping : zeno::INode {
           v_n[base] = vel[d];
         }
       }
-      auto eleForce = eval_tet_force(mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei], mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity, mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], nullptr /*force_model*/, u_n, mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei], nullptr/*damping_model*/, mesh->_elmDamp[ei], v_n);
+      auto eleForce = eval_tet_force(
+          mesh->_elmVolume[ei], mesh->_elmMass[ei], mesh->_elmYoungModulus[ei],
+          mesh->_elmPoissonRatio[ei], integrator->_dt, integrator->_gravity,
+          mesh->_elmdFdx[ei], mesh->_elmDmInv[ei], nullptr /*force_model*/, u_n,
+          mesh->_elmAct[ei], mesh->_elmWeight[ei], mesh->_elmOrient[ei],
+          nullptr /*damping_model*/, mesh->_elmDamp[ei], v_n);
       // atomic add
       for (int v = 0, base = 0; v != 4; ++v) {
         auto &f = integrator->_f[tetIndices[v]];
@@ -71,7 +75,8 @@ struct ExplicitTimeStepping : zeno::INode {
         auto &vel = mesh->_v[vi];
         const auto f = integrator->_f[vi];
         for (int d = 0; d != 3; ++d)
-          zs::atomic_add(zs::exec_omp, &vel[d], (value_type)(f[d] * dt / nodalMass));
+          zs::atomic_add(zs::exec_omp, &vel[d],
+                         (value_type)(f[d] * dt / nodalMass));
       }
     });
     // apply gravity, update x
@@ -110,31 +115,37 @@ struct ExplicitTimeStepping : zeno::INode {
 
     set_output("depa", std::move(depa));
   }
-
 };
 
 ZENDEFNODE(ExplicitTimeStepping, {
-    {{"mesh"},{"muscleForce"},{"dampForce"},{"integrator"},{"epsilon"},{"CT"},{"FT"}},
-    {"depa"},
-    {},
-    {"FEM"},
-});
+                                     {{"mesh"},
+                                      {"muscleForce"},
+                                      {"dampForce"},
+                                      {"integrator"},
+                                      {"epsilon"},
+                                      {"CT"},
+                                      {"FT"}},
+                                     {"depa"},
+                                     {},
+                                     {"FEM"},
+                                 });
 
 struct MakeExplicitTimeIntegrator2 : zeno::INode {
   void apply() override {
     auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
     auto integrator = std::make_shared<ZenoExplicitTimeIntegrator>();
     integrator->_dt = dt;
-    integrator->_gravity = typename ZenoExplicitTimeIntegrator::vec3{0.f, -9.8f, 0.f};
+    integrator->_gravity =
+        typename ZenoExplicitTimeIntegrator::vec3{0.f, -9.8f, 0.f};
     set_output("integrator", std::move(integrator));
   }
 };
 
 ZENDEFNODE(MakeExplicitTimeIntegrator2, {
-    {{"dt"}},
-    {"integrator"},
-    {},
-    {"FEM"},
-});
+                                            {{"dt"}},
+                                            {"integrator"},
+                                            {},
+                                            {"FEM"},
+                                        });
 
 } // namespace zeno

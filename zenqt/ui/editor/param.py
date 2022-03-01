@@ -153,6 +153,9 @@ class FloatSliderEdit(QLineEdit):
         self.old = None
         self.start = None
         self.pixel_per_one = 100
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(lambda: self.editingFinished.emit())
 
     def mouseMoveEvent(self, e):
         super().mouseMoveEvent(e)
@@ -161,6 +164,8 @@ class FloatSliderEdit(QLineEdit):
             offset = x - self.start
             v = self.old + offset / self.pixel_per_one * self.link.get_base()
             self.setText('{:.4f}'.format(v))
+            self.timer.stop()
+            self.timer.start(100)
 
     def mousePressEvent(self, e):
         super().mousePressEvent(e)
@@ -171,6 +176,8 @@ class FloatSliderEdit(QLineEdit):
         super().mouseReleaseEvent(e)
         self.old = None
         self.start = None
+        self.timer.stop()
+        self.editingFinished.emit()
 
 class QDMGraphicsParam_floatslider(QDMGraphicsParam_float):
     def __init__(self, parent):
@@ -195,6 +202,13 @@ class QDMGraphicsParam_floatslider(QDMGraphicsParam_float):
 
     def get_base(self):
         return self.p.base_value
+
+    def edit_finished(self):
+        prev = self.p.tmp_value
+        self.p.value_modify()
+        next = self.p.tmp_value
+        if prev != next:
+            super().edit_finished()
 
 
 class QDMGraphicsParam_string(QDMGraphicsParam):

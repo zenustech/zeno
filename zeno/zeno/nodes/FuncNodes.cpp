@@ -51,7 +51,6 @@ struct FuncEnd : zeno::ContextManagedNode {
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
             if (fore) fore->update_arguments(args);
             push_context();
-            // m_ctx->visited.clear();
             zeno::INode::preApply();
             pop_context();
             zeno::FunctionObject::DictType rets{};
