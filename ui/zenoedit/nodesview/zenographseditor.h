@@ -6,7 +6,7 @@
 class ZToolButton;
 class ZenoSubnetListView;
 class ZenoGraphsTabWidget;
-class ZenoSubnetListPanel;
+class ZenoSubnetPanel;
 class ZenoGraphsLayerWidget;
 class ZenoSubnetTreeView;
 class ZenoWelcomePage;
@@ -25,6 +25,8 @@ public slots:
     void onCurrentModelClear();
     void onItemActivated(const QModelIndex& index);
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
+    void onGraphsItemInserted(const QModelIndex& parent, int first, int last);
+    void onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private slots:
     void onSubnetBtnClicked();
@@ -35,7 +37,7 @@ private:
     QWidget* m_pSideBar;
     ZToolButton* m_pSubnetBtn;
     ZToolButton* m_pViewBtn;
-    ZenoSubnetListPanel* m_pSubnetList;
+    ZenoSubnetPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
     ZenoGraphsLayerWidget* m_pLayerWidget;
     ZenoWelcomePage* m_welcomePage;

@@ -7,10 +7,11 @@
 #include "zenowelcomepage.h"
 #include "graphsmanagment.h"
 #include "zenosubnettreeview.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <model/graphstreemodel.h>
 #include <zenoui/model/modelrole.h>
 #include "zenomainwindow.h"
+#include "zenosubnetpanel.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -65,7 +66,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
 
     QVBoxLayout* pLayout2 = new QVBoxLayout;
 
-    m_pSubnetList = new ZenoSubnetListPanel();
+    m_pSubnetList = new ZenoSubnetPanel();
     m_pSubnetList->hide();
     pLayout->addWidget(m_pSubnetList);
 
@@ -183,6 +184,24 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 		connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     }
 	m_welcomePage->setVisible(false);
+    connect(pModel, &QAbstractItemModel::rowsInserted, this, &ZenoGraphsEditor::onGraphsItemInserted);
+    connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoGraphsEditor::onGraphsItemAboutToBeRemoved);
+}
+
+void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first, int last)
+{
+	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    const QModelIndex& idx = pModel->index(first, 0, parent);
+    if (m_bListView)
+    {
+		const QString& subgraphName = idx.data(ROLE_OBJNAME).toString();
+		m_pTabWidget->activate(subgraphName);
+    }
+}
+
+void ZenoGraphsEditor::onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()

@@ -1,6 +1,6 @@
 #include "zenonode.h"
 #include <zenoui/model/modelrole.h>
-#include <zenoui/model/subgraphmodel.h>
+#include "model/subgraphmodel.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
@@ -837,7 +837,6 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         connect(pFork, &QAction::triggered, this, [=]()
         {
             pGraphsModel->fork(m_subGpIndex, index());
-            zenoApp->graphsManagment()->initScenes(pGraphsModel);
         });
     }
 

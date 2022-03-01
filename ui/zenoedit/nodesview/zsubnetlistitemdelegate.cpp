@@ -4,7 +4,7 @@
 #include <model/graphsmodel.h>
 
 
-ZSubnetListItemDelegate::ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent)
+ZSubnetListItemDelegate::ZSubnetListItemDelegate(GraphsPlainModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
 {
@@ -119,7 +119,8 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 
 void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
-    m_model->removeGraph(index.row());
+    //todo
+    //m_model->removeGraph(index.row());
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

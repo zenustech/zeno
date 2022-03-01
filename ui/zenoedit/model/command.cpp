@@ -1,7 +1,7 @@
 #include "command.h"
 #include "subgraphmodel.h"
 #include "graphsmodel.h"
-#include "modelrole.h"
+#include <zenoui/model/modelrole.h>
 
 
 AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)

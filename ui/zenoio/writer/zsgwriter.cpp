@@ -13,7 +13,7 @@ ZsgWriter& ZsgWriter::getInstance()
 	return writer;
 }
 
-QString ZsgWriter::dumpProgramStr(GraphsModel* pModel)
+QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 {
 	QJsonObject obj = dumpGraphs(pModel);
 	QJsonDocument doc(obj);
@@ -21,15 +21,7 @@ QString ZsgWriter::dumpProgramStr(GraphsModel* pModel)
 	return strJson;
 }
 
-QString ZsgWriter::dumpSubGraph(SubGraphModel* pSubModel)
-{
-	QJsonObject obj = _dumpSubGraph(pSubModel);
-	QJsonDocument doc(obj);
-	QString strJson(doc.toJson(QJsonDocument::Indented));
-	return strJson;
-}
-
-QJsonObject ZsgWriter::dumpGraphs(GraphsModel* pModel)
+QJsonObject ZsgWriter::dumpGraphs(IGraphsModel* pModel)
 {
 	QJsonObject obj;
 	if (!pModel)
@@ -38,8 +30,9 @@ QJsonObject ZsgWriter::dumpGraphs(GraphsModel* pModel)
 	QJsonObject graphObj;
 	for (int i = 0; i < pModel->rowCount(); i++)
 	{
-		SubGraphModel* pSubModel = pModel->subGraph(i);
-		graphObj.insert(pSubModel->name(), _dumpSubGraph(pSubModel));
+		const QModelIndex& subgIdx = pModel->index(i, 0);
+		const QString& subgName = pModel->name(subgIdx);
+		graphObj.insert(subgName, _dumpSubGraph(pModel, subgIdx));
 	}
 	obj.insert("graph", graphObj);
 	obj.insert("views", QJsonObject());     //todo
@@ -50,14 +43,15 @@ QJsonObject ZsgWriter::dumpGraphs(GraphsModel* pModel)
 	return obj;
 }
 
-QJsonObject ZsgWriter::_dumpSubGraph(SubGraphModel* pSubModel)
+QJsonObject ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx)
 {
 	QJsonObject obj;
-	if (!pSubModel)
+	if (!pModel)
 		return obj;
 
 	QJsonObject nodesObj;
-	const NODES_DATA& nodes = pSubModel->nodes();
+
+	const NODES_DATA& nodes = pModel->nodes(subgIdx);
 	for (const NODE_DATA& node : nodes)
 	{
 		const QString& id = node[ROLE_OBJID].toString();
@@ -65,7 +59,7 @@ QJsonObject ZsgWriter::_dumpSubGraph(SubGraphModel* pSubModel)
 	}
 	obj.insert("nodes", nodesObj);
 
-	QRectF viewRc = pSubModel->viewRect();
+	QRectF viewRc = pModel->viewRect(subgIdx);
 	if (!viewRc.isNull())
 	{
 		QJsonObject rcObj;

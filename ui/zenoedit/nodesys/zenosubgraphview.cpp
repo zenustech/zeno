@@ -1,5 +1,4 @@
 #include "zenosubgraphscene.h"
-#include <zenoui/model/subgraphmodel.h>
 #include "../graphsmanagment.h"
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"

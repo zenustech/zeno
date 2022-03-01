@@ -1,5 +1,5 @@
 #include "graphstreemodel.h"
-#include <zenoui/model/graphsmodel.h>
+#include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 
 

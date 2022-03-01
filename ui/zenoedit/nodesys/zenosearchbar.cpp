@@ -1,6 +1,5 @@
 #include "zenosearchbar.h"
 #include <zenoui/comctrl/ziconbutton.h>
-#include <zenoui/model/subgraphmodel.h>
 #include <zenoui/model/modelrole.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"

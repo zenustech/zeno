@@ -5,9 +5,9 @@
 #include <QItemSelectionModel>
 
 #include <zenoui/include/igraphsmodel.h>
-
+#include "../nodesys/zenosubgraphscene.h"
 #include "subgraphmodel.h"
-#include "modeldata.h"
+#include <zenoui/model/modeldata.h>
 
 class SubGraphModel;
 
@@ -21,12 +21,21 @@ class GraphsModel : public IGraphsModel
 {
     Q_OBJECT
     typedef IGraphsModel _base;
+
+    struct SUBMODEL_SCENE
+    {
+        SubGraphModel* pModel;
+        ZenoSubGraphScene* pScene;
+        SUBMODEL_SCENE() : pModel(nullptr), pScene(nullptr) {}
+    };
+
 public:
     GraphsModel(QObject* parent = nullptr);
     ~GraphsModel();
     void setFilePath(const QString& fn);
     SubGraphModel* subGraph(const QString& name) const;
     SubGraphModel *subGraph(int idx) const;
+    SUBMODEL_SCENE subGraphScene(int idx) const;
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName);
     void newSubgraph(const QString& graphName);
@@ -96,6 +105,8 @@ public:
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QStandardItemModel* linkModel() const;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
+    QGraphicsScene* scene(const QModelIndex& subgIdx) override;
+    QRectF viewRect(const QModelIndex& subgIdx) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -117,7 +128,8 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
-    QVector<SubGraphModel*> m_subGraphs;
+    //QVector<SubGraphModel*> m_subGraphs;
+    QVector<SUBMODEL_SCENE> m_subGraphs;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;

@@ -1,6 +1,6 @@
 #include "zenographslayerwidget.h"
 #include <comctrl/ziconbutton.h>
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "../zenoapplication.h"
 #include "../graphsmanagment.h"
@@ -118,9 +118,14 @@ ZenoStackedViewWidget::~ZenoStackedViewWidget()
 void ZenoStackedViewWidget::activate(const QString& subGraph, const QString& nodeId)
 {
 	auto graphsMgm = zenoApp->graphsManagment();
+	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	Q_ASSERT(pGraphsModel);
+	const QModelIndex& subgIdx = pGraphsModel->index(subGraph);
+
 	if (m_views.find(subGraph) == m_views.end())
 	{
-		ZenoSubGraphScene* pScene = graphsMgm->scene(subGraph);
+		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pGraphsModel->scene(subgIdx));
+		Q_ASSERT(pScene);
 		ZenoSubGraphView* pView = new ZenoSubGraphView;
 		pView->initScene(pScene);
 		m_views[subGraph] = pView;
@@ -128,10 +133,6 @@ void ZenoStackedViewWidget::activate(const QString& subGraph, const QString& nod
 	}
 	setCurrentWidget(m_views[subGraph]);
 
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pGraphsModel);
-
-	const QModelIndex& subgIdx = pGraphsModel->index(subGraph);
 	const QModelIndex& idx = pGraphsModel->index(nodeId, subgIdx);
 	if (idx.isValid())
 	{

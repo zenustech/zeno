@@ -1,5 +1,5 @@
 #include "zenonewmenu.h"
-#include <zenoui/model/subgraphmodel.h>
+#include "model/subgraphmodel.h"
 #include "../graphsmanagment.h"
 #include "zenoapplication.h"
 #include "nodesmgr.h"

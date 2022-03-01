@@ -3,10 +3,8 @@
     <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Black.ttf</file>
 	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Bold.ttf</file>
 	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Regular.ttf</file>
-	<!--
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Black.ttf</file>
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.ttf</file>
 	<file>font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf</file>
-	-->
   </qresource>
 </RCC>

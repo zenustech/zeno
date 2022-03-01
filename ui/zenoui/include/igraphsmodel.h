@@ -35,6 +35,9 @@ public:
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
+	/* get the corresponding scene by model item*/
+	virtual QGraphicsScene* scene(const QModelIndex& subgIdx) = 0;
+
 	//virtual QModelIndex clone()
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;
@@ -70,6 +73,7 @@ public:
 	virtual QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& idx) = 0;
 	virtual void removeGraph(int idx) = 0;
 	virtual QString fileName() const = 0;
+	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 
 signals:
 	void clearLayout2();

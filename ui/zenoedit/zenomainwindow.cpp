@@ -8,7 +8,7 @@
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include "launch/corelaunch.h"
 #include "nodesview/zenographseditor.h"
 #include <zenoio/reader/zsgreader.h>

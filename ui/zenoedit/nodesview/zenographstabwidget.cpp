@@ -1,7 +1,7 @@
 #include "zenographstabwidget.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include "../nodesys/zenosubgraphview.h"
 #include <comctrl/ziconbutton.h>
 
@@ -20,8 +20,12 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
     int idx = indexOfName(subgraphName);
     if (idx == -1)
     {
+        const QModelIndex& subgIdx = pModel->index(subgraphName);
+		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(subgIdx));
+		Q_ASSERT(pScene);
+
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-        pView->initScene(graphsMgm->scene(subgraphName));
+        pView->initScene(pScene);
         int idx = addTab(pView, subgraphName);
         setCurrentIndex(idx);
         ZIconButton* pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(14, 14), QColor(), QColor());
