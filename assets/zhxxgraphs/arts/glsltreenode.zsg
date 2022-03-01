@@ -2,32 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "253162f0-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
-     "inputs": {
-      "in1": [
-       null,
-       null,
-       1.0
-      ],
-      "op": [
-       null,
-       null,
-       "sqrt"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      487.7980132450331,
-      215.11589403973508
-     ],
-     "options": []
-    },
     "7f798009-TreeFinalize": {
      "name": "TreeFinalize",
      "inputs": {
@@ -39,12 +13,17 @@
       "metallic": [
        null,
        null,
-       null
+       0.0
       ],
       "roughness": [
        null,
        null,
-       null
+       0.4
+      ],
+      "specular": [
+       null,
+       null,
+       0.5
       ],
       "normal": [
        null,
@@ -52,9 +31,14 @@
        null
       ],
       "emission": [
-       null,
-       null,
+       "45c08b7c-TreeInputAttr",
+       "out",
        null
+      ],
+      "emitrate": [
+       null,
+       null,
+       1.0
       ],
       "SRC": [
        null,
@@ -91,13 +75,114 @@
      "options": [
       "VIEW"
      ]
+    },
+    "3fcc25af-SetMaterial": {
+     "name": "SetMaterial",
+     "inputs": {
+      "prim": [
+       "9a6a5be3-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "mtl": [
+       "4252fd79-MakeMaterial",
+       "mtl",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1721.8966887417218,
+      225.57880794701978
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "4252fd79-MakeMaterial": {
+     "name": "MakeMaterial",
+     "inputs": {
+      "vert": [
+       null,
+       null,
+       ""
+      ],
+      "frag": [
+       "7f798009-TreeFinalize",
+       "code",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1091.0516556291388,
+      401.3880794701986
+     ],
+     "options": []
+    },
+    "9a6a5be3-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1314.0450331125826,
+      157.0649006622516
+     ],
+     "options": []
+    },
+    "45c08b7c-TreeInputAttr": {
+     "name": "TreeInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "pos"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      472.2580645161289,
+      326.80258064516124
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 474.16794701986623,
-    "y": 175.8092715231793,
-    "width": 614.4,
-    "height": 312.32
+    "x": 449.4353856013729,
+    "y": 191.02161076692667,
+    "width": 614.3999999999999,
+    "height": 312.31999999999994
    }
   }
  },
@@ -8458,27 +8543,37 @@
     [
      "vec3f",
      "basecolor",
-     ""
+     "0.8,0.8,0.8"
     ],
     [
      "float",
      "metallic",
-     ""
+     "0.0"
     ],
     [
      "float",
      "roughness",
-     ""
+     "0.4"
+    ],
+    [
+     "float",
+     "specular",
+     "0.5"
     ],
     [
      "vec3f",
      "normal",
-     ""
+     "0,0,1"
     ],
     [
      "vec3f",
      "emission",
-     ""
+     "0,0,0"
+    ],
+    [
+     "float",
+     "emitrate",
+     "1"
     ],
     [
      "",
@@ -8490,6 +8585,41 @@
     [
      "string",
      "code",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeInputAttr": {
+   "inputs": [
+    [
+     "enum pos clr nrm",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "tree",
+     "out",
      ""
     ],
     [

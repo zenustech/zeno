@@ -67,6 +67,7 @@ ZENDEFNODE(TreeTernaryMath, {
     {"tree"},
 });
 
+
 struct TreeBinaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
@@ -144,6 +145,7 @@ ZENDEFNODE(TreeBinaryMath, {
     {"tree"},
 });
 
+
 struct TreeUnaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
@@ -179,20 +181,25 @@ ZENDEFNODE(TreeUnaryMath, {
     {"tree"},
 });
 
+
 struct TreeFinalize : INode {
     virtual void apply() override {
         auto code = EmissionPass{}.finalizeCode({
-            "basecolor",
-            "metallic",
-            "roughness",
-            "normal",
-            "emission",
+            "mat_basecolor",
+            "mat_metallic",
+            "mat_roughness",
+            "mat_specular",
+            "mat_normal",
+            "mat_emission",
+            "mat_emitrate",
         }, {
-            get_input("basecolor", std::make_shared<NumericObject>(vec3f(0.8f))),
-            get_input("metallic", std::make_shared<NumericObject>(float(0.0f))),
-            get_input("roughness", std::make_shared<NumericObject>(float(0.4f))),
-            get_input("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
-            get_input("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
+            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),
+            get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
+            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("emitrate", std::make_shared<NumericObject>(float(0.f))),
         });
         set_output2("code", code);
     }
@@ -200,14 +207,43 @@ struct TreeFinalize : INode {
 
 ZENDEFNODE(TreeFinalize, {
     {
-        {"vec3f", "basecolor"},
-        {"float", "metallic"},
-        {"float", "roughness"},
-        {"vec3f", "normal"},
-        {"vec3f", "emission"},
+        {"vec3f", "basecolor", "0.8,0.8,0.8"},
+        {"float", "metallic", "0.0"},
+        {"float", "roughness", "0.4"},
+        {"float", "specular", "0.5"},
+        {"vec3f", "normal", "0,0,1"},
+        {"vec3f", "emission", "0,0,0"},
+        {"float", "emitrate", "0"},
     },
     {
         {"string", "code"},
+    },
+    {},
+    {"tree"},
+});
+
+
+struct TreeInputAttr : TreeNode {
+    virtual int determineType(EmissionPass *em) override {
+        auto attr = get_input2<std::string>("type");
+        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
+        auto idx = std::find(std::begin(tab), std::end(tab), attr) - std::begin(tab);
+        return idx + 1;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto attr = get_input2<std::string>("attr");
+        return em->emitCode("att_" + attr);
+    }
+};
+
+ZENDEFNODE(TreeInputAttr, {
+    {
+        {"enum pos clr nrm", "attr", "pos"},
+        {"enum float vec2 vec3 vec4", "type", "vec3"},
+    },
+    {
+        {"tree", "out"},
     },
     {},
     {"tree"},
