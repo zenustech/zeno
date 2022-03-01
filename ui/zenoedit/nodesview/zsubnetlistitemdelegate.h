@@ -23,7 +23,6 @@ public:
 
 protected:
     void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const;
-    bool eventFilter(QObject* object, QEvent* event) override;
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
         const QModelIndex& index) override;
 

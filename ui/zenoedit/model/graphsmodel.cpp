@@ -1037,6 +1037,10 @@ QStandardItemModel* GraphsModel::linkModel() const
 void GraphsModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+	if (!pSubModel)
+	{
+		pSubModel = m_subGraphs[topLeft.row()].pModel;
+	}
     Q_ASSERT(pSubModel && roles.size() == 1);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _dataChanged(subgIdx, topLeft, roles[0]);
@@ -1045,6 +1049,10 @@ void GraphsModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& 
 void GraphsModel::on_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+	if (!pSubModel)
+	{
+		pSubModel = m_subGraphs[first].pModel;
+	}
     Q_ASSERT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeInserted(subgIdx, first, last);
@@ -1053,6 +1061,10 @@ void GraphsModel::on_rowsAboutToBeInserted(const QModelIndex& parent, int first,
 void GraphsModel::on_rowsInserted(const QModelIndex& parent, int first, int last)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+	if (!pSubModel)
+	{
+		pSubModel = m_subGraphs[first].pModel;
+	}
     Q_ASSERT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsInserted(subgIdx, parent, first, last);
@@ -1061,6 +1073,10 @@ void GraphsModel::on_rowsInserted(const QModelIndex& parent, int first, int last
 void GraphsModel::on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+    if (!pSubModel)
+    {
+        pSubModel = m_subGraphs[first].pModel;
+    }
     Q_ASSERT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
@@ -1069,6 +1085,10 @@ void GraphsModel::on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, 
 void GraphsModel::on_rowsRemoved(const QModelIndex& parent, int first, int last)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
+	if (!pSubModel)
+	{
+		pSubModel = m_subGraphs[first].pModel;
+	}
     Q_ASSERT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsRemoved(parent, first, last);

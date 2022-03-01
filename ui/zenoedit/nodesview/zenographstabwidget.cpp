@@ -55,7 +55,8 @@ void ZenoGraphsTabWidget::onSubGraphsToRemove(const QModelIndex& parent, int fir
     {
         QModelIndex subgIdx = m_model->index(r, 0);
         const QString& name = m_model->name(subgIdx);
-        pTabBar->removeTab(indexOfName(name));
+        int idx = indexOfName(name);
+        pTabBar->removeTab(idx);
     }
 }
 

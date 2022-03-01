@@ -30,12 +30,13 @@ void GraphsPlainModel::init(IGraphsModel* pModel)
 		pItem->setData(subgName, ROLE_OBJNAME);
 		appendRow(pItem);
 	}
-
+	/*
 	connect(m_model, &QAbstractItemModel::dataChanged, this, &GraphsPlainModel::on_dataChanged);
 	connect(m_model, &QAbstractItemModel::rowsAboutToBeInserted, this, &GraphsPlainModel::on_rowsAboutToBeInserted);
 	connect(m_model, &QAbstractItemModel::rowsInserted, this, &GraphsPlainModel::on_rowsInserted);
 	connect(m_model, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsPlainModel::on_rowsAboutToBeRemoved);
 	connect(m_model, &QAbstractItemModel::rowsRemoved, this, &GraphsPlainModel::on_rowsRemoved);
+	*/
 }
 
 bool GraphsPlainModel::setData(const QModelIndex& index, const QVariant& value, int role)

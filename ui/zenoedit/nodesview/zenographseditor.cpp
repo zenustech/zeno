@@ -201,7 +201,6 @@ void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first
 
 void ZenoGraphsEditor::onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()

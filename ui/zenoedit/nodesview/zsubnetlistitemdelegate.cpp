@@ -1,7 +1,11 @@
 #include "zsubnetlistitemdelegate.h"
 #include "style/zenostyle.h"
 #include "zenosubnetlistview.h"
-#include <model/graphsmodel.h>
+#include "model/graphsmodel.h"
+#include "model/graphsplainmodel.h"
+#include "graphsmanagment.h"
+#include "zenoapplication.h"
+#include <zenoui/model/modelrole.h>
 
 
 ZSubnetListItemDelegate::ZSubnetListItemDelegate(GraphsPlainModel* model, QObject* parent)
@@ -119,8 +123,10 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 
 void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
-    //todo
-    //m_model->removeGraph(index.row());
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    pModel->removeSubGraph(index.data(ROLE_OBJNAME).toString());
+    //todo: modify plain model, but the sync is complicated between plain model and graphsmodel.
+    m_model->removeRow(index.row());
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
