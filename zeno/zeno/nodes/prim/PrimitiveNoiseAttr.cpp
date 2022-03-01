@@ -160,6 +160,8 @@ struct GetPerlinNoise : INode{
             offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
         auto res = std::make_shared<zeno::NumericObject>();
         vec3f p = vec + offset;
+        float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
+        p = p*10;
         float x = perlin(p[0], p[1],p[2]);
         float y = perlin(p[1], p[2], p[0]);
         float z = perlin(p[2], p[0], p[1]);
@@ -169,7 +171,7 @@ struct GetPerlinNoise : INode{
 };
 ZENDEFNODE(GetPerlinNoise,
     { /* inputs: */ {
-    "vec3","seed",
+    "vec3","seed",{"float", "freq", "1.0"},
     }, /* outputs: */ {
     "noise",
     }, /* params: */ {
