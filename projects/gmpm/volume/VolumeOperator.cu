@@ -194,20 +194,20 @@ struct ResampleZSLevelSet : INode {
             //    refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
           } else {
             auto x = ls.indexToWorld(coord);
-            // auto X = refLs.worldToIndex(x);
+            auto X = refLs.worldToIndex(x);
             // not quite efficient
             if constexpr (refls_t::category == grid_e::staggered) {
               for (typename ls_t::channel_counter_type chn = 0;
                    chn != tag.numChannels; ++chn) {
-                auto arena =
-                    refLs.arena(x, chn % 3, kernel_linear_c, wrapv<0>{});
+                auto arena = refLs.arena(X, chn % 3, kernel_linear_c,
+                                         wrapv<0>{}, false_c);
                 ls._grid(propOffset + chn, bi, ci) =
                     arena.isample(refPropOffset + chn, 0);
               }
               // ls._grid(propOffset + chn, bi, ci) =
               //    refLs.isample(refPropOffset + chn, X, 0);
             } else {
-              auto arena = refLs.arena(x, kernel_linear_c, wrapv<0>{});
+              auto arena = refLs.arena(X, kernel_linear_c, wrapv<0>{}, false_c);
               for (typename ls_t::channel_counter_type chn = 0;
                    chn != tag.numChannels; ++chn)
                 ls._grid(propOffset + chn, bi, ci) =
@@ -333,8 +333,6 @@ struct AdvectZSLevelSet : INode {
                             typename RM_CVREF_T(
                                 lsOut)::cell_index_type ci) mutable {
               using ls_t = RM_CVREF_T(ls);
-              using vel_ls_t = RM_CVREF_T(velLs);
-              using vec3 = zs::vec<float, 3>;
               auto coord = lsOut._table._activeKeys[bi] +
                            ls_t::grid_view_t::cellid_to_coord(ci);
               if constexpr (ls_t::category == grid_e::staggered) {
