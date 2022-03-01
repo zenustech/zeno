@@ -1,10 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/TreeNode.h>
 #include <zeno/types/TreeObject.h>
-#include <zeno/types/DictObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
+
 
 static const char /* see https://docs.gl/sl4/trunc */
     unops[] = "copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees"
@@ -178,127 +178,6 @@ ZENDEFNODE(TreeUnaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
-});
-
-
-struct TreeFinalize : INode {
-    virtual void apply() override {
-        auto code = EmissionPass{}.finalizeCode({
-            "mat_basecolor",
-            "mat_metallic",
-            "mat_roughness",
-            "mat_specular",
-            "mat_normal",
-            "mat_emission",
-            "mat_emitrate",
-        }, {
-            get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
-            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),
-            get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
-            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
-            get_input<IObject>("emitrate", std::make_shared<NumericObject>(float(0.f))),
-        });
-        set_output2("code", code);
-    }
-};
-
-ZENDEFNODE(TreeFinalize, {
-    {
-        {"vec3f", "basecolor", "1,1,1"},
-        {"float", "metallic", "0.0"},
-        {"float", "roughness", "0.4"},
-        {"float", "specular", "0.5"},
-        {"vec3f", "normal", "0,0,1"},
-        {"vec3f", "emission", "0,0,0"},
-        {"float", "emitrate", "0"},
-    },
-    {
-        {"string", "code"},
-    },
-    {},
-    {"tree"},
-});
-
-
-struct TreeInputAttr : TreeNode {
-    virtual int determineType(EmissionPass *em) override {
-        auto attr = get_input2<std::string>("type");
-        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
-        auto idx = std::find(std::begin(tab), std::end(tab), attr) - std::begin(tab);
-        return idx + 1;
-    }
-
-    virtual void emitCode(EmissionPass *em) override {
-        auto attr = get_input2<std::string>("attr");
-        return em->emitCode("att_" + attr);
-    }
-};
-
-ZENDEFNODE(TreeInputAttr, {
-    {
-        {"enum pos clr nrm", "attr", "pos"},
-        {"enum float vec2 vec3 vec4", "type", "vec3"},
-    },
-    {
-        {"tree", "out"},
-    },
-    {},
-    {"tree"},
-});
-
-
-struct TreeLinearFit : TreeNode {
-    virtual int determineType(EmissionPass *em) override {
-        auto in = em->determineType(get_input("in").get());
-        auto inMin = em->determineType(get_input("inMin").get());
-        auto inMax = em->determineType(get_input("inMax").get());
-        auto outMin = em->determineType(get_input("outMin").get());
-        auto outMax = em->determineType(get_input("outMax").get());
-
-        if (inMin == 1 && inMax == 1 && outMin == 1 && outMax == 1) {
-            return in;
-        } else if (inMin == in && inMax == in && outMin == in && outMax == in) {
-            return in;
-        } else if (inMin == 1 && inMax == 1 && outMin == in && outMax == in) {
-            return in;
-        } else if (inMin == in && inMax == in && outMin == 1 && outMax == 1) {
-            return in;
-        } else {
-            throw zeno::Exception("vector dimension mismatch in linear fit");
-        }
-    }
-
-    virtual void emitCode(EmissionPass *em) override {
-        auto in = em->determineExpr(get_input("in").get());
-        auto inMin = em->determineExpr(get_input("inMin").get());
-        auto inMax = em->determineExpr(get_input("inMax").get());
-        auto outMin = em->determineExpr(get_input("outMin").get());
-        auto outMax = em->determineExpr(get_input("outMax").get());
-
-        auto exp = "(" + in + " - " + inMin + ") / (" + inMax + " - " + inMin + ")";
-        if (get_param<bool>("clamped"))
-            exp = "clamp(" + exp + ", 0.0, 1.0)";
-        em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMax);
-    }
-};
-
-ZENDEFNODE(TreeLinearFit, {
-    {
-        {"float", "in", "0"},
-        {"float", "inMin", "0"},
-        {"float", "inMax", "1"},
-        {"float", "outMin", "0"},
-        {"float", "outMax", "1"},
-    },
-    {
-        {"float", "out"},
-    },
-    {
-        {"bool", "clamped", "0"},
-    },
     {"tree"},
 });
 
