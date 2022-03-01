@@ -112,10 +112,10 @@ struct NonlinearProblemObject : zeno::IObject, NonlinearProblem<VectorType>
         // x is a samrt pointer.
         args->lut["x"] = x;                                             // 封装
         args->lut["r"] = r;                                             // 封装
-        rets->lut = function->call(args->lut);                          // 调用
+        function->call(args->lut);                          // 调用
         
         // NOTE : It is unneccessary.
-        r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(rets->lut["r"]);         // 解封
+        // r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(rets->lut["r"]);         // 解封
 
     }
 };
@@ -135,9 +135,11 @@ struct CalculateResidual : zeno::INode {
         _r[0] = std::exp(2.0*_x[0])/2.0 - _x[1];
         _r[1] = _x[0]*_x[0] + _x[1]*_x[1]-1.0;
 
+        std::cout << "residual \n" << std::endl;
+
         // NOTE : It is unneccessary.
-        rets->lut["r"] = r;
-        set_output("rets", std::move(rets));
+        // rets->lut["r"] = r;
+        // set_output("rets", std::move(rets));
     }
 };
 
@@ -246,6 +248,7 @@ struct SolveNonlinearProblem : zeno::INode {
 
         // NOTE : we solve F(x) = b here. But b is not necessary. b is to be removed.
         auto nonlinear_result = jfnk_solver->ns->Solve(nlp, x_vector_ptr, b_vector_ptr);
+        nonlinear_result = jfnk_solver->ns->Solve(nlp, x_vector_ptr, b_vector_ptr);
 
 
         if ( nonlinear_result.first) {

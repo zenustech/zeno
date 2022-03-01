@@ -11,8 +11,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "e83899a7-FuncBegin",
+       "DST",
        null
       ]
      },
@@ -48,8 +48,8 @@
      "name": "FuncEnd",
      "inputs": {
       "rets": [
-       "1b9b8c32-CalculateResidual",
-       "rets",
+       null,
+       null,
        null
       ],
       "FUNC": [
@@ -58,8 +58,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "48783b41-PrintMessage",
+       "DST",
        null
       ]
      },
@@ -89,9 +89,7 @@
       580.1117946957213,
       1099.528204233161
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "a0a524e0-MakeJFNKSolver": {
      "name": "MakeJFNKSolver",
@@ -242,14 +240,14 @@
        null,
        null
       ],
-      "obj1": [
-       null,
-       null,
-       null
-      ],
       "num": [
        "f1a83977-NumericInt",
        "value",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
        null
       ]
      },
@@ -265,13 +263,31 @@
       "num",
       "obj1"
      ]
+    },
+    "48783b41-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "1b9b8c32-CalculateResidual",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "hello"
+     },
+     "uipos": [
+      52.33604863221868,
+      1176.8724620060755
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1151.5443495670536,
-    "y": 643.9201353021823,
-    "width": 3046.875,
-    "height": 1382.8124999999966
+    "x": -315.41730386373575,
+    "y": 753.4341730699091,
+    "width": 1248.0,
+    "height": 566.3999999999984
    }
   }
  },
@@ -1132,6 +1148,82 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "DynamicNumber": {
+   "inputs": [
+    [
+     "",
+     "frame",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 100 10 1 0.1 0.01 0.001",
+     "speed",
+     "1"
+    ],
+    [
+     "floatslider",
+     "x",
+     "0"
+    ],
+    [
+     "floatslider",
+     "y",
+     "0"
+    ],
+    [
+     "floatslider",
+     "z",
+     "0"
+    ],
+    [
+     "floatslider",
+     "w",
+     "0"
+    ],
+    [
+     "enum clamp zero cycle",
+     "type",
+     "clamp"
+    ]
+   ],
+   "categories": [
+    "numeric"
    ]
   },
   "EmptyDict": {
@@ -2646,6 +2738,81 @@
     "list"
    ]
   },
+  "MakeLocalSys": {
+   "inputs": [
+    [
+     "vec3f",
+     "front",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "up",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "right",
+     "0,0,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "LocalSys",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeMaterial": {
+   "inputs": [
+    [
+     "string",
+     "vert",
+     ""
+    ],
+    [
+     "string",
+     "frag",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
+   ]
+  },
   "MakeMultilineString": {
    "inputs": [
     [
@@ -3813,6 +3980,51 @@
     "zenofx"
    ]
   },
+  "OrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "PackNumericIntVec2": {
    "inputs": [
     [
@@ -4481,6 +4693,16 @@
      "1"
     ],
     [
+     "float",
+     "midPoint",
+     "0.5"
+    ],
+    [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -4498,7 +4720,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "0"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -5347,6 +5575,11 @@
      "1"
     ],
     [
+     "bool",
+     "lineSort",
+     "1"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -5365,6 +5598,138 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSort": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reversed",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -5685,6 +6050,51 @@
    "outputs": [
     [
      "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveScale": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "axis",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
      "prim",
      ""
     ],
@@ -6049,7 +6459,7 @@
      "0,1,0"
     ],
     [
-     "vec3f",
+     "",
      "tangent",
      ""
     ],
@@ -6254,6 +6664,76 @@
     "Zentricle"
    ]
   },
+  "ProjectAndNormalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "enum XY YX YZ ZY ZX XZ",
+     "plane",
+     "XY"
+    ],
+    [
+     "float",
+     "directionScale",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightOffset",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "direction",
+     ""
+    ],
+    [
+     "float",
+     "length",
+     ""
+    ],
+    [
+     "float",
+     "height",
+     ""
+    ],
+    [
+     "float",
+     "phase",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -6373,6 +6853,41 @@
     [
      "",
      "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadObjPrimitiveDict": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dict",
      ""
     ],
     [
@@ -6535,6 +7050,41 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "SetMaterial": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
    ]
   },
   "SetRandomSeed": {
@@ -7134,6 +7684,11 @@
     ],
     [
      "vec3f",
+     "offset",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
      "eulerXYZ",
      "0,0,0"
     ],
@@ -7149,6 +7704,16 @@
     ],
     [
      "",
+     "Matrix",
+     ""
+    ],
+    [
+     "",
+     "local",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -7157,6 +7722,11 @@
     [
      "",
      "outPrim",
+     ""
+    ],
+    [
+     "",
+     "Matrix",
      ""
     ],
     [
