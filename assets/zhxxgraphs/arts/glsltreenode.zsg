@@ -6,8 +6,8 @@
      "name": "TreeFinalize",
      "inputs": {
       "basecolor": [
-       null,
-       null,
+       "ede91dd5-TreeLinearFit",
+       "out",
        null
       ],
       "metallic": [
@@ -31,14 +31,14 @@
        null
       ],
       "emission": [
-       "45c08b7c-TreeInputAttr",
-       "out",
+       null,
+       null,
        null
       ],
       "emitrate": [
        null,
        null,
-       1.0
+       0.0
       ],
       "SRC": [
        null,
@@ -136,7 +136,7 @@
       "path": [
        null,
        null,
-       "assets/monkey.obj"
+       "assets/Pig_Head.obj"
       ],
       "SRC": [
        null,
@@ -172,17 +172,60 @@
      },
      "params": {},
      "uipos": [
-      472.2580645161289,
-      326.80258064516124
+      123.87130954924169,
+      284.1429779961545
+     ],
+     "options": []
+    },
+    "ede91dd5-TreeLinearFit": {
+     "name": "TreeLinearFit",
+     "inputs": {
+      "in": [
+       "45c08b7c-TreeInputAttr",
+       "out",
+       0.0
+      ],
+      "inMin": [
+       null,
+       null,
+       -1.0
+      ],
+      "inMax": [
+       null,
+       null,
+       1.0
+      ],
+      "outMin": [
+       null,
+       null,
+       0.0
+      ],
+      "outMax": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "clamped": true
+     },
+     "uipos": [
+      493.8172185430462,
+      255.9576158940397
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 449.4353856013729,
-    "y": 191.02161076692667,
-    "width": 614.3999999999999,
-    "height": 312.31999999999994
+    "x": -122.21371501815645,
+    "y": 154.07184789574362,
+    "width": 767.9999999999998,
+    "height": 390.39999999999986
    }
   }
  },
@@ -8543,7 +8586,7 @@
     [
      "vec3f",
      "basecolor",
-     "0.8,0.8,0.8"
+     "1,1,1"
     ],
     [
      "float",
@@ -8573,7 +8616,7 @@
     [
      "float",
      "emitrate",
-     "1"
+     "0"
     ],
     [
      "",
@@ -8629,6 +8672,62 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeLinearFit": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "float",
+     "inMin",
+     "0"
+    ],
+    [
+     "float",
+     "inMax",
+     "1"
+    ],
+    [
+     "float",
+     "outMin",
+     "0"
+    ],
+    [
+     "float",
+     "outMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clamped",
+     "0"
+    ]
+   ],
    "categories": [
     "tree"
    ]
