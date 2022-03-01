@@ -37,6 +37,7 @@ public:
 protected:
     ZENO_API bool checkApplyCondition();
     ZENO_API bool requireInput(std::string const &ds);
+    ZENO_API bool requireInput2(std::string const &ds);
 
     ZENO_API virtual void preApply();
     ZENO_API virtual void complete();
