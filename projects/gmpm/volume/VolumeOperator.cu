@@ -159,6 +159,7 @@ struct ResampleZSLevelSet : INode {
          tag] __device__(typename RM_CVREF_T(ls)::size_type bi,
                          typename RM_CVREF_T(ls)::cell_index_type ci) mutable {
           using ls_t = RM_CVREF_T(ls);
+          using refls_t = RM_CVREF_T(refLs);
           using vec3 = zs::vec<float, 3>;
 #if 0
           if (ls.hasProperty("mark")) {
@@ -171,22 +172,47 @@ struct ResampleZSLevelSet : INode {
           const auto propOffset = ls.propertyOffset(tag.name);
           const auto refPropOffset = refLs.propertyOffset(tag.name);
           if constexpr (ls_t::category == grid_e::staggered) {
-            zs::vec<typename ls_t::TV, 3> Xs{
-                refLs.worldToIndex(ls.indexToWorld(coord, 0)),
-                refLs.worldToIndex(ls.indexToWorld(coord, 1)),
-                refLs.worldToIndex(ls.indexToWorld(coord, 2))};
+            // zs::vec<typename ls_t::TV, 3> Xs{
+            //    refLs.worldToIndex(ls.indexToWorld(coord, 0)),
+            //    refLs.worldToIndex(ls.indexToWorld(coord, 1)),
+            //    refLs.worldToIndex(ls.indexToWorld(coord, 2))};
             for (typename ls_t::channel_counter_type chn = 0;
-                 chn != tag.numChannels; ++chn)
-              ls._grid(propOffset + chn, bi, ci) =
-                  refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
+                 chn != tag.numChannels; ++chn) {
+              if constexpr (refls_t::category == grid_e::staggered) {
+                auto arena = refLs.arena(ls.indexToWorld(coord, chn % 3),
+                                         chn % 3, kernel_linear_c, wrapv<0>{});
+                ls._grid(propOffset + chn, bi, ci) =
+                    arena.isample(refPropOffset + chn, 0);
+              } else {
+                auto arena = refLs.arena(ls.indexToWorld(coord, chn % 3),
+                                         kernel_linear_c, wrapv<0>{});
+                ls._grid(propOffset + chn, bi, ci) =
+                    arena.isample(refPropOffset + chn, 0);
+              }
+            }
+            // ls._grid(propOffset + chn, bi, ci) =
+            //    refLs.isample(refPropOffset + chn, Xs[chn % 3], 0);
           } else {
             auto x = ls.indexToWorld(coord);
-            auto X = refLs.worldToIndex(x);
+            // auto X = refLs.worldToIndex(x);
             // not quite efficient
-            for (typename ls_t::channel_counter_type chn = 0;
-                 chn != tag.numChannels; ++chn)
-              ls._grid(propOffset + chn, bi, ci) =
-                  refLs.isample(refPropOffset + chn, X, 0);
+            if constexpr (refls_t::category == grid_e::staggered) {
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != tag.numChannels; ++chn) {
+                auto arena =
+                    refLs.arena(x, chn % 3, kernel_linear_c, wrapv<0>{});
+                ls._grid(propOffset + chn, bi, ci) =
+                    arena.isample(refPropOffset + chn, 0);
+              }
+              // ls._grid(propOffset + chn, bi, ci) =
+              //    refLs.isample(refPropOffset + chn, X, 0);
+            } else {
+              auto arena = refLs.arena(x, kernel_linear_c, wrapv<0>{});
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != tag.numChannels; ++chn)
+                ls._grid(propOffset + chn, bi, ci) =
+                    arena.isample(refPropOffset + chn, 0);
+            }
           }
         });
   }
