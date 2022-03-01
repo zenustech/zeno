@@ -67,20 +67,21 @@ struct ZSLevelSetTopologyUnion : INode {
               using ls_t = RM_CVREF_T(ls);
               using table_t = RM_CVREF_T(refTable);
               auto blockid = refTable._activeKeys[bi];
-              if (auto blockno = ls._table.insert(blockid);
-                  blockno !=
-                  table_t::sentinel_v) { // initialize newly inserted block
-                auto block = ls._grid.block(blockno);
-                for (typename ls_t::channel_counter_type chn = 0;
-                     chn != ls.numChannels(); ++chn)
-                  for (typename ls_t::cell_index_type ci = 0;
-                       ci != ls.block_size; ++ci)
-                    block(chn, ci) = 0; // ls._backgroundValue;
-              }
+              ls._table.insert(blockid);
+            });
+    const auto numCurBlocks = ls.numBlocks();
+    cudaPol(Collapse{numCurBlocks - numPrevBlocks, ls.block_size},
+            [numPrevBlocks, ls = proxy<execspace_e::cuda>(ls)] __device__(
+                auto bi, auto ci) mutable {
+              using ls_t = RM_CVREF_T(ls);
+              auto block = ls._grid.block(bi + numPrevBlocks);
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != ls.numChannels(); ++chn)
+                block(chn, ci) = 0; // ls._backgroundValue;
             });
     fmt::print("levelset of [{}] blocks inserted [{}] blocks, eventually [{}] "
                "blocks\n",
-               numPrevBlocks, numInBlocks, ls.numBlocks());
+               numPrevBlocks, numInBlocks, numCurBlocks);
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
@@ -115,14 +116,12 @@ struct ZSLevelSetTopologyUnion : INode {
                                      int i) { return std::min(a(i), b(i)); });
           lsPtr->_max = TV::init([&a = lsPtr->_max, &b = refLsPtr->_max](
                                      int i) { return std::max(a(i), b(i)); });
-          if constexpr (true) {
-            lsPtr->_i2wT = refLsPtr->_i2wT;
-            lsPtr->_i2wRinv = refLsPtr->_i2wRinv;
-            lsPtr->_i2wSinv = refLsPtr->_i2wSinv;
-            lsPtr->_i2wRhat = refLsPtr->_i2wRhat;
-            lsPtr->_i2wShat = refLsPtr->_i2wShat;
-            lsPtr->_grid.dx = refLsPtr->_grid.dx; // don't forger this.
-          }
+          lsPtr->_i2wT = refLsPtr->_i2wT;
+          lsPtr->_i2wRinv = refLsPtr->_i2wRinv;
+          lsPtr->_i2wSinv = refLsPtr->_i2wSinv;
+          lsPtr->_i2wRhat = refLsPtr->_i2wRhat;
+          lsPtr->_i2wShat = refLsPtr->_i2wShat;
+          lsPtr->_grid.dx = refLsPtr->_grid.dx; // don't forget this.
           topologyUnion(*lsPtr, refTable);
         },
         [](...) { throw std::runtime_error("not both fields are spls!"); })(
