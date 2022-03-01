@@ -2,39 +2,43 @@
  "graph": {
   "main": {
    "nodes": {
-    "253162f0-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
-     "inputs": {
-      "in1": [
-       null,
-       null,
-       1.0
-      ],
-      "op": [
-       null,
-       null,
-       "sqrt"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      487.7980132450331,
-      215.11589403973508
-     ],
-     "options": []
-    },
     "7f798009-TreeFinalize": {
      "name": "TreeFinalize",
      "inputs": {
-      "in": [
-       "253162f0-TreeUnaryMath",
+      "basecolor": [
+       "ede91dd5-TreeLinearFit",
        "out",
        null
+      ],
+      "metallic": [
+       null,
+       null,
+       0.4
+      ],
+      "roughness": [
+       null,
+       null,
+       0.3
+      ],
+      "specular": [
+       null,
+       null,
+       0.5
+      ],
+      "normal": [
+       null,
+       null,
+       null
+      ],
+      "emission": [
+       null,
+       null,
+       null
+      ],
+      "emitrate": [
+       null,
+       null,
+       0.0
       ],
       "SRC": [
        null,
@@ -71,13 +75,180 @@
      "options": [
       "VIEW"
      ]
+    },
+    "3fcc25af-SetMaterial": {
+     "name": "SetMaterial",
+     "inputs": {
+      "prim": [
+       "9a6a5be3-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "mtl": [
+       "4252fd79-MakeMaterial",
+       "mtl",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1372.7594267384106,
+      55.941494205298
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "4252fd79-MakeMaterial": {
+     "name": "MakeMaterial",
+     "inputs": {
+      "vert": [
+       null,
+       null,
+       ""
+      ],
+      "frag": [
+       "7f798009-TreeFinalize",
+       "code",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1091.0516556291388,
+      401.3880794701986
+     ],
+     "options": []
+    },
+    "9a6a5be3-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/Pig_Head.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -33.190842301324196,
+      -37.03174668874164
+     ],
+     "options": []
+    },
+    "45c08b7c-TreeInputAttr": {
+     "name": "TreeInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "pos"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      197.2678334287953,
+      369.06422407664866
+     ],
+     "options": []
+    },
+    "ede91dd5-TreeLinearFit": {
+     "name": "TreeLinearFit",
+     "inputs": {
+      "in": [
+       "45c08b7c-TreeInputAttr",
+       "out",
+       0.0
+      ],
+      "inMin": [
+       "44b151b4-PrimitiveBoundingBox",
+       "bmin",
+       -1.0
+      ],
+      "inMax": [
+       "44b151b4-PrimitiveBoundingBox",
+       "bmax",
+       1.0
+      ],
+      "outMin": [
+       null,
+       null,
+       0.0
+      ],
+      "outMax": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "clamped": true
+     },
+     "uipos": [
+      493.8172185430462,
+      255.9576158940397
+     ],
+     "options": []
+    },
+    "44b151b4-PrimitiveBoundingBox": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "9a6a5be3-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.0
+     },
+     "uipos": [
+      234.81717715231764,
+      117.95269039735095
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 816.9960264900718,
-    "y": 147.36953642384128,
-    "width": 614.4,
-    "height": 312.32
+    "x": 286.9092078586608,
+    "y": 140.68341801519875,
+    "width": 767.9999999999995,
+    "height": 390.3999999999995
    }
   }
  },
@@ -8398,12 +8569,12 @@
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "float",
      "in2",
-     ""
+     "0"
     ],
     [
      "enum add sub mul div mod pow atan2 min max dot cross distance",
@@ -8436,9 +8607,39 @@
   "TreeFinalize": {
    "inputs": [
     [
-     "tree",
-     "in",
-     ""
+     "vec3f",
+     "basecolor",
+     "1,1,1"
+    ],
+    [
+     "float",
+     "metallic",
+     "0.0"
+    ],
+    [
+     "float",
+     "roughness",
+     "0.4"
+    ],
+    [
+     "float",
+     "specular",
+     "0.5"
+    ],
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "emission",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "emitrate",
+     "0"
     ],
     [
      "",
@@ -8463,17 +8664,113 @@
     "tree"
    ]
   },
+  "TreeInputAttr": {
+   "inputs": [
+    [
+     "enum pos clr nrm",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "tree",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeLinearFit": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "float",
+     "inMin",
+     "0"
+    ],
+    [
+     "float",
+     "inMax",
+     "1"
+    ],
+    [
+     "float",
+     "outMin",
+     "0"
+    ],
+    [
+     "float",
+     "outMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "tree"
+   ]
+  },
   "TreeTernaryMath": {
    "inputs": [
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "float",
      "in2",
-     ""
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
     ],
     [
      "enum mix clamp smoothstep",
@@ -8508,7 +8805,7 @@
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",

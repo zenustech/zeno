@@ -103,14 +103,7 @@ struct GraphicPrimitive : IGraphic {
     if (tris_count) {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        if (prim->mtl != nullptr)
-        {
-          tris_prog = get_tris_program(prim->mtl);
-        }
-        else
-        {
-          tris_prog = get_tris_program(path);
-        }
+        tris_prog = get_tris_program(path, prim->mtl);
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -339,12 +332,7 @@ void main()
     return compile_program(vert, frag);
   }
 
-  Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl)
-  {
-      return compile_program(mtl->vert, mtl->frag);
-  }
-
-  Program *get_tris_program(std::string const &path) {
+  Program *get_tris_program(std::string const &path, std::shared_ptr<zeno::MaterialObject> mtl) {
     auto vert = hg::file_get_content(path + ".tris.vert");
     auto frag = hg::file_get_content(path + ".tris.frag");
 
@@ -415,9 +403,12 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
   float ndf = alpha2 / (denom * denom);
 
   vec3 brdf = fdf * vdf * ndf * f0 + (1. - f0) * albedo;
-  return brdf * NoL;
+  return brdf * NoV;
 }
 
+)" + (
+!mtl ?
+R"(
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
@@ -435,6 +426,39 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
     return color;
 }
+)" :
+R"(
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+    vec3 att_pos = position;
+    vec3 att_clr = iColor;
+    vec3 att_nrm = iNormal;
+
+    /* custom_shader_begin */
+)" + mtl->frag + R"(
+    /* custom_shader_end */
+
+    vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
+    vec3 color = vec3(0.0);
+    vec3 light_dir;
+
+    light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
+    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
+             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+
+    light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
+    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
+             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+
+    light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
+    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
+             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+
+    color = mix(color, mat_emission, mat_emitrate);
+    return color;
+
+}
+)"
+) + R"(
 
 vec3 calcRayDir(vec3 pos)
 {
@@ -467,6 +491,7 @@ void main()
 )";
     }
 
+//printf("!!!!%s!!!!\n", frag.c_str());
     return compile_program(vert, frag);
   }
 };
