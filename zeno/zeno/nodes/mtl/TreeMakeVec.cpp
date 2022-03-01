@@ -1,7 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/TreeNode.h>
 #include <zeno/types/TreeObject.h>
-#include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -135,61 +134,6 @@ ZENDEFNODE(TreeMakeVec4, {
     {},
     {"tree"},
 });
-
-
-std::shared_ptr<TreeObject> treeMakeVec(std::shared_ptr<IObject> x) {
-    auto node = std::make_shared<TreeMakeFloat>();
-    node->inputs["x"] = x;
-    node->apply();
-    auto out = safe_any_cast<std::shared_ptr<TreeObject>>(node->outputs.at("out"));
-    out->extra_data = node;
-    out->node = node.get();
-    return out;
-}
-
-
-std::shared_ptr<TreeObject> treeMakeVec(std::shared_ptr<IObject> x, std::shared_ptr<IObject> y) {
-    auto node = std::make_shared<TreeMakeVec2>();
-    node->inputs["x"] = x;
-    node->inputs["y"] = y;
-    node->apply();
-    auto out = safe_any_cast<std::shared_ptr<TreeObject>>(node->outputs.at("out"));
-    out->extra_data = node;
-    out->node = node.get();
-    return out;
-}
-
-
-std::shared_ptr<TreeObject> treeMakeVec(std::shared_ptr<IObject> x, std::shared_ptr<IObject> y, std::shared_ptr<IObject> z) {
-    auto node = std::make_shared<TreeMakeVec3>();
-    node->inputs["x"] = x;
-    node->inputs["y"] = y;
-    node->inputs["z"] = z;
-    node->apply();
-    auto out = safe_any_cast<std::shared_ptr<TreeObject>>(node->outputs.at("out"));
-    out->extra_data = node;
-    out->node = node.get();
-    return out;
-}
-
-
-std::shared_ptr<TreeObject> treeMakeVec(std::shared_ptr<IObject> x, std::shared_ptr<IObject> y, std::shared_ptr<IObject> z, std::shared_ptr<IObject> w) {
-    auto node = std::make_shared<TreeMakeVec4>();
-    node->inputs["x"] = x;
-    node->inputs["y"] = y;
-    node->inputs["z"] = z;
-    node->inputs["w"] = w;
-    node->apply();
-    auto out = safe_any_cast<std::shared_ptr<TreeObject>>(node->outputs.at("out"));
-    out->extra_data = node;
-    out->node = node.get();
-    return out;
-}
-
-
-std::shared_ptr<IObject> treeNum(NumericValue value) {
-    return std::make_shared<NumericObject>(value);
-}
 
 
 }
