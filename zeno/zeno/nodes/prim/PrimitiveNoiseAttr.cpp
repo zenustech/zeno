@@ -159,9 +159,9 @@ struct GetPerlinNoise : INode{
         if(has_input("seed"))
             offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
         auto res = std::make_shared<zeno::NumericObject>();
-        vec3f p = vec + offset;
         float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
-        p = p*f;
+        vec3f p = vec*f + offset;
+        p = p;
         float x = perlin(p[0], p[1],p[2]);
         float y = perlin(p[1], p[2], p[0]);
         float z = perlin(p[2], p[0], p[1]);
