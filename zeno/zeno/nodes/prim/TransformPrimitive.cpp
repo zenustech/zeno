@@ -13,6 +13,24 @@ namespace zeno {
 struct MatrixObject : zeno::IObject{
     std::variant<glm::mat3, glm::mat4> m;
 };
+
+struct SetMatrix : zeno::INode{
+    virtual void apply() override {
+        auto &dst = std::get<glm::mat4>(get_input<zeno::MatrixObject>("dst")->m);
+        auto &src = std::get<glm::mat4>(get_input<zeno::MatrixObject>("src")->m);
+        dst = src;
+    }
+};
+ZENDEFNODE(SetMatrix, {
+    {
+    {"dst" },
+    {"src" },
+    },
+    {},
+    {},
+    {"primitive"},
+});
+
 struct MakeLocalSys : zeno::INode{
     virtual void apply() override {
         zeno::vec3f front = {1,0,0};
