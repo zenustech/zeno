@@ -2,6 +2,7 @@
 #include <zeno/extra/TreeNode.h>
 #include <zeno/types/TreeObject.h>
 #include <zeno/types/NumericObject.h>
+#include <sstream>
 #include <cassert>
 
 namespace zeno {
@@ -78,20 +79,26 @@ ZENO_API std::string EmissionPass::collectCode() const {
     return res;
 }
 
+static std::string ftos(float x) {
+    std::ostringstream ss;
+    ss << x;
+    return ss.str();
+}
+
 ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
     if (auto num = dynamic_cast<NumericObject *>(object)) {
         return std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
-                return "float(" + std::to_string(value) + ")";
+                return "float(" + ftos(value) + ")";
             } else if constexpr (std::is_same_v<vec2f, T>) {
-                return "vec2(" + std::to_string(value[0]) + ", " + std::to_string(value[1]) + ")";
+                return "vec2(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
             } else if constexpr (std::is_same_v<vec3f, T>) {
-                return "vec3(" + std::to_string(value[0]) + ", " + std::to_string(value[1]) + ", "
-                    + std::to_string(value[2]) + ")";
+                return "vec3(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                    + ftos(value[2]) + ")";
             } else if constexpr (std::is_same_v<vec4f, T>) {
-                return "vec4(" + std::to_string(value[0]) + ", " + std::to_string(value[1]) + ", "
-                    + std::to_string(value[2]) + ", " + std::to_string(value[3]) + ")";
+                return "vec4(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                    + ftos(value[2]) + ", " + ftos(value[3]) + ")";
             } else {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
             }
@@ -108,15 +115,16 @@ ZENO_API void EmissionPass::emitCode(std::string const &line) {
 }
 
 ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::string> const &keys, std::vector<std::shared_ptr<IObject>> const &vals) {
-    std::map<std::string, int> vartypes;
+    std::vector<int> vartypes;
+    vartypes.reserve(keys.size());
     for (int i = 0; i < keys.size(); i++) {
-        vartypes.emplace(keys[i], determineType(vals[i].get()));
+        vartypes.push_back(determineType(vals[i].get()));
     }
     auto code = finalizeCode();
     for (int i = 0; i < keys.size(); i++) {
-        auto type = vartypes.at(keys[i]);
+        auto type = vartypes[i];
         auto expr = determineExpr(vals[i].get());
-        code += typeNameOf(type) + " " + keys[i] + " = " + expr + ";";
+        code += typeNameOf(type) + " " + keys[i] + " = " + expr + ";\n";
     }
     return code;
 }
