@@ -2,7 +2,6 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio>
-
 #ifdef ZENO_ENABLE_SPDLOG
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -91,9 +90,13 @@ namespace { struct LogInitializer {
     }
 }; }
 
+#ifdef ZENO_ENABLE_SPDLOG
 ZENO_API spdlog::logger *__get_spdlog_logger() {
     static LogInitializer init;
     return init.g_logger.get();
 }
+#else
+static LogInitializer g_log_init;
+#endif
 
 }

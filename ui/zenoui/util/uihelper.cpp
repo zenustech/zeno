@@ -236,7 +236,7 @@ QString UiHelper::variantToString(const QVariant& var)
 	}
 	else if (var.type() == QVariant::Invalid)
 	{
-		zeno::log_warn("got null qt variant");
+		zeno::log_debug("got null qt variant");
 		value = "";
 	}
 	else if (var.type() == QVariant::Bool)
