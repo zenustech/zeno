@@ -129,8 +129,8 @@ class ViewportWidget(QGLWidget):
         zenvis.initializeGL()
 
     def resizeGL(self, nx, ny):
-        ratio = QApplication.desktop().devicePixelRatio()
-        self.camera.res = (nx * ratio, ny * ratio)
+        # ratio = QApplication.desktop().devicePixelRatio()
+        self.camera.res = (nx, ny)
         self.camera.update_perspective()
 
     def paintGL(self):
