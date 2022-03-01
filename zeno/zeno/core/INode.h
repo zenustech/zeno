@@ -134,6 +134,16 @@ protected:
         //return std::get<T>(get_param(id));
         return get_input2<T>(id + ":");
     }
+
+    template <class T = IObject>
+    std::shared_ptr<T> get_input(std::string const &id, std::shared_ptr<T> const &defl) const {
+        return has_input(id) ? get_input<T>(id) : defl;
+    }
+
+    template <class T>
+    T get_input2(std::string const &id, T const &defl) const {
+        return has_input2(id) ? get_input2<T>(id) : defl;
+    }
 };
 
 }

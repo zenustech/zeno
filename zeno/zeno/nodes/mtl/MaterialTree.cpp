@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/TreeNode.h>
 #include <zeno/types/TreeObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -180,16 +181,30 @@ ZENDEFNODE(TreeUnaryMath, {
 
 struct TreeFinalize : INode {
     virtual void apply() override {
-        auto in = get_input("in");
-        EmissionPass em;
-        auto info = em.finalizeOutput(in.get());
-        set_output2("code", info.code);
+        auto code = EmissionPass{}.finalizeCode({
+            "basecolor",
+            "metallic",
+            "roughness",
+            "normal",
+            "emission",
+        }, {
+            get_input("basecolor", std::make_shared<NumericObject>(vec3f(0.8f))),
+            get_input("metallic", std::make_shared<NumericObject>(float(0.0f))),
+            get_input("roughness", std::make_shared<NumericObject>(float(0.4f))),
+            get_input("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
+            get_input("emission", std::make_shared<NumericObject>(vec3f(0))),
+        });
+        set_output2("code", code);
     }
 };
 
 ZENDEFNODE(TreeFinalize, {
     {
-        {"tree", "in"},
+        {"vec3f", "basecolor"},
+        {"float", "metallic"},
+        {"float", "roughness"},
+        {"vec3f", "normal"},
+        {"vec3f", "emission"},
     },
     {
         {"string", "code"},

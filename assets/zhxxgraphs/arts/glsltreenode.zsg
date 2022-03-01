@@ -31,9 +31,29 @@
     "7f798009-TreeFinalize": {
      "name": "TreeFinalize",
      "inputs": {
-      "in": [
-       "253162f0-TreeUnaryMath",
-       "out",
+      "basecolor": [
+       null,
+       null,
+       null
+      ],
+      "metallic": [
+       null,
+       null,
+       null
+      ],
+      "roughness": [
+       null,
+       null,
+       null
+      ],
+      "normal": [
+       null,
+       null,
+       null
+      ],
+      "emission": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -74,8 +94,8 @@
     }
    },
    "view_rect": {
-    "x": 816.9960264900718,
-    "y": 147.36953642384128,
+    "x": 474.16794701986623,
+    "y": 175.8092715231793,
     "width": 614.4,
     "height": 312.32
    }
@@ -8398,12 +8418,12 @@
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "float",
      "in2",
-     ""
+     "0"
     ],
     [
      "enum add sub mul div mod pow atan2 min max dot cross distance",
@@ -8436,8 +8456,28 @@
   "TreeFinalize": {
    "inputs": [
     [
-     "tree",
-     "in",
+     "vec3f",
+     "basecolor",
+     ""
+    ],
+    [
+     "float",
+     "metallic",
+     ""
+    ],
+    [
+     "float",
+     "roughness",
+     ""
+    ],
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "emission",
      ""
     ],
     [
@@ -8468,12 +8508,17 @@
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "float",
      "in2",
-     ""
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
     ],
     [
      "enum mix clamp smoothstep",
@@ -8508,7 +8553,7 @@
     [
      "float",
      "in1",
-     ""
+     "0"
     ],
     [
      "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",

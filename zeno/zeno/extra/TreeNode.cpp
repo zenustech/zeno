@@ -14,8 +14,7 @@ ZENO_API void TreeNode::apply() {
     set_output("out", std::move(tree));
 }
 
-ZENO_API EmissionPass::FinalCode EmissionPass::finalizeOutput(IObject *object) {
-    int type = determineType(object);
+ZENO_API std::string EmissionPass::finalizeCode() {
     auto defs = collectDefs();
     for (auto const &var: variables) {
         var.node->emitCode(this);
@@ -56,14 +55,16 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
     }
 }
 
+ZENO_API std::string EmissionPass::typeNameOf(int type) {
+    if (type == 1) return "float";
+    else return "vec" + std::to_string(type);
+}
+
 ZENO_API std::string EmissionPass::collectDefs() const {
     std::string res;
     int cnt = 0;
     for (auto const &var: variables) {
-        std::string tyname;
-        if (var.type == 1) tyname = "float";
-        else tyname = "vec" + std::to_string(var.type);
-        res += tyname + " tmp" + std::to_string(cnt) + ";\n";
+        res += typeNameOf(var.type) + " tmp" + std::to_string(cnt) + ";\n";
         cnt++;
     }
     return res;
@@ -104,6 +105,20 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
 ZENO_API void EmissionPass::emitCode(std::string const &line) {
     int idx = lines.size();
     lines.push_back("tmp" + std::to_string(idx) + " = " + line + ";");
+}
+
+ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::string> const &keys, std::vector<std::shared_ptr<IObject>> const &vals) {
+    std::map<std::string, int> vartypes;
+    for (int i = 0; i < keys.size(); i++) {
+        vartypes.emplace(keys[i], determineType(vals[i].get()));
+    }
+    auto code = finalizeCode();
+    for (int i = 0; i < keys.size(); i++) {
+        auto type = vartypes.at(keys[i]);
+        auto expr = determineExpr(vals[i].get());
+        code += typeNameOf(type) + " " + keys[i] + " = " + expr + ";";
+    }
+    return code;
 }
 
 }
