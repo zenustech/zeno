@@ -10,10 +10,11 @@
 #include <zenoui/model/graphsmodel.h>
 #include <model/graphstreemodel.h>
 #include <zenoui/model/modelrole.h>
+#include "zenomainwindow.h"
 
 
-ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
-    : QWidget(parent)
+ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
+    : QWidget(nullptr)
     , m_pSubnetBtn(nullptr)
     , m_pSubnetList(nullptr)
     , m_pTabWidget(nullptr)
@@ -22,6 +23,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_bListView(true)
     , m_pViewBtn(nullptr)
     , m_welcomePage(nullptr)
+    , m_mainWin(pMainWin)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -93,10 +95,18 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     m_pLayerWidget->setVisible(false);
     m_pSubnetBtn->setVisible(false);
     m_pViewBtn->setVisible(false);
+
+    connect(m_welcomePage, SIGNAL(newRequest()), this, SLOT(onNewFile()));
+    connect(m_welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()
 {
+}
+
+void ZenoGraphsEditor::onNewFile()
+{
+    
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)

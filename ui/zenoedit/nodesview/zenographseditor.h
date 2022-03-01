@@ -10,13 +10,14 @@ class ZenoSubnetListPanel;
 class ZenoGraphsLayerWidget;
 class ZenoSubnetTreeView;
 class ZenoWelcomePage;
+class ZenoMainWindow;
 class IGraphsModel;
 
 class ZenoGraphsEditor : public QWidget
 {
     Q_OBJECT
 public:
-    ZenoGraphsEditor(QWidget* parent = nullptr);
+    ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
     void resetModel(IGraphsModel* pModel);
 
@@ -28,6 +29,7 @@ public slots:
 private slots:
     void onSubnetBtnClicked();
     void onViewBtnClicked();
+    void onNewFile();
 
 private:
     QWidget* m_pSideBar;
@@ -37,6 +39,7 @@ private:
     ZenoGraphsTabWidget* m_pTabWidget;
     ZenoGraphsLayerWidget* m_pLayerWidget;
     ZenoWelcomePage* m_welcomePage;
+    ZenoMainWindow* m_mainWin;
     bool m_bListView;
 };
 

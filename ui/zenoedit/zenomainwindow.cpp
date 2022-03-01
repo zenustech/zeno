@@ -251,7 +251,7 @@ void ZenoMainWindow::initDocks()
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_pEditor = new ZenoGraphsEditor;
+    m_pEditor = new ZenoGraphsEditor(this);
     m_editor->setWidget(m_pEditor);
     m_docks.insert(DOCK_EDITOR, m_editor);
 
@@ -298,7 +298,7 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
     if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDockWidget->widget()))
     {
         ZenoDockWidget* pDock = new ZenoDockWidget("", this);
-        ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor;
+        ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor(this);
 
         pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
         pDock->setWidget(pEditor2);
@@ -374,7 +374,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
     {
         case DOCK_EDITOR:
         {
-            ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor;
+            ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor(this);
             pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
             pDock->setWidget(pEditor2);
             break;
