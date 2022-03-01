@@ -131,8 +131,45 @@ struct AlignPrimitive : zeno::INode {
         auto aligned_shape = get_input<zeno::PrimitiveObject>("aligned_shape");
 
         auto res = std::make_shared<zeno::PrimitiveObject>(*aligned_shape);
-        for(size_t i = 0;i < res->size();++i)
+
+        const auto& rtris = ref_shape->tris;
+        const auto& atris = aligned_shape->tris;
+
+        const auto& rquads = ref_shape->quads;
+        const auto& aquads = aligned_shape->quads;
+
+        // if(ref_shape->size() != aligned_shape->size()){
+        //     throw std::runtime_error("AlignPrimitiveObject : INPUT SHAPES SIZE NOT MATCH");
+        // }
+
+        // if(rtris->size() != atris->size()){
+        //     throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS SIZE NOT MATCH");
+        // }
+
+        // if(rquads->size() != aquads->size()){
+        //     throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS SIZE NOT MATCH");
+        // }
+
+        // for(size_t i = 0;i < rtris.size();++i){
+        //     auto tri_diff = rtris[i] - atris[i];
+        //     if(tri_diff[0] != 0 || tri_diff[1] != 0 || tri_diff[2] != 0){
+        //         throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS TOPO NOT MATCH");
+        //     }
+        // }
+
+        // for(size_t i = 0;i < rquads.size();++i){
+        //     auto quad_diff = rquads[i] - aquads[i];
+        //     if(quad_diff[0] != 0 || quad_diff[1] != 0 || quad_diff[2] != 0 || quad_diff[3] != 0){
+        //         throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS TOPO NOT MATCH");
+        //     }
+        // }
+
+
+        
+        #pragma omp parallel for 
+        for(size_t i = 0;i < res->size();++i){
             res->verts[i] = ref_shape->verts[i];
+        }
 
         set_output("res",std::move(res));
     }

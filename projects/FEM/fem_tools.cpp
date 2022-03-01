@@ -350,8 +350,8 @@ struct InterpolateEmbedPrimitive : zeno::INode {
         auto& embed_ws = skin->attr<zeno::vec3f>("embed_w");
 
         auto res = std::make_shared<zeno::PrimitiveObject>(*skin);
-        const auto& vposs = volume->attr<zeno::vec3f>("pos");
-        auto& eposs = res->attr<zeno::vec3f>("pos");
+        const auto& vposs = volume->attr<zeno::vec3f>("curPos");
+        auto& eposs = res->add_attr<zeno::vec3f>("curPos");
 
         const auto& v0s = res->attr<zeno::vec3f>("v0");
         const auto& v1s = res->attr<zeno::vec3f>("v1");

@@ -38,6 +38,8 @@ set(FEM_MUSCLE_SOURCE_FILES
     src/integrator/quasi_static_solver.cpp
     src/integrator/example_based_quasi_static_solver.cpp
     src/integrator/example_based_quasi_static_solver.h
+    src/integrator/skin_driven_quasi_static_solver.cpp
+    src/integrator/skin_driven_quasi_static_solver.h
     src/bspline/cubicBspline.cpp
     src/bspline/cubicBspline.h
     equa_solver.cpp

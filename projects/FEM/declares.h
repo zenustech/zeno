@@ -17,6 +17,7 @@
 #include <quasi_static_solver.h>
 #include <backward_euler_integrator.h>
 #include <example_based_quasi_static_solver.h>
+#include <skin_driven_quasi_static_solver.h>
 #include <fstream>
 #include <algorithm>
 
@@ -269,11 +270,14 @@ struct FEMIntegrator : zeno::IObject {
                 interpPs[i].clear();
                 interpWs[i].clear();
             }
-
+            // std::cout << "TRY ASSIGN INTERP SHAPE" << std::endl;
             if(interpShape && interpShape->has_attr("embed_id") && interpShape->has_attr("embed_w")){
+                // std::cout << "ASSIGN ATTRIBUTES" << std::endl;
                 const auto& elm_ids = interpShape->attr<float>("embed_id");
                 const auto& elm_ws = interpShape->attr<zeno::vec3f>("embed_w");
                 const auto& pos = interpShape->verts;
+
+                // #pragma omp parallel for 
                 for(size_t i = 0;i < interpShape->size();++i){
                     auto elm_id = elm_ids[i];
                     const auto& pos = interpShape->verts[i];
@@ -282,6 +286,10 @@ struct FEMIntegrator : zeno::IObject {
                     interpWs[elm_id].emplace_back(w[0],w[1],w[2]);
                 }
             }
+            // if(!interpShape){
+            //     std::cout << "NULLPTR FOR INTERPSHAPE" << std::endl;
+            // }
+            // if()
     }
 
     FEM_Scaler EvalObj(const std::shared_ptr<PrimitiveObject>& shape,
@@ -345,7 +353,7 @@ struct FEMIntegrator : zeno::IObject {
 
                 TetAttributes attrbs;
                 AssignElmAttribs(elm_id,shape,elmView,attrbs);
-                attrbs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[elm_id] : 0;
+                attrbs.interpPenaltyCoeff = elmView->has_attr("embed_PC") ? elmView->attr<float>("embed_PC")[elm_id] : 0;
                 attrbs.interpPs = interpPs[elm_id];
                 attrbs.interpWs = interpWs[elm_id];
 
@@ -393,7 +401,7 @@ struct FEMIntegrator : zeno::IObject {
 
                 TetAttributes attrbs;
                 AssignElmAttribs(elm_id,shape,elmView,attrbs);  
-                attrbs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[elm_id] : 0;
+                attrbs.interpPenaltyCoeff = elmView->has_attr("embed_PC") ? elmView->attr<float>("embed_PC")[elm_id] : 0;
                 attrbs.interpPs = interpPs[elm_id];
                 attrbs.interpWs = interpWs[elm_id];   
 
@@ -407,6 +415,50 @@ struct FEMIntegrator : zeno::IObject {
                     damp->_dampForce,
                     elm_traj,
                     &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
+
+                // _intPtr->EvalElmObjDerivJacobi(attrbs,
+                //     muscle->_forceModel,
+                //     damp->_dampForce,
+                //     elm_traj,
+                //     &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],false);
+
+                // FEM_Scaler obj_tmp;
+                // Vec12d deriv_tmp,deriv_fd;
+                // Mat12x12d H_fd;
+                // std::vector<Vec12d> elm_traj_copy = elm_traj;
+                // for(size_t i = 0;i < 12;++i){
+                //     elm_traj_copy[0] = elm_traj[0];
+                //     FEM_Scaler step = elm_traj_copy[0][i] * 1e-6;
+                //     step = fabs(step) < 1e-6 ? 1e-6 : step;
+
+                //     elm_traj_copy[0][i] += step;
+                //     _intPtr->EvalElmObjDeriv(attrbs,
+                //         muscle->_forceModel,
+                //         damp->_dampForce,
+                //         elm_traj_copy,&obj_tmp,deriv_tmp);
+
+                //     deriv_fd[i] = (obj_tmp - objBuffer[elm_id]) / step;
+                //     H_fd.col(i) = (deriv_tmp - derivBuffer[elm_id]) / step;
+                // }
+
+                // FEM_Scaler D_error = (deriv_fd - derivBuffer[elm_id]).norm() / (deriv_fd.norm() + 1e-3);
+                // FEM_Scaler H_error = (H_fd - HBuffer[elm_id]).norm() / H_fd.norm();
+
+                // if((D_error > 1e-3 || H_error > 1e-3) && attrbs.interpPs.size() > 0){
+                //     std::cout << "ELM_ID : " << attrbs._elmID << std::endl;
+                //     std::cout << "NM_INTERP : " << attrbs.interpPs.size() << std::endl;
+                //     std::cout << "EMBED_PC : " << attrbs.interpPenaltyCoeff << std::endl;
+                //     std::cout << "D_ERROR : " << D_error << std::endl;
+                //     std::cout << "H_ERROR : " << H_error << std::endl;
+                //     for(int i = 0;i < 12;++i){
+                //         std::cout << "D<" << i << "> :\t" << deriv_fd[i] << "\t" << derivBuffer[elm_id][i] << std::endl;
+
+                //     }
+
+                //     throw std::runtime_error("INT_DH_ERROR");
+                // }
+
+
             }
 
             deriv.setZero();

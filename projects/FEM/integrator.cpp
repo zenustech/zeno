@@ -21,6 +21,8 @@ struct MakeFEMIntegrator : zeno::INode {
             res->_intPtr = std::make_shared<QuasiStaticSolver>();
         else if(inttype == "EBQS")
             res->_intPtr = std::make_shared<ExamBasedQuasiStaticSolver>();
+        else if(inttype == "SDQS")
+            res->_intPtr = std::make_shared<SkinDrivenQuasiStaticSolver>();
 
         res->_intPtr->SetGravity(Vec3d(gravity[0],gravity[1],gravity[2]));
         res->_intPtr->SetTimeStep(dt);
@@ -38,7 +40,7 @@ struct MakeFEMIntegrator : zeno::INode {
 ZENDEFNODE(MakeFEMIntegrator,{
     {{"prim"},{"elasto"},{"visco"},{"gravity"},{"dt"}},
     {"FEMIntegrator"},
-    {{"enum BE QS EBQS", "integType", "QS"}},
+    {{"enum BE QS EBQS SDQS", "integType", "QS"}},
     {"FEM"},
 });
 

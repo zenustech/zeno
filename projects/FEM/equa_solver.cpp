@@ -4,6 +4,7 @@ namespace zeno{
 
 struct SolveFEM : zeno::INode {
     virtual void apply() override {
+        // std::cout << "BEGIN SOLVER " << std::endl;
         Eigen::SparseLU<SpMat> _LUSolver;
         Eigen::SimplicialLDLT<SpMat> _LDLTSolver;
 
@@ -38,11 +39,13 @@ struct SolveFEM : zeno::INode {
 
         FEM_Scaler stop_error = 0;
 
+        // std::cout << "BEGIN LOOP" << std::endl;
 
         do{
             FEM_Scaler e0,e1,eg0;
 
             e0 = integrator->EvalObjDerivHessian(shape,elmView,interpShape,r,HBuffer,true);
+            // std::cout << "FINISH EVAL A X B" << std::endl;
             // break;
             if(iter_idx == 0)
                 r0 = r.norm();
@@ -73,6 +76,9 @@ struct SolveFEM : zeno::INode {
 
             FEM_Scaler stopError = 0;
             if(iter_idx == 0){
+                std::vector<std::vector<Vec3d>> interpPs;
+                std::vector<std::vector<Vec3d>> interpWs;
+                integrator->AssignElmInterpShape(shape->quads.size(),interpShape,interpPs,interpWs);
                 for(size_t i = 0;i < shape->quads.size();++i){
                     Vec12d tet_shape;
                     const auto& tet = shape->quads[i];
@@ -81,13 +87,11 @@ struct SolveFEM : zeno::INode {
                     Mat3x3d F;
                     BaseIntegrator::ComputeDeformationGradient(integrator->_elmMinv[i],tet_shape,F);
 
-                    std::vector<std::vector<Vec3d>> interpPs;
-                    std::vector<std::vector<Vec3d>> interpWs;
-                    integrator->AssignElmInterpShape(shape->quads.size(),interpShape,interpPs,interpWs);
+
 
                     TetAttributes attrs;
                     integrator->AssignElmAttribs(i,shape,elmView,attrs);
-                    attrs.interpPenaltyCoeff = elmView->has_attr("interpPC") ? elmView->attr<float>("interpPC")[i] : 0;
+                    attrs.interpPenaltyCoeff = elmView->has_attr("embed_PC") ? elmView->attr<float>("embed_PC")[i] : 0;
                     attrs.interpPs = interpPs[i];
                     attrs.interpWs = interpWs[i]; 
 
@@ -99,6 +103,8 @@ struct SolveFEM : zeno::INode {
 
                     stop_error += integrator->_elmCharacteristicNorm[i] * ddpsi.norm();
                 }
+
+                // std::cout << "EVAL CNORM" << std::endl;
 
                 stop_error *= epsilon;
                 stop_error *= sqrt(shape->quads.size());               
@@ -164,9 +170,9 @@ struct SolveFEM : zeno::INode {
         if(iter_idx == max_iters){
             std::cout << "MAX NEWTON ITERS EXCEED" << std::endl;
         }
-
+        std::cout << "FINISH STEPPING " << "\t" << iter_idx << "\t" << r.norm() << std::endl;
         set_output("shape",shape); 
-        // std::cout << "FINISH STEPPING " << "\t" << iter_idx << "\t" << r.norm() << std::endl;
+
     }
 
     static void UpdateCurrentShape(std::shared_ptr<PrimitiveObject> prim,const VecXd& dp,double alpha){
