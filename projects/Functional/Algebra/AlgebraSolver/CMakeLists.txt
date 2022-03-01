@@ -1,0 +1,2 @@
+set(SOURCES 
+    PARENT_SCOPE)

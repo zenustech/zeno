@@ -68,3 +68,5 @@ projects/Euler
 # xinlei files
 assets/upper_slate_v01
 assets/character
+
+projects/Functional/Algebra/GPULIB/cuda-samples/Common/helper_timer.h

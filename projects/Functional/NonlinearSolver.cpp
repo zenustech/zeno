@@ -1,47 +1,149 @@
+/**
+ * @file NonlinearSolverNodes.cpp
+ * @author Ma Pengfei (mapengfei@mail.nwpu.edu.cn)
+ * @brief An example for nonlinear solver on zeno.
+ * @version 0.1
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022  Ma Pengfei
+ * 
+ */
+
+#include <AlgebraSolver/StdVector.h>
+#include <AlgebraSolver/BiCGSTAB.h>
+#include <AlgebraSolver/NonlinearProblem.h>
+#include <AlgebraSolver/NonlinearSolver.h>
+#include <AlgebraSolver/NewtonSolver.h>
+#include <loguru/loguru.hpp>
+
+
 #include <zeno/zeno.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/ContextManaged.h>
-#include <iostream>
+#include <zeno/types/NumericObject.h>
 
-class NonlinearProblem {
-    virtual void Residual(const double &x, double &r) = 0;
+using VectorType = StdVector<double,double>;
+
+
+
+struct RawDoubleObject : zeno::IObject
+{
+    double * data = nullptr;
+    int num = 0;
 };
 
-struct NonlinearProblemObject2 : zeno::IObject, NonlinearProblem
+
+struct VectorTypeObject : zeno::IObject
+{
+    std::shared_ptr<VectorType> vector = nullptr;
+};
+
+struct ConvertRawdataToVecotor : zeno::INode {
+    virtual void apply() override {
+
+        auto x_raw = get_input<RawDoubleObject>("RawDoubleObject");
+
+        auto vector_object = std::make_shared<VectorTypeObject>();
+        vector_object->vector = std::make_shared<VectorType>();
+        vector_object->vector->resize(x_raw->num);
+
+        for (size_t i = 0; i < x_raw->num; i++)
+        {
+            vector_object->vector->data()[i] = x_raw->data[i];
+        }
+        
+        set_output("VectorTypeObject", std::move(vector_object));
+    }
+};
+
+ZENDEFNODE(ConvertRawdataToVecotor,
+        { /* inputs: */ {
+            "RawDoubleObject",
+        }, /* outputs: */ {
+            "VectorTypeObject",
+        }, /* params: */ {
+            // defl min max; defl min; defl
+        }, /* category: */ {
+            "Zentricle",
+        }});
+
+struct MakeRawDoubleObject : zeno::INode {
+    virtual void apply() override {
+        auto raw_double_array = std::make_shared<RawDoubleObject>();
+
+        // auto num = get_param<int>("value");
+        auto num = get_input<zeno::NumericObject>("num")->get<int>();
+
+        auto data = (double*)malloc(num*sizeof(double));
+        std::fill(data, data+num, 1.0);
+
+        raw_double_array->num = num;
+        raw_double_array->data = data;
+
+        set_output("RawDoubleObject", std::move(raw_double_array));
+    }
+};
+
+ZENDEFNODE(MakeRawDoubleObject,
+        { /* inputs: */ {
+            "num",
+        }, /* outputs: */ {
+        "RawDoubleObject",
+        }, /* params: */ {
+        // defl min max; defl min; defl
+        }, /* category: */ {
+        "Zentricle",
+        }});
+
+
+struct NonlinearProblemObject : zeno::IObject, NonlinearProblem<VectorType>
 {
     std::shared_ptr<zeno::FunctionObject> function = nullptr;
 
-    virtual void Residual(const double &x, double &r){
+    virtual void Residual(std::shared_ptr<const VectorType> x, std::shared_ptr<VectorType> r) final {
 
         auto args = std::make_shared<zeno::DictObject>();
         auto rets = std::make_shared<zeno::DictObject>();
 
-        std::cout << " Before calling func. \n"; 
-        rets->lut = function->call(args->lut);
-        std::cout << " After calling func. \n"; 
+        CHECK_F(x->size() == r->size(), "Wrong size.");
+
+        // x is a samrt pointer.
+        args->lut["x"] = x;                                             // 封装
+        args->lut["r"] = r;                                             // 封装
+        function->call(args->lut);                          // 调用
+        
+        // NOTE : It is unneccessary.
+        // r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(rets->lut["r"]);         // 解封
+
     }
 };
-
-struct CalculateResidual2 : zeno::INode {
-    
+// User defined 
+struct CalculateResidual : zeno::INode {
     virtual void apply() override {
         
         auto args = get_input<zeno::DictObject>("args");
         auto rets = std::make_shared<zeno::DictObject>();
 
-        static int n = 0;
+        auto x = zeno::safe_any_cast<std::shared_ptr<const VectorType>>(args->lut.at("x"));
+        auto r = zeno::safe_any_cast<std::shared_ptr<VectorType>>(args->lut.at("r"));
 
-        n++;
-        std::cout << " Calculate Residual for the \n" << n << "th time.\n"; 
+        auto _x = flatten(*x).data;
+        auto _r = flatten(*r).data;
 
-        rets->lut["n"] = n;
-        set_output("rets", std::move(rets));
+        _r[0] = std::exp(2.0*_x[0])/2.0 - _x[1];
+        _r[1] = _x[0]*_x[0] + _x[1]*_x[1]-1.0;
+
+        std::cout << "residual \n" << std::endl;
+
+        // NOTE : It is unneccessary.
+        // rets->lut["r"] = r;
+        // set_output("rets", std::move(rets));
     }
 };
 
-ZENDEFNODE(CalculateResidual2,
+ZENDEFNODE(CalculateResidual,
         { /* inputs: */ {
             "args",
         }, /* outputs: */ {
@@ -52,22 +154,22 @@ ZENDEFNODE(CalculateResidual2,
         "Zentricle",
         }});
 
-struct MakeNonlinearProblemObject2 : zeno::INode {
+struct MakeNonlinearProblemObject : zeno::INode {
 
     virtual void apply() override {
-        auto nlp = std::make_shared<NonlinearProblemObject2>();
+        auto nlp = std::make_shared<NonlinearProblemObject>();
         // TODO : input a function constructed with FuncBegin and FuncEnd
         if (has_input("function")) nlp->function = get_input<zeno::FunctionObject>("function");
-        // else LOG_F(WARNING, "no function input");
-        set_output("NonlinearProblemObject2", std::move(nlp));
+        else LOG_F(WARNING, "no function input");
+        set_output("NonlinearProblemObject", std::move(nlp));
     }
 };
 
-ZENDEFNODE(MakeNonlinearProblemObject2,
+ZENDEFNODE(MakeNonlinearProblemObject,
         { /* inputs: */ {
             "function",
         }, /* outputs: */ {
-            "NonlinearProblemObject2",
+            "NonlinearProblemObject",
         }, /* params: */ {
         {},  // defl min max; defl min; defl
         }, /* category: */ {
@@ -75,27 +177,35 @@ ZENDEFNODE(MakeNonlinearProblemObject2,
         }});
 
 
-struct JFNKSolverObject2 : zeno::IObject
+struct JFNKSolverObject : zeno::IObject
 {
-    // std::shared_ptr<NewtonSolver<VectorType>> ns = nullptr;
+    std::shared_ptr<NewtonSolver<VectorType>> ns = nullptr;
 };
 
 
-struct MakeJFNKSolver2 : zeno::INode {
+struct MakeJFNKSolver : zeno::INode {
 
     virtual void apply() override {
 
-        auto jfnk_solver = std::make_shared<JFNKSolverObject2>();
-        // jfnk_solver->ns = ns;
+        // TODO : Need parameters such as problem size, line search newton solver, bicgstab
+        auto num = get_input<zeno::NumericObject>("num")->get<int>();
+        auto bicgstab = std::make_shared<BiCGSTAB<VectorType>>(num);
+        auto ns = std::make_shared<NewtonSolver<VectorType>>(bicgstab);
+        auto method = ns->method();
+        LOG_F(INFO, "using %s. ", method.c_str());
 
-        set_output("JFNKSolverObject2", std::move(jfnk_solver));
+        auto jfnk_solver = std::make_shared<JFNKSolverObject>();
+        jfnk_solver->ns = ns;
+
+        set_output("JFNKSolverObject", std::move(jfnk_solver));
     }
 };
 
-ZENDEFNODE(MakeJFNKSolver2,
+ZENDEFNODE(MakeJFNKSolver,
         { /* inputs: */ {
+            "num",
         }, /* outputs: */ {
-            "JFNKSolverObject2",
+            "JFNKSolverObject",
         }, /* params: */ {
         {},  // defl min max; defl min; defl
         }, /* category: */ {
@@ -103,31 +213,60 @@ ZENDEFNODE(MakeJFNKSolver2,
         }});
 
 
-struct SolveNonlinearProblem2 : zeno::INode {
+struct PrintVectorTypeObject : zeno::INode {
+    virtual void apply() override {
+        auto x = get_input<VectorTypeObject>("VectorTypeObject")->vector;
+
+        for (size_t i = 0; i < x->size(); i++)
+        {
+            printf("%lf\n", x->data()[i]);
+        }
+    }
+};
+
+ZENDEFNODE(PrintVectorTypeObject,
+        { /* inputs: */ {
+        "VectorTypeObject",
+        }, /* outputs: */ {
+        }, /* params: */ {
+        // defl min max; defl min; defl
+        }, /* category: */ {
+        "Zentricle",
+        }});
+
+struct SolveNonlinearProblem : zeno::INode {
 
     virtual void apply() override {
 
-        auto jfnk_solver = get_input<JFNKSolverObject2>("JFNKSolverObject2");
-        auto nlp = get_input<NonlinearProblemObject2>("NonlinearProblemObject2");
-
-        auto args = std::make_shared<zeno::DictObject>();
-        auto rets = std::make_shared<zeno::DictObject>();
+        auto jfnk_solver = get_input<JFNKSolverObject>("JFNKSolverObject");
+        auto nlp = get_input<NonlinearProblemObject>("NonlinearProblemObject");
+        auto x_vector_object = get_input<VectorTypeObject>("VectorTypeObject");
         
+        auto x_vector_ptr = x_vector_object->vector;
+        auto b_vector_ptr = std::make_shared<VectorType>(); 
+        b_vector_ptr->resize(x_vector_ptr->size());
 
-        auto function = get_input<zeno::FunctionObject>("function");
-        for (size_t i = 0; i < 100; i++){
-            std::cout << " Before calling func. \n"; 
-            rets->lut = function->call(args->lut);
-            std::cout << " After calling func. \n"; 
-        }  
+        // NOTE : we solve F(x) = b here. But b is not necessary. b is to be removed.
+        auto nonlinear_result = jfnk_solver->ns->Solve(nlp, x_vector_ptr, b_vector_ptr);
+        nonlinear_result = jfnk_solver->ns->Solve(nlp, x_vector_ptr, b_vector_ptr);
+
+
+        if ( nonlinear_result.first) {
+            LOG_F(WARNING, "Noninear solver succeed");
+            LOG_F(WARNING, "residual : %lf, iter : %d", nonlinear_result.second.first, nonlinear_result.second.second);
+        }
+        else LOG_F(WARNING, "Noninear solver failed");
+
+        set_output("VectorTypeObject", std::move(x_vector_object));
     }
 };
 
 
-ZENDEFNODE(SolveNonlinearProblem2,
+ZENDEFNODE(SolveNonlinearProblem,
         { /* inputs: */ {
-            "JFNKSolverObject2", "NonlinearProblemObject2", "function",
+            "NonlinearProblemObject", "JFNKSolverObject", "VectorTypeObject",
         }, /* outputs: */ {
+            "VectorTypeObject",
         }, /* params: */ {
         {},  // defl min max; defl min; defl
         }, /* category: */ {

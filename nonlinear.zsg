@@ -2,101 +2,33 @@
  "graph": {
   "main": {
    "nodes": {
-    "e1d74bcd-CalculateResidual2": {
-     "name": "CalculateResidual2",
+    "1b9b8c32-CalculateResidual": {
+     "name": "CalculateResidual",
      "inputs": {
       "args": [
-       "71e17506-FuncBegin",
+       "e83899a7-FuncBegin",
        "args",
        null
       ],
       "SRC": [
-       null,
-       null,
+       "e83899a7-FuncBegin",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      37.36754966887429,
-      176.7384105960265
+      54.810852248948095,
+      837.3037041317889
      ],
      "options": []
     },
-    "fa9f69fd-MakeJFNKSolver2": {
-     "name": "MakeJFNKSolver2",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      646.3576158940394,
-      179.76821192052978
-     ],
-     "options": []
-    },
-    "564e9642-MakeNonlinearProblemObject2": {
-     "name": "MakeNonlinearProblemObject2",
-     "inputs": {
-      "function": [
-       "c16225c4-FuncEnd",
-       "function",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      655.4470198675498,
-      422.15231788079467
-     ],
-     "options": []
-    },
-    "679fe11c-SolveNonlinearProblem2": {
-     "name": "SolveNonlinearProblem2",
-     "inputs": {
-      "JFNKSolverObject2": [
-       null,
-       null,
-       null
-      ],
-      "NonlinearProblemObject2": [
-       null,
-       null,
-       null
-      ],
-      "function": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      912.9801324503312,
-      180.77814569536417
-     ],
-     "options": []
-    },
-    "71e17506-FuncBegin": {
+    "e83899a7-FuncBegin": {
      "name": "FuncBegin",
      "inputs": {
       "extraArgs": [
-       null,
-       null,
+       "5225ba97-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -107,52 +39,42 @@
      },
      "params": {},
      "uipos": [
-      -267.6324503311259,
-      365.59602649006627
+      -234.28952791099368,
+      994.883876753358
      ],
      "options": []
     },
-    "c16225c4-FuncEnd": {
+    "82a64254-FuncEnd": {
      "name": "FuncEnd",
      "inputs": {
       "rets": [
-       "e1d74bcd-CalculateResidual2",
-       "rets",
+       null,
+       null,
        null
       ],
       "FUNC": [
-       "71e17506-FuncBegin",
+       "e83899a7-FuncBegin",
        "FUNC",
        null
       ],
       "SRC": [
-       null,
-       null,
+       "48783b41-PrintMessage",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      315.14900662251654,
-      358.52649006622516
+      328.76166555634313,
+      1031.4545256057277
      ],
      "options": []
     },
-    "d5d6d49d-SolveNonlinearProblem2": {
-     "name": "SolveNonlinearProblem2",
+    "7211c4a7-MakeNonlinearProblemObject": {
+     "name": "MakeNonlinearProblemObject",
      "inputs": {
-      "JFNKSolverObject2": [
-       "fa9f69fd-MakeJFNKSolver2",
-       "JFNKSolverObject2",
-       null
-      ],
-      "NonlinearProblemObject2": [
-       "564e9642-MakeNonlinearProblemObject2",
-       "NonlinearProblemObject2",
-       null
-      ],
       "function": [
-       "c16225c4-FuncEnd",
+       "82a64254-FuncEnd",
        "function",
        null
       ],
@@ -164,19 +86,208 @@
      },
      "params": {},
      "uipos": [
-      932.1688741721855,
-      390.84437086092714
+      580.1117946957213,
+      1099.528204233161
+     ],
+     "options": []
+    },
+    "a0a524e0-MakeJFNKSolver": {
+     "name": "MakeJFNKSolver",
+     "inputs": {
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      586.5346745339856,
+      1293.4626298723344
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "f1a83977-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      -855.1575280329002,
+      1422.442427509166
+     ],
+     "options": []
+    },
+    "8bb99697-ConvertRawdataToVecotor": {
+     "name": "ConvertRawdataToVecotor",
+     "inputs": {
+      "RawDoubleObject": [
+       "c28fe426-MakeRawDoubleObject",
+       "RawDoubleObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      452.29688083576525,
+      1617.3822023971202
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "7c6673db-PrintVectorTypeObject": {
+     "name": "PrintVectorTypeObject",
+     "inputs": {
+      "VectorTypeObject": [
+       "eb17d827-SolveNonlinearProblem",
+       "VectorTypeObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1423.4646368455442,
+      1425.1946344900164
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "c28fe426-MakeRawDoubleObject": {
+     "name": "MakeRawDoubleObject",
+     "inputs": {
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      33.95365287162164,
+      1575.5092905405374
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "eb17d827-SolveNonlinearProblem": {
+     "name": "SolveNonlinearProblem",
+     "inputs": {
+      "NonlinearProblemObject": [
+       "7211c4a7-MakeNonlinearProblemObject",
+       "NonlinearProblemObject",
+       null
+      ],
+      "JFNKSolverObject": [
+       "a0a524e0-MakeJFNKSolver",
+       "JFNKSolverObject",
+       null
+      ],
+      "VectorTypeObject": [
+       "8bb99697-ConvertRawdataToVecotor",
+       "VectorTypeObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1042.7340582770244,
+      1327.6494932432395
+     ],
+     "options": []
+    },
+    "5225ba97-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "num": [
+       "f1a83977-NumericInt",
+       "value",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "num\nobj1"
+     },
+     "uipos": [
+      -497.64432010135005,
+      972.7525337837817
+     ],
+     "options": [],
+     "socket_keys": [
+      "num",
+      "obj1"
+     ]
+    },
+    "48783b41-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "1b9b8c32-CalculateResidual",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "hello"
+     },
+     "uipos": [
+      52.33604863221868,
+      1176.8724620060755
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 0.0,
-    "y": 0.0,
-    "width": 1200.0,
-    "height": 610.0
+    "x": -315.41730386373575,
+    "y": 753.4341730699091,
+    "width": 1248.0,
+    "height": 566.3999999999984
    }
   }
  },
@@ -678,7 +789,7 @@
     "control"
    ]
   },
-  "CalculateResidual2": {
+  "CalculateResidual": {
    "inputs": [
     [
      "",
@@ -736,6 +847,36 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "ConvertRawdataToVecotor": {
+   "inputs": [
+    [
+     "",
+     "RawDoubleObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VectorTypeObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "CopyAllUserData": {
@@ -1007,6 +1148,82 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "DynamicNumber": {
+   "inputs": [
+    [
+     "",
+     "frame",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 100 10 1 0.1 0.01 0.001",
+     "speed",
+     "1"
+    ],
+    [
+     "floatslider",
+     "x",
+     "0"
+    ],
+    [
+     "floatslider",
+     "y",
+     "0"
+    ],
+    [
+     "floatslider",
+     "z",
+     "0"
+    ],
+    [
+     "floatslider",
+     "w",
+     "0"
+    ],
+    [
+     "enum clamp zero cycle",
+     "type",
+     "clamp"
+    ]
+   ],
+   "categories": [
+    "numeric"
    ]
   },
   "EmptyDict": {
@@ -1504,383 +1721,6 @@
    "params": [],
    "categories": [
     "functional"
-   ]
-  },
-  "GLBindFramebufferTexture": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLClearColor": {
-   "inputs": [
-    [
-     "",
-     "color",
-     ""
-    ],
-    [
-     "",
-     "alpha",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateProgram": {
-   "inputs": [
-    [
-     "",
-     "shaderList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "program",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateShader": {
-   "inputs": [
-    [
-     "",
-     "source",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "type",
-     "vertex"
-    ]
-   ],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLCreateTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLDrawArrayTriangles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLGetFramebufferTexture": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLNoFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUTMainLoop": {
-   "inputs": [
-    [
-     "",
-     "drawFunc",
-     ""
-    ],
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "interval",
-     "17 0"
-    ]
-   ],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseFramebuffer": {
-   "inputs": [
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseProgram": {
-   "inputs": [
-    [
-     "",
-     "program",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
-  "GLUseTexture": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "index",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
    ]
   },
   "GeoVertexVel": {
@@ -2781,31 +2621,6 @@
     "dict"
    ]
   },
-  "MakeFullscreenRect": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
-   ]
-  },
   "MakeGCTest": {
    "inputs": [
     [
@@ -2868,8 +2683,13 @@
     "visualize"
    ]
   },
-  "MakeJFNKSolver2": {
+  "MakeJFNKSolver": {
    "inputs": [
+    [
+     "",
+     "num",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -2879,7 +2699,7 @@
    "outputs": [
     [
      "",
-     "JFNKSolverObject2",
+     "JFNKSolverObject",
      ""
     ],
     [
@@ -2916,6 +2736,81 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "MakeLocalSys": {
+   "inputs": [
+    [
+     "vec3f",
+     "front",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "up",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "right",
+     "0,0,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "LocalSys",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeMaterial": {
+   "inputs": [
+    [
+     "string",
+     "vert",
+     ""
+    ],
+    [
+     "string",
+     "frag",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
    ]
   },
   "MakeMultilineString": {
@@ -2979,7 +2874,7 @@
     "control"
    ]
   },
-  "MakeNonlinearProblemObject2": {
+  "MakeNonlinearProblemObject": {
    "inputs": [
     [
      "",
@@ -2995,7 +2890,7 @@
    "outputs": [
     [
      "",
-     "NonlinearProblemObject2",
+     "NonlinearProblemObject",
      ""
     ],
     [
@@ -3114,6 +3009,36 @@
     "primitive"
    ]
   },
+  "MakeRawDoubleObject": {
+   "inputs": [
+    [
+     "",
+     "num",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "RawDoubleObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
   "MakeReadPath": {
    "inputs": [
     [
@@ -3143,31 +3068,6 @@
    ],
    "categories": [
     "string"
-   ]
-  },
-  "MakeSimpleTriangle": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "EasyGL"
    ]
   },
   "MakeSmallList": {
@@ -4080,6 +3980,51 @@
     "zenofx"
    ]
   },
+  "OrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "PackNumericIntVec2": {
    "inputs": [
     [
@@ -4512,444 +4457,6 @@
     "zenofx"
    ]
   },
-  "PassToyApplyShader": {
-   "inputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "uniforms",
-     ""
-    ],
-    [
-     "",
-     "textureIn",
-     ""
-    ],
-    [
-     "",
-     "textureOut",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "textureOut",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyDownscaleResolution": {
-   "inputs": [
-    [
-     "",
-     "scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetResolution": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetTextureInteger": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "id",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyGetTextureResolution": {
-   "inputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyImageTextureFromVoidPtr": {
-   "inputs": [
-    [
-     "",
-     "voidPtr",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyImageTextureFromVoidPtrAndRes": {
-   "inputs": [
-    [
-     "",
-     "voidPtr",
-     ""
-    ],
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyLoadImageTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeShader": {
-   "inputs": [
-    [
-     "",
-     "source",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shader",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeTexture": {
-   "inputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "format",
-     "rgb16f"
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyMakeTexturePair": {
-   "inputs": [
-    [
-     "",
-     "resolution",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "format",
-     "rgb16f"
-    ]
-   ],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyScreenTexture": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyTexturePairSwap": {
-   "inputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "texturePair",
-     ""
-    ],
-    [
-     "",
-     "oldTexture",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
-  "PassToyUpscaleResolution": {
-   "inputs": [
-    [
-     "",
-     "scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "PassToy"
-   ]
-  },
   "PlaneProjectPrimitive2DAABB": {
    "inputs": [
     [
@@ -5186,6 +4693,16 @@
      "1"
     ],
     [
+     "float",
+     "midPoint",
+     "0.5"
+    ],
+    [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -5203,7 +4720,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "0"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -6052,6 +5575,11 @@
      "1"
     ],
     [
+     "bool",
+     "lineSort",
+     "1"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -6070,6 +5598,138 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSort": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reversed",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -6390,6 +6050,51 @@
    "outputs": [
     [
      "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveScale": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "axis",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
      "prim",
      ""
     ],
@@ -6754,7 +6459,7 @@
      "0,1,0"
     ],
     [
-     "vec3f",
+     "",
      "tangent",
      ""
     ],
@@ -6934,6 +6639,101 @@
     "string"
    ]
   },
+  "PrintVectorTypeObject": {
+   "inputs": [
+    [
+     "",
+     "VectorTypeObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
+  "ProjectAndNormalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "enum XY YX YZ ZY ZX XZ",
+     "plane",
+     "XY"
+    ],
+    [
+     "float",
+     "directionScale",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightOffset",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "direction",
+     ""
+    ],
+    [
+     "float",
+     "length",
+     ""
+    ],
+    [
+     "float",
+     "height",
+     ""
+    ],
+    [
+     "float",
+     "phase",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -7053,6 +6853,41 @@
     [
      "",
      "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadObjPrimitiveDict": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dict",
      ""
     ],
     [
@@ -7217,6 +7052,41 @@
     "frame"
    ]
   },
+  "SetMaterial": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
+   ]
+  },
   "SetRandomSeed": {
    "inputs": [
     [
@@ -7293,21 +7163,21 @@
     "portal"
    ]
   },
-  "SolveNonlinearProblem2": {
+  "SolveNonlinearProblem": {
    "inputs": [
     [
      "",
-     "JFNKSolverObject2",
+     "NonlinearProblemObject",
      ""
     ],
     [
      "",
-     "NonlinearProblemObject2",
+     "JFNKSolverObject",
      ""
     ],
     [
      "",
-     "function",
+     "VectorTypeObject",
      ""
     ],
     [
@@ -7317,6 +7187,11 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "VectorTypeObject",
+     ""
+    ],
     [
      "",
      "DST",
@@ -7809,6 +7684,11 @@
     ],
     [
      "vec3f",
+     "offset",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
      "eulerXYZ",
      "0,0,0"
     ],
@@ -7824,6 +7704,16 @@
     ],
     [
      "",
+     "Matrix",
+     ""
+    ],
+    [
+     "",
+     "local",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -7832,6 +7722,11 @@
     [
      "",
      "outPrim",
+     ""
+    ],
+    [
+     "",
+     "Matrix",
      ""
     ],
     [

@@ -83,9 +83,9 @@ if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
 endif()
 
-if (ZENO_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+# if (ZENO_BUILD_TESTS)
+#     add_subdirectory(tests)
+# endif()
 
 #if (ZENO_BUILD_LAUNCHER)
 #    add_subdirectory(scripts/launcher)
