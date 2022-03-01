@@ -3,22 +3,21 @@
 
 #include <QtWidgets>
 
+enum DOCK_TYPE
+{
+	DOCK_VIEW,
+	DOCK_EDITOR,
+	DOCK_NODE_PARAMS,
+	DOCK_NODE_DATA,
+	DOCK_TIMER
+};
+
 class ZenoDockWidget;
 class ZenoGraphsEditor;
 
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
-
-    enum DOCK_TYPE
-    {
-        DOCK_VIEW,
-        DOCK_EDITOR,
-        DOCK_NODE_PARAMS,
-        DOCK_NODE_DATA,
-        DOCK_TIMER
-    };
-
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoMainWindow();
@@ -35,6 +34,7 @@ public slots:
     void onMaximumTriggered();
     void onSplitDock(bool);
     void onToggleDockWidget(DOCK_TYPE, bool);
+    void onDockSwitched(DOCK_TYPE);
     void importGraph();
 
 private:

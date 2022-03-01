@@ -1,5 +1,5 @@
 #include "zenomainwindow.h"
-#include <comctrl/zenodockwidget.h>
+#include "dock/zenodockwidget.h"
 #include "nodesview/znodeseditwidget.h"
 #include "panel/zenodatapanel.h"
 #include "timeline/ztimeline.h"
@@ -19,6 +19,7 @@
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_pEditor(nullptr)
+    , m_viewDock(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -227,12 +228,12 @@ void ZenoMainWindow::initDocks()
     //m_toolbar->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     //m_toolbar->setWidget(new ZToolbar);
 
-    m_viewDock = new ZenoDockWidget("view", this);
-    m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
-    m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    DisplayWidget* view = new DisplayWidget;
-    m_viewDock->setWidget(view);
-    m_docks.insert(DOCK_VIEW, m_viewDock);
+	m_viewDock = new ZenoDockWidget("view", this);
+	m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
+	m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+	DisplayWidget* view = new DisplayWidget;
+	m_viewDock->setWidget(view);
+	m_docks.insert(DOCK_VIEW, m_viewDock);
 
     //m_parameter = new ZenoDockWidget("parameter", this);
     //m_parameter->setObjectName(QString::fromUtf8("dock_parameter"));
@@ -363,6 +364,47 @@ void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
             dock->show();
         else
             dock->close();
+    }
+}
+
+void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
+{
+    ZenoDockWidget* pDock = qobject_cast<ZenoDockWidget*>(sender());
+    switch (type)
+    {
+        case DOCK_EDITOR:
+        {
+            ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor;
+            pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
+            pDock->setWidget(pEditor2);
+            break;
+        }
+        case DOCK_VIEW:
+        {
+            DisplayWidget* view = new DisplayWidget;
+            pDock->setWidget(view);
+            break;
+        }
+        case DOCK_NODE_PARAMS:
+        {
+            QWidget* pWidget = new QWidget;
+			QPalette pal = pWidget->palette();
+			pal.setColor(QPalette::Window, QColor(255, 0, 0));
+            pWidget->setAutoFillBackground(true);
+            pWidget->setPalette(pal);
+            pDock->setWidget(pWidget);
+            break;
+        }
+        case DOCK_NODE_DATA:
+        {
+			QWidget* pWidget = new QWidget;
+			QPalette pal = pWidget->palette();
+			pal.setColor(QPalette::Window, QColor(0, 0, 255));
+			pWidget->setAutoFillBackground(true);
+			pWidget->setPalette(pal);
+			pDock->setWidget(pWidget);
+            break;
+        }
     }
 }
 

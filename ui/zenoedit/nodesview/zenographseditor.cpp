@@ -4,6 +4,7 @@
 #include "zenosubnetlistview.h"
 #include <comctrl/ztoolbutton.h>
 #include "zenoapplication.h"
+#include "zenowelcomepage.h"
 #include "graphsmanagment.h"
 #include "zenosubnettreeview.h"
 #include <zenoui/model/graphsmodel.h>
@@ -20,6 +21,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_pSideBar(nullptr)
     , m_bListView(true)
     , m_pViewBtn(nullptr)
+    , m_welcomePage(nullptr)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -82,6 +84,15 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     m_pViewBtn->setChecked(!m_bListView);
     m_pTabWidget->setVisible(m_bListView);
     m_pLayerWidget->setVisible(!m_bListView);
+
+    m_welcomePage = new ZenoWelcomePage;
+    pLayout->addWidget(m_welcomePage);
+    m_welcomePage->setVisible(true);
+    m_pSubnetList->setVisible(false);
+    m_pTabWidget->setVisible(false);
+    m_pLayerWidget->setVisible(false);
+    m_pSubnetBtn->setVisible(false);
+    m_pViewBtn->setVisible(false);
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()
@@ -141,19 +152,27 @@ void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
 
 void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 {
-    m_pSubnetList->initModel(pModel);
-    if (m_bListView)
+    m_pSideBar->show();
+    m_pSubnetBtn->show();
+    m_pViewBtn->show();
+    if (pModel)
     {
-		m_pTabWidget->resetModel(pModel);
+		m_pSubnetList->initModel(pModel);
+		if (m_bListView)
+		{
+			m_pTabWidget->resetModel(pModel);
+            m_pTabWidget->show();
+		}
+		else
+		{
+			m_pLayerWidget->show();
+		}
+
+		m_pSubnetBtn->setChecked(true);
+		m_pSubnetList->show();
+		connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     }
-    else
-    {
-        m_pLayerWidget;
-    }
-	m_pSideBar->show();
-	m_pSubnetBtn->setChecked(true);
-	m_pSubnetList->show();
-    connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
+	m_welcomePage->setVisible(false);
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()
@@ -162,6 +181,13 @@ void ZenoGraphsEditor::onCurrentModelClear()
     m_pTabWidget->clear();
     m_pLayerWidget->clear();
     m_pSideBar->hide();
+
+	m_welcomePage->setVisible(true);
+	m_pSubnetList->setVisible(false);
+	m_pTabWidget->setVisible(false);
+	m_pLayerWidget->setVisible(false);
+	m_pSubnetBtn->setVisible(false);
+	m_pViewBtn->setVisible(false);
 }
 
 void ZenoGraphsEditor::onViewBtnClicked()

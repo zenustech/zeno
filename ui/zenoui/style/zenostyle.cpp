@@ -4,7 +4,6 @@
 #include "../comctrl/zobjectbutton.h"
 #include "../comctrl/gv/zenoparamwidget.h"
 #include <QScreen>
-#include "../comctrl/zenodockwidget.h"
 #include <QtWidgets/private/qdockwidget_p.h>
 
 

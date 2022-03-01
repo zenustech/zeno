@@ -2,6 +2,7 @@
 #define __ZENO_DOCKWIDGET_H__
 
 #include <QtWidgets>
+#include "zenomainwindow.h"
 
 class ZenoDockTitleWidget : public QWidget
 {
@@ -11,8 +12,12 @@ public:
     ~ZenoDockTitleWidget();
     QSize sizeHint() const override;
 
+private slots:
+    void onDockSwitchClicked();
+
 signals:
     void dockOptionsClicked();
+    void dockSwitchClicked(DOCK_TYPE);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -36,6 +41,7 @@ signals:
     void maximizeTriggered();
     void floatTriggered();
     void splitRequest(bool bHorzonal);
+    void dockSwitchClicked(DOCK_TYPE);
 
 private slots:
     void onDockOptionsClicked();
@@ -43,7 +49,7 @@ private slots:
     void onFloatTriggered();
 
 private:
-    void init();
+    void init(ZenoMainWindow* pMainWin);
 };
 
 

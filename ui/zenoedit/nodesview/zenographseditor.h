@@ -9,6 +9,7 @@ class ZenoGraphsTabWidget;
 class ZenoSubnetListPanel;
 class ZenoGraphsLayerWidget;
 class ZenoSubnetTreeView;
+class ZenoWelcomePage;
 class IGraphsModel;
 
 class ZenoGraphsEditor : public QWidget
@@ -35,6 +36,7 @@ private:
     ZenoSubnetListPanel* m_pSubnetList;
     ZenoGraphsTabWidget* m_pTabWidget;
     ZenoGraphsLayerWidget* m_pLayerWidget;
+    ZenoWelcomePage* m_welcomePage;
     bool m_bListView;
 };
 
