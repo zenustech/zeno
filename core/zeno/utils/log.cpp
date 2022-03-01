@@ -81,7 +81,9 @@ namespace { struct LogInitializer {
 
 #if defined(__DATE__) && defined(__TIME__)
 #ifdef ZENO_ENABLE_SPDLOG
-        g_logger->info("build date: {} {}", __DATE__, __TIME__);
+        source_location loc;
+        g_logger->log(spdlog::source_loc(loc.file_name(), loc.line(), loc.function_name()),
+                      spdlog::level::info, "build date: {} {}", __DATE__, __TIME__);
 #else
         log_info("build date: {} {}", __DATE__, __TIME__);
 #endif
