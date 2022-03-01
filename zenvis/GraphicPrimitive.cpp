@@ -403,7 +403,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
   float ndf = alpha2 / (denom * denom);
 
   vec3 brdf = fdf * vdf * ndf * f0 + (1. - f0) * albedo;
-  return brdf * NoL;
+  return brdf * NoV;
 }
 
 )" + (
@@ -491,7 +491,7 @@ void main()
 )";
     }
 
-printf("!!!!%s!!!!\n", frag.c_str());
+//printf("!!!!%s!!!!\n", frag.c_str());
     return compile_program(vert, frag);
   }
 };
