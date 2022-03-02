@@ -1070,7 +1070,7 @@
      "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "65234c2e-TreeUnaryMath",
+       "0c339a57-TreeTernaryMath",
        "out",
        0.0
       ],
@@ -1096,11 +1096,68 @@
       -116.88190322580627
      ],
      "options": []
+    },
+    "15693942-TreeExtractVec": {
+     "name": "TreeExtractVec",
+     "inputs": {
+      "vec": [
+       "65234c2e-TreeUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3158.264900662247,
+      -133.3112582781455
+     ],
+     "options": []
+    },
+    "0c339a57-TreeTernaryMath": {
+     "name": "TreeTernaryMath",
+     "inputs": {
+      "in1": [
+       "15693942-TreeExtractVec",
+       "x",
+       0.0
+      ],
+      "in2": [
+       "15693942-TreeExtractVec",
+       "y",
+       0.0
+      ],
+      "in3": [
+       "15693942-TreeExtractVec",
+       "z",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3426.5033112582714,
+      -107.4569536423839
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 3009.692751128015,
-    "y": -317.8228292087688,
+    "x": 3382.439108743882,
+    "y": -242.72415371207921,
     "width": 959.9999999999994,
     "height": 487.99999999999926
    }
@@ -9569,6 +9626,51 @@
     "tree"
    ]
   },
+  "TreeExtractVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
   "TreeFinalize": {
    "inputs": [
     [
@@ -9888,7 +9990,7 @@
      "0"
     ],
     [
-     "enum mix clamp smoothstep",
+     "enum mix clamp smoothstep add3",
      "op",
      "mix"
     ],

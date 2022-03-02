@@ -11,7 +11,7 @@ static const char /* see https://docs.gl/sl4/trunc */
               " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
               " ceil trunc sign step length normalize",
     binops[] = "add sub mul div mod pow atan2 min max dot cross distance",
-    ternops[] = "mix clamp smoothstep";
+    ternops[] = "mix clamp smoothstep add3";
 
 
 struct TreeTernaryMath : TreeNode {
@@ -49,7 +49,11 @@ struct TreeTernaryMath : TreeNode {
         auto in2 = em->determineExpr(get_input("in2").get());
         auto in3 = em->determineExpr(get_input("in3").get());
 
-        em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+        if (op == "add3") {
+            return em->emitCode(in1 + " + " + in2 + " + " + in3);
+        } else {
+            return em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+        }
     }
 };
 
