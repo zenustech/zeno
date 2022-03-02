@@ -7,6 +7,7 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 
 namespace zeno {
 
@@ -121,8 +122,12 @@ struct ZSPoissonDiskSample : INode {
       } else if constexpr (is_same_v<
                                LsT,
                                typename ZenoLevelSet::const_transition_ls_t>) {
-        match([&sampled = sampled, dx = dx, ppc = ppc](auto fieldPair) {
-          sampled = zs::sample_from_levelset(TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)}, SdfVelFieldView{get<1>(fieldPair)}}, dx, ppc);
+        match([&sampled = sampled, &ls, dx = dx, ppc = ppc](auto fieldPair) {
+          sampled = zs::sample_from_levelset(
+              TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)},
+                                     SdfVelFieldView{get<1>(fieldPair)},
+                                     ls._stepDt, ls._alpha},
+              dx, ppc);
         })(ls.template getView<execspace_e::openmp>());
       } else {
         throw std::runtime_error("unknown levelset type...");
@@ -336,6 +341,22 @@ ZENDEFNODE(EnqueueLevelSetSequence, {
                                         {"MPM"},
                                     });
 
+struct MakeZSString : INode {
+  void apply() override {
+    auto n = std::make_shared<StringObject>();
+    n->value = fmt::format(get_input<StringObject>("fmt_str")->get(),
+                           get_input<NumericObject>("frameid")->get<int>(),
+                           get_input<NumericObject>("stepid")->get<int>());
+    set_output("str", std::move(n));
+  }
+};
+ZENDEFNODE(MakeZSString, {
+                             {"fmt_str", "frameid", "stepid"},
+                             {"str"},
+                             {},
+                             {"SOP"},
+                         });
+
 /// update levelsetsequence state
 struct UpdateLevelSetSequence : INode {
   void apply() override {
@@ -359,12 +380,32 @@ struct UpdateLevelSetSequence : INode {
     if (has_input<NumericObject>("dt")) {
       auto stepDt = get_input<NumericObject>("dt")->get<float>();
       lsseq.setStepDt(stepDt);
+      // fmt::print("\tdt: {}\n", lsseq._stepDt);
     }
 
     if (has_input<NumericObject>("alpha")) {
       auto alpha = get_input<NumericObject>("alpha")->get<float>();
       lsseq.advance(alpha);
+      // fmt::print("\talpha: {}, accum: {}\n", alpha, lsseq._alpha);
     }
+
+#if 0
+    fmt::print("\t{} levelset in queue.\n", lsseq._fields.size());
+    match([&lsseq](auto fieldPair) {
+      auto lsseqv = TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)},
+                                           SdfVelFieldView{get<1>(fieldPair)},
+                                           lsseq._stepDt, lsseq._alpha};
+      fmt::print("ls_seq_view type: [{}]\n", get_var_type_str(lsseqv));
+      auto printBox = [](std::string_view msg, auto &lsv) {
+        auto [mi, ma] = lsv.getBoundingBox();
+        fmt::print("[{}]: [{}, {}, {} ~ {}, {}, {}]\n", msg, mi[0], mi[1],
+                   mi[2], ma[0], ma[1], ma[2]);
+      };
+      printBox("src", lsseqv._lsvSrc);
+      printBox("dst", lsseqv._lsvDst);
+      printBox("cur", lsseqv);
+    })(lsseq.template getView<execspace_e::openmp>());
+#endif
 
     fmt::print(fg(fmt::color::cyan), "done executing UpdateLevelSetSequence\n");
     set_output("ZSLevelSetSequence", std::move(zsls));
