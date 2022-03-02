@@ -126,6 +126,7 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
             pModel->replaceSubGraphNode(oldName, newName);
         }
     }
+    initDescriptors();
     emit graphRenamed(oldName, newName);
 }
 
@@ -216,6 +217,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
 			{
                 //new subgraph.
                 pModel->setName(newName);
+                initDescriptors();
 			}
 		}
 	}
@@ -232,86 +234,88 @@ void GraphsModel::revert(const QModelIndex& idx)
 	}
 }
 
-void GraphsModel::initDescriptors()
+NODE_DESCS GraphsModel::getCoreDescs()
 {
-    NODE_DESCS descs;
-    QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
-    QStringList L = strDescs.split("\n");
-    for (int i = 0; i < L.size(); i++)
-    {
-        QString line = L[i];
-        if (line.startsWith("DESC@"))
-        {
-            line = line.trimmed();
-            int idx1 = line.indexOf("@");
-            int idx2 = line.indexOf("@", idx1 + 1);
-            Q_ASSERT(idx1 != -1 && idx2 != -1);
-            QString wtf = line.mid(0, idx1);
-            QString z_name = line.mid(idx1 + 1, idx2 - idx1 - 1);
-            QString rest = line.mid(idx2 + 1);
-            Q_ASSERT(rest.startsWith("{") && rest.endsWith("}"));
-            auto _L = rest.mid(1, rest.length() - 2).split("}{");
-            QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
-            QStringList z_categories = categories.split('%', QtSkipEmptyParts);
-            QJsonArray z_inputs;
+	NODE_DESCS descs;
+	QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
+	QStringList L = strDescs.split("\n");
+	for (int i = 0; i < L.size(); i++)
+	{
+		QString line = L[i];
+		if (line.startsWith("DESC@"))
+		{
+			line = line.trimmed();
+			int idx1 = line.indexOf("@");
+			int idx2 = line.indexOf("@", idx1 + 1);
+			Q_ASSERT(idx1 != -1 && idx2 != -1);
+			QString wtf = line.mid(0, idx1);
+			QString z_name = line.mid(idx1 + 1, idx2 - idx1 - 1);
+			QString rest = line.mid(idx2 + 1);
+			Q_ASSERT(rest.startsWith("{") && rest.endsWith("}"));
+			auto _L = rest.mid(1, rest.length() - 2).split("}{");
+			QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
+			QStringList z_categories = categories.split('%', QtSkipEmptyParts);
+			QJsonArray z_inputs;
 
-            NODE_DESC desc;
-            for (QString input : inputs.split("%", QtSkipEmptyParts))
-            {
-                QString type, name, defl;
-                auto _arr = input.split('@');
-                Q_ASSERT(_arr.size() == 3);
-                type = _arr[0];
-                name = _arr[1];
-                defl = _arr[2];
-                INPUT_SOCKET socket;
-                socket.info.type = type;
-                socket.info.name = name;
-                socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
-                desc.inputs[name] = socket;
-            }
-            for (QString output : outputs.split("%", QtSkipEmptyParts))
-            {
-                QString type, name, defl;
+			NODE_DESC desc;
+			for (QString input : inputs.split("%", QtSkipEmptyParts))
+			{
+				QString type, name, defl;
+				auto _arr = input.split('@');
+				Q_ASSERT(_arr.size() == 3);
+				type = _arr[0];
+				name = _arr[1];
+				defl = _arr[2];
+				INPUT_SOCKET socket;
+				socket.info.type = type;
+				socket.info.name = name;
+				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+				desc.inputs[name] = socket;
+			}
+			for (QString output : outputs.split("%", QtSkipEmptyParts))
+			{
+				QString type, name, defl;
 				auto _arr = output.split('@');
 				Q_ASSERT(_arr.size() == 3);
 				type = _arr[0];
 				name = _arr[1];
 				defl = _arr[2];
-                OUTPUT_SOCKET socket;
+				OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
-                desc.outputs[name] = socket;
-            }
-            for (QString param : params.split("%", QtSkipEmptyParts))
-            {
-                QString type, name, defl;
-                auto _arr = param.split('@');
+				desc.outputs[name] = socket;
+			}
+			for (QString param : params.split("%", QtSkipEmptyParts))
+			{
+				QString type, name, defl;
+				auto _arr = param.split('@');
 				type = _arr[0];
 				name = _arr[1];
 				defl = _arr[2];
-                PARAM_INFO paramInfo;
-                paramInfo.bEnableConnect = false;
-                paramInfo.name = name;
-                paramInfo.typeDesc = type;
-                paramInfo.control = UiHelper::_getControlType(type);
-                paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
-                //thers is no "value" in descriptor, but it's convient to initialize param value. 
-                paramInfo.value = paramInfo.defaultValue;
-                desc.params[name] = paramInfo;
-            }
-            desc.categories = z_categories;
+				PARAM_INFO paramInfo;
+				paramInfo.bEnableConnect = false;
+				paramInfo.name = name;
+				paramInfo.typeDesc = type;
+				paramInfo.control = UiHelper::_getControlType(type);
+				paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+				//thers is no "value" in descriptor, but it's convient to initialize param value. 
+				paramInfo.value = paramInfo.defaultValue;
+				desc.params[name] = paramInfo;
+			}
+			desc.categories = z_categories;
 
-            if (z_name == "SubInput")
-            {
-                int j;
-                j = 0;
-            }
+			descs.insert(z_name, desc);
+		}
+	}
+    return descs;
+}
 
-            descs.insert(z_name, desc);
-        }
-    }
+void GraphsModel::initDescriptors()
+{
+    NODE_DESCS descs = getCoreDescs();
+    NODE_DESCS subgDescs = getSubgraphDescs();
+    descs.insert(subgDescs);
     setDescriptors(descs);
 }
 
@@ -322,9 +326,9 @@ NODE_DESCS GraphsModel::getSubgraphDescs()
     {
         QModelIndex index = this->index(r, 0);
         Q_ASSERT(index.isValid());
-        SubGraphModel *pModel = static_cast<SubGraphModel *>(index.data(ROLE_GRAPHPTR).value<void *>());
+        SubGraphModel *pModel = subGraph(r);
         const QString& graphName = pModel->name();
-        if (graphName == "main")
+        if (graphName == "main" || graphName.isEmpty())
             continue;
 
         QString subcategory = "subgraph";
@@ -412,6 +416,7 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
     SUBMODEL_SCENE info;
     info.pModel = pGraph;
     m_subGraphs.append(info);
+    initDescriptors();
 	endInsertRows();
 }
 

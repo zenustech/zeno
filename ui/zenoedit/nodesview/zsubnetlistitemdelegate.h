@@ -13,6 +13,7 @@ public:
     explicit SubgEditValidator(QObject* parent = nullptr);
     ~SubgEditValidator();
     State validate(QString&, int&) const override;
+    void fixup(QString&) const override;
 };
 
 class ZSubnetListItemDelegate : public QStyledItemDelegate

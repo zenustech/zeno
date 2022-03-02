@@ -37,7 +37,7 @@ private:
     QWidget* m_pSideBar;
     ZToolButton* m_pSubnetBtn;
     ZToolButton* m_pViewBtn;
-    ZenoSubnetPanel* m_pSubnetList;
+    ZenoSubnetPanel* m_pSubnetPanel;
     ZenoGraphsTabWidget* m_pTabWidget;
     ZenoGraphsLayerWidget* m_pLayerWidget;
     ZenoWelcomePage* m_welcomePage;

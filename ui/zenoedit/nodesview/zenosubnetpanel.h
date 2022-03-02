@@ -6,6 +6,7 @@
 class ZenoSubnetListView;
 class ZenoSubnetTreeView;
 class IGraphsModel;
+class ZTextLabel;
 
 class ZenoSubnetPanel : public QWidget
 {
@@ -30,6 +31,7 @@ protected:
 private:
 	ZenoSubnetListView* m_pListView;
 	ZenoSubnetTreeView* m_pTreeView;
+	ZTextLabel* m_pNewSubnetBtn;
 	QLabel* m_pTextLbl;
 	bool m_bListView;
 };

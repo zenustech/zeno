@@ -51,7 +51,6 @@ public:
     bool isDirty() const override;
     void markDirty();
     void clearDirty();
-    NODE_DESCS getSubgraphDescs();
     NODE_CATES getCates() override;
     QString filePath() const;
     QString fileName() const override;
@@ -130,7 +129,9 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
-    //QVector<SubGraphModel*> m_subGraphs;
+    NODE_DESCS getSubgraphDescs();
+    NODE_DESCS getCoreDescs();
+
     QVector<SUBMODEL_SCENE> m_subGraphs;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;

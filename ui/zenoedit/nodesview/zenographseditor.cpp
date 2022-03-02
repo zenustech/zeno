@@ -17,7 +17,7 @@
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     : QWidget(nullptr)
     , m_pSubnetBtn(nullptr)
-    , m_pSubnetList(nullptr)
+    , m_pSubnetPanel(nullptr)
     , m_pTabWidget(nullptr)
     , m_pLayerWidget(nullptr)
     , m_pSideBar(nullptr)
@@ -66,9 +66,9 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
 
     QVBoxLayout* pLayout2 = new QVBoxLayout;
 
-    m_pSubnetList = new ZenoSubnetPanel();
-    m_pSubnetList->hide();
-    pLayout->addWidget(m_pSubnetList);
+    m_pSubnetPanel = new ZenoSubnetPanel();
+    m_pSubnetPanel->hide();
+    pLayout->addWidget(m_pSubnetPanel);
 
     m_pTabWidget = new ZenoGraphsTabWidget;
     m_pLayerWidget = new ZenoGraphsLayerWidget;
@@ -76,8 +76,8 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     pLayout->addWidget(m_pTabWidget);
     pLayout->addWidget(m_pLayerWidget);
 
-    connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
-    connect(m_pSubnetList, SIGNAL(graphToBeActivated(const QString&)), m_pTabWidget, SLOT(activate(const QString&)));
+    connect(m_pSubnetPanel, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
+    connect(m_pSubnetPanel, SIGNAL(graphToBeActivated(const QString&)), m_pTabWidget, SLOT(activate(const QString&)));
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
     connect(m_pViewBtn, SIGNAL(clicked()), this, SLOT(onViewBtnClicked()));
 
@@ -92,7 +92,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     m_welcomePage = new ZenoWelcomePage;
     pLayout->addWidget(m_welcomePage);
     m_welcomePage->setVisible(true);
-    m_pSubnetList->setVisible(false);
+    m_pSubnetPanel->setVisible(false);
     m_pTabWidget->setVisible(false);
     m_pLayerWidget->setVisible(false);
     m_pSubnetBtn->setVisible(false);
@@ -169,7 +169,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_pViewBtn->show();
     if (pModel)
     {
-		m_pSubnetList->initModel(pModel);
+		m_pSubnetPanel->initModel(pModel);
 		if (m_bListView)
 		{
 			m_pTabWidget->resetModel(pModel);
@@ -181,7 +181,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 		}
 
 		m_pSubnetBtn->setChecked(true);
-		m_pSubnetList->show();
+		m_pSubnetPanel->show();
 		connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     }
 	m_welcomePage->setVisible(false);
@@ -208,13 +208,13 @@ void ZenoGraphsEditor::onGraphsItemAboutToBeRemoved(const QModelIndex& parent, i
 
 void ZenoGraphsEditor::onCurrentModelClear()
 {
-    m_pSubnetList->hide();
+    m_pSubnetPanel->hide();
     m_pTabWidget->clear();
     m_pLayerWidget->clear();
     m_pSideBar->hide();
 
 	m_welcomePage->setVisible(true);
-	m_pSubnetList->setVisible(false);
+	m_pSubnetPanel->setVisible(false);
 	m_pTabWidget->setVisible(false);
 	m_pLayerWidget->setVisible(false);
 	m_pSubnetBtn->setVisible(false);
@@ -231,7 +231,7 @@ void ZenoGraphsEditor::onViewBtnClicked()
 	{
         m_bListView = true;
 	}
-    m_pSubnetList->setViewWay(m_bListView);
+    m_pSubnetPanel->setViewWay(m_bListView);
 	m_pTabWidget->setVisible(m_bListView);
 	m_pLayerWidget->setVisible(!m_bListView);
 }
@@ -247,11 +247,11 @@ void ZenoGraphsEditor::onSubnetBtnClicked()
     {
         if (m_pSubnetBtn->isChecked())
         {
-            m_pSubnetList->show();
+            m_pSubnetPanel->show();
         }
         else
         {
-            m_pSubnetList->hide();
+            m_pSubnetPanel->hide();
         }
     }
 }

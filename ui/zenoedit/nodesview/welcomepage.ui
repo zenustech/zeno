@@ -193,7 +193,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(255, 255, 255);
 }</string>
              </property>
@@ -286,7 +286,7 @@
     border-radius: 0px;
     border-color: rgba(133,130,128,1);
 	background-color: transparent;
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(156, 156, 156);
 }</string>
                </property>
@@ -340,7 +340,7 @@
     border-color: rgba(133,130,128,1);
 	background-color: transparent;
 	
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(156, 156, 156);
 }</string>
                </property>
@@ -372,7 +372,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -392,7 +392,7 @@
              <property name="styleSheet">
               <string notr="true">QFrame
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -409,7 +409,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -423,7 +423,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -437,7 +437,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -451,7 +451,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -493,7 +493,7 @@
                <property name="styleSheet">
                 <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
                </property>
@@ -523,7 +523,7 @@
                <property name="styleSheet">
                 <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
                </property>
@@ -555,7 +555,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -569,7 +569,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -583,7 +583,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -597,7 +597,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>
@@ -611,7 +611,7 @@
              <property name="styleSheet">
               <string notr="true">QLabel
 {
-	font: 14px &quot;HarmonyOS Sans SC&quot;;
+	font: 14px &quot;HarmonyOS Sans&quot;;
 	color: rgb(133, 130, 128);
 }</string>
              </property>

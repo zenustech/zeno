@@ -13,6 +13,7 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 	: QWidget(parent)
 	, m_pListView(nullptr)
 	, m_pTreeView(nullptr)
+	, m_pNewSubnetBtn(nullptr)
 	, m_bListView(true)
 {
 	QVBoxLayout* pMainLayout = new QVBoxLayout;
@@ -40,16 +41,16 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 	pMainLayout->addWidget(m_pListView);
 	pMainLayout->addWidget(m_pTreeView);
 
-	ZTextLabel* pNewSubnetBtn = new ZTextLabel("Add New Subnet");
+	m_pNewSubnetBtn = new ZTextLabel("Add New Subnet");
 	font.setPointSize(13);
 	font.setBold(false);
-	pNewSubnetBtn->setFont(font);
-	pNewSubnetBtn->setTextColor(QColor(116, 116, 116));
-	pNewSubnetBtn->setBackgroundColor(QColor(56, 57, 56));
-	pNewSubnetBtn->setAlignment(Qt::AlignCenter);
-	pNewSubnetBtn->setFixedHeight(ZenoStyle::dpiScaled(40));
+	m_pNewSubnetBtn->setFont(font);
+	m_pNewSubnetBtn->setTextColor(QColor(116, 116, 116));
+	m_pNewSubnetBtn->setBackgroundColor(QColor(56, 57, 56));
+	m_pNewSubnetBtn->setAlignment(Qt::AlignCenter);
+	m_pNewSubnetBtn->setFixedHeight(ZenoStyle::dpiScaled(40));
 
-	pMainLayout->addWidget(pNewSubnetBtn);
+	pMainLayout->addWidget(m_pNewSubnetBtn);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(pMainLayout);
@@ -57,7 +58,7 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 	connect(m_pListView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
 	connect(m_pTreeView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
 	connect(m_pListView, SIGNAL(graphToBeActivated(const QString&)), this, SIGNAL(graphToBeActivated(const QString&)));
-	connect(pNewSubnetBtn, SIGNAL(clicked()), this, SLOT(onNewSubnetBtnClicked()));
+	connect(m_pNewSubnetBtn, SIGNAL(clicked()), this, SLOT(onNewSubnetBtnClicked()));
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
 	m_pListView->setVisible(m_bListView);
@@ -78,6 +79,7 @@ void ZenoSubnetPanel::setViewWay(bool bListView)
 	m_bListView = bListView;
 	m_pListView->setVisible(m_bListView);
 	m_pTreeView->setVisible(!m_bListView);
+	m_pNewSubnetBtn->setVisible(m_bListView);
 }
 
 QSize ZenoSubnetPanel::sizeHint() const

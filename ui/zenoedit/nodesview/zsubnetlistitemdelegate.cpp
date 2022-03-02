@@ -19,14 +19,19 @@ SubgEditValidator::~SubgEditValidator()
 QValidator::State SubgEditValidator::validate(QString& input, int& pos) const
 {
     if (input.isEmpty())
-        return Invalid;
+        return Intermediate;
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     const QModelIndex& idx = pModel->index(input);
     if (idx.isValid())
-        return Invalid;
+        return Intermediate;
 
     return Acceptable;
+}
+
+void SubgEditValidator::fixup(QString& wtf) const
+{
+
 }
 
 
