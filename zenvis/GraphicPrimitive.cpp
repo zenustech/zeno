@@ -394,11 +394,12 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
   float VoH = clamp(dot(odir, hdir), 0., 1.);
   float LoH = clamp(dot(idir, hdir), 0., 1.);
 
-  vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular * specular;
+  vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular;
   vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
 
+  roughness *= roughness;
   float k = (roughness + 1.) * (roughness + 1.) / 8.;
-  float vdf = 0.5 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
+  float vdf = 0.25 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
 
   float alpha2 = max(0., roughness * roughness);
   float denom = 1. - NoH * NoH * (1. - alpha2);
@@ -440,7 +441,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     /* custom_shader_end */
 
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
-    vec3 color = vec3(0.0);
+    vec3 color = mat_emission;
     vec3 light_dir;
 
     light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
@@ -455,7 +456,6 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
              mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    color = mix(color, mat_emission, mat_emitrate);
     return color;
 
 }

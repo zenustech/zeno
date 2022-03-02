@@ -14,6 +14,12 @@ static const char /* see https://docs.gl/sl4/trunc */
     ternops[] = "mix clamp smoothstep add3";
 
 
+static auto &toHlsl() {
+    static std::map<std::string, std::string> tab;
+    return tab;
+}
+
+
 struct TreeTernaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");

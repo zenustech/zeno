@@ -6,8 +6,8 @@
      "name": "TreeFinalize",
      "inputs": {
       "basecolor": [
-       null,
-       null,
+       "343c5391-TreeLinearFit",
+       "out",
        null
       ],
       "metallic": [
@@ -18,12 +18,12 @@
       "roughness": [
        null,
        null,
-       0.4
+       0.3
       ],
       "specular": [
        null,
        null,
-       0.5
+       1.0
       ],
       "normal": [
        null,
@@ -31,14 +31,9 @@
        null
       ],
       "emission": [
-       "5201536f-TreeFillVec",
-       "out",
+       null,
+       null,
        null
-      ],
-      "emitrate": [
-       null,
-       null,
-       1.0
       ],
       "SRC": [
        null,
@@ -51,7 +46,7 @@
      },
      "uipos": [
       4425.109175328249,
-      -178.6342577934734
+      -177.34154256168534
      ],
      "options": []
     },
@@ -138,7 +133,7 @@
       "path": [
        null,
        null,
-       "assets/cube.obj"
+       "assets/bowl.obj"
       ],
       "SRC": [
        null,
@@ -1022,7 +1017,7 @@
       "in2": [
        null,
        null,
-       0.25001
+       1.0
       ],
       "op": [
        null,
@@ -1147,11 +1142,54 @@
       -128.7544370860925
      ],
      "options": []
+    },
+    "343c5391-TreeLinearFit": {
+     "name": "TreeLinearFit",
+     "inputs": {
+      "in": [
+       "5201536f-TreeFillVec",
+       "out",
+       0.0
+      ],
+      "inMin": [
+       null,
+       null,
+       0.0
+      ],
+      "inMax": [
+       null,
+       null,
+       1.0
+      ],
+      "outMin": [
+       null,
+       null,
+       0.1
+      ],
+      "outMax": [
+       null,
+       null,
+       0.9
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "clamped": false
+     },
+     "uipos": [
+      4077.2238410595965,
+      -109.23443708609254
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 4126.806916134255,
-    "y": -261.3035613802572,
+    "x": 3497.5777770614195,
+    "y": -204.32713753919614,
     "width": 767.9999999999995,
     "height": 390.3999999999994
    }
@@ -9731,11 +9769,6 @@
      "vec3f",
      "emission",
      "0,0,0"
-    ],
-    [
-     "float",
-     "emitrate",
-     "0"
     ],
     [
      "",
