@@ -49,14 +49,26 @@ void to_stream(Os &os, T const &t, std::string_view fms) {
             fms = fms.substr(1);
             os << std::setfill('0');
         }
-        int tmp = 0;
-        while (fms.size() != 0 && '0' <= fms[0] && '9' >= fms[0]) {
-            tmp *= 10;
-            tmp += fms[0] - '0';
-            fms = fms.substr(1);
+        {
+            int tmp = 0;
+            while (fms.size() != 0 && '0' <= fms[0] && '9' >= fms[0]) {
+                tmp *= 10;
+                tmp += fms[0] - '0';
+                fms = fms.substr(1);
+            }
+            if (tmp != 0)
+                os << std::setw(tmp);
         }
-        if (tmp != 0)
-            os << std::setw(tmp);
+        if (fms.size() != 0 && fms[0] == '.') {
+            fms = fms.substr(1);
+            int tmp = 0;
+            while (fms.size() != 0 && '0' <= fms[0] && '9' >= fms[0]) {
+                tmp *= 10;
+                tmp += fms[0] - '0';
+                fms = fms.substr(1);
+            }
+            os << std::setprecision(tmp);
+        }
         if (fms.size() != 0) {
             switch (fms[0]) {
             case 'x': os << std::hex; break;

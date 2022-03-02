@@ -15,6 +15,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 		QString ident = node[ROLE_OBJID].toString();
         ident = graphIdPrefix + ident;
 		QString name = node[ROLE_OBJNAME].toString();
+        //zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
 		const INPUT_SOCKETS& inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
         const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
 		PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
