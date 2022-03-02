@@ -31,7 +31,7 @@
        null
       ],
       "emission": [
-       "8f305ee1-TreeBinaryMath",
+       "5201536f-TreeFillVec",
        "out",
        null
       ],
@@ -48,8 +48,8 @@
      },
      "params": {},
      "uipos": [
-      4141.380905460699,
-      -156.54195646897014
+      4425.109175328249,
+      -178.6342577934734
      ],
      "options": []
     },
@@ -69,7 +69,7 @@
      },
      "params": {},
      "uipos": [
-      4586.838858837835,
+      4802.712203208695,
       -241.6267435381893
      ],
      "options": [
@@ -97,7 +97,7 @@
      },
      "params": {},
      "uipos": [
-      4867.994408546227,
+      5083.867752917087,
       -282.68912188145816
      ],
      "options": [
@@ -125,8 +125,8 @@
      },
      "params": {},
      "uipos": [
-      4571.123039918518,
-      46.76920471292213
+      4786.996384289379,
+      46.769204712922125
      ],
      "options": []
     },
@@ -136,7 +136,7 @@
       "path": [
        null,
        null,
-       "assets/bowl.obj"
+       "assets/cube.obj"
       ],
       "SRC": [
        null,
@@ -1020,7 +1020,7 @@
       "in2": [
        null,
        null,
-       0.25
+       0.25001
       ],
       "op": [
        null,
@@ -1070,7 +1070,7 @@
      "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "0c339a57-TreeTernaryMath",
+       "2cb68afe-TreeReduceVec",
        "out",
        0.0
       ],
@@ -1092,15 +1092,41 @@
      },
      "params": {},
      "uipos": [
-      3682.032806451607,
-      -116.88190322580627
+      3500.2447269814093,
+      -127.99117474898505
      ],
      "options": []
     },
-    "15693942-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "5201536f-TreeFillVec": {
+     "name": "TreeFillVec",
      "inputs": {
-      "vec": [
+      "in": [
+       "8f305ee1-TreeBinaryMath",
+       "out",
+       0.0
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3767.9417218542985,
+      -82.49947019867535
+     ],
+     "options": []
+    },
+    "2cb68afe-TreeReduceVec": {
+     "name": "TreeReduceVec",
+     "inputs": {
+      "in": [
        "65234c2e-TreeUnaryMath",
        "out",
        null
@@ -1111,55 +1137,21 @@
        null
       ]
      },
-     "params": {},
-     "uipos": [
-      3158.264900662247,
-      -133.3112582781455
-     ],
-     "options": []
-    },
-    "0c339a57-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
-     "inputs": {
-      "in1": [
-       "15693942-TreeExtractVec",
-       "x",
-       0.0
-      ],
-      "in2": [
-       "15693942-TreeExtractVec",
-       "y",
-       0.0
-      ],
-      "in3": [
-       "15693942-TreeExtractVec",
-       "z",
-       0.0
-      ],
-      "op": [
-       null,
-       null,
-       "add3"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+     "params": {
+      "op": "sum"
      },
-     "params": {},
      "uipos": [
-      3426.5033112582714,
-      -107.4569536423839
+      3168.703576158936,
+      -128.7544370860925
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3382.439108743882,
-    "y": -242.72415371207921,
-    "width": 959.9999999999994,
-    "height": 487.99999999999926
+    "x": 3091.069056086232,
+    "y": -266.20671665387545,
+    "width": 614.3999999999996,
+    "height": 312.31999999999954
    }
   }
  },
@@ -9671,6 +9663,41 @@
     "tree"
    ]
   },
+  "TreeFillVec": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
   "TreeFinalize": {
    "inputs": [
     [
@@ -9822,112 +9849,7 @@
     "tree"
    ]
   },
-  "TreeMakeFloat": {
-   "inputs": [
-    [
-     "float",
-     "x",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec2f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeVec2": {
-   "inputs": [
-    [
-     "float",
-     "x",
-     "0"
-    ],
-    [
-     "float",
-     "y",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec2f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeVec3": {
-   "inputs": [
-    [
-     "float",
-     "x",
-     "0"
-    ],
-    [
-     "float",
-     "y",
-     "0"
-    ],
-    [
-     "float",
-     "z",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec3f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeVec4": {
+  "TreeMakeVec": {
    "inputs": [
     [
      "float",
@@ -9968,6 +9890,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeReduceVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "in",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum average sum",
+     "op",
+     "average"
+    ]
+   ],
    "categories": [
     "tree"
    ]

@@ -52,4 +52,44 @@ ZENDEFNODE(TreeExtractVec, {
 });
 
 
+struct TreeReduceVec : TreeNode {
+    int tyin{};
+
+    virtual int determineType(EmissionPass *em) override {
+        tyin = em->determineType(get_input("in").get());
+        return 1;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto in = em->determineExpr(get_input("in").get());
+        if (tyin == 1) {
+            return em->emitCode(in);
+        } else {
+            std::string exp = in + ".x";
+            for (int i = 1; i < tyin; i++) {
+                exp += " + " + in + "." + "xyzw"[i];
+            }
+            exp = "float(" + exp + ")";
+            if (get_param<std::string>("op") == "average")
+                exp += " / " + std::to_string(tyin) + ".";
+            em->emitCode(exp);
+        }
+    }
+};
+
+
+ZENDEFNODE(TreeReduceVec, {
+    {
+        {"vec3f", "in"},
+    },
+    {
+        {"float", "out"},
+    },
+    {
+        {"enum average sum", "op", "average"},
+    },
+    {"tree"},
+});
+
+
 }

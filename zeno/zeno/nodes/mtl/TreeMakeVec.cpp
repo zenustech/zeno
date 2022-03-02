@@ -59,4 +59,44 @@ ZENDEFNODE(TreeMakeVec, {
 });
 
 
+struct TreeFillVec : TreeNode {
+    virtual int determineType(EmissionPass *em) override {
+        auto tin = em->determineType(get_input("in").get());
+        if (tin != 1)
+            throw zeno::Exception("TreeFillVec expect scalar as input");
+
+        auto type = get_input2<std::string>("type");
+        if (type == "float")
+            return 1;
+        else if (type == "vec2")
+            return 2;
+        else if (type == "vec3")
+            return 3;
+        else if (type == "vec4")
+            return 4;
+        else
+            throw zeno::Exception("TreeFillVec got bad type: " + type);
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto in = em->determineExpr(get_input("in").get());
+        auto type = get_input2<std::string>("type");
+        em->emitCode(type + "(" + in + ")");
+    }
+};
+
+
+ZENDEFNODE(TreeFillVec, {
+    {
+        {"float", "in", "0"},
+        {"enum float vec2 vec3 vec4", "type", "vec3"},
+    },
+    {
+        {"vec4f", "out"},
+    },
+    {},
+    {"tree"},
+});
+
+
 }
