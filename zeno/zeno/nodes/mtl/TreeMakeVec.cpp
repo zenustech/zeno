@@ -81,7 +81,9 @@ struct TreeFillVec : TreeNode {
     virtual void emitCode(EmissionPass *em) override {
         auto in = em->determineExpr(get_input("in").get());
         auto type = get_input2<std::string>("type");
-        em->emitCode(type + "(" + in + ")");
+        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
+        auto ty = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab) + 1;
+        em->emitCode(em->typeNameOf(ty) + "(" + in + ")");
     }
 };
 

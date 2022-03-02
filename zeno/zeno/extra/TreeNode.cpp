@@ -98,14 +98,14 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
         return std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
-                return "float(" + ftos(value) + ")";
+                return typeNameOf(1) + "(" + ftos(value) + ")";
             } else if constexpr (std::is_same_v<vec2f, T>) {
-                return "vec2(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
+                return typeNameOf(2) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
             } else if constexpr (std::is_same_v<vec3f, T>) {
-                return "vec3(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                return typeNameOf(3) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
                     + ftos(value[2]) + ")";
             } else if constexpr (std::is_same_v<vec4f, T>) {
-                return "vec4(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                return typeNameOf(4) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
                     + ftos(value[2]) + ", " + ftos(value[3]) + ")";
             } else {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());

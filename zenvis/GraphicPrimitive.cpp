@@ -104,6 +104,8 @@ struct GraphicPrimitive : IGraphic {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
         tris_prog = get_tris_program(path, prim->mtl);
+        if (!tris_prog)
+            tris_prog = get_tris_program(path, nullptr);
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
