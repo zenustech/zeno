@@ -305,8 +305,7 @@ ZENDEFNODE(ExtendZSLevelSet,
            });
 
 /// advection
-// process: shrink, extend, advect
-// :
+// process: refit, extend, advect
 struct AdvectZSLevelSet : INode {
   template <typename SplsT, typename VelSplsT>
   int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
@@ -391,6 +390,113 @@ ZENDEFNODE(AdvectZSLevelSet,
            {
                {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
                {"ZSField", "nvoxels"},
+               {},
+               {"Volume"},
+           });
+
+struct ClampZSLevelSet : INode {
+  template <typename SplsT, typename RefSplsT, typename VelSplsT>
+  void clamp(SplsT &ls, const RefSplsT &refLs, const VelSplsT &velLs,
+             const float dt) {
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    /// ls & refLs better be of same category
+    cudaPol(
+        Collapse{ls.numBlocks(), ls.block_size},
+        [ls = proxy<execspace_e::cuda>(ls),
+         refLs = proxy<execspace_e::cuda>(refLs),
+         velLs = proxy<execspace_e::cuda>(velLs),
+         dt] __device__(auto bi, auto ci) mutable {
+          using ls_t = RM_CVREF_T(ls);
+          using ref_ls_t = RM_CVREF_T(refLs);
+          auto coord = ls._table._activeKeys[bi] +
+                       ls_t::grid_view_t::cellid_to_coord(ci);
+          if constexpr (ls_t::category == grid_e::staggered) {
+            for (int d = 0; d != 3; ++d) {
+              auto x = ls.indexToWorld(coord, d);
+              auto vi = velLs.getMaterialVelocity(x);
+              auto xn = x - vi * dt;
+              if constexpr (ref_ls_t::category == grid_e::staggered) {
+                auto pad =
+                    refLs.arena(xn, d, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum("vel", d);
+                auto ma = pad.maximum("vel", d);
+                auto v = ls._grid("vel", d, bi, ci);
+                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              } else {
+                auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum("vel", d);
+                auto ma = pad.maximum("vel", d);
+                auto v = ls._grid("vel", d, bi, ci);
+                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            }
+          } else {
+            auto x = ls.indexToWorld(coord);
+            auto vi = velLs.getMaterialVelocity(x);
+            auto xn = x - vi * dt;
+            if constexpr (ref_ls_t::category == grid_e::staggered) {
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != ls.numChannels(); ++chn) {
+                int f = chn % 3;
+                auto pad =
+                    refLs.arena(xn, f, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum(chn);
+                auto ma = pad.maximum(chn);
+                auto v = ls._grid(chn, bi, ci);
+                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            } else {
+              auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != ls.numChannels(); ++chn) {
+                auto mi = pad.minimum(chn);
+                auto ma = pad.maximum(chn);
+                auto v = ls._grid(chn, bi, ci);
+                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            }
+          }
+        });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ClampZSLevelSet\n");
+
+    using namespace zs;
+
+    // this could possibly be the same staggered velocity field too
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+
+    auto zsreffield = get_input<ZenoLevelSet>("RefZSField");
+    auto &reffield = zsreffield->getBasicLevelSet()._ls;
+
+    auto velZsField = get_input<ZenoLevelSet>("ZSVelField");
+    const auto &velField = velZsField->getBasicLevelSet()._ls;
+    auto dt = get_input2<float>("dt");
+
+    match(
+        [this, dt](auto &lsPtr, auto &refLsPtr, const auto &velLsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
+          clamp(*lsPtr, *refLsPtr, *velLsPtr, dt);
+        },
+        [](...) { throw std::runtime_error("not all fields are spls!"); })(
+        field, reffield, velField);
+
+    fmt::print(fg(fmt::color::cyan), "done executing ClampZSLevelSet\n");
+    set_output("ZSField", std::move(zsfield));
+  }
+};
+
+ZENDEFNODE(ClampZSLevelSet,
+           {
+               {"ZSField", "RefZSField", "ZSVelField", {"float", "dt", "0.1"}},
+               {"ZSField"},
                {},
                {"Volume"},
            });
