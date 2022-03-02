@@ -7,7 +7,7 @@
      "inputs": {
       "basecolor": [
        "c5f2d45e-TreeInvokeFunc",
-       "ret",
+       "out",
        null
       ],
       "metallic": [
@@ -46,7 +46,7 @@
      },
      "uipos": [
       5075.386393070184,
-      -234.2215828842659
+      -232.28251003658377
      ],
      "options": []
     },
@@ -1220,7 +1220,7 @@
       "args": [
        null,
        null,
-       "vec3 arg1, vec3 arg2"
+       "vec3 origClr, vec3 pos"
       ],
       "rettype": [
        null,
@@ -1230,7 +1230,7 @@
       "code": [
        null,
        null,
-       "return arg1 + arg2;"
+       "return vec3(origClr.xy, pos.z);"
       ],
       "SRC": [
        null,
@@ -1280,7 +1280,7 @@
        null
       ],
       "obj1": [
-       "343c5391-TreeLinearFit",
+       "f8c82dbe-TreeInputAttr",
        "out",
        null
       ],
@@ -1314,17 +1314,43 @@
       "doConcat": true
      },
      "uipos": [
-      4499.254966887409,
-      157.9536423841057
+      4498.44701986754,
+      158.76158940397323
+     ],
+     "options": []
+    },
+    "f8c82dbe-TreeInputAttr": {
+     "name": "TreeInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "pos"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4218.29139072847,
+      219.76158940397312
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 4050.45952468226,
-    "y": -191.21067173846797,
-    "width": 1199.9999999999993,
-    "height": 609.9999999999991
+    "x": 4061.498510581221,
+    "y": -216.18648227434448,
+    "width": 959.9999999999994,
+    "height": 487.99999999999926
    }
   }
  },
@@ -10038,7 +10064,7 @@
    "outputs": [
     [
      "tree",
-     "ret",
+     "out",
      ""
     ],
     [

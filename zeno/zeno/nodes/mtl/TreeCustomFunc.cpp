@@ -21,14 +21,14 @@ struct TreeCustomFunc : INode {
         auto args = get_input2<std::string>("args");
         auto rettype = get_input2<std::string>("rettype");
 
-        auto ret = std::make_shared<TreeCustomFuncObject>();
+        auto func = std::make_shared<TreeCustomFuncObject>();
 
         static const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         {
             auto tabid = std::find(std::begin(tab), std::end(tab), rettype) - std::begin(tab);
             if (tabid == std::size(tab))
                 throw zeno::Exception("invalid return type name: " + rettype);
-            ret->retType = tabid;
+            func->retType = tabid + 1;
         }
 
         std::string exp;
@@ -43,15 +43,15 @@ struct TreeCustomFunc : INode {
             auto tabid = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
             if (tabid == std::size(tab))
                 throw zeno::Exception("invalid argument type name: " + type);
-            ret->argTypes.push_back(tabid + 1);
+            func->argTypes.push_back(tabid + 1);
 
             if (!exp.empty())
                 exp += ", ";
             exp += type + " " + name;
         }
-        exp = "(" + exp + ") {\n" + code + "\n}";
+        func->code = "(" + exp + ") {\n" + code + "\n}";
 
-        set_output("func", std::move(ret));
+        set_output("func", std::move(func));
     }
 };
 
@@ -95,6 +95,7 @@ struct TreeInvokeFunc : TreeNode {
         auto args = get_input<ListObject>("args");
         if (func->name.empty()) {
             EmissionPass::CommonFunc comm;
+            comm.rettype = func->retType;
             comm.code = func->code;
             comm.argTypes = func->argTypes;
             func->name = em->addCommonFunc(std::move(comm));

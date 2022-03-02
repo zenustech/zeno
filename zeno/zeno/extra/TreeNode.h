@@ -33,7 +33,7 @@ struct EmissionPass {
     };
 
     struct CommonFunc {
-        int rettype;
+        int rettype{};
         std::string name;
         std::vector<int> argTypes;
         std::string code;

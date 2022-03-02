@@ -66,9 +66,10 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node
 
 ZENO_API std::string EmissionPass::addCommonFunc(EmissionPass::CommonFunc comm) {
     int idx = commons.size();
-    comm.name = "fun" + std::to_string(idx);
-    commons.push_back(comm);
-    return comm.name;
+    if (comm.name.empty())
+        comm.name = "fun" + std::to_string(idx);
+    commons.push_back(std::move(comm));
+    return commons.back().name;
 }
 
 ZENO_API std::string EmissionPass::getCommonCode() const {
