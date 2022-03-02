@@ -161,6 +161,11 @@ void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransa
     m_stack->endMacro();
 }
 
+void SubGraphModel::removeNode(int row, bool enableTransaction)
+{
+	removeNode(m_row2Key[row], enableTransaction);
+}
+
 void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
 {
     Q_ASSERT(m_key2Row.find(nodeid) != m_key2Row.end());
@@ -168,9 +173,12 @@ void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
     removeRows(row, 0);
 }
 
-void SubGraphModel::removeNode(int row, bool enableTransaction)
+bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    removeNode(m_row2Key[row], enableTransaction);
+	beginRemoveRows(parent, row, row);
+	_removeRow(index(row, 0));
+	endRemoveRows();
+	return true;
 }
 
 bool SubGraphModel::_removeRow(const QModelIndex& index)
@@ -213,6 +221,24 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_nodes.remove(id);
     m_pGraphsModel->markDirty();
     return true;
+}
+
+void SubGraphModel::removeNodeByDescName(const QString& descName)
+{
+    QStringList nodes;
+    for (int r = 0; r < rowCount(); r++)
+    {
+        const QModelIndex& idx = index(r, 0);
+        const QString& objName = data(idx, ROLE_OBJNAME).toString();
+        if (objName == descName)
+        {
+            nodes.push_back(data(idx, ROLE_OBJID).toString());
+        }
+    }
+    for (const QString& nodeid : nodes)
+    {
+        removeNode(nodeid);
+    }
 }
 
 QModelIndex SubGraphModel::parent(const QModelIndex& child) const
@@ -497,14 +523,6 @@ bool SubGraphModel::insertRow(int row, const NODE_DATA &nodeData, const QModelIn
     bool ret = _insertRow(row, nodeData);
     endInsertRows();
     return ret;
-}
-
-bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
-{
-    beginRemoveRows(parent, row, row);
-    _removeRow(index(row, 0));
-    endRemoveRows();
-    return true;
 }
 
 void SubGraphModel::onDoubleClicked(const QString& nodename)

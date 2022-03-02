@@ -23,17 +23,20 @@ void GraphsTreeModel::init(IGraphsModel* pModel)
     SubGraphModel* pSubModel = m_model->subGraph("main");
     QStandardItem* pItem = appendSubModel(pSubModel);
     appendRow(pItem);
+
+	connect(m_model, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsTreeModel::on_graphs_rowsAboutToBeRemoved);
 }
 
 QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
 {
-	connect(pModel, &QAbstractItemModel::dataChanged, this, &GraphsTreeModel::on_dataChanged);
-	connect(pModel, &QAbstractItemModel::rowsAboutToBeInserted, this, &GraphsTreeModel::on_rowsAboutToBeInserted);
-	connect(pModel, &QAbstractItemModel::rowsInserted, this, &GraphsTreeModel::on_rowsInserted);
-	connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsTreeModel::on_rowsAboutToBeRemoved);
-	connect(pModel, &QAbstractItemModel::rowsRemoved, this, &GraphsTreeModel::on_rowsRemoved);
+	connect(pModel, &QAbstractItemModel::dataChanged, this, &GraphsTreeModel::on_subg_dataChanged);
+	connect(pModel, &QAbstractItemModel::rowsAboutToBeInserted, this, &GraphsTreeModel::on_subg_rowsAboutToBeInserted);
+	connect(pModel, &QAbstractItemModel::rowsInserted, this, &GraphsTreeModel::on_subg_rowsInserted);
+	connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsTreeModel::on_subg_rowsAboutToBeRemoved);
+	connect(pModel, &QAbstractItemModel::rowsRemoved, this, &GraphsTreeModel::on_subg_rowsRemoved);
 
 	QStandardItem* pItem = new QStandardItem(pModel->name());
+	pItem->setEditable(true);
 	for (int r = 0; r < pModel->rowCount(); r++)
 	{
 		const QModelIndex& idx = pModel->index(r, 0);
@@ -47,6 +50,7 @@ QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
 		else
 		{
 			pSubItem = new QStandardItem(objName);
+			pSubItem->setEditable(false);
 		}
 		pSubItem->setData(objName, ROLE_OBJNAME);
 		pSubItem->setData(objId, ROLE_OBJID);
@@ -54,10 +58,9 @@ QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
 	}
 	pItem->setData(pModel->name(), ROLE_OBJNAME);
 	return pItem;
-	return nullptr;
 }
 
-void GraphsTreeModel::on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+void GraphsTreeModel::on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
 	if (roles[0] == ROLE_OBJNAME)
 	{
@@ -78,11 +81,11 @@ void GraphsTreeModel::on_dataChanged(const QModelIndex& topLeft, const QModelInd
 	}
 }
 
-void GraphsTreeModel::on_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
+void GraphsTreeModel::on_subg_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 {
 }
 
-void GraphsTreeModel::on_rowsInserted(const QModelIndex& parent, int first, int last)
+void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int last)
 {
 	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
 	QModelIndex itemIdx = pModel->index(first, 0, parent);
@@ -112,7 +115,7 @@ void GraphsTreeModel::on_rowsInserted(const QModelIndex& parent, int first, int 
 	pSubgItem->insertRow(first, pSubItem);
 }
 
-void GraphsTreeModel::on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+void GraphsTreeModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
 	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
 	QModelIndex itemIdx = pModel->index(first, 0, parent);
@@ -125,6 +128,19 @@ void GraphsTreeModel::on_rowsAboutToBeRemoved(const QModelIndex& parent, int fir
 	removeRow(first, subgIdx);
 }
 
-void GraphsTreeModel::on_rowsRemoved(const QModelIndex& parent, int first, int last)
+void GraphsTreeModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)
 {
+}
+
+void GraphsTreeModel::on_graphs_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+	QModelIndex subgIdx = m_model->index(first, 0, parent);
+	Q_ASSERT(subgIdx.isValid());
+
+	const QString& subgName = m_model->name(subgIdx);
+	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchRecursive);
+	for (QModelIndex idx : lst)
+	{
+		removeRow(idx.row(), idx.parent());
+	}
 }

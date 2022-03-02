@@ -68,9 +68,11 @@ void ZenoGraphsTabWidget::onModelReset()
 void ZenoGraphsTabWidget::onSubGraphRename(const QString& oldName, const QString& newName)
 {
     int idx = indexOfName(oldName);
-    Q_ASSERT(idx != -1);
-    QTabBar* pTabBar = tabBar();
-    pTabBar->setTabText(idx, newName);
+    if (idx != -1)
+    {
+		QTabBar* pTabBar = tabBar();
+		pTabBar->setTabText(idx, newName);
+    }
 }
 
 int ZenoGraphsTabWidget::indexOfName(const QString& subGraphName)

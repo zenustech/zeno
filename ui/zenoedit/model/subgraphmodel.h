@@ -65,6 +65,7 @@ public:
     void appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
+    void removeNodeByDescName(const QString& descName);
 
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);

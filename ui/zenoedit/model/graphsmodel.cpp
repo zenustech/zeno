@@ -830,7 +830,10 @@ void GraphsModel::removeSubGraph(const QString& name)
         if (m_subGraphs[i].pModel->name() == name)
         {
             removeGraph(i);
-            return;
+        }
+        else
+        {
+            m_subGraphs[i].pModel->removeNodeByDescName(name);
         }
 	}
 }

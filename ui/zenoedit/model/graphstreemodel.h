@@ -16,11 +16,12 @@ public:
 	void init(IGraphsModel* pModel);
 
 public slots:
-	void on_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
-	void on_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
-	void on_rowsInserted(const QModelIndex& parent, int first, int last);
-	void on_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-	void on_rowsRemoved(const QModelIndex& parent, int first, int last);
+	void on_graphs_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+	void on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+	void on_subg_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
+	void on_subg_rowsInserted(const QModelIndex& parent, int first, int last);
+	void on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+	void on_subg_rowsRemoved(const QModelIndex& parent, int first, int last);
 
 private:
 	QStandardItem* appendSubModel(SubGraphModel* pModel);
