@@ -6,6 +6,15 @@
 class GraphsPlainModel;
 class IGraphsModel;
 
+class SubgEditValidator : public QValidator
+{
+    Q_OBJECT
+public:
+    explicit SubgEditValidator(QObject* parent = nullptr);
+    ~SubgEditValidator();
+    State validate(QString&, int&) const override;
+};
+
 class ZSubnetListItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT

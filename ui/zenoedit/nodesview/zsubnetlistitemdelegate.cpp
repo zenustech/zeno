@@ -8,6 +8,28 @@
 #include <zenoui/model/modelrole.h>
 
 
+SubgEditValidator::SubgEditValidator(QObject* parent)
+{
+}
+
+SubgEditValidator::~SubgEditValidator()
+{
+}
+
+QValidator::State SubgEditValidator::validate(QString& input, int& pos) const
+{
+    if (input.isEmpty())
+        return Invalid;
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    const QModelIndex& idx = pModel->index(input);
+    if (idx.isValid())
+        return Invalid;
+
+    return Acceptable;
+}
+
+
 ZSubnetListItemDelegate::ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
@@ -129,7 +151,11 @@ void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    return QStyledItemDelegate::createEditor(parent, option, index);
+    QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(QStyledItemDelegate::createEditor(parent, option, index));
+    Q_ASSERT(pLineEdit);
+    SubgEditValidator* pValidator = new SubgEditValidator;
+    pLineEdit->setValidator(pValidator);
+    return pLineEdit;
 }
 
 void ZSubnetListItemDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
