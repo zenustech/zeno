@@ -8,7 +8,14 @@ namespace zeno {
 
 struct TreeFinalize : INode {
     virtual void apply() override {
-        auto code = EmissionPass{}.finalizeCode({
+        EmissionPass em;
+        auto backend = get_param<std::string>("backend");
+        if (backend == "HLSL")
+            em.backend = em.HLSL;
+        else if (backend == "GLSL")
+            em.backend = em.GLSL;
+
+        auto code = em.finalizeCode({
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -42,7 +49,9 @@ ZENDEFNODE(TreeFinalize, {
     {
         {"string", "code"},
     },
-    {},
+    {
+        {"enum GLSL HLSL", "backend", "GLSL"},
+    },
     {"tree"},
 });
 
