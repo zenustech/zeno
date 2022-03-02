@@ -56,9 +56,17 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
     }
 }
 
-ZENO_API std::string EmissionPass::typeNameOf(int type) {
+ZENO_API int EmissionPass::currentType(TreeNode *node) const {
+    return variables[varmap.at(node)].type;
+}
+
+ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node) const {
+    return typeNameOf(currentType(node)) + "(" + determineExpr(object) + ")";
+}
+
+ZENO_API std::string EmissionPass::typeNameOf(int type) const {
     if (type == 1) return "float";
-    else return "vec" + std::to_string(type);
+    else return (backend == HLSL ? "float" : "vec") + std::to_string(type);
 }
 
 ZENO_API std::string EmissionPass::collectDefs() const {
@@ -114,17 +122,24 @@ ZENO_API void EmissionPass::emitCode(std::string const &line) {
     lines.push_back("tmp" + std::to_string(idx) + " = " + line + ";");
 }
 
-ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::string> const &keys, std::vector<std::shared_ptr<IObject>> const &vals) {
+ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::pair<int, std::string>> const &keys,
+                                                std::vector<std::shared_ptr<IObject>> const &vals) {
     std::vector<int> vartypes;
     vartypes.reserve(keys.size());
     for (int i = 0; i < keys.size(); i++) {
-        vartypes.push_back(determineType(vals[i].get()));
+        int their_type = determineType(vals[i].get());
+        int our_type = keys[i].first;
+        if (their_type != our_type && their_type != 1)
+            throw zeno::Exception("unexpected input for " + keys[i].second + " which requires "
+                                  + typeNameOf(our_type) + " but got " + typeNameOf(their_type));
+        vartypes.push_back(their_type);
     }
     auto code = finalizeCode();
     for (int i = 0; i < keys.size(); i++) {
         auto type = vartypes[i];
         auto expr = determineExpr(vals[i].get());
-        code += typeNameOf(type) + " " + keys[i] + " = " + expr + ";\n";
+        int our_type = keys[i].first;
+        code += typeNameOf(our_type) + " " + keys[i].second + " = " + typeNameOf(our_type) + "(" + expr + ");\n";
     }
     return code;
 }

@@ -9,13 +9,13 @@ namespace zeno {
 struct TreeFinalize : INode {
     virtual void apply() override {
         auto code = EmissionPass{}.finalizeCode({
-            "mat_basecolor",
-            "mat_metallic",
-            "mat_roughness",
-            "mat_specular",
-            "mat_normal",
-            "mat_emission",
-            "mat_emitrate",
+            {3, "mat_basecolor"},
+            {1, "mat_metallic"},
+            {1, "mat_roughness"},
+            {1, "mat_specular"},
+            {3, "mat_normal"},
+            {3, "mat_emission"},
+            {1, "mat_emitrate"},
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),

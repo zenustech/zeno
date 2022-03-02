@@ -25,19 +25,28 @@ struct EmissionPass {
         TreeNode *node;
     };
 
-    std::map<TreeNode *, int> varmap;  // varmap[node] = 40, then the variable of node is "tmp40"
-    std::vector<VarInfo> variables;  // variables[40].type = 3, then the variable type will be "vec3 tmp40;"
-    std::vector<std::string> lines;  // contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"}
+    enum Backend {
+        GLSL = 0,
+        HLSL,  /* DID U KNOW THAT MICROSOFT BUYS GITHUB */
+    };
 
+    Backend backend = GLSL;
 
-    ZENO_API static std::string typeNameOf(int type);
-    ZENO_API std::string finalizeCode(std::vector<std::string> const &keys, std::vector<std::shared_ptr<IObject>> const &vals);
+    std::map<TreeNode *, int> varmap;  /* varmap[node] = 40, then the variable of node is "tmp40" */
+    std::vector<VarInfo> variables;  /* variables[40].type = 3, then the variable type will be "vec3 tmp40;" */
+    std::vector<std::string> lines;  /* contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"} */
+
+    ZENO_API std::string typeNameOf(int type) const;
+    ZENO_API std::string finalizeCode(std::vector<std::pair<int, std::string>> const &keys,
+                                      std::vector<std::shared_ptr<IObject>> const &vals);
     ZENO_API std::string finalizeCode();
 
     ZENO_API std::string determineExpr(IObject *object) const;
+    ZENO_API std::string determineExpr(IObject *object, TreeNode *node) const;
     ZENO_API std::string collectDefs() const;
     ZENO_API std::string collectCode() const;
 
+    ZENO_API int currentType(TreeNode *node) const;
     ZENO_API int determineType(IObject *object);
     ZENO_API void emitCode(std::string const &line);
 };

@@ -45,9 +45,9 @@ struct TreeTernaryMath : TreeNode {
 
     virtual void emitCode(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
-        auto in1 = em->determineExpr(get_input("in1").get());
-        auto in2 = em->determineExpr(get_input("in2").get());
-        auto in3 = em->determineExpr(get_input("in3").get());
+        auto in1 = em->determineExpr(get_input("in1").get(), this);
+        auto in2 = em->determineExpr(get_input("in2").get(), this);
+        auto in3 = em->determineExpr(get_input("in3").get(), this);
 
         if (op == "add3") {
             return em->emitCode(in1 + " + " + in2 + " + " + in3);
