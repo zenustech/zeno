@@ -35,7 +35,7 @@ public:
 	void clear();
 
 private:
-	QMap<QString, ZenoSubGraphView*> m_views;
+	QMap<QString, ZenoSubGraphView*> m_views;	//rename issues.
 };
 
 class ZenoGraphsLayerWidget : public QWidget

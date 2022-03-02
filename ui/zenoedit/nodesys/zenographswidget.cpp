@@ -1,6 +1,6 @@
 #include "zenosubgraphscene.h"
-#include <zenoui/model/graphsmodel.h>
-#include <zenoui/model/subgraphmodel.h>
+#include "model/graphsmodel.h"
+#include "model/subgraphmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "zenosubgraphview.h"
 #include "zenographswidget.h"

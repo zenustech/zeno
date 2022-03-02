@@ -1,5 +1,4 @@
 #include "zenosubgraphscene.h"
-#include <zenoui/model/subgraphmodel.h>
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"

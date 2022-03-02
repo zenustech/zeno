@@ -1,7 +1,8 @@
 #include "graphsmanagment.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "model/graphstreemodel.h"
+#include "model/graphsplainmodel.h"
 #include <zenoio/reader/zsgreader.h>
 #include "acceptor/modelacceptor.h"
 #include <zenoui/util/uihelper.h>
@@ -25,7 +26,6 @@ IGraphsModel* GraphsManagment::currentModel()
 void GraphsManagment::setCurrentModel(IGraphsModel* model)
 {
     m_model = model;
-    initScenes(m_model);
     m_pTreeModel = new GraphsTreeModel(this);
     m_pTreeModel->init(model);
 }
@@ -47,25 +47,6 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     return pModel;
 }
 
-void GraphsManagment::initScenes(IGraphsModel* model)
-{
-    GraphsModel* pModel = qobject_cast<GraphsModel*>(model);
-    if (!pModel)
-        return;
-	for (int row = 0; row < pModel->rowCount(); row++)
-	{
-		SubGraphModel* pSubGraphModel = pModel->subGraph(row);
-		QModelIndex subgIdx = pModel->index(row, 0);
-        const QString& graphName = pSubGraphModel->name();
-        if (m_scenes.find(graphName) != m_scenes.end())
-            continue;
-
-		ZenoSubGraphScene* pScene = new ZenoSubGraphScene(this);
-		pScene->initModel(subgIdx);
-		m_scenes[graphName] = pScene;
-	}
-}
-
 void GraphsManagment::importGraph(const QString& fn)
 {
     if (!m_model)
@@ -78,7 +59,6 @@ void GraphsManagment::importGraph(const QString& fn)
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;
 	}
-    initScenes(m_model);
     m_model->initDescriptors();
 }
 
@@ -115,12 +95,6 @@ void GraphsManagment::clear()
 
         delete m_pTreeModel;
         m_pTreeModel = nullptr;
-
-        for (ZenoSubGraphScene* scene : m_scenes)
-        {
-            delete scene;
-        }
-        m_scenes.clear();
     }
 }
 
@@ -129,9 +103,4 @@ void GraphsManagment::removeCurrent()
     if (m_model) {
         
     }
-}
-
-ZenoSubGraphScene* GraphsManagment::scene(const QString& subGraphName)
-{
-    return m_scenes[subGraphName];
 }

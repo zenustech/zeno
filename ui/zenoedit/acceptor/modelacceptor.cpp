@@ -1,8 +1,9 @@
 #include "modelacceptor.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "../nodesys/nodesmgr.h"
 #include <zeno/utils/logger.h>
+#include "nodesys/zenosubgraphscene.h"
 #include "magic_enum.hpp"
 
 

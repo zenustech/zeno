@@ -1,6 +1,6 @@
 #include "zenosubnettreeview.h"
 #include "subnettreeitemdelegate.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <model/graphstreemodel.h>
 #include <zenoui/include/igraphsmodel.h>
 #include "zenoapplication.h"
@@ -62,11 +62,9 @@ ZenoSubnetTreeView::~ZenoSubnetTreeView()
 {
 }
 
-void ZenoSubnetTreeView::initModel(IGraphsModel* pModel)
+void ZenoSubnetTreeView::initModel(GraphsTreeModel* pTreeModel)
 {
-	GraphsModel* pPlainModel = qobject_cast<GraphsModel*>(pModel);
-	Q_ASSERT(pPlainModel);
-    GraphsTreeModel* pTreeModel = zenoApp->graphsManagment()->treeModel();
+
     setModel(pTreeModel);
 	setSelectionMode(SingleSelection);
 }

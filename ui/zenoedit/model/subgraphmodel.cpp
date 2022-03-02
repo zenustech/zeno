@@ -1,7 +1,7 @@
 #include "graphsmodel.h"
 #include "subgraphmodel.h"
-#include "modelrole.h"
-#include "modeldata.h"
+#include <zenoui/model/modelrole.h>
+#include <zenoui/model/modeldata.h>
 #include <zeno/utils/log.h>
 #include <zenoui/util/uihelper.h>
 

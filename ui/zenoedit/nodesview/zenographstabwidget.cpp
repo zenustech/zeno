@@ -1,7 +1,7 @@
 #include "zenographstabwidget.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include "../nodesys/zenosubgraphview.h"
 #include <comctrl/ziconbutton.h>
 
@@ -20,15 +20,19 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
     int idx = indexOfName(subgraphName);
     if (idx == -1)
     {
+        const QModelIndex& subgIdx = pModel->index(subgraphName);
+		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(subgIdx));
+		Q_ASSERT(pScene);
+
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-        pView->initScene(graphsMgm->scene(subgraphName));
+        pView->initScene(pScene);
         int idx = addTab(pView, subgraphName);
         setCurrentIndex(idx);
         ZIconButton* pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(14, 14), QColor(), QColor());
         tabBar()->setTabButton(idx, QTabBar::RightSide, pCloseBtn);
         connect(pCloseBtn, &ZIconButton::clicked, this, [=]() {
-            this->removeTab(indexOf(pView));
-            });
+            removeTab(indexOf(pView));
+        });
     }
     else
     {
@@ -46,12 +50,12 @@ void ZenoGraphsTabWidget::resetModel(IGraphsModel* pModel)
 
 void ZenoGraphsTabWidget::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
 {
-    QTabBar* pTabBar = tabBar();
     for (int r = first; r <= last; r++)
     {
         QModelIndex subgIdx = m_model->index(r, 0);
         const QString& name = m_model->name(subgIdx);
-        pTabBar->removeTab(indexOfName(name));
+        int idx = indexOfName(name);
+        removeTab(idx);
     }
 }
 

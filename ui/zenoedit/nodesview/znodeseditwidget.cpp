@@ -4,7 +4,7 @@
 #include <nodesys/zenographswidget.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <QMenuBar>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"

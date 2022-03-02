@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class GraphsModel;
+class GraphsPlainModel;
 class IGraphsModel;
 class ZenoSubnetTreeView;
 
@@ -28,35 +29,16 @@ public:
     ~ZenoSubnetListView();
     void initModel(IGraphsModel* pModel);
     QSize sizeHint() const override;
-
-protected:
-    void paintEvent(QPaintEvent* e) override;
-};
-
-class ZenoSubnetListPanel : public QWidget
-{
-    Q_OBJECT
-public:
-    ZenoSubnetListPanel(QWidget* parent = nullptr);
-    void initModel(IGraphsModel* pModel);
-    QSize sizeHint() const override;
-    void setViewWay(bool bListView);
+    void edittingNew();
 
 signals:
-    void clicked(const QModelIndex& index);
+    void graphToBeActivated(const QString&);
 
-private slots:
-    void onNewSubnetBtnClicked();
-    void onModelReset();
+protected slots:
+    void closeEditor(QWidget* editor, QAbstractItemDelegate::EndEditHint hint) override;
 
 protected:
     void paintEvent(QPaintEvent* e) override;
-
-private:
-    ZenoSubnetListView* m_pListView;
-    ZenoSubnetTreeView* m_pTreeView;
-    QLabel* m_pTextLbl;
-    bool m_bListView;
 };
 
 #endif

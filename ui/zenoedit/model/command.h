@@ -2,7 +2,7 @@
 #define __TRANSCATION_COMMAND_H__
 
 #include <QUndoCommand>
-#include "modeldata.h"
+#include <zenoui/model/modeldata.h>
 
 class SubGraphModel;
 class GraphsModel;

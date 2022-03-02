@@ -8,10 +8,16 @@ namespace Ui
 
 class ZenoWelcomePage : public QWidget
 {
+	Q_OBJECT
 public:
 	ZenoWelcomePage(QWidget* parent = nullptr);
 
+signals:
+	void newRequest();
+	void openRequest();
+
 private:
+	void initSignals();
 	Ui::WelcomePage* m_ui;
 };
 

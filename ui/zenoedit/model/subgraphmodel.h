@@ -6,7 +6,7 @@
 #include <QObject>
 #include <memory>
 
-#include "modeldata.h"
+#include <zenoui/model/modeldata.h>
 #include "command.h"
 
 struct PlainNodeItem
@@ -28,7 +28,6 @@ struct PlainNodeItem
 //typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
 
 class GraphsModel;
-class ZenoSubGraphScene;
 
 class SubGraphModel : public QAbstractItemModel
 {

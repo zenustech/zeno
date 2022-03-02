@@ -7,13 +7,15 @@
 #include "zenowelcomepage.h"
 #include "graphsmanagment.h"
 #include "zenosubnettreeview.h"
-#include <zenoui/model/graphsmodel.h>
+#include "model/graphsmodel.h"
 #include <model/graphstreemodel.h>
 #include <zenoui/model/modelrole.h>
+#include "zenomainwindow.h"
+#include "zenosubnetpanel.h"
 
 
-ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
-    : QWidget(parent)
+ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
+    : QWidget(nullptr)
     , m_pSubnetBtn(nullptr)
     , m_pSubnetList(nullptr)
     , m_pTabWidget(nullptr)
@@ -22,6 +24,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     , m_bListView(true)
     , m_pViewBtn(nullptr)
     , m_welcomePage(nullptr)
+    , m_mainWin(pMainWin)
 {
     QHBoxLayout* pLayout = new QHBoxLayout;
 
@@ -63,7 +66,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
 
     QVBoxLayout* pLayout2 = new QVBoxLayout;
 
-    m_pSubnetList = new ZenoSubnetListPanel();
+    m_pSubnetList = new ZenoSubnetPanel();
     m_pSubnetList->hide();
     pLayout->addWidget(m_pSubnetList);
 
@@ -74,6 +77,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     pLayout->addWidget(m_pLayerWidget);
 
     connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
+    connect(m_pSubnetList, SIGNAL(graphToBeActivated(const QString&)), m_pTabWidget, SLOT(activate(const QString&)));
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
     connect(m_pViewBtn, SIGNAL(clicked()), this, SLOT(onViewBtnClicked()));
 
@@ -93,10 +97,18 @@ ZenoGraphsEditor::ZenoGraphsEditor(QWidget* parent)
     m_pLayerWidget->setVisible(false);
     m_pSubnetBtn->setVisible(false);
     m_pViewBtn->setVisible(false);
+
+    connect(m_welcomePage, SIGNAL(newRequest()), this, SLOT(onNewFile()));
+    connect(m_welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()
 {
+}
+
+void ZenoGraphsEditor::onNewFile()
+{
+    
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)
@@ -173,6 +185,25 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 		connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     }
 	m_welcomePage->setVisible(false);
+    connect(pModel, &QAbstractItemModel::rowsInserted, this, &ZenoGraphsEditor::onGraphsItemInserted);
+    connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoGraphsEditor::onGraphsItemAboutToBeRemoved);
+}
+
+void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first, int last)
+{
+    /*
+	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    const QModelIndex& idx = pModel->index(first, 0, parent);
+    if (m_bListView)
+    {
+		const QString& subgraphName = idx.data(ROLE_OBJNAME).toString();
+		m_pTabWidget->activate(subgraphName);
+    }
+    */
+}
+
+void ZenoGraphsEditor::onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
 }
 
 void ZenoGraphsEditor::onCurrentModelClear()
