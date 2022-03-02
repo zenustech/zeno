@@ -20,11 +20,6 @@ struct TreeNode : INode {
 };
 
 struct EmissionPass {
-    struct VarInfo {
-        int type;
-        TreeNode *node;
-    };
-
     enum Backend {
         GLSL = 0,
         HLSL,  /* DID U KNOW THAT MICROSOFT BUYS GITHUB */
@@ -32,14 +27,29 @@ struct EmissionPass {
 
     Backend backend = GLSL;
 
+    struct VarInfo {
+        int type;
+        TreeNode *node;
+    };
+
+    struct CommonFunc {
+        int rettype;
+        std::vector<int> argTypes;
+        std::string code;
+    };
+
     std::map<TreeNode *, int> varmap;  /* varmap[node] = 40, then the variable of node is "tmp40" */
     std::vector<VarInfo> variables;  /* variables[40].type = 3, then the variable type will be "vec3 tmp40;" */
     std::vector<std::string> lines;  /* contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"} */
+    std::vector<CommonFunc> commons;  /* definition of common functions, including custom functions and pre-defined functions */
 
     ZENO_API std::string typeNameOf(int type) const;
     ZENO_API std::string finalizeCode(std::vector<std::pair<int, std::string>> const &keys,
                                       std::vector<std::shared_ptr<IObject>> const &vals);
     ZENO_API std::string finalizeCode();
+
+    ZENO_API std::string addCommonFunc(CommonFunc const &func);
+    ZENO_API std::string getCommonCode() const;
 
     ZENO_API std::string determineExpr(IObject *object) const;
     ZENO_API std::string determineExpr(IObject *object, TreeNode *node) const;
