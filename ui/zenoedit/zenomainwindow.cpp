@@ -57,7 +57,8 @@ void ZenoMainWindow::initMenu()
     {
         QAction* pAction = new QAction(tr("New"), pFile);
         QMenu* pNewMenu = new QMenu;
-        QAction* pNewGraph = pNewMenu->addAction("New Graph");
+        QAction* pNewGraph = pNewMenu->addAction("New Scene");
+        connect(pNewGraph, SIGNAL(triggered()), this, SLOT(onNewFile()));
 
         pAction->setMenu(pNewMenu);
 
@@ -323,6 +324,12 @@ void ZenoMainWindow::openFileDialog()
     openFile(filePath);
 }
 
+void ZenoMainWindow::onNewFile()
+{
+    saveQuit();
+    zenoApp->graphsManagment()->newFile();
+}
+
 void ZenoMainWindow::importGraph()
 {
 	QString filePath = getOpenFileByDialog();
@@ -341,16 +348,6 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    pGraphs->setCurrentModel(pModel);
-
-    for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
-    {
-        ZenoDockWidget* pDock = it.value();
-        if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDock->widget()))
-        {
-            pEditor->resetModel(pModel);
-        }
-    }
     currFilePath = filePath;
     return true;
 }

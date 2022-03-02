@@ -521,8 +521,10 @@ QString GraphsModel::filePath() const
 QString GraphsModel::fileName() const
 {
     QFileInfo fi(m_filePath);
-    Q_ASSERT(fi.isFile());
-    return fi.fileName();
+    QString fn;
+    if (fi.isFile())
+        fn = fi.fileName();
+    return fn;
 }
 
 void GraphsModel::onCurrentIndexChanged(int row)

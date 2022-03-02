@@ -70,7 +70,10 @@ void ZenoSubnetPanel::initModel(IGraphsModel* pModel)
 	GraphsTreeModel* pTreeModel = zenoApp->graphsManagment()->treeModel();
 	m_pListView->initModel(pModel);
 	m_pTreeView->initModel(pTreeModel);
-	m_pTextLbl->setText(pModel->fileName());
+	QString fn = pModel->fileName();
+	if (fn.isEmpty())
+		fn = "newFile";
+	m_pTextLbl->setText(fn);
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 }
 

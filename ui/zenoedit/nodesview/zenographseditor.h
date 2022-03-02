@@ -19,9 +19,9 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
-    void resetModel(IGraphsModel* pModel);
 
 public slots:
+    void resetModel(IGraphsModel* pModel);
     void onCurrentModelClear();
     void onItemActivated(const QModelIndex& index);
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
@@ -31,7 +31,6 @@ public slots:
 private slots:
     void onSubnetBtnClicked();
     void onViewBtnClicked();
-    void onNewFile();
 
 private:
     QWidget* m_pSideBar;

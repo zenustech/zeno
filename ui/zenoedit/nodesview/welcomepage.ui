@@ -152,7 +152,7 @@
            <property name="styleSheet">
             <string notr="true">QLabel
 {
-	font: 28px &quot;HarmonyOS Sans&quot;;
+	font: 36px &quot;HarmonyOS Sans&quot;;
 	color: rgb(255, 255, 255);
 }</string>
            </property>

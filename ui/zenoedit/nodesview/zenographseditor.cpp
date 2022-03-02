@@ -98,17 +98,15 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     m_pSubnetBtn->setVisible(false);
     m_pViewBtn->setVisible(false);
 
-    connect(m_welcomePage, SIGNAL(newRequest()), this, SLOT(onNewFile()));
+    connect(m_welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
     connect(m_welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
+
+    auto graphsMgr = zenoApp->graphsManagment();
+    connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()
 {
-}
-
-void ZenoGraphsEditor::onNewFile()
-{
-    
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)

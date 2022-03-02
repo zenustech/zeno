@@ -28,6 +28,7 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     m_model = model;
     m_pTreeModel = new GraphsTreeModel(this);
     m_pTreeModel->init(model);
+    emit modelInited(m_model);
 }
 
 GraphsTreeModel* GraphsManagment::treeModel()
@@ -44,6 +45,18 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 
     pModel->clearDirty();
     pModel->initDescriptors();
+    setCurrentModel(pModel);
+    emit modelInited(pModel);
+    return pModel;
+}
+
+IGraphsModel* GraphsManagment::newFile()
+{
+    GraphsModel* pModel = new GraphsModel(this);
+    SubGraphModel* pSubModel = new SubGraphModel(pModel);
+    pSubModel->setName("main");
+    pModel->appendSubGraph(pSubModel);
+    setCurrentModel(pModel);
     return pModel;
 }
 
