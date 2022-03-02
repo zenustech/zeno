@@ -162,27 +162,28 @@ void ZenoGraphsEditor::onItemActivated(const QModelIndex& index)
 
 void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 {
+    if (!pModel)
+        return;
+
     m_pSideBar->show();
     m_pSubnetBtn->show();
     m_pViewBtn->show();
-    if (pModel)
-    {
-		m_pSubnetPanel->initModel(pModel);
-		if (m_bListView)
-		{
-			m_pTabWidget->resetModel(pModel);
-            m_pTabWidget->show();
-		}
-		else
-		{
-			m_pLayerWidget->show();
-		}
+    m_welcomePage->setVisible(false);
 
-		m_pSubnetBtn->setChecked(true);
-		m_pSubnetPanel->show();
-		connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
-    }
-	m_welcomePage->setVisible(false);
+	m_pSubnetPanel->initModel(pModel);
+	if (m_bListView)
+	{
+		m_pTabWidget->resetModel(pModel);
+        m_pTabWidget->show();
+	}
+	else
+	{
+		m_pLayerWidget->show();
+	}
+
+	m_pSubnetBtn->setChecked(true);
+	m_pSubnetPanel->show();
+	connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     connect(pModel, &QAbstractItemModel::rowsInserted, this, &ZenoGraphsEditor::onGraphsItemInserted);
     connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoGraphsEditor::onGraphsItemAboutToBeRemoved);
 }
