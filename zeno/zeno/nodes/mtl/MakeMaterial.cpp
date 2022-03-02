@@ -12,6 +12,7 @@ namespace zeno
     {
       auto vert = get_input<zeno::StringObject>("vert")->get();
       auto frag = get_input<zeno::StringObject>("frag")->get();
+      auto common = get_input<zeno::StringObject>("common")->get();
       auto mtl = std::make_shared<zeno::MaterialObject>();
 
       if (vert.empty()) vert = R"(
@@ -66,6 +67,7 @@ void main()
 
       mtl->vert = vert;
       mtl->frag = frag;
+      mtl->common = common;
       set_output("mtl", std::move(mtl));
     }
   };
@@ -76,6 +78,7 @@ void main()
           {
               {"string", "vert", ""},
               {"string", "frag", ""},
+              {"string", "common", ""},
           },
           {
               {"material", "mtl"},

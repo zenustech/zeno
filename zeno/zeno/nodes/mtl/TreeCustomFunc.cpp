@@ -93,7 +93,7 @@ struct TreeCallFunc : TreeNode {
             EmissionPass::CommonFunc comm;
             comm.code = func->code;
             comm.argTypes = func->argTypes;
-            func->name = em->addCommonFunc(comm);
+            func->name = em->addCommonFunc(std::move(comm));
         }
         std::string exp;
         for (auto const &arg: args->get<std::shared_ptr<IObject>>()) {

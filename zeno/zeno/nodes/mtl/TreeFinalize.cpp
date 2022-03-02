@@ -30,7 +30,9 @@ struct TreeFinalize : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
         });
-        set_output2("code", code);
+        auto commonCode = em.getCommonCode();
+        set_output2("code", std::move(code));
+        set_output2("commonCode", std::move(commonCode));
     }
 };
 
@@ -45,6 +47,7 @@ ZENDEFNODE(TreeFinalize, {
     },
     {
         {"string", "code"},
+        {"string", "commonCode"},
     },
     {
         {"enum GLSL HLSL", "backend", "GLSL"},

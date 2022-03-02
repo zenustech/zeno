@@ -13,6 +13,7 @@ namespace zeno
     {
         std::string vert;
         std::string frag;
+        std::string common;
 
         std::vector<char> serialize()
         {
@@ -22,7 +23,8 @@ namespace zeno
 
             auto vertLen{vert.size()};
             auto fragLen{frag.size()};
-            str.resize(vertLen + sizeof(vertLen) + fragLen + sizeof(fragLen));
+            auto commonLen{common.size()};
+            str.resize(vertLen + sizeof(vertLen) + fragLen + sizeof(fragLen) + commonLen + sizeof(commonLen));
 
             memcpy(str.data() + i, &vertLen, sizeof(vertLen));
             i += sizeof(vertLen);
@@ -35,6 +37,12 @@ namespace zeno
 
             frag.copy(str.data() + i, fragLen);
             i += fragLen;
+
+            memcpy(str.data() + i, &commonLen, sizeof(commonLen));
+            i += sizeof(commonLen);
+
+            common.copy(str.data() + i, commonLen);
+            i += commonLen;
 
             return str;
         }
@@ -58,6 +66,13 @@ namespace zeno
 
             mtl.frag = std::string{str.data() + i, fragLen};
             i += fragLen;
+
+            size_t commonLen;
+            memcpy(&commonLen, str.data() + i, sizeof(commonLen));
+            i += sizeof(commonLen);
+
+            mtl.common = std::string{str.data() + i, commonLen};
+            i += commonLen;
 
             return mtl;
         }

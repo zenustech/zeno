@@ -34,6 +34,7 @@ struct EmissionPass {
 
     struct CommonFunc {
         int rettype;
+        std::string name;
         std::vector<int> argTypes;
         std::string code;
     };
@@ -48,7 +49,7 @@ struct EmissionPass {
                                       std::vector<std::shared_ptr<IObject>> const &vals);
     ZENO_API std::string finalizeCode();
 
-    ZENO_API std::string addCommonFunc(CommonFunc const &func);
+    ZENO_API std::string addCommonFunc(CommonFunc func);
     ZENO_API std::string getCommonCode() const;
 
     ZENO_API std::string determineExpr(IObject *object) const;

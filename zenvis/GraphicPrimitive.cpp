@@ -429,7 +429,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
     return color;
 }
-)" :
+)" : "\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"
 R"(
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;

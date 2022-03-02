@@ -114,6 +114,11 @@
        "code",
        ""
       ],
+      "common": [
+       "7f798009-TreeFinalize",
+       "commonCode",
+       ""
+      ],
       "SRC": [
        null,
        null,
@@ -1188,10 +1193,10 @@
     }
    },
    "view_rect": {
-    "x": 3497.5777770614195,
-    "y": -204.32713753919614,
-    "width": 767.9999999999995,
-    "height": 390.3999999999994
+    "x": 3603.53381073075,
+    "y": -299.36123980478925,
+    "width": 959.9999999999994,
+    "height": 487.99999999999926
    }
   }
  },
@@ -3965,6 +3970,11 @@
     [
      "string",
      "frag",
+     ""
+    ],
+    [
+     "string",
+     "common",
      ""
     ],
     [
@@ -9658,6 +9668,41 @@
     "tree"
    ]
   },
+  "TreeCallFunc": {
+   "inputs": [
+    [
+     "TreeCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "list",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "tree",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
   "TreeExtractVec": {
    "inputs": [
     [
@@ -9783,6 +9828,11 @@
      ""
     ],
     [
+     "string",
+     "commonCode",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -9886,6 +9936,46 @@
      "0"
     ]
    ],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeMakeFunc": {
+   "inputs": [
+    [
+     "string",
+     "args",
+     "vec3 arg1, vec3 arg2"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "rettype",
+     "vec3"
+    ],
+    [
+     "multiline_string",
+     "code",
+     "return arg1 + arg2;"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "TreeCustomFuncObject",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "tree"
    ]
