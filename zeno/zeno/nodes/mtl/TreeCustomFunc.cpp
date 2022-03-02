@@ -7,7 +7,7 @@
 namespace zeno {
 
 
-struct TreeCustomFuncObject : INode {
+struct TreeCustomFuncObject : IObjectClone<TreeCustomFuncObject> {
     std::string name;
     std::string code;
     std::vector<int> argTypes;
