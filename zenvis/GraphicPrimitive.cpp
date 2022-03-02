@@ -396,14 +396,14 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
   vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
 
   float k = (roughness + 1.) * (roughness + 1.) / 8.;
-  float vdf = 0.25 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
+  float vdf = 0.5 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
 
   float alpha2 = max(0., roughness * roughness);
   float denom = 1. - NoH * NoH * (1. - alpha2);
   float ndf = alpha2 / (denom * denom);
 
   vec3 brdf = fdf * vdf * ndf * f0 + (1. - f0) * albedo;
-  return brdf * NoV;
+  return brdf * NoL;
 }
 
 )" + (
@@ -431,7 +431,7 @@ R"(
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
-    vec3 att_nrm = iNormal;
+    vec3 att_nrm = normal;
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
@@ -483,6 +483,7 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
+  normal = faceforward(normal, -viewdir, normal);
 
   vec3 albedo = iColor;
   vec3 color = studioShading(albedo, viewdir, normal);
