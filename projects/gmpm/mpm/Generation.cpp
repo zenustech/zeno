@@ -84,38 +84,62 @@ struct ZSPoissonDiskSample : INode {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
     auto prim = std::make_shared<PrimitiveObject>();
+    std::vector<std::array<float, 3>> sampled;
 
     auto zsfield = get_input<ZenoLevelSet>("ZSLevelSet");
-    auto &field = zsfield->getBasicLevelSet()._ls;
+    auto dx = get_input2<float>("dx");
+    auto ppc = get_input2<float>("ppc");
 
-    match(
-        [&prim, this](auto &lsPtr)
-            -> std::enable_if_t<
-                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
-          const auto &ls = *lsPtr;
-          const auto &spls = ls.memspace() == memsrc_e::host
-                                 ? ls.clone({memsrc_e::host, -1})
-                                 : ls;
+    match([&prim, &sampled, dx, ppc, this](auto &ls) {
+      using LsT = RM_CVREF_T(ls);
+      if constexpr (is_same_v<LsT, typename ZenoLevelSet::basic_ls_t>) {
+        auto &field = ls._ls;
+        match(
+            [&sampled = sampled, dx = dx, ppc = ppc](auto &lsPtr)
+                -> std::enable_if_t<
+                    is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              const auto &ls = *lsPtr;
+              const auto &spls = ls.memspace() == memsrc_e::host
+                                     ? ls.clone({memsrc_e::host, -1})
+                                     : ls;
+              sampled = zs::sample_from_levelset(
+                  zs::proxy<zs::execspace_e::openmp>(spls), dx, ppc);
+            },
+            [](auto &lsPtr)
+                -> std::enable_if_t<
+                    !is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              throw std::runtime_error(
+                  fmt::format("levelset type [{}] not supported in sampling.",
+                              zs::get_var_type_str(lsPtr)));
+            })(field);
+      } else if constexpr (is_same_v<
+                               LsT,
+                               typename ZenoLevelSet::const_sdf_vel_ls_t>) {
+        match([&sampled = sampled, dx = dx, ppc = ppc](auto lsv) {
+          sampled = zs::sample_from_levelset(SdfVelFieldView{lsv}, dx, ppc);
+        })(ls.template getView<execspace_e::openmp>());
+      } else if constexpr (is_same_v<
+                               LsT,
+                               typename ZenoLevelSet::const_transition_ls_t>) {
+        match([&sampled = sampled, dx = dx, ppc = ppc](auto fieldPair) {
+          sampled = zs::sample_from_levelset(TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)}, SdfVelFieldView{get<1>(fieldPair)}}, dx, ppc);
+        })(ls.template getView<execspace_e::openmp>());
+      } else {
+        throw std::runtime_error("unknown levelset type...");
+      }
+    })(zsfield->levelset);
 
-          auto dx = get_input2<float>("dx");
+    prim->resize(sampled.size());
+    auto &pos = prim->attr<vec3f>("pos");
+    auto &vel = prim->add_attr<vec3f>("vel");
 
-          auto sampled =
-              zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls),
-                                       dx, get_input2<float>("ppc"));
-
-          prim->resize(sampled.size());
-          auto &pos = prim->attr<vec3f>("pos");
-          auto &vel = prim->add_attr<vec3f>("vel");
-
-          /// compute default normal
-          auto ompExec = zs::omp_exec();
-          ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
-            pos[pi] = sampled[pi];
-            vel[pi] = vec3f{0, 0, 0};
-            // nrm[pi] = calcNormal(pos[pi]);
-          });
-        },
-        [](...) {})(field);
+    /// compute default normal
+    auto ompExec = zs::omp_exec();
+    ompExec(zs::range(sampled.size()), [&sampled, &pos, &vel](size_t pi) {
+      pos[pi] = sampled[pi];
+      vel[pi] = vec3f{0, 0, 0};
+      // nrm[pi] = calcNormal(pos[pi]);
+    });
 
     fmt::print(fg(fmt::color::cyan), "done executing ZSPoissonDiskSample\n");
     set_output("prim", std::move(prim));
