@@ -52,7 +52,7 @@ struct TreeMakeVec2 : TreeNode {
 };
 
 
-ZENDEFNODE(TreeMakeVec4, {
+ZENDEFNODE(TreeMakeVec2, {
     {
         {"float", "x", "0"},
         {"float", "y", "0"},
