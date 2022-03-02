@@ -6,8 +6,8 @@
      "name": "TreeFinalize",
      "inputs": {
       "basecolor": [
-       "343c5391-TreeLinearFit",
-       "out",
+       "c5f2d45e-TreeInvokeFunc",
+       "ret",
        null
       ],
       "metallic": [
@@ -45,8 +45,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      4425.109175328249,
-      -177.34154256168534
+      5075.386393070184,
+      -234.2215828842659
      ],
      "options": []
     },
@@ -66,8 +66,8 @@
      },
      "params": {},
      "uipos": [
-      4802.712203208695,
-      -241.6267435381893
+      5425.519222275135,
+      -298.5067838607698
      ],
      "options": [
       "VIEW"
@@ -94,8 +94,8 @@
      },
      "params": {},
      "uipos": [
-      5083.867752917087,
-      -282.68912188145816
+      5734.144970659022,
+      -339.5691622040387
      ],
      "options": [
       "VIEW"
@@ -127,8 +127,8 @@
      },
      "params": {},
      "uipos": [
-      4786.996384289379,
-      46.769204712922125
+      5437.273602031314,
+      -10.110835609658437
      ],
      "options": []
     },
@@ -1190,13 +1190,141 @@
       -109.23443708609254
      ],
      "options": []
+    },
+    "0e0316ea-PrintString": {
+     "name": "PrintString",
+     "inputs": {
+      "str": [
+       "7f798009-TreeFinalize",
+       "commonCode",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5435.747416417423,
+      -164.3369939649645
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "a4e6255b-TreeCustomFunc": {
+     "name": "TreeCustomFunc",
+     "inputs": {
+      "args": [
+       null,
+       null,
+       "vec3 arg1, vec3 arg2"
+      ],
+      "rettype": [
+       null,
+       null,
+       "vec3"
+      ],
+      "code": [
+       null,
+       null,
+       "return arg1 + arg2;"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4476.489886776323,
+      -196.7784971694079
+     ],
+     "options": []
+    },
+    "c5f2d45e-TreeInvokeFunc": {
+     "name": "TreeInvokeFunc",
+     "inputs": {
+      "func": [
+       "a4e6255b-TreeCustomFunc",
+       "func",
+       null
+      ],
+      "args": [
+       "df268f0d-MakeSmallList",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4787.894039735093,
+      -84.43046357615879
+     ],
+     "options": []
+    },
+    "df268f0d-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "343c5391-TreeLinearFit",
+       "out",
+       null
+      ],
+      "obj1": [
+       "343c5391-TreeLinearFit",
+       "out",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": true
+     },
+     "uipos": [
+      4499.254966887409,
+      157.9536423841057
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 3603.53381073075,
-    "y": -299.36123980478925,
-    "width": 959.9999999999994,
-    "height": 487.99999999999926
+    "x": 4050.45952468226,
+    "y": -191.21067173846797,
+    "width": 1199.9999999999993,
+    "height": 609.9999999999991
    }
   }
  },
@@ -9668,17 +9796,22 @@
     "tree"
    ]
   },
-  "TreeCallFunc": {
+  "TreeCustomFunc": {
    "inputs": [
     [
-     "TreeCustomFuncObject",
-     "func",
-     ""
+     "string",
+     "args",
+     "vec3 arg1, vec3 arg2"
     ],
     [
-     "list",
-     "args",
-     ""
+     "enum float vec2 vec3 vec4",
+     "rettype",
+     "vec3"
+    ],
+    [
+     "multiline_string",
+     "code",
+     "return arg1 + arg2;"
     ],
     [
      "",
@@ -9688,8 +9821,8 @@
    ],
    "outputs": [
     [
-     "tree",
-     "ret",
+     "TreeCustomFuncObject",
+     "func",
      ""
     ],
     [
@@ -9884,6 +10017,41 @@
     "tree"
    ]
   },
+  "TreeInvokeFunc": {
+   "inputs": [
+    [
+     "TreeCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "list",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "tree",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
   "TreeLinearFit": {
    "inputs": [
     [
@@ -9936,46 +10104,6 @@
      "0"
     ]
    ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeFunc": {
-   "inputs": [
-    [
-     "string",
-     "args",
-     "vec3 arg1, vec3 arg2"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "rettype",
-     "vec3"
-    ],
-    [
-     "multiline_string",
-     "code",
-     "return arg1 + arg2;"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "TreeCustomFuncObject",
-     "ret",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
    "categories": [
     "tree"
    ]

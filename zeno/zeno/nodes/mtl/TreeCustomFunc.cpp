@@ -15,7 +15,7 @@ struct TreeCustomFuncObject : IObjectClone<TreeCustomFuncObject> {
 };
 
 
-struct TreeMakeFunc : INode {
+struct TreeCustomFunc : INode {
     virtual void apply() override {
         auto code = get_input2<std::string>("code");
         auto args = get_input2<std::string>("args");
@@ -34,9 +34,11 @@ struct TreeMakeFunc : INode {
         std::string exp;
         auto arglist = zeno::split_str(args, ',');
         for (auto const &argi: arglist) {
-            auto argj = zeno::split_str(argi);
-            auto type = zeno::trim_string(argj.at(0));
-            auto name = zeno::trim_string(argj.at(1));
+            auto argj = zeno::split_str(zeno::trim_string(argi), ' ');
+            if (argj.size() != 2)
+                throw zeno::Exception("argument list syntax wrong: " + argi);
+            auto type = zeno::trim_string(argj[0]);
+            auto name = zeno::trim_string(argj[1]);
 
             auto tabid = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
             if (tabid == std::size(tab))
@@ -48,25 +50,27 @@ struct TreeMakeFunc : INode {
             exp += type + " " + name;
         }
         exp = "(" + exp + ") {\n" + code + "\n}";
+
+        set_output("func", std::move(ret));
     }
 };
 
 
-ZENDEFNODE(TreeMakeFunc, {
+ZENDEFNODE(TreeCustomFunc, {
     {
         {"string", "args", "vec3 arg1, vec3 arg2"},
         {"enum float vec2 vec3 vec4", "rettype", "vec3"},
         {"multiline_string", "code", "return arg1 + arg2;"},
     },
     {
-        {"TreeCustomFuncObject", "ret"},
+        {"TreeCustomFuncObject", "func"},
     },
     {},
     {"tree"},
 });
 
 
-struct TreeCallFunc : TreeNode {
+struct TreeInvokeFunc : TreeNode {
     virtual int determineType(EmissionPass *em) override {
         auto func = get_input<TreeCustomFuncObject>("func");
         auto args = get_input<ListObject>("args");
@@ -108,13 +112,13 @@ struct TreeCallFunc : TreeNode {
 };
 
 
-ZENDEFNODE(TreeCallFunc, {
+ZENDEFNODE(TreeInvokeFunc, {
     {
         {"TreeCustomFuncObject", "func"},
         {"list", "args"},
     },
     {
-        {"tree", "ret"},
+        {"tree", "out"},
     },
     {},
     {"tree"},
