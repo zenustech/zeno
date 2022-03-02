@@ -5,12 +5,13 @@
 
 namespace zeno {
 
+
 static const char /* see https://docs.gl/sl4/trunc */
     unops[] = "copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees"
               " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
               " ceil trunc sign step length normalize",
     binops[] = "add sub mul div mod pow atan2 min max dot cross distance",
-    ternops[] = "mix clamp smoothstep";
+    ternops[] = "mix clamp smoothstep add3";
 
 
 struct TreeTernaryMath : TreeNode {
@@ -48,7 +49,11 @@ struct TreeTernaryMath : TreeNode {
         auto in2 = em->determineExpr(get_input("in2").get());
         auto in3 = em->determineExpr(get_input("in3").get());
 
-        em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+        if (op == "add3") {
+            return em->emitCode(in1 + " + " + in2 + " + " + in3);
+        } else {
+            return em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+        }
     }
 };
 
@@ -65,6 +70,7 @@ ZENDEFNODE(TreeTernaryMath, {
     {},
     {"tree"},
 });
+
 
 struct TreeBinaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
@@ -143,6 +149,7 @@ ZENDEFNODE(TreeBinaryMath, {
     {"tree"},
 });
 
+
 struct TreeUnaryMath : TreeNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
@@ -178,24 +185,5 @@ ZENDEFNODE(TreeUnaryMath, {
     {"tree"},
 });
 
-struct TreeFinalize : INode {
-    virtual void apply() override {
-        auto in = get_input("in");
-        EmissionPass em;
-        auto info = em.finalizeOutput(in.get());
-        set_output2("code", info.code);
-    }
-};
-
-ZENDEFNODE(TreeFinalize, {
-    {
-        {"tree", "in"},
-    },
-    {
-        {"string", "code"},
-    },
-    {},
-    {"tree"},
-});
 
 }

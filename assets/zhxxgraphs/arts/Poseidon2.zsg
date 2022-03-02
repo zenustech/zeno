@@ -21,9 +21,7 @@
       781.9340391828939,
       3694.94092219019
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "7e7c7caf-MakeSmokeEmitter": {
      "name": "MakeSmokeEmitter",
@@ -212,8 +210,8 @@
      },
      "params": {},
      "uipos": [
-      2929.62552597093,
-      3603.7248159133796
+      2962.468864786719,
+      3576.9635768782914
      ],
      "options": []
     },
@@ -236,9 +234,7 @@
       2045.908403175455,
       3588.456341668572
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "0215fed0-NumericVec3": {
      "name": "NumericVec3",
@@ -294,9 +290,7 @@
       2238.1048905990583,
       4401.77031994061
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "be8b19ec-FLIPMakeAbsorber": {
      "name": "FLIPMakeAbsorber",
@@ -322,9 +316,7 @@
       2246.4071881869395,
       4608.555419510543
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "a1cdbff8-FLIPMakeCollider": {
      "name": "FLIPMakeCollider",
@@ -365,9 +357,7 @@
       2281.065684713526,
       4320.249961591776
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "7c9895f9-ExtractDict": {
      "name": "ExtractDict",
@@ -541,6 +531,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -552,6 +547,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -608,6 +613,11 @@
        null,
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -621,6 +631,16 @@
       "scaling": [
        "3671ba14-NumericVec3",
        "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -667,6 +687,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -678,6 +703,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -914,6 +949,11 @@
        null,
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -927,6 +967,16 @@
       "scaling": [
        "3671ba14-NumericVec3",
        "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -1208,6 +1258,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -1219,6 +1274,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -1469,6 +1534,11 @@
        null,
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -1482,6 +1552,16 @@
       "scaling": [
        "3671ba14-NumericVec3",
        "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -1566,6 +1646,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -1577,6 +1662,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -1988,6 +2083,11 @@
        null,
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -2001,6 +2101,16 @@
       "scaling": [
        "3671ba14-NumericVec3",
        "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -2029,6 +2139,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -2040,6 +2155,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -2583,6 +2708,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -2594,6 +2724,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -2624,6 +2764,11 @@
        "vec3",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        null,
        null,
@@ -2635,6 +2780,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -3601,9 +3756,7 @@
       5672.188174807188,
       4435.4375321336665
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "ed0a68fa-SampleVDBToPrimitive": {
      "name": "SampleVDBToPrimitive",
@@ -3852,9 +4005,7 @@
       1349.985604113109,
       3928.6910025706884
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "4e0a4e40-Curvemap": {
      "name": "Curvemap",
@@ -3903,9 +4054,7 @@
       1184.1967712082248,
       3487.058591259635
      ],
-     "options": [
-      "ONCE"
-     ],
+     "options": [],
      "points": [
       [
        0,
@@ -4158,16 +4307,2031 @@
       4021.0457583547495,
       4619.343958868887
      ],
+     "options": []
+    },
+    "d7ff7450-MakeFLIPWorld": {
+     "name": "MakeFLIPWorld",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -634.0896927682984,
+      4787.316530461891
+     ],
+     "options": []
+    },
+    "fa081e63-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/mnt/data/assets/perfume_only_model.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2676.5995012162634,
+      4812.55220292412
+     ],
+     "options": []
+    },
+    "16d8d8f8-StepFLIPWorld": {
+     "name": "StepFLIPWorld",
+     "inputs": {
+      "World": [
+       "d7ff7450-MakeFLIPWorld",
+       "World",
+       null
+      ],
+      "Particles": [
+       "7cafffee-FLIPMakeParticles",
+       "Particles",
+       null
+      ],
+      "Environ": [
+       "dc1ca1f4-FLIPMakeEnviron",
+       "Environ",
+       null
+      ],
+      "gravity": [
+       "dc533206-NumericVec3",
+       "vec3",
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.03
+      ],
+      "min_scale": [
+       null,
+       null,
+       1.0
+      ],
+      "dt_scale": [
+       null,
+       null,
+       1.0
+      ],
+      "particleApplyForce": [
+       null,
+       null,
+       null
+      ],
+      "dynaObjFrameStart": [
+       null,
+       null,
+       null
+      ],
+      "dynaObjFrameEnd": [
+       null,
+       null,
+       null
+      ],
+      "ColliderAmp": [
+       null,
+       null,
+       0.5
+      ],
+      "ColliderConverter": [
+       null,
+       null,
+       null
+      ],
+      "smokeFields": [
+       null,
+       null,
+       null
+      ],
+      "SmokeController": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      378.11464640185864,
+      4859.019383376102
+     ],
+     "options": []
+    },
+    "fcf33932-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "13d6ebaa-PrimitiveMerge",
+       "prim",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      -1147.0725237380825,
+      5111.533627260493
+     ],
+     "options": []
+    },
+    "7cafffee-FLIPMakeParticles": {
+     "name": "FLIPMakeParticles",
+     "inputs": {
+      "TankSDF": [
+       "9c8cf021-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -725.5749488587894,
+      4967.224520816862
+     ],
+     "options": []
+    },
+    "dc1ca1f4-FLIPMakeEnviron": {
+     "name": "FLIPMakeEnviron",
+     "inputs": {
+      "Collider": [
+       "3747c0ef-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "Emitter": [
+       "154a5a66-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       "55f01f68-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -452.3958019393626,
+      5250.3828146557225
+     ],
+     "options": []
+    },
+    "dc533206-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -9.8,
+      "z": 0.0
+     },
+     "uipos": [
+      -135.30521201669376,
+      4794.686525057323
+     ],
+     "options": []
+    },
+    "3747c0ef-FLIPMakeCollider": {
+     "name": "FLIPMakeCollider",
+     "inputs": {
+      "StaticSDF": [
+       "fcf33932-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.04
+      ],
+      "existingCollider": [
+       null,
+       null,
+       null
+      ],
+      "ColliderConverter": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -818.947499154166,
+      5195.497506598849
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "154a5a66-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       null,
+       null,
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       0
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -927.0289772948067,
+      5447.626890485104
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "55f01f68-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -955.2145534983479,
+      5384.105700662209
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "8aec1661-VDBPointsToPrimitive": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "16d8d8f8-StepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      769.4071021650072,
+      5331.14955583072
+     ],
+     "options": []
+    },
+    "37329d5e-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "8aec1661-VDBPointsToPrimitive",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "f6ea5962-MakeMultilineString",
+       "value",
+       "@clr=vec3(0,0,1)"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1167.7325077963617,
+      5276.605531998202
+     ],
+     "options": []
+    },
+    "f6ea5962-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@rad = 0\n@speed = length(@vel)"
+     },
+     "uipos": [
+      819.3653610032845,
+      4848.788535118014
+     ],
+     "options": []
+    },
+    "65f3d558-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0.0 0.0 0.0196078431372549 1.0\n0.4057971014492754 0.0 0.6941176470588235 1.0\n0.7463768115942029 0.0 0.9803921568627451 0.7843137254901961\n1.0 1.0 1.0 1.0"
+     },
+     "uipos": [
+      1156.8636066173196,
+      5527.230640381169
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0.0,
+        0.0196078431372549,
+        1.0
+       ]
+      ],
+      [
+       0.4057971014492754,
+       [
+        0.0,
+        0.6941176470588235,
+        1.0
+       ]
+      ],
+      [
+       0.7463768115942029,
+       [
+        0.0,
+        0.9803921568627451,
+        0.7843137254901961
+       ]
+      ],
+      [
+       1.0,
+       [
+        1.0,
+        1.0,
+        1.0
+       ]
+      ]
+     ]
+    },
+    "f0ae7ce5-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "37329d5e-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "65f3d558-MakeHeatmap",
+       "heatmap",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       0.0
+      ],
+      "max": [
+       null,
+       null,
+       10.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      1486.6130496476674,
+      5282.622861964768
+     ],
+     "options": []
+    },
+    "c8432b6b-VDBCreateLevelsetSphere": {
+     "name": "VDBCreateLevelsetSphere",
+     "inputs": {
+      "Dx": [
+       null,
+       null,
+       0.04
+      ],
+      "radius": [
+       null,
+       null,
+       0.8
+      ],
+      "center": [
+       null,
+       null,
+       null
+      ],
+      "half_width": [
+       null,
+       null,
+       3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2443.1186692379165,
+      5501.996454152702
+     ],
+     "options": []
+    },
+    "1caf90ef-SDFToPrimitive": {
+     "name": "SDFToPrimitive",
+     "inputs": {
+      "SDF": [
+       "c8432b6b-VDBCreateLevelsetSphere",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      -2142.7697355886307,
+      5551.502378323317
+     ],
+     "options": []
+    },
+    "3d0ddb00-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "1caf90ef-SDFToPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "3eee662a-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1795.838455967783,
+      5823.200245621885
+     ],
+     "options": []
+    },
+    "9c8cf021-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "3d0ddb00-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "cell"
+     },
+     "uipos": [
+      -1506.13134696305,
+      5846.432947043688
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "bf029ffa-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "fa081e63-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "a17ee401-NumericVec3",
+       "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2186.4285033611436,
+      4787.125727873417
+     ],
+     "options": []
+    },
+    "a17ee401-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.01,
+      "y": 0.01,
+      "z": 0.01
+     },
+     "uipos": [
+      -2877.1725791905155,
+      4878.299771688247
+     ],
+     "options": []
+    },
+    "795d3c55-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       null,
+       null,
+       null
+      ],
+      "boundMax": [
+       null,
+       null,
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      -2726.623778811963,
+      5122.083442049274
+     ],
+     "options": []
+    },
+    "4745a7c0-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "795d3c55-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "ee7b0173-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "bb76935b-NumericVec3",
+       "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2121.6783765598625,
+      5143.267479875243
+     ],
+     "options": []
+    },
+    "abac84a0-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "bf029ffa-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj1": [
+       "4745a7c0-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      -1753.428054565948,
+      5151.026714187743
+     ],
+     "options": [],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
+    },
+    "13d6ebaa-PrimitiveMerge": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "abac84a0-MakeList",
+       "list",
+       null
+      ],
+      "dst": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1468.4658080760933,
+      5345.655107323464
+     ],
+     "options": []
+    },
+    "3eee662a-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 6.59,
+      "z": 0.0
+     },
+     "uipos": [
+      -2266.93399101391,
+      5808.414679811702
+     ],
+     "options": []
+    },
+    "bb76935b-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 7.18,
+      "y": 0.47,
+      "z": 7.04
+     },
+     "uipos": [
+      -2750.8550436454857,
+      5459.33134647837
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "ee7b0173-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -0.403,
+      "z": 0.0
+     },
+     "uipos": [
+      -2472.927412066539,
+      5254.583539460824
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "3a43a9b6-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -0.403,
+      "z": 0.0
+     },
+     "uipos": [
+      3186.4231319422156,
+      6123.72475760457
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "f8a32e6f-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 6.59,
+      "z": 0.0
+     },
+     "uipos": [
+      3374.6391754732335,
+      6769.4056818171175
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "434887a9-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "e89289e6-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj1": [
+       "6ebb54b6-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      3888.1451119211956,
+      6112.017716193159
+     ],
+     "options": [
+      "ONCE"
+     ],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
+    },
+    "9aee5c71-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "7e349c06-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "Dx": [
+       "5f196ff1-PortalOut",
+       "port",
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "cell"
+     },
+     "uipos": [
+      4176.527314240713,
+      6811.374477387237
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6cadacc4-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       1.0
+      ],
+      "boundMin": [
+       null,
+       null,
+       null
+      ],
+      "boundMax": [
+       null,
+       null,
+       null
+      ],
+      "OpenTop": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "trifaces"
+     },
+     "uipos": [
+      2914.949387675178,
+      6083.07444405469
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "81190f08-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/mnt/data/assets/perfume_only_model.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2954.267638210608,
+      5690.414053638024
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "73b27c44-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 15.0,
+      "y": 0.47,
+      "z": 15.0
+     },
+     "uipos": [
+      2777.1404331202352,
+      6219.833035323365
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "2c869a52-VDBCreateLevelsetSphere": {
+     "name": "VDBCreateLevelsetSphere",
+     "inputs": {
+      "Dx": [
+       "3f037f89-PortalOut",
+       "port",
+       0.04
+      ],
+      "radius": [
+       null,
+       null,
+       0.8
+      ],
+      "center": [
+       null,
+       null,
+       null
+      ],
+      "half_width": [
+       null,
+       null,
+       3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3198.454497249227,
+      6462.987456158118
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "7e349c06-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "fe483754-SDFToPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "f8a32e6f-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3845.734710519358,
+      6784.191247627301
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "39e8ce32-MakeFLIPWorld": {
+     "name": "MakeFLIPWorld",
+     "inputs": {
+      "dx": [
+       "b9038281-PortalOut",
+       "port",
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5062.000764785125,
+      6063.023129615291
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "60823058-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "95b3fdea-PrimitiveMerge",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "0cc8c39c-PortalOut",
+       "port",
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      4494.500642749059,
+      6072.524629265907
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "1a0c58f5-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.01,
+      "y": 0.01,
+      "z": 0.01
+     },
+     "uipos": [
+      2764.400587296627,
+      5839.290773693661
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fe483754-SDFToPrimitive": {
+     "name": "SDFToPrimitive",
+     "inputs": {
+      "SDF": [
+       "2c869a52-VDBCreateLevelsetSphere",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      3498.803430898513,
+      6512.493380328731
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "49dfbfd5-FLIPMakeParticles": {
+     "name": "FLIPMakeParticles",
+     "inputs": {
+      "TankSDF": [
+       "9aee5c71-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "dx": [
+       "ba567712-PortalOut",
+       "port",
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4915.998217628352,
+      6293.497882698408
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fcbd7d9d-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -9.8,
+      "z": 0.0
+     },
+     "uipos": [
+      5446.673086903393,
+      6036.503729610726
+     ],
+     "options": []
+    },
+    "a23d6951-StepFLIPWorld": {
+     "name": "StepFLIPWorld",
+     "inputs": {
+      "World": [
+       "39e8ce32-MakeFLIPWorld",
+       "World",
+       null
+      ],
+      "Particles": [
+       "49dfbfd5-FLIPMakeParticles",
+       "Particles",
+       null
+      ],
+      "Environ": [
+       "4c41d3a7-FLIPMakeEnviron",
+       "Environ",
+       null
+      ],
+      "gravity": [
+       "fcbd7d9d-NumericVec3",
+       "vec3",
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.04
+      ],
+      "min_scale": [
+       null,
+       null,
+       0.04
+      ],
+      "dt_scale": [
+       null,
+       null,
+       2.0
+      ],
+      "particleApplyForce": [
+       null,
+       null,
+       null
+      ],
+      "dynaObjFrameStart": [
+       null,
+       null,
+       null
+      ],
+      "dynaObjFrameEnd": [
+       null,
+       null,
+       null
+      ],
+      "ColliderAmp": [
+       null,
+       null,
+       1.0
+      ],
+      "ColliderConverter": [
+       null,
+       null,
+       null
+      ],
+      "smokeFields": [
+       null,
+       null,
+       null
+      ],
+      "SmokeController": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5959.790314609909,
+      6028.861144436352
+     ],
+     "options": []
+    },
+    "e89289e6-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "81190f08-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "1a0c58f5-NumericVec3",
+       "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3455.144663126,
+      5748.116729878833
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "b1dd9b17-FLIPMakeCollider": {
+     "name": "FLIPMakeCollider",
+     "inputs": {
+      "StaticSDF": [
+       "60823058-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "5adaee8e-PortalOut",
+       "port",
+       0.04
+      ],
+      "existingCollider": [
+       null,
+       null,
+       null
+      ],
+      "ColliderConverter": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4822.625667332975,
+      6521.770868480395
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "95b3fdea-PrimitiveMerge": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "434887a9-MakeList",
+       "list",
+       null
+      ],
+      "dst": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4160.465667729015,
+      6273.461671288536
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6ebb54b6-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "6cadacc4-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "3a43a9b6-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "73b27c44-NumericVec3",
+       "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3519.8947899272785,
+      6104.258481880657
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4c41d3a7-FLIPMakeEnviron": {
+     "name": "FLIPMakeEnviron",
+     "inputs": {
+      "Collider": [
+       "b1dd9b17-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "Emitter": [
+       "82699048-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       "fedfc69d-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5171.104196616132,
+      6787.514952489419
+     ],
+     "options": []
+    },
+    "fedfc69d-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4751.741585408025,
+      7044.242224460817
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "82699048-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       null,
+       null,
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       0
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4691.184012311798,
+      6948.197839684386
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "cac37f05-SmoothLiquidSDF": {
+     "name": "SmoothLiquidSDF",
+     "inputs": {
+      "inParticles": [
+       "a23d6951-StepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "Dx": [
+       "cab715eb-PortalOut",
+       "port",
+       0.04
+      ],
+      "pScaleDx": [
+       null,
+       null,
+       0.5
+      ],
+      "voxelScale": [
+       null,
+       null,
+       0.5
+      ],
+      "dropletScale": [
+       null,
+       null,
+       1.0
+      ],
+      "influenceScale": [
+       null,
+       null,
+       3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7713.967022221588,
+      6557.393799081725
+     ],
+     "options": []
+    },
+    "f0e07263-SDFToPrimitive": {
+     "name": "SDFToPrimitive",
+     "inputs": {
+      "SDF": [
+       "cac37f05-SmoothLiquidSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.025,
+      "allowQuads": false
+     },
+     "uipos": [
+      8138.477521186092,
+      6699.866907390326
+     ],
      "options": [
       "VIEW"
      ]
+    },
+    "d592ab07-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.02
+     },
+     "uipos": [
+      2193.7370279478396,
+      6111.193271193435
+     ],
+     "options": []
+    },
+    "11e2920e-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "d592ab07-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      2456.631306436066,
+      6243.39286263195
+     ],
+     "options": []
+    },
+    "3f037f89-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      2897.3964937559435,
+      6528.880163304377
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "5f196ff1-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      3987.2682516809905,
+      6598.567483189101
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "5adaee8e-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      4541.922430355331,
+      6592.246637848082
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "0cc8c39c-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      4234.571325648325,
+      5923.817243035417
+     ],
+     "options": []
+    },
+    "ba567712-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      4512.688520653121,
+      6368.646733909567
+     ],
+     "options": []
+    },
+    "b9038281-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      4869.026176753017,
+      5805.301392891328
+     ],
+     "options": []
+    },
+    "cab715eb-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      7437.659702209256,
+      6386.819164264991
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 2492.259585010009,
-    "y": 3644.487573229478,
-    "width": 959.6927999999986,
-    "height": 269.51679999999703
+    "x": 3988.18485243088,
+    "y": 6013.297453402953,
+    "width": 4576.171874999993,
+    "height": 1285.1562499999716
    }
   },
   "OceanVolume": {
@@ -9949,6 +12113,11 @@
        "port",
        null
       ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
       "eulerXYZ": [
        "3f1dcd49-IfElse",
        "result",
@@ -9960,6 +12129,16 @@
        null
       ],
       "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "local": [
        null,
        null,
        null
@@ -10657,7 +12836,7 @@
       ],
       "SRC": [
        "7831905b-IfElse",
-       "DST",
+       "result",
        null
       ]
      },
@@ -10665,8 +12844,8 @@
       "dx": 0.04
      },
      "uipos": [
-      12052.748845277756,
-      -1831.6853649650557
+      12071.212656208329,
+      -1836.3013176976997
      ],
      "options": []
     },
@@ -10908,14 +13087,14 @@
       ],
       "SRC": [
        "bdfae5ef-IfElse",
-       "DST",
+       "result",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4288.020593553778,
-      -1768.1208182259659
+      4290.337446752276,
+      -1657.0574447456802
      ],
      "options": []
     },
@@ -10934,12 +13113,10 @@
       "defl": ""
      },
      "uipos": [
-      2092.2946317090177,
-      -3363.350129127501
+      2102.4497277208347,
+      -3431.6662295706315
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "34263d5b-x": {
      "name": "SubInput",
@@ -11083,8 +13260,8 @@
       "defl": ""
      },
      "uipos": [
-      4848.315429687495,
-      -2313.4418688322335
+      4946.173627619547,
+      -1992.1715586402138
      ],
      "options": []
     },
@@ -11104,8 +13281,8 @@
      },
      "params": {},
      "uipos": [
-      6723.819200176354,
-      -1591.840973041578
+      6612.11314404637,
+      -1662.0034545777662
      ],
      "options": []
     },
@@ -11124,10 +13301,12 @@
       "defl": ""
      },
      "uipos": [
-      2064.6209550113367,
-      -2583.2798050660854
+      2005.536760033494,
+      -2550.9681359375786
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "fe9d7375-SubInput": {
      "name": "SubInput",
@@ -11432,8 +13611,8 @@
       "defl": ""
      },
      "uipos": [
-      7015.062969250933,
-      -1713.1169914295995
+      7019.720213123255,
+      -446.0680781979869
      ],
      "options": []
     },
@@ -11465,8 +13644,8 @@
       "_KEYS": "particles\nddt\nobj2"
      },
      "uipos": [
-      7942.4013865415345,
-      -1494.3205917698017
+      7944.473696883579,
+      -220.80934471248804
      ],
      "options": [],
      "socket_keys": [
@@ -11501,8 +13680,8 @@
      },
      "params": {},
      "uipos": [
-      7892.929729729719,
-      -1752.5189189189164
+      7861.9551453188105,
+      -453.7105874803234
      ],
      "options": []
     },
@@ -11522,8 +13701,8 @@
      },
      "params": {},
      "uipos": [
-      7345.934442817192,
-      -1884.2350685660995
+      7314.857634522668,
+      -572.9735695783271
      ],
      "options": []
     },
@@ -11548,8 +13727,8 @@
      },
      "params": {},
      "uipos": [
-      7597.124324324316,
-      -1864.9513513513482
+      7588.672262435928,
+      -554.8817586514939
      ],
      "options": []
     },
@@ -11574,8 +13753,8 @@
      },
      "params": {},
      "uipos": [
-      8295.112216633686,
-      -1662.984045106516
+      8305.175077617678,
+      -408.0651449281073
      ],
      "options": []
     },
@@ -11686,8 +13865,8 @@
      },
      "params": {},
      "uipos": [
-      3705.076065465719,
-      -1291.310138400699
+      3879.5232399128918,
+      -1393.6852407758001
      ],
      "options": []
     },
@@ -11752,8 +13931,8 @@
      },
      "params": {},
      "uipos": [
-      8667.841805651311,
-      -1461.8452452969148
+      8659.389743762924,
+      -151.77565259706046
      ],
      "options": []
     },
@@ -11790,8 +13969,8 @@
       "SampleType": "Clamp"
      },
      "uipos": [
-      9014.1663851706,
-      -1365.5154646396825
+      9005.714323282213,
+      -55.44587193982818
      ],
      "options": []
     },
@@ -11813,8 +13992,8 @@
       "_KEYS": "temp\ndens\nfuel\nobj3"
      },
      "uipos": [
-      8380.582361265699,
-      -1185.4460375995645
+      8372.130299377313,
+      124.62355510028965
      ],
      "options": [],
      "socket_keys": [
@@ -11857,8 +14036,8 @@
       "SampleType": "Clamp"
      },
      "uipos": [
-      9357.609841827736,
-      -1248.5061511423507
+      9349.157779939349,
+      61.56344155750355
      ],
      "options": []
     },
@@ -11895,8 +14074,8 @@
       "SampleType": "Clamp"
      },
      "uipos": [
-      9620.246045694168,
-      -1242.8822495606287
+      9611.79398380578,
+      67.18734313922562
      ],
      "options": []
     },
@@ -11926,8 +14105,8 @@
      },
      "params": {},
      "uipos": [
-      10326.336295769022,
-      -1239.0650875674314
+      10317.884233880635,
+      71.00450513242288
      ],
      "options": []
     },
@@ -11957,8 +14136,8 @@
      },
      "params": {},
      "uipos": [
-      10660.7767064076,
-      -1247.2842445257163
+      10652.324644519213,
+      62.785348174137994
      ],
      "options": []
     },
@@ -11988,8 +14167,8 @@
      },
      "params": {},
      "uipos": [
-      11100.132792834971,
-      -1049.0332362496285
+      11091.680730946584,
+      261.03635645022564
      ],
      "options": []
     },
@@ -12206,8 +14385,8 @@
       "_KEYS": "bouyancyProg\nparams\nobj2"
      },
      "uipos": [
-      9671.641791044722,
-      -1636.8159203980015
+      9663.189729156336,
+      -326.7463276981472
      ],
      "options": [],
      "socket_keys": [
@@ -12242,17 +14421,17 @@
      },
      "params": {},
      "uipos": [
-      10098.258706467604,
-      -906.7164179104425
+      10089.806644579217,
+      403.3531747894117
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3440.3231158660215,
-    "y": -2197.2427656368654,
-    "width": 767.999999999995,
-    "height": 639.9999999999949
+    "x": 4554.307500184942,
+    "y": -2144.856818429471,
+    "width": 767.999999999991,
+    "height": 639.9999999999909
    }
   },
   "FLIPMakeCollider": {
@@ -13130,10 +15309,10 @@
     }
    },
    "view_rect": {
-    "x": -1878.516892579056,
-    "y": 592.5829506514731,
-    "width": 491.5199999999997,
-    "height": 409.5999999999998
+    "x": -2117.8698296474945,
+    "y": 615.6659018552873,
+    "width": 251.65823999999984,
+    "height": 209.71519999999992
    }
   },
   "FLIPMakeParticles": {
@@ -13531,8 +15710,8 @@
     }
    },
    "view_rect": {
-    "x": 384.84266880382205,
-    "y": 764.5198819868415,
+    "x": 423.1292271494645,
+    "y": 828.3308125629125,
     "width": 768.0,
     "height": 640.0
    }
@@ -13673,8 +15852,8 @@
        null
       ],
       "SmokeFields": [
-       "0246f673-IfElse",
-       "result",
+       "f2a4c65b-MakeSmokeEmitter",
+       "smokeFields",
        null
       ],
       "SmokeController": [
@@ -13695,8 +15874,8 @@
      },
      "params": {},
      "uipos": [
-      3505.7870370370238,
-      230.32407407407322
+      3727.8608202075557,
+      424.5691852412665
      ],
      "options": []
     },
@@ -14208,8 +16387,8 @@
      },
      "params": {},
      "uipos": [
-      2047.46866266498,
-      116.31010224948898
+      1983.65773208891,
+      67.86106236765755
      ],
      "options": []
     },
@@ -14239,8 +16418,8 @@
      },
      "params": {},
      "uipos": [
-      2656.295899717982,
-      197.7593699220693
+      2676.6799469853377,
+      155.36646002546684
      ],
      "options": []
     },
@@ -14265,8 +16444,8 @@
      },
      "params": {},
      "uipos": [
-      2366.1190578454375,
-      110.63542143370361
+      2295.070313384581,
+      55.68712010430946
      ],
      "options": []
     },
@@ -14285,8 +16464,8 @@
       "defl": ""
      },
      "uipos": [
-      1573.2087551209054,
-      207.80296548702898
+      1486.354988503476,
+      169.39823875143094
      ],
      "options": []
     },
@@ -14456,8 +16635,8 @@
       "defl": ""
      },
      "uipos": [
-      1827.4955497740584,
-      349.345018029119
+      1768.4113547962154,
+      514.0422115298568
      ],
      "options": []
     },
@@ -14472,8 +16651,8 @@
      },
      "params": {},
      "uipos": [
-      2037.2050167572436,
-      376.8978544434993
+      2086.688030051187,
+      327.4148411495556
      ],
      "options": []
     },
@@ -14623,8 +16802,8 @@
      },
      "params": {},
      "uipos": [
-      2821.8905472636707,
-      733.3333333333302
+      3025.4406799127687,
+      698.5257985257956
      ],
      "options": []
     },
@@ -14664,57 +16843,57 @@
       "tempGen": [
        null,
        null,
-       1.0
+       0.0
       ],
       "densGen": [
        null,
        null,
-       1.0
+       0.0
       ],
       "fuelGen": [
        null,
        null,
-       1.0
+       0.0
       ],
       "burningRate": [
        null,
        null,
-       1.0
+       0.0
       ],
       "expRate": [
        null,
        null,
-       1.0
+       0.0
       ],
       "burnToSoot": [
        null,
        null,
-       1.0
+       0.0
       ],
       "burnToHeat": [
        null,
        null,
-       1.0
+       0.0
       ],
       "tempDecay": [
        null,
        null,
-       1.0
+       0.0
       ],
       "densDecay": [
        null,
        null,
-       1.0
+       0.0
       ],
       "lift": [
        null,
        null,
-       1.0
+       0.0
       ],
       "drop": [
        null,
        null,
-       1.0
+       0.0
       ],
       "burnModel": [
        null,
@@ -14749,17 +16928,17 @@
      },
      "params": {},
      "uipos": [
-      2241.9502487562095,
-      556.0895522388039
+      2673.9731807791404,
+      530.4957766450282
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3322.924440012147,
-    "y": 513.8413876719227,
-    "width": 393.2159999999984,
-    "height": 327.67999999999876
+    "x": 2423.5834391163175,
+    "y": -239.83940684379354,
+    "width": 1874.999999999992,
+    "height": 1562.4999999999936
    }
   },
   "SmoothLiquidSDF": {
@@ -14990,12 +17169,12 @@
      },
      "params": {
       "name": "Dx",
-      "type": "",
+      "type": "float",
       "defl": ""
      },
      "uipos": [
-      -4210.666992187499,
-      277.4150390625004
+      -4313.535439269596,
+      220.0460974205618
      ],
      "options": []
     },
@@ -15014,8 +17193,8 @@
       "defl": ""
      },
      "uipos": [
-      -4329.496093749999,
-      -215.52148437499946
+      -4443.244857350394,
+      -346.0852825945839
      ],
      "options": []
     },
@@ -15034,8 +17213,8 @@
       "defl": ""
      },
      "uipos": [
-      -3629.7197423986468,
-      368.4747994087833
+      -3858.2063892829187,
+      482.22356300917875
      ],
      "options": []
     },
@@ -15063,8 +17242,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "343c4bcb-NumericOperator",
-       "ret",
+       "7b7a84ed-SubInput",
+       "port",
        null
       ],
       "rhs": [
@@ -15082,8 +17261,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -2903.183593749998,
-      351.853515625
+      -2889.3359181812557,
+      336.0276006892928
      ],
      "options": []
     },
@@ -15105,8 +17284,8 @@
       "name": "Dx"
      },
      "uipos": [
-      -2555.468749999998,
-      328.0126953124995
+      -2528.762518545992,
+      330.98005436294466
      ],
      "options": []
     },
@@ -15114,8 +17293,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7b7a84ed-SubInput",
-       "port",
+       "343c4bcb-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -15133,8 +17312,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -2930.371093749998,
-      101.41601562499977
+      -2878.9368702089496,
+      42.06883461609786
      ],
      "options": []
     },
@@ -15156,8 +17335,8 @@
       "name": "dilate"
      },
      "uipos": [
-      -2528.4960937499977,
-      -71.3183593749998
+      -2529.485213433479,
+      -112.86138608123116
      ],
      "options": []
     },
@@ -15475,8 +17654,8 @@
       "value": 0.75
      },
      "uipos": [
-      -3820.0400863717477,
-      616.545219275879
+      -3844.728513671451,
+      597.5541213530305
      ],
      "options": []
     },
@@ -15506,8 +17685,8 @@
      },
      "params": {},
      "uipos": [
-      -3146.0,
-      481.0
+      -3285.46587537092,
+      481.0000000000001
      ],
      "options": []
     },
@@ -15586,8 +17765,8 @@
      },
      "params": {},
      "uipos": [
-      -3155.061731418919,
-      102.8125
+      -3163.9638085702536,
+      1.9222922848666713
      ],
      "options": []
     },
@@ -15624,8 +17803,8 @@
       "defl": ""
      },
      "uipos": [
-      -3458.6648648648647,
-      -2.7567567567565447
+      -3451.741027080493,
+      -106.61432352233497
      ],
      "options": []
     },
@@ -15652,8 +17831,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -3685.125,
-      158.4375
+      -3827.5582344213644,
+      27.87370178041573
      ],
      "options": []
     },
@@ -15683,8 +17862,8 @@
      },
      "params": {},
      "uipos": [
-      -3938.133986486487,
-      5.133986486486435
+      -4086.5019390087423,
+      -183.7878730585181
      ],
      "options": []
     },
@@ -15701,8 +17880,8 @@
       "value": 0.5
      },
      "uipos": [
-      -4349.566300675674,
-      66.66442567567552
+      -4476.173620161331,
+      -36.204021406421205
      ],
      "options": []
     },
@@ -15816,9 +17995,9 @@
     }
    },
    "view_rect": {
-    "x": -4050.91552779195,
-    "y": 191.996239163692,
-    "width": 1199.999999999997,
+    "x": -3210.856180610941,
+    "y": -174.67042750297358,
+    "width": 1199.9999999999966,
     "height": 999.9999999999978
    }
   },
@@ -15991,12 +18170,12 @@
        null
       ],
       "smokeFields": [
-       "1f59e92a-IfElse",
-       "result",
+       "ff496c57-MakeSmokeEmitter",
+       "smokeFields",
        null
       ],
       "SmokeController": [
-       "12bd31cc-IfElse",
+       "1f59e92a-IfElse",
        "result",
        null
       ],
@@ -16008,8 +18187,8 @@
      },
      "params": {},
      "uipos": [
-      4854.621101441296,
-      366.71559839937254
+      4952.827449759463,
+      592.9473480686213
      ],
      "options": []
     },
@@ -16448,8 +18627,8 @@
       "value": 0.04
      },
      "uipos": [
-      -557.46875,
-      842.0546875
+      -691.7848843161337,
+      835.5026809479934
      ],
      "options": []
     },
@@ -16737,8 +18916,8 @@
      },
      "params": {},
      "uipos": [
-      4439.371294407592,
-      721.6780518370296
+      4546.041967484515,
+      1058.2165133754897
      ],
      "options": []
     },
@@ -17643,37 +19822,6 @@
       "ONCE"
      ]
     },
-    "12bd31cc-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "82623a56-DictGetItem",
-       "object",
-       null
-      ],
-      "false": [
-       "25c6494e-NumericInt",
-       "value",
-       null
-      ],
-      "cond": [
-       "01a41762-SubInput",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4307.1477475010115,
-      1663.138436259065
-     ],
-     "options": []
-    },
     "a6307968-makeEmptySmokeFields": {
      "name": "makeEmptySmokeFields",
      "inputs": {
@@ -17685,52 +19833,8 @@
      },
      "params": {},
      "uipos": [
-      3456.7905752035385,
-      864.9119125931163
-     ],
-     "options": []
-    },
-    "82623a56-DictGetItem": {
-     "name": "DictGetItem",
-     "inputs": {
-      "dict": [
-       "01a41762-SubInput",
-       "port",
-       null
-      ],
-      "key": [
-       null,
-       null,
-       "doSmoke"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3833.515906704991,
-      1900.9493815326962
-     ],
-     "options": []
-    },
-    "25c6494e-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0
-     },
-     "uipos": [
-      3905.157697749768,
-      1755.6757496919008
+      3388.544129705908,
+      852.7792111713155
      ],
      "options": []
     },
@@ -17760,8 +19864,8 @@
      },
      "params": {},
      "uipos": [
-      3755.9769957551543,
-      852.5400520334076
+      3760.5267587883304,
+      949.6016634078148
      ],
      "options": []
     },
@@ -17886,8 +19990,8 @@
      },
      "params": {},
      "uipos": [
-      3661.5358072025047,
-      1044.103610388421
+      4054.33201573331,
+      909.8856009097486
      ],
      "options": []
     },
@@ -17906,8 +20010,8 @@
       "defl": ""
      },
      "uipos": [
-      3247.0811082203536,
-      837.3590761787361
+      3204.61665324405,
+      1193.7571804441377
      ],
      "options": []
     },
@@ -17957,17 +20061,17 @@
      },
      "params": {},
      "uipos": [
-      4150.928842028375,
-      1229.3075904879227
+      4476.236898900408,
+      1682.0090122888682
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3920.3868163009893,
-    "y": 1291.2457420069247,
-    "width": 1199.9999999999932,
-    "height": 999.999999999996
+    "x": 3858.528171387788,
+    "y": 351.3964568497837,
+    "width": 1499.9999999999902,
+    "height": 1249.999999999995
    }
   },
   "FLIPMakeEmitter": {
@@ -25660,10 +27764,10 @@
     }
    },
    "view_rect": {
-    "x": 4077.911499032988,
-    "y": -858.1100757927263,
-    "width": 1388.1599999999949,
-    "height": 782.72
+    "x": 5698.680982641888,
+    "y": 180.6497838250499,
+    "width": 2168.999999999992,
+    "height": 1223.0
    }
   },
   "AdvectSmokeFields": {
@@ -30393,6 +32497,36 @@
     "control"
    ]
   },
+  "CalculateResidual2": {
+   "inputs": [
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
   "Clone": {
    "inputs": [
     [
@@ -31210,6 +33344,87 @@
    "params": [],
    "categories": [
     "FEM"
+   ]
+  },
+  "DynamicNumber": {
+   "inputs": [
+    [
+     "",
+     "frame",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 100 10 1 0.1 0.01 0.001",
+     "speed",
+     "1"
+    ],
+    [
+     "floatslider",
+     "x",
+     "0"
+    ],
+    [
+     "floatslider",
+     "y",
+     "0"
+    ],
+    [
+     "floatslider",
+     "z",
+     "0"
+    ],
+    [
+     "floatslider",
+     "w",
+     "0"
+    ],
+    [
+     "enum clamp zero cycle",
+     "type",
+     "clamp"
+    ]
+   ],
+   "categories": [
+    "numeric"
    ]
   },
   "EmptyDict": {
@@ -35164,6 +37379,31 @@
     "GPUMPM"
    ]
   },
+  "MakeJFNKSolver2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "JFNKSolverObject2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
   "MakeList": {
    "inputs": [
     [
@@ -35187,6 +37427,46 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "MakeLocalSys": {
+   "inputs": [
+    [
+     "vec3f",
+     "front",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "up",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "right",
+     "0,0,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "LocalSys",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "MakeMPMMehser": {
@@ -35242,6 +37522,41 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "MakeMaterial": {
+   "inputs": [
+    [
+     "string",
+     "vert",
+     ""
+    ],
+    [
+     "string",
+     "frag",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
    ]
   },
   "MakeMultilineString": {
@@ -35348,6 +37663,36 @@
    "params": [],
    "categories": [
     "FEM"
+   ]
+  },
+  "MakeNonlinearProblemObject2": {
+   "inputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "NonlinearProblemObject2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "MakeOrthonormalBase": {
@@ -36925,6 +39270,51 @@
     "Ocean"
    ]
   },
+  "OrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "OutputVec2List": {
    "inputs": [
     [
@@ -37894,6 +40284,41 @@
     "portal"
    ]
   },
+  "PrimFindTriangle": {
+   "inputs": [
+    [
+     "",
+     "MeshPrim",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimSprayParticles": {
    "inputs": [
     [
@@ -38053,6 +40478,16 @@
      "1"
     ],
     [
+     "float",
+     "midPoint",
+     "0.5"
+    ],
+    [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -38070,7 +40505,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "0"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -39025,6 +41466,11 @@
      "1"
     ],
     [
+     "bool",
+     "lineSort",
+     "1"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -39043,6 +41489,138 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSort": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reversed",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -39469,6 +42047,51 @@
    "outputs": [
     [
      "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveScale": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "axis",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
      "prim",
      ""
     ],
@@ -39955,7 +42578,7 @@
      "0,1,0"
     ],
     [
-     "vec3f",
+     "",
      "tangent",
      ""
     ],
@@ -40184,6 +42807,76 @@
    "params": [],
    "categories": [
     "string"
+   ]
+  },
+  "ProjectAndNormalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "enum XY YX YZ ZY ZX XZ",
+     "plane",
+     "XY"
+    ],
+    [
+     "float",
+     "directionScale",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightOffset",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "direction",
+     ""
+    ],
+    [
+     "float",
+     "length",
+     ""
+    ],
+    [
+     "float",
+     "height",
+     ""
+    ],
+    [
+     "float",
+     "phase",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
    ]
   },
   "PushOutLiquidSDF": {
@@ -40456,6 +43149,41 @@
     [
      "",
      "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadObjPrimitiveDict": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dict",
      ""
     ],
     [
@@ -42147,6 +44875,71 @@
     "frame"
    ]
   },
+  "SetMaterial": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "material"
+   ]
+  },
+  "SetMatrix": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SetRandomSeed": {
    "inputs": [
     [
@@ -42554,7 +45347,7 @@
      ""
     ],
     [
-     "",
+     "float",
      "Dx",
      ""
     ],
@@ -42717,6 +45510,41 @@
    ],
    "categories": [
     "Skinning"
+   ]
+  },
+  "SolveNonlinearProblem2": {
+   "inputs": [
+    [
+     "",
+     "JFNKSolverObject2",
+     ""
+    ],
+    [
+     "",
+     "NonlinearProblemObject2",
+     ""
+    ],
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "SpatialPartitionForParticles": {
@@ -43946,6 +46774,11 @@
     ],
     [
      "vec3f",
+     "offset",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
      "eulerXYZ",
      "0,0,0"
     ],
@@ -43961,6 +46794,16 @@
     ],
     [
      "",
+     "Matrix",
+     ""
+    ],
+    [
+     "",
+     "local",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -43969,6 +46812,11 @@
     [
      "",
      "outPrim",
+     ""
+    ],
+    [
+     "",
+     "Matrix",
      ""
     ],
     [
@@ -44105,6 +46953,156 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "TreeBinaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "enum add sub mul div mod pow atan2 min max dot cross distance",
+     "op",
+     "add"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeFinalize": {
+   "inputs": [
+    [
+     "tree",
+     "in",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "code",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeTernaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
+    ],
+    [
+     "enum mix clamp smoothstep",
+     "op",
+     "mix"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
+   ]
+  },
+  "TreeUnaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
+     "op",
+     "sqrt"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "tree"
    ]
   },
   "TriggerAbortSignal": {

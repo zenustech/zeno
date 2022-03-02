@@ -25,15 +25,14 @@ struct EmissionPass {
         TreeNode *node;
     };
 
-    struct FinalCode {
-        std::string code;
-    };
-
     std::map<TreeNode *, int> varmap;  // varmap[node] = 40, then the variable of node is "tmp40"
     std::vector<VarInfo> variables;  // variables[40].type = 3, then the variable type will be "vec3 tmp40;"
     std::vector<std::string> lines;  // contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"}
 
-    ZENO_API FinalCode finalizeOutput(IObject *object);
+
+    ZENO_API static std::string typeNameOf(int type);
+    ZENO_API std::string finalizeCode(std::vector<std::string> const &keys, std::vector<std::shared_ptr<IObject>> const &vals);
+    ZENO_API std::string finalizeCode();
 
     ZENO_API std::string determineExpr(IObject *object) const;
     ZENO_API std::string collectDefs() const;

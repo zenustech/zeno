@@ -22,9 +22,12 @@ struct ZSParticleToZSLevelSet : INode {
     ls.append_channels(cudaPol, pars.getPropertyTags());
     cudaPol(range(pars.size()),
             [pars = proxy<execspace_e::cuda>({}, pars),
-             lsv = proxy<execspace_e::cuda>(ls)] __device__(size_t pi) mutable {
+             lsv = proxy<execspace_e::cuda>(ls)] __device__(auto pi) mutable {
+              // static_assert(std::is_integral_v<RM_CVREF_T(pi)>, "haha
+              // gotcha");
               using ls_t = RM_CVREF_T(lsv);
-              auto pos = pars.template pack<3>("pos", pi); // this is required
+              auto pos = pars.pack<3>("pos", pi); // this is required
+              auto vol = pars("vol", pi);                  // as weight
 #if 0
               auto vel = pars.pack<3>("vel", pi);
               auto vol = pars("vol", pi);

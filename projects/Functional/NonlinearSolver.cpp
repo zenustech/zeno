@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/ConditionObject.h>
@@ -29,15 +30,12 @@ struct CalculateResidual2 : zeno::INode {
     virtual void apply() override {
         
         auto args = get_input<zeno::DictObject>("args");
-        auto rets = std::make_shared<zeno::DictObject>();
+        
+        std::cout << " Calculate Residual\n" <<"\n"; 
 
-        static int n = 0;
-
-        n++;
-        std::cout << " Calculate Residual for the \n" << n << "th time.\n"; 
-
-        rets->lut["n"] = n;
-        set_output("rets", std::move(rets));
+        //rets->lut["n"] = n;
+        auto res = std::make_shared<zeno::NumericObject>(); 
+        set_output("rets", std::move(res));
     }
 };
 
