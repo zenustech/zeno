@@ -69,7 +69,7 @@ ZenoSubnetListView::~ZenoSubnetListView()
 {
 }
 
-void ZenoSubnetListView::initModel(GraphsPlainModel* pModel)
+void ZenoSubnetListView::initModel(IGraphsModel* pModel)
 {
     setModel(pModel);
     setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
@@ -79,12 +79,13 @@ void ZenoSubnetListView::initModel(GraphsPlainModel* pModel)
 
 void ZenoSubnetListView::edittingNew()
 {
-    GraphsPlainModel* pModel = qobject_cast<GraphsPlainModel*>(model());
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(model());
     Q_ASSERT(pModel);
 
-    QStandardItem* pTemp = new QStandardItem;
-    pModel->appendRow(pTemp);
-    const QModelIndex& idx = pModel->indexFromItem(pTemp);
+    SubGraphModel* pSubModel = new SubGraphModel(pModel);
+    pModel->appendSubGraph(pSubModel);
+
+    const QModelIndex& idx = pModel->indexBySubModel(pSubModel);
     setCurrentIndex(idx);
     edit(idx);
 }
@@ -94,24 +95,20 @@ void ZenoSubnetListView::closeEditor(QWidget* editor, QAbstractItemDelegate::End
     QModelIndex idx = currentIndex();
     QListView::closeEditor(editor, hint);
     
-	GraphsPlainModel* pModel = qobject_cast<GraphsPlainModel*>(model());
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(model());
 	Q_ASSERT(pModel);
     switch (hint)
     {
-        case QAbstractItemDelegate::SubmitModelCache:
-        {
-            pModel->submit(idx);
-            break;
-        }
         case QAbstractItemDelegate::RevertModelCache:
         {
             pModel->revert(idx);
             break;
         }
-        case QAbstractItemDelegate::NoHint:
+        case QAbstractItemDelegate::SubmitModelCache:
         {
-            //focusout hint
-            pModel->submit(idx);
+            //activate the tab widget.
+            QString subgName = idx.data().toString();
+            emit graphToBeActivated(subgName);
             break;
         }
     }

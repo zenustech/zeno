@@ -27,9 +27,12 @@ class ZenoSubnetListView : public QListView
 public:
     ZenoSubnetListView(QWidget* parent = nullptr);
     ~ZenoSubnetListView();
-    void initModel(GraphsPlainModel* pModel);
+    void initModel(IGraphsModel* pModel);
     QSize sizeHint() const override;
     void edittingNew();
+
+signals:
+    void graphToBeActivated(const QString&);
 
 protected slots:
     void closeEditor(QWidget* editor, QAbstractItemDelegate::EndEditHint hint) override;

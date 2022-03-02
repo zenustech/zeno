@@ -4,12 +4,13 @@
 #include <QtWidgets>
 
 class GraphsPlainModel;
+class IGraphsModel;
 
 class ZSubnetListItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    ZSubnetListItemDelegate(GraphsPlainModel* model, QObject* parent = nullptr);
+    ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent = nullptr);
     ~ZSubnetListItemDelegate();
 
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
@@ -30,7 +31,7 @@ private slots:
     void onDelete(const QModelIndex& index);
 
 private:
-    GraphsPlainModel* m_model;
+    IGraphsModel* m_model;
 };
 
 

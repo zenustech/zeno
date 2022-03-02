@@ -18,6 +18,7 @@ public:
 
 signals:
 	void clicked(const QModelIndex& index);
+	void graphToBeActivated(const QString&);
 
 private slots:
 	void onNewSubnetBtnClicked();

@@ -3,7 +3,6 @@
 
 class GraphsModel;
 class GraphsTreeModel;
-class GraphsPlainModel;
 class ZenoSubGraphScene;
 
 #include <QtWidgets>
@@ -18,7 +17,6 @@ public:
     void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
     GraphsTreeModel* treeModel();
-    GraphsPlainModel* plainModel();
     IGraphsModel* openZsgFile(const QString &fn);
     void importGraph(const QString &fn);
     void reloadGraph(const QString& graphName);
@@ -29,7 +27,6 @@ public:
 private:
     IGraphsModel *m_model;
     GraphsTreeModel* m_pTreeModel;
-    GraphsPlainModel* m_plainModel;
     QString m_currFile;
 };
 

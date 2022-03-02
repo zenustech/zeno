@@ -135,7 +135,6 @@ QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) c
         return QModelIndex();
 
     return createIndex(row, 0, nullptr);
-    //return _base::index(row, column, parent);
 }
 
 QModelIndex GraphsModel::index(const QString& subGraphName) const
@@ -174,8 +173,12 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
-    if (role == Qt::DisplayRole || role == ROLE_OBJNAME)
+
+    switch (role)
     {
+    case Qt::DisplayRole:
+    case Qt::EditRole:
+    case ROLE_OBJNAME:
         return m_subGraphs[index.row()].pModel->name();
     }
     return QVariant();
@@ -191,18 +194,42 @@ int GraphsModel::columnCount(const QModelIndex& parent) const
     return 1;
 }
 
+Qt::ItemFlags GraphsModel::flags(const QModelIndex& index) const
+{
+    return IGraphsModel::flags(index) | Qt::ItemIsEditable;
+}
+
 bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    if (role == Qt::EditRole)
-    {
-        QString oldName = index.data(ROLE_OBJNAME).toString();
-        if (oldName != value.toString())
-        {
-            renameSubGraph(oldName, value.toString());
-            _base::setData(index, value, ROLE_OBJNAME);
-        }
-    }
-    return false;
+	if (role == Qt::EditRole)
+	{
+		const QString& newName = value.toString();
+		const QString& oldName = data(index, Qt::DisplayRole).toString();
+		if (newName != oldName)
+		{
+			SubGraphModel* pModel = subGraph(oldName);
+			if (!oldName.isEmpty())
+			{
+				renameSubGraph(oldName, newName);
+			}
+			else
+			{
+                //new subgraph.
+                pModel->setName(newName);
+			}
+		}
+	}
+	return false;
+}
+
+void GraphsModel::revert(const QModelIndex& idx)
+{
+	const QString& subgName = idx.data().toString();
+	if (subgName.isEmpty())
+	{
+		//exitting new item
+        removeGraph(idx.row());
+	}
 }
 
 void GraphsModel::initDescriptors()

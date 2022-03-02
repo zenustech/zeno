@@ -31,8 +31,8 @@ void ZenoGraphsTabWidget::activate(const QString& subgraphName)
         ZIconButton* pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(14, 14), QColor(), QColor());
         tabBar()->setTabButton(idx, QTabBar::RightSide, pCloseBtn);
         connect(pCloseBtn, &ZIconButton::clicked, this, [=]() {
-            this->removeTab(indexOf(pView));
-            });
+            removeTab(indexOf(pView));
+        });
     }
     else
     {
@@ -50,13 +50,12 @@ void ZenoGraphsTabWidget::resetModel(IGraphsModel* pModel)
 
 void ZenoGraphsTabWidget::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
 {
-    QTabBar* pTabBar = tabBar();
     for (int r = first; r <= last; r++)
     {
         QModelIndex subgIdx = m_model->index(r, 0);
         const QString& name = m_model->name(subgIdx);
         int idx = indexOfName(name);
-        pTabBar->removeTab(idx);
+        removeTab(idx);
     }
 }
 

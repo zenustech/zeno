@@ -8,7 +8,7 @@
 #include <zenoui/model/modelrole.h>
 
 
-ZSubnetListItemDelegate::ZSubnetListItemDelegate(GraphsPlainModel* model, QObject* parent)
+ZSubnetListItemDelegate::ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
 {
@@ -123,10 +123,8 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 
 void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    pModel->removeSubGraph(index.data(ROLE_OBJNAME).toString());
-    //todo: modify plain model, but the sync is complicated between plain model and graphsmodel.
-    m_model->removeRow(index.row());
+    QString subgName = index.data(ROLE_OBJNAME).toString();
+    m_model->removeSubGraph(subgName);
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

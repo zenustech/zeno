@@ -56,6 +56,7 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 
 	connect(m_pListView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
 	connect(m_pTreeView, SIGNAL(clicked(const QModelIndex&)), this, SIGNAL(clicked(const QModelIndex&)));
+	connect(m_pListView, SIGNAL(graphToBeActivated(const QString&)), this, SIGNAL(graphToBeActivated(const QString&)));
 	connect(pNewSubnetBtn, SIGNAL(clicked()), this, SLOT(onNewSubnetBtnClicked()));
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
@@ -66,8 +67,7 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 void ZenoSubnetPanel::initModel(IGraphsModel* pModel)
 {
 	GraphsTreeModel* pTreeModel = zenoApp->graphsManagment()->treeModel();
-	GraphsPlainModel* plainModel = zenoApp->graphsManagment()->plainModel();
-	m_pListView->initModel(plainModel);
+	m_pListView->initModel(pModel);
 	m_pTreeView->initModel(pTreeModel);
 	m_pTextLbl->setText(pModel->fileName());
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));

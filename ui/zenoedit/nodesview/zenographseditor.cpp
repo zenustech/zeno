@@ -77,6 +77,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     pLayout->addWidget(m_pLayerWidget);
 
     connect(m_pSubnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemActivated(const QModelIndex&)));
+    connect(m_pSubnetList, SIGNAL(graphToBeActivated(const QString&)), m_pTabWidget, SLOT(activate(const QString&)));
     connect(m_pSubnetBtn, SIGNAL(clicked()), this, SLOT(onSubnetBtnClicked()));
     connect(m_pViewBtn, SIGNAL(clicked()), this, SLOT(onViewBtnClicked()));
 
@@ -190,6 +191,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 
 void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first, int last)
 {
+    /*
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     const QModelIndex& idx = pModel->index(first, 0, parent);
     if (m_bListView)
@@ -197,6 +199,7 @@ void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first
 		const QString& subgraphName = idx.data(ROLE_OBJNAME).toString();
 		m_pTabWidget->activate(subgraphName);
     }
+    */
 }
 
 void ZenoGraphsEditor::onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
