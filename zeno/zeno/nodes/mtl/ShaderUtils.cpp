@@ -1,12 +1,12 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/ZenMatNode.h>
-#include <zeno/types/ZenMatObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
-struct ZenMatLinearFit : ZenMatNode {
+struct ShaderLinearFit : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto in = em->determineType(get_input("in").get());
         auto inMin = em->determineType(get_input("inMin").get());
@@ -41,7 +41,7 @@ struct ZenMatLinearFit : ZenMatNode {
     }
 };
 
-ZENDEFNODE(ZenMatLinearFit, {
+ZENDEFNODE(ShaderLinearFit, {
     {
         {"float", "in", "0"},
         {"float", "inMin", "0"},
@@ -55,7 +55,7 @@ ZENDEFNODE(ZenMatLinearFit, {
     {
         {"bool", "clamped", "0"},
     },
-    {"zenMat"},
+    {"shader"},
 });
 
 

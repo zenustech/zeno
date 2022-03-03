@@ -88,7 +88,7 @@ void main()
           },
           {},
           {
-              "zenMat",
+              "shader",
           },
       });
 
@@ -116,7 +116,7 @@ void main()
           },
           {},
           {
-              "zenMat",
+              "shader",
           },
       });
 

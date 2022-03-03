@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/ZenMatNode.h>
-#include <zeno/types/ZenMatObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -20,7 +20,7 @@ static auto &toHlsl() {
 }
 
 
-struct ZenMatTernaryMath : ZenMatNode {
+struct ShaderTernaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -63,7 +63,7 @@ struct ZenMatTernaryMath : ZenMatNode {
     }
 };
 
-ZENDEFNODE(ZenMatTernaryMath, {
+ZENDEFNODE(ShaderTernaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -74,11 +74,11 @@ ZENDEFNODE(ZenMatTernaryMath, {
         {"float", "out"},
     },
     {},
-    {"zenMat"},
+    {"shader"},
 });
 
 
-struct ZenMatBinaryMath : ZenMatNode {
+struct ShaderBinaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -142,7 +142,7 @@ struct ZenMatBinaryMath : ZenMatNode {
     }
 };
 
-ZENDEFNODE(ZenMatBinaryMath, {
+ZENDEFNODE(ShaderBinaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -152,11 +152,11 @@ ZENDEFNODE(ZenMatBinaryMath, {
         {"float", "out"},
     },
     {},
-    {"zenMat"},
+    {"shader"},
 });
 
 
-struct ZenMatUnaryMath : ZenMatNode {
+struct ShaderUnaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -179,7 +179,7 @@ struct ZenMatUnaryMath : ZenMatNode {
     }
 };
 
-ZENDEFNODE(ZenMatUnaryMath, {
+ZENDEFNODE(ShaderUnaryMath, {
     {
         {"float", "in1", "0"},
         {(std::string)"enum " + unops, "op", "sqrt"},
@@ -188,7 +188,7 @@ ZENDEFNODE(ZenMatUnaryMath, {
         {"float", "out"},
     },
     {},
-    {"zenMat"},
+    {"shader"},
 });
 
 

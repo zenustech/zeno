@@ -1,12 +1,12 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/ZenMatNode.h>
-#include <zeno/types/ZenMatObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
-struct ZenMatMakeVec : ZenMatNode {
+struct ShaderMakeVec : ShaderNode {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -16,7 +16,7 @@ struct ZenMatMakeVec : ZenMatNode {
         auto t4 = has_input("w") ? em->determineType(get_input("w").get()) : 0;
         ty = t1 + t2 + t3 + t4;
         if (ty > 4)
-            throw zeno::Exception("ZenMatMakeVec expect sum of dimension to no more than 4");
+            throw zeno::Exception("ShaderMakeVec expect sum of dimension to no more than 4");
         return ty;
     }
 
@@ -44,7 +44,7 @@ struct ZenMatMakeVec : ZenMatNode {
 };
 
 
-ZENDEFNODE(ZenMatMakeVec, {
+ZENDEFNODE(ShaderMakeVec, {
     {
         {"tree", "x"},
         {"tree", "y"},
@@ -55,15 +55,15 @@ ZENDEFNODE(ZenMatMakeVec, {
         {"vec4f", "out"},
     },
     {},
-    {"zenMat"},
+    {"shader"},
 });
 
 
-struct ZenMatFillVec : ZenMatNode {
+struct ShaderFillVec : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto tin = em->determineType(get_input("in").get());
         if (tin != 1)
-            throw zeno::Exception("ZenMatFillVec expect scalar as input");
+            throw zeno::Exception("ShaderFillVec expect scalar as input");
 
         auto type = get_input2<std::string>("type");
         if (type == "float")
@@ -75,7 +75,7 @@ struct ZenMatFillVec : ZenMatNode {
         else if (type == "vec4")
             return 4;
         else
-            throw zeno::Exception("ZenMatFillVec got bad type: " + type);
+            throw zeno::Exception("ShaderFillVec got bad type: " + type);
     }
 
     virtual void emitCode(EmissionPass *em) override {
@@ -89,7 +89,7 @@ struct ZenMatFillVec : ZenMatNode {
 };
 
 
-ZENDEFNODE(ZenMatFillVec, {
+ZENDEFNODE(ShaderFillVec, {
     {
         {"float", "in", "0"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
@@ -98,7 +98,7 @@ ZENDEFNODE(ZenMatFillVec, {
         {"vec4f", "out"},
     },
     {},
-    {"zenMat"},
+    {"shader"},
 });
 
 
