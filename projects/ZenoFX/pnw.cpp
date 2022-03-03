@@ -27,25 +27,28 @@ struct Buffer {
 };
 
 struct LBvh : zeno::IObject {
+    enum element_e {point = 0, line, tri, tet};
     using TV = zeno::vec3f;
     using Box = std::pair<TV, TV>;
     using Ti = int;
     using Tu = std::make_unsigned_t<Ti>;
 
-    float radius;
-    float radius_sqr;
-    float radius_sqr_min;
-    std::vector<TV> const &refpos;
+    std::weak_ptr<const zeno::PrimitiveObject> primPtr;
+    float thickness;
     std::vector<Box> sortedBvs;
     std::vector<Ti> auxIndices, levels, parents, leafIndices;
 
-    LBvh(std::vector<zeno::vec3f> const &refpos_,
-            float radius_, float radius_min)
-        : refpos(refpos_) {
+    decltype(auto) refPrimPositions() const {
+        std::shared_ptr<const zeno::PrimitiveObject> pprim = primPtr.lock();
+        if (!pprim)
+            throw std::runtime_error("the primitive object referenced by lbvh not available anymore");
+        return pprim->attr<zeno::vec3f>("pos");
+    }
 
-        radius = radius_;
-        radius_sqr = radius * radius;
-        radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
+    LBvh(const std::shared_ptr<zeno::PrimitiveObject> &prim, float thickness)
+        : primPtr(prim), thickness{thickness} {
+
+        const auto &refpos = refPrimPositions();
 
         const Ti numLeaves = refpos.size();
         const Ti numNodes = numLeaves + numLeaves - 1;
@@ -151,7 +154,7 @@ struct LBvh : zeno::IObject {
         for (Ti idx = 0; idx < numLeaves; ++idx) {
             {
                 const auto &pos = refpos[records[idx].second];
-                leafBvs[idx] = Box{pos - radius, pos + radius};
+                leafBvs[idx] = Box{pos - thickness, pos + thickness};
             }
 
             leafLca[idx] = -1, leafDepths[idx] = 1;
@@ -296,12 +299,52 @@ struct LBvh : zeno::IObject {
 #endif
     }
 
-    bool intersect(const Box& box, const TV &p) const noexcept {
+    static bool intersect(const Box& box, const TV &p) noexcept {
         constexpr int dim = 3;
         for (Ti d = 0; d != dim; ++d)
             if (p[d] < box.first[d] || p[d] > box.second[d])
                 return false;
         return true;
+    }
+    static constexpr float distance(const Box& bv, const TV &x) {
+        const auto &[mi, ma] = bv;
+        TV center = (mi + ma) / 2;
+        TV point = abs(x - center) - (ma - mi) / 2;
+        float max = std::numeric_limits<float>::lowest();
+        for (int d = 0; d != 3; ++d) {
+            if (point[d] > max) max = point[d];
+            if (point[d] < 0) point[d] = 0;
+        }
+        return (max < 0.f ? max : 0.f) + length(point);
+    }
+    static constexpr float distance(const TV &x, const Box& bv) {
+        return distance(bv, x);
+    }
+
+    /// closest bounding box
+    template <class F>
+    void find_nearest(TV const &pos, F const &f, Ti& id, float &dist) const {
+        const auto &refpos = refPrimPositions();
+        const Ti numNodes = sortedBvs.size();
+        Ti node = 0;
+        while (node != -1 && node != numNodes) {
+            Ti level = levels[node];
+            // level and node are always in sync
+            for (; level; --level, ++node)
+                if (auto d = distance(sortedBvs[node], pos); d > dist)
+                    break;
+            // leaf node check
+            if (level == 0) {
+                const auto pid = auxIndices[node];
+                auto d = length(refpos[pid] - pos);
+                if (d < dist) {
+                    id = pid;
+                    dist = d;
+                }
+                node++;
+            } else  // separate at internal nodes
+                node = auxIndices[node];
+        }
     }
 
     template <class F>
@@ -316,12 +359,11 @@ struct LBvh : zeno::IObject {
                     break;
             // leaf node check
             if (level == 0) {
-                const auto pid = auxIndices[node];
                 // const auto dist = refpos[pid] - pos;
                 // auto dis2 = zeno::dot(dist, dist);
                 // if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
                 if (intersect(sortedBvs[node], pos))
-                    f(pid);
+                    f(auxIndices[node]);
                 // }
                 node++;
             } else  // separate at internal nodes
@@ -526,8 +568,7 @@ struct ParticlesBuildBvh : zeno::INode {
         float radius = get_input<zeno::NumericObject>("radius")->get<float>();
         float radiusMin = has_input("radiusMin") ?
             get_input<zeno::NumericObject>("radiusMin")->get<float>() : -1.f;
-        auto lbvh = std::make_shared<LBvh>(
-                primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
+        auto lbvh = std::make_shared<LBvh>(primNei, radius);
         set_output("lbvh", std::move(lbvh));
     }
 };
