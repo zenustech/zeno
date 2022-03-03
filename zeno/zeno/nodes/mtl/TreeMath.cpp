@@ -58,7 +58,7 @@ struct TreeTernaryMath : TreeNode {
         if (op == "add3") {
             return em->emitCode(in1 + " + " + in2 + " + " + in3);
         } else {
-            return em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ", " + in2 + ", " + in3 + ")");
         }
     }
 };
@@ -137,7 +137,7 @@ struct TreeBinaryMath : TreeNode {
         } else if (op == "div") {
             return em->emitCode(in1 + " / " + in2);
         } else {
-            return em->emitCode(op + "(" + in1 + ", " + in2 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ", " + in2 + ")");
         }
     }
 };
@@ -174,7 +174,7 @@ struct TreeUnaryMath : TreeNode {
         } else if (op == "neg") {
             return em->emitCode("-" + in1);
         } else {
-            return em->emitCode(op + "(" + in1 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ")");
         }
     }
 };

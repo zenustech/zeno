@@ -47,6 +47,8 @@ struct EmissionPass {
     std::string extensionsCode;       /* OpenGL extensions, e.g. "#extension GL_EXT_gpu_shader4 : enable" */
 
     ZENO_API std::string typeNameOf(int type) const;
+    ZENO_API std::string funcName(std::string const &fun) const;
+
     ZENO_API std::string finalizeCode(std::vector<std::pair<int, std::string>> const &keys,
                                       std::vector<std::shared_ptr<IObject>> const &vals);
     ZENO_API std::string finalizeCode();

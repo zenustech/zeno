@@ -64,6 +64,16 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node
     return typeNameOf(currentType(node)) + "(" + determineExpr(object) + ")";
 }
 
+ZENO_API std::string EmissionPass::funcName(std::string const &fun) const {
+    if (backend == HLSL) {
+        std::map<std::string, std::string> mp;
+        mp["mix"] = "lerp";
+        if (auto it = mp.find(fun); it != mp.end())
+            return it->second;
+    }
+    return fun;
+}
+
 ZENO_API std::string EmissionPass::addCommonFunc(EmissionPass::CommonFunc comm) {
     int idx = commons.size();
     if (comm.name.empty())
