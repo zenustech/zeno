@@ -56,6 +56,7 @@ struct EmissionPass {
     ZENO_API std::string addCommonFunc(CommonFunc func);
     ZENO_API std::string getCommonCode() const;
 
+    ZENO_API void duplicateIfHlsl(int type, std::string &expr) const;
     ZENO_API static void translateToHlsl(std::string &code);
     ZENO_API void translateCommonCode();
 
