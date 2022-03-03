@@ -6,13 +6,13 @@
      "name": "TreeFinalize",
      "inputs": {
       "basecolor": [
-       "c5f2d45e-TreeInvokeFunc",
-       "out",
+       null,
+       null,
        null
       ],
       "metallic": [
-       null,
-       null,
+       "c5f2d45e-TreeInvokeFunc",
+       "out",
        0.0
       ],
       "roughness": [
@@ -130,8 +130,8 @@
        ""
       ],
       "extensions": [
-       "b46c3d4f-MakeMultilineString",
-       "value",
+       null,
+       null,
        ""
       ],
       "SRC": [
@@ -1370,29 +1370,11 @@
       ]
      },
      "params": {
-      "value": "float PerlinNoise2D_Noise(int x,int y)\n{\n    int n = x + y * 57;\n    n = (n<<13) ^ n;\n    n = abs((n * (n * n * 15731 + 789221) + 1376312589));\n    return ( 1.0 - n / 1073741824.0);\n}\n \nfloat PerlinNoise2D_SmoothedNoise(int x, int y)\n{\n    float corners = ( PerlinNoise2D_Noise(x-1, y-1)+PerlinNoise2D_Noise(x+1, y-1)+PerlinNoise2D_Noise(x-1, y+1)+PerlinNoise2D_Noise(x+1, y+1) ) / 16;\n    float sides = ( PerlinNoise2D_Noise(x-1, y) +PerlinNoise2D_Noise(x+1, y) +PerlinNoise2D_Noise(x, y-1) +PerlinNoise2D_Noise(x, y+1) ) / 8;\n    float center = PerlinNoise2D_Noise(x, y) / 4;\n    return corners + sides + center;\n}\nfloat PerlinNoise2D_Cosine_Interpolate(float a,float b, float x)\n{\n    float ft = x * 3.1415927;\n    float f = (1 - cos(ft)) * 0.5;\n    return a*(1-f) + b*f;\n}\n \nfloat PerlinNoise2D_InterpolatedNoise(float x,float y)\n{\n    int integer_X = int(floor(x));\n    float  fractional_X = x - integer_X;\n    int integer_Y = int(floor(y));\n    float fractional_Y = y - integer_Y;\n    float v1 = PerlinNoise2D_SmoothedNoise(integer_X, integer_Y);\n    float v2 = PerlinNoise2D_SmoothedNoise(integer_X + 1, integer_Y);\n    float v3 = PerlinNoise2D_SmoothedNoise(integer_X, integer_Y + 1);\n    float v4 = PerlinNoise2D_SmoothedNoise(integer_X + 1, integer_Y + 1);\n    float i1 = PerlinNoise2D_Cosine_Interpolate(v1, v2, fractional_X);\n    float i2 = PerlinNoise2D_Cosine_Interpolate(v3, v4, fractional_X);\n    return PerlinNoise2D_Cosine_Interpolate(i1, i2, fractional_Y);\n}\n \nfloat PerlinNoise2D(float p,int n,float x,float y)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + PerlinNoise2D_InterpolatedNoise(x * frequency, y * frequency) * amplitude;\n    }\n \n    return total;\n}"
+      "value": "float nose(float x)\n{\n    return x * .8 + .08;\n}\n\nvec3 hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat noise(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return nose(mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + noise(a * frequency) * amplitude;\n    }\n\n    return total;\n}"
      },
      "uipos": [
       5569.66959388843,
       83.78434399762887
-     ],
-     "options": []
-    },
-    "b46c3d4f-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "#extension GL_EXT_gpu_shader4 : enable"
-     },
-     "uipos": [
-      5940.43046357615,
-      178.75827814569504
      ],
      "options": []
     },
@@ -1406,7 +1388,7 @@
       ]
      },
      "params": {
-      "value": "return 0.5+ PerlinNoise2D(0.7, 12, pos.x, pos.y);"
+      "value": "return pow(perlin(0.75, 10, pos),2);"
      },
      "uipos": [
       4682.72340425531,
@@ -1416,9 +1398,9 @@
     }
    },
    "view_rect": {
-    "x": 4499.728538638618,
-    "y": -391.0878643516966,
-    "width": 614.3999999999994,
+    "x": 4494.118154532611,
+    "y": -347.4457981265296,
+    "width": 614.3999999999983,
     "height": 312.31999999999954
    }
   }
@@ -9909,7 +9891,7 @@
      "vec3"
     ],
     [
-     "multiline_string",
+     "string",
      "code",
      "return arg1 + arg2;"
     ],
