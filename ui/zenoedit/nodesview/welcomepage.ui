@@ -278,18 +278,6 @@
                  <height>36</height>
                 </size>
                </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton
-{ 
-	border-style: solid;
-    border-width: 1px;
-    border-radius: 0px;
-    border-color: rgba(133,130,128,1);
-	background-color: transparent;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(156, 156, 156);
-}</string>
-               </property>
                <property name="text">
                 <string>NEW</string>
                </property>
@@ -330,19 +318,6 @@
                  <width>86</width>
                  <height>36</height>
                 </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton
-{ 
-	border-style: solid;
-    border-width: 1px;
-    border-radius: 0px;
-    border-color: rgba(133,130,128,1);
-	background-color: transparent;
-	
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(156, 156, 156);
-}</string>
                </property>
                <property name="text">
                 <string>OPEN</string>

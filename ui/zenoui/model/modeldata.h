@@ -89,7 +89,6 @@ struct SOCKET_INFO {
     PARAM_CONTROL control;
     QString type;
     QVariant defaultValue;
-    QPersistentModelIndex index;
 
     SOCKET_INFO() : control(CONTROL_NONE) {}
     SOCKET_INFO(const QString& id, const QString& name)

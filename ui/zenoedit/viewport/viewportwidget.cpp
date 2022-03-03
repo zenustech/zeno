@@ -1,6 +1,11 @@
 #include "viewportwidget.h"
 #include "zenovis.h"
 #include "camerakeyframe.h"
+#include "timeline/ztimeline.h"
+#include "graphsmanagment.h"
+#include "model/graphsmodel.h"
+#include "launch/corelaunch.h"
+#include "zenoapplication.h"
 
 
 CameraControl::CameraControl(QWidget* parent)
@@ -213,9 +218,14 @@ QDMRecordMenu::QDMRecordMenu()
 
 DisplayWidget::DisplayWidget(QWidget* parent)
     : QWidget(parent)
+    , m_view(nullptr)
+    , m_timeline(nullptr)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
+    pLayout->setSpacing(0);
+
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     /*
     ZMenuBar* menuBar = new ZMenuBar;
@@ -229,14 +239,25 @@ DisplayWidget::DisplayWidget(QWidget* parent)
     pLayout->addWidget(menuBar);
     */
 
-    m_view = new ViewportWidget(this);
+    m_view = new ViewportWidget;
     pLayout->addWidget(m_view);
 
+    m_timeline = new ZTimeline;
+    pLayout->addWidget(m_timeline);
     setLayout(pLayout);
 
     //RecordVideoDialog
     m_camera_keyframe = new CameraKeyframeWidget;
     Zenovis::GetInstance().m_camera_keyframe = m_camera_keyframe;
+
+	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
+	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
+	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
+	connect(m_timeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
+
+	QTimer* pTimer = new QTimer;
+	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+	pTimer->start(16);
 }
 
 DisplayWidget::~DisplayWidget()
@@ -258,4 +279,12 @@ QSize DisplayWidget::sizeHint() const
 void DisplayWidget::updateFrame()
 {
     m_view->update();
+}
+
+void DisplayWidget::onRunClicked(int nFrames)
+{
+	auto pGraphsMgr = zenoApp->graphsManagment();
+	IGraphsModel* pModel = pGraphsMgr->currentModel();
+	GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
+	launchProgram(pLegacy, nFrames);
 }

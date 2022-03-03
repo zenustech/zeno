@@ -1,6 +1,7 @@
 #include "ztimeline.h"
 #include "zslider.h"
 #include <comctrl/zlabel.h>
+#include <zenoui/style/zenostyle.h>
 
 
 //////////////////////////////////////////////
@@ -8,16 +9,25 @@ ZTimeline::ZTimeline(QWidget* parent)
     : QWidget(parent)
     , m_slider(nullptr)
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	QPalette pal = palette();
+	pal.setColor(QPalette::Window, QColor(30, 30, 30));
+	setAutoFillBackground(true);
+	setPalette(pal);
+
     QHBoxLayout* pLayout = new QHBoxLayout;
-    pLayout->setMargin(0);
 
     QLineEdit* pFrame = new QLineEdit;
     pFrame->setText("1");
-    pFrame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(50, 24)));
+
     QPushButton* pRun = new QPushButton(tr("Run"));
-    pRun->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pRun->setObjectName("grayButton");
+    pRun->setFixedSize(ZenoStyle::dpiScaledSize(QSize(87, 24)));
+
     QPushButton* pKill = new QPushButton(tr("Kill"));
-    pKill->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pKill->setObjectName("grayButton");
+    pKill->setFixedSize(ZenoStyle::dpiScaledSize(QSize(87, 24)));
 
     ZIconLabel* plblForward = new ZIconLabel;
     plblForward->setIcons(QSize(20, 20), ":/icons/playforward.svg", ":/icons/playforward_hover.svg", ":/icons/playforward_on.svg", ":/icons/playforward_on_hover.svg", ":/icons/playforward.svg");

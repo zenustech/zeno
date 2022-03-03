@@ -375,9 +375,14 @@ NODE_DESCS GraphsModel::getSubgraphDescs()
             }
         }
 
-        subInputs.insert(m_nodesDesc["Subgraph"].inputs);
-        subOutputs.insert(m_nodesDesc["Subgraph"].outputs);
-        
+        INPUT_SOCKET srcSock;
+        srcSock.info.name = "SRC";
+        OUTPUT_SOCKET dstSock;
+        dstSock.info.name = "DST";
+
+        subInputs.insert("SRC", srcSock);
+        subOutputs.insert("DST", dstSock);
+
         NODE_DESC desc;
         desc.inputs = subInputs;
         desc.outputs = subOutputs;

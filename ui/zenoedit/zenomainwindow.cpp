@@ -20,6 +20,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_pEditor(nullptr)
     , m_viewDock(nullptr)
+    , m_timelineDock(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -41,7 +42,7 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    simpleLayout();
+    verticalLayout();
     //onlyEditorLayout();
 }
 
@@ -256,22 +257,6 @@ void ZenoMainWindow::initDocks()
     m_editor->setWidget(m_pEditor);
     m_docks.insert(DOCK_EDITOR, m_editor);
 
-    m_timelineDock = new ZenoDockWidget(this);
-    m_timelineDock->setObjectName(QString::fromUtf8("dock_timeline"));
-    m_timelineDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    ZTimeline* pTimeline = new ZTimeline;
-    m_timelineDock->setWidget(pTimeline);
-    m_docks.insert(DOCK_TIMER, m_timelineDock);
-
-	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), pTimeline, SLOT(onTimelineUpdate(int)));
-	connect(pTimeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
-	connect(pTimeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
-    connect(pTimeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
-
-    QTimer* pTimer = new QTimer;
-    connect(pTimer, SIGNAL(timeout()), view, SLOT(updateFrame()));
-    pTimer->start(16);
-
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
     {
         ZenoDockWidget* pDock = it.value();
@@ -296,21 +281,24 @@ void ZenoMainWindow::onMaximumTriggered()
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
     ZenoDockWidget* pDockWidget = qobject_cast<ZenoDockWidget*>(sender());
+    ZenoDockWidget* pDock = new ZenoDockWidget("", this);
+    pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+
     if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDockWidget->widget()))
     {
-        ZenoDockWidget* pDock = new ZenoDockWidget("", this);
         ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor(this);
-
-        pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
         pDock->setWidget(pEditor2);
         //only one model.
         pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
         m_docks.insert(DOCK_EDITOR, pDock);
         splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-
-        connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
-        connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
     }
+    else
+    {
+        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
+    }
+	connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
+	connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
 }
 
 void ZenoMainWindow::openFileDialog()
@@ -328,6 +316,25 @@ void ZenoMainWindow::onNewFile()
 {
     saveQuit();
     zenoApp->graphsManagment()->newFile();
+}
+
+void ZenoMainWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+
+    adjustDockSize();
+}
+
+void ZenoMainWindow::adjustDockSize()
+{
+    //temp: different layout
+	float height = size().height();
+	int dockHeightA = 0.50 * height;
+	int dockHeightB = 0.50 * height;
+
+	QList<QDockWidget*> docks = { m_viewDock, m_editor };
+	QList<int> dockSizes = { dockHeightA, dockHeightB };
+	resizeDocks(docks, dockSizes, Qt::Vertical);
 }
 
 void ZenoMainWindow::importGraph()
@@ -488,16 +495,15 @@ void ZenoMainWindow::houdiniStyleLayout()
     writeHoudiniStyleLayout();
 }
 
-void ZenoMainWindow::simpleLayout()
+void ZenoMainWindow::verticalLayout()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
-    splitDockWidget(m_viewDock, m_editor, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
+    splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
 }
 
 void ZenoMainWindow::onlyEditorLayout()
 {
-    simpleLayout();
+    verticalLayout();
 	for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
 	{
 		ZenoDockWidget* pDock = it.value();

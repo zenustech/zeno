@@ -38,12 +38,15 @@ public slots:
     void onDockSwitched(DOCK_TYPE);
     void importGraph();
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
     void init();
     void initMenu();
     void initDocks();
     void houdiniStyleLayout();
-    void simpleLayout();
+    void verticalLayout();
     void onlyEditorLayout();
     void simpleLayout2();
     void arrangeDocks2();
@@ -52,6 +55,7 @@ private:
     void writeSettings2();
     void readHoudiniStyleLayout();
     void readSettings2();
+    void adjustDockSize();
     QString getOpenFileByDialog();
 
     ZenoDockWidget *m_viewDock;

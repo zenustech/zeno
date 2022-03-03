@@ -6,6 +6,7 @@
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
 
+class ZTimeline;
 
 class QDMDisplayMenu : public ZMenu
 {
@@ -80,12 +81,14 @@ public:
 
 public slots:
     void updateFrame();
+    void onRunClicked(int nFrames);
 
 signals:
     void frameUpdated(int new_frame);
 
 private:
     ViewportWidget* m_view;
+    ZTimeline* m_timeline;
     CameraKeyframeWidget* m_camera_keyframe;
 };
 
