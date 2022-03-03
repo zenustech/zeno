@@ -46,10 +46,10 @@ struct TreeMakeVec : TreeNode {
 
 ZENDEFNODE(TreeMakeVec, {
     {
-        {"float", "x", "0"},
-        {"float", "y", "0"},
-        {"float", "z", "0"},
-        {"float", "w", "0"},
+        {"tree", "x"},
+        {"tree", "y"},
+        {"tree", "z"},
+        {"tree", "w"},
     },
     {
         {"vec4f", "out"},

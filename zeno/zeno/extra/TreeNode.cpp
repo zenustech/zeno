@@ -73,7 +73,7 @@ ZENO_API std::string EmissionPass::addCommonFunc(EmissionPass::CommonFunc comm) 
 }
 
 ZENO_API std::string EmissionPass::getCommonCode() const {
-    std::string ret;
+    std::string ret = commonCode;
     for (int i = 0; i < commons.size(); i++) {
         ret += typeNameOf(commons[i].rettype) + " " + commons[i].name + commons[i].code + "\n";
     }

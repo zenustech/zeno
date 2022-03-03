@@ -43,6 +43,8 @@ struct EmissionPass {
     std::vector<VarInfo> variables;  /* variables[40].type = 3, then the variable type will be "vec3 tmp40;" */
     std::vector<std::string> lines;  /* contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"} */
     std::vector<CommonFunc> commons;  /* definition of common functions, including custom functions and pre-defined functions */
+    std::string commonCode;           /* other common codes written directly, e.g. "void myutilfunc() {...}" */
+    std::string extensionsCode;       /* OpenGL extensions, e.g. "#extension GL_EXT_gpu_shader4 : enable" */
 
     ZENO_API std::string typeNameOf(int type) const;
     ZENO_API std::string finalizeCode(std::vector<std::pair<int, std::string>> const &keys,

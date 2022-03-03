@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/TreeNode.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/types/TreeObject.h>
 #include <zeno/utils/string.h>
 
@@ -14,6 +15,9 @@ struct TreeFinalize : INode {
             em.backend = em.HLSL;
         else if (backend == "GLSL")
             em.backend = em.GLSL;
+
+        if (has_input("commonCode"))
+            em.commonCode += get_input<StringObject>("commonCode")->get();
 
         auto code = em.finalizeCode({
             {3, "mat_basecolor"},
@@ -44,6 +48,8 @@ ZENDEFNODE(TreeFinalize, {
         {"float", "specular", "0.5"},
         {"vec3f", "normal", "0,0,1"},
         {"vec3f", "emission", "0,0,0"},
+        {"string", "commonCode"},
+        {"string", "extensionsCode"},
     },
     {
         {"string", "code"},

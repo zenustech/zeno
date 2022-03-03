@@ -370,6 +370,7 @@ void main()
     if (frag.size() == 0) {
       frag = R"(
 #version 120
+)" + (mtl ? mtl->extensions : "") + R"(
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -417,13 +418,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
 
     light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
-    color += vec3(0.45, 0.47, 0.5) * pbr(albedo, 0.19, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.45, 0.47, 0.5) * pbr(albedo, 0.44, 0.0, 1.0, normal, light_dir, view_dir);
 
     light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
-    color += vec3(0.3, 0.23, 0.18) * pbr(albedo, 0.14, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.3, 0.23, 0.18) * pbr(albedo, 0.37, 0.0, 1.0, normal, light_dir, view_dir);
 
     light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
-    color += vec3(0.15, 0.2, 0.22) * pbr(albedo, 0.23, 0.0, 1.0, normal, light_dir, view_dir);
+    color += vec3(0.15, 0.2, 0.22) * pbr(albedo, 0.48, 0.0, 1.0, normal, light_dir, view_dir);
 
     color *= 1.2;
     //color = pow(clamp(color, 0., 1.), vec3(1./2.2));

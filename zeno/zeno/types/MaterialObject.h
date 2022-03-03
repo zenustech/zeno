@@ -14,6 +14,7 @@ namespace zeno
         std::string vert;
         std::string frag;
         std::string common;
+        std::string extensions;
 
         std::vector<char> serialize()
         {
@@ -24,7 +25,9 @@ namespace zeno
             auto vertLen{vert.size()};
             auto fragLen{frag.size()};
             auto commonLen{common.size()};
-            str.resize(vertLen + sizeof(vertLen) + fragLen + sizeof(fragLen) + commonLen + sizeof(commonLen));
+            auto extensionsLen{extensions.size()};
+            str.resize(vertLen + sizeof(vertLen) + fragLen + sizeof(fragLen)
+                       + commonLen + sizeof(commonLen) + extensionsLen + sizeof(extensionsLen));
 
             memcpy(str.data() + i, &vertLen, sizeof(vertLen));
             i += sizeof(vertLen);
@@ -43,6 +46,12 @@ namespace zeno
 
             common.copy(str.data() + i, commonLen);
             i += commonLen;
+
+            memcpy(str.data() + i, &extensionsLen, sizeof(extensionsLen));
+            i += sizeof(extensionsLen);
+
+            extensions.copy(str.data() + i, extensionsLen);
+            i += extensionsLen;
 
             return str;
         }
@@ -73,6 +82,13 @@ namespace zeno
 
             mtl.common = std::string{str.data() + i, commonLen};
             i += commonLen;
+
+            size_t extensionsLen;
+            memcpy(&extensionsLen, str.data() + i, sizeof(extensionsLen));
+            i += sizeof(extensionsLen);
+
+            mtl.extensions = std::string{str.data() + i, extensionsLen};
+            i += extensionsLen;
 
             return mtl;
         }
