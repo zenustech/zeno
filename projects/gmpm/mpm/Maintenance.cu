@@ -148,7 +148,8 @@ struct PushOutZSParticles : INode {
               auto &fvDst = std::get<1>(fieldPair);
               pushout(cudaPol, pars,
                       TransitionLevelSetView{SdfVelFieldView{fvSrc},
-                                             SdfVelFieldView{fvDst}},
+                                             SdfVelFieldView{fvDst}, ls._stepDt,
+                                             ls._alpha},
                       dis);
             })(ls.template getView<execspace_e::cuda>());
           })(zsls->getLevelSet());
