@@ -92,6 +92,61 @@ ZENDEFNODE(PrintString, {
     {"string"},
 });
 
+struct FileWriteString
+    : zeno::INode
+{
+    virtual void apply() override
+    {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        auto str = get_input<zeno::StringObject>("str")->get();
+        std::ofstream ofs{path};
+        ofs << str;
+        ofs.close();
+    }
+};
+
+ZENDEFNODE(
+    FileWriteString,
+    {
+        {
+            {"string", "str", ""},
+            {"writepath", "path", ""},
+        },
+        {},
+        {},
+        {"string"},
+    });
+
+struct FileReadString
+    : zeno::INode
+{
+    virtual void apply() override
+    {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        std::ifstream ifs{path};
+        std::string buffer;
+        ifs >> buffer;
+        ifs.close();
+
+        auto str = std::make_unique<zeno::StringObject>();
+        str->set(buffer);
+        set_output2("str", std::move(str));
+    }
+};
+
+ZENDEFNODE(
+    FileReadString,
+    {
+        {
+            {"readpath", "path"},
+        },
+        {
+            {"string", "str"},
+        },
+        {},
+        {"string"},
+    });
+
 #ifdef ZENO_GLOBALSTATE
 struct StringFormat : zeno::INode {
     virtual void apply() override {
