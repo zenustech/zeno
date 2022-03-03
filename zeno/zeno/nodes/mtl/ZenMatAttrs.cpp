@@ -1,12 +1,12 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ZenMatNode.h>
+#include <zeno/types/ZenMatObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
-struct TreeInputAttr : TreeNode {
+struct ZenMatInputAttr : ZenMatNode {
     virtual int determineType(EmissionPass *em) override {
         auto type = get_input2<std::string>("type");
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};
@@ -20,7 +20,7 @@ struct TreeInputAttr : TreeNode {
     }
 };
 
-ZENDEFNODE(TreeInputAttr, {
+ZENDEFNODE(ZenMatInputAttr, {
     {
         {"enum pos clr nrm", "attr", "pos"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
@@ -29,7 +29,7 @@ ZENDEFNODE(TreeInputAttr, {
         {"tree", "out"},
     },
     {},
-    {"tree"},
+    {"zenMat"},
 });
 
 

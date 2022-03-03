@@ -88,7 +88,7 @@ void main()
           },
           {},
           {
-              "material",
+              "zenMat",
           },
       });
 
@@ -116,7 +116,7 @@ void main()
           },
           {},
           {
-              "material",
+              "zenMat",
           },
       });
 

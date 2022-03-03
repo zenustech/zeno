@@ -1,17 +1,17 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ZenMatNode.h>
+#include <zeno/types/ZenMatObject.h>
 #include <zeno/types/NumericObject.h>
 #include <sstream>
 #include <cassert>
 
 namespace zeno {
 
-ZENO_API TreeNode::TreeNode() = default;
-ZENO_API TreeNode::~TreeNode() = default;
+ZENO_API ZenMatNode::ZenMatNode() = default;
+ZENO_API ZenMatNode::~ZenMatNode() = default;
 
-ZENO_API void TreeNode::apply() {
-    auto tree = std::make_shared<TreeObject>(this);
+ZENO_API void ZenMatNode::apply() {
+    auto tree = std::make_shared<ZenMatObject>(this);
     set_output("out", std::move(tree));
 }
 
@@ -42,7 +42,7 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
             }
         }, num->value);
 
-    } else if (auto tree = dynamic_cast<TreeObject *>(object)) {
+    } else if (auto tree = dynamic_cast<ZenMatObject *>(object)) {
         assert(tree->node);
         if (auto it = varmap.find(tree->node); it != varmap.end())
             return variables.at(it->second).type;
@@ -56,11 +56,11 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
     }
 }
 
-ZENO_API int EmissionPass::currentType(TreeNode *node) const {
+ZENO_API int EmissionPass::currentType(ZenMatNode *node) const {
     return variables[varmap.at(node)].type;
 }
 
-ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node) const {
+ZENO_API std::string EmissionPass::determineExpr(IObject *object, ZenMatNode *node) const {
     auto type = currentType(node);
     auto expr = determineExpr(object);
     duplicateIfHlsl(type, expr);
@@ -158,7 +158,7 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
             }
         }, num->value);
 
-    } else if (auto tree = dynamic_cast<TreeObject *>(object)) {
+    } else if (auto tree = dynamic_cast<ZenMatObject *>(object)) {
         return "tmp" + std::to_string(varmap.at(tree->node));
     }
 }

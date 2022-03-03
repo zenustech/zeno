@@ -1,13 +1,13 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ZenMatNode.h>
+#include <zeno/types/ZenMatObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
 namespace {
-struct ImplTreeExtractVec : TreeNode {
+struct ImplZenMatExtractVec : ZenMatNode {
     int comp{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -23,13 +23,13 @@ struct ImplTreeExtractVec : TreeNode {
 };
 }
 
-struct TreeExtractVec : INode {
+struct ZenMatExtractVec : INode {
     virtual void apply() override {
         for (int i = 0; i < 4; i++) {
-            auto node = std::make_shared<ImplTreeExtractVec>();
+            auto node = std::make_shared<ImplZenMatExtractVec>();
             node->inputs["vec"] = get_input("vec");
             node->comp = i;
-            auto tree = std::make_shared<TreeObject>(node.get());
+            auto tree = std::make_shared<ZenMatObject>(node.get());
             tree->extra_data = std::move(node);
             set_output(std::string{} + "xyzw"[i], std::move(tree));
         }
@@ -37,7 +37,7 @@ struct TreeExtractVec : INode {
 };
 
 
-ZENDEFNODE(TreeExtractVec, {
+ZENDEFNODE(ZenMatExtractVec, {
     {
         {"vec3f", "vec"},
     },
@@ -48,11 +48,11 @@ ZENDEFNODE(TreeExtractVec, {
         {"float", "w"},
     },
     {},
-    {"tree"},
+    {"zenMat"},
 });
 
 
-struct TreeReduceVec : TreeNode {
+struct ZenMatReduceVec : ZenMatNode {
     int tyin{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -78,7 +78,7 @@ struct TreeReduceVec : TreeNode {
 };
 
 
-ZENDEFNODE(TreeReduceVec, {
+ZENDEFNODE(ZenMatReduceVec, {
     {
         {"vec3f", "in"},
     },
@@ -88,7 +88,7 @@ ZENDEFNODE(TreeReduceVec, {
     {
         {"enum average sum", "op", "average"},
     },
-    {"tree"},
+    {"zenMat"},
 });
 
 

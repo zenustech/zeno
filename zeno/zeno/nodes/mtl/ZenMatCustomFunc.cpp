@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ZenMatNode.h>
+#include <zeno/types/ZenMatObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
@@ -8,7 +8,7 @@
 namespace zeno {
 
 
-struct TreeCustomFuncObject : IObjectClone<TreeCustomFuncObject> {
+struct ZenMatCustomFuncObject : IObjectClone<ZenMatCustomFuncObject> {
     std::string name;
     std::string code;
     std::vector<int> argTypes;
@@ -16,13 +16,13 @@ struct TreeCustomFuncObject : IObjectClone<TreeCustomFuncObject> {
 };
 
 
-struct TreeCustomFunc : INode {
+struct ZenMatCustomFunc : INode {
     virtual void apply() override {
         auto code = get_input<StringObject>("code")->get();
         auto args = get_input2<std::string>("args");
         auto rettype = get_input2<std::string>("rettype");
 
-        auto func = std::make_shared<TreeCustomFuncObject>();
+        auto func = std::make_shared<ZenMatCustomFuncObject>();
 
         static const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         {
@@ -64,23 +64,23 @@ struct TreeCustomFunc : INode {
 };
 
 
-ZENDEFNODE(TreeCustomFunc, {
+ZENDEFNODE(ZenMatCustomFunc, {
     {
         {"string", "args", "vec3 arg1, vec3 arg2"},
         {"enum float vec2 vec3 vec4", "rettype", "vec3"},
         {"string", "code", "return arg1 + arg2;"},
     },
     {
-        {"TreeCustomFuncObject", "func"},
+        {"ZenMatCustomFuncObject", "func"},
     },
     {},
-    {"tree"},
+    {"zenMat"},
 });
 
 
-struct TreeInvokeFunc : TreeNode {
+struct ZenMatInvokeFunc : ZenMatNode {
     virtual int determineType(EmissionPass *em) override {
-        auto func = get_input<TreeCustomFuncObject>("func");
+        auto func = get_input<ZenMatCustomFuncObject>("func");
         auto args = get_input<ListObject>("args");
         if (args->arr.size() != func->argTypes.size())
             throw zeno::Exception("expect " + std::to_string(func->argTypes.size())
@@ -99,7 +99,7 @@ struct TreeInvokeFunc : TreeNode {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto func = get_input<TreeCustomFuncObject>("func");
+        auto func = get_input<ZenMatCustomFuncObject>("func");
         auto args = get_input<ListObject>("args");
         if (func->name.empty()) {
             EmissionPass::CommonFunc comm;
@@ -121,16 +121,16 @@ struct TreeInvokeFunc : TreeNode {
 };
 
 
-ZENDEFNODE(TreeInvokeFunc, {
+ZENDEFNODE(ZenMatInvokeFunc, {
     {
-        {"TreeCustomFuncObject", "func"},
+        {"ZenMatCustomFuncObject", "func"},
         {"list", "args"},
     },
     {
         {"tree", "out"},
     },
     {},
-    {"tree"},
+    {"zenMat"},
 });
 
 

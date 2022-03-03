@@ -9,13 +9,13 @@
 
 namespace zeno {
 
-struct TreeNode;
+struct ZenMatNode;
 
-struct TreeObject : IObjectClone<TreeObject> {
-    TreeNode *node;
+struct ZenMatObject : IObjectClone<ZenMatObject> {
+    ZenMatNode *node;
     std::any extra_data;
 
-    ZENO_API explicit TreeObject(TreeNode *node) : node(std::move(node)) {}
+    ZENO_API explicit ZenMatObject(ZenMatNode *node) : node(std::move(node)) {}
 };
 
 }
