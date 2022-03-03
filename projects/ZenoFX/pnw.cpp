@@ -13,7 +13,6 @@
 // #if defined(_OPENMP)
 #include <omp.h>
 // #endif
-#define bvh 0
 namespace {
 
 static zfx::Compiler compiler;
@@ -27,7 +26,6 @@ struct Buffer {
 };
 
 
-#if bvh
 struct LBvh : zeno::IObject {
     enum element_e {point = 0, line, tri, tet};
     using TV = zeno::vec3f;
@@ -308,7 +306,7 @@ struct LBvh : zeno::IObject {
                 return false;
         return true;
     }
-    static constexpr float distance(const Box& bv, const TV &x) {
+    static float distance(const Box& bv, const TV &x) {
         const auto &[mi, ma] = bv;
         TV center = (mi + ma) / 2;
         TV point = abs(x - center) - (ma - mi) / 2;
@@ -319,7 +317,7 @@ struct LBvh : zeno::IObject {
         }
         return (max < 0.f ? max : 0.f) + length(point);
     }
-    static constexpr float distance(const TV &x, const Box& bv) {
+    static float distance(const TV &x, const Box& bv) {
         return distance(bv, x);
     }
 
@@ -373,7 +371,6 @@ struct LBvh : zeno::IObject {
         }
     }
 };
-#endif
 struct HashGrid : zeno::IObject {
     float inv_dx;
     float radius;
@@ -514,7 +511,7 @@ static void vectors_wrangle
     }
 }
 
-#if bvh
+
 static void bvh_vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
@@ -545,7 +542,7 @@ static void bvh_vectors_wrangle
         }
     }
 }
-#endif
+
 struct ParticlesBuildHashGrid : zeno::INode {
     virtual void apply() override {
         auto primNei = get_input<zeno::PrimitiveObject>("primNei");
@@ -565,7 +562,7 @@ ZENDEFNODE(ParticlesBuildHashGrid, {
     {"zenofx"},
 });
 
-#if bvh
+
 struct ParticlesBuildBvh : zeno::INode {
     virtual void apply() override {
         auto primNei = get_input<zeno::PrimitiveObject>("primNei");
@@ -583,7 +580,7 @@ ZENDEFNODE(ParticlesBuildBvh, {
     {},
     {"zenofx"},
 });
-#endif
+
 struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -744,7 +741,6 @@ ZENDEFNODE(ParticlesNeighborWrangle, {
     {"zenofx"},
 });
 
-#if bvh
 struct ParticlesNeighborBvhWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -904,5 +900,5 @@ ZENDEFNODE(ParticlesNeighborBvhWrangle, {
     {},
     {"zenofx"},
 });
-#endif
+
 }
