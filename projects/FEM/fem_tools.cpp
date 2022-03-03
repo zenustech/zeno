@@ -9,18 +9,20 @@ namespace zeno {
 struct ParticlesToSegments : zeno::INode {
     virtual void apply() override {
         auto particles = get_input<zeno::PrimitiveObject>("particles");
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
-        auto attr_name = get_param<std::string>("attr_name");
+        auto dt = get_input2<float>("dt");
+        auto dir_chanel = get_param<std::string>("dir_chanel");
         const auto& ppos = particles->verts;
-        if(!particles->has_attr(attr_name)){
-            std::cout << "PARITCLES_TO_SEGMENTS NO SPECIFIED ATTRIBUTES " << attr_name << std::endl;
+        if(!particles->has_attr(dir_chanel)){
+            std::cout << "PARITCLES_TO_SEGMENTS NO SPECIFIED ATTRIBUTES " << dir_chanel << std::endl;
             throw std::runtime_error("PARITCLES_TO_SEGMENTS NO SPECIFIED ATTRIBUTES");
         }
 
-        const auto& pvel = particles->attr<zeno::vec3f>(attr_name);
+
+        std::cout << "dt :" << dt << std::endl;
+        const auto& pvel = particles->attr<zeno::vec3f>(dir_chanel);
 
         auto segs = std::make_shared<zeno::PrimitiveObject>();
-        auto& svel = segs->add_attr<zeno::vec3f>(attr_name);
+        auto& svel = segs->add_attr<zeno::vec3f>(dir_chanel);
         segs->resize(particles->size() * 2);
         auto& segLines = segs->lines;
         segLines.resize(particles->size());
@@ -38,9 +40,9 @@ struct ParticlesToSegments : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesToSegments, {
-    {"particles","dt"},
+    {"particles",{"float","dt","1.0"}},
     {"seg"},
-    {{"string","attr_name",""}},
+    {{"string","dir_chanel",""}},
     {"FEM"},
 });
 
@@ -177,10 +179,10 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
         auto& elm_w = prim->add_attr<zeno::vec3f>("embed_w");
         // elm_w.resize(prim->size(),zeno::vec3f(0));
 
-        auto& v0s = prim->add_attr<zeno::vec3f>("v0");
-        auto& v1s = prim->add_attr<zeno::vec3f>("v1");
-        auto& v2s = prim->add_attr<zeno::vec3f>("v2");
-        auto& v3s = prim->add_attr<zeno::vec3f>("v3");
+        // auto& v0s = prim->add_attr<zeno::vec3f>("v0");
+        // auto& v1s = prim->add_attr<zeno::vec3f>("v1");
+        // auto& v2s = prim->add_attr<zeno::vec3f>("v2");
+        // auto& v3s = prim->add_attr<zeno::vec3f>("v3");
         // prim->resize(prim->size());
 
         // std::cout << "CHECK:" << embed_id[10641] << std::endl;
@@ -256,10 +258,10 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
                         std::cout << "INTERP ERROR : " << interpError << "\t" << interpPos.transpose() << "\t" << vp.transpose() << std::endl;
                     }
                     prim->verts[i] = zeno::vec3f(interpPos[0],interpPos[1],interpPos[2]);
-                    v0s[i] = zeno::vec3f(v0[0],v0[1],v0[2]);
-                    v1s[i] = zeno::vec3f(v1[0],v1[1],v1[2]);
-                    v2s[i] = zeno::vec3f(v2[0],v2[1],v2[2]);
-                    v3s[i] = zeno::vec3f(v3[0],v3[1],v3[2]);
+                    // v0s[i] = zeno::vec3f(v0[0],v0[1],v0[2]);
+                    // v1s[i] = zeno::vec3f(v1[0],v1[1],v1[2]);
+                    // v2s[i] = zeno::vec3f(v2[0],v2[1],v2[2]);
+                    // v3s[i] = zeno::vec3f(v3[0],v3[1],v3[2]);
                     
                     // if(i == 10641){
                     //     std::cout << "FIND : " << i << "\t" << j << std::endl;
@@ -318,7 +320,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
                 elm_w[i] = zeno::vec3f(closest_tet_w[0],closest_tet_w[1],closest_tet_w[2]);
 
 
-                std::cout << "CORRECT ID : " << i << "\t" << closest_tet_id << "\t" << closest_tet_w.transpose() << std::endl;
+                // std::cout << "CORRECT ID : " << i << "\t" << closest_tet_id << "\t" << closest_tet_w.transpose() << std::endl;
             }
         }
 
@@ -353,10 +355,10 @@ struct InterpolateEmbedPrimitive : zeno::INode {
         const auto& vposs = volume->attr<zeno::vec3f>("curPos");
         auto& eposs = res->add_attr<zeno::vec3f>("curPos");
 
-        const auto& v0s = res->attr<zeno::vec3f>("v0");
-        const auto& v1s = res->attr<zeno::vec3f>("v1");
-        const auto& v2s = res->attr<zeno::vec3f>("v2");
-        const auto& v3s = res->attr<zeno::vec3f>("v3");
+        // const auto& v0s = res->attr<zeno::vec3f>("v0");
+        // const auto& v1s = res->attr<zeno::vec3f>("v1");
+        // const auto& v2s = res->attr<zeno::vec3f>("v2");
+        // const auto& v3s = res->attr<zeno::vec3f>("v3");
 
         // #pragma omp parallel for
         for(size_t i = 0;i < skin->size();++i){
