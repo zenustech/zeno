@@ -12,7 +12,7 @@ float perlin_lev1(vec3 p)
     vec3 pi = floor(p);
     vec3 pf = p - pi;
     vec3 w = pf * pf * (3.0 - 2.0 * pf);
-    return .08 + .8 + (mix(
+    return .08 + .8 * (mix(
 			    mix(
 				    mix(
 					    dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),

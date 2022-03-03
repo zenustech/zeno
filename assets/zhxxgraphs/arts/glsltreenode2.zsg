@@ -52,7 +52,7 @@
       ]
      },
      "params": {
-      "backend": "HLSL"
+      "backend": "GLSL"
      },
      "uipos": [
       5645.679299233394,
@@ -1370,7 +1370,7 @@
       ]
      },
      "params": {
-      "value": "float nose(float x)\n{\n    return x * .8 + .08;\n}\n\nvec3 hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat noise(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return nose(mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + noise(a * frequency) * amplitude;\n    }\n\n    return total;\n}"
+      "value": "vec3 perlin_hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat perlin_lev1(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return .08 + .8 * (mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + perlin_lev1(a * frequency) * amplitude;\n    }\n\n    return total;\n}"
      },
      "uipos": [
       5569.66959388843,
@@ -1398,10 +1398,10 @@
     }
    },
    "view_rect": {
-    "x": 5299.221200890252,
-    "y": -325.72818223248976,
-    "width": 614.3999999999983,
-    "height": 312.31999999999954
+    "x": 5293.370077271835,
+    "y": 16.753414593492437,
+    "width": 767.9999999999974,
+    "height": 390.3999999999994
    }
   }
  },
