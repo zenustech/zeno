@@ -2,10 +2,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/orthonormal.h>
-#include <zeno/utils/parallel.h>
-#include <sstream>
-#include <iostream>
 #include <random>
 #include <cmath>
 #ifndef M_PI
@@ -22,12 +18,12 @@ struct PrimitiveScatter : INode {
         auto type = get_param<std::string>("type");
         auto retprim = std::make_shared<PrimitiveObject>();
 
-        if (type == "tris") {
+        if (type == "tris" && prim->tris.size()) {
             float total = 0;
             std::vector<float> cdf(prim->tris.size());
             for (size_t i = 0; i < prim->tris.size(); i++) {
                 auto const &ind = prim->tris[i];
-                std::cout << '?' << i << ' ' << ind[0] << std::endl;
+                //std::cout << '?' << i << ' ' << ind[0] << std::endl;
                 auto a = prim->verts[ind[0]];
                 auto b = prim->verts[ind[1]];
                 auto c = prim->verts[ind[2]];
@@ -43,33 +39,33 @@ struct PrimitiveScatter : INode {
             std::mt19937 gen(seed);
             std::uniform_real_distribution<float> unif;
 
-            retprim->verts.reserve(npoints);
+            retprim->verts.resize(npoints);
+#pragma omp simd
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);
                 size_t index = it - cdf.begin();
                 index = std::min(index, prim->tris.size() - 1);
                 auto const &ind = prim->tris[index];
-                std::cout << '!' << index << ' ' << ind[0] << std::endl;
+                //std::cout << '!' << index << ' ' << ind[0] << std::endl;
                 auto a = prim->verts[ind[0]];
                 auto b = prim->verts[ind[1]];
                 auto c = prim->verts[ind[2]];
                 auto r1 = std::sqrt(unif(gen));
                 auto r2 = unif(gen);
                 auto p = (1 - r1) * a + (r1 * (1 - r2)) * b + (r1 * r2) * c;
-                retprim->verts.push_back(p);
+                retprim->verts[i] = p;
             }
 
-        } else if (type == "lines") {
+        } else if (type == "lines" && prim->lines.size()) {
             float total = 0;
-            std::vector<float> cdf(prim->tris.size());
-            for (size_t i = 0; i < prim->tris.size(); i++) {
-                auto const &ind = prim->tris[i];
-                std::cout << '?' << i << ' ' << ind[0] << std::endl;
+            std::vector<float> cdf(prim->lines.size());
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                auto const &ind = prim->lines[i];
+                //std::cout << '?' << i << ' ' << ind[0] << std::endl;
                 auto a = prim->verts[ind[0]];
                 auto b = prim->verts[ind[1]];
-                auto c = prim->verts[ind[2]];
-                auto area = length(cross(c - a, c - b));
+                auto area = length(b - a);
                 total += area;
                 cdf[i] = total;
             }
@@ -81,25 +77,22 @@ struct PrimitiveScatter : INode {
             std::mt19937 gen(seed);
             std::uniform_real_distribution<float> unif;
 
-            retprim->verts.reserve(npoints);
+            retprim->verts.resize(npoints);
+#pragma omp simd
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);
                 size_t index = it - cdf.begin();
-                index = std::min(index, prim->tris.size() - 1);
-                auto const &ind = prim->tris[index];
-                std::cout << '!' << index << ' ' << ind[0] << std::endl;
+                index = std::min(index, prim->lines.size() - 1);
+                auto const &ind = prim->lines[index];
+                //std::cout << '!' << index << ' ' << ind[0] << std::endl;
                 auto a = prim->verts[ind[0]];
                 auto b = prim->verts[ind[1]];
-                auto c = prim->verts[ind[2]];
-                auto r1 = std::sqrt(unif(gen));
-                auto r2 = unif(gen);
-                auto p = (1 - r1) * a + (r1 * (1 - r2)) * b + (r1 * r2) * c;
-                retprim->verts.push_back(p);
+                auto r1 = unif(gen);
+                auto p = a * (1 - r1) + b * r1;
+                retprim->verts[i] = p;
             }
 
-        } else {
-            throw;
         }
 
         set_output("points", std::move(retprim));
