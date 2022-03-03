@@ -136,21 +136,5 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
     // end of deprecated
 };
-static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t index)
-        {
-            for(auto key:src->attr_keys())
-            {
-                //using T = std::decay_t<decltype(src->attr(key)[0])>;
-                if (key != "pos") {
-                std::visit([index, &key, dst](auto &&src) {
-                    using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
-                    std::get<SrcT>(dst->attr(key)).emplace_back(src[index]);
-                }, src->attr(key));
-                // dst->attr(key).emplace_back(src->attr(key)[index]);
-                } else {
-                    dst->attr<vec3f>(key).emplace_back(src->attr<vec3f>(key)[index]);
-                }
-            }
-            dst->resize(dst->attr<zeno::vec3f>("pos").size());
-        }
+
 } // namespace zeno
