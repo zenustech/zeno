@@ -20,9 +20,9 @@ ZENO_API std::string EmissionPass::finalizeCode() {
     for (auto const &var: variables) {
         var.node->emitCode(this);
     }
+    translateCommonCode();
     auto code = collectCode();
-    code = defs + code;
-    return {code};
+    return defs + code;
 }
 
 ZENO_API int EmissionPass::determineType(IObject *object) {
@@ -64,11 +64,20 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node
     return typeNameOf(currentType(node)) + "(" + determineExpr(object) + ")";
 }
 
+static const auto cihou = [] {
+    std::map<std::string, std::string> cihou;
+    cihou["mix"] = "lerp";
+    cihou["inversesqrt"] = "rsqrt";
+    cihou["mod"] = "fmod";
+    cihou["vec2"] = "float2";
+    cihou["vec3"] = "float3";
+    cihou["vec4"] = "float4";
+    return cihou;
+}();
+
 ZENO_API std::string EmissionPass::funcName(std::string const &fun) const {
     if (backend == HLSL) {
-        std::map<std::string, std::string> mp;
-        mp["mix"] = "lerp";
-        if (auto it = mp.find(fun); it != mp.end())
+        if (auto it = cihou.find(fun); it != cihou.end())
             return it->second;
     }
     return fun;
@@ -85,7 +94,7 @@ ZENO_API std::string EmissionPass::addCommonFunc(EmissionPass::CommonFunc comm) 
 ZENO_API std::string EmissionPass::getCommonCode() const {
     std::string ret = commonCode;
     for (int i = 0; i < commons.size(); i++) {
-        ret += typeNameOf(commons[i].rettype) + " " + commons[i].name + commons[i].code + "\n";
+        ret += "\n" + typeNameOf(commons[i].rettype) + " " + commons[i].name + commons[i].code + "\n";
     }
     return ret;
 }
@@ -168,6 +177,32 @@ ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::pair<int, std::
         code += typeNameOf(our_type) + " " + keys[i].second + " = " + typeNameOf(our_type) + "(" + expr + ");\n";
     }
     return code;
+}
+
+ZENO_API void EmissionPass::translateToHlsl(std::string &code) {
+    std::string ret;
+    for (auto const &[key, val]: cihou) {
+        size_t pos = 0, last_pos = 0;
+        ret.clear();
+        while ((pos = code.find(key, pos)) != std::string::npos) {
+            printf("%s %s %d %d\n", key.c_str(), code.substr(pos).c_str(), last_pos, pos);
+            ret.append(code, last_pos, pos - last_pos);
+            ret.append(val);
+            pos += key.size();
+            last_pos = pos;
+        }
+        if (!ret.empty() && last_pos != 0) {
+            ret.append(code, last_pos, std::string::npos);
+            code = std::move(ret);
+        }
+    }
+}
+
+ZENO_API void EmissionPass::translateCommonCode() {
+    if (backend != HLSL) return;
+    for (auto &comm: commons)
+        translateToHlsl(comm.code);
+    translateToHlsl(commonCode);
 }
 
 }
