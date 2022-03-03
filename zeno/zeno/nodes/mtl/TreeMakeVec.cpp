@@ -83,6 +83,7 @@ struct TreeFillVec : TreeNode {
         auto type = get_input2<std::string>("type");
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         auto ty = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab) + 1;
+        em->duplicateIfHlsl(ty, in);
         em->emitCode(em->typeNameOf(ty) + "(" + in + ")");
     }
 };

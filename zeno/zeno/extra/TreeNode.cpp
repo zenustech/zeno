@@ -61,7 +61,18 @@ ZENO_API int EmissionPass::currentType(TreeNode *node) const {
 }
 
 ZENO_API std::string EmissionPass::determineExpr(IObject *object, TreeNode *node) const {
-    return typeNameOf(currentType(node)) + "(" + determineExpr(object) + ")";
+    auto type = currentType(node);
+    auto expr = determineExpr(object);
+    duplicateIfHlsl(type, expr);
+    return typeNameOf(type) + "(" + expr + ")";
+}
+
+ZENO_API void EmissionPass::duplicateIfHlsl(int type, std::string &expr) const {
+    if (backend == HLSL) {
+        auto tmp = ", " + expr;
+        for (int i = 1; i < type; i++)
+            expr += tmp;
+    }
 }
 
 static const auto cihou = [] {
