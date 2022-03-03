@@ -249,7 +249,7 @@ read_obj_file_dict(
                 dict[sub_name] = std::move(sub_indices);
             }
             sub_name = items[0];
-            fmt::print("sub_mesh: {}\n", sub_name);
+            // fmt::print("sub_mesh: {}\n", sub_name);
         }
     }
     if (sub_indices.size() > 0) {
