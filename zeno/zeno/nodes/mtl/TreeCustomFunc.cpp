@@ -33,27 +33,29 @@ struct TreeCustomFunc : INode {
         }
 
         std::string exp;
-        // is void possible?
+        // is void possible? NO, use empty string for void!
         // if(!strcmp(args, "void") {
         //     func->code = "(" + args + ") {\n" + code + "\n}"
         // }
         // else{}
-        auto arglist = zeno::split_str(args, ',');
-        for (auto const &argi: arglist) {
-            auto argj = zeno::split_str(zeno::trim_string(argi), ' ');
-            if (argj.size() != 2)
-                throw zeno::Exception("argument list syntax wrong: " + argi);
-            auto type = zeno::trim_string(argj[0]);
-            auto name = zeno::trim_string(argj[1]);
+        if (args.empty() || args == "void") {} else {
+            auto arglist = zeno::split_str(args, ',');
+            for (auto const &argi: arglist) {
+                auto argj = zeno::split_str(zeno::trim_string(argi), ' ');
+                if (argj.size() != 2)
+                    throw zeno::Exception("argument list syntax wrong: " + argi);
+                auto type = zeno::trim_string(argj[0]);
+                auto name = zeno::trim_string(argj[1]);
 
-            auto tabid = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
-            if (tabid == std::size(tab))
-                throw zeno::Exception("invalid argument type name: " + type);
-            func->argTypes.push_back(tabid + 1);
+                auto tabid = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
+                if (tabid == std::size(tab))
+                    throw zeno::Exception("invalid argument type name: " + type);
+                func->argTypes.push_back(tabid + 1);
 
-            if (!exp.empty())
-                exp += ", ";
-            exp += type + " " + name;
+                if (!exp.empty())
+                    exp += ", ";
+                exp += type + " " + name;
+            }
         }
         func->code = "(" + exp + ") {\n" + code + "\n}";
 
