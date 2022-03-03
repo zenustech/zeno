@@ -184,8 +184,19 @@ ZENO_API void EmissionPass::translateToHlsl(std::string &code) {
     for (auto const &[key, val]: cihou) {
         size_t pos = 0, last_pos = 0;
         ret.clear();
+        auto isident = [] (char c) -> bool {
+            return ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+        };
         while ((pos = code.find(key, pos)) != std::string::npos) {
-            printf("%s %s %d %d\n", key.c_str(), code.substr(pos).c_str(), last_pos, pos);
+            if (pos != 0 && isident(code[pos - 1])) {
+                pos += key.size();
+                continue;
+            }
+            if (pos + key.size() != code.size() && isident(code[pos + key.size()])) {
+                pos += key.size();
+                continue;
+            }
+            //printf("%s %s %d %d\n", key.c_str(), code.substr(pos).c_str(), last_pos, pos);
             ret.append(code, last_pos, pos - last_pos);
             ret.append(val);
             pos += key.size();
