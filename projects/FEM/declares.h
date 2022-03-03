@@ -16,8 +16,6 @@
 
 #include <quasi_static_solver.h>
 #include <backward_euler_integrator.h>
-#include <example_based_quasi_static_solver.h>
-#include <skin_driven_quasi_static_solver.h>
 #include <fstream>
 #include <algorithm>
 
@@ -50,15 +48,6 @@ struct FEMIntegrator : zeno::IObject {
     std::shared_ptr<MuscleModelObject> muscle;
     std::shared_ptr<DampingForceModel> damp;
 
-    // std::vector<double> _elmYoungModulus;
-    // std::vector<double> _elmPossonRatio;
-    // std::vector<double> _elmDamp;
-    // std::vector<double> _elmDensity;
-
-    // std::vector<Vec3d> _elmFiberDir;
-
-    // std::vector<double> _elmMass;
-    // std::vector<double> _elmVolume;
     std::vector<Mat9x12d> _elmdFdx;
     std::vector<Mat4x4d> _elmMinv;
 
@@ -80,37 +69,6 @@ struct FEMIntegrator : zeno::IObject {
     void PrecomputeFEMInfo(const std::shared_ptr<zeno::PrimitiveObject>& prim){
         zeno::vec3f default_fdir = zeno::vec3f(1,0,0);
         size_t nm_elms = prim->quads.size();
-        // _elmYoungModulus.resize(nm_elms);
-        // _elmPossonRatio.resize(nm_elms);
-        // _elmDamp.resize(nm_elms);
-        // _elmDensity.resize(nm_elms);
-        // _elmFiberDir.resize(nm_elms);
-
-        // for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
-        //     const auto& tet = prim->quads[elm_id];
-        //     _elmDensity[elm_id] = 0;
-        //     _elmYoungModulus[elm_id] = 0;
-        //     _elmPossonRatio[elm_id] = 0;
-        //     _elmDamp[elm_id] = 0;
-        //     for(size_t i = 0;i < 4;++i){
-        //         size_t idx = tet[i];
-        //         _elmDensity[elm_id] += prim->attr<float>("phi")[idx];
-        //         _elmYoungModulus[elm_id] += prim->attr<float>("E")[idx];
-        //         _elmPossonRatio[elm_id] += prim->attr<float>("nu")[idx];
-        //         _elmDamp[elm_id] += prim->attr<float>("dampingCoeff")[idx];
-        //         zeno::vec3f fdir = prim->attr<zeno::vec3f>("fiberDir")[idx];
-        //         Vec3d fdir_vec = Vec3d(fdir[0],fdir[1],fdir[2]);
-        //         if(fdir_vec.norm() > 1e-5)
-        //             fdir_vec /= fdir_vec.norm();
-
-        //         _elmFiberDir[elm_id] += fdir_vec;
-        //     }
-        //     _elmDensity[elm_id] /= 4;
-        //     _elmYoungModulus[elm_id] /= 4;
-        //     _elmPossonRatio[elm_id] /= 4;
-        //     _elmDamp[elm_id] /= 4;   
-        //     _elmFiberDir[elm_id] /= _elmFiberDir[elm_id].norm();  
-        // }
         // compute connectivity matrix
         std::set<Triplet,triplet_cmp> connTriplets;
         for (size_t elm_id = 0; elm_id < nm_elms; ++elm_id) {
@@ -236,6 +194,13 @@ struct FEMIntegrator : zeno::IObject {
                 attrbs._example_pos.segment(i*3,3) << 0,0,0;
                 attrbs._example_pos_weight.segment(i*3,3).setConstant(0);
             }
+
+            if(prim->has_attr("nodal_force")){
+                const auto& nf = prim->attr<zeno::vec3f>("nodal_force")[tet[i]];
+                attrbs._nodal_force.segment(i*3,3) << nf[0],nf[1],nf[2];
+            }else{
+                attrbs._nodal_force.segment(i*3,3).setZero();
+            }
         }
 
         // Support non-uniform activation
@@ -258,6 +223,13 @@ struct FEMIntegrator : zeno::IObject {
         attrbs.v = vs[elm_id];
         attrbs._volume = Vs[elm_id];
         attrbs._density = phis[elm_id];
+
+        if(elmView->has_attr("vol_force_accel")){
+            const auto& vf = elmView->attr<zeno::vec3f>("vol_force_accel")[elm_id];
+            attrbs._volume_force_accel << vf[0],vf[1],vf[2];
+        }else{
+            attrbs._volume_force_accel.setConstant(0);
+        }
     }
 
     void AssignElmInterpShape(size_t nm_elms,
@@ -415,50 +387,6 @@ struct FEMIntegrator : zeno::IObject {
                     damp->_dampForce,
                     elm_traj,
                     &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
-
-                // _intPtr->EvalElmObjDerivJacobi(attrbs,
-                //     muscle->_forceModel,
-                //     damp->_dampForce,
-                //     elm_traj,
-                //     &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],false);
-
-                // FEM_Scaler obj_tmp;
-                // Vec12d deriv_tmp,deriv_fd;
-                // Mat12x12d H_fd;
-                // std::vector<Vec12d> elm_traj_copy = elm_traj;
-                // for(size_t i = 0;i < 12;++i){
-                //     elm_traj_copy[0] = elm_traj[0];
-                //     FEM_Scaler step = elm_traj_copy[0][i] * 1e-6;
-                //     step = fabs(step) < 1e-6 ? 1e-6 : step;
-
-                //     elm_traj_copy[0][i] += step;
-                //     _intPtr->EvalElmObjDeriv(attrbs,
-                //         muscle->_forceModel,
-                //         damp->_dampForce,
-                //         elm_traj_copy,&obj_tmp,deriv_tmp);
-
-                //     deriv_fd[i] = (obj_tmp - objBuffer[elm_id]) / step;
-                //     H_fd.col(i) = (deriv_tmp - derivBuffer[elm_id]) / step;
-                // }
-
-                // FEM_Scaler D_error = (deriv_fd - derivBuffer[elm_id]).norm() / (deriv_fd.norm() + 1e-3);
-                // FEM_Scaler H_error = (H_fd - HBuffer[elm_id]).norm() / H_fd.norm();
-
-                // if((D_error > 1e-3 || H_error > 1e-3) && attrbs.interpPs.size() > 0){
-                //     std::cout << "ELM_ID : " << attrbs._elmID << std::endl;
-                //     std::cout << "NM_INTERP : " << attrbs.interpPs.size() << std::endl;
-                //     std::cout << "EMBED_PC : " << attrbs.interpPenaltyCoeff << std::endl;
-                //     std::cout << "D_ERROR : " << D_error << std::endl;
-                //     std::cout << "H_ERROR : " << H_error << std::endl;
-                //     for(int i = 0;i < 12;++i){
-                //         std::cout << "D<" << i << "> :\t" << deriv_fd[i] << "\t" << derivBuffer[elm_id][i] << std::endl;
-
-                //     }
-
-                //     throw std::runtime_error("INT_DH_ERROR");
-                // }
-
-
             }
 
             deriv.setZero();

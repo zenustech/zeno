@@ -44,7 +44,11 @@ struct TetAttributes{
 
     FEM_Scaler _volume;
     FEM_Scaler _density;
-    Vec12d _ext_f;
+
+    Vec12d _nodal_force;
+    Vec3d _volume_force_accel;
+
+    // Vec12d _ext_f;
 
     // example-based energy term
     Vec12d _example_pos;
