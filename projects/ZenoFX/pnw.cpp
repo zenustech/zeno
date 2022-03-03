@@ -322,8 +322,7 @@ struct LBvh : zeno::IObject {
     }
 
     /// closest bounding box
-    template <class F>
-    void find_nearest(TV const &pos, F const &f, Ti& id, float &dist) const {
+    void find_nearest(TV const &pos, Ti& id, float &dist) const {
         const auto &refpos = refPrimPositions();
         const Ti numNodes = sortedBvs.size();
         Ti node = 0;
