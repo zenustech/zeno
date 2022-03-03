@@ -4,7 +4,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
-
+#include <zeno/types/StringObject.h>
 namespace zeno {
 
 
@@ -33,6 +33,11 @@ struct TreeCustomFunc : INode {
         }
 
         std::string exp;
+        // is void possible?
+        // if(!strcmp(args, "void") {
+        //     func->code = "(" + args + ") {\n" + code + "\n}"
+        // }
+        // else{}
         auto arglist = zeno::split_str(args, ',');
         for (auto const &argi: arglist) {
             auto argj = zeno::split_str(zeno::trim_string(argi), ' ');
