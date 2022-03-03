@@ -3,7 +3,7 @@
 #include <zeno/types/TreeObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/string.h>
-
+#include <zeno/types/StringObject.h>
 namespace zeno {
 
 
@@ -17,7 +17,7 @@ struct TreeCustomFuncObject : IObjectClone<TreeCustomFuncObject> {
 
 struct TreeCustomFunc : INode {
     virtual void apply() override {
-        auto code = get_input2<std::string>("code");
+        auto code = get_input<zeno::StringObject>("code")->value;
         auto args = get_input2<std::string>("args");
         auto rettype = get_input2<std::string>("rettype");
 
@@ -32,6 +32,11 @@ struct TreeCustomFunc : INode {
         }
 
         std::string exp;
+        // is void possible?
+        // if(!strcmp(args, "void") {
+        //     func->code = "(" + args + ") {\n" + code + "\n}"
+        // }
+        // else{}
         auto arglist = zeno::split_str(args, ',');
         for (auto const &argi: arglist) {
             auto argj = zeno::split_str(zeno::trim_string(argi), ' ');
@@ -60,7 +65,7 @@ ZENDEFNODE(TreeCustomFunc, {
     {
         {"string", "args", "vec3 arg1, vec3 arg2"},
         {"enum float vec2 vec3 vec4", "rettype", "vec3"},
-        {"multiline_string", "code", "return arg1 + arg2;"},
+        {"code"},
     },
     {
         {"TreeCustomFuncObject", "func"},
