@@ -182,9 +182,10 @@ ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::pair<int, std::
     }
     auto code = finalizeCode();
     for (int i = 0; i < keys.size(); i++) {
-        auto type = vartypes[i];
         auto expr = determineExpr(vals[i].get());
         int our_type = keys[i].first;
+        duplicateIfHlsl(our_type, expr);
+        //printf("!!!!!!!!!!!!%d %s\n", our_type, expr.c_str());
         code += typeNameOf(our_type) + " " + keys[i].second + " = " + typeNameOf(our_type) + "(" + expr + ");\n";
     }
     return code;
