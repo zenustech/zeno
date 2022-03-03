@@ -19,12 +19,7 @@ struct MakeFEMIntegrator : zeno::INode {
         }
         else if(inttype == "QS")
             res->_intPtr = std::make_shared<QuasiStaticSolver>();
-        else if(inttype == "EBQS")
-            res->_intPtr = std::make_shared<ExamBasedQuasiStaticSolver>();
-        else if(inttype == "SDQS")
-            res->_intPtr = std::make_shared<SkinDrivenQuasiStaticSolver>();
 
-        res->_intPtr->SetGravity(Vec3d(gravity[0],gravity[1],gravity[2]));
         res->_intPtr->SetTimeStep(dt);
 
         res->muscle = muscle;
