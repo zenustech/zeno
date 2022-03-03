@@ -53,6 +53,7 @@ target_compile_options(zeno_mpm
 # zeno_zsfluid
 add_library(zeno_zsfluid SHARED)
 target_sources(zeno_zsfluid PRIVATE
+  volume/VolumeTopology.cu
   volume/VolumeOperator.cu
   volume/Transfer.cu
 )
