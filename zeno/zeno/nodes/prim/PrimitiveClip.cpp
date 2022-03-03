@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 namespace zeno {
+    
     struct PrimitiveClip : zeno::INode {
         static zeno::vec3f line_plane_intersection(const zeno::vec3f& plane_point, const zeno::vec3f& plane_normal, const zeno::vec3f& line_point, const zeno::vec3f&line_end, const zeno::vec3f& line_direction, float &intersection) {
             float t = (dot(plane_normal, plane_point) - dot(plane_normal, line_point)) / dot(plane_normal, line_direction);
@@ -33,23 +34,7 @@ namespace zeno {
             }
             element_arr.emplace_back(new_element);
         }
-        static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t index)
-        {
-            for(auto key:src->attr_keys())
-            {
-                //using T = std::decay_t<decltype(src->attr(key)[0])>;
-                if (key != "pos") {
-                std::visit([index, &key, dst](auto &&src) {
-                    using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
-                    std::get<SrcT>(dst->attr(key)).emplace_back(src[index]);
-                }, src->attr(key));
-                // dst->attr(key).emplace_back(src->attr(key)[index]);
-                } else {
-                    dst->attr<vec3f>(key).emplace_back(src->attr<vec3f>(key)[index]);
-                }
-            }
-            dst->resize(dst->attr<zeno::vec3f>("pos").size());
-        }
+        
         static void addLerpIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t i, size_t j, float c)
         {
             for(auto key:src->attr_keys())
