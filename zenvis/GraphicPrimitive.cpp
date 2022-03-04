@@ -706,6 +706,10 @@ vec3 CalculateLightingIBL(
     return ((kd * diffuse) + specular);
 
 }
+
+
+
+
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
@@ -721,7 +725,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
 
-    light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
+    new_normal=gl_NormalMatrix * new_normal;
+    light_dir = vec3(1,1,0);
     color +=  
         CalculateLightingAnalytical(
             new_normal,
@@ -729,11 +734,11 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(1, 1, 1);
+            mat_metallic) * vec3(2, 2, 2);
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
+    light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
     color +=  
@@ -743,8 +748,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(0.3, 0.23, 0.18);
-    light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
+            mat_metallic) * vec3(0.3, 0.23, 0.18)*5;
+    light_dir = vec3(-1,1,-1);
     color +=  
         CalculateLightingAnalytical(
             new_normal,
@@ -752,7 +757,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(0.15, 0.2, 0.22);
+            mat_metallic) * vec3(0.15, 0.2, 0.22)*4;
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
     //color += vec3(1,1,1) * 0.2;

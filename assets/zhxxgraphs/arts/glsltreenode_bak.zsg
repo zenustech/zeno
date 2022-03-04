@@ -27,7 +27,7 @@
      "name": "SetMaterial",
      "inputs": {
       "prim": [
-       "eeee2052-PrimitiveCalcNormal",
+       "e14b31f3-ParticlesWrangle",
        "prim",
        null
       ],
@@ -87,32 +87,11 @@
      ],
      "options": []
     },
-    "9a6a5be3-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/bowl.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -892.7691965420656,
-      -268.83107796241086
-     ],
-     "options": []
-    },
     "eeee2052-PrimitiveCalcNormal": {
      "name": "PrimitiveCalcNormal",
      "inputs": {
       "prim": [
-       "9a6a5be3-ImportObjPrimitive",
+       "4a2ca553-SDFToPrimitive",
        "prim",
        null
       ],
@@ -775,11 +754,103 @@
       90.96397811918047
      ],
      "options": []
+    },
+    "e14b31f3-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "eeee2052-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@nrm = @nrm"
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -59.87208713272534,
+      -110.08738601823691
+     ],
+     "options": []
+    },
+    "63e5cab1-VDBCreateLevelsetSphere": {
+     "name": "VDBCreateLevelsetSphere",
+     "inputs": {
+      "Dx": [
+       null,
+       null,
+       0.04
+      ],
+      "radius": [
+       null,
+       null,
+       1.0
+      ],
+      "center": [
+       null,
+       null,
+       null
+      ],
+      "half_width": [
+       null,
+       null,
+       3.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -872.4099099099084,
+      -36.064189189189165
+     ],
+     "options": []
+    },
+    "4a2ca553-SDFToPrimitive": {
+     "name": "SDFToPrimitive",
+     "inputs": {
+      "SDF": [
+       "63e5cab1-VDBCreateLevelsetSphere",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.01,
+      "adaptivity": 0.025,
+      "allowQuads": false
+     },
+     "uipos": [
+      -602.7871621621613,
+      122.7899774774773
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 4609.7887359412325,
-    "y": -28.394872194949592,
+    "x": -1040.3374959760213,
+    "y": -403.18702404973396,
     "width": 1499.999999999999,
     "height": 762.4999999999989
    }
