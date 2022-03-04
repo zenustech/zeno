@@ -133,18 +133,21 @@ public:
             Vec3d s;
             DiffSVD::SVD_Decomposition(FAct,U,s,V);
             
-            Mat3x3d Q1 = U * Ts[0] * s.asDiagonal() * V.transpose() * A;
             Vec3d ahat = V.transpose() * a;
 
-            Mat3x3d Q2 = s[1] * ahat[1] * U * Ts[2] * s.asDiagonal() * V.transpose() * A - \
-                (s[2] * ahat[2]) * U * Ts[1] * s.asDiagonal() * V.transpose() * A;
+            Mat3x3d Q1,Q2;
+            Q1 = U * Ts[0] * s.asDiagonal() * V.transpose() * A;
+            Q2 = s[1] * ahat[1] * U * Ts[2] * s.asDiagonal() * V.transpose() * A - \
+                    (s[2] * ahat[2]) * U * Ts[1] * s.asDiagonal() * V.transpose() * A;
 
             aniso_eigen_vecs[0] = MatHelper::VEC(Q0);
             aniso_eigen_vecs[1] = MatHelper::VEC(Q1);
             aniso_eigen_vecs[2] = MatHelper::VEC(Q2);
 
-            for(size_t i = 0;i < 3;++i)
-                aniso_eigen_vecs[i] /= aniso_eigen_vecs[i].norm();
+            for(size_t i = 0;i < 3;++i){
+                if(aniso_eigen_vecs[i].norm() > 1e-6)
+                    aniso_eigen_vecs[i] /= aniso_eigen_vecs[i].norm();
+            }
 
             if(spd){
                 for(size_t i = 0;i < 3;++i)
@@ -159,6 +162,36 @@ public:
             psi = aniso_psi + iso_psi;
             dpsi = iso_dpsi + aniso_dpsi;   
             ddpsi = aniso_ddpsi + iso_ddpsi;
+
+            if(std::isnan(psi)){
+                std::cout << "NAN PSI DETECTED: : " << psi << "\t" << aniso_psi << "\t" << iso_psi << std::endl;
+                throw std::runtime_error("NAN_PSI");
+            }
+            if(std::isnan(dpsi.norm())){
+                std::cout << "NAN DPSI DETECTED : " << dpsi.norm() << "\t" << aniso_dpsi.norm() << "\t" << iso_dpsi.norm() << std::endl;
+                throw std::runtime_error("NAN_DPSI");
+            }
+            if(std::isnan(ddpsi.norm())){
+                std::cout << "NAN DDPSI DETECTED : " << dFactdF.norm() << "\t" << ddpsi.norm() << "\t" << aniso_ddpsi.norm() << "\t" << iso_ddpsi.norm() << std::endl;
+                std::cout << "ANISOTROPIC EIGEN SPACE" << std::endl;
+                for(size_t i = 0;i < 3;++i) {
+                    std::cout << "EIGVAL : " << aniso_eigen_vals[i] << "\t" << aniso_eigen_vecs[i].norm() << std::endl;
+                }
+
+                std::cout << "U : " << std::endl << U << std::endl \
+                    << "Ts[0]" << std::endl << Ts[0] << std::endl \
+                    << "s:" << "\t" << s.transpose() << std::endl \
+                    << "V : " << std::endl << V << std::endl \
+                    << "A : " << std::endl << A << std::endl;
+
+                std::cout << "Ts[1]" << std::endl << Ts[1] << std::endl;
+
+                std::cout << "Q0 : " << std::endl << Q0 << std::endl;
+                std::cout << "Q1 : " << std::endl << Q1 << std::endl;
+                std::cout << "Q2 : " << std::endl << Q2 << std::endl;
+                
+                throw std::runtime_error("NAN_DDPSI");
+            }
     }        
 
     void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& pstrain,Vec3d& pstress) const override {
