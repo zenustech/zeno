@@ -305,3 +305,55 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
+
+class QDMGraphicsParam_vec3f(QDMGraphicsParam):
+    class QDMVec3Edit(QWidget):
+        def __init__(self) -> None:
+            super().__init__()
+            self.x_widget = QLineEdit()
+            self.y_widget = QLineEdit()
+            self.z_widget = QLineEdit()
+
+            self.x_widget.setFixedWidth(35)
+            self.y_widget.setFixedWidth(35)
+            self.z_widget.setFixedWidth(35)
+
+            self.layout = QHBoxLayout()
+            self.layout.setContentsMargins(0, 0, 0, 0)
+            self.setLayout(self.layout)
+
+            self.layout.addWidget(self.x_widget)
+            self.layout.addWidget(self.y_widget)
+            self.layout.addWidget(self.z_widget)
+
+            self.x_widget.editingFinished.connect(self.callback)
+            self.y_widget.editingFinished.connect(self.callback)
+            self.z_widget.editingFinished.connect(self.callback)
+
+        def callback(self):
+            self.parent.edit_finished()
+
+        def getValue(self):
+            v = (
+                    float(self.x_widget.text()),
+                    float(self.y_widget.text()),
+                    float(self.z_widget.text()),
+                )
+            return v
+
+        def setValue(self, value):
+            x, y, z = value.split(',')
+            self.x_widget.setText(x)
+            self.y_widget.setText(y)
+            self.z_widget.setText(z)
+
+    def initLayout(self):
+        self.edit = self.QDMVec3Edit()
+        self.edit.parent = self
+        super().initLayout()
+
+    def setValue(self, value):
+        self.edit.setValue(value)
+
+    def getValue(self):
+        return self.edit.getValue()
