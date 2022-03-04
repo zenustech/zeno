@@ -441,9 +441,7 @@ ZENDEFNODE(GetTetMeshElementView, {
 });
 
 struct InterpolateElmAttrib : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto elmView = get_input<zeno::PrimitiveObject>("elmView");
+    virtual void apply() override {1Object>("elmView");
         auto attr_name = get_param<std::string>("attrName");
         auto attr_type = std::get<std::string>(get_param("attrType"));
 
@@ -492,6 +490,72 @@ ZENDEFNODE(InterpolateElmAttrib, {
     {"prim","elmView"},
     {"elmView"},
     {{"string","attrName","RENAME ME"},{"enum float vec3f","attrType","float"}},
+    {"FEM"},
+});
+
+
+struct EvalElmDeformationField : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("shape");
+        auto elmView = get_input<zeno::PrimitiveObject>("shapeElmView");
+
+        if(!prim->has_attr("curPos")){
+            throw std::runtime_error("Absence of CurPos Attributes");
+        }
+
+        const auto& rvs = prim->attr<zeno::vec3f>("pos");
+        const auto& dvs = prim->attr<zeno::vec3f>("curPos");
+
+        auto& A0s = elmView->add_attr<zeno::vec3f>("A0");
+        auto& A1s = elmView->add_attr<zeno::vec3f>("A1");
+        auto& A2s = elmView->add_attr<zeno::vec3f>("A2");
+        auto& A3s = elmView->add_attr<zeno::vec3f>("A3");
+
+        // auto& elmPos = elmView->add_attr<zeno::vec3f>("pos");
+
+        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+            const auto& tet = prim->quads[elm_id];
+            auto rv0 = rvs[tet[0]];
+            auto rv1 = rvs[tet[1]];
+            auto rv2 = rvs[tet[2]];
+            auto rv3 = rvs[tet[3]];
+
+            auto dv0 = dvs[tet[0]];
+            auto dv1 = dvs[tet[1]];
+            auto dv2 = dvs[tet[2]];
+            auto dv3 = dvs[tet[3]];
+
+            Mat4x4d rShape,dShape;
+            rShape <<   rv0[0],rv1[0],rv2[0],rv3[0],
+                        rv0[1],rv1[1],rv2[1],rv3[1],
+                        rv0[2],rv1[2],rv2[2],rv3[2],
+                             1,     1,     1,     1;
+
+            dShape <<   dv0[0],dv1[0],dv2[0],dv3[0],
+                        dv0[1],dv1[1],dv2[1],dv3[1],
+                        dv0[2],dv1[2],dv2[2],dv3[2],
+                             1,     1,     1,     1;
+            // D = F * R
+            Mat4x4d A = dShape * rShape.inverse();
+
+            A0s[elm_id] = zeno::vec3f(A.row(0)[0],A.row(0)[1],A.row(0)[2]);
+            A1s[elm_id] = zeno::vec3f(A.row(1)[0],A.row(1)[1],A.row(1)[2]);
+            A2s[elm_id] = zeno::vec3f(A.row(2)[0],A.row(2)[1],A.row(2)[2]);
+            A3s[elm_id] = zeno::vec3f(A.col(3)[0],A.col(3)[1],A.col(3)[2]);
+
+            // elmPos[elm_id] = zeno::vec3f(0);
+            // for(size_t i = 0;i < 4;++i)
+            //     elmPos[elm_id] += dvs[tet[i]] / 4;
+        }
+
+        set_output("shapeElmView",elmView);
+    }
+};
+
+ZENDEFNODE(EvalElmDeformationField, {
+    {"shape","shapeElmView"},
+    {"shapeElmView"},
+    {},
     {"FEM"},
 });
 
