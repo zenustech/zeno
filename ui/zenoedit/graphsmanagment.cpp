@@ -8,6 +8,20 @@
 #include <zenoui/util/uihelper.h>
 #include "nodesys/zenosubgraphscene.h"
 #include <zeno/utils/log.h>
+#include "zenoapplication.h"
+
+
+class IOBreakingBatch
+{
+public:
+    IOBreakingBatch() {
+        zenoApp->setIOProcessing(true);
+    }
+
+    ~IOBreakingBatch() {
+        zenoApp->setIOProcessing(false);
+    }
+};
 
 
 GraphsManagment::GraphsManagment(QObject* parent)
@@ -39,9 +53,13 @@ GraphsTreeModel* GraphsManagment::treeModel()
 IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
     GraphsModel* pModel = new GraphsModel(this);
-    ModelAcceptor acceptor(pModel, false);
-    if (!ZsgReader::getInstance().openFile(fn, &acceptor))
-        return nullptr;
+
+    {
+        IOBreakingBatch batch;
+		ModelAcceptor acceptor(pModel, false);
+		if (!ZsgReader::getInstance().openFile(fn, &acceptor))
+			return nullptr;
+    }
 
     pModel->clearDirty();
     pModel->initDescriptors();

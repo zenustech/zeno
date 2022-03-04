@@ -46,3 +46,13 @@ QSharedPointer<GraphsManagment> ZenoApplication::graphsManagment() const
 {
     return m_pGraphs;
 }
+
+void ZenoApplication::setIOProcessing(bool bIOProcessing)
+{
+    m_bIOProcessing = bIOProcessing;
+}
+
+bool ZenoApplication::IsIOProcessing() const
+{
+    return m_bIOProcessing;
+}

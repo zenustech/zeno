@@ -93,7 +93,7 @@ private:
     ZenoBackgroundWidget* initHeaderLegacy(NODE_TYPE type);
     ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
-    QGraphicsGridLayout* initSockets();
+    QGraphicsLayout* initSockets();
     void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
     void _initStatusBtnPos();
@@ -121,6 +121,7 @@ private:
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
     QGraphicsLinearLayout *m_pMainLayout;
+    QGraphicsLinearLayout* m_pSocketsLayout;
     QGraphicsRectItem* m_border;
 
     bool m_bInitSockets;

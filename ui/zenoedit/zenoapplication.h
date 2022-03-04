@@ -16,9 +16,12 @@ public:
     QSharedPointer<GraphsManagment> graphsManagment() const;
     void initFonts();
     void initStyleSheets();
+    void setIOProcessing(bool bIOProcessing);
+    bool IsIOProcessing() const;
 
 private:
     QSharedPointer<GraphsManagment> m_pGraphs;
+    bool m_bIOProcessing;
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))

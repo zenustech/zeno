@@ -384,7 +384,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
             pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
             pVLayout->addItem(pParamsLayout);
         }
-        if (QGraphicsGridLayout *pSocketsLayout = initSockets())
+        if (QGraphicsLayout* pSocketsLayout = initSockets())
         {
             pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
             pVLayout->addItem(pSocketsLayout);
@@ -439,7 +439,7 @@ QGraphicsLayout* ZenoNode::initParams()
         }
     }
     QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
-    if (pCustomParams)
+    if (pParamsLayout && pCustomParams)
         pParamsLayout->addItem(pCustomParams);
     return pParamsLayout;
 }
@@ -588,21 +588,51 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
 
 void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 {
-    const QString& oldName = info.oldInfo.name;
-    const QString& newName = info.newInfo.name;
-    if (info.bInput)
+    switch (info.updateWay)
     {
-        Q_ASSERT(m_inSockets.find(oldName) != m_inSockets.end());
-        m_inSockets[newName] = m_inSockets[oldName];
-        m_inSockets[newName].socket_text->setPlainText(newName);
-        m_inSockets.remove(oldName);
-    }
-    else
-    {
-        Q_ASSERT(m_outSockets.find(oldName) != m_outSockets.end());
-        m_outSockets[newName] = m_outSockets[oldName];
-        m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
-        m_outSockets.remove(oldName);
+        case SOCKET_INSERT:
+        case SOCKET_REMOVE:
+        {
+            const QString& newName = info.newInfo.name;
+			if (info.bInput)
+			{
+				Q_ASSERT(m_inSockets.find(newName) == m_inSockets.end());
+
+                _socket_ctrl sock;
+                sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
+                sock.socket_text = new ZenoTextLayoutItem(newName, m_renderParams.socketFont, m_renderParams.socketClr.color());;
+                m_inSockets[newName] = sock;
+
+                int r = std::max(m_inSockets.count() - 1, 0);
+                m_pSocketsLayout->insertItem(r, sock.socket_text);
+                m_pSocketsLayout->updateGeometry();
+			}
+			else
+			{
+				Q_ASSERT(m_outSockets.find(newName) == m_outSockets.end());
+			}
+            break;
+        }
+        case SOCKET_UPDATE_NAME:
+        {
+		    const QString& oldName = info.oldInfo.name;
+		    const QString& newName = info.newInfo.name;
+		    if (info.bInput)
+		    {
+			    Q_ASSERT(m_inSockets.find(oldName) != m_inSockets.end());
+			    m_inSockets[newName] = m_inSockets[oldName];
+			    m_inSockets[newName].socket_text->setPlainText(newName);
+			    m_inSockets.remove(oldName);
+		    }
+		    else
+		    {
+			    Q_ASSERT(m_outSockets.find(oldName) != m_outSockets.end());
+			    m_outSockets[newName] = m_outSockets[oldName];
+			    m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
+			    m_outSockets.remove(oldName);
+		    }
+            break;
+        }
     }
 }
 
@@ -618,10 +648,11 @@ void ZenoNode::onNameUpdated(const QString& newName)
 	}
 }
 
-QGraphicsGridLayout* ZenoNode::initSockets()
+QGraphicsLayout* ZenoNode::initSockets()
 {
+    m_pSocketsLayout = new QGraphicsLinearLayout(Qt::Vertical);
+
     const QString &nodeid = nodeId();
-    QGraphicsGridLayout *pSocketsLayout = new QGraphicsGridLayout;
     {
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         int r = 0;
@@ -631,13 +662,13 @@ QGraphicsGridLayout* ZenoNode::initSockets()
             socket->setZValue(ZVALUE_ELEMENT);
 
             ZenoTextLayoutItem *pSocketItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
-            pSocketsLayout->addItem(pSocketItem, r, 0);
+            m_pSocketsLayout->addItem(pSocketItem);
 
             const INPUT_SOCKET& inSocket = inputs[inSock];
             if (!inSocket.info.type.isEmpty())
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), m_renderParams.lineEditParam);
-				pSocketsLayout->addItem(pSocketEditor, r, 1);
+                m_pSocketsLayout->addItem(pSocketEditor);
                 connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]()
                 {
                     const QString& textValue = pSocketEditor->text();
@@ -672,7 +703,7 @@ QGraphicsGridLayout* ZenoNode::initSockets()
             QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
             pMiniLayout->addStretch();
             pMiniLayout->addItem(pSocketItem);
-            pSocketsLayout->addItem(pMiniLayout, r, 1);
+            m_pSocketsLayout->addItem(pMiniLayout);
 
             ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
@@ -685,7 +716,7 @@ QGraphicsGridLayout* ZenoNode::initSockets()
             r++;
         }
     }
-    return pSocketsLayout;
+    return m_pSocketsLayout;
 }
 
 void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx)

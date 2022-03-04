@@ -79,6 +79,7 @@ void SubOutputNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& p
 	{
 		info.oldInfo.name = oldName;
 		info.newInfo.name = textValue;
+		info.updateWay = SOCKET_UPDATE_NAME;
 		pModel->updateSubnetIO(subgIdx, nodeid, info);
 	}
 	else if (paramName == "type")
