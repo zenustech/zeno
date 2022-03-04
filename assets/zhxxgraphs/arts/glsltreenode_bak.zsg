@@ -2,16 +2,16 @@
  "graph": {
   "main": {
    "nodes": {
-    "7f798009-ShaderFinalize": {
-     "name": "ShaderFinalize",
+    "7f798009-TreeFinalize": {
+     "name": "TreeFinalize",
      "inputs": {
       "basecolor": [
-       "c5f2d45e-ShaderInvokeFunc",
+       "c5f2d45e-TreeInvokeFunc",
        "out",
        null
       ],
       "metallic": [
-       "62436a94-ShaderBinaryMath",
+       "62436a94-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -31,7 +31,7 @@
        null
       ],
       "emission": [
-       "a6eab46c-ShaderInvokeFunc",
+       "a6eab46c-TreeInvokeFunc",
        "out",
        null
       ],
@@ -54,7 +54,7 @@
      "name": "PrintString",
      "inputs": {
       "str": [
-       "7f798009-ShaderFinalize",
+       "7f798009-TreeFinalize",
        "code",
        ""
       ],
@@ -112,12 +112,12 @@
        ""
       ],
       "frag": [
-       "7f798009-ShaderFinalize",
+       "7f798009-TreeFinalize",
        "code",
        ""
       ],
       "common": [
-       "7f798009-ShaderFinalize",
+       "7f798009-TreeFinalize",
        "commonCode",
        ""
       ],
@@ -155,8 +155,8 @@
      ],
      "options": []
     },
-    "45c08b7c-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
+    "45c08b7c-TreeInputAttr": {
+     "name": "TreeInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -181,11 +181,11 @@
      ],
      "options": []
     },
-    "ede91dd5-ShaderLinearFit": {
-     "name": "ShaderLinearFit",
+    "ede91dd5-TreeLinearFit": {
+     "name": "TreeLinearFit",
      "inputs": {
       "in": [
-       "45c08b7c-ShaderInputAttr",
+       "45c08b7c-TreeInputAttr",
        "out",
        0.0
       ],
@@ -288,11 +288,11 @@
      ],
      "options": []
     },
-    "0f0f7c8a-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "0f0f7c8a-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "45c08b7c-ShaderInputAttr",
+       "45c08b7c-TreeInputAttr",
        "out",
        0.0
       ],
@@ -319,11 +319,11 @@
      ],
      "options": []
     },
-    "9ab90bc4-ShaderUnaryMath": {
-     "name": "ShaderUnaryMath",
+    "9ab90bc4-TreeUnaryMath": {
+     "name": "TreeUnaryMath",
      "inputs": {
       "in1": [
-       "d6acdbdc-ShaderBinaryMath",
+       "d6acdbdc-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -345,11 +345,11 @@
      ],
      "options": []
     },
-    "d6acdbdc-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "d6acdbdc-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "0f0f7c8a-ShaderBinaryMath",
+       "0f0f7c8a-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -376,11 +376,11 @@
      ],
      "options": []
     },
-    "3d57ccaa-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "3d57ccaa-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "5bbe7d34-ShaderBinaryMath",
+       "5bbe7d34-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -488,11 +488,11 @@
      ],
      "options": []
     },
-    "00e4d7d6-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "00e4d7d6-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "45c08b7c-ShaderInputAttr",
+       "45c08b7c-TreeInputAttr",
        "out",
        0.0
       ],
@@ -549,11 +549,11 @@
      ],
      "options": []
     },
-    "1980819f-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "1980819f-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "00e4d7d6-ShaderBinaryMath",
+       "00e4d7d6-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -580,11 +580,11 @@
      ],
      "options": []
     },
-    "3e26b5d4-ShaderUnaryMath": {
-     "name": "ShaderUnaryMath",
+    "3e26b5d4-TreeUnaryMath": {
+     "name": "TreeUnaryMath",
      "inputs": {
       "in1": [
-       "1980819f-ShaderBinaryMath",
+       "1980819f-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -606,11 +606,11 @@
      ],
      "options": []
     },
-    "bc56b62e-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "bc56b62e-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "3177a213-ShaderBinaryMath",
+       "3177a213-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -637,11 +637,11 @@
      ],
      "options": []
     },
-    "54255084-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "54255084-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "45c08b7c-ShaderInputAttr",
+       "45c08b7c-TreeInputAttr",
        "out",
        0.0
       ],
@@ -720,11 +720,11 @@
       "collapsed"
      ]
     },
-    "bcf47da6-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "bcf47da6-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "65110f6d-ShaderUnaryMath",
+       "65110f6d-TreeUnaryMath",
        "out",
        0.0
       ],
@@ -751,11 +751,11 @@
      ],
      "options": []
     },
-    "f895997c-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "f895997c-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "54255084-ShaderBinaryMath",
+       "54255084-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -782,11 +782,11 @@
      ],
      "options": []
     },
-    "65110f6d-ShaderUnaryMath": {
-     "name": "ShaderUnaryMath",
+    "65110f6d-TreeUnaryMath": {
+     "name": "TreeUnaryMath",
      "inputs": {
       "in1": [
-       "f895997c-ShaderBinaryMath",
+       "f895997c-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -808,11 +808,11 @@
      ],
      "options": []
     },
-    "772bee06-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "772bee06-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "bcf47da6-ShaderBinaryMath",
+       "bcf47da6-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -839,11 +839,11 @@
      ],
      "options": []
     },
-    "b5a292d2-ShaderLinearFit": {
-     "name": "ShaderLinearFit",
+    "b5a292d2-TreeLinearFit": {
+     "name": "TreeLinearFit",
      "inputs": {
       "in": [
-       "3e26b5d4-ShaderUnaryMath",
+       "3e26b5d4-TreeUnaryMath",
        "out",
        0.0
       ],
@@ -882,11 +882,11 @@
      ],
      "options": []
     },
-    "7b2521e2-ShaderLinearFit": {
-     "name": "ShaderLinearFit",
+    "7b2521e2-TreeLinearFit": {
+     "name": "TreeLinearFit",
      "inputs": {
       "in": [
-       "9ab90bc4-ShaderUnaryMath",
+       "9ab90bc4-TreeUnaryMath",
        "out",
        0.0
       ],
@@ -925,11 +925,11 @@
      ],
      "options": []
     },
-    "3177a213-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "3177a213-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "b5a292d2-ShaderLinearFit",
+       "b5a292d2-TreeLinearFit",
        "out",
        0.0
       ],
@@ -956,11 +956,11 @@
      ],
      "options": []
     },
-    "5bbe7d34-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "5bbe7d34-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "7b2521e2-ShaderLinearFit",
+       "7b2521e2-TreeLinearFit",
        "out",
        0.0
       ],
@@ -987,8 +987,8 @@
      ],
      "options": []
     },
-    "47c09f62-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
+    "47c09f62-TreeInputAttr": {
+     "name": "TreeInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -1013,11 +1013,11 @@
      ],
      "options": []
     },
-    "702b6475-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "702b6475-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "47c09f62-ShaderInputAttr",
+       "47c09f62-TreeInputAttr",
        "out",
        0.0
       ],
@@ -1044,11 +1044,11 @@
      ],
      "options": []
     },
-    "65234c2e-ShaderUnaryMath": {
-     "name": "ShaderUnaryMath",
+    "65234c2e-TreeUnaryMath": {
+     "name": "TreeUnaryMath",
      "inputs": {
       "in1": [
-       "702b6475-ShaderBinaryMath",
+       "702b6475-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -1070,11 +1070,11 @@
      ],
      "options": []
     },
-    "8f305ee1-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "8f305ee1-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "2cb68afe-ShaderReduceVec",
+       "2cb68afe-TreeReduceVec",
        "out",
        0.0
       ],
@@ -1101,11 +1101,11 @@
      ],
      "options": []
     },
-    "5201536f-ShaderFillVec": {
-     "name": "ShaderFillVec",
+    "5201536f-TreeFillVec": {
+     "name": "TreeFillVec",
      "inputs": {
       "in": [
-       "8f305ee1-ShaderBinaryMath",
+       "8f305ee1-TreeBinaryMath",
        "out",
        0.0
       ],
@@ -1127,11 +1127,11 @@
      ],
      "options": []
     },
-    "2cb68afe-ShaderReduceVec": {
-     "name": "ShaderReduceVec",
+    "2cb68afe-TreeReduceVec": {
+     "name": "TreeReduceVec",
      "inputs": {
       "in": [
-       "65234c2e-ShaderUnaryMath",
+       "65234c2e-TreeUnaryMath",
        "out",
        null
       ],
@@ -1150,11 +1150,11 @@
      ],
      "options": []
     },
-    "343c5391-ShaderLinearFit": {
-     "name": "ShaderLinearFit",
+    "343c5391-TreeLinearFit": {
+     "name": "TreeLinearFit",
      "inputs": {
       "in": [
-       "5201536f-ShaderFillVec",
+       "5201536f-TreeFillVec",
        "out",
        0.0
       ],
@@ -1197,7 +1197,7 @@
      "name": "PrintString",
      "inputs": {
       "str": [
-       "7f798009-ShaderFinalize",
+       "7f798009-TreeFinalize",
        "commonCode",
        ""
       ],
@@ -1217,8 +1217,8 @@
       "VIEW"
      ]
     },
-    "a4e6255b-ShaderCustomFunc": {
-     "name": "ShaderCustomFunc",
+    "a4e6255b-TreeCustomFunc": {
+     "name": "TreeCustomFunc",
      "inputs": {
       "args": [
        null,
@@ -1248,11 +1248,11 @@
      ],
      "options": []
     },
-    "c5f2d45e-ShaderInvokeFunc": {
-     "name": "ShaderInvokeFunc",
+    "c5f2d45e-TreeInvokeFunc": {
+     "name": "TreeInvokeFunc",
      "inputs": {
       "func": [
-       "a4e6255b-ShaderCustomFunc",
+       "a4e6255b-TreeCustomFunc",
        "func",
        null
       ],
@@ -1278,17 +1278,17 @@
      "name": "MakeSmallList",
      "inputs": {
       "obj0": [
-       "a1d70917-ShaderMakeVec",
+       "a1d70917-TreeMakeVec",
        "out",
        null
       ],
       "obj1": [
-       "343c5391-ShaderLinearFit",
+       "343c5391-TreeLinearFit",
        "out",
        null
       ],
       "obj2": [
-       "f8c82dbe-ShaderInputAttr",
+       "f8c82dbe-TreeInputAttr",
        "out",
        null
       ],
@@ -1322,8 +1322,8 @@
      ],
      "options": []
     },
-    "f8c82dbe-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
+    "f8c82dbe-TreeInputAttr": {
+     "name": "TreeInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -1366,11 +1366,11 @@
      ],
      "options": []
     },
-    "4712dcea-ShaderExtractVec": {
-     "name": "ShaderExtractVec",
+    "4712dcea-TreeExtractVec": {
+     "name": "TreeExtractVec",
      "inputs": {
       "vec": [
-       "c5f2d45e-ShaderInvokeFunc",
+       "c5f2d45e-TreeInvokeFunc",
        "out",
        null
       ],
@@ -1387,8 +1387,8 @@
      ],
      "options": []
     },
-    "a1d70917-ShaderMakeVec": {
-     "name": "ShaderMakeVec",
+    "a1d70917-TreeMakeVec": {
+     "name": "TreeMakeVec",
      "inputs": {
       "x": [
        "1c54e185-DynamicNumber",
@@ -1457,17 +1457,17 @@
      "name": "MakeSmallList",
      "inputs": {
       "obj0": [
-       "a1d70917-ShaderMakeVec",
+       "a1d70917-TreeMakeVec",
        "out",
        null
       ],
       "obj1": [
-       "64da23b2-ShaderFillVec",
+       "64da23b2-TreeFillVec",
        "out",
        null
       ],
       "obj2": [
-       "da051620-ShaderInputAttr",
+       "da051620-TreeInputAttr",
        "out",
        null
       ],
@@ -1501,11 +1501,11 @@
      ],
      "options": []
     },
-    "a6eab46c-ShaderInvokeFunc": {
-     "name": "ShaderInvokeFunc",
+    "a6eab46c-TreeInvokeFunc": {
+     "name": "TreeInvokeFunc",
      "inputs": {
       "func": [
-       "a4e6255b-ShaderCustomFunc",
+       "a4e6255b-TreeCustomFunc",
        "func",
        null
       ],
@@ -1527,8 +1527,8 @@
      ],
      "options": []
     },
-    "da051620-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
+    "da051620-TreeInputAttr": {
+     "name": "TreeInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -1553,8 +1553,8 @@
      ],
      "options": []
     },
-    "64da23b2-ShaderFillVec": {
-     "name": "ShaderFillVec",
+    "64da23b2-TreeFillVec": {
+     "name": "TreeFillVec",
      "inputs": {
       "in": [
        null,
@@ -1579,11 +1579,11 @@
      ],
      "options": []
     },
-    "62436a94-ShaderBinaryMath": {
-     "name": "ShaderBinaryMath",
+    "62436a94-TreeBinaryMath": {
+     "name": "TreeBinaryMath",
      "inputs": {
       "in1": [
-       "4712dcea-ShaderExtractVec",
+       "4712dcea-TreeExtractVec",
        "y",
        0.0
       ],
@@ -12251,7 +12251,7 @@
     "string"
    ]
   },
-  "ProceduralShader": {
+  "ProceduralTree": {
    "inputs": [
     [
      "LSysGenerator",
@@ -15484,7 +15484,7 @@
     "primitive"
    ]
   },
-  "ShaderBinaryMath": {
+  "TreeBinaryMath": {
    "inputs": [
     [
      "float",
@@ -15524,7 +15524,7 @@
     "tree"
    ]
   },
-  "ShaderCustomFunc": {
+  "TreeCustomFunc": {
    "inputs": [
     [
      "string",
@@ -15549,7 +15549,7 @@
    ],
    "outputs": [
     [
-     "ShaderCustomFuncObject",
+     "TreeCustomFuncObject",
      "func",
      ""
     ],
@@ -15564,7 +15564,7 @@
     "tree"
    ]
   },
-  "ShaderExtractVec": {
+  "TreeExtractVec": {
    "inputs": [
     [
      "vec3f",
@@ -15609,7 +15609,7 @@
     "tree"
    ]
   },
-  "ShaderFillVec": {
+  "TreeFillVec": {
    "inputs": [
     [
      "float",
@@ -15644,7 +15644,7 @@
     "tree"
    ]
   },
-  "ShaderFinalize": {
+  "TreeFinalize": {
    "inputs": [
     [
      "vec3f",
@@ -15710,7 +15710,7 @@
     "tree"
    ]
   },
-  "ShaderInputAttr": {
+  "TreeInputAttr": {
    "inputs": [
     [
      "enum pos clr nrm",
@@ -15745,10 +15745,10 @@
     "tree"
    ]
   },
-  "ShaderInvokeFunc": {
+  "TreeInvokeFunc": {
    "inputs": [
     [
-     "ShaderCustomFuncObject",
+     "TreeCustomFuncObject",
      "func",
      ""
     ],
@@ -15780,7 +15780,7 @@
     "tree"
    ]
   },
-  "ShaderLinearFit": {
+  "TreeLinearFit": {
    "inputs": [
     [
      "float",
@@ -15836,7 +15836,7 @@
     "tree"
    ]
   },
-  "ShaderMakeVec": {
+  "TreeMakeVec": {
    "inputs": [
     [
      "float",
@@ -15881,7 +15881,7 @@
     "tree"
    ]
   },
-  "ShaderReduceVec": {
+  "TreeReduceVec": {
    "inputs": [
     [
      "vec3f",
@@ -15917,7 +15917,7 @@
     "tree"
    ]
   },
-  "ShaderTernaryMath": {
+  "TreeTernaryMath": {
    "inputs": [
     [
      "float",
@@ -15962,7 +15962,7 @@
     "tree"
    ]
   },
-  "ShaderUnaryMath": {
+  "TreeUnaryMath": {
    "inputs": [
     [
      "float",
