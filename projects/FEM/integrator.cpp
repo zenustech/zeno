@@ -7,8 +7,7 @@ struct MakeFEMIntegrator : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto muscle = get_input<MuscleModelObject>("elasto");
         auto damp = get_input<DampingForceModel>("visco");
-        auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        auto dt = get_input2<float>("dt");
         auto inttype = std::get<std::string>(get_param("integType"));
 
         auto res = std::make_shared<FEMIntegrator>();
@@ -28,12 +27,13 @@ struct MakeFEMIntegrator : zeno::INode {
         res->_stepID = 0;
 
         res->PrecomputeFEMInfo(prim);
+
         set_output("FEMIntegrator",res);
     }
 };
 
 ZENDEFNODE(MakeFEMIntegrator,{
-    {{"prim"},{"elasto"},{"visco"},{"gravity"},{"dt"}},
+    {{"prim"},{"elasto"},{"visco"},{"float","dt","1"}},
     {"FEMIntegrator"},
     {{"enum BE QS EBQS SDQS", "integType", "QS"}},
     {"FEM"},
