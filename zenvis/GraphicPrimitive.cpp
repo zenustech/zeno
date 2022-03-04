@@ -495,6 +495,251 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 }
 )" : "\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"
 R"(
+  
+vec3 CalculateDiffuse(
+    in vec3 albedo){                              
+    return (albedo / 3.1415926);
+}
+
+
+vec3 CalculateHalfVector(
+    in vec3 toLight, in vec3 toView){
+    return normalize(toLight + toView);
+}
+
+// Specular D -  Normal distribution function (NDF)
+float CalculateNDF( // GGX/Trowbridge-Reitz NDF
+    in vec3  surfNorm,
+    in vec3  halfVector,
+    in float roughness){
+    float a2 = (roughness * roughness);
+    float halfAngle = dot(surfNorm, halfVector);
+
+    return (a2 / (3.1415926 * pow((pow(halfAngle, 2.0) * (a2 - 1.0) + 1.0), 2.0)));
+}
+
+// Specular G - Microfacet geometric attenuation
+float CalculateAttenuation( // GGX/Schlick-Beckmann
+    in vec3  surfNorm,
+    in vec3  vector,
+    in float k)
+{
+    float d = max(dot(surfNorm, vector), 0.0);
+ 	return (d / ((d * (1.0 - k)) + k));
+}
+float CalculateAttenuationAnalytical(// Smith for analytical light
+    in vec3  surfNorm,
+    in vec3  toLight,
+    in vec3  toView,
+    in float roughness)
+{
+    float k = pow((roughness + 1.0), 2.0) * 0.125;
+
+    // G(l) and G(v)
+    float lightAtten = CalculateAttenuation(surfNorm, toLight, k);
+    float viewAtten  = CalculateAttenuation(surfNorm, toView, k);
+
+    // Smith
+    return (lightAtten * viewAtten);
+}
+
+// Specular F - Fresnel reflectivity
+vec3 CalculateFresnel(
+    in vec3 surfNorm,
+    in vec3 toView,
+    in vec3 fresnel0)
+{
+	float d = max(dot(surfNorm, toView), 0.0);
+    float p = ((-5.55473 * d) - 6.98316) * d;
+
+    //return fresnel0 + ((1.0 - fresnel0) * pow(1.0 - d, 5.0));
+    return fresnel0 + ((1.0 - fresnel0) * pow(2.0, p));
+}
+
+// Specular Term - put together
+vec3 CalculateSpecularAnalytical(
+    in    vec3  surfNorm,            // Surface normal
+    in    vec3  toLight,             // Normalized vector pointing to light source
+    in    vec3  toView,              // Normalized vector point to the view/camera
+    in    vec3  fresnel0,            // Fresnel incidence value
+    inout vec3  sfresnel,            // Final fresnel value used a kS
+    in    float roughness)           // Roughness parameter (microfacet contribution)
+{
+    vec3 halfVector = CalculateHalfVector(toLight, toView);
+
+    float ndf      = CalculateNDF(surfNorm, halfVector, roughness);
+    float geoAtten = CalculateAttenuationAnalytical(surfNorm, toLight, toView, roughness);
+
+    sfresnel = CalculateFresnel(surfNorm, toView, fresnel0);
+
+    vec3  numerator   = (sfresnel * ndf * geoAtten); // FDG
+    float denominator = 4.0 * dot(surfNorm, toLight) * dot(surfNorm, toView);
+
+    return (numerator / denominator);
+}
+
+// Solve Rendering Integral - Final
+vec3 CalculateLightingAnalytical(
+    in vec3  surfNorm,
+    in vec3  toLight,
+    in vec3  toView,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
+    vec3 ks       = vec3(0.0);
+    vec3 diffuse  = CalculateDiffuse(albedo);
+    vec3 specular = CalculateSpecularAnalytical(surfNorm, toLight, toView, fresnel0, ks, roughness);
+    vec3 kd       = (1.0 - ks);
+
+    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+
+    return ((kd * diffuse) + specular) * angle;
+}
+float VanDerCorpus(int n, int base) {
+    float invBase = 1.0 / float(base);
+    float denom   = 1.0;
+    float result  = 0.0;
+
+    for(int i = 0; i < 32; ++i)
+    {
+        if(n > 0)
+        {
+            denom   = mod(float(n), 2.0);
+            result += denom * invBase;
+            invBase = invBase / 2.0;
+            n       = int(float(n) / 2.0);
+        }
+    }
+
+    return result;
+}
+
+vec2 Hammersley(int i, int N) {
+    return vec2(float(i)/float(N), VanDerCorpus(i, 2));
+}  
+float CalculateAttenuationIBL(
+    in float roughness,
+    in float normDotLight,          // Clamped to [0.0, 1.0]
+    in float normDotView)           // Clamped to [0.0, 1.0]
+{
+    float k = pow(roughness, 2.0) * 0.5;
+    
+    float lightAtten = (normDotLight / ((normDotLight * (1.0 - k)) + k));
+    float viewAtten  = (normDotView / ((normDotView * (1.0 - k)) + k));
+    
+    return (lightAtten * viewAtten);
+}
+
+vec3 ImportanceSample(vec2 Xi, vec3 N, float roughness) {
+    float a = roughness*roughness;
+	
+    float phi = 2.0 * 3.1415926 * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+	
+    vec3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+
+    vec3 up        = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent   = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+	
+    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+    return normalize(sampleVec);
+}
+
+
+//important to do: load env texture here
+vec3 SampleEnvironment(in vec3 reflVec)
+{
+    return vec3(0,0,0);//texture(TextureEnv, reflVec).rgb;
+}
+
+/**
+ * Performs the Riemann Sum approximation of the IBL lighting integral.
+ *
+ * The ambient IBL source hits the surface from all angles. We average
+ * the lighting contribution from a number of random light directional
+ * vectors to approximate the total specular lighting.
+ *
+ * The number of steps is controlled by the 'IBL Steps' global.
+ */
+vec3 CalculateSpecularIBL(
+    in    vec3  surfNorm,
+    in    vec3  toView,
+    in    vec3  fresnel0,
+    inout vec3  sfresnel,
+    in    float roughness)
+{
+    vec3 totalSpec = vec3(0.0);
+    vec3 toSurfaceCenter = reflect(-toView, surfNorm);
+    int IBLSteps = 32;
+    for(int i = 0; i < IBLSteps; ++i)
+    {
+        // The 2D hemispherical sampling vector
+    	vec2 xi = Hammersley(i, IBLSteps);
+        
+        // Bias the Hammersley vector towards the specular lobe of the surface roughness
+        vec3 H = ImportanceSample(xi, surfNorm, roughness);
+        
+        // The light sample vector
+        vec3 L = (2.0 * dot(toView, H) * H) - toView;
+        
+        float NoV = clamp(dot(surfNorm, toView), 0.0, 1.0);
+        float NoL = clamp(dot(surfNorm, L), 0.0, 1.0);
+        float NoH = clamp(dot(surfNorm, H), 0.0, 1.0);
+        float VoH = clamp(dot(toView, H), 0.0, 1.0);
+        
+        if(NoL > 0.0)
+        {
+            vec3 color = SampleEnvironment(L);
+            
+            float geoAtten = CalculateAttenuationIBL(roughness, NoL, NoV);
+            vec3  fresnel = CalculateFresnel(surfNorm, toView, fresnel0);
+            
+            sfresnel += fresnel;
+#ifdef SPECULAR_NDF_ONLY
+            totalSpec += 0.0;
+#elif defined(SPECULAR_ATTEN_ONLY)
+            totalSpec += geoAtten / (NoH * NoV);
+#elif defined(SPECULAR_FRESNEL_ONLY)
+            totalSpec += fresnel / (NoH * NoV);
+#else
+            totalSpec += (color * fresnel * geoAtten * VoH) / (NoH * NoV);
+#endif
+        }
+    }
+    
+    sfresnel /= float(IBLSteps);
+    
+    return (totalSpec / float(IBLSteps));
+}
+
+vec3 CalculateLightingIBL(
+    in vec3  surfNorm,
+    in vec3  toView,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
+    vec3 ks       = vec3(0.0);
+    vec3 diffuse  = CalculateDiffuse(albedo);
+    //vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
+    vec3 kd       = (1.0 - ks);
+    
+//#ifdef DIFFUSE_ONLY
+	return diffuse;
+//#elif defined(SPECULAR_ONLY) || defined(SPECULAR_NDF_ONLY) || defined(SPECULAR_ATTEN_ONLY) || defined(SPECULAR_FRESNEL_ONLY)
+//    return specular;
+//#else
+//    return ((kd * diffuse) + specular);
+//#endif
+}
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
@@ -503,23 +748,56 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     /* custom_shader_end */
-
+    mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
-    vec3 color = mat_emission;
+    vec3 color = vec3(0,0,0);
     vec3 light_dir;
+    vec3 albedo2 = mat_basecolor;
+    float roughness = mat_roughness;
 
     light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
-    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
-             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+    color +=  
+        CalculateLightingAnalytical(
+            new_normal,
+            light_dir,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic) * vec3(1, 1, 1);
+//    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
+//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
     light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
-    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
-             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-
+//    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
+//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+    color +=  
+        CalculateLightingAnalytical(
+            new_normal,
+            light_dir,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic) * vec3(0.3, 0.23, 0.18);
     light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
-    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
-             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+    color +=  
+        CalculateLightingAnalytical(
+            new_normal,
+            light_dir,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic) * vec3(0.15, 0.2, 0.22);
+//    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
+//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+    //color += vec3(1,1,1) * 0.2;
 
+    color +=  
+        CalculateLightingIBL(
+            new_normal,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic) * vec3(0.6, 0.6, 0.6);
     return color;
 
 }
