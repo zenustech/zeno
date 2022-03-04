@@ -54,7 +54,6 @@ struct SolveFEM : zeno::INode {
                 const auto& pos = cpos;
                 const auto& examShape = shape->attr<zeno::vec3f>("examShape");
                 const auto& examW = shape->attr<float>("examW");
-                const auto& interpWSum = shape->attr<float>("wsum");
                 for(size_t i = 0;i < shape->size();++i){
                     if(std::isnan(zeno::length(pos[i]))){
                         std::cout << "NAN POS : " << i << "\t" << pos[i][0] << "\t" << pos[i][1] << "\t" << pos[i][2] << std::endl;
@@ -62,7 +61,6 @@ struct SolveFEM : zeno::INode {
                     if(std::isnan(zeno::length(examShape[i])) || std::isnan(examW[i])){
                         std::cout << "EXAMSHAPE : " << i << "\t" << examShape[i][0] << "\t" << examShape[i][1] << "\t" << examShape[i][2] << std::endl;
                         std::cout << "EXAMW : " << i << "\t" << examW[i] << std::endl;
-                        std::cout << "INTERPW : " << i << "\t" << interpWSum[i] << std::endl;
                     }
                 }
                 std::cerr << "NAN VALUE DETECTED : " << e0 << "\t" << r.norm() << "\t" << HBuffer.norm() << std::endl;
