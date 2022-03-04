@@ -589,11 +589,52 @@ vec3 ImportanceSample(vec2 Xi, vec3 N, float roughness) {
     return normalize(sampleVec);
 }
 
+#define time 0
+float hash2(in vec2 n){ return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
+
+mat2 mm2(in float a){float c = cos(a), s = sin(a);return mat2(c,-s,s,c);}
+
+vec2 field(in vec2 x)
+{
+    vec2 n = floor(x);
+	vec2 f = fract(x);
+	vec2 m = vec2(5.,1.);
+	for(int j=0; j<=1; j++)
+	for(int i=0; i<=1; i++)
+    {
+		vec2 g = vec2( float(i),float(j) );
+		vec2 r = g - f;
+        float d = length(r)*(sin(time*0.12)*0.5+1.5); //any metric can be used
+        d = sin(d*5.+abs(fract(time*0.1)-0.5)*1.8+0.2);
+		m.x *= d;
+		m.y += d*1.2;
+    }
+	return abs(m);
+}
+
+vec3 tex(in vec2 p, in float ofst)
+{    
+    vec2 rz = field(p*ofst*0.5);
+	vec3 col = sin(vec3(2.,1.,.1)*rz.y*.2+3.+ofst*2.)+.9*(rz.x+1.);
+	col = col*col*.5;
+    col *= sin(length(p)*9.+time*5.)*0.35+0.65;
+	return col;
+}
+
+vec3 cubem(in vec3 p, in float ofst)
+{
+    p = abs(p);
+    if (p.x > p.y && p.x > p.z) return tex( vec2(p.z,p.y)/p.x,ofst );
+    else if (p.y > p.x && p.y > p.z) return tex( vec2(p.z,p.x)/p.y,ofst );
+    else return tex( vec2(p.y,p.x)/p.z,ofst );
+}
+
+
 
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
-    return vec3(0,0,0);//texture(TextureEnv, reflVec).rgb;
+    return cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
 }
 
 /**
@@ -639,15 +680,7 @@ vec3 CalculateSpecularIBL(
             vec3  fresnel = CalculateFresnel(surfNorm, toView, fresnel0);
             
             sfresnel += fresnel;
-#ifdef SPECULAR_NDF_ONLY
-            totalSpec += 0.0;
-#elif defined(SPECULAR_ATTEN_ONLY)
-            totalSpec += geoAtten / (NoH * NoV);
-#elif defined(SPECULAR_FRESNEL_ONLY)
-            totalSpec += fresnel / (NoH * NoV);
-#else
             totalSpec += (color * fresnel * geoAtten * VoH) / (NoH * NoV);
-#endif
         }
     }
     
@@ -666,16 +699,12 @@ vec3 CalculateLightingIBL(
     vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    //vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
+    vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
     
-//#ifdef DIFFUSE_ONLY
-	return diffuse;
-//#elif defined(SPECULAR_ONLY) || defined(SPECULAR_NDF_ONLY) || defined(SPECULAR_ATTEN_ONLY) || defined(SPECULAR_FRESNEL_ONLY)
-//    return specular;
-//#else
-//    return ((kd * diffuse) + specular);
-//#endif
+
+    return ((kd * diffuse) + specular);
+
 }
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
