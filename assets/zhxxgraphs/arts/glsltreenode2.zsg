@@ -4238,7 +4238,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
+    "shader"
    ]
   },
   "MakeMultilineString": {
@@ -9173,7 +9173,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
+    "shader"
    ]
   },
   "SetMatrix": {
@@ -10018,7 +10018,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderCihouUnrealEngine": {
@@ -10053,7 +10053,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderCustomFunc": {
@@ -10093,7 +10093,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderExtractVec": {
@@ -10138,7 +10138,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderFillVec": {
@@ -10173,7 +10173,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderFinalize": {
@@ -10249,7 +10249,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderInputAttr": {
@@ -10284,7 +10284,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderInvokeFunc": {
@@ -10319,7 +10319,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderLinearFit": {
@@ -10375,7 +10375,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderMakeVec": {
@@ -10420,7 +10420,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderReduceVec": {
@@ -10456,7 +10456,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderTernaryMath": {
@@ -10501,7 +10501,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderUnaryMath": {
@@ -10536,7 +10536,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "TriggerAbortSignal": {

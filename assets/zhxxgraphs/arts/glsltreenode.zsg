@@ -7375,7 +7375,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
+    "shader"
    ]
   },
   "MakeMultilineString": {
@@ -12251,7 +12251,7 @@
     "string"
    ]
   },
-  "ProceduralShader": {
+  "ProceduralTree": {
    "inputs": [
     [
      "LSysGenerator",
@@ -14029,7 +14029,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
+    "shader"
    ]
   },
   "SetMatrix": {
@@ -15521,7 +15521,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderCustomFunc": {
@@ -15561,7 +15561,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderExtractVec": {
@@ -15606,7 +15606,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderFillVec": {
@@ -15641,7 +15641,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderFinalize": {
@@ -15707,7 +15707,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderInputAttr": {
@@ -15730,7 +15730,7 @@
    ],
    "outputs": [
     [
-     "tree",
+     "shader",
      "out",
      ""
     ],
@@ -15742,7 +15742,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderInvokeFunc": {
@@ -15777,7 +15777,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderLinearFit": {
@@ -15833,7 +15833,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderMakeVec": {
@@ -15878,7 +15878,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderReduceVec": {
@@ -15914,7 +15914,7 @@
     ]
    ],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderTernaryMath": {
@@ -15959,7 +15959,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "ShaderUnaryMath": {
@@ -15994,7 +15994,7 @@
    ],
    "params": [],
    "categories": [
-    "tree"
+    "shader"
    ]
   },
   "TriggerAbortSignal": {
