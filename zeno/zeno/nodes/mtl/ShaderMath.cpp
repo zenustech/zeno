@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -20,7 +20,7 @@ static auto &toHlsl() {
 }
 
 
-struct TreeTernaryMath : TreeNode {
+struct ShaderTernaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -63,7 +63,7 @@ struct TreeTernaryMath : TreeNode {
     }
 };
 
-ZENDEFNODE(TreeTernaryMath, {
+ZENDEFNODE(ShaderTernaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -74,11 +74,11 @@ ZENDEFNODE(TreeTernaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 
-struct TreeBinaryMath : TreeNode {
+struct ShaderBinaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -142,7 +142,7 @@ struct TreeBinaryMath : TreeNode {
     }
 };
 
-ZENDEFNODE(TreeBinaryMath, {
+ZENDEFNODE(ShaderBinaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -152,11 +152,11 @@ ZENDEFNODE(TreeBinaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 
-struct TreeUnaryMath : TreeNode {
+struct ShaderUnaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -179,7 +179,7 @@ struct TreeUnaryMath : TreeNode {
     }
 };
 
-ZENDEFNODE(TreeUnaryMath, {
+ZENDEFNODE(ShaderUnaryMath, {
     {
         {"float", "in1", "0"},
         {(std::string)"enum " + unops, "op", "sqrt"},
@@ -188,7 +188,7 @@ ZENDEFNODE(TreeUnaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 

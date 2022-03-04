@@ -1,12 +1,12 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
-struct TreeCihouUnrealEngine : INode {
+struct ShaderCihouUnrealEngine : INode {
     virtual void apply() override {
         EmissionPass em;
         auto frag = get_input<StringObject>("frag")->get();
@@ -38,7 +38,7 @@ return mat;
     }
 };
 
-ZENDEFNODE(TreeCihouUnrealEngine, {
+ZENDEFNODE(ShaderCihouUnrealEngine, {
     {
         {"string", "frag"},
         {"string", "common"},
@@ -48,7 +48,7 @@ ZENDEFNODE(TreeCihouUnrealEngine, {
     },
     {
     },
-    {"tree"},
+    {"shader"},
 });
 
 }

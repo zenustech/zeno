@@ -9,13 +9,13 @@
 
 namespace zeno {
 
-struct TreeNode;
+struct ShaderNode;
 
-struct TreeObject : IObjectClone<TreeObject> {
-    TreeNode *node;
+struct ShaderObject : IObjectClone<ShaderObject> {
+    ShaderNode *node;
     std::any extra_data;
 
-    ZENO_API explicit TreeObject(TreeNode *node) : node(std::move(node)) {}
+    ZENO_API explicit ShaderObject(ShaderNode *node) : node(std::move(node)) {}
 };
 
 }

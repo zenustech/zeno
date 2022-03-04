@@ -88,7 +88,7 @@ void main()
           },
           {},
           {
-              "material",
+              "shader",
           },
       });
 
@@ -116,7 +116,7 @@ void main()
           },
           {},
           {
-              "material",
+              "shader",
           },
       });
 

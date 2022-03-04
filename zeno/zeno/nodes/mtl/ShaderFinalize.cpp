@@ -1,13 +1,13 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
+#include <zeno/extra/ShaderNode.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
-struct TreeFinalize : INode {
+struct ShaderFinalize : INode {
     virtual void apply() override {
         EmissionPass em;
         auto backend = get_param<std::string>("backend");
@@ -40,7 +40,7 @@ struct TreeFinalize : INode {
     }
 };
 
-ZENDEFNODE(TreeFinalize, {
+ZENDEFNODE(ShaderFinalize, {
     {
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
@@ -58,7 +58,7 @@ ZENDEFNODE(TreeFinalize, {
     {
         {"enum GLSL HLSL", "backend", "GLSL"},
     },
-    {"tree"},
+    {"shader"},
 });
 
 
