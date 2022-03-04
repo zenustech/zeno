@@ -441,7 +441,9 @@ ZENDEFNODE(GetTetMeshElementView, {
 });
 
 struct InterpolateElmAttrib : zeno::INode {
-    virtual void apply() override {1Object>("elmView");
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto elmView = get_input<zeno::PrimitiveObject>("elmView");
         auto attr_name = get_param<std::string>("attrName");
         auto attr_type = std::get<std::string>(get_param("attrType"));
 
