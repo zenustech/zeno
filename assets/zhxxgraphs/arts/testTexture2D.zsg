@@ -6,8 +6,8 @@
      "name": "ShaderAddTexture2D",
      "inputs": {
       "mtl": [
-       "031fa460-MakeMaterial",
-       "mtl",
+       null,
+       null,
        null
       ],
       "tex": [
@@ -23,8 +23,9 @@
      },
      "params": {},
      "uipos": [
-      749.1025972682116,
-      538.6655370447022
+      773.7591835678805,
+      592.9100269039735
+
      ],
      "options": []
     },
@@ -47,8 +48,8 @@
        ""
       ],
       "extensions": [
-       "bee9ea89-MakeMultilineString",
-       "value",
+       null,
+       null,
        ""
       ],
       "SRC": [
@@ -59,7 +60,7 @@
      },
      "params": {},
      "uipos": [
-      540.2356684602648,
+      539.5255587748344,
       297.7332108857617
      ],
      "options": []
@@ -94,7 +95,7 @@
        null
       ],
       "mtl": [
-       "c9a265eb-ShaderAddTexture2D",
+       "031fa460-MakeMaterial",
        "mtl",
        null
       ],
@@ -117,7 +118,7 @@
      "name": "ShaderFinalize",
      "inputs": {
       "basecolor": [
-       "15e6c8ec-ShaderInvokeFunc",
+       "06e59318-ShaderInputAttr",
        "out",
        null
       ],
@@ -166,8 +167,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      263.8451986754968,
-      100.67777317880802
+      261.8822589770043,
+      102.6407128773005
      ],
      "options": []
     },
@@ -228,38 +229,12 @@
      ],
      "options": []
     },
-    "c293c35b-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
-     "inputs": {
-      "attr": [
-       null,
-       null,
-       "clr"
-      ],
-      "type": [
-       null,
-       null,
-       "vec3"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -641.9678672034302,
-      506.90582883818115
-     ],
-     "options": []
-    },
     "16388187-MakeSmallList": {
      "name": "MakeSmallList",
      "inputs": {
       "obj0": [
-       "c293c35b-ShaderInputAttr",
-       "out",
+       null,
+       null,
        null
       ],
       "obj1": [
@@ -315,8 +290,8 @@
       "value": "vec4 c = texture2D(texture1, TexCoord.xy);\nreturn c.xyz;"
      },
      "uipos": [
-      -795.0062918067156,
-      29.848544252720515
+      -720.5236759126758,
+      -39.584402767147
      ],
      "options": []
     },
@@ -378,13 +353,62 @@
       643.8327814569533
      ],
      "options": []
+    },
+    "06e59318-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "uv"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -446.67477235099295,
+      283.1191535596024
+     ],
+     "options": []
+    },
+    "535a9994-PrintString": {
+     "name": "PrintString",
+     "inputs": {
+      "str": [
+       null,
+       null,
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1078.89331539735,
+      560.0398385761588
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": -1155.8053638184292,
-    "y": -198.36007799540576,
-    "width": 2343.75,
-    "height": 1191.4062499999993
+    "x": -390.10487860547937,
+    "y": -71.44977035665158,
+    "width": 1875.0,
+    "height": 953.1249999999994
    }
   }
  },
@@ -7662,7 +7686,8 @@
   "ShaderInputAttr": {
    "inputs": [
     [
-     "enum pos clr nrm",
+     "enum pos clr nrm uv",
+
      "attr",
      "pos"
     ],
