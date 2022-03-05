@@ -192,7 +192,7 @@ void main(void)
 	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
 	// Apply the exposure to this texel
   oColor.xyz = ACESToneMapping(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, exposure);
-	oColor = vec4(oColor.xyz, 1.0);
+	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
   
 }
 )";
