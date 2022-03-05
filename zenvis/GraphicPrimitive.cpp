@@ -652,11 +652,52 @@ vec3 ImportanceSample(vec2 Xi, vec3 N, float roughness) {
     return normalize(sampleVec);
 }
 
+#define time 0
+float hash2(in vec2 n){ return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
+
+mat2 mm2(in float a){float c = cos(a), s = sin(a);return mat2(c,-s,s,c);}
+
+vec2 field(in vec2 x)
+{
+    vec2 n = floor(x);
+	vec2 f = fract(x);
+	vec2 m = vec2(5.,1.);
+	for(int j=0; j<=1; j++)
+	for(int i=0; i<=1; i++)
+    {
+		vec2 g = vec2( float(i),float(j) );
+		vec2 r = g - f;
+        float d = length(r)*(sin(time*0.12)*0.5+1.5); //any metric can be used
+        d = sin(d*5.+abs(fract(time*0.1)-0.5)*1.8+0.2);
+		m.x *= d;
+		m.y += d*1.2;
+    }
+	return abs(m);
+}
+
+vec3 tex(in vec2 p, in float ofst)
+{    
+    vec2 rz = field(p*ofst*0.5);
+	vec3 col = sin(vec3(2.,1.,.1)*rz.y*.2+3.+ofst*2.)+.9*(rz.x+1.);
+	col = col*col*.5;
+    col *= sin(length(p)*9.+time*5.)*0.35+0.65;
+	return col;
+}
+
+vec3 cubem(in vec3 p, in float ofst)
+{
+    p = abs(p);
+    if (p.x > p.y && p.x > p.z) return tex( vec2(p.z,p.y)/p.x,ofst );
+    else if (p.y > p.x && p.y > p.z) return tex( vec2(p.z,p.x)/p.y,ofst );
+    else return tex( vec2(p.y,p.x)/p.z,ofst );
+}
+
+
 
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
-    return vec3(0,0,0);//texture(TextureEnv, reflVec).rgb;
+    return cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
 }
 
 /**
@@ -702,15 +743,7 @@ vec3 CalculateSpecularIBL(
             vec3  fresnel = CalculateFresnel(surfNorm, toView, fresnel0);
             
             sfresnel += fresnel;
-#ifdef SPECULAR_NDF_ONLY
-            totalSpec += 0.0;
-#elif defined(SPECULAR_ATTEN_ONLY)
-            totalSpec += geoAtten / (NoH * NoV);
-#elif defined(SPECULAR_FRESNEL_ONLY)
-            totalSpec += fresnel / (NoH * NoV);
-#else
             totalSpec += (color * fresnel * geoAtten * VoH) / (NoH * NoV);
-#endif
         }
     }
     
@@ -729,17 +762,17 @@ vec3 CalculateLightingIBL(
     vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    //vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
+    vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
     
-//#ifdef DIFFUSE_ONLY
-	return diffuse;
-//#elif defined(SPECULAR_ONLY) || defined(SPECULAR_NDF_ONLY) || defined(SPECULAR_ATTEN_ONLY) || defined(SPECULAR_FRESNEL_ONLY)
-//    return specular;
-//#else
-//    return ((kd * diffuse) + specular);
-//#endif
+
+    return ((kd * diffuse) + specular);
+
 }
+
+
+
+
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
@@ -755,7 +788,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
 
-    light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
+    new_normal=gl_NormalMatrix * new_normal;
+    light_dir = vec3(1,1,0);
     color +=  
         CalculateLightingAnalytical(
             new_normal,
@@ -763,11 +797,11 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(1, 1, 1);
+            mat_metallic) * vec3(2, 2, 2);
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
+    light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
     color +=  
@@ -777,8 +811,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(0.3, 0.23, 0.18);
-    light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
+            mat_metallic) * vec3(0.3, 0.23, 0.18)*5;
+    light_dir = vec3(-1,1,-1);
     color +=  
         CalculateLightingAnalytical(
             new_normal,
@@ -786,7 +820,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(0.15, 0.2, 0.22);
+            mat_metallic) * vec3(0.15, 0.2, 0.22)*4;
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
     //color += vec3(1,1,1) * 0.2;
