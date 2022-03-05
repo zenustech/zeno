@@ -655,7 +655,7 @@ vec3 CalculateSpecularIBL(
 {
     vec3 totalSpec = vec3(0.0);
     vec3 toSurfaceCenter = reflect(-toView, surfNorm);
-    int IBLSteps = 32;
+    int IBLSteps = 64;
     for(int i = 0; i < IBLSteps; ++i)
     {
         // The 2D hemispherical sampling vector
