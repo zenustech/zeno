@@ -44,8 +44,8 @@
      },
      "params": {},
      "uipos": [
-      6299.0076191492235,
-      -289.7613273643502
+      6659.888738030341,
+      -190.79629239931538
      ],
      "options": [
       "VIEW"
@@ -82,8 +82,8 @@
      },
      "params": {},
      "uipos": [
-      5982.1685480075475,
-      -118.56553180659289
+      6121.231485070484,
+      -90.41168565274677
      ],
      "options": []
     },
@@ -588,8 +588,8 @@
      },
      "params": {},
      "uipos": [
-      3909.232425512098,
-      572.4074720670383
+      3898.245393811809,
+      681.1790858998912
      ],
      "options": []
     },
@@ -692,8 +692,8 @@
      },
      "params": {},
      "uipos": [
-      5182.86145694776,
-      426.8022922763138
+      5186.6003228320305,
+      418.609663384898
      ],
      "options": []
     },
@@ -706,14 +706,14 @@
        null
       ],
       "metallic": [
-       "b8b42d38-ShaderExtractVec",
-       "y",
+       "afcf9379-ShaderBinaryMath",
+       "out",
        1.0
       ],
       "roughness": [
        null,
        null,
-       1.0
+       0.3
       ],
       "specular": [
        null,
@@ -729,6 +729,11 @@
        null,
        null,
        null
+      ],
+      "exposure": [
+       null,
+       null,
+       2.2
       ],
       "commonCode": [
        null,
@@ -750,8 +755,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      5722.595631595274,
-      90.96397811918047
+      5733.178697649928,
+      80.50355998434381
      ],
      "options": []
     },
@@ -792,12 +797,12 @@
       "Dx": [
        null,
        null,
-       0.04
+       0.02
       ],
       "radius": [
        null,
        null,
-       1.0
+       0.5
       ],
       "center": [
        null,
@@ -817,8 +822,8 @@
      },
      "params": {},
      "uipos": [
-      -872.4099099099084,
-      -36.064189189189165
+      -1597.9665771442394,
+      -113.97631452978848
      ],
      "options": []
     },
@@ -837,22 +842,53 @@
       ]
      },
      "params": {
-      "isoValue": 0.01,
-      "adaptivity": 0.025,
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
       "allowQuads": false
      },
      "uipos": [
-      -602.7871621621613,
-      122.7899774774773
+      -1115.7086539877737,
+      -203.4670473862824
+     ],
+     "options": []
+    },
+    "afcf9379-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "b8b42d38-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       5.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5424.358834625856,
+      413.72740610887683
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 5301.060452003116,
-    "y": -141.73128838888593,
-    "width": 1499.999999999999,
-    "height": 762.4999999999989
+    "x": 3449.302624567517,
+    "y": 2.260986951943778,
+    "width": 1874.9999999999989,
+    "height": 953.1249999999985
    }
   }
  },
@@ -15472,6 +15508,41 @@
     "particles"
    ]
   },
+  "ShaderAddTexture2D": {
+   "inputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "ShaderBinaryMath": {
    "inputs": [
     [
@@ -15700,6 +15771,11 @@
      "0,0,0"
     ],
     [
+     "float",
+     "exposure",
+     "1.0"
+    ],
+    [
      "string",
      "commonCode",
      ""
@@ -15746,7 +15822,7 @@
   "ShaderInputAttr": {
    "inputs": [
     [
-     "enum pos clr nrm",
+     "enum pos clr nrm uv",
      "attr",
      "pos"
     ],
@@ -15865,6 +15941,56 @@
      "0"
     ]
    ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderMakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "NEAREST"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "NEAREST"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "shader"
    ]

@@ -516,7 +516,7 @@ float CalculateNDF( // GGX/Trowbridge-Reitz NDF
     in vec3  surfNorm,
     in vec3  halfVector,
     in float roughness){
-    float a2 = (roughness * roughness);
+    float a2 = (roughness * roughness * roughness * roughness);
     float halfAngle = dot(surfNorm, halfVector);
 
     return (a2 / (3.1415926 * pow((pow(halfAngle, 2.0) * (a2 - 1.0) + 1.0), 2.0)));
@@ -701,7 +701,8 @@ vec3 cubem(in vec3 p, in float ofst)
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
-    return cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
+    if(reflVec.y>-0.2) return vec3(0,0,0);
+    else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
 }
 
 /**
@@ -774,6 +775,17 @@ vec3 CalculateLightingIBL(
 
 }
 
+vec3 ACESToneMapping(vec3 color, float adapted_lum)
+{
+	const float A = 2.51f;
+	const float B = 0.03f;
+	const float C = 2.43f;
+	const float D = 0.59f;
+	const float E = 0.14f;
+
+	color *= adapted_lum;
+	return (color * (A * color + B)) / (color * (C * color + D) + E);
+}
 
 
 
@@ -793,7 +805,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
 
-    new_normal=gl_NormalMatrix * new_normal;
+    new_normal = normalize(gl_NormalMatrix * new_normal);
     light_dir = vec3(1,1,0);
     color +=  
         CalculateLightingAnalytical(
@@ -802,33 +814,32 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(2, 2, 2);
+            mat_metallic) * vec3(1, 1, 1) * 3.14;
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
     light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-    color +=  
-        CalculateLightingAnalytical(
-            new_normal,
-            light_dir,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic) * vec3(0.3, 0.23, 0.18)*5;
-    light_dir = vec3(-1,1,-1);
-    color +=  
-        CalculateLightingAnalytical(
-            new_normal,
-            light_dir,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic) * vec3(0.15, 0.2, 0.22)*4;
+//    color +=  
+//        CalculateLightingAnalytical(
+//            new_normal,
+//            light_dir,
+//            view_dir,
+//            albedo2,
+//            roughness,
+//            mat_metallic) * vec3(0.3, 0.23, 0.18)*5;
+//    light_dir = vec3(0,-0.2,-1);
+//    color +=  
+//        CalculateLightingAnalytical(
+//            new_normal,
+//            light_dir,
+//            view_dir,
+//            albedo2,
+//            roughness,
+//            mat_metallic) * vec3(0.15, 0.2, 0.22)*6;
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-    //color += vec3(1,1,1) * 0.2;
 
     color +=  
         CalculateLightingIBL(
@@ -836,7 +847,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
             view_dir,
             albedo2,
             roughness,
-            mat_metallic) * vec3(0.6, 0.6, 0.6);
+            mat_metallic);
+    color = ACESToneMapping(color, mat_zenxposure);
     return color;
 
 }
@@ -870,6 +882,7 @@ void main()
 
   vec3 albedo = iColor;
   vec3 color = studioShading(albedo, viewdir, normal);
+  
   gl_FragColor = vec4(color, 1.0);
 }
 )";
