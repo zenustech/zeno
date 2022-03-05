@@ -5,6 +5,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/TextureObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 
@@ -27,7 +28,7 @@ struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
-  //std::vector<std::unique_ptr<Texture>> textures;
+  std::vector<std::unique_ptr<Texture>> textures;
 
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -78,10 +79,24 @@ struct GraphicPrimitive : IGraphic {
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(vertex_count * 3);
-    for (int i = 0; i < vertex_count; i++) {
+    if (prim->has_attr("uv"))
+    {
+      auto const &uv = prim->attr<zeno::vec3f>("uv");
+      for (int i = 0; i < vertex_count; i++)
+      {
+        mem[3 * i + 0] = pos[i];
+        mem[3 * i + 1] = uv[i];
+        mem[3 * i + 2] = nrm[i];
+      }
+    }
+    else
+    {
+      for (int i = 0; i < vertex_count; i++)
+      {
         mem[3 * i + 0] = pos[i];
         mem[3 * i + 1] = clr[i];
         mem[3 * i + 2] = nrm[i];
+      }
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -113,13 +128,17 @@ struct GraphicPrimitive : IGraphic {
         points_prog = get_points_program(path);
     }
 
+    if (!prim->mtl->tex2Ds.empty())
+    {
+      load_texture2Ds(prim->mtl->tex2Ds);
+    }
     //load_textures(path);
   }
 
   virtual void draw() override {
-    /*for (int id = 0; id < textures.size(); id++) {
+    for (int id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
-    }*/
+    }
 
     vbo->bind();
     vbo->attribute(/*index=*/0,
@@ -198,6 +217,50 @@ struct GraphicPrimitive : IGraphic {
           textures.push_back(std::move(tex));
       }
   }*/
+
+  void load_texture2Ds(const std::vector<std::shared_ptr<zeno::Texture2DObject>> &tex2Ds)
+  {
+    for (const auto &tex2D : tex2Ds)
+    {
+      auto tex = std::make_unique<Texture>();
+      tex->load(tex2D->path.c_str());
+
+#define SET_TEX_WRAP(TEX_WRAP, TEX_2D_WRAP)                                    \
+  if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::REPEAT)               \
+    TEX_WRAP = GL_REPEAT;                                                      \
+  else if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::MIRRORED_REPEAT) \
+    TEX_WRAP = GL_MIRRORED_REPEAT;                                             \
+  else if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::CLAMP_TO_EDGE)   \
+    TEX_WRAP = GL_CLAMP_TO_EDGE;                                               \
+  else if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::CLAMP_TO_BORDER) \
+    TEX_WRAP = GL_CLAMP_TO_BORDER;
+
+      SET_TEX_WRAP(tex->wrap_s, tex2D->wrapS)
+      SET_TEX_WRAP(tex->wrap_t, tex2D->wrapT)
+
+#undef SET_TEX_WRAP
+
+#define SET_TEX_FILTER(TEX_FILTER, TEX_2D_FILTER)                                         \
+  if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::NEAREST)                     \
+    TEX_FILTER = GL_NEAREST;                                                              \
+  else if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::LINEAR)                 \
+    TEX_FILTER = GL_LINEAR;                                                               \
+  else if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::NEAREST_MIPMAP_NEAREST) \
+    TEX_FILTER = GL_NEAREST_MIPMAP_NEAREST;                                               \
+  else if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::LINEAR_MIPMAP_NEAREST)  \
+    TEX_FILTER = GL_LINEAR_MIPMAP_NEAREST;                                                \
+  else if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::NEAREST_MIPMAP_LINEAR)  \
+    TEX_FILTER = GL_NEAREST_MIPMAP_LINEAR;                                                \
+  else if (TEX_2D_FILTER == zeno::Texture2DObject::TexFilterEnum::LINEAR_MIPMAP_LINEAR)   \
+    TEX_FILTER = GL_LINEAR_MIPMAP_LINEAR;
+
+      SET_TEX_FILTER(tex->min_filter, tex2D->minFilter)
+      SET_TEX_FILTER(tex->mag_filter, tex2D->magFilter)
+
+#undef SET_TEX_FILTER
+      textures.push_back(std::move(tex));
+    }
+  }
 
   Program *get_points_program(std::string const &path) {
     auto vert = hg::file_get_content(path + ".points.vert");

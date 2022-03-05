@@ -12,6 +12,8 @@ primitive_merge(std::shared_ptr<ListObject> list);
 
 ZENO_API void read_obj_file(
     std::vector<zeno::vec3f> &vertices,
+    std::vector<zeno::vec3f> &uvs,
+    std::vector<zeno::vec3f> &normals,
     std::vector<zeno::vec3i> &indices,
     const char *path
 );
