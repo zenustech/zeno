@@ -161,7 +161,10 @@ struct ShaderUnaryMath : ShaderNode {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
         auto t1 = em->determineType(in1.get());
-
+        if(op=="length")
+        {
+            t1 = 1;
+        }
         return t1;
     }
 

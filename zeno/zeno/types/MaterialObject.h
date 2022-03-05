@@ -144,6 +144,7 @@ namespace zeno
             mtl.tex2Ds.resize(tex2DsSize);
 
             for (size_t j{0}; j < tex2DsSize; ++j)
+
             {
                 size_t tex2DStrSize;
                 memcpy(&tex2DStrSize, str.data() + i, sizeof(tex2DStrSize));
