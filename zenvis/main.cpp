@@ -165,20 +165,20 @@ vec3 ACESToneMapping(vec3 color, float adapted_lum)
 	return (color * (A * color + B)) / (color * (C * color + D) + E);
 }
 
-uniform sampler2D hdr_image;
+uniform samplerRect hdr_image;
 out vec4 oColor;
 void main(void)
 {
 	int i;
 	float lum[25];
-	vec2 tex_scale = vec2(1.0) / textureSize(hdr_image, 0);
+	vec2 tex_scale = vec2(1.0);
 	for (i = 0; i < 25; i++)
 	{
 		vec2 tc = (2.0 * gl_FragCoord.xy + 3.5 * vec2(i % 5 - 2, i / 5 - 2));
-		vec3 col = texture(hdr_image, tc * tex_scale).rgb;lum[i] = dot(col, vec3(0.3, 0.59, 0.11));
+		vec3 col = texture2DRect(hdr_image, tc).rgb;
+    lum[i] = dot(col, vec3(0.3, 0.59, 0.11));
 	} 
 	// Calculate weighted color of region
-	vec3 vColor = texelFetch(hdr_image, 2 * ivec2(gl_FragCoord.xy), 0).rgb;
 	float kernelLuminance = (
 		(1.0 * (lum[0] + lum[4] + lum[20] + lum[24])) +
 		(4.0 * (lum[1] + lum[3] + lum[5] + lum[9] +
@@ -191,7 +191,8 @@ void main(void)
 	// Compute the corresponding exposure
 	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
 	// Apply the exposure to this texel
-	oColor = vec4(1,1,1, 1.0);
+  oColor.xyz = ACESToneMapping(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, exposure);
+	oColor = vec4(oColor.xyz, 1.0);
   
 }
 )";
@@ -199,14 +200,23 @@ hg::OpenGL::Program* tmProg=nullptr;
 GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
 int oldnx, oldny;
 GLuint texRect=0, regularFBO = 0;
-void ScreenFillQuad()
+GLuint emptyVAO=0;
+void ScreenFillQuad(GLuint tex)
 {
-  
+  if(emptyVAO==0)
+    glGenVertexArrays(1, &emptyVAO); 
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   tmProg->use();
+  tmProg->set_uniformi("hdr_image",0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+
+  glEnableVertexAttribArray(0);
+  glBindVertexArray(emptyVAO); 
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDisableVertexAttribArray(0);
   glUseProgram(0);
 }
 static void paint_graphics(void) {
@@ -253,7 +263,7 @@ static void paint_graphics(void) {
       CHECK_GL(glDeleteTextures(1, &texRect));
     }
     CHECK_GL(glGenTextures(1, &texRect));
-    glBindTexture(GL_TEXTURE_RECTANGLE, texRect);
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
     {
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
@@ -300,9 +310,11 @@ static void paint_graphics(void) {
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
   glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
 
