@@ -23,8 +23,8 @@
      },
      "params": {},
      "uipos": [
-      749.1025972682116,
-      538.6655370447022
+      773.7591835678805,
+      592.9100269039735
      ],
      "options": []
     },
@@ -59,8 +59,8 @@
      },
      "params": {},
      "uipos": [
-      540.2356684602648,
-      297.7332108857617
+      541.4980856788079,
+      297.73321088576176
      ],
      "options": []
     },
@@ -117,7 +117,7 @@
      "name": "ShaderFinalize",
      "inputs": {
       "basecolor": [
-       "15e6c8ec-ShaderInvokeFunc",
+       "06e59318-ShaderInputAttr",
        "out",
        null
       ],
@@ -166,8 +166,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      263.8451986754968,
-      100.67777317880802
+      261.8822589770043,
+      102.6407128773005
      ],
      "options": []
     },
@@ -228,38 +228,12 @@
      ],
      "options": []
     },
-    "c293c35b-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
-     "inputs": {
-      "attr": [
-       null,
-       null,
-       "clr"
-      ],
-      "type": [
-       null,
-       null,
-       "vec3"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -641.9678672034302,
-      506.90582883818115
-     ],
-     "options": []
-    },
     "16388187-MakeSmallList": {
      "name": "MakeSmallList",
      "inputs": {
       "obj0": [
-       "c293c35b-ShaderInputAttr",
-       "out",
+       null,
+       null,
        null
       ],
       "obj1": [
@@ -315,8 +289,8 @@
       "value": "vec4 c = texture2D(texture1, TexCoord.xy);\nreturn c.xyz;"
      },
      "uipos": [
-      -795.0062918067156,
-      29.848544252720515
+      -720.5236759126758,
+      -39.584402767147
      ],
      "options": []
     },
@@ -378,11 +352,60 @@
       643.8327814569533
      ],
      "options": []
+    },
+    "06e59318-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "uv"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -675.48789321192,
+      436.97625206953614
+     ],
+     "options": []
+    },
+    "535a9994-PrintString": {
+     "name": "PrintString",
+     "inputs": {
+      "str": [
+       "cb0a2469-ShaderFinalize",
+       "code",
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1080.4713369205292,
+      560.0398385761588
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": -1155.8053638184292,
-    "y": -198.36007799540576,
+    "x": -932.1400360672816,
+    "y": -375.5258667123719,
     "width": 2343.75,
     "height": 1191.4062499999993
    }
@@ -7662,7 +7685,7 @@
   "ShaderInputAttr": {
    "inputs": [
     [
-     "enum pos clr nrm",
+     "enum pos clr nrm uv",
      "attr",
      "pos"
     ],

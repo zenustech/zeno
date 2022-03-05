@@ -72,31 +72,27 @@ struct GraphicPrimitive : IGraphic {
             }
         }
     }
+    if (!prim->has_attr("uv"))
+    {
+        auto &uv = prim->add_attr<zeno::vec3f>("uv");
+        for (size_t i = 0; i < uv.size(); i++) {
+            uv[i] = zeno::vec3f(1.0f);
+        }
+    }
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &uv = prim->attr<zeno::vec3f>("uv");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(vertex_count * 3);
-    if (prim->has_attr("uv"))
+    std::vector<zeno::vec3f> mem(vertex_count * 4);
+    for (int i = 0; i < vertex_count; i++)
     {
-      auto const &uv = prim->attr<zeno::vec3f>("uv");
-      for (int i = 0; i < vertex_count; i++)
-      {
-        mem[3 * i + 0] = pos[i];
-        mem[3 * i + 1] = uv[i];
-        mem[3 * i + 2] = nrm[i];
-      }
-    }
-    else
-    {
-      for (int i = 0; i < vertex_count; i++)
-      {
-        mem[3 * i + 0] = pos[i];
-        mem[3 * i + 1] = clr[i];
-        mem[3 * i + 2] = nrm[i];
-      }
+      mem[4 * i + 0] = pos[i];
+      mem[4 * i + 1] = clr[i];
+      mem[4 * i + 2] = nrm[i];
+      mem[4 * i + 3] = uv[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -142,13 +138,16 @@ struct GraphicPrimitive : IGraphic {
 
     vbo->bind();
     vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 9,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
     vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 9,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
     vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 9,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+    vbo->attribute(/*index=*/3,
+        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
 
     if (draw_all_points) {
@@ -201,6 +200,7 @@ struct GraphicPrimitive : IGraphic {
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->disable_attribute(2);
+    vbo->disable_attribute(3);
     vbo->unbind();
   }
 
@@ -415,16 +415,19 @@ uniform mat4 mInvProj;
 attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
+attribute vec3 vTexCoord;
 
 varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
+varying vec3 iTexCoord;
 
 void main()
 {
   position = vPosition;
   iColor = vColor;
   iNormal = vNormal;
+  iTexCoord = vTexCoord;
 
   gl_Position = mVP * vec4(position, 1.0);
 }
@@ -447,6 +450,7 @@ uniform bool mRenderWireframe;
 varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
+varying vec3 iTexCoord;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -777,6 +781,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
+    vec3 att_uv = iTexCoord;
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
