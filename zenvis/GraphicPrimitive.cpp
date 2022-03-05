@@ -124,7 +124,7 @@ struct GraphicPrimitive : IGraphic {
         points_prog = get_points_program(path);
     }
 
-    if (!prim->mtl->tex2Ds.empty())
+    if ((prim->mtl != nullptr) && !prim->mtl->tex2Ds.empty())
     {
       load_texture2Ds(prim->mtl->tex2Ds);
     }

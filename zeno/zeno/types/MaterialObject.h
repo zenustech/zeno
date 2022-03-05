@@ -143,7 +143,7 @@ namespace zeno
             i += sizeof(tex2DsSize);
             mtl.tex2Ds.resize(tex2DsSize);
 
-            for (size_t j{0}; j < 1; ++j)
+            for (size_t j{0}; j < tex2DsSize; ++j)
             {
                 size_t tex2DStrSize;
                 memcpy(&tex2DStrSize, str.data() + i, sizeof(tex2DStrSize));
