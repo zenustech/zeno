@@ -1,3 +1,2 @@
-add_library(zeno_Functional SHARED NonlinearSolver.cpp)
-target_link_libraries(zeno_Functional PRIVATE zeno)
-target_link_libraries(zeno_Functional PRIVATE zeno_nodep)
+add_library(zeno_Functional OBJECT NonlinearSolver.cpp)
+target_link_libraries(zeno_Functional PRIVATE zenocore)
