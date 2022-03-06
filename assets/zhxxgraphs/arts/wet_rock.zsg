@@ -2,8 +2,8 @@
  "graph": {
   "main": {
    "nodes": {
-    "ab6bbbdf-TreeFinalize": {
-     "name": "TreeFinalize",
+    "ab6bbbdf-ShaderFinalize": {
+     "name": "ShaderFinalize",
      "inputs": {
       "basecolor": [
        "995d9f8b-getStoneColor",
@@ -26,7 +26,7 @@
        0.5
       ],
       "normal": [
-       "b84d1120-TreeInputAttr",
+       "b84d1120-ShaderInputAttr",
        "out",
        null
       ],
@@ -34,6 +34,21 @@
        null,
        null,
        null
+      ],
+      "exposure": [
+       null,
+       null,
+       1.0
+      ],
+      "commonCode": [
+       null,
+       null,
+       ""
+      ],
+      "extensionsCode": [
+       null,
+       null,
+       ""
       ],
       "SRC": [
        null,
@@ -48,9 +63,7 @@
       7305.3003315854785,
       -465.78706032301574
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "3cde9c7c-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
@@ -73,37 +86,6 @@
      ],
      "options": []
     },
-    "eb8dbdf8-MakeMaterial": {
-     "name": "MakeMaterial",
-     "inputs": {
-      "vert": [
-       null,
-       null,
-       ""
-      ],
-      "frag": [
-       "ab6bbbdf-TreeFinalize",
-       "code",
-       ""
-      ],
-      "common": [
-       "ab6bbbdf-TreeFinalize",
-       "commonCode",
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      7666.794801187662,
-      -347.09845862295384
-     ],
-     "options": []
-    },
     "145b4e4b-SetMaterial": {
      "name": "SetMaterial",
      "inputs": {
@@ -113,7 +95,7 @@
        null
       ],
       "mtl": [
-       "eb8dbdf8-MakeMaterial",
+       "ab6bbbdf-ShaderFinalize",
        "mtl",
        null
       ],
@@ -128,81 +110,33 @@
       7975.46594500847,
       -457.31602505336247
      ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "0a86d290-PrintString": {
-     "name": "PrintString",
-     "inputs": {
-      "str": [
-       "ab6bbbdf-TreeFinalize",
-       "code",
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      7788.534628378367,
-      -21.616342905405375
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "4a6b31dd-PrintString": {
-     "name": "PrintString",
-     "inputs": {
-      "str": [
-       "ab6bbbdf-TreeFinalize",
-       "commonCode",
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      7791.860219594584,
-      141.337626689189
-     ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "995d9f8b-getStoneColor": {
      "name": "getStoneColor",
      "inputs": {
       "getStoneColor_p": [
-       "7d45e4c3-TreeInputAttr",
+       "7d45e4c3-ShaderInputAttr",
        "out",
        null
       ],
       "getStoneColor_c": [
-       "f4e33bdd-TreeMakeVec",
+       "f4e33bdd-ShaderMakeVec",
        "out",
        null
       ],
       "getStoneColor_l": [
-       "3c65331e-TreeMakeVec",
+       "3c65331e-ShaderMakeVec",
        "out",
        null
       ],
       "getStoneColor_n": [
-       "b84d1120-TreeInputAttr",
+       "b84d1120-ShaderInputAttr",
        "out",
        null
       ],
       "getStoneColor_e": [
-       "7d45e4c3-TreeInputAttr",
+       "7d45e4c3-ShaderInputAttr",
        "out",
        null
       ],
@@ -219,8 +153,8 @@
      ],
      "options": []
     },
-    "7d45e4c3-TreeInputAttr": {
-     "name": "TreeInputAttr",
+    "7d45e4c3-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -245,8 +179,8 @@
      ],
      "options": []
     },
-    "f4e33bdd-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "f4e33bdd-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -281,8 +215,8 @@
      ],
      "options": []
     },
-    "b84d1120-TreeInputAttr": {
-     "name": "TreeInputAttr",
+    "b84d1120-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
      "inputs": {
       "attr": [
        null,
@@ -307,8 +241,8 @@
      ],
      "options": []
     },
-    "3c65331e-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "3c65331e-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -345,24 +279,24 @@
     }
    },
    "view_rect": {
-    "x": 5864.783946829885,
-    "y": -1025.6556928564737,
-    "width": 3662.1093749999977,
-    "height": 1922.607421874997
+    "x": 7067.641608995088,
+    "y": -646.0802349186495,
+    "width": 1199.9999999999993,
+    "height": 629.9999999999991
    }
   },
   "noise_3": {
    "nodes": {
-    "5cb94876-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "5cb94876-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
-       "6262a675-TreeExtractVec",
+       "6262a675-ShaderExtractVec",
        "x",
        0.0
       ],
       "y": [
-       "6262a675-TreeExtractVec",
+       "6262a675-ShaderExtractVec",
        "y",
        0.0
       ],
@@ -389,11 +323,11 @@
      ],
      "options": []
     },
-    "7237d226-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "7237d226-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "837401bb-TreeBinaryMath",
+       "837401bb-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -420,16 +354,16 @@
      ],
      "options": []
     },
-    "05a43f40-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "05a43f40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "837401bb-TreeBinaryMath",
+       "837401bb-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "d4f0325f-TreeFillVec",
+       "d4f0325f-ShaderFillVec",
        "out",
        0.0
       ],
@@ -451,8 +385,8 @@
      ],
      "options": []
     },
-    "d4f0325f-TreeFillVec": {
-     "name": "TreeFillVec",
+    "d4f0325f-ShaderFillVec": {
+     "name": "ShaderFillVec",
      "inputs": {
       "in": [
        null,
@@ -477,11 +411,11 @@
      ],
      "options": []
     },
-    "1c538021-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1c538021-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "05a43f40-TreeBinaryMath",
+       "05a43f40-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -546,21 +480,21 @@
      ],
      "options": []
     },
-    "a119e4b3-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "a119e4b3-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
-       "2bec4458-TreeTernaryMath",
+       "2bec4458-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "2316cf22-TreeTernaryMath",
+       "2316cf22-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "z",
        0.0
       ],
@@ -601,8 +535,8 @@
      ],
      "options": []
     },
-    "e2b3baf1-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e2b3baf1-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -610,7 +544,7 @@
        2.0
       ],
       "in2": [
-       "b5a9db73-TreeUnaryMath",
+       "b5a9db73-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -632,8 +566,8 @@
      ],
      "options": []
     },
-    "a66766b8-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "a66766b8-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
        "fca02d0d-hash12_2",
@@ -646,7 +580,7 @@
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "x",
        0.0
       ],
@@ -668,16 +602,16 @@
      ],
      "options": []
     },
-    "837401bb-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "837401bb-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "5cb94876-TreeMakeVec",
+       "5cb94876-ShaderMakeVec",
        "out",
        0.0
       ],
       "in2": [
-       "f211ff13-TreeBinaryMath",
+       "f211ff13-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -699,8 +633,8 @@
      ],
      "options": []
     },
-    "b5a9db73-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "b5a9db73-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
        "207d176c-SubInput",
@@ -725,8 +659,8 @@
      ],
      "options": []
     },
-    "2a967170-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "2a967170-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
        "207d176c-SubInput",
@@ -751,11 +685,11 @@
      ],
      "options": []
     },
-    "08a9d9d6-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "08a9d9d6-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "837401bb-TreeBinaryMath",
+       "837401bb-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -801,8 +735,8 @@
      ],
      "options": []
     },
-    "71953127-TreeFillVec": {
-     "name": "TreeFillVec",
+    "71953127-ShaderFillVec": {
+     "name": "ShaderFillVec",
      "inputs": {
       "in": [
        null,
@@ -827,11 +761,11 @@
      ],
      "options": []
     },
-    "c3484332-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "c3484332-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "a119e4b3-TreeTernaryMath",
+       "a119e4b3-ShaderTernaryMath",
        "out",
        0.0
       ],
@@ -858,16 +792,16 @@
      ],
      "options": []
     },
-    "ab775a05-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "ab775a05-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "dca78b6a-TreeBinaryMath",
+       "dca78b6a-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "1e740b46-TreeBinaryMath",
+       "1e740b46-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -889,11 +823,11 @@
      ],
      "options": []
     },
-    "ca9ce505-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "ca9ce505-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "05a43f40-TreeBinaryMath",
+       "05a43f40-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -920,11 +854,11 @@
      ],
      "options": []
     },
-    "0d577939-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "0d577939-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "05a43f40-TreeBinaryMath",
+       "05a43f40-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -951,11 +885,11 @@
      ],
      "options": []
     },
-    "16492ad0-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "16492ad0-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "05a43f40-TreeBinaryMath",
+       "05a43f40-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -982,11 +916,11 @@
      ],
      "options": []
     },
-    "6262a675-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "6262a675-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
      "inputs": {
       "vec": [
-       "2a967170-TreeUnaryMath",
+       "2a967170-ShaderUnaryMath",
        "out",
        null
       ],
@@ -1003,11 +937,11 @@
      ],
      "options": []
     },
-    "1de0249b-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1de0249b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "837401bb-TreeBinaryMath",
+       "837401bb-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -1034,21 +968,21 @@
      ],
      "options": []
     },
-    "2316cf22-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "2316cf22-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
-       "a5ba5327-TreeTernaryMath",
+       "a5ba5327-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "035c6fee-TreeTernaryMath",
+       "035c6fee-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "y",
        0.0
       ],
@@ -1089,11 +1023,11 @@
      ],
      "options": []
     },
-    "53562889-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "53562889-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "837401bb-TreeBinaryMath",
+       "837401bb-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -1120,8 +1054,8 @@
      ],
      "options": []
     },
-    "035c6fee-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "035c6fee-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
        "f4f730eb-hash12_6",
@@ -1134,7 +1068,7 @@
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "x",
        0.0
       ],
@@ -1156,11 +1090,11 @@
      ],
      "options": []
     },
-    "8b1175c0-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "8b1175c0-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
      "inputs": {
       "vec": [
-       "ab775a05-TreeBinaryMath",
+       "ab775a05-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1177,8 +1111,8 @@
      ],
      "options": []
     },
-    "a5ba5327-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "a5ba5327-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
        "13aad9b4-hash12_4",
@@ -1191,7 +1125,7 @@
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "x",
        0.0
       ],
@@ -1232,16 +1166,16 @@
      ],
      "options": []
     },
-    "f211ff13-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "f211ff13-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6262a675-TreeExtractVec",
+       "6262a675-ShaderExtractVec",
        "z",
        0.0
       ],
       "in2": [
-       "71953127-TreeFillVec",
+       "71953127-ShaderFillVec",
        "out",
        0.0
       ],
@@ -1263,21 +1197,21 @@
      ],
      "options": []
     },
-    "2bec4458-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "2bec4458-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
-       "cc2acbc9-TreeTernaryMath",
+       "cc2acbc9-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "a66766b8-TreeTernaryMath",
+       "a66766b8-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "y",
        0.0
       ],
@@ -1299,8 +1233,8 @@
      ],
      "options": []
     },
-    "cc2acbc9-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "cc2acbc9-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
        "4e8a61f2-hash12_0",
@@ -1313,7 +1247,7 @@
        0.0
       ],
       "in3": [
-       "8b1175c0-TreeExtractVec",
+       "8b1175c0-ShaderExtractVec",
        "x",
        0.0
       ],
@@ -1335,8 +1269,8 @@
      ],
      "options": []
     },
-    "1e740b46-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1e740b46-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -1344,7 +1278,7 @@
        3.0
       ],
       "in2": [
-       "e2b3baf1-TreeBinaryMath",
+       "e2b3baf1-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -1404,16 +1338,16 @@
      ],
      "options": []
     },
-    "dca78b6a-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "dca78b6a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "b5a9db73-TreeUnaryMath",
+       "b5a9db73-ShaderUnaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "b5a9db73-TreeUnaryMath",
+       "b5a9db73-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -1459,7 +1393,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "c3484332-TreeBinaryMath",
+       "c3484332-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1484,7 +1418,7 @@
      "name": "hash12_0",
      "inputs": {
       "hash12_p": [
-       "7237d226-TreeBinaryMath",
+       "7237d226-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1505,7 +1439,7 @@
      "name": "hash12_1",
      "inputs": {
       "hash12_p": [
-       "53562889-TreeBinaryMath",
+       "53562889-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1526,7 +1460,7 @@
      "name": "hash12_2",
      "inputs": {
       "hash12_p": [
-       "08a9d9d6-TreeBinaryMath",
+       "08a9d9d6-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1547,7 +1481,7 @@
      "name": "hash12_3",
      "inputs": {
       "hash12_p": [
-       "1de0249b-TreeBinaryMath",
+       "1de0249b-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1568,7 +1502,7 @@
      "name": "hash12_4",
      "inputs": {
       "hash12_p": [
-       "16492ad0-TreeBinaryMath",
+       "16492ad0-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1589,7 +1523,7 @@
      "name": "hash12_5",
      "inputs": {
       "hash12_p": [
-       "0d577939-TreeBinaryMath",
+       "0d577939-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1610,7 +1544,7 @@
      "name": "hash12_6",
      "inputs": {
       "hash12_p": [
-       "1c538021-TreeBinaryMath",
+       "1c538021-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1631,7 +1565,7 @@
      "name": "hash12_7",
      "inputs": {
       "hash12_p": [
-       "ca9ce505-TreeBinaryMath",
+       "ca9ce505-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1658,11 +1592,11 @@
   },
   "getStoneColor": {
    "nodes": {
-    "913683dd-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "913683dd-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "f0e3ec3b-TreeMakeVec",
+       "f0e3ec3b-ShaderMakeVec",
        "out",
        1.0
       ],
@@ -1693,7 +1627,7 @@
      "name": "noise_3",
      "inputs": {
       "noise_3_p": [
-       "e009d462-TreeBinaryMath",
+       "e009d462-ShaderBinaryMath",
        "out",
        null
       ],
@@ -1710,11 +1644,11 @@
      ],
      "options": []
     },
-    "ede89a53-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "ede89a53-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "e5308129-TreeMakeVec",
+       "e5308129-ShaderMakeVec",
        "out",
        1.0
       ],
@@ -1741,8 +1675,8 @@
      ],
      "options": []
     },
-    "fe3a7265-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "fe3a7265-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -1750,7 +1684,7 @@
        1.0
       ],
       "in2": [
-       "38b513e1-TreeBinaryMath",
+       "38b513e1-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -1772,11 +1706,11 @@
      ],
      "options": []
     },
-    "20d09ded-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "20d09ded-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
-       "4b86aecc-TreeExtractVec",
+       "4b86aecc-ShaderExtractVec",
        "x",
        null
       ],
@@ -1786,7 +1720,7 @@
        0.0
       ],
       "z": [
-       "4b86aecc-TreeExtractVec",
+       "4b86aecc-ShaderExtractVec",
        "z",
        null
       ],
@@ -1808,11 +1742,11 @@
      ],
      "options": []
     },
-    "38b513e1-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "38b513e1-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "b9a839a9-TreeBinaryMath",
+       "b9a839a9-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -1839,8 +1773,8 @@
      ],
      "options": []
     },
-    "f0e3ec3b-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "f0e3ec3b-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -1875,8 +1809,8 @@
      ],
      "options": []
     },
-    "6db0b37a-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "6db0b37a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "3559eadd-noise_3",
@@ -1906,8 +1840,8 @@
      ],
      "options": []
     },
-    "e5308129-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "e5308129-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -1942,11 +1876,11 @@
      ],
      "options": []
     },
-    "2fa4aa7c-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "2fa4aa7c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "fe3a7265-TreeBinaryMath",
+       "fe3a7265-ShaderBinaryMath",
        "out",
        1.0
       ],
@@ -1973,11 +1907,11 @@
      ],
      "options": []
     },
-    "e009d462-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e009d462-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "20d09ded-TreeMakeVec",
+       "20d09ded-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -2004,11 +1938,11 @@
      ],
      "options": []
     },
-    "b9a839a9-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "b9a839a9-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "0d26eb5e-TreeBinaryMath",
+       "0d26eb5e-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2035,8 +1969,8 @@
      ],
      "options": []
     },
-    "4b86aecc-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "4b86aecc-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
      "inputs": {
       "vec": [
        "12664fe7-SubInput",
@@ -2056,21 +1990,21 @@
      ],
      "options": []
     },
-    "ef9354f7-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "ef9354f7-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
-       "913683dd-TreeBinaryMath",
+       "913683dd-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "ede89a53-TreeBinaryMath",
+       "ede89a53-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in3": [
-       "38b513e1-TreeBinaryMath",
+       "38b513e1-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2192,8 +2126,8 @@
      ],
      "options": []
     },
-    "0d26eb5e-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "0d26eb5e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "93a45523-SubInput",
@@ -2201,7 +2135,7 @@
        0.0
       ],
       "in2": [
-       "6db0b37a-TreeBinaryMath",
+       "6db0b37a-ShaderBinaryMath",
        "out",
        70.0
       ],
@@ -2227,7 +2161,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "c3ad8e14-TreeBinaryMath",
+       "c3ad8e14-ShaderBinaryMath",
        "out",
        null
       ],
@@ -2248,8 +2182,8 @@
      ],
      "options": []
     },
-    "a9698d21-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "a9698d21-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
        "13cf399c-SubInput",
@@ -2274,8 +2208,8 @@
      ],
      "options": []
     },
-    "e0228eea-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e0228eea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "0f1ce2fc-SubInput",
@@ -2283,7 +2217,7 @@
        0.0
       ],
       "in2": [
-       "a9698d21-TreeUnaryMath",
+       "a9698d21-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -2305,11 +2239,11 @@
      ],
      "options": []
     },
-    "3e812d14-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3e812d14-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "e0228eea-TreeBinaryMath",
+       "e0228eea-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2336,8 +2270,8 @@
      ],
      "options": []
     },
-    "cbffad40-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "cbffad40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -2345,7 +2279,7 @@
        1.0
       ],
       "in2": [
-       "3e812d14-TreeBinaryMath",
+       "3e812d14-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2367,11 +2301,11 @@
      ],
      "options": []
     },
-    "1cdc4850-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1cdc4850-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "cbffad40-TreeBinaryMath",
+       "cbffad40-ShaderBinaryMath",
        "out",
        1.0
       ],
@@ -2398,11 +2332,11 @@
      ],
      "options": []
     },
-    "767a1d9c-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "767a1d9c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "1cdc4850-TreeBinaryMath",
+       "1cdc4850-ShaderBinaryMath",
        "out",
        1.0
       ],
@@ -2429,16 +2363,16 @@
      ],
      "options": []
     },
-    "12ed9a6c-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "12ed9a6c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "767a1d9c-TreeBinaryMath",
+       "767a1d9c-ShaderBinaryMath",
        "out",
        1.0
       ],
       "in2": [
-       "2fa4aa7c-TreeBinaryMath",
+       "2fa4aa7c-ShaderBinaryMath",
        "out",
        0.75
       ],
@@ -2474,7 +2408,7 @@
        null
       ],
       "diffuse_p": [
-       "ed4fa695-TreeMakeVec",
+       "ed4fa695-ShaderMakeVec",
        "out",
        null
       ],
@@ -2491,8 +2425,8 @@
      ],
      "options": []
     },
-    "ed4fa695-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "ed4fa695-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -2527,8 +2461,8 @@
      ],
      "options": []
     },
-    "a5c4edfe-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "a5c4edfe-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -2563,8 +2497,8 @@
      ],
      "options": []
     },
-    "b4f729a4-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "b4f729a4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "1b59be72-diffuse",
@@ -2572,7 +2506,7 @@
        0.0
       ],
       "in2": [
-       "40ef17fc-TreeBinaryMath",
+       "40ef17fc-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2594,11 +2528,11 @@
      ],
      "options": []
     },
-    "40ef17fc-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "40ef17fc-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "a5c4edfe-TreeMakeVec",
+       "a5c4edfe-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -2625,16 +2559,16 @@
      ],
      "options": []
     },
-    "d5f68958-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "d5f68958-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "ef9354f7-TreeTernaryMath",
+       "ef9354f7-ShaderTernaryMath",
        "out",
        1.0
       ],
       "in2": [
-       "b4f729a4-TreeBinaryMath",
+       "b4f729a4-ShaderBinaryMath",
        "out",
        0.75
       ],
@@ -2675,7 +2609,7 @@
        null
       ],
       "specular_s": [
-       "81dd3a40-TreeMakeVec",
+       "81dd3a40-ShaderMakeVec",
        "out",
        null
       ],
@@ -2692,8 +2626,8 @@
      ],
      "options": []
     },
-    "81dd3a40-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "81dd3a40-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -2728,8 +2662,8 @@
      ],
      "options": []
     },
-    "207a23ea-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "207a23ea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "76d7063c-specular_0",
@@ -2737,7 +2671,7 @@
        0.0
       ],
       "in2": [
-       "40ef17fc-TreeBinaryMath",
+       "40ef17fc-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2759,11 +2693,11 @@
      ],
      "options": []
     },
-    "5f8aa72a-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "5f8aa72a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "207a23ea-TreeBinaryMath",
+       "207a23ea-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2790,16 +2724,16 @@
      ],
      "options": []
     },
-    "e440a4f7-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e440a4f7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "5f8aa72a-TreeBinaryMath",
+       "5f8aa72a-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "2fa4aa7c-TreeBinaryMath",
+       "2fa4aa7c-ShaderBinaryMath",
        "out",
        1.5
       ],
@@ -2821,16 +2755,16 @@
      ],
      "options": []
     },
-    "295b1d57-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "295b1d57-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "d5f68958-TreeBinaryMath",
+       "d5f68958-ShaderBinaryMath",
        "out",
        1.0
       ],
       "in2": [
-       "e440a4f7-TreeBinaryMath",
+       "e440a4f7-ShaderBinaryMath",
        "out",
        0.75
       ],
@@ -2852,8 +2786,8 @@
      ],
      "options": []
     },
-    "deb5ee06-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "deb5ee06-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
        "12664fe7-SubInput",
@@ -2878,11 +2812,11 @@
      ],
      "options": []
     },
-    "20ed03ba-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "20ed03ba-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "deb5ee06-TreeUnaryMath",
+       "deb5ee06-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -2909,8 +2843,8 @@
      ],
      "options": []
     },
-    "e5185aab-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e5185aab-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "0f1ce2fc-SubInput",
@@ -2918,7 +2852,7 @@
        0.0
       ],
       "in2": [
-       "20ed03ba-TreeBinaryMath",
+       "20ed03ba-ShaderBinaryMath",
        "out",
        0.4
       ],
@@ -2940,11 +2874,11 @@
      ],
      "options": []
     },
-    "d8c590c3-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "d8c590c3-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "e5185aab-TreeBinaryMath",
+       "e5185aab-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -2975,7 +2909,7 @@
        null
       ],
       "specular_n": [
-       "d8c590c3-TreeUnaryMath",
+       "d8c590c3-ShaderUnaryMath",
        "out",
        null
       ],
@@ -2985,7 +2919,7 @@
        null
       ],
       "specular_s": [
-       "1a1f6782-TreeMakeVec",
+       "1a1f6782-ShaderMakeVec",
        "out",
        null
       ],
@@ -3002,8 +2936,8 @@
      ],
      "options": []
     },
-    "1a1f6782-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "1a1f6782-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -3038,8 +2972,8 @@
      ],
      "options": []
     },
-    "2995a47d-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "2995a47d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "6c6c61ce-specular_1",
@@ -3047,7 +2981,7 @@
        0.0
       ],
       "in2": [
-       "40ef17fc-TreeBinaryMath",
+       "40ef17fc-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3069,11 +3003,11 @@
      ],
      "options": []
     },
-    "073e4f40-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "073e4f40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "2995a47d-TreeBinaryMath",
+       "2995a47d-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3100,16 +3034,16 @@
      ],
      "options": []
     },
-    "41cc5c0a-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "41cc5c0a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "073e4f40-TreeBinaryMath",
+       "073e4f40-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "2fa4aa7c-TreeBinaryMath",
+       "2fa4aa7c-ShaderBinaryMath",
        "out",
        1.5
       ],
@@ -3131,16 +3065,16 @@
      ],
      "options": []
     },
-    "346bf0c4-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "346bf0c4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "295b1d57-TreeBinaryMath",
+       "295b1d57-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "41cc5c0a-TreeBinaryMath",
+       "41cc5c0a-ShaderBinaryMath",
        "out",
        1.5
       ],
@@ -3162,8 +3096,8 @@
      ],
      "options": []
     },
-    "4867ddc4-TreeFillVec": {
-     "name": "TreeFillVec",
+    "4867ddc4-ShaderFillVec": {
+     "name": "ShaderFillVec",
      "inputs": {
       "in": [
        null,
@@ -3188,21 +3122,21 @@
      ],
      "options": []
     },
-    "c9dc8fe4-TreeTernaryMath": {
-     "name": "TreeTernaryMath",
+    "c9dc8fe4-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
      "inputs": {
       "in1": [
-       "346bf0c4-TreeBinaryMath",
+       "346bf0c4-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "4867ddc4-TreeFillVec",
+       "4867ddc4-ShaderFillVec",
        "out",
        0.0
       ],
       "in3": [
-       "12ed9a6c-TreeBinaryMath",
+       "12ed9a6c-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3224,16 +3158,16 @@
      ],
      "options": []
     },
-    "6bb4c18e-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "6bb4c18e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "c9dc8fe4-TreeTernaryMath",
+       "c9dc8fe4-ShaderTernaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "8f4743f4-TreeBinaryMath",
+       "8f4743f4-ShaderBinaryMath",
        "out",
        1.5
       ],
@@ -3255,8 +3189,8 @@
      ],
      "options": []
     },
-    "52ef8366-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "52ef8366-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
      "inputs": {
       "vec": [
        "12664fe7-SubInput",
@@ -3276,11 +3210,11 @@
      ],
      "options": []
     },
-    "3aa395ea-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3aa395ea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "52ef8366-TreeExtractVec",
+       "52ef8366-ShaderExtractVec",
        "y",
        0.0
       ],
@@ -3307,11 +3241,11 @@
      ],
      "options": []
     },
-    "a4a98dc8-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "a4a98dc8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "3aa395ea-TreeBinaryMath",
+       "3aa395ea-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3338,11 +3272,11 @@
      ],
      "options": []
     },
-    "02303f7f-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "02303f7f-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "a4a98dc8-TreeBinaryMath",
+       "a4a98dc8-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3364,11 +3298,11 @@
      ],
      "options": []
     },
-    "0b4900b6-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "0b4900b6-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "02303f7f-TreeUnaryMath",
+       "02303f7f-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -3390,11 +3324,11 @@
      ],
      "options": []
     },
-    "21e790cd-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "21e790cd-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "0b4900b6-TreeUnaryMath",
+       "0b4900b6-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -3421,11 +3355,11 @@
      ],
      "options": []
     },
-    "8f4743f4-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "8f4743f4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "21e790cd-TreeBinaryMath",
+       "21e790cd-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3452,8 +3386,8 @@
      ],
      "options": []
     },
-    "7cf770d6-TreeExtractVec": {
-     "name": "TreeExtractVec",
+    "7cf770d6-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
      "inputs": {
       "vec": [
        "0f1ce2fc-SubInput",
@@ -3473,11 +3407,11 @@
      ],
      "options": []
     },
-    "827da701-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "827da701-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "7cf770d6-TreeExtractVec",
+       "7cf770d6-ShaderExtractVec",
        "y",
        0.0
       ],
@@ -3504,11 +3438,11 @@
      ],
      "options": []
     },
-    "c47a2b09-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "c47a2b09-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "827da701-TreeBinaryMath",
+       "827da701-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3535,11 +3469,11 @@
      ],
      "options": []
     },
-    "3a831653-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3a831653-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "c47a2b09-TreeBinaryMath",
+       "c47a2b09-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3566,11 +3500,11 @@
      ],
      "options": []
     },
-    "eb50bd0b-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "eb50bd0b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "3a831653-TreeBinaryMath",
+       "3a831653-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3597,16 +3531,16 @@
      ],
      "options": []
     },
-    "c3ad8e14-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "c3ad8e14-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6bb4c18e-TreeBinaryMath",
+       "6bb4c18e-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "eb50bd0b-TreeBinaryMath",
+       "eb50bd0b-ShaderBinaryMath",
        "out",
        1.5
       ],
@@ -3630,16 +3564,16 @@
     }
    },
    "view_rect": {
-    "x": -1136.4730149721804,
-    "y": -4191.587471338416,
-    "width": 7061.958312988277,
-    "height": 2908.706665039058
+    "x": 2816.9558367236045,
+    "y": -3119.04971546677,
+    "width": 1851.2499999999989,
+    "height": 762.4999999999989
    }
   },
   "hash12_0": {
    "nodes": {
-    "8955db4f-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "8955db4f-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "204fa196-SubInput",
@@ -3647,7 +3581,7 @@
        0.0
       ],
       "in2": [
-       "ac158445-TreeMakeVec",
+       "ac158445-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -3689,8 +3623,8 @@
      ],
      "options": []
     },
-    "ac158445-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "ac158445-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -3729,7 +3663,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "2e67de86-TreeUnaryMath",
+       "2e67de86-ShaderUnaryMath",
        "out",
        null
       ],
@@ -3750,11 +3684,11 @@
      ],
      "options": []
     },
-    "2e67de86-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "2e67de86-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "9a610109-TreeBinaryMath",
+       "9a610109-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3776,11 +3710,11 @@
      ],
      "options": []
     },
-    "d4666970-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "d4666970-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "8955db4f-TreeBinaryMath",
+       "8955db4f-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3802,11 +3736,11 @@
      ],
      "options": []
     },
-    "9a610109-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "9a610109-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "d4666970-TreeUnaryMath",
+       "d4666970-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -3843,8 +3777,8 @@
   },
   "hash12_1": {
    "nodes": {
-    "bdff862d-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "bdff862d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "c6d02b54-SubInput",
@@ -3852,7 +3786,7 @@
        0.0
       ],
       "in2": [
-       "4f37e503-TreeMakeVec",
+       "4f37e503-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -3894,8 +3828,8 @@
      ],
      "options": []
     },
-    "4f37e503-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "4f37e503-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -3934,7 +3868,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "253c2cb2-TreeUnaryMath",
+       "253c2cb2-ShaderUnaryMath",
        "out",
        null
       ],
@@ -3955,11 +3889,11 @@
      ],
      "options": []
     },
-    "253c2cb2-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "253c2cb2-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "9cac236d-TreeBinaryMath",
+       "9cac236d-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -3981,11 +3915,11 @@
      ],
      "options": []
     },
-    "f713b3b4-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "f713b3b4-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "bdff862d-TreeBinaryMath",
+       "bdff862d-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4007,11 +3941,11 @@
      ],
      "options": []
     },
-    "9cac236d-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "9cac236d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "f713b3b4-TreeUnaryMath",
+       "f713b3b4-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4048,8 +3982,8 @@
   },
   "hash12_2": {
    "nodes": {
-    "3d4e934f-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3d4e934f-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "064c4337-SubInput",
@@ -4057,7 +3991,7 @@
        0.0
       ],
       "in2": [
-       "c0327813-TreeMakeVec",
+       "c0327813-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -4099,8 +4033,8 @@
      ],
      "options": []
     },
-    "c0327813-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "c0327813-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -4139,7 +4073,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "d6e016fd-TreeUnaryMath",
+       "d6e016fd-ShaderUnaryMath",
        "out",
        null
       ],
@@ -4160,11 +4094,11 @@
      ],
      "options": []
     },
-    "d6e016fd-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "d6e016fd-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "0bafd70a-TreeBinaryMath",
+       "0bafd70a-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4186,11 +4120,11 @@
      ],
      "options": []
     },
-    "738b13d5-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "738b13d5-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "3d4e934f-TreeBinaryMath",
+       "3d4e934f-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4212,11 +4146,11 @@
      ],
      "options": []
     },
-    "0bafd70a-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "0bafd70a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "738b13d5-TreeUnaryMath",
+       "738b13d5-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4253,8 +4187,8 @@
   },
   "hash12_3": {
    "nodes": {
-    "479417f8-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "479417f8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "9be52793-SubInput",
@@ -4262,7 +4196,7 @@
        0.0
       ],
       "in2": [
-       "2c53fd33-TreeMakeVec",
+       "2c53fd33-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -4304,8 +4238,8 @@
      ],
      "options": []
     },
-    "2c53fd33-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "2c53fd33-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -4344,7 +4278,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "f0d89569-TreeUnaryMath",
+       "f0d89569-ShaderUnaryMath",
        "out",
        null
       ],
@@ -4365,11 +4299,11 @@
      ],
      "options": []
     },
-    "f0d89569-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "f0d89569-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "16ff6654-TreeBinaryMath",
+       "16ff6654-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4391,11 +4325,11 @@
      ],
      "options": []
     },
-    "da728cb1-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "da728cb1-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "479417f8-TreeBinaryMath",
+       "479417f8-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4417,11 +4351,11 @@
      ],
      "options": []
     },
-    "16ff6654-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "16ff6654-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "da728cb1-TreeUnaryMath",
+       "da728cb1-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4458,8 +4392,8 @@
   },
   "hash12_4": {
    "nodes": {
-    "29cdfb25-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "29cdfb25-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -4494,8 +4428,8 @@
      ],
      "options": []
     },
-    "4e557fe9-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "4e557fe9-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "11a104a8-SubInput",
@@ -4503,7 +4437,7 @@
        0.0
       ],
       "in2": [
-       "29cdfb25-TreeMakeVec",
+       "29cdfb25-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -4525,11 +4459,11 @@
      ],
      "options": []
     },
-    "f96a22ce-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "f96a22ce-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6e3dbdeb-TreeUnaryMath",
+       "6e3dbdeb-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4576,11 +4510,11 @@
      ],
      "options": []
     },
-    "6e3dbdeb-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "6e3dbdeb-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "4e557fe9-TreeBinaryMath",
+       "4e557fe9-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4606,7 +4540,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "56cee7a4-TreeUnaryMath",
+       "56cee7a4-ShaderUnaryMath",
        "out",
        null
       ],
@@ -4627,11 +4561,11 @@
      ],
      "options": []
     },
-    "56cee7a4-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "56cee7a4-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "f96a22ce-TreeBinaryMath",
+       "f96a22ce-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4663,8 +4597,8 @@
   },
   "hash12_5": {
    "nodes": {
-    "808e5372-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "808e5372-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -4699,8 +4633,8 @@
      ],
      "options": []
     },
-    "1a05e3a8-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1a05e3a8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "685a700f-SubInput",
@@ -4708,7 +4642,7 @@
        0.0
       ],
       "in2": [
-       "808e5372-TreeMakeVec",
+       "808e5372-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -4730,11 +4664,11 @@
      ],
      "options": []
     },
-    "7a8bf227-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "7a8bf227-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "9ba5ebd1-TreeUnaryMath",
+       "9ba5ebd1-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4781,11 +4715,11 @@
      ],
      "options": []
     },
-    "9ba5ebd1-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "9ba5ebd1-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "1a05e3a8-TreeBinaryMath",
+       "1a05e3a8-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4811,7 +4745,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "d5342e5b-TreeUnaryMath",
+       "d5342e5b-ShaderUnaryMath",
        "out",
        null
       ],
@@ -4832,11 +4766,11 @@
      ],
      "options": []
     },
-    "d5342e5b-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "d5342e5b-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "7a8bf227-TreeBinaryMath",
+       "7a8bf227-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -4868,8 +4802,8 @@
   },
   "hash12_6": {
    "nodes": {
-    "9108d195-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "9108d195-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -4904,8 +4838,8 @@
      ],
      "options": []
     },
-    "1e200e70-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1e200e70-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "8b18e012-SubInput",
@@ -4913,7 +4847,7 @@
        0.0
       ],
       "in2": [
-       "9108d195-TreeMakeVec",
+       "9108d195-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -4935,11 +4869,11 @@
      ],
      "options": []
     },
-    "1f65f155-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "1f65f155-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "f5d536a2-TreeUnaryMath",
+       "f5d536a2-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -4986,11 +4920,11 @@
      ],
      "options": []
     },
-    "f5d536a2-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "f5d536a2-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "1e200e70-TreeBinaryMath",
+       "1e200e70-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5016,7 +4950,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "7a53a116-TreeUnaryMath",
+       "7a53a116-ShaderUnaryMath",
        "out",
        null
       ],
@@ -5037,11 +4971,11 @@
      ],
      "options": []
     },
-    "7a53a116-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "7a53a116-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "1f65f155-TreeBinaryMath",
+       "1f65f155-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5073,8 +5007,8 @@
   },
   "hash12_7": {
    "nodes": {
-    "f9df4ff6-TreeMakeVec": {
-     "name": "TreeMakeVec",
+    "f9df4ff6-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
      "inputs": {
       "x": [
        null,
@@ -5109,8 +5043,8 @@
      ],
      "options": []
     },
-    "a3bc0d85-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "a3bc0d85-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "929563e8-SubInput",
@@ -5118,7 +5052,7 @@
        0.0
       ],
       "in2": [
-       "f9df4ff6-TreeMakeVec",
+       "f9df4ff6-ShaderMakeVec",
        "out",
        0.0
       ],
@@ -5140,11 +5074,11 @@
      ],
      "options": []
     },
-    "e5f6286d-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e5f6286d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "bd2e987b-TreeUnaryMath",
+       "bd2e987b-ShaderUnaryMath",
        "out",
        0.0
       ],
@@ -5191,11 +5125,11 @@
      ],
      "options": []
     },
-    "bd2e987b-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "bd2e987b-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "a3bc0d85-TreeBinaryMath",
+       "a3bc0d85-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5221,7 +5155,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "c4555a1d-TreeUnaryMath",
+       "c4555a1d-ShaderUnaryMath",
        "out",
        null
       ],
@@ -5242,11 +5176,11 @@
      ],
      "options": []
     },
-    "c4555a1d-TreeUnaryMath": {
-     "name": "TreeUnaryMath",
+    "c4555a1d-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
      "inputs": {
       "in1": [
-       "e5f6286d-TreeBinaryMath",
+       "e5f6286d-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5270,10 +5204,10 @@
     }
    },
    "view_rect": {
-    "x": -20.57740066225074,
-    "y": -140.94888245033084,
-    "width": 1851.25,
-    "height": 762.5
+    "x": -181.1554296385334,
+    "y": -236.84787546659854,
+    "width": 2314.0625,
+    "height": 953.125
    }
   },
   "diffuse": {
@@ -5338,8 +5272,8 @@
      ],
      "options": []
     },
-    "0a49636b-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "0a49636b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "79080223-SubInput",
@@ -5369,11 +5303,11 @@
      ],
      "options": []
     },
-    "6ea35e46-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "6ea35e46-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "0a49636b-TreeBinaryMath",
+       "0a49636b-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5400,11 +5334,11 @@
      ],
      "options": []
     },
-    "764facca-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "764facca-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6ea35e46-TreeBinaryMath",
+       "6ea35e46-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5435,7 +5369,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "764facca-TreeBinaryMath",
+       "764facca-ShaderBinaryMath",
        "out",
        null
       ],
@@ -5546,8 +5480,8 @@
      ],
      "options": []
     },
-    "6e05b36d-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "6e05b36d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "aef45cad-SubInput",
@@ -5577,8 +5511,8 @@
      ],
      "options": []
     },
-    "3f9071e7-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3f9071e7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -5608,16 +5542,16 @@
      ],
      "options": []
     },
-    "f58b9903-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "f58b9903-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6e05b36d-TreeBinaryMath",
+       "6e05b36d-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "3f9071e7-TreeBinaryMath",
+       "3f9071e7-ShaderBinaryMath",
        "out",
        8.0
       ],
@@ -5639,8 +5573,8 @@
      ],
      "options": []
     },
-    "e11b339e-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "e11b339e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "5573f2ac-SubInput",
@@ -5670,11 +5604,11 @@
      ],
      "options": []
     },
-    "eb55ca20-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "eb55ca20-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "e11b339e-TreeBinaryMath",
+       "e11b339e-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5701,11 +5635,11 @@
      ],
      "options": []
     },
-    "3efb9529-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "3efb9529-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "eb55ca20-TreeBinaryMath",
+       "eb55ca20-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5732,11 +5666,11 @@
      ],
      "options": []
     },
-    "6c4147f7-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "6c4147f7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "3efb9529-TreeBinaryMath",
+       "3efb9529-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5763,16 +5697,16 @@
      ],
      "options": []
     },
-    "72cd7ecf-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "72cd7ecf-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "6c4147f7-TreeBinaryMath",
+       "6c4147f7-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "f58b9903-TreeBinaryMath",
+       "f58b9903-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5798,7 +5732,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "72cd7ecf-TreeBinaryMath",
+       "72cd7ecf-ShaderBinaryMath",
        "out",
        null
       ],
@@ -5829,16 +5763,16 @@
   },
   "specular_1": {
    "nodes": {
-    "c1ac705c-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "c1ac705c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "cf86b8fa-TreeBinaryMath",
+       "cf86b8fa-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "71c4e115-TreeBinaryMath",
+       "71c4e115-ShaderBinaryMath",
        "out",
        8.0
       ],
@@ -5880,8 +5814,8 @@
      ],
      "options": []
     },
-    "cf86b8fa-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "cf86b8fa-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "f205cba4-SubInput",
@@ -5931,11 +5865,11 @@
      ],
      "options": []
     },
-    "d827aecb-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "d827aecb-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "843783a5-TreeBinaryMath",
+       "843783a5-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -5962,8 +5896,8 @@
      ],
      "options": []
     },
-    "71c4e115-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "71c4e115-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        null,
@@ -6013,11 +5947,11 @@
      ],
      "options": []
     },
-    "28ce53dc-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "28ce53dc-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "d827aecb-TreeBinaryMath",
+       "d827aecb-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -6048,7 +5982,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "7d0667b5-TreeBinaryMath",
+       "7d0667b5-ShaderBinaryMath",
        "out",
        null
       ],
@@ -6089,16 +6023,16 @@
      ],
      "options": []
     },
-    "7d0667b5-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "7d0667b5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "28ce53dc-TreeBinaryMath",
+       "28ce53dc-ShaderBinaryMath",
        "out",
        0.0
       ],
       "in2": [
-       "c1ac705c-TreeBinaryMath",
+       "c1ac705c-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -6120,8 +6054,8 @@
      ],
      "options": []
     },
-    "af409fe5-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "af409fe5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
        "d4f38533-SubInput",
@@ -6151,11 +6085,11 @@
      ],
      "options": []
     },
-    "843783a5-TreeBinaryMath": {
-     "name": "TreeBinaryMath",
+    "843783a5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
      "inputs": {
       "in1": [
-       "af409fe5-TreeBinaryMath",
+       "af409fe5-ShaderBinaryMath",
        "out",
        0.0
       ],
@@ -7247,36 +7181,6 @@
     "debug"
    ]
   },
-  "ExportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ExportObjPrimitive": {
    "inputs": [
     [
@@ -7305,36 +7209,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ExportParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ExportZpmPrimitive": {
@@ -7450,6 +7324,66 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "FileReadString": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "FileWriteString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
    ]
   },
   "FinalOutput": {
@@ -7575,46 +7509,6 @@
    "params": [],
    "categories": [
     "functional"
-   ]
-  },
-  "GeoVertexVel": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "TargetMesh",
-     ""
-    ],
-    [
-     "",
-     "OriginMesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MeshVel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "GetFrameNum": {
@@ -7863,36 +7757,6 @@
     "control"
    ]
   },
-  "ImportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ImportObjPrimitive": {
    "inputs": [
     [
@@ -7921,36 +7785,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ImportParticles": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ImportZpmPrimitive": {
@@ -8017,6 +7851,36 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "LineAddVert": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "vert",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ListGetItem": {
@@ -8642,46 +8506,6 @@
     "primitive"
    ]
   },
-  "MakeMaterial": {
-   "inputs": [
-    [
-     "string",
-     "vert",
-     ""
-    ],
-    [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "material"
-   ]
-  },
   "MakeMultilineString": {
    "inputs": [
     [
@@ -8786,6 +8610,36 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "MakePointPrimitive": {
+   "inputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "MakePrimitive": {
@@ -8971,6 +8825,56 @@
     "string"
    ]
   },
+  "MakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "LINEAR"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "LINEAR"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -9053,16 +8957,16 @@
     "string"
    ]
   },
-  "MeshCopy": {
+  "MaterialTexture2D": {
    "inputs": [
     [
-     "",
-     "copyFrom",
+     "material",
+     "mtl",
      ""
     ],
     [
-     "",
-     "copyTo",
+     "texture",
+     "tex",
      ""
     ],
     [
@@ -9073,43 +8977,8 @@
    ],
    "outputs": [
     [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshMix": {
-   "inputs": [
-    [
-     "",
-     "meshA",
-     ""
-    ],
-    [
-     "",
-     "meshB",
-     ""
-    ],
-    [
-     "",
-     "coef",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
+     "material",
+     "mtl",
      ""
     ],
     [
@@ -9120,37 +8989,7 @@
    ],
    "params": [],
    "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
+    "shader"
    ]
   },
   "MoveAssign": {
@@ -10016,46 +9855,6 @@
     "zenofx"
    ]
   },
-  "ParticlesBuildBvh": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radius",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radiusMin",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -10083,56 +9882,6 @@
     [
      "hashgrid",
      "hashGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesNeighborBvhWrangle": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
      ""
     ],
     [
@@ -10194,36 +9943,6 @@
    "params": [],
    "categories": [
     "zenofx"
-   ]
-  },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
    ]
   },
   "ParticlesWrangle": {
@@ -10319,41 +10038,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "PolyDuplicate": {
-   "inputs": [
-    [
-     "",
-     "Mesh",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Meshes",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "PortalIn": {
@@ -11959,6 +11643,52 @@
     "primitive"
    ]
   },
+  "PrimitiveScatter": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "npoints",
+     "100"
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "points",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum tris lines",
+     "type",
+     "tris"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveSetAttrValue": {
    "inputs": [
     [
@@ -12201,66 +11931,6 @@
     "primitive"
    ]
   },
-  "PrimitiveToMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveToParticles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -12396,6 +12066,42 @@
      "string",
      "op",
      "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveWireframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "removeFaces",
+     "1"
     ]
    ],
    "categories": [
@@ -12559,47 +12265,6 @@
     "math"
    ]
   },
-  "RandomParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1 0"
-    ],
-    [
-     "float",
-     "Prange",
-     "1 0"
-    ],
-    [
-     "float",
-     "Vrange",
-     "1 0"
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "ReadMutable": {
    "inputs": [
     [
@@ -12628,37 +12293,6 @@
    "params": [],
    "categories": [
     "control"
-   ]
-  },
-  "ReadObjMesh": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
    ]
   },
   "ReadObjPrimitive": {
@@ -12724,37 +12358,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ReadParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "ReadPlyPrimitive": {
@@ -12909,7 +12512,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
+    "shader"
    ]
   },
   "SetMatrix": {
@@ -13016,6 +12619,644 @@
    ],
    "categories": [
     "portal"
+   ]
+  },
+  "ShaderBinaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "enum add sub mul div mod pow atan2 min max dot cross distance",
+     "op",
+     "add"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCihouUnrealEngine": {
+   "inputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "code",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCustomFunc": {
+   "inputs": [
+    [
+     "string",
+     "args",
+     "vec3 arg1, vec3 arg2"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "rettype",
+     "vec3"
+    ],
+    [
+     "string",
+     "code",
+     "return arg1 + arg2;"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderExtractVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFillVec": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFinalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "basecolor",
+     "1,1,1"
+    ],
+    [
+     "float",
+     "metallic",
+     "0.0"
+    ],
+    [
+     "float",
+     "roughness",
+     "0.4"
+    ],
+    [
+     "float",
+     "specular",
+     "0.5"
+    ],
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "emission",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "exposure",
+     "1.0"
+    ],
+    [
+     "string",
+     "commonCode",
+     ""
+    ],
+    [
+     "string",
+     "extensionsCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum GLSL HLSL",
+     "backend",
+     "GLSL"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInputAttr": {
+   "inputs": [
+    [
+     "enum pos clr nrm uv",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInvokeFunc": {
+   "inputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "list",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderLinearFit": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "float",
+     "inMin",
+     "0"
+    ],
+    [
+     "float",
+     "inMax",
+     "1"
+    ],
+    [
+     "float",
+     "outMin",
+     "0"
+    ],
+    [
+     "float",
+     "outMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderMakeVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderPackVec": {
+   "inputs": [
+    [
+     "shader",
+     "x",
+     ""
+    ],
+    [
+     "shader",
+     "y",
+     ""
+    ],
+    [
+     "shader",
+     "z",
+     ""
+    ],
+    [
+     "shader",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderReduceVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "in",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum average sum",
+     "op",
+     "average"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTernaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
+    ],
+    [
+     "enum mix clamp smoothstep add3",
+     "op",
+     "mix"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTexture2D": {
+   "inputs": [
+    [
+     "int",
+     "texId",
+     "0"
+    ],
+    [
+     "vec2f",
+     "coord",
+     "0,0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderUnaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
+     "op",
+     "sqrt"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
    ]
   },
   "SpdlogErrorMessage": {
@@ -13133,51 +13374,6 @@
    "params": [],
    "categories": [
     "string"
-   ]
-  },
-  "StringToMesh": {
-   "inputs": [
-    [
-     "",
-     "string",
-     ""
-    ],
-    [
-     "",
-     "AZmesh",
-     ""
-    ],
-    [
-     "",
-     "spacing",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "StringMeshList",
-     ""
-    ],
-    [
-     "",
-     "SpacingList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "math"
    ]
   },
   "SubCategory": {
@@ -13440,51 +13636,6 @@
     "zenofx"
    ]
   },
-  "TransformMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "translate",
-     ""
-    ],
-    [
-     "",
-     "rotate",
-     ""
-    ],
-    [
-     "",
-     "scaling",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "TransformPrimitive": {
    "inputs": [
     [
@@ -13588,519 +13739,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "TreeBinaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "float",
-     "in2",
-     "0"
-    ],
-    [
-     "enum add sub mul div mod pow atan2 min max dot cross distance reflect",
-     "op",
-     "add"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeCustomFunc": {
-   "inputs": [
-    [
-     "string",
-     "args",
-     "vec3 arg1, vec3 arg2"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "rettype",
-     "vec3"
-    ],
-    [
-     "multiline_string",
-     "code",
-     "return arg1 + arg2;"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "TreeCustomFuncObject",
-     "func",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeExtractVec": {
-   "inputs": [
-    [
-     "vec3f",
-     "vec",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "x",
-     ""
-    ],
-    [
-     "float",
-     "y",
-     ""
-    ],
-    [
-     "float",
-     "z",
-     ""
-    ],
-    [
-     "float",
-     "w",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeFillVec": {
-   "inputs": [
-    [
-     "float",
-     "in",
-     "0"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "type",
-     "vec3"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec4f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeFinalize": {
-   "inputs": [
-    [
-     "vec3f",
-     "basecolor",
-     "1,1,1"
-    ],
-    [
-     "float",
-     "metallic",
-     "0.0"
-    ],
-    [
-     "float",
-     "roughness",
-     "0.4"
-    ],
-    [
-     "float",
-     "specular",
-     "0.5"
-    ],
-    [
-     "vec3f",
-     "normal",
-     "0,0,1"
-    ],
-    [
-     "vec3f",
-     "emission",
-     "0,0,0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "string",
-     "code",
-     ""
-    ],
-    [
-     "string",
-     "commonCode",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum GLSL HLSL",
-     "backend",
-     "GLSL"
-    ]
-   ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeInputAttr": {
-   "inputs": [
-    [
-     "enum pos clr nrm",
-     "attr",
-     "pos"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "type",
-     "vec3"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "tree",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeInvokeFunc": {
-   "inputs": [
-    [
-     "TreeCustomFuncObject",
-     "func",
-     ""
-    ],
-    [
-     "list",
-     "args",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "tree",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeLinearFit": {
-   "inputs": [
-    [
-     "float",
-     "in",
-     "0"
-    ],
-    [
-     "float",
-     "inMin",
-     "0"
-    ],
-    [
-     "float",
-     "inMax",
-     "1"
-    ],
-    [
-     "float",
-     "outMin",
-     "0"
-    ],
-    [
-     "float",
-     "outMax",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "clamped",
-     "0"
-    ]
-   ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeVec": {
-   "inputs": [
-    [
-     "float",
-     "x",
-     ""
-    ],
-    [
-     "float",
-     "y",
-     ""
-    ],
-    [
-     "float",
-     "z",
-     ""
-    ],
-    [
-     "float",
-     "w",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec4f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeReduceVec": {
-   "inputs": [
-    [
-     "vec3f",
-     "in",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum average sum",
-     "op",
-     "average"
-    ]
-   ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeTernaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "float",
-     "in2",
-     "0"
-    ],
-    [
-     "float",
-     "in3",
-     "0"
-    ],
-    [
-     "enum mix clamp smoothstep add3",
-     "op",
-     "mix"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeUnaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
-     "op",
-     "sqrt"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
    ]
   },
   "TriggerAbortSignal": {
@@ -14269,11 +13907,26 @@
     "control"
    ]
   },
-  "WriteObjMesh": {
+  "VDBWrangle": {
    "inputs": [
     [
-     "",
-     "mesh",
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "enum true false",
+     "ModifyActive",
+     "false"
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
      ""
     ],
     [
@@ -14284,20 +13937,19 @@
    ],
    "outputs": [
     [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
     ]
    ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
+   "params": [],
    "categories": [
-    "trimesh"
+    "zenofx"
    ]
   },
   "WriteObjPrimitive": {
@@ -14328,37 +13980,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "WriteParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "WritePlyPrimitive": {
