@@ -262,8 +262,7 @@ struct GraphicPrimitive : IGraphic {
   }
 
   Program *get_points_program() {
-    auto vert = R"(
-#version 120
+    auto vert = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -380,8 +379,7 @@ void main()
   }
 
   Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl) {
-      auto vert = R"(
-#version 120
+      auto vert = R"(#version 120
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -410,8 +408,7 @@ void main()
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
-      auto frag = R"(
-#version 120
+      auto frag = R"(#version 120
 )" + (mtl ? mtl->extensions : "") + R"(
 
 uniform mat4 mVP;

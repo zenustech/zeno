@@ -138,9 +138,8 @@ static void draw_small_axis() {
 }
 
 
-
-
-
+#if 0
+/* BEGIN MAKE_ZHXX_HAPPY */
 auto qvert = R"(
 #version 330 core
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
@@ -221,10 +220,12 @@ void ScreenFillQuad(GLuint tex)
   glDisableVertexAttribArray(0);
   glUseProgram(0);
 }
-static void paint_graphics(void) {
+
+static void paint_graphics(void);
+static void zhxx_paint_graphics(void) {
   if(tmProg==nullptr)
   {
-    std::cout<<"compiling glprog"<<std::endl;
+    std::cout<<"compiling zxx glprog"<<std::endl;
     tmProg = compile_program(qvert, qfrag);
   }
   
@@ -295,6 +296,22 @@ static void paint_graphics(void) {
   CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
 
+  paint_graphics();
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
+  CHECK_GL(glFlush());
+}
+/* END MAKE_ZHXX_HAPPY */
+#endif
+
+static void paint_graphics(void) {
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -308,16 +325,6 @@ static void paint_graphics(void) {
       draw_small_axis();
   }
   vao->unbind();
-  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-  ScreenFillQuad(texRect);
-  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  //drawScreenQuad here:
-  CHECK_GL(glFlush());
 }
 
 double get_time() {
