@@ -152,7 +152,7 @@ struct NumericOperator : zeno::INode {
         std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
             if (op == "copy") ret->value = remove_bool(lhs);
-            if (op == "copyr") lhs->value = remove_bool(rhs->value);
+            if (op == "copyr") ret->value = remove_bool(rhs);
 #define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs));
 _PER_OP(pos)
 _PER_OP(neg)

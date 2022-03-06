@@ -113,9 +113,9 @@ struct GraphicPrimitive : IGraphic {
     if (tris_count) {
         tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        tris_prog = get_tris_program(path, prim->mtl);
+        tris_prog = get_tris_program(prim->mtl);
         if (!tris_prog)
-            tris_prog = get_tris_program(path, nullptr);
+            tris_prog = get_tris_program(nullptr);
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -261,12 +261,8 @@ struct GraphicPrimitive : IGraphic {
     }
   }
 
-  Program *get_points_program(std::string const &path) {
-    auto vert = hg::file_get_content(path + ".points.vert");
-    auto frag = hg::file_get_content(path + ".points.frag");
-
-    if (vert.size() == 0) {
-      vert = R"(
+  Program *get_points_program() {
+    auto vert = R"(
 #version 120
 
 uniform mat4 mVP;
@@ -383,12 +379,8 @@ void main()
     return compile_program(vert, frag);
   }
 
-  Program *get_tris_program(std::string const &path, std::shared_ptr<zeno::MaterialObject> mtl) {
-    auto vert = hg::file_get_content(path + ".tris.vert");
-    auto frag = hg::file_get_content(path + ".tris.frag");
-
-    if (vert.size() == 0) {
-      vert = R"(
+  Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl) {
+      auto vert = R"(
 #version 120
 
 uniform mat4 mVP;

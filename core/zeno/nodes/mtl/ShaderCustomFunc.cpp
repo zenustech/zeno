@@ -89,7 +89,7 @@ struct ShaderInvokeFunc : ShaderNode {
                                   + " arguments in call to " + func->name + ", got "
                                   + std::to_string(args->arr.size()));
         auto argTyIt = func->argTypes.begin();
-        for (auto const &arg: args->get<std::shared_ptr<IObject>>()) {
+        for (auto const &arg: args->get<IObject>()) {
             auto ourType = *argTyIt++;
             auto theirType = em->determineType(arg.get());
             if (ourType != theirType)
@@ -111,7 +111,7 @@ struct ShaderInvokeFunc : ShaderNode {
             func->name = em->addCommonFunc(std::move(comm));
         }
         std::string exp;
-        for (auto const &arg: args->get<std::shared_ptr<IObject>>()) {
+        for (auto const &arg: args->get<IObject>()) {
             if (!exp.empty())
                 exp += ", ";
             exp += em->determineExpr(arg.get());

@@ -367,7 +367,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
                     keyframes[f] = zeno::vec4f(x, y, z, w);
                     max_frame = f > max_frame? f : max_frame;
                 }
-                int cur_frame = zeno::state.frameid;
+                int cur_frame = getGlobalState()->frameid;
                 if (cur_frame > max_frame) {
                     if (type == "zero") {
                         v = zeno::vec4f(0, 0, 0, 0);
