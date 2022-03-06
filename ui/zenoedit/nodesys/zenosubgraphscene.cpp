@@ -102,14 +102,22 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
 {
-    NODE_TYPE type = static_cast<NODE_TYPE>(idx.data(ROLE_NODETYPE).toInt());
-    switch (type)
+    const QString& descName = idx.data(ROLE_OBJNAME).toString();
+    if (descName == "SubInput")
     {
-        case SUBINPUT_NODE: return new SubInputNode(params);
-        case SUBOUTPUT_NODE: return new SubOutputNode(params);
-        case HEATMAP_NODE: return new MakeHeatMapNode(params);
-        default:
-            return new ZenoNode(params);
+        return new SubnetNode(true, params);
+    }
+    else if (descName == "SubOutput")
+    {
+        return new SubnetNode(false, params);
+    }
+    else if (descName == "MakeHeatmap")
+    {
+        return new MakeHeatMapNode(params);
+    }
+    else
+    {
+        return new ZenoNode(params);
     }
 }
 

@@ -109,5 +109,18 @@ private:
     GraphsModel* m_pModel;
 };
 
+class UpdateDescCommand : public QUndoCommand
+{
+public:
+    UpdateDescCommand(const QString& descName, const SOCKET_UPDATE_INFO& info, GraphsModel* pModel);
+    void redo();
+    void undo();
+
+private:
+    SOCKET_UPDATE_INFO m_info;
+    QString m_descName;
+    GraphsModel* m_pModel;
+};
+
 
 #endif

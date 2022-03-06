@@ -44,6 +44,7 @@ public:
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
+    //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
     void removeGraph(int idx) override;
@@ -87,11 +88,11 @@ public:
     void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false) override;
     QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const SOCKET_UPDATE_INFO& info) override;
 	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
     QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
+    void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo, bool enableTransaction = false) override;
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	QString name(const QModelIndex& subGpIdx) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
@@ -131,7 +132,7 @@ public slots:
 private:
     NODE_DESCS getSubgraphDescs();
     NODE_DESCS getCoreDescs();
-    void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput);
+    void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
 
     QVector<SUBMODEL_SCENE> m_subGraphs;
     QItemSelectionModel* m_selection;

@@ -3,28 +3,19 @@
 
 #include "zenonode.h"
 
-class SubInputNode : public ZenoNode
+class SubnetNode : public ZenoNode
 {
 	Q_OBJECT
 	typedef ZenoNode _base;
 public:
-	SubInputNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
-	~SubInputNode();
+	SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+	~SubnetNode();
 
 protected:
 	void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue) override;
-};
 
-class SubOutputNode : public ZenoNode
-{
-	Q_OBJECT
-	typedef ZenoNode _base;
-public:
-	SubOutputNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
-	~SubOutputNode();
-
-protected:
-	void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue) override;
+private:
+	bool m_bInput;
 };
 
 #endif

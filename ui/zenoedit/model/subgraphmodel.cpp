@@ -328,12 +328,21 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_REMOVE:
             {
-                //todo
+                Q_ASSERT(inputs.find(oldName) != inputs.end());
+                INPUT_SOCKET inputSock = inputs[oldName];
+				//remove link connected to oldName.
+				for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
+				{
+					const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+					m_pGraphsModel->removeLink(linkIdx, subgIdx, false);
+				}
+                inputs.remove(oldName);
+				setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
                 break;
             }
             case SOCKET_UPDATE_NAME:
             {
-			    
 			    Q_ASSERT(inputs.find(oldName) != inputs.end());
 
 			    INPUT_SOCKET inputSock = inputs[oldName];
@@ -342,7 +351,8 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 			    inputs.remove(oldName);
 			    inputs[newName] = inputSock;
 			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-			    setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+			    setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);    //will sync to scene/node.
+                //todo: The sync by calling setData is somehow dangerous, we need to fetch scene and update node directly.
 
 			    for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
 			    {
@@ -378,40 +388,73 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
         OUTPUT_SOCKETS outputs = data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
-        Q_ASSERT(outputs.find(oldName) != outputs.end());
 
-        if (oldName != newName)
+        switch (info.updateWay)
         {
-            OUTPUT_SOCKET outputSock = outputs[oldName];
-            outputSock.info.name = newName;
-
-            outputs.remove(oldName);
-            outputs[newName] = outputSock;
-            setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-            setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
-
-            for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+            case SOCKET_INSERT:
             {
-                //modify link info.
-                QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-                QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                QString inNode = linkIdx.data(ROLE_INNODE).toString();
-                QString inSock = linkIdx.data(ROLE_INSOCK).toString();
-
-                Q_ASSERT(outSock == oldName);
-                LINK_UPDATE_INFO updateInfo;
-                updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
-                updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
-
-                m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+				OUTPUT_SOCKET newSock;
+				newSock.info = info.newInfo;
+				outputs[newName] = newSock;
+				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+				break;
             }
-        }
-        else
-        {
-            OUTPUT_SOCKET& outputSock = outputs[oldName];
-            outputSock.info = info.newInfo;
-			setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-			setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+            case SOCKET_REMOVE:
+            {
+				Q_ASSERT(outputs.find(oldName) != outputs.end());
+				OUTPUT_SOCKET outputSock = outputs[oldName];
+				//remove link connected to oldName.
+				for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+				{
+					const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+					m_pGraphsModel->removeLink(linkIdx, subgIdx, false);
+				}
+                outputs.remove(oldName);
+				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+				break;
+            }
+            case SOCKET_UPDATE_NAME:
+            {
+                Q_ASSERT(outputs.find(oldName) != outputs.end());
+				OUTPUT_SOCKET outputSock = outputs[oldName];
+				outputSock.info.name = newName;
+
+				outputs.remove(oldName);
+				outputs[newName] = outputSock;
+				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+
+				for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+				{
+					//modify link info.
+					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+					QString inNode = linkIdx.data(ROLE_INNODE).toString();
+					QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+
+					Q_ASSERT(outSock == oldName);
+					LINK_UPDATE_INFO updateInfo;
+					updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
+					updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
+
+					m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
+				}
+                break;
+            }
+            case SOCKET_UPDATE_TYPE:
+            {
+
+            }
+            case SOCKET_UPDATE_DEFL:
+            {
+				OUTPUT_SOCKET& outputSock = outputs[oldName];
+				outputSock.info = info.newInfo;
+				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
+                break;
+            }
         }
     }
 }

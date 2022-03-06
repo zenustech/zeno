@@ -591,7 +591,6 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
     switch (info.updateWay)
     {
         case SOCKET_INSERT:
-        case SOCKET_REMOVE:
         {
             const QString& newName = info.newInfo.name;
 			if (info.bInput)
@@ -600,7 +599,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                sock.socket_text = new ZenoTextLayoutItem(newName, m_renderParams.socketFont, m_renderParams.socketClr.color());;
+                sock.socket_text = new ZenoTextLayoutItem(newName, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 m_inSockets[newName] = sock;
 
                 int r = std::max(m_inSockets.count() - 1, 0);
@@ -610,7 +609,41 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 			else
 			{
 				Q_ASSERT(m_outSockets.find(newName) == m_outSockets.end());
+
+                _socket_ctrl sock;
+				sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
+				sock.socket_text = new ZenoTextLayoutItem(newName, m_renderParams.socketFont, m_renderParams.socketClr.color());
+                m_outSockets[newName] = sock;
+
+                int r = std::max(m_inSockets.count() + m_outSockets.count() - 1, 0);
+                m_pSocketsLayout->insertItem(r, sock.socket_text);
+                m_pSocketsLayout->updateGeometry();
 			}
+            break;
+        }
+        case SOCKET_REMOVE:
+        {
+            const QString& name = info.oldInfo.name;
+            if (info.bInput)
+            {
+                Q_ASSERT(m_inSockets.find(name) != m_inSockets.end());
+                const _socket_ctrl& sock = m_inSockets[name];
+                m_pSocketsLayout->removeItem(sock.socket_text);
+                delete sock.socket;
+                delete sock.socket_text;
+                m_inSockets.remove(name);
+                m_pSocketsLayout->updateGeometry();
+            }
+            else
+            {
+				Q_ASSERT(m_outSockets.find(name) != m_outSockets.end());
+				const _socket_ctrl& sock = m_outSockets[name];
+				m_pSocketsLayout->removeItem(sock.socket_text);
+				delete sock.socket;
+				delete sock.socket_text;
+                m_outSockets.remove(name);
+				m_pSocketsLayout->updateGeometry();
+            }
             break;
         }
         case SOCKET_UPDATE_NAME:

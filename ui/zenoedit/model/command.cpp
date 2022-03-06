@@ -178,3 +178,47 @@ void UpdateSocketCommand::undo()
     revertInfo.oldInfo = m_info.newInfo;
     m_pModel->updateSocket(m_nodeid, revertInfo, m_subgIdx);
 }
+
+
+UpdateDescCommand::UpdateDescCommand(const QString& descName, const SOCKET_UPDATE_INFO& info, GraphsModel* pModel)
+    : m_info(info)
+    , m_pModel(pModel)
+    , m_descName(descName)
+{
+}
+
+void UpdateDescCommand::redo()
+{
+    m_pModel->updateDescInfo(m_descName, m_info);
+}
+
+void UpdateDescCommand::undo()
+{
+    SOCKET_UPDATE_INFO revertInfo;
+    revertInfo.bInput = m_info.bInput;
+    switch (m_info.updateWay)
+    {
+        case SOCKET_INSERT:
+        {
+            revertInfo.updateWay = SOCKET_REMOVE;
+			revertInfo.newInfo = m_info.oldInfo;
+			revertInfo.oldInfo = m_info.newInfo;
+            break;
+        }
+        case SOCKET_REMOVE:
+        {
+            revertInfo.updateWay = SOCKET_INSERT;
+			revertInfo.newInfo = m_info.oldInfo;
+			revertInfo.oldInfo = m_info.newInfo;
+            break;
+        }
+        case SOCKET_UPDATE_NAME:
+        {
+            revertInfo.updateWay = SOCKET_UPDATE_NAME;
+			revertInfo.newInfo = m_info.oldInfo;
+			revertInfo.oldInfo = m_info.newInfo;
+            break;
+        }
+    }
+    m_pModel->updateDescInfo(m_descName, revertInfo);
+}

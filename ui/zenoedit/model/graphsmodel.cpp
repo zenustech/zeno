@@ -773,12 +773,18 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
 			const QModelIndex& inIdx = pGraph->index(inNode);
 
 			OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-			outputs[outSock].linkIndice.removeOne(linkIdx);
-			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+            if (outputs.find(outSock) != outputs.end())
+            {
+				outputs[outSock].linkIndice.removeOne(linkIdx);
+				pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+            }
 
 			INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-			inputs[inSock].linkIndice.removeOne(linkIdx);
-			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            if (inputs.find(inSock) != inputs.end())
+            {
+				inputs[inSock].linkIndice.removeOne(linkIdx);
+				pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            }
 		}
 		m_linkModel->removeRow(linkIdx.row());
     }
@@ -881,42 +887,6 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
-void GraphsModel::updateSubnetIO(QPersistentModelIndex subgIdx, const QString& subNodeId, const SOCKET_UPDATE_INFO& info)
-{
-    static const QString paramName("name");
-
-    beginTransaction("update socket");
-
-    const QString& subnetNodeName = this->name(subgIdx);
-
-    switch (info.updateWay)
-    {
-        case SOCKET_UPDATE_DEFL:
-        case SOCKET_UPDATE_NAME:
-        case SOCKET_UPDATE_TYPE:
-        {
-		    PARAM_UPDATE_INFO paramInfo;
-		    paramInfo.oldValue = getParamValue(subNodeId, paramName, subgIdx);
-		    paramInfo.newValue = info.newInfo.name;
-		    paramInfo.name = paramName;
-		    updateParamInfo(subNodeId, paramInfo, subgIdx, true);
-		    break;
-        }
-    }
-
-	for (int r = 0; r < rowCount(); r++)
-	{
-		subgIdx = index(r, 0);
-		QModelIndexList m_results = searchInSubgraph(subnetNodeName, subgIdx);
-		for (auto idx : m_results)
-		{
-			updateSocket(idx.data(ROLE_OBJID).toString(), info, subgIdx, true);
-		}
-	}
-
-	endTransaction();
-}
-
 void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     if (enableTransaction)
@@ -959,6 +929,103 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
 		if (pSubg)
 		{
 			pSubg->updateNodeStatus(nodeid, info);
+		}
+    }
+}
+
+void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        UpdateDescCommand* pCmd = new UpdateDescCommand(descName, updateInfo, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+		Q_ASSERT(m_nodesDesc.find(descName) != m_nodesDesc.end());
+		NODE_DESC& desc = m_nodesDesc[descName];
+		switch (updateInfo.updateWay)
+		{
+		    case SOCKET_INSERT:
+		    {
+			    const QString& nameValue = updateInfo.newInfo.name;
+			    if (updateInfo.bInput)
+			    {
+				    // add SubInput
+				    Q_ASSERT(desc.inputs.find(nameValue) == desc.inputs.end());
+				    INPUT_SOCKET inputSocket;
+				    inputSocket.info = updateInfo.newInfo;
+				    desc.inputs[nameValue] = inputSocket;
+			    }
+			    else
+			    {
+				    // add SubOutput
+				    Q_ASSERT(desc.outputs.find(nameValue) == desc.outputs.end());
+				    OUTPUT_SOCKET outputSocket;
+				    outputSocket.info = updateInfo.newInfo;
+				    desc.outputs[nameValue] = outputSocket;
+			    }
+			    break;
+		    }
+		    case SOCKET_REMOVE:
+		    {
+			    const QString& nameValue = updateInfo.newInfo.name;
+			    if (updateInfo.bInput)
+			    {
+				    Q_ASSERT(desc.inputs.find(nameValue) != desc.inputs.end());
+				    desc.inputs.remove(nameValue);
+			    }
+			    else
+			    {
+				    Q_ASSERT(desc.outputs.find(nameValue) != desc.outputs.end());
+				    desc.outputs.remove(nameValue);
+			    }
+			    break;
+		    }
+		    case SOCKET_UPDATE_NAME:
+		    {
+			    const QString& oldName = updateInfo.oldInfo.name;
+			    const QString& newName = updateInfo.newInfo.name;
+			    if (updateInfo.bInput)
+			    {
+				    Q_ASSERT(desc.inputs.find(oldName) != desc.inputs.end() &&
+					    desc.inputs.find(newName) == desc.inputs.end());
+				    desc.inputs[newName] = desc.inputs[oldName];
+				    desc.inputs.remove(oldName);
+			    }
+			    else
+			    {
+				    Q_ASSERT(desc.outputs.find(oldName) != desc.outputs.end() &&
+					    desc.outputs.find(newName) == desc.outputs.end());
+				    desc.outputs[newName] = desc.outputs[oldName];
+				    desc.outputs.remove(oldName);
+			    }
+			    break;
+		    }
+		    case SOCKET_UPDATE_DEFL:
+		    {
+
+                break;
+		    }
+		    case SOCKET_UPDATE_TYPE:
+		    {
+
+                break;
+		    }
+		}
+
+		for (int i = 0; i < m_subGraphs.size(); i++)
+		{
+			SubGraphModel* pModel = m_subGraphs[i].pModel;
+			if (pModel->name() != descName)
+			{
+				QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchContains);
+				for (auto idx : results)
+				{
+					const QString& nodeId = idx.data(ROLE_OBJID).toString();
+					updateSocket(nodeId, updateInfo, index(i, 0), false);
+				}
+			}
 		}
     }
 }
@@ -1113,12 +1180,12 @@ void GraphsModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int
     {
 		const QModelIndex& idx = pSubModel->index(first, 0);
 		const QString& objName = idx.data(ROLE_OBJNAME).toString();
-
+        bool bInserted = true;
         if (objName == "SubInput") {
-            onSubInfoChanged(pSubModel, idx, true);
+            onSubInfoChanged(pSubModel, idx, true, bInserted);
         }
         else if (objName == "SubOutput") {
-            onSubInfoChanged(pSubModel, idx, false);
+            onSubInfoChanged(pSubModel, idx, false, bInserted);
         }
     }
 
@@ -1130,8 +1197,21 @@ void GraphsModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int
 void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-
     Q_ASSERT(pSubModel);
+
+    if (!zenoApp->IsIOProcessing())
+    {
+		const QModelIndex& idx = pSubModel->index(first, 0);
+		const QString& objName = idx.data(ROLE_OBJNAME).toString();
+        bool bInserted = false;
+		if (objName == "SubInput") {
+			onSubInfoChanged(pSubModel, idx, true, bInserted);
+		}
+		else if (objName == "SubOutput") {
+			onSubInfoChanged(pSubModel, idx, false, bInserted);
+		}
+    }
+
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
 }
@@ -1218,7 +1298,7 @@ void GraphsModel::on_linkRemoved(const QModelIndex& parent, int first, int last)
 }
 
 
-void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput)
+void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert)
 {
     const QString& objId = idx.data(ROLE_OBJID).toString();
     const QString& objName = idx.data(ROLE_OBJNAME).toString();
@@ -1228,7 +1308,7 @@ void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& 
 
     SOCKET_UPDATE_INFO updateInfo;
     updateInfo.bInput = bInput;
-    updateInfo.updateWay = SOCKET_INSERT;
+    updateInfo.updateWay = bInsert ? SOCKET_INSERT : SOCKET_REMOVE;
 
     SOCKET_INFO info;
     info.name = nameValue;
@@ -1236,25 +1316,7 @@ void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& 
     info.type = "";
 
     updateInfo.oldInfo = updateInfo.newInfo = info;
-    updateInfo.updateWay = SOCKET_INSERT;
 
     const QString& subnetNodeName = pSubModel->name();
-
-	for (int r = 0; r < rowCount(); r++)
-	{
-		const QModelIndex& subgIdx = index(r, 0);
-		QModelIndexList m_results = searchInSubgraph(subnetNodeName, subgIdx);
-		for (auto idx : m_results)
-		{
-			updateSocket(idx.data(ROLE_OBJID).toString(), updateInfo, subgIdx, false);
-		}
-	}
-
-    const QString& subnetName = pSubModel->name();
-	Q_ASSERT(m_nodesDesc.find(subnetName) != m_nodesDesc.end());
-	NODE_DESC& desc = m_nodesDesc[subnetName];
-    Q_ASSERT(desc.inputs.find(nameValue) == desc.inputs.end());
-    INPUT_SOCKET inputSocket;
-    inputSocket.info = info;
-    desc.inputs[nameValue] = inputSocket;
+    updateDescInfo(subnetNodeName, updateInfo, false);
 }
