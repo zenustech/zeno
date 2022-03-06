@@ -1,4 +1,5 @@
 #include "LinearBvh.h"
+#include "SpatialUtils.hpp"
 #include <algorithm>
 #include <atomic>
 #include <exception>
@@ -261,11 +262,7 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
     std::vector<Ti> trunkRc(numLeaves - 1);
 #pragma omp parallel for
     for (Ti idx = 0; idx < numLeaves; ++idx) {
-      {
-        // const auto &pos = refpos[records[idx].second];
-        // leafBvs[idx] = Box{pos - thickness, pos + thickness};
-        leafBvs[idx] = getBv(records[idx].second);
-      }
+      leafBvs[idx] = getBv(records[idx].second);
 
       leafLca[idx] = -1, leafDepths[idx] = 1;
       Ti l = idx - 1, r = idx; ///< (l, r]
@@ -473,8 +470,10 @@ void LBvh::refit() {
   }
 }
 
-/// closest bounding box
-void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
+/// nearest primitive
+template <LBvh::element_e et>
+void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
+                        element_t<et>) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -491,16 +490,114 @@ void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
         break;
     // leaf node check
     if (level == 0) {
-      const auto pid = auxIndices[node];
-      auto d = length(refpos[pid] - pos);
+      const auto eid = auxIndices[node];
+      float d = std::numeric_limits<float>::max();
+      if constexpr (et == element_e::point)
+        d = length(refpos[prim->points[eid]] - pos);
+      else if constexpr (et == element_e::line) {
+        auto line = prim->lines[eid];
+        d = dist_pe(pos, refpos[line[0]], refpos[line[1]]);
+      } else if constexpr (et == element_e::tri) {
+        auto tri = prim->tris[eid];
+        d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]]);
+      } else if constexpr (et == element_e::tet) {
+        auto tet = prim->quads[eid];
+        if (auto dd =
+                dist_pt(pos, refpos[tet[0]], refpos[tet[1]], refpos[tet[2]]);
+            dd < d)
+          d = dd;
+        if (auto dd =
+                dist_pt(pos, refpos[tet[1]], refpos[tet[3]], refpos[tet[2]]);
+            dd < d)
+          d = dd;
+        if (auto dd =
+                dist_pt(pos, refpos[tet[0]], refpos[tet[3]], refpos[tet[2]]);
+            dd < d)
+          d = dd;
+        if (auto dd =
+                dist_pt(pos, refpos[tet[0]], refpos[tet[2]], refpos[tet[3]]);
+            dd < d)
+          d = dd;
+      }
       if (d < dist) {
-        id = pid;
+        id = eid;
         dist = d;
       }
       node++;
     } else // separate at internal nodes
       node = auxIndices[node];
   }
+}
+
+void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
+  if (eleCategory == element_e::tet)
+    find_nearest(pos, id, dist, element_c<element_e::tet>);
+  else if (eleCategory == element_e::tri)
+    find_nearest(pos, id, dist, element_c<element_e::tri>);
+  else if (eleCategory == element_e::line)
+    find_nearest(pos, id, dist, element_c<element_e::line>);
+  else if (eleCategory == element_e::point)
+    find_nearest(pos, id, dist, element_c<element_e::point>);
+}
+
+std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {
+  std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
+  if (!prim)
+    throw std::runtime_error(
+        "the primitive object referenced by lbvh not available anymore");
+  const auto &refpos = prim->attr<vec3f>("pos");
+
+  auto ret = std::make_shared<PrimitiveObject>();
+  if (eleCategory == element_e::tet) {
+    auto quad = prim->quads[eid];
+    ret->quads.push_back({0, 1, 2, 3});
+    ret->verts.push_back(refpos[quad[0]]);
+    ret->verts.push_back(refpos[quad[1]]);
+    ret->verts.push_back(refpos[quad[2]]);
+    ret->verts.push_back(refpos[quad[3]]);
+  } else if (eleCategory == element_e::tri) {
+    auto tri = prim->tris[eid];
+    ret->tris.push_back({0, 1, 2});
+    ret->verts.push_back(refpos[tri[0]]);
+    ret->verts.push_back(refpos[tri[1]]);
+    ret->verts.push_back(refpos[tri[2]]);
+  } else if (eleCategory == element_e::line) {
+    auto line = prim->lines[eid];
+    ret->lines.push_back({0, 1});
+    ret->verts.push_back(refpos[line[0]]);
+    ret->verts.push_back(refpos[line[1]]);
+  } else if (eleCategory == element_e::point) {
+    auto point = prim->points[eid];
+    ret->points.push_back(0);
+    ret->verts.push_back(refpos[point]);
+  }
+  return ret;
+}
+
+vec3f LBvh::retrievePrimitiveCenter(Ti eid) const {
+  std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
+  if (!prim)
+    throw std::runtime_error(
+        "the primitive object referenced by lbvh not available anymore");
+  const auto &refpos = prim->attr<vec3f>("pos");
+
+  vec3f ret;
+  if (eleCategory == element_e::tet) {
+    auto quad = prim->quads[eid];
+    ret = (refpos[quad[0]] + refpos[quad[1]] + refpos[quad[2]] +
+           refpos[quad[3]]) /
+          4;
+  } else if (eleCategory == element_e::tri) {
+    auto tri = prim->tris[eid];
+    ret = (refpos[tri[0]] + refpos[tri[1]] + refpos[tri[2]]) / 3;
+  } else if (eleCategory == element_e::line) {
+    auto line = prim->lines[eid];
+    ret = (refpos[line[0]] + refpos[line[1]]) / 2;
+  } else if (eleCategory == element_e::point) {
+    auto point = prim->points[eid];
+    ret = refpos[point];
+  }
+  return ret;
 }
 
 } // namespace zeno
