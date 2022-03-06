@@ -17,8 +17,10 @@ struct LBvh : IObjectClone<LBvh> {
   using Box = std::pair<TV, TV>;
   using Ti = int;
   using Tu = std::make_unsigned_t<Ti>;
+  using BvFunc = std::function<Box(Ti)>;
 
   std::weak_ptr<const PrimitiveObject> primPtr;
+  BvFunc getBv;
   std::vector<Box> sortedBvs;
   std::vector<Ti> auxIndices, levels, parents, leafIndices;
   float thickness{0};
@@ -29,7 +31,14 @@ struct LBvh : IObjectClone<LBvh> {
     build(prim, thickness);
   }
 
+  std::size_t getNumLeaves() const noexcept { return leafIndices.size(); }
+  std::size_t getNumNodes() const noexcept { return getNumLeaves() * 2 - 1; }
+  BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
+
   void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
+  template <element_e et>
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+             element_t<et>);
   void refit();
 
   static bool intersect(const Box &box, const TV &p) noexcept {
@@ -58,6 +67,13 @@ struct LBvh : IObjectClone<LBvh> {
   void find_nearest(TV const &pos, Ti &id, float &dist) const;
 
   template <class F> void iter_neighbors(TV const &pos, F const &f) const {
+    if (auto numLeaves = getNumLeaves() <= 2) {
+      for (Ti i = 0; i != numLeaves; ++i) {
+        if (intersect(sortedBvs[i], pos))
+          f(auxIndices[i]);
+      }
+      return;
+    }
     const Ti numNodes = sortedBvs.size();
     Ti node = 0;
     while (node != -1 && node != numNodes) {

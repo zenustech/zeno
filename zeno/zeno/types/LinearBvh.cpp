@@ -10,8 +10,81 @@
 
 namespace zeno {
 
-void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
-                 float thickness) {
+typename LBvh::BvFunc
+LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
+  constexpr auto ma = std::numeric_limits<float>().max();
+  constexpr auto mi = std::numeric_limits<float>().lowest();
+  const Box defaultBox{TV{ma, ma, ma}, TV{mi, mi, mi}};
+
+  std::function<Box(typename LBvh::Ti)> getBv;
+  if (eleCategory == element_e::tet)
+    getBv = [&quads = prim->quads, &refpos = prim->attr<vec3f>("pos"),
+             &defaultBox, this](Ti i) -> Box {
+      auto quad = quads[i];
+      Box bv = defaultBox;
+      for (int j = 0; j != 4; ++j) {
+        const auto &p = refpos[quad[j]];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness < bv.first[d])
+            bv.first[d] = p[d] - thickness;
+          if (p[d] + thickness > bv.second[d])
+            bv.second[d] = p[d] + thickness;
+        }
+      }
+      return bv;
+    };
+  else if (eleCategory == element_e::tri)
+    getBv = [&tris = prim->tris, &refpos = prim->attr<vec3f>("pos"),
+             &defaultBox, this](Ti i) -> Box {
+      auto tri = tris[i];
+      Box bv = defaultBox;
+      for (int j = 0; j != 3; ++j) {
+        const auto &p = refpos[tri[j]];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness < bv.first[d])
+            bv.first[d] = p[d] - thickness;
+          if (p[d] + thickness > bv.second[d])
+            bv.second[d] = p[d] + thickness;
+        }
+      }
+      return bv;
+    };
+  else if (eleCategory == element_e::line)
+    getBv = [&lines = prim->lines, &refpos = prim->attr<vec3f>("pos"),
+             &defaultBox, this](Ti i) -> Box {
+      auto line = lines[i];
+      Box bv = defaultBox;
+      for (int j = 0; j != 2; ++j) {
+        const auto &p = refpos[line[j]];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness < bv.first[d])
+            bv.first[d] = p[d] - thickness;
+          if (p[d] + thickness > bv.second[d])
+            bv.second[d] = p[d] + thickness;
+        }
+      }
+      return bv;
+    };
+  else if (eleCategory == element_e::point)
+    getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"),
+             &defaultBox, this](Ti i) -> Box {
+      auto point = points[i];
+      Box bv = defaultBox;
+      const auto &p = refpos[point];
+      for (int d = 0; d != 3; ++d) {
+        if (p[d] - thickness < bv.first[d])
+          bv.first[d] = p[d] - thickness;
+        if (p[d] + thickness > bv.second[d])
+          bv.second[d] = p[d] + thickness;
+      }
+      return bv;
+    };
+  return getBv;
+}
+
+template <LBvh::element_e et>
+void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+                 element_t<et>) {
   this->primPtr = prim;
   this->thickness = thickness;
 
@@ -19,25 +92,27 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
 
   {
     // determine element category
-    if (prim->quads.size() > 0) {
+    if constexpr (et == element_e::tet) {
       this->eleCategory = element_e::tet;
       numLeaves = prim->quads.size();
-    } else if (prim->tris.size() > 0) {
+    } else if constexpr (et == element_e::tri) {
       this->eleCategory = element_e::tri;
       numLeaves = prim->tris.size();
-    } else if (prim->lines.size() > 0) {
+    } else if constexpr (et == element_e::line) {
       this->eleCategory = element_e::line;
       numLeaves = prim->lines.size();
-    } else if (prim->points.size() > 0) {
-      this->eleCategory = element_e::point;
-      numLeaves = prim->points.size();
-    } else {
-      this->eleCategory = element_e::point;
-      numLeaves = prim->verts.size();
-      prim->points.resize(numLeaves);
+    } else if constexpr (et == element_e::point) {
+      if (prim->points.size() > 0) {
+        this->eleCategory = element_e::point;
+        numLeaves = prim->points.size();
+      } else {
+        this->eleCategory = element_e::point;
+        numLeaves = prim->verts.size();
+        prim->points.resize(numLeaves);
 #pragma omp parallel for
-      for (Ti i = 0; i < numLeaves; ++i)
-        prim->points[i] = i;
+        for (Ti i = 0; i < numLeaves; ++i)
+          prim->points[i] = i;
+      }
     }
   }
 
@@ -49,11 +124,23 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
   parents.resize(numNodes);
   leafIndices.resize(numLeaves);
 
+  this->getBv = getBvFunc(prim);
+
+  if (numLeaves <= 2) { // edge cases where not enough primitives to form a tree
+    for (Ti i = 0; i != numLeaves; ++i) {
+      sortedBvs[i] = getBv(i);
+      leafIndices[i] = i;
+      levels[i] = 0;
+      auxIndices[i] = i;
+      parents[i] = -1;
+    }
+    return;
+  }
+
   constexpr int dim = 3;
   constexpr auto ma = std::numeric_limits<float>().max();
   constexpr auto mi = std::numeric_limits<float>().lowest();
   Box wholeBox{TV{ma, ma, ma}, TV{mi, mi, mi}};
-  const auto defaultBox = wholeBox;
 
   /// whole box
   // should use reduce here
@@ -84,7 +171,6 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
            (expand_bits((Tu)(p[1] * 1024.f)) << (Tu)1) |
            expand_bits((Tu)(p[2] * 1024.f));
   };
-  std::function<Box(Ti)> getBv;
   {
     const auto lengths = wholeBox.second - wholeBox.first;
     auto getUniformCoord = [&wholeBox, &lengths](const TV &p) {
@@ -95,22 +181,7 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
         offsets[d] = std::clamp(offsets[d], (float)0, lengths[d]) / lengths[d];
       return offsets;
     };
-    if (eleCategory == element_e::tet) {
-      getBv = [&quads = prim->quads, &refpos, &defaultBox,
-               thickness](Ti i) -> Box {
-        auto quad = quads[i];
-        Box bv = defaultBox;
-        for (int j = 0; j != 4; ++j) {
-          const auto &p = refpos[quad[j]];
-          for (int d = 0; d != 3; ++d) {
-            if (p[d] - thickness < bv.first[d])
-              bv.first[d] = p[d] - thickness;
-            if (p[d] + thickness > bv.second[d])
-              bv.second[d] = p[d] + thickness;
-          }
-        }
-        return bv;
-      };
+    if constexpr (et == element_e::tet) {
 #pragma omp parallel for
       for (Ti i = 0; i < numLeaves; ++i) {
         auto quad = prim->quads[i];
@@ -119,22 +190,7 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
                                   4);
         records[i] = std::make_pair(getMortonCode(uc), i);
       }
-    } else if (eleCategory == element_e::tri) {
-      getBv = [&tris = prim->tris, &refpos, &defaultBox,
-               thickness](Ti i) -> Box {
-        auto tri = tris[i];
-        Box bv = defaultBox;
-        for (int j = 0; j != 3; ++j) {
-          const auto &p = refpos[tri[j]];
-          for (int d = 0; d != 3; ++d) {
-            if (p[d] - thickness < bv.first[d])
-              bv.first[d] = p[d] - thickness;
-            if (p[d] + thickness > bv.second[d])
-              bv.second[d] = p[d] + thickness;
-          }
-        }
-        return bv;
-      };
+    } else if constexpr (et == element_e::tri) {
 #pragma omp parallel for
       for (Ti i = 0; i < numLeaves; ++i) {
         auto tri = prim->tris[i];
@@ -142,42 +198,14 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
             (refpos[tri[0]] + refpos[tri[1]] + refpos[tri[2]]) / 3);
         records[i] = std::make_pair(getMortonCode(uc), i);
       }
-    } else if (eleCategory == element_e::line) {
-      getBv = [&lines = prim->lines, &refpos, &defaultBox,
-               thickness](Ti i) -> Box {
-        auto line = lines[i];
-        Box bv = defaultBox;
-        for (int j = 0; j != 2; ++j) {
-          const auto &p = refpos[line[j]];
-          for (int d = 0; d != 3; ++d) {
-            if (p[d] - thickness < bv.first[d])
-              bv.first[d] = p[d] - thickness;
-            if (p[d] + thickness > bv.second[d])
-              bv.second[d] = p[d] + thickness;
-          }
-        }
-        return bv;
-      };
+    } else if constexpr (et == element_e::line) {
 #pragma omp parallel for
       for (Ti i = 0; i < numLeaves; ++i) {
         auto line = prim->lines[i];
         auto uc = getUniformCoord((refpos[line[0]] + refpos[line[1]]) / 2);
         records[i] = std::make_pair(getMortonCode(uc), i);
       }
-    } else if (eleCategory == element_e::point) {
-      getBv = [&points = prim->points, &refpos, &defaultBox,
-               thickness](Ti i) -> Box {
-        auto point = points[i];
-        Box bv = defaultBox;
-        const auto &p = refpos[point];
-        for (int d = 0; d != 3; ++d) {
-          if (p[d] - thickness < bv.first[d])
-            bv.first[d] = p[d] - thickness;
-          if (p[d] + thickness > bv.second[d])
-            bv.second[d] = p[d] + thickness;
-        }
-        return bv;
-      };
+    } else if constexpr (et == element_e::point) {
 #pragma omp parallel for
       for (Ti i = 0; i < numLeaves; ++i) {
         auto pi = prim->points[i];
@@ -306,8 +334,8 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
   for (Ti i = 1; i <= numLeaves; ++i)
     leafOffsets[i] = leafOffsets[i - 1] + leafDepths[i - 1];
   std::vector<Ti> trunkDst(numLeaves - 1);
-  /// compute trunk order
-  // [levels], [parents], [trunkDst]
+/// compute trunk order
+// [levels], [parents], [trunkDst]
 #pragma omp parallel for
   for (Ti i = 0; i < numLeaves; ++i) {
     auto offset = leafOffsets[i];
@@ -319,13 +347,13 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
       trunkDst[node] = offset++;
     }
   }
-  // only left-branch-node's parents are set so far
-  // levels store the number of node within the left-child-branch from bottom
-  // up starting from 0
+// only left-branch-node's parents are set so far
+// levels store the number of node within the left-child-branch from bottom
+// up starting from 0
 
-  /// reorder trunk
-  // [sortedBvs], [auxIndices], [parents]
-  // auxIndices here is escapeIndex (for trunk nodes)
+/// reorder trunk
+// [sortedBvs], [auxIndices], [parents]
+// auxIndices here is escapeIndex (for trunk nodes)
 #pragma omp parallel for
   for (Ti i = 0; i < numLeaves - 1; ++i) {
     const auto dst = trunkDst[i];
@@ -344,9 +372,9 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
       auxIndices[dst] = -1;
   }
 
-  /// reorder leaf
-  // [sortedBvs], [auxIndices], [levels], [parents], [leafIndices]
-  // auxIndices here is primitiveIndex (for leaf nodes)
+/// reorder leaf
+// [sortedBvs], [auxIndices], [levels], [parents], [leafIndices]
+// auxIndices here is primitiveIndex (for leaf nodes)
 #pragma omp parallel for
   for (Ti i = 0; i < numLeaves; ++i) {
     const auto &bv = leafBvs[i];
@@ -361,6 +389,79 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
       parents[dst + 1] = dst - 1; // setup right-branch brother's parent
     // if (leafDepth > 1) parents[dst + 1] = dst - 1;  // setup right-branch
     // brother's parent
+  }
+}
+
+void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
+                 float thickness) {
+  // determine element category
+  if (prim->quads.size() > 0)
+    build(prim, thickness, element_c<element_e::tet>);
+  else if (prim->tris.size() > 0)
+    build(prim, thickness, element_c<element_e::tri>);
+  else if (prim->lines.size() > 0)
+    build(prim, thickness, element_c<element_e::line>);
+  else if (prim->points.size() > 0)
+    build(prim, thickness, element_c<element_e::point>);
+  else
+    build(prim, thickness, element_c<element_e::point>);
+}
+
+void LBvh::refit() {
+  std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
+  if (!prim)
+    throw std::runtime_error(
+        "the primitive object referenced by lbvh not available anymore");
+  const auto &refpos = prim->attr<vec3f>("pos");
+
+  const auto numLeaves = getNumLeaves();
+  if (numLeaves <= 2) {
+    for (Ti i = 0; i != numLeaves; ++i) {
+      sortedBvs[i] = getBv(i);
+      leafIndices[i] = i;
+      levels[i] = 0;
+      auxIndices[i] = i;
+      parents[i] = -1;
+    }
+    return;
+  }
+  const auto numNodes = numLeaves * 2 - 1;
+  std::vector<std::atomic<Ti>> refitFlags(numNodes);
+#pragma omp parallel for
+  for (Ti i = 0; i < numNodes; ++i)
+    refitFlags[i] = 0;
+
+  {
+#pragma omp parallel for
+    for (Ti nid = 0; nid < numLeaves; ++nid) {
+      auto idx = leafIndices[nid];
+      sortedBvs[idx] = getBv(auxIndices[idx]);
+
+      auto par = parents[idx];
+      while (par != -1) {
+        Ti old{0};
+        if (refitFlags[par].compare_exchange_strong(
+                old, (Ti)1, std::memory_order_relaxed)) {
+          auto lc = par + 1;
+          auto rc = levels[lc] == 0 ? lc + 1 : auxIndices[lc];
+          // merge box
+          const auto &leftBox = sortedBvs[lc];
+          const auto &rightBox = sortedBvs[rc];
+          Box bv{};
+          for (int d = 0; d != 3; ++d) {
+            bv.first[d] = leftBox.first[d] < rightBox.first[d]
+                              ? leftBox.first[d]
+                              : rightBox.first[d];
+            bv.second[d] = leftBox.second[d] > rightBox.second[d]
+                               ? leftBox.second[d]
+                               : rightBox.second[d];
+          }
+          sortedBvs[par] = bv;
+          atomic_thread_fence(std::memory_order_acquire);
+          par = parents[par];
+        }
+      }
+    }
   }
 }
 
