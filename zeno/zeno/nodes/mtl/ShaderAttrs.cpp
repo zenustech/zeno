@@ -26,7 +26,7 @@ ZENDEFNODE(ShaderInputAttr, {
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
-        {"tree", "out"},
+        {"shader", "out"},
     },
     {},
     {"shader"},

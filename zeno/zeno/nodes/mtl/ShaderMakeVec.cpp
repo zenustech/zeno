@@ -46,10 +46,10 @@ struct ShaderMakeVec : ShaderNode {
 
 ZENDEFNODE(ShaderMakeVec, {
     {
-        {"tree", "x"},
-        {"tree", "y"},
-        {"tree", "z"},
-        {"tree", "w"},
+        {"shader", "x"},
+        {"shader", "y"},
+        {"shader", "z"},
+        {"shader", "w"},
     },
     {
         {"vec4f", "out"},

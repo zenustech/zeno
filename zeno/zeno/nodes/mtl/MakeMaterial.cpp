@@ -5,7 +5,7 @@
 
 namespace zeno
 {
-  struct MakeMaterial
+  /*struct MakeMaterial
       : zeno::INode
   {
     virtual void apply() override
@@ -90,7 +90,7 @@ void main()
           {
               "shader",
           },
-      });
+      });*/
 
   struct SetMaterial
       : zeno::INode

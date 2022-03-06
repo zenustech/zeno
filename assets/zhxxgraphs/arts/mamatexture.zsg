@@ -2,68 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "c9a265eb-ShaderAddTexture2D": {
-     "name": "ShaderAddTexture2D",
-     "inputs": {
-      "mtl": [
-       "031fa460-MakeMaterial",
-       "mtl",
-       null
-      ],
-      "tex": [
-       "247bcea0-ShaderMakeTexture2D",
-       "tex",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      773.7591835678805,
-      592.9100269039735
-     ],
-     "options": []
-    },
-    "031fa460-MakeMaterial": {
-     "name": "MakeMaterial",
-     "inputs": {
-      "vert": [
-       null,
-       null,
-       ""
-      ],
-      "frag": [
-       "cb0a2469-ShaderFinalize",
-       "code",
-       ""
-      ],
-      "common": [
-       "cb0a2469-ShaderFinalize",
-       "commonCode",
-       ""
-      ],
-      "extensions": [
-       "bee9ea89-MakeMultilineString",
-       "value",
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      539.5255587748344,
-      297.7332108857617
-     ],
-     "options": []
-    },
     "33e91d42-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
      "inputs": {
@@ -94,7 +32,7 @@
        null
       ],
       "mtl": [
-       "c9a265eb-ShaderAddTexture2D",
+       "d99e82ca-MaterialTexture2D",
        "mtl",
        null
       ],
@@ -117,7 +55,7 @@
      "name": "ShaderFinalize",
      "inputs": {
       "basecolor": [
-       "15e6c8ec-ShaderInvokeFunc",
+       "158cd1b8-ShaderTexture2D",
        "out",
        null
       ],
@@ -146,6 +84,11 @@
        null,
        null
       ],
+      "exposure": [
+       null,
+       null,
+       1.0
+      ],
       "commonCode": [
        null,
        null,
@@ -166,29 +109,24 @@
       "backend": "GLSL"
      },
      "uipos": [
-      261.8822589770043,
-      102.6407128773005
+      351.5138814935606,
+      136.72597777796273
      ],
      "options": []
     },
-    "1e9e9fe4-ShaderCustomFunc": {
-     "name": "ShaderCustomFunc",
+    "06e59318-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
      "inputs": {
-      "args": [
+      "attr": [
        null,
        null,
-       "vec3 TexCoord"
+       "uv"
       ],
-      "rettype": [
+      "type": [
        null,
        null,
        "vec3"
       ],
-      "code": [
-       "0bca2dd9-MakeMultilineString",
-       "value",
-       ""
-      ],
       "SRC": [
        null,
        null,
@@ -197,69 +135,28 @@
      },
      "params": {},
      "uipos": [
-      -320.6465897367633,
-      -37.49188824919304
+      -294.78073261589384,
+      211.3734581953641
      ],
      "options": []
     },
-    "15e6c8ec-ShaderInvokeFunc": {
-     "name": "ShaderInvokeFunc",
+    "158cd1b8-ShaderTexture2D": {
+     "name": "ShaderTexture2D",
      "inputs": {
-      "func": [
-       "1e9e9fe4-ShaderCustomFunc",
-       "func",
-       null
-      ],
-      "args": [
-       "16388187-MakeSmallList",
-       "list",
-       null
-      ],
-      "SRC": [
+      "texId": [
        null,
        null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -24.271424381842948,
-      -98.95064623614768
-     ],
-     "options": []
-    },
-    "16388187-MakeSmallList": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
+       0
+      ],
+      "coord": [
        "06e59318-ShaderInputAttr",
        "out",
        null
       ],
-      "obj1": [
+      "type": [
        null,
        null,
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ],
-      "obj3": [
-       null,
-       null,
-       null
-      ],
-      "obj4": [
-       null,
-       null,
-       null
-      ],
-      "obj5": [
-       null,
-       null,
-       null
+       "vec3"
       ],
       "SRC": [
        null,
@@ -267,53 +164,15 @@
        null
       ]
      },
-     "params": {
-      "doConcat": true
-     },
+     "params": {},
      "uipos": [
-      -321.8145437322164,
-      513.2810988796425
+      19.39072847682116,
+      226.8715231788076
      ],
      "options": []
     },
-    "0bca2dd9-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "vec4 c = texture2D(texture1, TexCoord.xy);\nreturn c.xyz;"
-     },
-     "uipos": [
-      -707.8995037272454,
-      -106.49251534992837
-     ],
-     "options": []
-    },
-    "bee9ea89-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "uniform sampler2D texture1;"
-     },
-     "uipos": [
-      46.70943708609275,
-      511.27897350993396
-     ],
-     "options": []
-    },
-    "247bcea0-ShaderMakeTexture2D": {
-     "name": "ShaderMakeTexture2D",
+    "77deccc9-MakeTexture2D": {
+     "name": "MakeTexture2D",
      "inputs": {
       "path": [
        null,
@@ -348,23 +207,23 @@
      },
      "params": {},
      "uipos": [
-      468.60927152317856,
-      643.8327814569533
+      426.5960264900655,
+      563.1390728476812
      ],
      "options": []
     },
-    "06e59318-ShaderInputAttr": {
-     "name": "ShaderInputAttr",
+    "d99e82ca-MaterialTexture2D": {
+     "name": "MaterialTexture2D",
      "inputs": {
-      "attr": [
-       null,
-       null,
-       "uv"
+      "mtl": [
+       "cb0a2469-ShaderFinalize",
+       "mtl",
+       null
       ],
-      "type": [
-       null,
-       null,
-       "vec3"
+      "tex": [
+       "77deccc9-MakeTexture2D",
+       "tex",
+       null
       ],
       "SRC": [
        null,
@@ -374,40 +233,17 @@
      },
      "params": {},
      "uipos": [
-      -446.67477235099295,
-      283.1191535596024
+      723.1125827814559,
+      498.50331125827734
      ],
      "options": []
-    },
-    "535a9994-PrintString": {
-     "name": "PrintString",
-     "inputs": {
-      "str": [
-       null,
-       null,
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1078.89331539735,
-      560.0398385761588
-     ],
-     "options": [
-      "VIEW"
-     ]
     }
    },
    "view_rect": {
-    "x": 230.09595563047333,
-    "y": 620.4528495586095,
-    "width": 767.9999999999999,
-    "height": 390.39999999999975
+    "x": -300.40247129926706,
+    "y": -28.362450604893354,
+    "width": 1499.999999999999,
+    "height": 762.4999999999989
    }
   }
  },
@@ -2723,51 +2559,6 @@
     "primitive"
    ]
   },
-  "MakeMaterial": {
-   "inputs": [
-    [
-     "string",
-     "vert",
-     ""
-    ],
-    [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
-     ""
-    ],
-    [
-     "string",
-     "extensions",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
-   ]
-  },
   "MakeMultilineString": {
    "inputs": [
     [
@@ -3087,6 +2878,56 @@
     "string"
    ]
   },
+  "MakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "NEAREST"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "NEAREST"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -3167,6 +3008,41 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MaterialTexture2D": {
+   "inputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
    ]
   },
   "MoveAssign": {
@@ -4032,46 +3908,6 @@
     "zenofx"
    ]
   },
-  "ParticlesBuildBvh": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radius",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radiusMin",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -4099,56 +3935,6 @@
     [
      "hashgrid",
      "hashGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesNeighborBvhWrangle": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
      ""
     ],
     [
@@ -6888,41 +6674,6 @@
     "portal"
    ]
   },
-  "ShaderAddTexture2D": {
-   "inputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "texture",
-     "tex",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
-   ]
-  },
   "ShaderBinaryMath": {
    "inputs": [
     [
@@ -6966,13 +6717,8 @@
   "ShaderCihouUnrealEngine": {
    "inputs": [
     [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
+     "MaterialObject",
+     "mtl",
      ""
     ],
     [
@@ -7173,13 +6919,8 @@
    ],
    "outputs": [
     [
-     "string",
-     "code",
-     ""
-    ],
-    [
-     "string",
-     "commonCode",
+     "MaterialObject",
+     "mtl",
      ""
     ],
     [
@@ -7219,7 +6960,7 @@
    ],
    "outputs": [
     [
-     "tree",
+     "shader",
      "out",
      ""
     ],
@@ -7254,7 +6995,7 @@
    ],
    "outputs": [
     [
-     "tree",
+     "shader",
      "out",
      ""
     ],
@@ -7325,75 +7066,25 @@
     "shader"
    ]
   },
-  "ShaderMakeTexture2D": {
-   "inputs": [
-    [
-     "readpath",
-     "path",
-     ""
-    ],
-    [
-     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
-     "wrapS",
-     "REPEAT"
-    ],
-    [
-     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
-     "wrapT",
-     "REPEAT"
-    ],
-    [
-     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
-     "minFilter",
-     "NEAREST"
-    ],
-    [
-     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
-     "magFilter",
-     "NEAREST"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "texture",
-     "tex",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
-   ]
-  },
   "ShaderMakeVec": {
    "inputs": [
     [
-     "tree",
+     "shader",
      "x",
      ""
     ],
     [
-     "tree",
+     "shader",
      "y",
      ""
     ],
     [
-     "tree",
+     "shader",
      "z",
      ""
     ],
     [
-     "tree",
+     "shader",
      "w",
      ""
     ],
@@ -7487,6 +7178,46 @@
    "outputs": [
     [
      "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTexture2D": {
+   "inputs": [
+    [
+     "int",
+     "texId",
+     "0"
+    ],
+    [
+     "vec2f",
+     "coord",
+     "0,0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
      "out",
      ""
     ],
