@@ -437,6 +437,22 @@ void main()
       frag = R"(
 #version 120
 )" + (mtl ? mtl->extensions : "") + R"(
+const float minDot = 1e-5;
+
+// Clamped dot product
+float dot_c(vec3 a, vec3 b){
+	return max(dot(a, b), minDot);
+}
+
+// Get orthonormal basis from surface normal
+// https://graphics.pixar.com/library/OrthonormalB/paper.pdf
+void pixarONB(vec3 n, out vec3 b1, out vec3 b2){
+	float sign_ = sign(n.z);
+	float a = -1.0 / (sign_ + n.z);
+	float b = n.x * n.y * a;
+	b1 = vec3(1.0 + sign_ * n.x * n.x * a, sign_ * b, -sign_ * n.x);
+	b2 = vec3(b, sign_ + n.y * n.y * a, -n.y);
+}
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -547,17 +563,20 @@ float CalculateAttenuationAnalytical(// Smith for analytical light
     return (lightAtten * viewAtten);
 }
 
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness){
+    return F0 + (max(vec3(1.0-roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
 // Specular F - Fresnel reflectivity
 vec3 CalculateFresnel(
     in vec3 surfNorm,
     in vec3 toView,
     in vec3 fresnel0)
 {
-	float d = max(dot(surfNorm, toView), 0.0);
+	float d = dot_c(surfNorm, toView);
     float p = ((-5.55473 * d) - 6.98316) * d;
 
-    //return fresnel0 + ((1.0 - fresnel0) * pow(1.0 - d, 5.0));
-    return fresnel0 + ((1.0 - fresnel0) * pow(2.0, p));
+    return fresnel0 + ((1.0 - fresnel0) * pow(1.0 - d, 5.0));
+    //return fresnel0 + ((1.0 - fresnel0) * pow(2.0, p));
 }
 
 // Specular Term - put together
@@ -698,10 +717,10 @@ vec3 ImportanceSample(vec2 Xi, vec3 N, float roughness) {
     H.y = sin(phi) * sinTheta;
     H.z = cosTheta;
 
-    vec3 up        = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent   = normalize(cross(up, N));
-    vec3 bitangent = cross(N, tangent);
-	
+    //vec3 up        = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent;//   = normalize(cross(up, N));
+    vec3 bitangent;// = cross(N, tangent);
+	pixarONB(N, tangent, bitangent);
     vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
     return normalize(sampleVec);
 }
@@ -764,6 +783,15 @@ vec3 SampleEnvironment(in vec3 reflVec)
  *
  * The number of steps is controlled by the 'IBL Steps' global.
  */
+ //Geometry for IBL uses a different k than direct lighting
+ //GGX and Schlick-Beckmann
+float geometry(float cosTheta, float k){
+	return (cosTheta)/(cosTheta*(1.0-k)+k);
+}
+float smithsIBL(float NdotV, float NdotL, float roughness){
+    float k = (roughness * roughness) / 2.0;; 
+	return geometry(NdotV, k) * geometry(NdotL, k);
+}
 vec3 CalculateSpecularIBL(
     in    vec3  surfNorm,
     in    vec3  toView,
@@ -794,7 +822,7 @@ vec3 CalculateSpecularIBL(
         {
             vec3 color = SampleEnvironment(L);
             
-            float geoAtten = CalculateAttenuationIBL(roughness, NoL, NoV);
+            float geoAtten = smithsIBL(NoV, NoL, roughness);
             vec3  fresnel = CalculateFresnel(surfNorm, toView, fresnel0);
             
             sfresnel += fresnel;
@@ -815,8 +843,9 @@ vec3 CalculateLightingIBL(
     in float metallic)
 {
     vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
-    vec3 ks       = vec3(0.0);
-    vec3 diffuse  = CalculateDiffuse(albedo) * 0.2 * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
+    //vec3 F = fresnelSchlickRoughness(dot_c(surfNorm, toView), 0.04);
+    vec3 ks       = vec3(0);
+    vec3 diffuse  = CalculateDiffuse(albedo) * 0.2 * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
     vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
     
@@ -1005,9 +1034,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     float roughness = mat_roughness;
 
     new_normal = normalize(gl_NormalMatrix * new_normal);
-    vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent   = normalize(cross(up, new_normal));
-    vec3 bitangent = cross(new_normal, tangent);
+    //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent;//   = normalize(cross(up, new_normal));
+    vec3 bitangent;// = cross(new_normal, tangent);
+    pixarONB(new_normal, tangent, bitangent);
     light_dir = vec3(1,1,0);
     color += BRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,0,0,0,0.5,0,1,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
