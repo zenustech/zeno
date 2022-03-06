@@ -224,6 +224,19 @@ Please check the [BUILD.md](/BUILD.md) for the complete build instructions of Ze
 
 If you have trouble setting up developing environment, please let us help by opening an [issue](https://github.com/zenustech/zeno/issues)!
 
+### Folder structures
+
+* `assets` - binary assets for some examples to run.
+* `docs` - documentations for Zeno developers and contributors.
+* `external` - third-party libraries of Zeno as submodules.
+* `graphs` - example graphs to demostrate the use of Zeno.
+* `misc` - some random files and scripts used by CI.
+* `projects` - source code of Zeno extension modules.
+* `ui` - source code of Zeno editor UI (written in Qt5).
+* `zeno` - source code of Zeno node system core.
+* `.POC` - proof-of-concept and deprecated code archive.
+* `.github` - GitHub workflow and template files.
+
 ### Code Style
 
 Zeno is based on C++17, you may assume all C++17 features to be available in coding.
