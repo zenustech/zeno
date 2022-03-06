@@ -783,7 +783,7 @@ vec3 CalculateSpecularIBL(
         vec3 H = ImportanceSample(xi, surfNorm, roughness);
         
         // The light sample vector
-        vec3 L = (2.0 * dot(toView, H) * H) - toView;
+        vec3 L = normalize((2.0 * dot(toView, H) * H) - toView);
         
         float NoV = clamp(dot(surfNorm, toView), 0.0, 1.0);
         float NoL = clamp(dot(surfNorm, L), 0.0, 1.0);
@@ -816,7 +816,7 @@ vec3 CalculateLightingIBL(
 {
     vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
     vec3 ks       = vec3(0.0);
-    vec3 diffuse  = CalculateDiffuse(albedo);
+    vec3 diffuse  = CalculateDiffuse(albedo) * 0.2 * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
     
@@ -1044,13 +1044,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-//    color +=  
-//        CalculateLightingIBL(
-//            new_normal,
-//            view_dir,
-//            albedo2,
-//            roughness,
-//            mat_metallic);
+    color +=  
+        CalculateLightingIBL(
+            new_normal,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic);
     color = ACESFitted(color.rgb, 2.2);
     return color;
 
