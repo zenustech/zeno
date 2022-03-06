@@ -67,7 +67,7 @@ struct LBvh : IObjectClone<LBvh> {
   void find_nearest(TV const &pos, Ti &id, float &dist) const;
 
   template <class F> void iter_neighbors(TV const &pos, F const &f) const {
-    if (auto numLeaves = getNumLeaves() <= 2) {
+    if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
       for (Ti i = 0; i != numLeaves; ++i) {
         if (intersect(sortedBvs[i], pos))
           f(auxIndices[i]);

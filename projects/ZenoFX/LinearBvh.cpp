@@ -245,11 +245,16 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
 
   std::vector<std::atomic<Tu>> trunkTopoMarks(numLeaves - 1);
   std::vector<std::atomic<Ti>> trunkBuildFlags(numLeaves - 1);
+#if 0
+// already zero-initialized during default ctor
+// https://en.cppreference.com/w/cpp/atomic/atomic/atomic
+// courtesy of pyb
 #pragma omp parallel for
   for (Ti i = 0; i < numLeaves - 1; ++i) {
     trunkTopoMarks[i] = 0;
     trunkBuildFlags[i] = 0;
   }
+#endif
 
   {
     std::vector<Ti> trunkL(numLeaves - 1);
@@ -427,9 +432,12 @@ void LBvh::refit() {
   }
   const auto numNodes = numLeaves * 2 - 1;
   std::vector<std::atomic<Ti>> refitFlags(numNodes);
+#if 0
+// comment out with the same reason in build
 #pragma omp parallel for
   for (Ti i = 0; i < numNodes; ++i)
     refitFlags[i] = 0;
+#endif
 
   {
 #pragma omp parallel for
