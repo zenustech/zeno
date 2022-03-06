@@ -1,11 +1,13 @@
 #include "../Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
+#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/VDBGrid.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 
 namespace zeno {
 
@@ -82,15 +84,56 @@ struct ZSPoissonDiskSample : INode {
   void apply() override {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ZSPoissonDiskSample\n");
-    const auto &ls = get_input<ZenoLevelSet>("ZSLevelSet")->getSparseLevelSet();
-    auto spls = ls.clone({memsrc_e::host, -1});
-
-    auto dx = get_input2<float>("dx");
-
-    auto sampled = zs::sample_from_levelset(
-        zs::proxy<zs::execspace_e::openmp>(spls), dx, get_input2<float>("ppc"));
-
     auto prim = std::make_shared<PrimitiveObject>();
+    std::vector<std::array<float, 3>> sampled;
+
+    auto zsfield = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto dx = get_input2<float>("dx");
+    auto ppc = get_input2<float>("ppc");
+
+    match([&prim, &sampled, dx, ppc, this](auto &ls) {
+      using LsT = RM_CVREF_T(ls);
+      if constexpr (is_same_v<LsT, typename ZenoLevelSet::basic_ls_t>) {
+        auto &field = ls._ls;
+        match(
+            [&sampled = sampled, dx = dx, ppc = ppc](auto &lsPtr)
+                -> std::enable_if_t<
+                    is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              const auto &ls = *lsPtr;
+              const auto &spls = ls.memspace() == memsrc_e::host
+                                     ? ls.clone({memsrc_e::host, -1})
+                                     : ls;
+              sampled = zs::sample_from_levelset(
+                  zs::proxy<zs::execspace_e::openmp>(spls), dx, ppc);
+            },
+            [](auto &lsPtr)
+                -> std::enable_if_t<
+                    !is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              throw std::runtime_error(
+                  fmt::format("levelset type [{}] not supported in sampling.",
+                              zs::get_var_type_str(lsPtr)));
+            })(field);
+      } else if constexpr (is_same_v<
+                               LsT,
+                               typename ZenoLevelSet::const_sdf_vel_ls_t>) {
+        match([&sampled = sampled, dx = dx, ppc = ppc](auto lsv) {
+          sampled = zs::sample_from_levelset(SdfVelFieldView{lsv}, dx, ppc);
+        })(ls.template getView<execspace_e::openmp>());
+      } else if constexpr (is_same_v<
+                               LsT,
+                               typename ZenoLevelSet::const_transition_ls_t>) {
+        match([&sampled = sampled, &ls, dx = dx, ppc = ppc](auto fieldPair) {
+          sampled = zs::sample_from_levelset(
+              TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)},
+                                     SdfVelFieldView{get<1>(fieldPair)},
+                                     ls._stepDt, ls._alpha},
+              dx, ppc);
+        })(ls.template getView<execspace_e::openmp>());
+      } else {
+        throw std::runtime_error("unknown levelset type...");
+      }
+    })(zsfield->levelset);
+
     prim->resize(sampled.size());
     auto &pos = prim->attr<vec3f>("pos");
     auto &vel = prim->add_attr<vec3f>("vel");
@@ -185,8 +228,9 @@ struct ToZSLevelSet : INode {
     } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
-      ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+      ls->getLevelSet() =
+          basic_ls_t{zs::convert_vec3fgrid_to_sparse_staggered_grid(
+              gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
@@ -297,6 +341,22 @@ ZENDEFNODE(EnqueueLevelSetSequence, {
                                         {"MPM"},
                                     });
 
+struct MakeZSString : INode {
+  void apply() override {
+    auto n = std::make_shared<StringObject>();
+    n->value = fmt::format(get_input<StringObject>("fmt_str")->get(),
+                           get_input<NumericObject>("frameid")->get<int>(),
+                           get_input<NumericObject>("stepid")->get<int>());
+    set_output("str", std::move(n));
+  }
+};
+ZENDEFNODE(MakeZSString, {
+                             {"fmt_str", "frameid", "stepid"},
+                             {"str"},
+                             {},
+                             {"SOP"},
+                         });
+
 /// update levelsetsequence state
 struct UpdateLevelSetSequence : INode {
   void apply() override {
@@ -320,12 +380,32 @@ struct UpdateLevelSetSequence : INode {
     if (has_input<NumericObject>("dt")) {
       auto stepDt = get_input<NumericObject>("dt")->get<float>();
       lsseq.setStepDt(stepDt);
+      // fmt::print("\tdt: {}\n", lsseq._stepDt);
     }
 
     if (has_input<NumericObject>("alpha")) {
       auto alpha = get_input<NumericObject>("alpha")->get<float>();
       lsseq.advance(alpha);
+      // fmt::print("\talpha: {}, accum: {}\n", alpha, lsseq._alpha);
     }
+
+#if 0
+    fmt::print("\t{} levelset in queue.\n", lsseq._fields.size());
+    match([&lsseq](auto fieldPair) {
+      auto lsseqv = TransitionLevelSetView{SdfVelFieldView{get<0>(fieldPair)},
+                                           SdfVelFieldView{get<1>(fieldPair)},
+                                           lsseq._stepDt, lsseq._alpha};
+      fmt::print("ls_seq_view type: [{}]\n", get_var_type_str(lsseqv));
+      auto printBox = [](std::string_view msg, auto &lsv) {
+        auto [mi, ma] = lsv.getBoundingBox();
+        fmt::print("[{}]: [{}, {}, {} ~ {}, {}, {}]\n", msg, mi[0], mi[1],
+                   mi[2], ma[0], ma[1], ma[2]);
+      };
+      printBox("src", lsseqv._lsvSrc);
+      printBox("dst", lsseqv._lsvDst);
+      printBox("cur", lsseqv);
+    })(lsseq.template getView<execspace_e::openmp>());
+#endif
 
     fmt::print(fg(fmt::color::cyan), "done executing UpdateLevelSetSequence\n");
     set_output("ZSLevelSetSequence", std::move(zsls));
@@ -345,10 +425,16 @@ struct ZSLevelSetToVDBGrid : INode {
 
     if (has_input<ZenoLevelSet>("ZSLevelSet")) {
       auto ls = get_input<ZenoLevelSet>("ZSLevelSet");
-      if (ls->holdsSparseLevelSet()) {
-        vdb->m_grid =
-            zs::convert_sparse_levelset_to_floatgrid(ls->getSparseLevelSet())
-                .as<openvdb::FloatGrid::Ptr>();
+      if (ls->holdsBasicLevelSet()) {
+        zs::match(
+            [&vdb](auto &lsPtr)
+                -> std::enable_if_t<
+                    zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+              using LsT = typename RM_CVREF_T(lsPtr)::element_type;
+              vdb->m_grid = zs::convert_sparse_levelset_to_vdbgrid(*lsPtr)
+                                .template as<openvdb::FloatGrid::Ptr>();
+            },
+            [](...) {})(ls->getBasicLevelSet()._ls);
       } else
         ZS_WARN("The current input levelset is not a sparse levelset!");
     }

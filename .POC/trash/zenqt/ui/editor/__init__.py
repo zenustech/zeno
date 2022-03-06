@@ -28,6 +28,7 @@ from .textarea import *
 from .makedict import *
 from .makelist import *
 from .curvemap import *
+from .dynamic_number import *
 from .heatmap import *
 from .scene import *
 from .window import *

@@ -25,7 +25,6 @@ ZENDEFNODE(MakePrimitive,
     "primitive",
     }});
 
-
 struct PrimitiveResize : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");

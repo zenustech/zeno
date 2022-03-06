@@ -1,7 +1,9 @@
+#include "MyShader.hpp"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
+#include <Hg/OpenGL/stdafx.hpp>
 #include <sstream>
 #include <cstdlib>
 #include <cmath>
@@ -135,7 +137,164 @@ static void draw_small_axis() {
   proj = backup_proj;
 }
 
+
+
+
+
+auto qvert = R"(
+#version 330 core
+const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
+void main()
+{
+    gl_Position = vec4(quad_vertices[gl_VertexID], 0.0, 1.0);
+}
+)";
+auto qfrag = R"(#version 330 core
+#extension GL_EXT_gpu_shader4 : enable
+// hdr_adaptive.fs
+//
+//
+
+vec3 ACESToneMapping(vec3 color, float adapted_lum)
+{
+	const float A = 2.51f;
+	const float B = 0.03f;
+	const float C = 2.43f;
+	const float D = 0.59f;
+	const float E = 0.14f;
+
+	color *= adapted_lum;
+	return (color * (A * color + B)) / (color * (C * color + D) + E);
+}
+
+uniform samplerRect hdr_image;
+out vec4 oColor;
+void main(void)
+{
+	int i;
+	float lum[25];
+	vec2 tex_scale = vec2(1.0);
+	for (i = 0; i < 25; i++)
+	{
+		vec2 tc = (2.0 * gl_FragCoord.xy + 3.5 * vec2(i % 5 - 2, i / 5 - 2));
+		vec3 col = texture2DRect(hdr_image, tc).rgb;
+    lum[i] = dot(col, vec3(0.3, 0.59, 0.11));
+	} 
+	// Calculate weighted color of region
+	float kernelLuminance = (
+		(1.0 * (lum[0] + lum[4] + lum[20] + lum[24])) +
+		(4.0 * (lum[1] + lum[3] + lum[5] + lum[9] +
+		lum[15] + lum[19] + lum[21] + lum[23])) +
+		(7.0 * (lum[2] + lum[10] + lum[14] + lum[22])) +
+		(16.0 * (lum[6] + lum[8] + lum[16] + lum[18])) +
+		(26.0 * (lum[7] + lum[11] + lum[13] + lum[17])) +
+		(41.0 * lum[12])
+	) / 273.0;
+	// Compute the corresponding exposure
+	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
+	// Apply the exposure to this texel
+  oColor.xyz = ACESToneMapping(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, exposure);
+	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
+  
+}
+)";
+hg::OpenGL::Program* tmProg=nullptr;
+GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
+int oldnx, oldny;
+GLuint texRect=0, regularFBO = 0;
+GLuint emptyVAO=0;
+void ScreenFillQuad(GLuint tex)
+{
+  if(emptyVAO==0)
+    glGenVertexArrays(1, &emptyVAO); 
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  tmProg->use();
+  tmProg->set_uniformi("hdr_image",0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+
+  glEnableVertexAttribArray(0);
+  glBindVertexArray(emptyVAO); 
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDisableVertexAttribArray(0);
+  glUseProgram(0);
+}
 static void paint_graphics(void) {
+  if(tmProg==nullptr)
+  {
+    std::cout<<"compiling glprog"<<std::endl;
+    tmProg = compile_program(qvert, qfrag);
+  }
+  
+  if(msfborgb==0||oldnx!=nx||oldny!=ny)
+  {
+    if(msfborgb!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &msfborgb));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA, nx, ny));
+    
+  
+    if(msfbod!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &msfbod));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+
+    
+    if(tonemapfbo!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
+    }
+    CHECK_GL(glGenFramebuffers(1, &tonemapfbo));
+
+
+    if(regularFBO!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &regularFBO));
+    }
+    CHECK_GL(glGenFramebuffers(1, &regularFBO));
+    if(texRect!=0)
+    {
+      CHECK_GL(glDeleteTextures(1, &texRect));
+    }
+    CHECK_GL(glGenTextures(1, &texRect));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+    {
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
+    }
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_RECTANGLE, texRect, 0));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    oldnx = nx;
+    oldny = ny;
+    
+  }
+
+    
+  
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+  CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+
+
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -149,6 +308,15 @@ static void paint_graphics(void) {
       draw_small_axis();
   }
   vao->unbind();
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
 

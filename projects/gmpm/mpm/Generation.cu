@@ -563,8 +563,8 @@ struct MakeZSLevelSet : INode {
     std::vector<zs::PropertyTag> tags{{"sdf", 1}};
 
     auto ls = std::make_shared<ZenoLevelSet>();
-    ls->transferScheme = get_input2<std::string>("transfer");
-    auto cateStr = get_input2<std::string>("category");
+    ls->transferScheme = get_param<std::string>("transfer");
+    auto cateStr = get_param<std::string>("category");
 
     // default is "cellcentered"
     if (cateStr == "staggered")
@@ -596,6 +596,10 @@ struct MakeZSLevelSet : INode {
           tags, dx, 1, zs::memsrc_e::um, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
+    } else if (cateStr == "uniform_vel") {
+      auto v = get_input<zeno::NumericObject>("aux")->get<zeno::vec3f>();
+      ls->getLevelSet() = typename ZenoLevelSet::uniform_vel_ls_t{
+          zs::vec<float, 3>{v[0], v[1], v[2]}};
     } else
       throw std::runtime_error(
           fmt::format("unknown levelset (grid) category [{}].", cateStr));
@@ -605,8 +609,13 @@ struct MakeZSLevelSet : INode {
         using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
         fmt::print(
             "levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n",
-            spls_t::category, lsPtr->_i2wShat(0, 0), lsPtr->_grid.dx,
+            spls_t::category, 1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx,
             spls_t::side_length, spls_t::block_size);
+      } else if constexpr (zs::is_same_v<
+                               typename RM_CVREF_T(lsPtr)::element_type,
+                               typename ZenoLevelSet::uniform_vel_ls_t>) {
+        fmt::print("uniform velocity field: {}, {}, {}\n", lsPtr->vel[0],
+                   lsPtr->vel[1], lsPtr->vel[2]);
       } else {
         throw std::runtime_error(
             fmt::format("invalid levelset [{}] initialized in basicls.",
@@ -616,14 +625,15 @@ struct MakeZSLevelSet : INode {
     set_output("ZSLevelSet", std::move(ls));
   }
 };
-ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"},
-                                {"string", "transfer", "unknown"},
-                                {"string", "category", "cellcentered"}},
-                               {"ZSLevelSet"},
-                               {},
-                               {"SOP"},
-                           });
+ZENDEFNODE(MakeZSLevelSet,
+           {
+               {{"float", "dx", "0.1"}, "aux"},
+               {"ZSLevelSet"},
+               {{"enum unknown apic flip", "transfer", "unknown"},
+                {"enum cellcentered collocated staggered uni_velocity",
+                 "category", "cellcentered"}},
+               {"SOP"},
+           });
 
 struct ToZSBoundary : INode {
   void apply() override {

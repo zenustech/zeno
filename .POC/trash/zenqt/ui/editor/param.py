@@ -147,6 +147,70 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         return float(text)
 
 
+class FloatSliderEdit(QLineEdit):
+    def __init__(self) -> None:
+        super().__init__()
+        self.old = None
+        self.start = None
+        self.pixel_per_one = 100
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(lambda: self.editingFinished.emit())
+
+    def mouseMoveEvent(self, e):
+        super().mouseMoveEvent(e)
+        if self.start != None:
+            x = e.globalX()
+            offset = x - self.start
+            v = self.old + offset / self.pixel_per_one * self.link.get_base()
+            self.setText('{:.4f}'.format(v))
+            self.timer.stop()
+            self.timer.start(100)
+
+    def mousePressEvent(self, e):
+        super().mousePressEvent(e)
+        self.old = float(self.text())
+        self.start = e.globalX()
+
+    def mouseReleaseEvent(self, e):
+        super().mouseReleaseEvent(e)
+        self.old = None
+        self.start = None
+        self.timer.stop()
+        self.editingFinished.emit()
+
+class QDMGraphicsParam_floatslider(QDMGraphicsParam_float):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.p = parent
+
+    def initLayout(self):
+        font = QFont()
+        font.setPointSize(style['param_text_size'])
+
+        if not hasattr(self, 'edit'):
+            self.edit = FloatSliderEdit()
+        self.edit.setFont(font)
+        self.edit.link = self
+        self.label = QLabel()
+        self.label.setFont(font)
+
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.edit)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def get_base(self):
+        return self.p.base_value
+
+    def edit_finished(self):
+        prev = self.p.tmp_value
+        self.p.value_modify()
+        next = self.p.tmp_value
+        if prev != next:
+            super().edit_finished()
+
+
 class QDMGraphicsParam_string(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()

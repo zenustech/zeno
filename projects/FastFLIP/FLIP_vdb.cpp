@@ -2669,13 +2669,18 @@ void FLIP_vdb::reseed_fluid(
         auto voxelipos = liquid_sdf->worldToIndex(voxelwpos);
         float liquid_phi = openvdb::tools::BoxSampler::sample(
             liquid_sdf->getConstAccessor(), voxelipos);
-        if (liquid_phi < -dx && this_voxel_emitted < 4) {
+        if (liquid_phi < dx && this_voxel_emitted < 4) {
           const int max_emit_trial = 16;
           for (int trial = 0; this_voxel_emitted < 6 && trial < max_emit_trial;
                trial++) {
             openvdb::Vec3d particle_pipos{randomTable[(index++) % 21474836],
                                           randomTable[(index++) % 21474836],
                                           randomTable[(index++) % 21474836]};
+            openvdb::Vec3d pwpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;                              
+            float liquid_phi2 = openvdb::tools::BoxSampler::sample(
+            liquid_sdf->getConstAccessor(), liquid_sdf->worldToIndex(pwpos));
+            if(liquid_phi2 > - dx)
+              continue;
             auto &p = particle_pipos;
             unsigned char sv_pos =
                 ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);

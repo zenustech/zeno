@@ -8,21 +8,35 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
+struct MakePointPrimitive :INode{
+    virtual void apply() override {
+        auto p = get_input<NumericObject>("vec3")->get<vec3f>();
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(1);
+        auto &pos = prim->add_attr<vec3f>("pos");
+        pos[0] = p;
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(MakePointPrimitive,
+    { /* inputs: */ {
+    "vec3",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
 
 struct Make1DLinePrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("n")->get<int>();
         float dx = 1.f / std::max(nx - 1, (size_t)1);
-        vec3f ax = has_input("direction") ?
-            get_input<NumericObject>("direction")->get<vec3f>()
-            : vec3f(1, 0, 0);
+        
         vec3f o = has_input("origin") ?
             get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
-        if (has_input("scale")) {
-            auto scale = get_input<NumericObject>("scale")->get<float>();
-            ax *= scale;
-        }
-
+        
+    vec3f ax = vec3f(1,0,0);
     auto dir = get_param<std::string>("Direction");
     if(dir == "Y")
     {
@@ -32,9 +46,15 @@ struct Make1DLinePrimitive : INode {
     {
         ax = zeno::vec3f(0,0,ax[0]);
     }
-
+    ax = has_input("direction") ?
+            get_input<NumericObject>("direction")->get<vec3f>()
+            : ax;
     if (get_param<bool>("isCentered"))
       o -= (ax) / 2;
+      if (has_input("scale")) {
+            auto scale = get_input<NumericObject>("scale")->get<float>();
+            ax *= scale;
+        }
     ax *= dx;
 
     auto prim = std::make_shared<PrimitiveObject>();
