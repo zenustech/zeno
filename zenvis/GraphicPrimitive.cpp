@@ -518,8 +518,8 @@ float CalculateNDF( // GGX/Trowbridge-Reitz NDF
     in float roughness){
     float a2 = (roughness * roughness * roughness * roughness);
     float halfAngle = dot(surfNorm, halfVector);
-
-    return (a2 / (3.1415926 * pow((pow(halfAngle, 2.0) * (a2 - 1.0) + 1.0), 2.0)));
+    float d = (halfAngle * a2 - halfAngle) * halfAngle + 1;
+    return (a2 / (3.1415926 *  d * d));
 }
 
 // Specular G - Microfacet geometric attenuation
@@ -537,7 +537,7 @@ float CalculateAttenuationAnalytical(// Smith for analytical light
     in vec3  toView,
     in float roughness)
 {
-    float k = pow((roughness + 1.0), 2.0) * 0.125;
+    float k = pow((roughness*roughness + 1.0), 2.0) * 0.125;
 
     // G(l) and G(v)
     float lightAtten = CalculateAttenuation(surfNorm, toLight, k);
@@ -581,7 +581,57 @@ vec3 CalculateSpecularAnalytical(
 
     return (numerator / denominator);
 }
+float D_GGX( float a2, float NoH )
+{
+	float d = ( NoH * a2 - NoH ) * NoH + 1;	// 2 mad
+	return a2 / ( 3.1415926*d*d );					// 4 mul, 1 rcp
+}
+float Vis_SmithJointApprox( float a2, float NoV, float NoL )
+{
+	float a = sqrt(a2);
+	float Vis_SmithV = NoL * ( NoV * ( 1 - a ) + a );
+	float Vis_SmithL = NoV * ( NoL * ( 1 - a ) + a );
+	return 0.5 / ( Vis_SmithV + Vis_SmithL );
+}
+vec3 F_Schlick( vec3 SpecularColor, float VoH )
+{
+	float Fc = pow( 1 - VoH , 5.0 );					// 1 sub, 3 mul
+	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
+	
+	
+	return clamp( 50.0 * SpecularColor.g, 0, 1 ) * Fc + (1 - Fc) * SpecularColor;
+	
+}
+vec3 SpecularGGX( float Roughness, vec3 SpecularColor, float NoL, float NoH, float NoV, float VoH)
+{
+	float a2 = pow( Roughness, 4);
+	
+	// Generalized microfacet specular
+    float D = D_GGX( a2,  NoH);
+	float Vis = Vis_SmithJointApprox( a2, NoV, NoL );
+	vec3 F = F_Schlick( SpecularColor, VoH );
 
+	return (D * Vis) * F;
+}
+vec3 UELighting(
+    in vec3  surfNorm,
+    in vec3  toLight,
+    in vec3  toView,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    vec3 ks       = vec3(0.0);
+    vec3 diffuse  = CalculateDiffuse(albedo);
+    vec3 half = normalize(toLight + toView);
+    float NoL = dot(surfNorm, toLight);
+    float NoH = dot(surfNorm, half);
+    float NoV = dot(surfNorm, toView);
+    float VoH = dot(toView, half);
+    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+    return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
+
+}
 // Solve Rendering Integral - Final
 vec3 CalculateLightingAnalytical(
     in vec3  surfNorm,
@@ -628,7 +678,7 @@ float CalculateAttenuationIBL(
     in float normDotLight,          // Clamped to [0.0, 1.0]
     in float normDotView)           // Clamped to [0.0, 1.0]
 {
-    float k = pow(roughness, 2.0) * 0.5;
+    float k = pow(roughness*roughness, 2.0) * 0.5;
     
     float lightAtten = (normDotLight / ((normDotLight * (1.0 - k)) + k));
     float viewAtten  = (normDotView / ((normDotView * (1.0 - k)) + k));
@@ -701,7 +751,7 @@ vec3 cubem(in vec3 p, in float ofst)
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
-    if(reflVec.y>-0.2) return vec3(0,0,0);
+    if(reflVec.y>-0.5) return vec3(0,0,0);
     else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
 }
 
@@ -787,7 +837,156 @@ vec3 ACESToneMapping(vec3 color, float adapted_lum)
 	return (color * (A * color + B)) / (color * (C * color + D) + E);
 }
 
+const float PI = 3.14159265358979323846;
 
+float sqr(float x) { return x*x; }
+
+float SchlickFresnel(float u)
+{
+    float m = clamp(1-u, 0, 1);
+    float m2 = m*m;
+    return m2*m2*m; // pow(m,5)
+}
+
+float GTR1(float NdotH, float a)
+{
+    if (a >= 1) return 1/PI;
+    float a2 = a*a;
+    float t = 1 + (a2-1)*NdotH*NdotH;
+    return (a2-1) / (PI*log(a2)*t);
+}
+
+float GTR2(float NdotH, float a)
+{
+    float a2 = a*a;
+    float t = 1 + (a2-1)*NdotH*NdotH;
+    return a2 / (PI * t*t);
+}
+
+float GTR2_aniso(float NdotH, float HdotX, float HdotY, float ax, float ay)
+{
+    return 1 / (PI * ax*ay * sqr( sqr(HdotX/ax) + sqr(HdotY/ay) + NdotH*NdotH ));
+}
+
+float smithG_GGX(float NdotV, float alphaG)
+{
+    float a = alphaG*alphaG;
+    float b = NdotV*NdotV;
+    return 1 / (NdotV + sqrt(a + b - a*b));
+}
+
+float smithG_GGX_aniso(float NdotV, float VdotX, float VdotY, float ax, float ay)
+{
+    return 1 / (NdotV + sqrt( sqr(VdotX*ax) + sqr(VdotY*ay) + sqr(NdotV) ));
+}
+
+vec3 mon2lin(vec3 x)
+{
+    return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
+}
+
+
+vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
+{
+    float NdotL = dot(N,L);
+    float NdotV = dot(N,V);
+    //if (NdotL < 0 || NdotV < 0) return vec3(0);
+
+    vec3 H = normalize(L+V);
+    float NdotH = dot(N,H);
+    float LdotH = dot(L,H);
+
+    vec3 Cdlin = mon2lin(baseColor);
+    float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
+
+    vec3 Ctint = Cdlum > 0 ? Cdlin/Cdlum : vec3(1); // normalize lum. to isolate hue+sat
+    vec3 Cspec0 = mix(specular*.08*mix(vec3(1), Ctint, specularTint), Cdlin, metallic);
+    vec3 Csheen = mix(vec3(1), Ctint, sheenTint);
+
+    // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
+    // and mix in diffuse retro-reflection based on roughness
+    float FL = SchlickFresnel(NdotL), FV = SchlickFresnel(NdotV);
+    float Fd90 = 0.5 + 2 * LdotH*LdotH * roughness;
+    float Fd = mix(1.0, Fd90, FL) * mix(1.0, Fd90, FV);
+
+    // Based on Hanrahan-Krueger brdf approximation of isotropic bssrdf
+    // 1.25 scale is used to (roughly) preserve albedo
+    // Fss90 used to "flatten" retroreflection based on roughness
+    float Fss90 = LdotH*LdotH*roughness;
+    float Fss = mix(1.0, Fss90, FL) * mix(1.0, Fss90, FV);
+    float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+
+    // specular
+    float aspect = sqrt(1-anisotropic*.9);
+    float ax = max(.001, sqr(roughness)/aspect);
+    float ay = max(.001, sqr(roughness)*aspect);
+    float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
+    float FH = SchlickFresnel(LdotH);
+    vec3 Fs = mix(Cspec0, vec3(1), FH);
+    float Gs;
+    Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+    Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+    // sheen
+    vec3 Fsheen = FH * sheen * Csheen;
+
+    // clearcoat (ior = 1.5 -> F0 = 0.04)
+    float Dr = GTR1(NdotH, mix(.1,.001,clearcoatGloss));
+    float Fr = mix(.04, 1.0, FH);
+    float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
+    float angle = clamp(dot(N, L), 0.0, 1.0);
+    return (((1/PI) * mix(Fd, ss, subsurface)*Cdlin + Fsheen)
+        * (1-metallic)
+        + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
+}
+
+const mat3x3 ACESInputMat = mat3x3
+(
+    0.59719, 0.35458, 0.04823,
+    0.07600, 0.90834, 0.01566,
+    0.02840, 0.13383, 0.83777
+);
+
+// ODT_SAT => XYZ => D60_2_D65 => sRGB
+const mat3x3 ACESOutputMat = mat3x3
+(
+     1.60475, -0.53108, -0.07367,
+    -0.10208,  1.10813, -0.00605,
+    -0.00327, -0.07276,  1.07602
+);
+
+vec3 RRTAndODTFit(vec3 v)
+{
+    vec3 a = v * (v + 0.0245786f) - 0.000090537f;
+    vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    return a / b;
+}
+
+vec3 ACESFitted(vec3 color, float gamma)
+{
+    color = color * ACESInputMat;
+
+    // Apply RRT and ODT
+    color = RRTAndODTFit(color);
+
+    color = color * ACESOutputMat;
+
+    // Clamp to [0, 1]
+  	color = clamp(color, 0.0, 1.0);
+    
+    color = pow(color, vec3(1. / gamma));
+
+    return color;
+}
 
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_pos = position;
@@ -806,15 +1005,19 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     float roughness = mat_roughness;
 
     new_normal = normalize(gl_NormalMatrix * new_normal);
+    vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent   = normalize(cross(up, new_normal));
+    vec3 bitangent = cross(new_normal, tangent);
     light_dir = vec3(1,1,0);
-    color +=  
-        CalculateLightingAnalytical(
-            new_normal,
-            light_dir,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic) * vec3(1, 1, 1) * 3.14;
+    color += BRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,0,0,0,0.5,0,1,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+ //   color +=  
+ //       CalculateLightingAnalytical(
+ //           new_normal,
+ //           normalize(light_dir),
+ //           normalize(view_dir),
+ //           albedo2,
+ //           roughness,
+ //           mat_metallic) * vec3(1, 1, 1) * mat_zenxposure;
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
@@ -841,14 +1044,14 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    color +=  
-        CalculateLightingIBL(
-            new_normal,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic);
-    color = ACESToneMapping(color, mat_zenxposure);
+//    color +=  
+//        CalculateLightingIBL(
+//            new_normal,
+//            view_dir,
+//            albedo2,
+//            roughness,
+//            mat_metallic);
+    color = ACESFitted(color.rgb, 2.2);
     return color;
 
 }

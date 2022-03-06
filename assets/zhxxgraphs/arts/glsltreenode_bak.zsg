@@ -103,8 +103,8 @@
      },
      "params": {},
      "uipos": [
-      -522.304201714171,
-      -265.9875393661547
+      1565.2684844091746,
+      -500.8808210060239
      ],
      "options": []
     },
@@ -190,10 +190,12 @@
       "value": "vec3 ModelColor = vec3(0.75, 0.2, 0.01);\n    vec3 PolkaDotColor = vec3(1, 1, 1);\n    vec3 Spacing = spacing;\n    float DotSize = 0.12;\n    float insidesphere,sphereradius,scaledpointlength;\n    vec3 scaledpoint,finalcolor;\n    scaledpoint = pos - (Spacing*floor(pos / Spacing));\n    scaledpoint = scaledpoint - Spacing / 2.0;\n    scaledpointlength = length(scaledpoint);\n    insidesphere = step(scaledpointlength,DotSize);\n    finalcolor = vec3(mix(ModelColor,PolkaDotColor,insidesphere));\n    return  vec3(clamp(vec4(finalcolor, 1.0),0.0,1.0));"
      },
      "uipos": [
-      4101.043439453912,
-      -447.7792306925477
+      3905.9086578342567,
+      -69.65138719846281
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "1c54e185-DynamicNumber": {
      "name": "DynamicNumber",
@@ -211,13 +213,13 @@
      },
      "params": {
       "speed": "0.1",
-      "x": 0.305,
+      "x": 0.285,
       "y": 0.291,
       "z": 0.246,
       "w": 0.0,
       "type": "clamp",
       "_POINTS": "0",
-      "_TMP": "0.305 0.291 0.246 0.0"
+      "_TMP": "0.285 0.291 0.246 0.0"
      },
      "uipos": [
       3524.4658373619222,
@@ -619,8 +621,8 @@
      },
      "params": {},
      "uipos": [
-      4542.282549658589,
-      -243.31015285536898
+      4459.025042834204,
+      -40.36997997092888
      ],
      "options": []
     },
@@ -692,7 +694,7 @@
      },
      "params": {},
      "uipos": [
-      5186.6003228320305,
+      5188.146583922018,
       418.609663384898
      ],
      "options": []
@@ -708,7 +710,7 @@
       "metallic": [
        "afcf9379-ShaderBinaryMath",
        "out",
-       1.0
+       0.0
       ],
       "roughness": [
        null,
@@ -733,7 +735,7 @@
       "exposure": [
        null,
        null,
-       2.2
+       35.0
       ],
       "commonCode": [
        null,
@@ -755,7 +757,7 @@
       "backend": "GLSL"
      },
      "uipos": [
-      5733.178697649928,
+      5730.7038957481855,
       80.50355998434381
      ],
      "options": []
@@ -786,8 +788,8 @@
      },
      "params": {},
      "uipos": [
-      -59.87208713272534,
-      -110.08738601823691
+      2027.7005989906202,
+      -344.98066765810626
      ],
      "options": []
     },
@@ -822,8 +824,8 @@
      },
      "params": {},
      "uipos": [
-      -1597.9665771442394,
-      -113.97631452978848
+      489.60610897910635,
+      -348.8695961696577
      ],
      "options": []
     },
@@ -847,8 +849,8 @@
       "allowQuads": false
      },
      "uipos": [
-      -1115.7086539877737,
-      -203.4670473862824
+      971.8640321355721,
+      -438.36032902615165
      ],
      "options": []
     },
@@ -878,17 +880,17 @@
      },
      "params": {},
      "uipos": [
-      5424.358834625856,
-      413.72740610887683
+      5448.153740792075,
+      407.10408171209394
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3449.302624567517,
-    "y": 2.260986951943778,
-    "width": 1874.9999999999989,
-    "height": 953.1249999999985
+    "x": 2755.526341707515,
+    "y": -898.39950108089,
+    "width": 4577.636718749997,
+    "height": 2326.9653320312464
    }
   }
  },
