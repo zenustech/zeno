@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
@@ -9,18 +10,17 @@ namespace zeno {
 struct ShaderCihouUnrealEngine : INode {
     virtual void apply() override {
         EmissionPass em;
-        auto frag = get_input<StringObject>("frag")->get();
-        auto commonCode = get_input<StringObject>("common")->get();
+        auto mtl = get_input<MaterialObject>("mtl");
 
         std::string code = R"(
 /* BEGIN CIHOU SON OF A MICROSOFT */
-)" + commonCode + R"(
+)" + mtl->common + R"(
 FMaterialAttributes zenoUnrealShader(float3 in_pos, float3 in_clr, float3 in_nrm) {
 float3 att_pos = in_pos;  /* world space position */
 float3 att_clr = in_clr;  /* vertex color */
 float3 att_nrm = in_nrm;  /* world space normal */
 /* custom_shader_begin */
-)" + frag + R"(
+)" + mtl->frag + R"(
 /* custom_shader_end */
 FMaterialAttributes mat = (FMaterialAttributes)0;
 mat.BaseColor = mat_basecolor;
@@ -40,8 +40,7 @@ return mat;
 
 ZENDEFNODE(ShaderCihouUnrealEngine, {
     {
-        {"string", "frag"},
-        {"string", "common"},
+        {"MaterialObject", "mtl"},
     },
     {
         {"string", "code"},

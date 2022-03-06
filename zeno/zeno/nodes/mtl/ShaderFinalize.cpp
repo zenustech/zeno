@@ -2,6 +2,7 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ShaderObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -37,8 +38,13 @@ struct ShaderFinalize : INode {
             get_input<IObject>("exposure", std::make_shared<NumericObject>(float(1.0f))),
         });
         auto commonCode = em.getCommonCode();
-        set_output2("code", std::move(code));
-        set_output2("commonCode", std::move(commonCode));
+
+        auto mtl = std::make_shared<MaterialObject>();
+        mtl->frag = std::move(code);
+        mtl->common = std::move(commonCode);
+        if (has_input("extensionsCode"))
+            mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
+        set_output("mtl", std::move(mtl));
     }
 };
 
@@ -55,8 +61,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "extensionsCode"},
     },
     {
-        {"string", "code"},
-        {"string", "commonCode"},
+        {"MaterialObject", "mtl"},
     },
     {
         {"enum GLSL HLSL", "backend", "GLSL"},

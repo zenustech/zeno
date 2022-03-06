@@ -5,7 +5,7 @@
 
 namespace zeno
 {
-  struct MakeMaterial
+  /*struct MakeMaterial
       : zeno::INode
   {
     virtual void apply() override
@@ -90,7 +90,19 @@ void main()
           {
               "shader",
           },
-      });
+      });*/
+
+struct ExtractMaterialShader : zeno::INode
+{
+    virtual void apply() override {
+      auto mtl = get_input<zeno::MaterialObject>("mtl");
+      auto s = [] (std::string const &s) { auto p = std::make_shared<StringObject>(); p->set(s); return p; };
+      set_output("vert", s(mtl->vert));
+      set_output("frag", s(mtl->frag));
+      set_output("common", s(mtl->common));
+      set_output("extensions", s(mtl->extensions));
+    }
+};
 
   struct SetMaterial
       : zeno::INode

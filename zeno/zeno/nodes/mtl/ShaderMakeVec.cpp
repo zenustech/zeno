@@ -6,7 +6,7 @@
 namespace zeno {
 
 
-struct ShaderMakeVec : ShaderNode {
+struct ShaderPackVec : ShaderNode {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -16,7 +16,7 @@ struct ShaderMakeVec : ShaderNode {
         auto t4 = has_input("w") ? em->determineType(get_input("w").get()) : 0;
         ty = t1 + t2 + t3 + t4;
         if (ty > 4)
-            throw zeno::Exception("ShaderMakeVec expect sum of dimension to no more than 4");
+            throw zeno::Exception("ShaderPackVec expect sum of dimension to no more than 4");
         return ty;
     }
 
@@ -44,12 +44,30 @@ struct ShaderMakeVec : ShaderNode {
 };
 
 
+ZENDEFNODE(ShaderPackVec, {
+    {
+        {"shader", "x"},
+        {"shader", "y"},
+        {"shader", "z"},
+        {"shader", "w"},
+    },
+    {
+        {"vec4f", "out"},
+    },
+    {},
+    {"shader"},
+});
+
+
+struct ShaderMakeVec : ShaderPackVec {
+};
+
 ZENDEFNODE(ShaderMakeVec, {
     {
-        {"tree", "x"},
-        {"tree", "y"},
-        {"tree", "z"},
-        {"tree", "w"},
+        {"float", "x"},
+        {"float", "y"},
+        {"float", "z"},
+        {"float", "w"},
     },
     {
         {"vec4f", "out"},
