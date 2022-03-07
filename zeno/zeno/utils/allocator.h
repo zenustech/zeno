@@ -9,7 +9,7 @@
 namespace zeno {
 inline namespace allocator_h {
 
-template <class T, std::align_val_t Align = 64, bool NoInit = false>
+template <class T, std::size_t Align = 64, bool NoInit = false>
 struct allocator {
     using size_type = std::size_t;
     using value_type = T;
@@ -18,11 +18,11 @@ struct allocator {
     allocator() = default;
 
     T *allocate(size_type n, void *p = 0) {
-        return reinterpret_cast<T *>(::new (Align) std::byte[sizeof(T)]);
+        return reinterpret_cast<T *>(::new (std::align_val_t(Align)) std::byte[sizeof(T)]);
     }
 
     T *deallocate(T *p, size_type n) {
-        ::operator delete(reinterpret_cast<void *>(p), Align);
+        ::operator delete(reinterpret_cast<void *>(p), std::align_val_t(Align));
     }
 
     template <class U, class ...Args>
@@ -31,12 +31,12 @@ struct allocator {
             ::new((void *)p) T(std::forward<Args>(args)...);
     }
 
-    template <class U, std::align_val_t UAlign>
+    template <class U, std::size_t UAlign>
     constexpr bool operator==(allocator<U, UAlign> const &) noexcept {
         return Align == UAlign;
     }
 
-    template <class U, std::align_val_t UAlign>
+    template <class U, std::size_t UAlign>
     constexpr bool operator!=(allocator<U, UAlign> const &) noexcept {
         return Align != UAlign;
     }
