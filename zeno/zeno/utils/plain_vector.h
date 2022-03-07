@@ -3,13 +3,13 @@
 #include <vector>
 #include <type_traits>
 #include <zeno/zeno/utils/vec.h>
-#include <zeno/zeno/utils/pod.h>
+#include <zeno/zeno/utils/pod_allocator.h>
 #include <zeno/zeno/utils/aligned_allocator.h>
 
 namespace zeno {
 
 template <class T>
-using plain_vector = std::vector<T, noinit_allocator<aligned_allocator<T>>>;
+using plain_vector = std::vector<T, pod_allocator<aligned_allocator<T>>>;
 
 template <class T>
 using plain_vector_ref = plain_vector<T> &;
