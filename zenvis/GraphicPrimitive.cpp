@@ -1,3 +1,4 @@
+#include "glad/glad.h"
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
@@ -29,7 +30,7 @@ struct GraphicPrimitive : IGraphic {
   size_t tris_count;
 
   std::vector<std::unique_ptr<Texture>> textures;
-
+  
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
     , std::string const &path
@@ -132,7 +133,8 @@ struct GraphicPrimitive : IGraphic {
   }
 
   virtual void draw() override {
-    for (int id = 0; id < textures.size(); id++) {
+    int id = 0;
+    for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
     }
 
@@ -182,6 +184,10 @@ struct GraphicPrimitive : IGraphic {
         tris_prog->use();
         set_program_uniforms(tris_prog);
         tris_prog->set_uniform("mRenderWireframe", false);
+        tris_prog->set_uniformi("skybox",id);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
+
         tris_ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
               GL_UNSIGNED_INT, /*first=*/0));
@@ -467,7 +473,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
-
+uniform samplerCube skybox;
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
 
@@ -572,11 +578,10 @@ vec3 CalculateFresnel(
     in vec3 toView,
     in vec3 fresnel0)
 {
-	float d = dot_c(surfNorm, toView);
+	float d = max(dot(surfNorm, toView), 0.0); 
     float p = ((-5.55473 * d) - 6.98316) * d;
-
+        
     return fresnel0 + ((1.0 - fresnel0) * pow(1.0 - d, 5.0));
-    //return fresnel0 + ((1.0 - fresnel0) * pow(2.0, p));
 }
 
 // Specular Term - put together
@@ -770,8 +775,9 @@ vec3 cubem(in vec3 p, in float ofst)
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
-    if(reflVec.y>-0.5) return vec3(0,0,0);
-    else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
+    //if(reflVec.y>-0.5) return vec3(0,0,0);
+    //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
+    return textureCube(skybox, reflVec).rgb;
 }
 
 /**
@@ -789,7 +795,8 @@ float geometry(float cosTheta, float k){
 	return (cosTheta)/(cosTheta*(1.0-k)+k);
 }
 float smithsIBL(float NdotV, float NdotL, float roughness){
-    float k = (roughness * roughness) / 2.0;; 
+    float k = (roughness * roughness);
+    k = k*k; 
 	return geometry(NdotV, k) * geometry(NdotL, k);
 }
 vec3 CalculateSpecularIBL(
@@ -845,7 +852,7 @@ vec3 CalculateLightingIBL(
     vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
     //vec3 F = fresnelSchlickRoughness(dot_c(surfNorm, toView), 0.04);
     vec3 ks       = vec3(0);
-    vec3 diffuse  = CalculateDiffuse(albedo) * 0.2 * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
+    vec3 diffuse  = CalculateDiffuse(albedo) * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
     vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
     
