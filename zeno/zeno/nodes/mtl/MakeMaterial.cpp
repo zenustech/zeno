@@ -5,13 +5,15 @@
 
 namespace zeno
 {
-  struct MakeMaterial
+  /*struct MakeMaterial
       : zeno::INode
   {
     virtual void apply() override
     {
       auto vert = get_input<zeno::StringObject>("vert")->get();
       auto frag = get_input<zeno::StringObject>("frag")->get();
+      auto common = get_input<zeno::StringObject>("common")->get();
+      auto extensions = get_input<zeno::StringObject>("extensions")->get();
       auto mtl = std::make_shared<zeno::MaterialObject>();
 
       if (vert.empty()) vert = R"(
@@ -66,6 +68,8 @@ void main()
 
       mtl->vert = vert;
       mtl->frag = frag;
+      mtl->common = common;
+      mtl->extensions = extensions;
       set_output("mtl", std::move(mtl));
     }
   };
@@ -76,15 +80,29 @@ void main()
           {
               {"string", "vert", ""},
               {"string", "frag", ""},
+              {"string", "common", ""},
+              {"string", "extensions", ""},
           },
           {
               {"material", "mtl"},
           },
           {},
           {
-              "material",
+              "shader",
           },
-      });
+      });*/
+
+struct ExtractMaterialShader : zeno::INode
+{
+    virtual void apply() override {
+      auto mtl = get_input<zeno::MaterialObject>("mtl");
+      auto s = [] (std::string const &s) { auto p = std::make_shared<StringObject>(); p->set(s); return p; };
+      set_output("vert", s(mtl->vert));
+      set_output("frag", s(mtl->frag));
+      set_output("common", s(mtl->common));
+      set_output("extensions", s(mtl->extensions));
+    }
+};
 
   struct SetMaterial
       : zeno::INode
@@ -110,7 +128,7 @@ void main()
           },
           {},
           {
-              "material",
+              "shader",
           },
       });
 

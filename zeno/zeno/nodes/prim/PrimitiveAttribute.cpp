@@ -56,24 +56,29 @@ struct PrimitiveGetAttrValue : zeno::INode {
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
 
         auto value = std::make_shared<zeno::NumericObject>();
-        auto &it = prim->attr(name);
+        if(name!="pos"){
+            auto &it = prim->attr(name);
 
-        if (type == "float") {
-            value->set<float>(0);
-                std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
-                if (index < attr_arr.size()) {
-                    value->set<float>(attr_arr[index]);
-                }
-        }
-        else if (type == "float3") {
-            value->set<vec3f>(vec3f(0, 0, 0));
-                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
-                if (index < attr_arr.size()) {
-                    value->set<vec3f>(attr_arr[index]);
-                }
-        }
-        else {
-            throw Exception("Bad attribute type: " + type);
+            if (type == "float") {
+                value->set<float>(0);
+                    std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
+                    if (index < attr_arr.size()) {
+                        value->set<float>(attr_arr[index]);
+                    }
+            }
+            else if (type == "float3") {
+                value->set<vec3f>(vec3f(0, 0, 0));
+                    std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
+                    if (index < attr_arr.size()) {
+                        value->set<vec3f>(attr_arr[index]);
+                    }
+            }
+            else {
+                throw Exception("Bad attribute type: " + type);
+            }
+        } else {
+            value->set<vec3f>(vec3f(0,0,0));
+            value->set<vec3f>(prim->verts[index]);
         }
         set_output("value", std::move(value));
     }

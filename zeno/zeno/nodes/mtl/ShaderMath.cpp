@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -14,7 +14,13 @@ static const char /* see https://docs.gl/sl4/trunc */
     ternops[] = "mix clamp smoothstep add3";
 
 
-struct TreeTernaryMath : TreeNode {
+static auto &toHlsl() {
+    static std::map<std::string, std::string> tab;
+    return tab;
+}
+
+
+struct ShaderTernaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -45,19 +51,19 @@ struct TreeTernaryMath : TreeNode {
 
     virtual void emitCode(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
-        auto in1 = em->determineExpr(get_input("in1").get());
-        auto in2 = em->determineExpr(get_input("in2").get());
-        auto in3 = em->determineExpr(get_input("in3").get());
+        auto in1 = em->determineExpr(get_input("in1").get(), this);
+        auto in2 = em->determineExpr(get_input("in2").get(), this);
+        auto in3 = em->determineExpr(get_input("in3").get(), this);
 
         if (op == "add3") {
             return em->emitCode(in1 + " + " + in2 + " + " + in3);
         } else {
-            return em->emitCode(op + "(" + in1 + ", " + in2 + ", " + in3 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ", " + in2 + ", " + in3 + ")");
         }
     }
 };
 
-ZENDEFNODE(TreeTernaryMath, {
+ZENDEFNODE(ShaderTernaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -68,11 +74,11 @@ ZENDEFNODE(TreeTernaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 
-struct TreeBinaryMath : TreeNode {
+struct ShaderBinaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -131,12 +137,12 @@ struct TreeBinaryMath : TreeNode {
         } else if (op == "div") {
             return em->emitCode(in1 + " / " + in2);
         } else {
-            return em->emitCode(op + "(" + in1 + ", " + in2 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ", " + in2 + ")");
         }
     }
 };
 
-ZENDEFNODE(TreeBinaryMath, {
+ZENDEFNODE(ShaderBinaryMath, {
     {
         {"float", "in1", "0"},
         {"float", "in2", "0"},
@@ -146,16 +152,19 @@ ZENDEFNODE(TreeBinaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 
-struct TreeUnaryMath : TreeNode {
+struct ShaderUnaryMath : ShaderNode {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
         auto t1 = em->determineType(in1.get());
-
+        if(op=="length")
+        {
+            t1 = 1;
+        }
         return t1;
     }
 
@@ -168,12 +177,12 @@ struct TreeUnaryMath : TreeNode {
         } else if (op == "neg") {
             return em->emitCode("-" + in1);
         } else {
-            return em->emitCode(op + "(" + in1 + ")");
+            return em->emitCode(em->funcName(op) + "(" + in1 + ")");
         }
     }
 };
 
-ZENDEFNODE(TreeUnaryMath, {
+ZENDEFNODE(ShaderUnaryMath, {
     {
         {"float", "in1", "0"},
         {(std::string)"enum " + unops, "op", "sqrt"},
@@ -182,7 +191,7 @@ ZENDEFNODE(TreeUnaryMath, {
         {"float", "out"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 

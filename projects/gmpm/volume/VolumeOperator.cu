@@ -14,130 +14,146 @@
 
 namespace zeno {
 
-/// mark activity
-struct MarkZSLevelSet : INode {
-  void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing MarkZSLevelSet\n");
-
-    using namespace zs;
-
-    // this could possibly be the same staggered velocity field too
-    auto zsfield = get_input<ZenoLevelSet>("ZSField");
-    auto &field = zsfield->getBasicLevelSet()._ls;
-
-    auto threshold = std::abs(get_input2<float>("threshold"));
-
-    match(
-        [this, threshold](auto &lsPtr)
-            -> std::enable_if_t<
-                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
-          // using SplsT = typename RM_CVREF_T(lsPtr)::element_type;
-          auto cudaPol = cuda_exec().device(0);
-          mark_level_set(cudaPol, *lsPtr, threshold);
-          // refit_level_set_domain(cudaPol, *lsPtr, threshold);
-        },
-        [](...) { throw std::runtime_error("field is not spls!"); })(field);
-
-    fmt::print(fg(fmt::color::cyan), "done executing MarkZSLevelSet\n");
-    set_output("ZSField", std::move(zsfield));
-  }
-};
-
-ZENDEFNODE(MarkZSLevelSet, {
-                               {"ZSField", {"float", "threshold", "1e-6"}},
-                               {"ZSField"},
-                               {},
-                               {"Volume"},
-                           });
-
-/// match topology (partition union, ignore transformation difference)
-struct ZSLevelSetTopologyUnion : INode {
-  template <typename SplsT, typename TableT>
-  void topologyUnion(SplsT &ls, const TableT &refTable) {
+/// binary operation
+struct ZSLevelSetBinaryOperator : INode {
+  template <typename SplsT, typename Op,
+            typename T = typename SplsT::value_type>
+  void binaryOp(SplsT &lsa, const SplsT &lsb, T a, T b, Op op) {
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
 
-    const auto numInBlocks = refTable.size();
-    const auto numPrevBlocks = ls.numBlocks();
-    cudaPol(range(numInBlocks),
-            [ls = proxy<execspace_e::cuda>(ls),
-             refTable = proxy<execspace_e::cuda>(
-                 refTable)] __device__(typename RM_CVREF_T(ls)::size_type
-                                           bi) mutable {
-              using ls_t = RM_CVREF_T(ls);
-              using table_t = RM_CVREF_T(refTable);
-              auto blockid = refTable._activeKeys[bi];
-              ls._table.insert(blockid);
-            });
-    const auto numCurBlocks = ls.numBlocks();
-    cudaPol(Collapse{numCurBlocks - numPrevBlocks, ls.block_size},
-            [numPrevBlocks, ls = proxy<execspace_e::cuda>(ls)] __device__(
+    const auto numInBlocks = lsb.numBlocks();
+    const auto numPrevBlocks = lsa.numBlocks();
+    cudaPol(range(numInBlocks), [taba = proxy<execspace_e::cuda>(lsa._table),
+                                 tabb = proxy<execspace_e::cuda>(
+                                     lsb._table)] __device__(auto bi) mutable {
+      auto blockid = tabb._activeKeys[bi];
+      taba.insert(blockid);
+    });
+    const auto numCurBlocks = lsa.numBlocks();
+    cudaPol(Collapse{numCurBlocks - numPrevBlocks, lsa.block_size},
+            [numPrevBlocks, lsa = proxy<execspace_e::cuda>(lsa)] __device__(
                 auto bi, auto ci) mutable {
-              using ls_t = RM_CVREF_T(ls);
-              auto block = ls._grid.block(bi + numPrevBlocks);
+              using ls_t = RM_CVREF_T(lsa);
+              auto block = lsa._grid.block(bi + numPrevBlocks);
               for (typename ls_t::channel_counter_type chn = 0;
-                   chn != ls.numChannels(); ++chn)
+                   chn != lsa.numChannels(); ++chn)
                 block(chn, ci) = 0; // ls._backgroundValue;
             });
     fmt::print("levelset of [{}] blocks inserted [{}] blocks, eventually [{}] "
                "blocks\n",
                numPrevBlocks, numInBlocks, numCurBlocks);
+    cudaPol(Collapse{numCurBlocks, lsa.block_size},
+            [lsa = proxy<execspace_e::cuda>(lsa),
+             lsb = proxy<execspace_e::cuda>(lsb), a, b,
+             op] __device__(auto bi, auto ci) mutable {
+              using ls_t = RM_CVREF_T(lsa);
+              auto coord = lsa._table._activeKeys[bi] +
+                           ls_t::grid_view_t::cellid_to_coord(ci);
+              auto [bnoB, cnoB] = lsb.decompose_coord(coord);
+              auto block = lsa._grid.block(bi);
+              for (typename ls_t::channel_counter_type propNo = 0;
+                   propNo != lsa.numProperties(); ++propNo) {
+                const auto &prop = lsa.getPropertyNames()[propNo];
+                if (prop == "mark" || prop == "sdf")
+                  continue; // skip property ["mark", "sdf"]
+                const auto propIdB = lsb.propertyIndex(prop);
+                if (propIdB == lsb.numProperties())
+                  continue; // skip channels missing in lsb
+                const auto propOffsetA = lsa.getPropertyOffsets()[propNo];
+                const auto propOffsetB = lsb.propertyOffset(prop);
+                const auto propSize = lsa.getPropertySizes()[propNo];
+                for (typename ls_t::channel_counter_type chn = 0;
+                     chn != propSize; ++chn) {
+                  const auto &A = a * block(propOffsetA + chn, ci);
+                  const auto &B =
+                      b * lsb.value_or(propOffsetB + chn, bnoB, cnoB, 0);
+                  block(propOffsetA + chn, ci) = op(a, b);
+                }
+              }
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != lsa.numChannels(); ++chn)
+                block(chn, ci) = 0; // ls._backgroundValue;
+            });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
-               "begin executing ZSLevelSetTopologyUnion\n");
+               "begin executing ZSLevelSetBinaryOperator\n");
 
     using namespace zs;
 
     // this could possibly be the same staggered velocity field too
-    auto zsfield = get_input<ZenoLevelSet>("ZSField");
-    auto &field = zsfield->getBasicLevelSet()._ls;
-    auto refZsField = get_input<ZenoLevelSet>("RefZSField");
-    auto &refField = refZsField->getBasicLevelSet()._ls;
+    auto zsfielda = get_input<ZenoLevelSet>("ZSFieldA");
+    auto &fielda = zsfielda->getBasicLevelSet()._ls;
+    auto zsfieldb = get_input<ZenoLevelSet>("ZSFieldB");
+    auto &fieldb = zsfieldb->getBasicLevelSet()._ls;
+
+    float a = get_input2<float>("a");
+    float b = get_input2<float>("b");
+    auto opStr = get_param<std::string>("transfer");
+
+    using Op = variant<static_plus, static_minus, static_multiplies,
+                       static_divides<true>>;
+    Op op{};
+    if (opStr == "aX_plus_bY")
+      op = static_plus{};
+    else if (opStr == "aX_minus_bY")
+      op = static_minus{};
+    else if (opStr == "aX_mul_bY")
+      op = static_multiplies{};
+    else if (opStr == "aX_div_bY")
+      op = static_divides<true>{};
 
     match(
-        [this](auto &lsPtr, const auto &refLsPtr)
+        [this, a, b](auto &lsPtr, const auto &lsPtrB, auto op)
             -> std::enable_if_t<
                 is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
-                is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type>> {
-          auto &table = lsPtr->_table;
-          const auto &refTable = refLsPtr->_table;
+                is_same_v<typename RM_CVREF_T(lsPtrB)::element_type,
+                          typename RM_CVREF_T(lsPtr)::element_type>> {
           auto numBlocks = lsPtr->numBlocks();
-          auto numRefBlocks = refLsPtr->numBlocks();
+          auto numBlocksB = lsPtrB->numBlocks();
           auto cudaPol = cuda_exec().device(0);
           /// reserve enough memory
-          lsPtr->resize(cudaPol, numBlocks + numRefBlocks);
+          lsPtr->resize(cudaPol, numBlocks + numBlocksB);
           /// assume sharing the same transformation
-          lsPtr->_backgroundValue = refLsPtr->_backgroundValue;
-          lsPtr->_backgroundVecValue = refLsPtr->_backgroundVecValue;
+          lsPtr->_backgroundValue = lsPtrB->_backgroundValue;
+          lsPtr->_backgroundVecValue = lsPtrB->_backgroundVecValue;
 
           using TV = RM_CVREF_T(lsPtr->_min);
-          lsPtr->_min = TV::init([&a = lsPtr->_min, &b = refLsPtr->_min](
-                                     int i) { return std::min(a(i), b(i)); });
-          lsPtr->_max = TV::init([&a = lsPtr->_max, &b = refLsPtr->_max](
-                                     int i) { return std::max(a(i), b(i)); });
-          lsPtr->_i2wT = refLsPtr->_i2wT;
-          lsPtr->_i2wRinv = refLsPtr->_i2wRinv;
-          lsPtr->_i2wSinv = refLsPtr->_i2wSinv;
-          lsPtr->_i2wRhat = refLsPtr->_i2wRhat;
-          lsPtr->_i2wShat = refLsPtr->_i2wShat;
-          lsPtr->_grid.dx = refLsPtr->_grid.dx; // don't forget this.
-          topologyUnion(*lsPtr, refTable);
+          lsPtr->_min = TV::init([&a = lsPtr->_min, &b = lsPtrB->_min](int i) {
+            return std::min(a(i), b(i));
+          });
+          lsPtr->_max = TV::init([&a = lsPtr->_max, &b = lsPtrB->_max](int i) {
+            return std::max(a(i), b(i));
+          });
+          lsPtr->_i2wT = lsPtrB->_i2wT;
+          lsPtr->_i2wRinv = lsPtrB->_i2wRinv;
+          lsPtr->_i2wSinv = lsPtrB->_i2wSinv;
+          lsPtr->_i2wRhat = lsPtrB->_i2wRhat;
+          lsPtr->_i2wShat = lsPtrB->_i2wShat;
+          lsPtr->_grid.dx = lsPtrB->_grid.dx; // don't forget this.
+
+          binaryOp(*lsPtr, *lsPtrB, a, b, op);
         },
-        [](...) { throw std::runtime_error("not both fields are spls!"); })(
-        field, refField);
+        [](...) {
+          throw std::runtime_error(
+              "both fields are of different spls categories!");
+        })(fielda, fieldb, op);
     fmt::print(fg(fmt::color::cyan),
-               "done executing ZSLevelSetTopologyUnion\n");
-    set_output("ZSField", std::move(zsfield));
+               "done executing ZSLevelSetBinaryOperator\n");
+    set_output("ZSFieldA", std::move(zsfielda));
   }
 };
 
-ZENDEFNODE(ZSLevelSetTopologyUnion, {
-                                        {"ZSField", "RefZSField"},
-                                        {"ZSField"},
-                                        {},
-                                        {"Volume"},
-                                    });
+ZENDEFNODE(
+    ZSLevelSetBinaryOperator,
+    {
+        {"ZSFieldA", "ZSFieldB", {"float", "a", "1"}, {"float", "b", "1"}},
+        {"ZSFieldA"},
+        {{"enum aX_plus_bY aX_minus_bY aX_mul_bY aX_div_bY", "operator",
+          "aX_plus_bY"}},
+        {"Volume"},
+    });
 /// resample
 struct ResampleZSLevelSet : INode {
   template <typename SplsT, typename RefSplsT>
@@ -257,56 +273,9 @@ ZENDEFNODE(ResampleZSLevelSet,
                {},
                {"Volume"},
            });
-/// binary operation
-/// extend domain (by vel field)
-struct ExtendZSLevelSet : INode {
-  void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing ExtendZSLevelSet\n");
-
-    using namespace zs;
-
-    // this could possibly be the same staggered velocity field too
-    auto zsfield = get_input<ZenoLevelSet>("ZSField");
-    auto &field = zsfield->getBasicLevelSet()._ls;
-    auto velZsField = get_input<ZenoLevelSet>("ZSVelField");
-    const auto &velField = velZsField->getBasicLevelSet()._ls;
-    auto dt = get_input2<float>("dt");
-
-    match(
-        [this, dt](auto &lsPtr, const auto &velLsPtr)
-            -> std::enable_if_t<
-                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
-                is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
-          auto cudaPol = cuda_exec().device(0);
-          auto vm = get_level_set_max_speed(cudaPol, *velLsPtr);
-          int nvoxels = (int)std::ceil(vm * dt / lsPtr->_grid.dx);
-          auto nlayers = std::max(
-              (nvoxels + lsPtr->side_length - 1) / lsPtr->side_length, 2);
-          fmt::print("before expanding: {} blocks, max vel: {}, covering {} "
-                     "voxels, {} blocks\n",
-                     lsPtr->numBlocks(), vm, nvoxels, nlayers);
-          // mark_level_set(cudaPol, *lsPtr);
-          refit_level_set_domain(cudaPol, *lsPtr, 1e-6);
-          extend_level_set_domain(cudaPol, *lsPtr, nlayers);
-        },
-        [](...) { throw std::runtime_error("not both fields are spls!"); })(
-        field, velField);
-    fmt::print(fg(fmt::color::cyan), "done executing ExtendZSLevelSet\n");
-    set_output("ZSField", std::move(zsfield));
-  }
-};
-
-ZENDEFNODE(ExtendZSLevelSet,
-           {
-               {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
-               {"ZSField"},
-               {},
-               {"Volume"},
-           });
 
 /// advection
-// process: shrink, extend, advect
-// :
+// process: refit, extend, advect
 struct AdvectZSLevelSet : INode {
   template <typename SplsT, typename VelSplsT>
   int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
@@ -391,6 +360,113 @@ ZENDEFNODE(AdvectZSLevelSet,
            {
                {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
                {"ZSField", "nvoxels"},
+               {},
+               {"Volume"},
+           });
+
+struct ClampZSLevelSet : INode {
+  template <typename SplsT, typename RefSplsT, typename VelSplsT>
+  void clamp(SplsT &ls, const RefSplsT &refLs, const VelSplsT &velLs,
+             const float dt) {
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    /// ls & refLs better be of same category
+    cudaPol(
+        Collapse{ls.numBlocks(), ls.block_size},
+        [ls = proxy<execspace_e::cuda>(ls),
+         refLs = proxy<execspace_e::cuda>(refLs),
+         velLs = proxy<execspace_e::cuda>(velLs),
+         dt] __device__(auto bi, auto ci) mutable {
+          using ls_t = RM_CVREF_T(ls);
+          using ref_ls_t = RM_CVREF_T(refLs);
+          auto coord = ls._table._activeKeys[bi] +
+                       ls_t::grid_view_t::cellid_to_coord(ci);
+          if constexpr (ls_t::category == grid_e::staggered) {
+            for (int d = 0; d != 3; ++d) {
+              auto x = ls.indexToWorld(coord, d);
+              auto vi = velLs.getMaterialVelocity(x);
+              auto xn = x - vi * dt;
+              if constexpr (ref_ls_t::category == grid_e::staggered) {
+                auto pad =
+                    refLs.arena(xn, d, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum("vel", d);
+                auto ma = pad.maximum("vel", d);
+                auto v = ls._grid("vel", d, bi, ci);
+                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              } else {
+                auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum("vel", d);
+                auto ma = pad.maximum("vel", d);
+                auto v = ls._grid("vel", d, bi, ci);
+                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            }
+          } else {
+            auto x = ls.indexToWorld(coord);
+            auto vi = velLs.getMaterialVelocity(x);
+            auto xn = x - vi * dt;
+            if constexpr (ref_ls_t::category == grid_e::staggered) {
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != ls.numChannels(); ++chn) {
+                int f = chn % 3;
+                auto pad =
+                    refLs.arena(xn, f, kernel_linear_c, wrapv<0>{}, true_c);
+                auto mi = pad.minimum(chn);
+                auto ma = pad.maximum(chn);
+                auto v = ls._grid(chn, bi, ci);
+                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            } else {
+              auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+              for (typename ls_t::channel_counter_type chn = 0;
+                   chn != ls.numChannels(); ++chn) {
+                auto mi = pad.minimum(chn);
+                auto ma = pad.maximum(chn);
+                auto v = ls._grid(chn, bi, ci);
+                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+              }
+            }
+          }
+        });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ClampZSLevelSet\n");
+
+    using namespace zs;
+
+    // this could possibly be the same staggered velocity field too
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+
+    auto zsreffield = get_input<ZenoLevelSet>("RefZSField");
+    auto &reffield = zsreffield->getBasicLevelSet()._ls;
+
+    auto velZsField = get_input<ZenoLevelSet>("ZSVelField");
+    const auto &velField = velZsField->getBasicLevelSet()._ls;
+    auto dt = get_input2<float>("dt");
+
+    match(
+        [this, dt](auto &lsPtr, auto &refLsPtr, const auto &velLsPtr)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type> &&
+                is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
+          clamp(*lsPtr, *refLsPtr, *velLsPtr, dt);
+        },
+        [](...) { throw std::runtime_error("not all fields are spls!"); })(
+        field, reffield, velField);
+
+    fmt::print(fg(fmt::color::cyan), "done executing ClampZSLevelSet\n");
+    set_output("ZSField", std::move(zsfield));
+  }
+};
+
+ZENDEFNODE(ClampZSLevelSet,
+           {
+               {"ZSField", "RefZSField", "ZSVelField", {"float", "dt", "0.1"}},
+               {"ZSField"},
                {},
                {"Volume"},
            });

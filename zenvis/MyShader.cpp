@@ -33,7 +33,13 @@ static std::map<std::string, std::unique_ptr<Program>> progs;
 Program *compile_program(std::string const &vert, std::string const &frag) {
     auto key = vert + frag;
     if (progs.find(key) == progs.end()) {
-        progs[key] = std::make_unique<MyProgram>(vert, frag);
+        std::unique_ptr<MyProgram> prog;
+        try {
+            prog = std::make_unique<MyProgram>(vert, frag);
+            progs.emplace(key, std::move(prog));
+        } catch (ShaderCompileException const &sce) {
+            return nullptr;
+        }
     }
     return progs.at(key).get();
 }

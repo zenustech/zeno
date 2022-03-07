@@ -1,13 +1,13 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TreeNode.h>
-#include <zeno/types/TreeObject.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
 
 
 namespace {
-struct ImplTreeExtractVec : TreeNode {
+struct ImplShaderExtractVec : ShaderNode {
     int comp{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -23,21 +23,21 @@ struct ImplTreeExtractVec : TreeNode {
 };
 }
 
-struct TreeExtractVec : INode {
+struct ShaderExtractVec : INode {
     virtual void apply() override {
         for (int i = 0; i < 4; i++) {
-            auto node = std::make_shared<ImplTreeExtractVec>();
+            auto node = std::make_shared<ImplShaderExtractVec>();
             node->inputs["vec"] = get_input("vec");
             node->comp = i;
-            auto tree = std::make_shared<TreeObject>(node.get());
-            tree->extra_data = std::move(node);
-            set_output(std::string{} + "xyzw"[i], std::move(tree));
+            auto shader = std::make_shared<ShaderObject>(node.get());
+            shader->extra_data = std::move(node);
+            set_output(std::string{} + "xyzw"[i], std::move(shader));
         }
     }
 };
 
 
-ZENDEFNODE(TreeExtractVec, {
+ZENDEFNODE(ShaderExtractVec, {
     {
         {"vec3f", "vec"},
     },
@@ -48,11 +48,11 @@ ZENDEFNODE(TreeExtractVec, {
         {"float", "w"},
     },
     {},
-    {"tree"},
+    {"shader"},
 });
 
 
-struct TreeReduceVec : TreeNode {
+struct ShaderReduceVec : ShaderNode {
     int tyin{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -78,7 +78,7 @@ struct TreeReduceVec : TreeNode {
 };
 
 
-ZENDEFNODE(TreeReduceVec, {
+ZENDEFNODE(ShaderReduceVec, {
     {
         {"vec3f", "in"},
     },
@@ -88,7 +88,7 @@ ZENDEFNODE(TreeReduceVec, {
     {
         {"enum average sum", "op", "average"},
     },
-    {"tree"},
+    {"shader"},
 });
 
 

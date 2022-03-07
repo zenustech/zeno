@@ -18,8 +18,10 @@ struct StringToMesh : zeno::INode {
             auto path = fmt::format("assets/ascii/{:03}.obj", i);
             auto prim = std::make_shared<zeno::PrimitiveObject>();
             auto &pos = prim->verts;
+            auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+            auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
             auto &tris = prim->tris;
-            read_obj_file(pos, tris, path.c_str());
+            read_obj_file(pos, uv, norm, tris, path.c_str());
             prim->resize(pos.size());
             alphaset->arr.push_back(prim);
         }

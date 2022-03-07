@@ -7,6 +7,25 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
+struct MakePointPrimitive :INode{
+    virtual void apply() override {
+        auto p = get_input<NumericObject>("vec3")->get<vec3f>();
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(1);
+        auto &pos = prim->add_attr<vec3f>("pos");
+        pos[0] = p;
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(MakePointPrimitive,
+    { /* inputs: */ {
+    "vec3",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
 
 struct Make1DLinePrimitive : INode {
     virtual void apply() override {
