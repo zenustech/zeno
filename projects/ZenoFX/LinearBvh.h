@@ -27,12 +27,13 @@ struct LBvh : IObjectClone<LBvh> {
   element_e eleCategory{element_e::point}; // element category
 
   LBvh() noexcept = default;
-  ZENO_API LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
+  ZENO_API LBvh(const std::shared_ptr<PrimitiveObject> &prim,
+                float thickness = 0.f) {
     build(prim, thickness);
   }
   template <element_e et>
   ZENO_API LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
-       element_t<et> t) {
+                element_t<et> t) {
     build(prim, thickness, t);
   }
 
@@ -41,10 +42,11 @@ struct LBvh : IObjectClone<LBvh> {
   BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
 
   template <element_e et>
-  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
-             element_t<et>);
-  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
-  void refit();
+  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim,
+                      float thickness, element_t<et>);
+  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim,
+                      float thickness);
+  ZENO_API void refit();
 
   static bool intersect(const Box &box, const TV &p) noexcept {
     constexpr int dim = 3;
@@ -70,13 +72,15 @@ struct LBvh : IObjectClone<LBvh> {
 
   /// closest bounding box
   template <element_e et>
-  void find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
-  void find_nearest(TV const &pos, Ti &id, float &dist) const;
+  ZENO_API void find_nearest(TV const &pos, Ti &id, float &dist,
+                             element_t<et>) const;
+  ZENO_API void find_nearest(TV const &pos, Ti &id, float &dist) const;
 
-  std::shared_ptr<PrimitiveObject> retrievePrimitive(Ti eid) const;
-  vec3f retrievePrimitiveCenter(Ti eid) const;
+  ZENO_API std::shared_ptr<PrimitiveObject> retrievePrimitive(Ti eid) const;
+  ZENO_API vec3f retrievePrimitiveCenter(Ti eid) const;
 
-  template <class F> void iter_neighbors(TV const &pos, F const &f) const {
+  template <class F>
+  ZENO_API void iter_neighbors(TV const &pos, F const &f) const {
     if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
       for (Ti i = 0; i != numLeaves; ++i) {
         if (intersect(sortedBvs[i], pos))
