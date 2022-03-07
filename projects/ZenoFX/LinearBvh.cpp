@@ -83,19 +83,6 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
   return getBv;
 }
 
-template void
-LBvh::build<LBvh::element_e::point>(const std::shared_ptr<PrimitiveObject> &,
-                                    float, element_t<LBvh::element_e::point>);
-template void
-LBvh::build<LBvh::element_e::line>(const std::shared_ptr<PrimitiveObject> &,
-                                   float, element_t<LBvh::element_e::line>);
-template void
-LBvh::build<LBvh::element_e::tri>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, element_t<LBvh::element_e::tri>);
-template void
-LBvh::build<LBvh::element_e::tet>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, element_t<LBvh::element_e::tet>);
-
 template <LBvh::element_e et>
 ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
                           float thickness, element_t<et>) {
@@ -407,6 +394,19 @@ ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
   }
 }
 
+template void
+LBvh::build<LBvh::element_e::point>(const std::shared_ptr<PrimitiveObject> &,
+                                    float, element_t<LBvh::element_e::point>);
+template void
+LBvh::build<LBvh::element_e::line>(const std::shared_ptr<PrimitiveObject> &,
+                                   float, element_t<LBvh::element_e::line>);
+template void
+LBvh::build<LBvh::element_e::tri>(const std::shared_ptr<PrimitiveObject> &,
+                                  float, element_t<LBvh::element_e::tri>);
+template void
+LBvh::build<LBvh::element_e::tet>(const std::shared_ptr<PrimitiveObject> &,
+                                  float, element_t<LBvh::element_e::tet>);
+
 ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
                           float thickness) {
   // determine element category
@@ -422,7 +422,7 @@ ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
     build(prim, thickness, element_c<element_e::point>);
 }
 
-void LBvh::refit() {
+ZENO_API void LBvh::refit() {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -485,8 +485,8 @@ void LBvh::refit() {
 
 /// nearest primitive
 template <LBvh::element_e et>
-void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
-                        element_t<et>) const {
+ZENO_API void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
+                                 element_t<et>) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -542,7 +542,20 @@ void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
   }
 }
 
-void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
+template void LBvh::find_nearest<LBvh::element_e::point>(
+    const LBvh::TV &, LBvh::Ti &, float &,
+    typename LBvh::element_t<LBvh::element_e::point>) const;
+template void LBvh::find_nearest<LBvh::element_e::line>(
+    const LBvh::TV &, LBvh::Ti &, float &,
+    typename LBvh::element_t<LBvh::element_e::line>) const;
+template void LBvh::find_nearest<LBvh::element_e::tri>(
+    const LBvh::TV &, LBvh::Ti &, float &,
+    typename LBvh::element_t<LBvh::element_e::tri>) const;
+template void LBvh::find_nearest<LBvh::element_e::tet>(
+    const LBvh::TV &, LBvh::Ti &, float &,
+    typename LBvh::element_t<LBvh::element_e::tet>) const;
+
+ZENO_API void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
   if (eleCategory == element_e::tet)
     find_nearest(pos, id, dist, element_c<element_e::tet>);
   else if (eleCategory == element_e::tri)
@@ -553,7 +566,8 @@ void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
     find_nearest(pos, id, dist, element_c<element_e::point>);
 }
 
-std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {
+ZENO_API std::shared_ptr<PrimitiveObject>
+LBvh::retrievePrimitive(Ti eid) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -587,7 +601,7 @@ std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {
   return ret;
 }
 
-vec3f LBvh::retrievePrimitiveCenter(Ti eid) const {
+ZENO_API vec3f LBvh::retrievePrimitiveCenter(Ti eid) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
