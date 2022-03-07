@@ -672,8 +672,8 @@
        null
       ],
       "metallic": [
-       "b8b42d38-ShaderExtractVec",
-       "y",
+       "afcf9379-ShaderBinaryMath",
+       "out",
        0.0
       ],
       "roughness": [
@@ -851,8 +851,8 @@
     }
    },
    "view_rect": {
-    "x": 5260.974445731388,
-    "y": -39.035235641398174,
+    "x": 4570.813835024044,
+    "y": 70.1554971497427,
     "width": 1199.9999999999993,
     "height": 609.9999999999991
    }
@@ -7801,51 +7801,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "MakeMaterial": {
-   "inputs": [
-    [
-     "string",
-     "vert",
-     ""
-    ],
-    [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
-     ""
-    ],
-    [
-     "string",
-     "extensions",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
    ]
   },
   "MakeMultilineString": {
