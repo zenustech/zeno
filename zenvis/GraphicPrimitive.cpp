@@ -453,11 +453,9 @@ float dot_c(vec3 a, vec3 b){
 // Get orthonormal basis from surface normal
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void pixarONB(vec3 n, out vec3 b1, out vec3 b2){
-	float sign_ = sign(n.z);
-	float a = -1.0 / (sign_ + n.z);
-	float b = n.x * n.y * a;
-	b1 = vec3(1.0 + sign_ * n.x * n.x * a, sign_ * b, -sign_ * n.x);
-	b2 = vec3(b, sign_ + n.y * n.y * a, -n.y);
+	vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    b1   = normalize(cross(up, n));
+    b2 = cross(n, b1);
 }
 
 uniform mat4 mVP;
