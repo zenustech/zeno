@@ -27,11 +27,11 @@ struct LBvh : IObjectClone<LBvh> {
   element_e eleCategory{element_e::point}; // element category
 
   LBvh() noexcept = default;
-  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
+  ZENO_API LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
     build(prim, thickness);
   }
   template <element_e et>
-  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+  ZENO_API LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
        element_t<et> t) {
     build(prim, thickness, t);
   }
@@ -41,9 +41,9 @@ struct LBvh : IObjectClone<LBvh> {
   BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
 
   template <element_e et>
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
              element_t<et>);
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
+  ZENO_API void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
   void refit();
 
   static bool intersect(const Box &box, const TV &p) noexcept {

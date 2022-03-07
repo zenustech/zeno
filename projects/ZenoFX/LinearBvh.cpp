@@ -83,9 +83,22 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
   return getBv;
 }
 
+template void
+LBvh::build<LBvh::element_e::point>(const std::shared_ptr<PrimitiveObject> &,
+                                    float, element_t<LBvh::element_e::point>);
+template void
+LBvh::build<LBvh::element_e::line>(const std::shared_ptr<PrimitiveObject> &,
+                                   float, element_t<LBvh::element_e::line>);
+template void
+LBvh::build<LBvh::element_e::tri>(const std::shared_ptr<PrimitiveObject> &,
+                                  float, element_t<LBvh::element_e::tri>);
+template void
+LBvh::build<LBvh::element_e::tet>(const std::shared_ptr<PrimitiveObject> &,
+                                  float, element_t<LBvh::element_e::tet>);
+
 template <LBvh::element_e et>
-void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
-                 element_t<et>) {
+ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
+                          float thickness, element_t<et>) {
   this->primPtr = prim;
   this->thickness = thickness;
 
@@ -394,8 +407,8 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
   }
 }
 
-void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
-                 float thickness) {
+ZENO_API void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
+                          float thickness) {
   // determine element category
   if (prim->quads.size() > 0)
     build(prim, thickness, element_c<element_e::tet>);
