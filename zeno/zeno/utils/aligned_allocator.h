@@ -12,6 +12,7 @@
 #endif
 
 namespace zeno {
+inline namespace aligned_allocator_h {
 
 
 // https://stackoverflow.com/questions/12942548/making-stdvector-allocate-aligned-memory
@@ -33,22 +34,22 @@ namespace detail {
 }
 
 template <typename T, size_t Align = 64>
-class AlignedAllocator;
+class aligned_allocator;
 
 template <size_t Align>
-class AlignedAllocator<void, Align>
+class aligned_allocator<void, Align>
 {
 public:
     typedef void*             pointer;
     typedef const void*       const_pointer;
     typedef void              value_type;
 
-    template <class U> struct rebind { typedef AlignedAllocator<U, Align> other; };
+    template <class U> struct rebind { typedef aligned_allocator<U, Align> other; };
 };
 
 
 template <typename T, size_t Align>
-class AlignedAllocator
+class aligned_allocator
 {
 public:
     typedef T         value_type;
@@ -62,14 +63,14 @@ public:
     typedef std::true_type propagate_on_container_move_assignment;
 
     template <class U>
-    struct rebind { typedef AlignedAllocator<U, Align> other; };
+    struct rebind { typedef aligned_allocator<U, Align> other; };
 
 public:
-    AlignedAllocator() noexcept
+    aligned_allocator() noexcept
     {}
 
     template <class U>
-    AlignedAllocator(const AlignedAllocator<U, Align>&) noexcept
+    aligned_allocator(const aligned_allocator<U, Align>&) noexcept
     {}
 
     size_type
@@ -85,7 +86,7 @@ public:
     { return std::addressof(x); }
 
     pointer
-    allocate(size_type n, typename AlignedAllocator<void, Align>::const_pointer = 0)
+    allocate(size_type n, typename aligned_allocator<void, Align>::const_pointer = 0)
     {
         const size_type alignment = static_cast<size_type>( Align );
         void* ptr = detail::allocate_aligned_memory(alignment , n * sizeof(T));
@@ -112,7 +113,7 @@ public:
 
 
 template <typename T, size_t Align>
-class AlignedAllocator<const T, Align>
+class aligned_allocator<const T, Align>
 {
 public:
     typedef T         value_type;
@@ -126,14 +127,14 @@ public:
     typedef std::true_type propagate_on_container_move_assignment;
 
     template <class U>
-    struct rebind { typedef AlignedAllocator<U, Align> other; };
+    struct rebind { typedef aligned_allocator<U, Align> other; };
 
 public:
-    AlignedAllocator() noexcept
+    aligned_allocator() noexcept
     {}
 
     template <class U>
-    AlignedAllocator(const AlignedAllocator<U, Align>&) noexcept
+    aligned_allocator(const aligned_allocator<U, Align>&) noexcept
     {}
 
     size_type
@@ -145,7 +146,7 @@ public:
     { return std::addressof(x); }
 
     pointer
-    allocate(size_type n, typename AlignedAllocator<void, Align>::const_pointer = 0)
+    allocate(size_type n, typename aligned_allocator<void, Align>::const_pointer = 0)
     {
         const size_type alignment = static_cast<size_type>( Align );
         void* ptr = detail::allocate_aligned_memory(alignment , n * sizeof(T));
@@ -173,13 +174,14 @@ public:
 template <typename T, size_t TAlign, typename U, size_t UAlign>
 inline
 bool
-operator== (const AlignedAllocator<T,TAlign>&, const AlignedAllocator<U, UAlign>&) noexcept
+operator== (const aligned_allocator<T,TAlign>&, const aligned_allocator<U, UAlign>&) noexcept
 { return TAlign == UAlign; }
 
 template <typename T, size_t TAlign, typename U, size_t UAlign>
 inline
 bool
-operator!= (const AlignedAllocator<T,TAlign>&, const AlignedAllocator<U, UAlign>&) noexcept
+operator!= (const aligned_allocator<T,TAlign>&, const aligned_allocator<U, UAlign>&) noexcept
 { return TAlign != UAlign; }
 
+}
 }

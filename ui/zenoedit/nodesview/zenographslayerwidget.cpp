@@ -5,7 +5,16 @@
 #include "../zenoapplication.h"
 #include "../graphsmanagment.h"
 #include "../nodesys/zenosubgraphview.h"
-#include <zeno/utils/msvc.h>
+
+// jiao wo cihou da shi
+#ifdef QT_VERSION
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#define QtSkipEmptyParts Qt::SkipEmptyParts
+#define msc_unordered_map std::map
+#else
+#define QtSkipEmptyParts QString::SkipEmptyParts
+#endif
+#endif
 
 
 LayerPathWidget::LayerPathWidget(QWidget* parent)
