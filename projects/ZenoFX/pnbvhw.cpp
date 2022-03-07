@@ -132,11 +132,13 @@ struct QueryNearestPrimitive : zeno::INode {
       KVPair mi{std::numeric_limits<float>::max(), -1};
 // ref:
 // https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
+#ifndef _MSC_VER
 #if defined(_OPENMP)
 #pragma omp declare reduction(minimum:KVPair                                   \
                               : omp_out = omp_in < omp_out ? omp_in : omp_out) \
     initializer(omp_priv = KVPair{std::numeric_limits <float>::max(), -1})
 #pragma omp parallel for reduction(minimum : mi)
+#endif
 #endif
       for (Ti i = 0; i < kvs.size(); ++i) {
         if (kvs[i].dist < mi.dist)
