@@ -8,10 +8,11 @@
 
 namespace zeno {
 
-template <class T, std::size_t Align = 64, bool Pod = true>
+template <class T = std::byte, std::size_t Align = 64, bool Pod = true>
 struct allocator {
-    using size_type = std::size_t;
+    /* cacheline-aligned and non-zero-initialized allocator for std::vector */
     using value_type = T;
+    using size_type = std::size_t;
     using propagate_on_container_move_assignment = std::true_type;
 
     template <class U>
@@ -21,12 +22,14 @@ struct allocator {
 
     allocator() = default;
 
-    static T *allocate(size_type n) {
-        n *= sizeof(T);
-        return reinterpret_cast<T *>(::operator new(n, std::align_val_t(Align)));
+    template <class U = T>
+    static U *allocate(size_type n) {
+        n *= sizeof(U);
+        return reinterpret_cast<U *>(::operator new(n, std::align_val_t(Align)));
     }
 
-    static void deallocate(T *p, size_type = 0) {
+    template <class U = T>
+    static void deallocate(U *p, size_type = 0) {
         ::operator delete(reinterpret_cast<void *>(p), std::align_val_t(Align));
     }
 
@@ -47,5 +50,7 @@ struct allocator {
         return Align != UAlign || Pod != UPod;
     }
 };
+
+using zallocator = allocator<>;
 
 }
