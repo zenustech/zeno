@@ -127,7 +127,7 @@ ZENDEFNODE(ShaderInvokeFunc, {
         {"list", "args"},
     },
     {
-        {"tree", "out"},
+        {"shader", "out"},
     },
     {},
     {"shader"},

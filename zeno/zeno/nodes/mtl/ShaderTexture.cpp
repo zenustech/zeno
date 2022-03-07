@@ -1,115 +1,55 @@
-#include "zeno/zeno.h"
-#include "zeno/types/TextureObject.h"
-#include "zeno/types/MaterialObject.h"
-#include "zeno/types/StringObject.h"
+#include <zeno/zeno.h>
+#include <zeno/extra/ShaderNode.h>
+#include <zeno/types/ShaderObject.h>
+#include <zeno/utils/string.h>
 
 namespace zeno
 {
-	static constexpr char
-		texWrapping[] = "REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
-		texFiltering[] = "NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR";
+struct ShaderTexture2D : ShaderNode
+{
+    virtual int determineType(EmissionPass *em) override {
+        auto texId = get_input2<int>("texId");
+        auto coord = em->determineType(get_input("coord").get());
+        if (coord < 2)
+            throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
 
-	struct ShaderMakeTexture2D
-		: zeno::INode
-	{
-		virtual void apply() override
-		{
-			auto tex = std::make_shared<zeno::Texture2DObject>();
+        auto type = get_input2<std::string>("type");
+        if (type == "float")
+            return 1;
+        else if (type == "vec2")
+            return 2;
+        else if (type == "vec3")
+            return 3;
+        else if (type == "vec4")
+            return 4;
+        else
+            throw zeno::Exception("ShaderTexture2D got bad type: " + type);
+    }
 
-			auto path = get_input<zeno::StringObject>("path")->get();
-			tex->path = path;
+    virtual void emitCode(EmissionPass *em) override {
+        auto texId = get_input2<int>("texId");
+        auto coord = em->determineExpr(get_input("coord").get());
+        auto type = get_input2<std::string>("type");
+        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
+        auto ty = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
+        const char *bat[] = {"x", "xy", "xyz", "xyzw"};
+        em->emitCode("texture2D(zenotex" + std::to_string(texId) + ", " + coord + ".xy)." + bat[ty]);
+    }
+};
 
-#define SET_TEX_WRAP(TEX, WRAP)                                    \
-	if (WRAP == "REPEAT")                                          \
-		TEX->WRAP = Texture2DObject::TexWrapEnum::REPEAT;          \
-	else if (WRAP == "MIRRORED_REPEAT")                            \
-		TEX->WRAP = Texture2DObject::TexWrapEnum::MIRRORED_REPEAT; \
-	else if (WRAP == "CLAMP_TO_EDGE")                              \
-		TEX->WRAP = Texture2DObject::TexWrapEnum::CLAMP_TO_EDGE;   \
-	else if (WRAP == "CLAMP_TO_BORDER")                            \
-		TEX->WRAP = Texture2DObject::TexWrapEnum::CLAMP_TO_BORDER; \
-	else                                                           \
-		throw zeno::Exception(#WRAP + WRAP);
-
-			auto wrapS = get_input<zeno::StringObject>("wrapT")->get();
-			SET_TEX_WRAP(tex, wrapS)
-			auto wrapT = get_input<zeno::StringObject>("wrapS")->get();
-			SET_TEX_WRAP(tex, wrapT)
-
-#undef SET_TEX_WRAP
-
-#define SET_TEX_FILTER(TEX, FILTER)                                           \
-	if (FILTER == "NEAREST")                                                  \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::NEAREST;                \
-	else if (FILTER == "LINEAR")                                              \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::LINEAR;                 \
-	else if (FILTER == "NEAREST_MIPMAP_NEAREST")                              \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::NEAREST_MIPMAP_NEAREST; \
-	else if (FILTER == "LINEAR_MIPMAP_NEAREST")                               \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::LINEAR_MIPMAP_NEAREST;  \
-	else if (FILTER == "NEAREST_MIPMAP_LINEAR")                               \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::NEAREST_MIPMAP_LINEAR;  \
-	else if (FILTER == "LINEAR_MIPMAP_LINEAR")                                \
-		TEX->FILTER = Texture2DObject::TexFilterEnum::LINEAR_MIPMAP_LINEAR;   \
-	else                                                                      \
-		throw zeno::Exception(#FILTER + FILTER);
-
-			auto minFilter = get_input<zeno::StringObject>("minFilter")->get();
-			SET_TEX_FILTER(tex, minFilter)
-			auto magFilter = get_input<zeno::StringObject>("magFilter")->get();
-			SET_TEX_FILTER(tex, magFilter)
-
-#undef SET_TEX_FILTER
-
-			set_output("tex", std::move(tex));
-		}
-	};
-
-	ZENDEFNODE(
-		ShaderMakeTexture2D,
-		{
-			{
-				{"readpath", "path"},
-				{(std::string) "enum " + texWrapping, "wrapS", "REPEAT"},
-				{(std::string) "enum " + texWrapping, "wrapT", "REPEAT"},
-				{(std::string) "enum " + texFiltering, "minFilter", "NEAREST"},
-				{(std::string) "enum " + texFiltering, "magFilter", "NEAREST"},
-			},
-			{
-				{"texture", "tex"},
-			},
-			{},
-			{
-				"shader",
-			},
-		});
-
-	struct ShaderAddTexture2D
-		: zeno::INode
-	{
-		virtual void apply() override
-		{
-			auto mtl = get_input<zeno::MaterialObject>("mtl");
-			auto tex = get_input<zeno::Texture2DObject>("tex");
-			mtl->tex2Ds.push_back(tex);
-			set_output("mtl", std::move(mtl));
-		}
-	};
-
-	ZENDEFNODE(
-		ShaderAddTexture2D,
-		{
-			{
-				{"material", "mtl"},
-				{"texture", "tex"},
-			},
-			{
-				{"material", "mtl"},
-			},
-			{},
-			{
-				"shader",
-			},
-		});
+ZENDEFNODE(ShaderTexture2D, {
+    {
+        {"int", "texId", "0"},
+        {"vec2f", "coord", "0,0"},
+        {"enum float vec2 vec3 vec4", "type", "vec3"},
+    },
+    {
+        {"shader", "out"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
 
 } // namespace zeno

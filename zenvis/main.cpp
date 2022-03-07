@@ -1,3 +1,4 @@
+#include "MyShader.hpp"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -7,7 +8,7 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
-
+#include <GL/gl.h>
 namespace zenvis {
 
 int curr_frameid = -1;
@@ -98,10 +99,55 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
+GLuint envTexture;
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}  
+void setupEnvMap()
+{
+  std::vector<std::string> faces
+  {
+    "assets/right.jpg",
+    "assets/left.jpg",
+    "assets/top.jpg",
+    "assets/bottom.jpg",
+    "assets/front.jpg",
+    "assets/back.jpg"
+  };
+  envTexture = loadCubemap(faces);  
+
+}
 void initialize() {
   gladLoadGL();
-
+  setupEnvMap();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -134,12 +180,199 @@ static void draw_small_axis() {
   proj = backup_proj;
 }
 
-static void paint_graphics(void) {
+
+
+
+
+auto qvert = R"(
+#version 330 core
+const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
+void main()
+{
+    gl_Position = vec4(quad_vertices[gl_VertexID], 0.0, 1.0);
+}
+)";
+auto qfrag = R"(#version 330 core
+#extension GL_EXT_gpu_shader4 : enable
+// hdr_adaptive.fs
+//
+//
+
+const mat3x3 ACESInputMat = mat3x3
+(
+    0.59719, 0.35458, 0.04823,
+    0.07600, 0.90834, 0.01566,
+    0.02840, 0.13383, 0.83777
+);
+
+// ODT_SAT => XYZ => D60_2_D65 => sRGB
+const mat3x3 ACESOutputMat = mat3x3
+(
+     1.60475, -0.53108, -0.07367,
+    -0.10208,  1.10813, -0.00605,
+    -0.00327, -0.07276,  1.07602
+);
+
+vec3 RRTAndODTFit(vec3 v)
+{
+    vec3 a = v * (v + 0.0245786f) - 0.000090537f;
+    vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    return a / b;
+}
+
+vec3 ACESFitted(vec3 color, float gamma)
+{
+    color = color * ACESInputMat;
+
+    // Apply RRT and ODT
+    color = RRTAndODTFit(color);
+
+    color = color * ACESOutputMat;
+
+    // Clamp to [0, 1]
+  	color = clamp(color, 0.0, 1.0);
+    
+    color = pow(color, vec3(1. / gamma));
+
+    return color;
+}
+
+
+uniform samplerRect hdr_image;
+out vec4 oColor;
+void main(void)
+{
+	int i;
+	float lum[25];
+	vec2 tex_scale = vec2(1.0);
+	for (i = 0; i < 25; i++)
+	{
+		vec2 tc = (2.0 * gl_FragCoord.xy + 3.5 * vec2(i % 5 - 2, i / 5 - 2));
+		vec3 col = texture2DRect(hdr_image, tc).rgb;
+    lum[i] = dot(col, vec3(0.3, 0.59, 0.11));
+	} 
+	// Calculate weighted color of region
+	float kernelLuminance = (
+		(1.0 * (lum[0] + lum[4] + lum[20] + lum[24])) +
+		(4.0 * (lum[1] + lum[3] + lum[5] + lum[9] +
+		lum[15] + lum[19] + lum[21] + lum[23])) +
+		(7.0 * (lum[2] + lum[10] + lum[14] + lum[22])) +
+		(16.0 * (lum[6] + lum[8] + lum[16] + lum[18])) +
+		(26.0 * (lum[7] + lum[11] + lum[13] + lum[17])) +
+		(41.0 * lum[12])
+	) / 273.0;
+	// Compute the corresponding exposure
+	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
+	// Apply the exposure to this texel
+  //oColor.rgb = 1.0 - exp2(-texture2DRect(hdr_image, gl_FragCoord.xy).rgb * exposure);
+	//oColor.a = 1.0f;
+	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
+  
+}
+)";
+hg::OpenGL::Program* tmProg=nullptr;
+GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
+int oldnx, oldny;
+GLuint texRect=0, regularFBO = 0;
+GLuint emptyVAO=0;
+void ScreenFillQuad(GLuint tex)
+{
+  if(emptyVAO==0)
+    glGenVertexArrays(1, &emptyVAO); 
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  tmProg->use();
+  tmProg->set_uniformi("hdr_image",0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+
+  glEnableVertexAttribArray(0);
+  glBindVertexArray(emptyVAO); 
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDisableVertexAttribArray(0);
+  glUseProgram(0);
+}
+static void paint_graphics(GLuint target_fbo = 0) {
+  if(tmProg==nullptr)
+  {
+    std::cout<<"compiling glprog"<<std::endl;
+    tmProg = compile_program(qvert, qfrag);
+  }
+  
+  if(msfborgb==0||oldnx!=nx||oldny!=ny)
+  {
+    if(msfborgb!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &msfborgb));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny));
+    
+  
+    if(msfbod!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &msfbod));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+
+    
+    if(tonemapfbo!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
+    }
+    CHECK_GL(glGenFramebuffers(1, &tonemapfbo));
+
+
+    if(regularFBO!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &regularFBO));
+    }
+    CHECK_GL(glGenFramebuffers(1, &regularFBO));
+    if(texRect!=0)
+    {
+      CHECK_GL(glDeleteTextures(1, &texRect));
+    }
+    CHECK_GL(glGenTextures(1, &texRect));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+    {
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
+    }
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_RECTANGLE, texRect, 0));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    oldnx = nx;
+    oldny = ny;
+    
+  }
+
+    
+  
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+  CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+
+
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
+    gra->SetEnvMap(envTexture);
     gra->draw();
   }
   if (show_grid) {
@@ -148,6 +381,15 @@ static void paint_graphics(void) {
       draw_small_axis();
   }
   vao->unbind();
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
 
@@ -198,14 +440,13 @@ void set_show_grid(bool flag) {
 std::vector<char> record_frame_offline() {
     std::vector<char> pixels(nx * ny * 3);
 
-    // multi-sampling buffer
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -215,37 +456,16 @@ std::vector<char> record_frame_offline() {
                 GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
-    paint_graphics();
+    paint_graphics(fbo);
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        // normal buffer as intermedia
-        GLuint sfbo, srbo1, srbo2;
-        CHECK_GL(glGenRenderbuffers(1, &srbo1));
-        CHECK_GL(glGenRenderbuffers(1, &srbo2));
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo1));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo2));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
-
-        CHECK_GL(glGenFramebuffers(1, &sfbo));
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sfbo));
-        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srbo1));
-        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, srbo2));
-        CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, sfbo));
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
         CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0]));
-
-        CHECK_GL(glDeleteRenderbuffers(1, &srbo1));
-        CHECK_GL(glDeleteRenderbuffers(1, &srbo2));
-        CHECK_GL(glDeleteFramebuffers(1, &sfbo));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
