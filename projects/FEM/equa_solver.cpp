@@ -13,12 +13,19 @@ struct SolveFEM : zeno::INode {
         auto elmView = get_input<PrimitiveObject>("elmView");
         std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;
 
-        int max_iters = get_param<int>("maxNRIters");
-        int max_linesearch = get_param<int>("maxBTLs");
-        float c1 = get_param<float>("ArmijoCoeff");
-        float c2 = get_param<float>("CurvatureCoeff");
-        float beta = get_param<float>("BTL_shrinkingRate");
-        float epsilon = get_param<float>("epsilon");
+        // int max_iters = get_param<int>("maxNRIters");
+        // int max_linesearch = get_param<int>("maxBTLs");
+        // float c1 = get_param<float>("ArmijoCoeff");
+        // float c2 = get_param<float>("CurvatureCoeff");
+        // float beta = get_param<float>("BTL_shrinkingRate");
+        // float epsilon = get_param<float>("epsilon");
+
+        auto max_iters = get_input2<int>("maxNRIters");
+        auto max_linesearch = get_input2<int>("maxBTLs");
+        auto c1 = get_input2<float>("ArmijoCoeff");
+        auto c2 = get_input2<float>("CurvatureCoeff");
+        auto beta = get_input2<float>("BTL_shrinkingRate");
+        auto epsilon = get_input2<float>("epsilon");
 
         std::vector<Vec2d> wolfeBuffer;
         wolfeBuffer.resize(max_linesearch);
@@ -181,12 +188,12 @@ struct SolveFEM : zeno::INode {
 };
 
 ZENDEFNODE(SolveFEM,{
-    {"integrator","shape","elmView","skin"},
-    {"shape"},
-    {{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
+    {"integrator","shape","elmView","skin",{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
         {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},
         {"float","epsilon","1e-8"}
     },
+    {"shape"},
+    {},
     {"FEM"},
 });
 
