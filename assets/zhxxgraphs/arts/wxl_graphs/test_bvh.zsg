@@ -765,8 +765,8 @@
      },
      "params": {},
      "uipos": [
-      282.3945312499999,
-      -695.4438151041663
+      240.20414307994446,
+      -975.4345729599889
      ],
      "options": []
     },
@@ -779,7 +779,7 @@
        null
       ],
       "lbvh": [
-       "76b84d8d-BuildPrimitiveBvh",
+       "69ffa760-RefitPrimitiveBvh",
        "lbvh",
        null
       ],
@@ -791,8 +791,8 @@
      },
      "params": {},
      "uipos": [
-      784.1391779064616,
-      -806.5415848351812
+      803.3166270746686,
+      -781.610900916512
      ],
      "options": []
     },
@@ -919,13 +919,34 @@
      "options": [
       "VIEW"
      ]
+    },
+    "69ffa760-RefitPrimitiveBvh": {
+     "name": "RefitPrimitiveBvh",
+     "inputs": {
+      "lbvh": [
+       "76b84d8d-BuildPrimitiveBvh",
+       "lbvh",
+       null
+      ],
+      "SRC": [
+       "2daab159-TransformPrimitive",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      513.9556377079481,
+      -843.8077634011089
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1024.1893751584676,
-    "y": -982.7274643800417,
-    "width": 3662.1093749999977,
-    "height": 2026.3671874999989
+    "x": -1237.8646693943065,
+    "y": -1155.1361177107838,
+    "width": 4577.636718749997,
+    "height": 2532.9589843749986
    }
   }
  },
@@ -11683,6 +11704,36 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "RefitPrimitiveBvh": {
+   "inputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ResampleVDBGrid": {

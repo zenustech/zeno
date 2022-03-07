@@ -512,25 +512,25 @@ namespace zeno {
                 while (par != -1) {
                     Ti old{ 0 };
                     if (refitFlags[par].compare_exchange_strong(
-                        old, (Ti)1, std::memory_order_relaxed)) {
-                        auto lc = par + 1;
-                        auto rc = levels[lc] == 0 ? lc + 1 : auxIndices[lc];
-                        // merge box
-                        const auto& leftBox = sortedBvs[lc];
-                        const auto& rightBox = sortedBvs[rc];
-                        Box bv{};
-                        for (int d = 0; d != 3; ++d) {
-                            bv.first[d] = leftBox.first[d] < rightBox.first[d]
-                                ? leftBox.first[d]
-                                : rightBox.first[d];
-                            bv.second[d] = leftBox.second[d] > rightBox.second[d]
-                                ? leftBox.second[d]
-                                : rightBox.second[d];
-                        }
-                        sortedBvs[par] = bv;
-                        atomic_thread_fence(std::memory_order_acquire);
-                        par = parents[par];
+                        old, (Ti)1, std::memory_order_acquire))
+                        break;
+                    auto lc = par + 1;
+                    auto rc = levels[lc] == 0 ? lc + 1 : auxIndices[lc];
+                    // merge box
+                    const auto& leftBox = sortedBvs[lc];
+                    const auto& rightBox = sortedBvs[rc];
+                    Box bv{};
+                    for (int d = 0; d != 3; ++d) {
+                        bv.first[d] = leftBox.first[d] < rightBox.first[d]
+                            ? leftBox.first[d]
+                            : rightBox.first[d];
+                        bv.second[d] = leftBox.second[d] > rightBox.second[d]
+                            ? leftBox.second[d]
+                            : rightBox.second[d];
                     }
+                    sortedBvs[par] = bv;
+                    atomic_thread_fence(std::memory_order_release);
+                    par = parents[par];
                 }
             }
         }
