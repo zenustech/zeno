@@ -18,7 +18,7 @@ template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&v
                   "Source Type and Destination Type must be of the same size");
     return reinterpret_cast<Dst const volatile &>(val);
   }
-void getNormal(zeno::PrimitiveObject* prim)
+ZENO_API void getNormal(zeno::PrimitiveObject* prim)
 {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
     auto &pos = prim->attr<zeno::vec3f>("pos");
