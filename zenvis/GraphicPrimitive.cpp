@@ -11,6 +11,12 @@
 #include <Hg/IterUtils.h>
 
 namespace zenvis {
+struct drawObject
+{
+    std::unique_ptr<Buffer> vbo;
+    std::unique_ptr<Buffer> ebo;
+    Program *prog;
+};
 
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
@@ -453,7 +459,7 @@ float dot_c(vec3 a, vec3 b){
 // Get orthonormal basis from surface normal
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void pixarONB(vec3 n, out vec3 b1, out vec3 b2){
-	vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 up        = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     b1   = normalize(cross(up, n));
     b2 = cross(n, b1);
 }
