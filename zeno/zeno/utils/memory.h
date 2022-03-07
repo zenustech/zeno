@@ -6,7 +6,6 @@
 namespace zeno {
 
 
-
 template <class T>
 struct copiable_unique_ptr : std::unique_ptr<T> {
     using std::unique_ptr<T>::unique_ptr;
@@ -17,7 +16,7 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
 
     copiable_unique_ptr &operator=(copiable_unique_ptr const &o) {
         std::unique_ptr<T>::operator=(std::unique_ptr<T>(
-            std::make_unique<T>(static_cast<T const &>(*o))));
+            o ? std::make_unique<T>(static_cast<T const &>(*o)) : nullptr));
         return *this;
     }
 
@@ -40,8 +39,8 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
     }
 
     copiable_unique_ptr(copiable_unique_ptr const &o)
-        : std::unique_ptr<T>(std::make_unique<T>(
-            static_cast<T const &>(*o))) {
+        : std::unique_ptr<T>(o ? std::make_unique<T>(
+            static_cast<T const &>(*o)) : nullptr) {
     }
 
     template <bool lazyHelper = true>
