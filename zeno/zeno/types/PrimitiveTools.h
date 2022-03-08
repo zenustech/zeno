@@ -38,4 +38,6 @@ static void primAppendVal(PrimitiveObject *prim, PrimitiveObject *primB, size_t 
     });
 }
 
+ZENO_API void getNormal(zeno::PrimitiveObject* prim);
+
 }
