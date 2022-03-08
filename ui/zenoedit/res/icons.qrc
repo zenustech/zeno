@@ -83,5 +83,12 @@
 	<file>icons/forward.svg</file>
 	<file>icons/backward.svg</file>
 	<file>icons/treeview.svg</file>
+	<file>icons/ic_color-picker.svg</file>
+	<file>icons/ic_direction_pullDown.svg</file>
+	<file>icons/spinbox-downbutton.svg</file>
+	<file>icons/spinbox-upbutton.svg</file>
+	<file>icons/spinbox-downbutton-hover.svg</file>
+	<file>icons/spinbox-upbutton-hover.svg</file>
+	<file>icons/circle-selector.svg</file>
 </qresource>
 </RCC>
