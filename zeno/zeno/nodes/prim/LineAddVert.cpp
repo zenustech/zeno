@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/prim_ops.h>
+#include <zeno/types/PrimitiveTools.h>
 
 namespace zeno {
 

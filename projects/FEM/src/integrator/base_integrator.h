@@ -17,7 +17,7 @@ class BaseIntegrator{
 public:
     BaseIntegrator(size_t cou_length) {
         _couplingLength = cou_length;
-        _gravity.setZero();
+        // _gravity.setZero();
     }
     /**
      * @brief default destructor for base integrator.
@@ -38,11 +38,11 @@ public:
     /**
      * @brief Set the gravity acceleration.
      */
-    inline void SetGravity(const Vec3d &gravity) { _gravity = gravity; } // set the gravitational acceleration
-    /**
-     * @brief Get the gravity acceleration.
-     */
-    inline const Vec3d& GetGravity() {return _gravity;}
+    // inline void SetGravity(const Vec3d &gravity) { _gravity = gravity; } // set the gravitational acceleration
+    // /**
+    //  * @brief Get the gravity acceleration.
+    //  */
+    // inline const Vec3d& GetGravity() {return _gravity;}
 
 public:
     /**
@@ -101,7 +101,7 @@ public:
 
 protected:
     size_t _couplingLength;
-    Vec3d _gravity;
+    // Vec3d _gravity;
     FEM_Scaler _dt;
     FEM_Scaler _epsilon;
 

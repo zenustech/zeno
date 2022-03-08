@@ -83,7 +83,6 @@ struct PrimitiveBent : zeno::INode {
                 newtanpos -= diff * cosang;
                 newdirpos += diff * sinang;
 
-                newtanpos -= truemid;
                 newdirpos -= radius;
                 pos += (newtanpos - tanpos + average) * tangent;
                 pos += (biasDir + avgDir - newdirpos - dirpos) * direction;
