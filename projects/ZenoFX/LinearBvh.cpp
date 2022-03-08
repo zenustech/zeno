@@ -155,27 +155,29 @@ namespace zeno {
 
         // ref: https://www.openmp.org/spec-html/5.0/openmpsu107.html
         for (int d = 0; d != dim; ++d) {
+            float &v = minVec[d];
 #ifndef _MSC_VER
 #if defined(_OPENMP)
-#pragma omp parallel for reduction(min: minVec[d])
+#pragma omp parallel for reduction(min: v)
 #endif
 #endif
             for (Ti i = 0; i < refpos.size(); ++i) {
                 const auto& p = refpos[i];
-                if (p[d] < minVec[d])
-                    minVec[d] = p[d];
+                if (p[d] < v)
+                    v = p[d];
             }
         }
         for (int d = 0; d != dim; ++d) {
+            float &v = maxVec[d];
 #ifndef _MSC_VER
 #if defined(_OPENMP)
-#pragma omp parallel for reduction(max: maxVec[d])
+#pragma omp parallel for reduction(max: v)
 #endif
 #endif
             for (Ti i = 0; i < refpos.size(); ++i) {
                 const auto& p = refpos[i];
-                if (p[d] > maxVec[d])
-                    maxVec[d] = p[d];
+                if (p[d] > v)
+                    v = p[d];
             }
         }
         wholeBox.first = minVec;
@@ -600,16 +602,16 @@ namespace zeno {
 
     template void LBvh::find_nearest<LBvh::element_e::point>(
         const LBvh::TV&, LBvh::Ti&, float&,
-        typename element_t<element_e::point>) const;
+        typename LBvh::element_t<element_e::point>) const;
     template void LBvh::find_nearest<LBvh::element_e::line>(
         const LBvh::TV&, LBvh::Ti&, float&,
-        typename element_t<element_e::line>) const;
+        typename LBvh::element_t<element_e::line>) const;
     template void LBvh::find_nearest<LBvh::element_e::tri>(
         const LBvh::TV&, LBvh::Ti&, float&,
-        typename element_t<element_e::tri>) const;
+        typename LBvh::element_t<element_e::tri>) const;
     template void LBvh::find_nearest<LBvh::element_e::tet>(
         const LBvh::TV&, LBvh::Ti&, float&,
-        typename element_t<element_e::tet>) const;
+        typename LBvh::element_t<element_e::tet>) const;
 
     void LBvh::find_nearest(TV const& pos, Ti& id, float& dist) const {
         if (eleCategory == element_e::tet)
