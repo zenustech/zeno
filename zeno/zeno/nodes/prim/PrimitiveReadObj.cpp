@@ -124,7 +124,7 @@ ZENDEFNODE(ReadObjPrim,
         { /* inputs: */ {
         {"readpath", "path"},
         }, /* outputs: */ {
-        "prim",
+        {"primitive", "prim"},
         }, /* params: */ {
         {"bool", "triangulate", "1"},
         }, /* category: */ {
