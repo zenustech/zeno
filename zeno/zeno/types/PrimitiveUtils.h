@@ -50,17 +50,17 @@ static void prim_polys_to_tris_with_uv(PrimitiveObject *prim) {
 
     for (auto [start, len]: prim->polys) {
         if (len < 3) continue;
-        uv0.push_back(loops[start]);
-        uv1.push_back(loops[start + 1]);
-        uv2.push_back(loops[start + 2]);
+        uv0.push_back(loop_uv[start]);
+        uv1.push_back(loop_uv[start + 1]);
+        uv2.push_back(loop_uv[start + 2]);
         prim->tris.emplace_back(
                 prim->loops[start],
                 prim->loops[start + 1],
                 prim->loops[start + 2]);
         for (int i = 3; i < len; i++) {
-            uv0.push_back(loops[start]);
-            uv1.push_back(loops[start + i - 1]);
-            uv2.push_back(loops[start + i]);
+            uv0.push_back(loop_uv[start]);
+            uv1.push_back(loop_uv[start + i - 1]);
+            uv2.push_back(loop_uv[start + i]);
             prim->tris.emplace_back(
                     prim->loops[start],
                     prim->loops[start + i - 1],
