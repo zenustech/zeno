@@ -1,14 +1,12 @@
 #include <zeno/back/allocator.h>
 #include <zeno/utils/disable_copy.h>
 #include <vector>
+#include <string>
 #include <cstdio>
-#include <map>
 
 namespace zeno {
 
-struct fvector {
-    std::vector<float, zallocator> m_data;
-};
+using fvector = std::vector<float, allocator<float>>;
 
 struct fvector_view {
     fvector &m_arr;
@@ -133,11 +131,11 @@ struct primitive {
 
     std::vector<AttrInfo> m_attrs;
 
-    constexpr fvector_view attr(std::size_t idx) {
+    fvector_view attr(std::size_t idx) {
         return m_attrs[idx].m_arr;
     }
 
-    constexpr fvector_const_view attr(std::size_t idx) const {
+    fvector_const_view attr(std::size_t idx) const {
         return m_attrs[idx].m_arr;
     }
 
@@ -149,11 +147,11 @@ struct primitive {
         throw;
     }
 
-    constexpr fvector_view attr(std::string const &name) {
+    fvector_view attr(std::string const &name) {
         return attr(lookup(name));
     }
 
-    constexpr fvector_const_view attr(std::string const &name) const {
+    fvector_const_view attr(std::string const &name) const {
         return attr(lookup(name));
     }
 };

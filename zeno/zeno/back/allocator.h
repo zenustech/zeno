@@ -41,12 +41,12 @@ struct allocator {
     }
 
     template <class U, std::size_t UAlign, bool UPod>
-    constexpr bool operator==(allocator<U, UAlign, Pod> const &) noexcept {
+    constexpr bool operator==(allocator<U, UAlign, UPod> const &) noexcept {
         return Align == UAlign && Pod == UPod;
     }
 
     template <class U, std::size_t UAlign, bool UPod>
-    constexpr bool operator!=(allocator<U, UAlign, Pod> const &) noexcept {
+    constexpr bool operator!=(allocator<U, UAlign, UPod> const &) noexcept {
         return Align != UAlign || Pod != UPod;
     }
 };
