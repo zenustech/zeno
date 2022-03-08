@@ -225,12 +225,12 @@ struct attrvector {
 
     template <std::size_t N, std::size_t ...Is>
     fvector_soa_view<N> _helper_attr(std::string const &name, std::index_sequence<Is...>) const {
-        return {attr(name + '.' + std::to_string(Is))...};
+        return {std::piecewise_construct, {attr(name + '.' + std::to_string(Is))...}};
     }
 
     template <std::size_t N>
-    fvector_view attr(std::string const &name) const {
-        return _helper_attr(name, std::make_index_sequence<N>{});
+    fvector_soa_view<N> attr(std::string const &name) const {
+        return _helper_attr<N>(name, std::make_index_sequence<N>{});
     }
 
     std::size_t num_attrs() const {
@@ -245,12 +245,12 @@ struct attrvector {
 
     template <std::size_t N, std::size_t ...Is>
     fvector_soa_view<N> _helper_add_attr(std::string const &name, std::index_sequence<Is...>) {
-        return {add_attr(name + '.' + std::to_string(Is))...};
+        return {std::piecewise_construct, {add_attr(name + '.' + std::to_string(Is))...}};
     }
 
     template <std::size_t N>
     fvector_soa_view<N> add_attr(std::string const &name) {
-        return _helper_add_attr(name, std::make_index_sequence<N>{});
+        return _helper_add_attr<N>(name, std::make_index_sequence<N>{});
     }
 
     std::size_t size() const {
@@ -284,6 +284,6 @@ using namespace zeno;
 
 int main() {
     attrvector prim;
-    auto pos = prim.add_attr("pos");
+    auto pos = prim.add_attr<3>("pos");
     return 0;
 }
