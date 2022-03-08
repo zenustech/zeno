@@ -219,7 +219,7 @@ struct GraphicPrimitive : IGraphic {
     {
         auto &uv = prim->add_attr<zeno::vec3f>("uv");
         for (size_t i = 0; i < uv.size(); i++) {
-            uv[i] = zeno::vec3f(1.0f);
+            uv[i] = zeno::vec3f(0.0f);
         }
     }
     auto const &pos = prim->attr<zeno::vec3f>("pos");
