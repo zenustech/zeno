@@ -336,6 +336,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
         return v;
 
     }
+#ifdef ZENO_GLOBALSTATE
     struct DynamicNumber : zeno::INode {
         virtual void apply() override {
             std::map<int, zeno::vec4f> keyframes;
@@ -443,4 +444,5 @@ ZENDEFNODE(PrimitiveCurvemap, {
             }
         }
     );
+#endif
 }
