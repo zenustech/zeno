@@ -39,9 +39,9 @@ static float takef(char const *&it) {
     return val;
 }
 
-static uint32_t takeu(char const *&it) {
+static int takeu(char const *&it) {
     char *eptr;
-    uint32_t val(std::strtoul(it, &eptr, 10));
+    int val(std::strtoul(it, &eptr, 10));
     it = eptr;
     return val;
 }
@@ -54,45 +54,55 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
     auto prim = std::make_shared<PrimitiveObject>();
 
-    std::vector<vec2i> uvs;
+    std::vector<vec2f> uvs;
+    std::vector<int> loop_uvs;
 
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
-        if (*it == '#') {
-            zeno::log_info("obj comment: {}", std::string_view(it, nit - it));
-        } else if (match(it, "v ")) {
+
+        if (match(it, "v ")) {
             float x = takef(it);
             float y = takef(it);
             float z = takef(it);
-            zeno::log_info("v {} {} {}", x, y, z);
             prim->verts.emplace_back(x, y, z);
+
         } else if (match(it, "vt ")) {
             float x = takef(it);
             float y = takef(it);
-            zeno::log_info("vt {} {}", x, y);
             uvs.emplace_back(x, y);
+
         } else if (match(it, "f ")) {
-            uint32_t beg = prim->loops.size();
-            uint32_t cnt{};
+            int beg = prim->loops.size();
+            int cnt{};
             while (it != nit) {
-                uint32_t x = takeu(it);
-                uint32_t xt{};
+                int x = takeu(it) - 1;
                 if (*it == '/' && it[1] != '/') {
-                    xt = takeu(it);
+                    int xt = takeu(it) - 1;
+                    loop_uvs.push_back(xt);
                 }
                 it = std::find(it, nit, ' ');
-                --x;
                 prim->loops.push_back(x);
                 ++cnt;
-                zeno::log_info("loop {}", x);
                 it = std::find_if(it, nit, [] (char c) { return c != ' '; });
             }
             prim->polys.emplace_back(beg, cnt);
-            zeno::log_info("poly {} {}", beg, cnt);
-        } else if (match(it, "o ")) {
-            std::string_view o_name(it, nit - it);
+
+        //} else if (match(it, "o ")) {
+            // todo: support tag verts to be multi components of primitive
+            //std::string_view o_name(it, nit - it);
+
         }
         it = nit + 1;
+    }
+
+    if (!loop_uvs.empty()) {
+        // todo: support vec2f in attr...
+        auto &attuv = prim->loops.add_attr<vec3f>("uv");
+        attuv.resize(prim->loops.size());
+        for (size_t i = 0; i < loop_uvs.size(); i++) {
+            auto uv = uvs[loop_uvs[i]];
+            attuv[i] = vec3f(uv[0], uv[1], 0);
+        }
     }
 
     return prim;
