@@ -2,16 +2,16 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
-#include <zeno/utils/prim_ops.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <spdlog/spdlog.h>
 
 
 namespace zeno {
@@ -247,7 +247,9 @@ read_obj_file_dict(
                 dict[sub_name] = std::move(sub_indices);
             }
             sub_name = items[0];
-            fmt::print("sub_mesh: {}\n", sub_name);
+
+            zeno::log_debug("sub_mesh: {}\n", sub_name);
+
         }
     }
     if (sub_indices.size() > 0) {

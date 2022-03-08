@@ -1,0 +1,3 @@
+add_library(zeno_HerculesTools SHARED HerculesTools.cpp)
+target_link_libraries(zeno_HerculesTools PRIVATE zeno)
+target_link_libraries(zeno_HerculesTools PRIVATE zeno_nodep)

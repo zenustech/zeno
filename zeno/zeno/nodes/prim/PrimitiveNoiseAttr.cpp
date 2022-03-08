@@ -176,7 +176,7 @@ ZENDEFNODE(GetPerlinNoise,
     "noise",
     }, /* params: */ {
     }, /* category: */ {
-    "primitive",
+    "math",
     }});
 
 }

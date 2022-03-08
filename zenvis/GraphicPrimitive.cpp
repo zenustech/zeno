@@ -7,6 +7,7 @@
 #include <vector>
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 #include <Hg/IOUtils.h>
