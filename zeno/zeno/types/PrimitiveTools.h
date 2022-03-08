@@ -9,6 +9,7 @@ namespace zeno {
 
 static void prim_triangulate(PrimitiveObject *prim) {
     prim->tris.clear();
+    prim->tris.reserve(prim->polys.size());
 
     for (auto [start, len]: prim->polys) {
         if (len < 3) continue;

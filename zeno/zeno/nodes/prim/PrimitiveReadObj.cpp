@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/fileio.h>
@@ -28,7 +29,7 @@ static bool match_helper(char const *&it, char const *arr, std::index_sequence<I
 
 template <std::size_t N>
 static bool match(char const *&it, char const (&arr)[N]) {
-    return match_helper(it, arr, std::make_index_sequence<N>{});
+    return match_helper(it, arr, std::make_index_sequence<N - 1>{});
 }
 
 static float takef(char const *&it) {
@@ -53,48 +54,45 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
     auto prim = std::make_shared<PrimitiveObject>();
 
-    while (it != eit) {
+    std::vector<vec2i> uvs;
+
+    while (it < eit) {
         auto nit = std::find(it, eit, '\n');
-        if (it[0] == '#') {
+        if (*it == '#') {
+            zeno::log_info("obj comment: {}", std::string_view(it, nit - it));
         } else if (match(it, "v ")) {
             float x = takef(it);
             float y = takef(it);
             float z = takef(it);
-            prim->verts.push_back({x, y, z});
+            zeno::log_info("v {} {} {}", x, y, z);
+            prim->verts.emplace_back(x, y, z);
         } else if (match(it, "vt ")) {
             float x = takef(it);
             float y = takef(it);
-        } else if (match(it, "vn ")) {
-            float x = takef(it);
-            float y = takef(it);
-            float z = takef(it);
+            zeno::log_info("vt {} {}", x, y);
+            uvs.emplace_back(x, y);
         } else if (match(it, "f ")) {
             uint32_t beg = prim->loops.size();
             uint32_t cnt{};
             while (it != nit) {
                 uint32_t x = takeu(it);
-                uint32_t xt{}, xn{};
-                if (*it == '/') {
-                    ++it;
-                    if (*it == '/') {
-                        ++it;
-                        xn = takeu(it);
-                    } else {
-                        xt = takeu(it);
-                        if (*it == '/') {
-                            xn = takeu(it);
-                        }
-                    }
+                uint32_t xt{};
+                if (*it == '/' && it[1] != '/') {
+                    xt = takeu(it);
                 }
-                prim->loops.push_back(x - 1);
+                it = std::find(it, nit, ' ');
+                --x;
+                prim->loops.push_back(x);
                 ++cnt;
+                zeno::log_info("loop {}", x);
                 it = std::find_if(it, nit, [] (char c) { return c != ' '; });
             }
             prim->polys.emplace_back(beg, cnt);
+            zeno::log_info("poly {} {}", beg, cnt);
         } else if (match(it, "o ")) {
             std::string_view o_name(it, nit - it);
         }
-        it = nit;
+        it = nit + 1;
     }
 
     return prim;
@@ -105,6 +103,9 @@ struct ReadObjPrim : INode {
         auto path = get_input<StringObject>("path")->get();
         auto binary = file_get_binary(path);
         auto prim = parse_obj(std::move(binary));
+        if (get_param<bool>("triangulate")) {
+            prim_polys_to_tris(prim.get());
+        }
         set_output("prim", std::move(prim));
     }
 };
@@ -115,6 +116,8 @@ ZENDEFNODE(ReadObjPrim,
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
+        {"bool", "triangulate", "1"},
+        {"bool", "allow_quads", "1"},
         }, /* category: */ {
         "primitive",
         }});
