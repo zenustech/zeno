@@ -9,8 +9,6 @@ namespace zeno {
 
 using fvector = std::vector<float, allocator<float>>;
 
-struct primitive;
-
 struct fvector_view {
     fvector &m_arr;
 
@@ -90,52 +88,14 @@ struct fvector_view {
     }
 };
 
-struct fvector_const_view {
-    fvector const &m_arr;
-
-    using value_type = float;
-
-    fvector_const_view(std::piecewise_construct_t, fvector const &arr)
-        : m_arr(arr) {
-    }
-
-    float const &operator[](std::size_t idx) const {
-        return m_arr[idx];
-    }
-
-    float const &at(std::size_t idx) const {
-        return m_arr.at(idx);
-    }
-
-    float read(std::size_t idx) const {
-        return m_arr[idx];
-    }
-
-    std::size_t size() const {
-        return m_arr.size();
-    }
-
-    float const *data() const {
-        return m_arr.data();
-    }
-
-    auto begin() const {
-        return m_arr.begin();
-    }
-
-    auto end() const {
-        return m_arr.end();
-    }
-
-    fvector const &original_vector() const {
-        return m_arr;
-    }
-};
-
 template <std::size_t N>
-struct fvector_multiview {
+struct fvector_soa_view {
     static_assert(N > 0);
     std::array<fvector_view, N> m_views;
+
+    fvector_soa_view(std::piecewise_construct_t, std::array<fvector_view, N> &&views)
+        : m_views(std::move(views)) {
+    }
 
     using value_type = vec<N, float>;
 
@@ -158,7 +118,7 @@ struct fvector_multiview {
     }
 
     struct _soa_reference {
-        fvector_multiview &m_that;
+        fvector_soa_view &m_that;
         std::size_t idx;
 
         vec<N, float> get() const {
@@ -239,23 +199,15 @@ struct fvector_multiview {
     }
 };
 
-struct primitive {
+struct attrvector {
     struct AttrInfo {
-        fvector m_arr;
+        mutable fvector m_arr;
         std::string m_name;
     };
 
     std::vector<AttrInfo> m_attrs;
 
-    primitive() : m_attrs(1) {
-        m_attrs[0].m_name = "_";
-    }
-
-    fvector_view attr(std::size_t idx) {
-        return {std::piecewise_construct, m_attrs.at(idx).m_arr};
-    }
-
-    fvector_const_view attr(std::size_t idx) const {
+    fvector_view attr(std::size_t idx) const {
         return {std::piecewise_construct, m_attrs.at(idx).m_arr};
     }
 
@@ -267,16 +219,38 @@ struct primitive {
         throw;
     }
 
-    fvector_view attr(std::string const &name) {
+    fvector_view attr(std::string const &name) const {
         return attr(lookup(name));
     }
 
-    fvector_const_view attr(std::string const &name) const {
-        return attr(lookup(name));
+    template <std::size_t N, std::size_t ...Is>
+    fvector_soa_view<N> _helper_attr(std::string const &name, std::index_sequence<Is...>) const {
+        return {attr(name + '.' + std::to_string(Is))...};
+    }
+
+    template <std::size_t N>
+    fvector_view attr(std::string const &name) const {
+        return _helper_attr(name, std::make_index_sequence<N>{});
     }
 
     std::size_t num_attrs() const {
         return m_attrs.size();
+    }
+
+    fvector_view add_attr(std::string const &name) {
+        auto back = m_attrs.emplace_back();
+        back.m_name = name;
+        return {std::piecewise_construct, back.m_arr};
+    }
+
+    template <std::size_t N, std::size_t ...Is>
+    fvector_soa_view<N> _helper_add_attr(std::string const &name, std::index_sequence<Is...>) {
+        return {add_attr(name + '.' + std::to_string(Is))...};
+    }
+
+    template <std::size_t N>
+    fvector_soa_view<N> add_attr(std::string const &name) {
+        return _helper_add_attr(name, std::make_index_sequence<N>{});
     }
 
     std::size_t size() const {
@@ -309,7 +283,7 @@ struct primitive {
 using namespace zeno;
 
 int main() {
-    primitive prim;
-    auto pos = prim.attr("_");
+    attrvector prim;
+    auto pos = prim.add_attr("pos");
     return 0;
 }
