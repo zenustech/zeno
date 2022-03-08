@@ -55,7 +55,7 @@ static Arr file_get_binary(std::string const &path) {
   return res;
 }
 
-static void file_put_binary(char const *arr_data, size_t arr_size, std::string const &path) {
+static bool file_put_binary(char const *arr_data, size_t arr_size, std::string const &path) {
   char const *filename = path.c_str();
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
@@ -79,12 +79,12 @@ static void file_put_binary(char const *arr_data, size_t arr_size, std::string c
     perror(filename);
   }
   fclose(fp);
-  return res;
+  return true;
 }
 
 template <class Arr>
-static void file_put_binary(Arr const &arr, std::string const &path) {
-    file_put_binary(std::data(arr), std::size(arr), path);
+static bool file_put_binary(Arr const &arr, std::string const &path) {
+    return file_put_binary(std::data(arr), std::size(arr), path);
 }
 
 }

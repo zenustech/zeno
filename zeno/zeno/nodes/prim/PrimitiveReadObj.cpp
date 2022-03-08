@@ -3,6 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/fileio.h>
+#include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <string_view>
 #include <algorithm>
@@ -30,25 +31,93 @@ static bool match(char const *&it, char const (&arr)[N]) {
     return match_helper(it, arr, std::make_index_sequence<N>{});
 }
 
-void parse_obj(std::vector<char> &&bin) {
-    bin.resize(bin.size() + 8, '\n');
-
-    char const *it = bin.data();
-    char const *eit = bin.data() + bin.size();
-
-    if (match(it, "o ")) {
-        it += 2;
-        std::string_view o_name(it, std::find(it, eit, '\n') - it);
-    }
+static float takef(char const *&it) {
+    char *eptr;
+    float val = std::strtof(it, &eptr);
+    it = eptr;
+    return val;
 }
 
-struct PrimitiveReadObj : INode {
+static uint32_t takeu(char const *&it) {
+    char *eptr;
+    uint32_t val(std::strtoul(it, &eptr, 10));
+    it = eptr;
+    return val;
+}
+
+std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
+    bin.resize(bin.size() + 8, '\0');
+
+    char const *it = bin.data();
+    char const *eit = bin.data() + bin.size() - 8;
+
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    while (it != eit) {
+        auto nit = std::find(it, eit, '\n');
+        if (it[0] == '#') {
+        } else if (match(it, "v ")) {
+            float x = takef(it);
+            float y = takef(it);
+            float z = takef(it);
+            prim->verts.push_back({x, y, z});
+        } else if (match(it, "vt ")) {
+            float x = takef(it);
+            float y = takef(it);
+        } else if (match(it, "vn ")) {
+            float x = takef(it);
+            float y = takef(it);
+            float z = takef(it);
+        } else if (match(it, "f ")) {
+            uint32_t beg = prim->loops.size();
+            uint32_t cnt{};
+            while (it != nit) {
+                uint32_t x = takeu(it);
+                uint32_t xt{}, xn{};
+                if (*it == '/') {
+                    ++it;
+                    if (*it == '/') {
+                        ++it;
+                        xn = takeu(it);
+                    } else {
+                        xt = takeu(it);
+                        if (*it == '/') {
+                            xn = takeu(it);
+                        }
+                    }
+                }
+                prim->loops.push_back(x - 1);
+                ++cnt;
+                it = std::find_if(it, nit, [] (char c) { return c != ' '; });
+            }
+            prim->polys.emplace_back(beg, cnt);
+        } else if (match(it, "o ")) {
+            std::string_view o_name(it, nit - it);
+        }
+        it = nit;
+    }
+
+    return prim;
+}
+
+struct ReadObjPrim : INode {
     virtual void apply() override {
         auto path = get_input<StringObject>("path")->get();
-        auto binary = zeno::file_get_binary(path);
-        parse_obj(std::move(binary));
+        auto binary = file_get_binary(path);
+        auto prim = parse_obj(std::move(binary));
+        set_output("prim", std::move(prim));
     }
 };
+
+ZENDEFNODE(ReadObjPrim,
+        { /* inputs: */ {
+        {"readpath", "path"},
+        }, /* outputs: */ {
+        "prim",
+        }, /* params: */ {
+        }, /* category: */ {
+        "primitive",
+        }});
 
 }
 }
