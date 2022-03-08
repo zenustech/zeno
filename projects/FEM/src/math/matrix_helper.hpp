@@ -83,7 +83,20 @@ public:
         for(int i = 0;i < nm_updofs;++i){
             _des[updofs[i]] = up_value;
         }
-    }   
+    }  
+
+    static Eigen::Map<const SpMat> MapHMatrix(size_t nm_verts,SpMat& conn,FEM_Scaler* HValBuffer){
+        size_t n = nm_verts * 3;
+        return Eigen::Map<const SpMat>(n,n,conn.nonZeros(),
+            conn.outerIndexPtr(),conn.innerIndexPtr(),HValBuffer);
+    }
+
+    static Eigen::Map<SpMat> MapHMatrixRef(size_t nm_verts,SpMat& conn,FEM_Scaler* HValBuffer){
+        size_t n = nm_verts * 3;
+        return Eigen::Map<SpMat>(n,n,conn.nonZeros(),
+            conn.outerIndexPtr(),conn.innerIndexPtr(),HValBuffer);
+    }    
+     
     static void RetrieveDoFs(const SPMAT_SCALER* _src, SPMAT_SCALER* _des,int nm_rtdofs,const int *rtdofs){
         for(int i = 0;i < nm_rtdofs;++i)
             _des[i] = _src[rtdofs[i]];
