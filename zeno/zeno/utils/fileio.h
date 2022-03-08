@@ -15,8 +15,7 @@ static std::string file_get_content(std::string const &path) {
   return content;
 }
 
-static void file_put_content(
-        std::string const &path, std::string const &content) {
+static void file_put_content(std::string const &path, std::string const &content) {
   std::ofstream fout(path);
   fout << content;
 }
@@ -26,7 +25,9 @@ static bool file_exists(std::string const &path) {
   return (bool)fin;
 }
 
-static std::vector<char> c_load_file_to_vector(char const *filename) {
+template <class Arr = std::vector<char>>
+static Arr file_get_binary(std::string const &path) {
+  char const *filename = path.c_str();
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
     perror(filename);
@@ -44,14 +45,46 @@ static std::vector<char> c_load_file_to_vector(char const *filename) {
     return {};
   }
   rewind(fp);
-  std::vector<char> res;
+  Arr res;
   res.resize(size);
-  size_t n = fread(res.data(), 1, res.size(), fp);
-  if (n != res.size()) {
+  size_t n = fread(res.data(), res.size(), 1, fp);
+  if (n != 1) {
     perror(filename);
   }
   fclose(fp);
   return res;
+}
+
+static void file_put_binary(char const *arr_data, size_t arr_size, std::string const &path) {
+  char const *filename = path.c_str();
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    perror(filename);
+    return {};
+  }
+  if (fseek(fp, 0, SEEK_END) != 0) {
+    perror(filename);
+    fclose(fp);
+    return {};
+  }
+  long size = ftell(fp);
+  if (size == -1) {
+    perror(filename);
+    fclose(fp);
+    return {};
+  }
+  rewind(fp);
+  size_t n = fwrite(arr_data, arr_size, 1, fp);
+  if (n != 1) {
+    perror(filename);
+  }
+  fclose(fp);
+  return res;
+}
+
+template <class Arr>
+static void file_put_binary(Arr const &arr, std::string const &path) {
+    file_put_binary(std::data(arr), std::size(arr), path);
 }
 
 }

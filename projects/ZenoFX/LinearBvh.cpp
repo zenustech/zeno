@@ -1,3 +1,4 @@
+#if WXHFUCKINGHAPPY // remove this when wxl fixed the compile error
 #include "LinearBvh.h"
 #include "SpatialUtils.hpp"
 #include <algorithm>
@@ -690,3 +691,4 @@ namespace zeno {
     }
 
 } // namespace zeno
+#endif
