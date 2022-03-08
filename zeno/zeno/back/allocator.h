@@ -51,6 +51,4 @@ struct allocator {
     }
 };
 
-using zallocator = allocator<>;
-
 }
