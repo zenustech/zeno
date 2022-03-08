@@ -193,7 +193,7 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-#extension GL_EXT_gpu_shader4 : enable
+//#extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
 //
 //
