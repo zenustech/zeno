@@ -136,5 +136,5 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
     // end of deprecated
 };
-void getNormal(zeno::PrimitiveObject* prim);
+ZENO_API void getNormal(zeno::PrimitiveObject* prim);
 } // namespace zeno

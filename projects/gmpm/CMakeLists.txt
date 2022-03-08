@@ -10,6 +10,22 @@ add_subdirectory(zecomp)
 
 find_package(CUDAToolkit)
 
+add_library(zeno_zstest SHARED test.cpp)
+target_compile_features(zeno_zstest PRIVATE cxx_std_17)
+
+if (WIN32)
+else()
+target_compile_options(zeno_zstest PRIVATE "-march=native")
+endif()
+target_link_libraries(zeno_zstest PRIVATE zensim)
+target_link_libraries(zeno_zstest PUBLIC zeno)
+target_link_libraries(zeno_zstest PRIVATE zeno_nodep)
+target_link_libraries(zeno_zstest PUBLIC ZFX)
+target_include_directories(zeno_zstest PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_zstest PRIVATE ../zenvdb/include)
+#[=[
+#]=]
+
 add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
   fem/test.cpp
