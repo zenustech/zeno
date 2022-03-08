@@ -26,14 +26,6 @@ struct fvector_view {
         return m_arr.at(idx);
     }
 
-    float read(std::size_t idx) const {
-        return m_arr[idx];
-    }
-
-    void write(std::size_t idx, float val) const {
-        m_arr[idx] = val;
-    }
-
     std::size_t size() const {
         return m_arr.size();
     }
@@ -103,45 +95,42 @@ struct fvector_soa_view {
         return m_views[0].size();
     }
 
-    vec<N, float> read(std::size_t idx) const {
-        vec<N, float> val;
-        for (std::size_t i = 0; i < N; i++) {
-            val[i] = m_views[i][idx];
-        }
-        return val;
-    }
+    struct vec_reference {
+        std::array<float *, N> m_ptrs;
 
-    void write(std::size_t idx, vec<N, float> const &val) const {
-        for (std::size_t i = 0; i < N; i++) {
-            m_views[i][idx] = val[i];
-        }
-    }
+        explicit vec_reference(std::piecewise_construct_t) {}
 
-    struct _soa_reference {
-        fvector_soa_view &m_that;
-        std::size_t idx;
-
-        vec<N, float> get() const {
-            return m_that.read(idx);
+        float &operator[](std::size_t i) const {
+            return *m_ptrs[i];
         }
 
         operator vec<N, float>() const {
-            return get();
+            vec<N, float> val;
+            for (std::size_t i = 0; i < N; i++) {
+                val[i] = *m_ptrs[i];
+            }
+            return val;
         }
 
-        _soa_reference &operator=(vec<N, float> const &val) const {
-            m_that.write(idx, val);
+        vec_reference &operator=(vec<N, float> const &val) const {
+            for (std::size_t i = 0; i < N; i++) {
+                *m_ptrs[i] = val[i];
+            }
             return *this;
         }
     };
 
-    _soa_reference operator[](std::size_t idx) const {
-        return {*this, idx};
+    vec_reference operator[](std::size_t idx) const {
+        vec_reference vref{std::piecewise_construct};
+        for (std::size_t i = 0; i < N; i++) {
+            vref.m_ptrs[i] = &m_views[i][idx];
+        }
+        return vref;
     }
 
-    _soa_reference at(std::size_t idx) const {
+    vec_reference at(std::size_t idx) const {
         (void)m_views[0].at(idx);
-        return {*this, idx};
+        return this->operator[](idx);
     }
 
     void push_back(vec<N, float> const &val) const {
@@ -284,6 +273,8 @@ using namespace zeno;
 
 int main() {
     attrvector prim;
-    auto pos = prim.add_attr<3>("pos");
+    auto pos = prim.add_attr("pos");
+    pos.resize(32);
+    printf("%f\n", pos[0]);
     return 0;
 }
