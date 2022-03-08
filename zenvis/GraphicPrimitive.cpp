@@ -3,15 +3,119 @@
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
 #include "main.hpp"
+#include <memory>
+#include <vector>
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-
 namespace zenvis {
+struct drawObject
+{
+    std::unique_ptr<Buffer> vbo;
+    std::unique_ptr<Buffer> ebo;
+    size_t count=0;
+    Program *prog;
+};
+void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &uv = prim->attr<zeno::vec3f>("uv");
+    obj.count = prim->size();
 
+    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    std::vector<zeno::vec3f> mem(obj.count * 4);
+    for (int i = 0; i < obj.count; i++)
+    {
+      mem[4 * i + 0] = pos[i];
+      mem[4 * i + 1] = clr[i];
+      mem[4 * i + 2] = nrm[i];
+      mem[4 * i + 3] = uv[i];
+    }
+    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+
+    size_t points_count = prim->points.size();
+    if (points_count) {
+        obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        obj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+    }
+
+}
+void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &lines = prim->lines;
+    bool has_uv = lines.has_attr("uv0")&&lines.has_attr("uv1");
+    obj.count = prim->lines.size();
+    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    std::vector<zeno::vec3f> mem(obj.count * 2 * 4);
+    std::vector<zeno::vec2i> linesdata(obj.count);
+    #pragma omp parallel for
+    for(int i=0; i<obj.count;i++)
+    {
+        mem[8 * i + 0] = pos[lines[i][0]];
+        mem[8 * i + 1] = clr[lines[i][0]];
+        mem[8 * i + 2] = nrm[lines[i][0]];
+        mem[8 * i + 3] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
+        mem[8 * i + 4] = pos[lines[i][1]];
+        mem[8 * i + 5] = clr[lines[i][1]];
+        mem[8 * i + 6] = nrm[lines[i][1]];
+        mem[8 * i + 7] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        linesdata[i] = zeno::vec2i(i*2, i*2+1);
+
+    }
+    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    if(obj.count)
+    {
+        obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        obj.ebo->bind_data(&(linesdata[0]), obj.count * sizeof(linesdata[0]));
+    }
+}
+void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &tris = prim->tris;
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    obj.count = prim->tris.size();
+    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    std::vector<zeno::vec3f> mem(obj.count * 3 * 4);
+    std::vector<zeno::vec3i> trisdata(obj.count);
+    #pragma omp parallel for
+    for(int i=0; i<obj.count;i++)
+    {
+        mem[12 * i + 0] = pos[tris[i][0]];
+        mem[12 * i + 1] = clr[tris[i][0]];
+        mem[12 * i + 2] = nrm[tris[i][0]];
+        mem[12 * i + 3] = has_uv? tris.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
+        mem[12 * i + 4] = pos[tris[i][1]];
+        mem[12 * i + 5] = clr[tris[i][1]];
+        mem[12 * i + 6] = nrm[tris[i][1]];
+        mem[12 * i + 7] = has_uv? tris.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        mem[12 * i + 8] = pos[tris[i][2]];
+        mem[12 * i + 9] = clr[tris[i][2]];
+        mem[12 * i + 10] = nrm[tris[i][2]];
+        mem[12 * i + 11] = has_uv? tris.attr<zeno::vec3f>("uv2")[i]:zeno::vec3f(0,0,0);
+
+
+        trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
+
+    }
+    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    if(obj.count)
+    {
+        obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
+    }
+}
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
   size_t vertex_count;
@@ -29,6 +133,8 @@ struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
+  drawObject lineObj;
+  drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
   
   GraphicPrimitive
@@ -64,9 +170,11 @@ struct GraphicPrimitive : IGraphic {
                 }
             }
         } else if (prim->tris.size()) {
-            for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
-            }
+            // for (size_t i = 0; i < nrm.size(); i++) {
+            //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+            // }
+            zeno::getNormal(prim);
+
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
                 nrm[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
@@ -106,18 +214,24 @@ struct GraphicPrimitive : IGraphic {
 
     lines_count = prim->lines.size();
     if (lines_count) {
-        lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
-        lines_prog = get_lines_program(path);
+        // lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        // lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+        // lines_prog = get_lines_program(path);
+        parseLinesDrawBuffer(prim, lineObj);
+        lineObj.prog = get_lines_program(path);
     }
 
     tris_count = prim->tris.size();
     if (tris_count) {
-        tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-        tris_prog = get_tris_program(path, prim->mtl);
-        if (!tris_prog)
-            tris_prog = get_tris_program(path, nullptr);
+        // tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        // tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+        // tris_prog = get_tris_program(path, prim->mtl);
+        // if (!tris_prog)
+        //     tris_prog = get_tris_program(path, nullptr);
+        parseTrianglesDrawBuffer(prim, triObj);
+        triObj.prog = get_tris_program(path, prim->mtl);
+        if(!triObj.prog)
+            triObj.prog = get_tris_program(path,nullptr);
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -168,46 +282,76 @@ struct GraphicPrimitive : IGraphic {
               GL_UNSIGNED_INT, /*first=*/0));
         points_ebo->unbind();
     }
-
-    if (lines_count) {
-        //printf("LINES\n");
-        lines_prog->use();
-        set_program_uniforms(lines_prog);
-        lines_ebo->bind();
-        CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count * 2,
-              GL_UNSIGNED_INT, /*first=*/0));
-        lines_ebo->unbind();
-    }
-
-    if (tris_count) {
-        //printf("TRIS\n");
-        tris_prog->use();
-        set_program_uniforms(tris_prog);
-        tris_prog->set_uniform("mRenderWireframe", false);
-        tris_prog->set_uniformi("skybox",id);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
-
-        tris_ebo->bind();
-        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
-              GL_UNSIGNED_INT, /*first=*/0));
-        if (render_wireframe) {
-          glEnable(GL_POLYGON_OFFSET_LINE);
-          glPolygonOffset(-1, -1);
-          tris_prog->set_uniform("mRenderWireframe", true);
-          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-          CHECK_GL(glDrawElements(GL_TRIANGLES, tris_count * 3, GL_UNSIGNED_INT, 0));
-          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-          glDisable(GL_POLYGON_OFFSET_LINE);
-        }
-        tris_ebo->unbind();
-    }
-
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->disable_attribute(2);
     vbo->disable_attribute(3);
     vbo->unbind();
+
+
+    if (lines_count) {
+        //printf("LINES\n");
+        lineObj.vbo->bind();
+        lineObj.vbo->attribute(/*index=*/0,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        lineObj.vbo->attribute(/*index=*/1,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        lineObj.vbo->attribute(/*index=*/2,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        lineObj.vbo->attribute(/*index=*/3,
+        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        lineObj.prog->use();
+        set_program_uniforms(lineObj.prog);
+        lineObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_LINES, /*count=*/lineObj.count * 2,
+              GL_UNSIGNED_INT, /*first=*/0));
+        lineObj.ebo->unbind();
+        lineObj.vbo->unbind();
+    }
+
+    if (tris_count) {
+        //printf("TRIS\n");
+        triObj.vbo->bind();
+        triObj.vbo->attribute(/*index=*/0,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        triObj.vbo->attribute(/*index=*/1,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        triObj.vbo->attribute(/*index=*/2,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        triObj.vbo->attribute(/*index=*/3,
+        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
+        GL_FLOAT, /*count=*/3);
+        triObj.prog->use();
+        set_program_uniforms(triObj.prog);
+        triObj.prog->set_uniform("mRenderWireframe", false);
+        triObj.prog->set_uniformi("skybox",id);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
+
+        triObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+              GL_UNSIGNED_INT, /*first=*/0));
+        if (render_wireframe) {
+          glEnable(GL_POLYGON_OFFSET_LINE);
+          glPolygonOffset(-1, -1);
+          triObj.prog->set_uniform("mRenderWireframe", true);
+          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+          CHECK_GL(glDrawElements(GL_TRIANGLES, triObj.count * 3, GL_UNSIGNED_INT, 0));
+          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+          glDisable(GL_POLYGON_OFFSET_LINE);
+        }
+        triObj.ebo->unbind();
+        triObj.vbo->unbind();
+    }
+
+    
   }
 
   /*void load_textures(std::string const &path) {
@@ -453,7 +597,7 @@ float dot_c(vec3 a, vec3 b){
 // Get orthonormal basis from surface normal
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void pixarONB(vec3 n, out vec3 b1, out vec3 b2){
-	vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 up        = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     b1   = normalize(cross(up, n));
     b2 = cross(n, b1);
 }

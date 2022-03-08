@@ -68,10 +68,13 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object, ShaderNode *no
 }
 
 ZENO_API void EmissionPass::duplicateIfHlsl(int type, std::string &expr) const {
-    if (backend == HLSL) {
-        auto tmp = ", " + expr;
+    if (backend == HLSL && type > 1) {
+        /* WHY IS MICROSOFT SO STUPID? THIS IS A PROBLEM. */
+        expr += " * float" + std::to_string(type) + "(1";
+        auto tmp = ", 1";
         for (int i = 1; i < type; i++)
             expr += tmp;
+        expr += ")";
     }
 }
 

@@ -99,6 +99,23 @@ ZENDEFNODE(BuildPrimitiveBvh,
                {"zenofx"},
            });
 
+struct RefitPrimitiveBvh : zeno::INode {
+  virtual void apply() override {
+    auto lbvh = get_input<zeno::LBvh>("lbvh");
+    lbvh->refit();
+    set_output("lbvh", std::move(lbvh));
+  }
+};
+
+ZENDEFNODE(RefitPrimitiveBvh,
+           {
+               {{"LBvh", "lbvh"}},
+               {{"LBvh", "lbvh"}},
+               {},
+               {"zenofx"},
+           });
+
+
 struct QueryNearestPrimitive : zeno::INode {
   struct KVPair {
     float dist;
