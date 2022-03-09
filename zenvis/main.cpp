@@ -8,8 +8,8 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
-#include <GL/gl.h>
-#include <spdlog/spdlog.h>
+#include <Hg/OpenGL/stdafx.hpp>
+#include "zenvisapi.hpp"
 
 namespace zenvis {
 
@@ -101,57 +101,7 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-static GLuint envTexture;
-static std::unordered_map<std::string, GLuint> envTextureCache;
 
-unsigned int loadCubemap(std::vector<std::string> faces)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-    int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-            );
-            stbi_image_free(data);
-        }
-        else
-        {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-            stbi_image_free(data);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    return textureID;
-}  
-void setup_env_map(std::string name)
-{
-  if (envTextureCache.count(name)) {
-    envTexture = envTextureCache[name];
-  }
-  std::vector<std::string> faces
-  {
-    fmt::format("assets/sky_box/{}/right.jpg", name),
-    fmt::format("assets/sky_box/{}/left.jpg", name),
-    fmt::format("assets/sky_box/{}/top.jpg", name),
-    fmt::format("assets/sky_box/{}/bottom.jpg", name),
-    fmt::format("assets/sky_box/{}/front.jpg", name),
-    fmt::format("assets/sky_box/{}/back.jpg", name)
-  };
-  envTexture = loadCubemap(faces);
-  envTextureCache[name] = envTexture;
-}
 void initialize() {
   gladLoadGL();
   setup_env_map("Default");
@@ -200,7 +150,7 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-#extension GL_EXT_gpu_shader4 : enable
+//#extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
 //
 //
@@ -379,7 +329,6 @@ static void paint_graphics(GLuint target_fbo = 0) {
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->SetEnvMap(envTexture);
     gra->draw();
   }
   if (show_grid) {
