@@ -156,7 +156,7 @@ struct GraphicPrimitive : IGraphic {
     }
     if(prim->tris.size())
     {
-        zeno::getNormal(prim);
+        zeno::getNormal(prim.get());
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
@@ -222,7 +222,7 @@ struct GraphicPrimitive : IGraphic {
         // lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         // lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
         // lines_prog = get_lines_program(path);
-        parseLinesDrawBuffer(prim, lineObj);//ZHXX????
+        parseLinesDrawBuffer(prim.get(), lineObj);//ZHXX????
         lineObj.prog = get_lines_program();
     }
 
@@ -233,7 +233,7 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        parseTrianglesDrawBuffer(prim, triObj);
+        parseTrianglesDrawBuffer(prim.get(), triObj);
         triObj.prog = get_tris_program(prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(nullptr);

@@ -15,6 +15,8 @@
 
 namespace zenvis {
 
+static void paint_graphics(GLuint target_fbo = 0);
+
 int curr_frameid = -1;
 
 static bool show_grid = true;
@@ -252,8 +254,6 @@ void ScreenFillQuad(GLuint tex)
   glUseProgram(0);
 }
 
-static void paint_graphics(void);
-
 static void zhxx_paint_graphics(GLuint target_fbo = 0) {
   if(tmProg==nullptr)
   {
@@ -354,7 +354,7 @@ static void zhxx_paint_graphics(GLuint target_fbo = 0) {
 /* END MAKE_ZHXX_HAPPY */
 #endif
 
-static void paint_graphics(void) {
+static void paint_graphics(GLuint target_fbo) {
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
