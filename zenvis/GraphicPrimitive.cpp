@@ -615,6 +615,7 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform bool mSmoothShading;
+uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
 varying vec3 position;
@@ -1272,6 +1273,15 @@ void main()
   vec3 color = studioShading(albedo, viewdir, normal);
   
   gl_FragColor = vec4(color, 1.0);
+  if (mNormalCheck) {
+      normal = normalize(cross(dFdx(position), dFdy(position)));
+      normal = (mView * vec4(normal, 0)).xyz;
+      if (normal.z > 0) {
+        gl_FragColor = vec4(0.42, 0.42, 0.93, 1.0);
+      } else {
+        gl_FragColor = vec4(0.87, 0.22, 0.2, 1.0);
+      }
+  }
 }
 )";
     }
