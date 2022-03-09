@@ -91,8 +91,6 @@ ZENDEFNODE(PrintString, {
     {"string"},
 });
 
-<<<<<<< HEAD
-=======
 struct FileWriteString
     : zeno::INode
 {
@@ -148,8 +146,6 @@ ZENDEFNODE(
         {"string"},
     });
 
-#ifdef ZENO_GLOBALSTATE
->>>>>>> origin/master
 struct StringFormat : zeno::INode {
     virtual void apply() override {
         auto str = get_input2<std::string>("str");
