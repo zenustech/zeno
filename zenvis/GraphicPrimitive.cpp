@@ -13,6 +13,7 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern unsigned int getGlobalEnvMap();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -337,7 +338,8 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniform("mRenderWireframe", false);
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
+        if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
