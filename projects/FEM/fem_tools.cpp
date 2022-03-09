@@ -561,4 +561,39 @@ ZENDEFNODE(EvalElmDeformationField, {
     {"FEM"},
 });
 
+struct ExtractSurfaceMeshByTag : zeno::INode {
+    virtual void apply() override {
+        auto vprim = get_input<zeno::PrimitiveObject>("volume");
+        auto primSurf = std::make_shared<zeno::PrimitiveObject>(*vprim);
+        primSurf->tris.clear();
+        primSurf->quads.clear();
+
+        const auto& surf_tag = vprim->attr<float>("surface_tag");
+
+        for(size_t elm_id = 0;elm_id < vprim->quads.size();++elm_id){
+            const auto& tet = vprim->quads[elm_id];
+            //0,1,2;1,2,3;2,3,0;3,0,1
+            for(size_t i = 0;i < 4;++i){
+                auto tris = zeno::vec3i(tet[i],tet[(i+1)%4],tet[(i+2)%4]);
+                if( fabs(surf_tag[tris[0]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tris[1]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tris[2]] - 1.0) < 1e-6){
+                    primSurf->tris.push_back(tris);
+                }
+            }
+        }
+
+        set_output("primSurf",std::move(primSurf));
+    }
+};
+
+ZENDEFNODE(ExtractSurfaceMeshByTag, {
+    {"volume"},
+    {"primSurf"},
+    {},
+    {"FEM"},
+});
+
+
+
 }
