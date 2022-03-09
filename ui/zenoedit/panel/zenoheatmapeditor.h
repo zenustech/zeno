@@ -22,7 +22,14 @@ protected:
 private:
 	QColor m_color;
 	int m_y;
-	static const int m_size = 12;
+	static const int m_size = 10;
+};
+
+class ZenoRampGroove : public QGraphicsLineItem
+{
+	typedef QGraphicsLineItem _base;
+public:
+	ZenoRampGroove(QGraphicsItem* parent = nullptr);
 };
 
 class ZenoRampBar : public QGraphicsView

@@ -10,14 +10,19 @@ ZenoRampSelector::ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* pare
 {
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
 	setRect(0, 0, m_size, m_size);
-	QColor borderClr(0, 0, 0);
-	QPen pen(borderClr, 2);
+	QPen pen(Qt::black, 1);
 	pen.setJoinStyle(Qt::MiterJoin);
 	setPen(pen);
 	setBrush(m_color);
 
 	m_y = y - m_size / 2;
 	setPos(0, m_y);
+
+	QGraphicsDropShadowEffect* pEffect = new QGraphicsDropShadowEffect;
+	pEffect->setColor(Qt::white);
+	pEffect->setOffset(0);
+	pEffect->setBlurRadius(2);
+	setGraphicsEffect(pEffect);
 }
 
 void ZenoRampSelector::setColor(const QColor& clr)
@@ -29,6 +34,7 @@ void ZenoRampSelector::setColor(const QColor& clr)
 void ZenoRampSelector::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	Q_UNUSED(widget);
+	painter->setRenderHint(QPainter::Antialiasing, true);
 	painter->setPen(this->pen());
 	painter->setBrush(this->brush());
 	if ((this->spanAngle() != 0) && (qAbs((this->spanAngle()) % (360 * 16) == 0)))
@@ -44,13 +50,13 @@ QVariant ZenoRampSelector::itemChange(GraphicsItemChange change, const QVariant&
 		bool bSelected = isSelected();
 		if (bSelected)
 		{
-			QPen pen(QColor(255, 128, 0), 2);
+			QPen pen(QColor(255, 128, 0), 1);
 			setPen(pen);
 		}
 		else
 		{
 			QColor borderClr(0, 0, 0);
-			QPen pen(borderClr, 2);
+			QPen pen(borderClr, 1);
 			setPen(pen);
 		}
 	}
@@ -65,13 +71,28 @@ QVariant ZenoRampSelector::itemChange(GraphicsItemChange change, const QVariant&
 }
 
 
+////////////////////////////////////////////////////////////////////
+ZenoRampGroove::ZenoRampGroove(QGraphicsItem* parent)
+	: _base(parent)
+{
+	QPen pen(QColor(45, 60, 76), 1);
+	setPen(pen);
+
+	QGraphicsDropShadowEffect* pEffect = new QGraphicsDropShadowEffect;
+	pEffect->setColor(Qt::white);
+	pEffect->setOffset(0);
+	pEffect->setBlurRadius(3);
+
+	setGraphicsEffect(pEffect);
+}
+
+
+/////////////////////////////////////////////////////////////////////
 ZenoRampBar::ZenoRampBar(QWidget* parent)
 	: QGraphicsView(parent)
 {
 	static const int barHeight = ZenoStyle::dpiScaled(32);
 	setFixedHeight(barHeight);
-	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	m_scene = new QGraphicsScene;
 	QGraphicsRectItem* pColorItem = new QGraphicsRectItem(0, 0, 272, barHeight);
@@ -82,7 +103,7 @@ ZenoRampBar::ZenoRampBar(QWidget* parent)
 	QBrush brush(initBg);
 	pColorItem->setBrush(brush);
 
-	QGraphicsLineItem* pLineItem = new QGraphicsLineItem;
+	ZenoRampGroove* pLineItem = new ZenoRampGroove;
 	int y = barHeight / 2;
 	pLineItem->setLine(0, y, 272, y);
 
