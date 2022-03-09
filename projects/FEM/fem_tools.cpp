@@ -686,12 +686,16 @@ struct ExtractSurfaceMeshByTag : zeno::INode {
 
         const auto& surf_tag = vprim->attr<float>("surface_tag");
 
-        for(size_t t = 0;t < vprim->tris.size();++t){
-            const auto tri = vprim->tris[t];
-            if( fabs(surf_tag[tri[0]] - 1.0) < 1e-6 && 
-                    fabs(surf_tag[tri[1]] - 1.0) < 1e-6 && 
-                    fabs(surf_tag[tri[2]] - 1.0) < 1e-6){
-                    primSurf->tris.push_back(tri);
+        for(size_t elm_id = 0;elm_id < vprim->quads.size();++elm_id){
+            const auto& tet = vprim->quads[elm_id];
+            //0,1,2;1,2,3;2,3,0;3,0,1
+            for(size_t i = 0;i < 4;++i){
+                auto tris = zeno::vec3i(tet[i],tet[(i+1)%4],tet[(i+2)%4]);
+                if( fabs(surf_tag[tris[0]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tris[1]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tris[2]] - 1.0) < 1e-6){
+                    primSurf->tris.push_back(tris);
+                }
             }
         }
 
@@ -706,31 +710,6 @@ ZENDEFNODE(ExtractSurfaceMeshByTag, {
     {"FEM"},
 });
 
-
-// struct ComputeExponentialWeightSimilarity : zeno::INode {
-//     virtual void apply() override {
-//         auto prim = get_input<zeno::PrimitiveObject>("prim");
-//         auto attr_prefix = get_input2<std::string>("attrName");
-
-//         size_t dim = 0;
-//         while(true){
-//             std::string attrName = attr_prefix + std::string("_") + std::to_string(dim);
-//             if(has_input(attrName))
-//                 dim++;
-//         }
-
-//         if(dim == 0){
-//             throw std::runtime_error("NO SPECIFIED ATTRIBUTES FOUND");
-//         }
-
-
-//     }
-// };
-
-// ZENDEFNODE{ComputeExponentialWeightSimilarity,{
-//     {"prim"},
-//     {"prim"}
-// }};
 
 
 }
