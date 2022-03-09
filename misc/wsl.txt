@@ -1,0 +1,51 @@
+Microsoft claims that WSL is the "best Linux disto ever".
+Let's see how Peng-sensei install WSL Ubuntu 20.04 on Windows Server 2019.
+
+Reference: https://petri.com/how-to-install-wsl-on-windows-server
+
+Step #0:
+
+* Download `CanonicalGroupLimited.UbuntuonWindows_2004.2021.825.0.zip` from https://aka.ms/wslubuntu2004
+* Download `wsl_update_x64.msi` from https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
+
+Step #1:
+
+Run the following command:
+```pwsh
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+```
+After executing the above command, reboot the computer (type Y to automatically reboot).
+
+Step #2:
+
+Run the following command:
+```pwsh
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+```
+
+Step #3:
+
+Run the `wsl_update_x64.msi` you have just downloaded:
+```pwsh
+.\wsl_update_x64.msi
+```
+It will open a installer window, keep clicking `next` until installation compete.
+
+Step #4:
+
+Extract `Ubuntu_2004.2021.825.0_x64.appx` from the `CanonicalGroupLimited.UbuntuonWindows_2004.2021.825.0.zip` you have just downloaded.
+Rename `Ubuntu_2004.2021.825.0_x64.appx` to `Ubuntu_2004_x64.zip`, extract it completely into a directory, and run `ubuntu.exe` inside of it.
+```pwsh
+Rename-Item .\CanonicalGroupLimited.UbuntuonWindows_2004.2021.825.0.zip .\Ubuntu_2004.zip
+md Ubuntu2004
+Expand-Archive Ubuntu2004.zip Ubuntu2004
+cd Ubuntu2004
+ls
+Rename-Item Ubuntu_2004.2021.825.0_x64.appx Ubuntu_2004_x64.zip
+md Ubuntu_2004_x64
+Expand-Archive Ubuntu_2004_x64.zip Ubuntu_2004_x64
+cd Ubuntu_2004_x64
+.\ubuntu.exe
+```
+
+After running `ubuntu.exe`, it will ask you for initial username and password.
