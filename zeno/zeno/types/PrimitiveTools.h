@@ -1,12 +1,5 @@
 #pragma once
 
-<<<<<<< HEAD
-#ifndef _MSC_VER
-#warning "<zeno/types/PrimitiveTools.h> is deprecated, use <zeno/funcs/PrimitiveTools.h> instead"
-#endif
-
-#include <zeno/funcs/PrimitiveTools.h>
-=======
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
@@ -82,4 +75,3 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
         }
 
 }
->>>>>>> origin/master
