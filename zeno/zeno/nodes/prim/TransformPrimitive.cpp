@@ -8,11 +8,7 @@
 #include <cstring>
 
 namespace zeno {
-<<<<<<< HEAD
 
-
-struct TransformPrimitive : zeno::INode {
-=======
 struct MatrixObject : zeno::IObject{//ZhxxHappyObject
     std::variant<glm::mat3, glm::mat4> m;
 };
@@ -65,7 +61,6 @@ ZENDEFNODE(MakeLocalSys, {
 });
 
 struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
->>>>>>> origin/master
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
         auto vector4 = matrix * glm::vec4(vector, 1.0f);
         return glm::vec3(vector4) / vector4.w;

@@ -9,12 +9,9 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
-<<<<<<< HEAD:ui/zenovis/main.cpp
 #include <zeno/utils/logger.h>
-=======
 #include <Hg/OpenGL/stdafx.hpp>
 #include "zenvisapi.hpp"
->>>>>>> origin/master:zenvis/main.cpp
 
 namespace zenvis {
 
@@ -254,13 +251,10 @@ void ScreenFillQuad(GLuint tex)
   glDisableVertexAttribArray(0);
   glUseProgram(0);
 }
-<<<<<<< HEAD:ui/zenovis/main.cpp
 
 static void paint_graphics(void);
-static void zhxx_paint_graphics(void) {
-=======
-static void paint_graphics(GLuint target_fbo = 0) {
->>>>>>> origin/master:zenvis/main.cpp
+
+static void zhxx_paint_graphics(GLuint target_fbo = 0) {
   if(tmProg==nullptr)
   {
     std::cout<<"compiling zxx glprog"<<std::endl;
@@ -335,12 +329,23 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
 
   paint_graphics();
-  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  /*CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
   glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
   //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
+  CHECK_GL(glFlush());*/
+
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
   ScreenFillQuad(texRect);
   //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
   //drawScreenQuad here:
@@ -363,19 +368,6 @@ static void paint_graphics(void) {
       draw_small_axis();
   }
   vao->unbind();
-<<<<<<< HEAD:ui/zenovis/main.cpp
-=======
-  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-  ScreenFillQuad(texRect);
-  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  //drawScreenQuad here:
-  CHECK_GL(glFlush());
->>>>>>> origin/master:zenvis/main.cpp
 }
 
 double get_time() {
