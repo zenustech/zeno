@@ -153,6 +153,10 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
+    if(prim->tris.size())
+    {
+        zeno::getNormal(prim);
+    }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
 
@@ -173,7 +177,7 @@ struct GraphicPrimitive : IGraphic {
             // for (size_t i = 0; i < nrm.size(); i++) {
             //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
             // }
-            zeno::getNormal(prim);
+            
 
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
@@ -1188,7 +1192,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 bitangent;// = cross(new_normal, tangent);
     pixarONB(new_normal, tangent, bitangent);
     light_dir = vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,0,0,0,0.5,0,1,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
