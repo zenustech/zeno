@@ -127,6 +127,9 @@ class ZenoParamPushButton : public ZenoParamWidget
 public:
     ZenoParamPushButton(const QString& name, int width, QSizePolicy::Policy hor, QGraphicsItem* parent = nullptr);
 
+signals:
+    void clicked(bool checked = false);
+
 private:
     int m_width;
 };

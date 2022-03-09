@@ -4,19 +4,15 @@
 #include <zenoui/nodesys/zenosvgitem.h>
 
 
-ZenoRampSelector::ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* parent)
+ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)
 	: _base(parent)
-	, m_color(clr)
+	, m_rampBar(pRampBar)
 {
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
 	setRect(0, 0, m_size, m_size);
 	QPen pen(Qt::black, 1);
 	pen.setJoinStyle(Qt::MiterJoin);
 	setPen(pen);
-	setBrush(m_color);
-
-	m_y = y - m_size / 2;
-	setPos(0, m_y);
 
 	QGraphicsDropShadowEffect* pEffect = new QGraphicsDropShadowEffect;
 	pEffect->setColor(Qt::white);
@@ -25,10 +21,12 @@ ZenoRampSelector::ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* pare
 	setGraphicsEffect(pEffect);
 }
 
-void ZenoRampSelector::setColor(const QColor& clr)
+void ZenoRampSelector::initRampPos(const QPointF& pos, const QColor& clr)
 {
-	m_color = clr;
-	setBrush(m_color);
+	setFlag(ItemSendsScenePositionChanges, false);
+	setPos(pos);
+	setFlag(ItemSendsScenePositionChanges, true);
+	setBrush(clr);
 }
 
 void ZenoRampSelector::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -60,12 +58,16 @@ QVariant ZenoRampSelector::itemChange(GraphicsItemChange change, const QVariant&
 			setPen(pen);
 		}
 	}
+	else if (change == QGraphicsItem::ItemPositionChange)
+	{
+		QPointF fixPos(value.toPointF().x(), pos().y());
+		return fixPos;
+	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
-		int x = pos().x();
-		x = qMax(0, x);
-		QPointF fixPos(pos().x(), m_y);
-		setPos(QPointF(x, m_y));
+		QPointF wtf = value.toPointF();
+		QPointF pos = this->pos();
+		m_rampBar->updateRampPos(this);
 	}
 	return _base::itemChange(change, value);
 }
@@ -90,34 +92,113 @@ ZenoRampGroove::ZenoRampGroove(QGraphicsItem* parent)
 /////////////////////////////////////////////////////////////////////
 ZenoRampBar::ZenoRampBar(QWidget* parent)
 	: QGraphicsView(parent)
+	, m_barHeight(ZenoStyle::dpiScaled(32))
+	, m_pColorItem(nullptr)
+	, m_szSelector(ZenoStyle::dpiScaled(10))
 {
-	static const int barHeight = ZenoStyle::dpiScaled(32);
-	setFixedHeight(barHeight);
+	setFixedHeight(m_barHeight);
 
 	m_scene = new QGraphicsScene;
-	QGraphicsRectItem* pColorItem = new QGraphicsRectItem(0, 0, 272, barHeight);
-
-	QLinearGradient initBg(0, 0, 272, 0);
-	initBg.setColorAt(0, QColor("#5338B0"));
-	initBg.setColorAt(1, QColor("#12D7F6"));
-	QBrush brush(initBg);
-	pColorItem->setBrush(brush);
+	m_pColorItem = new QGraphicsRectItem(0, 0, 272, m_barHeight);
 
 	ZenoRampGroove* pLineItem = new ZenoRampGroove;
-	int y = barHeight / 2;
+	int y = m_barHeight / 2;
 	pLineItem->setLine(0, y, 272, y);
 
-	ZenoRampSelector* selector = new ZenoRampSelector(QColor("#5338B0"), y);
-
-	m_scene->addItem(pColorItem);
+	m_scene->addItem(m_pColorItem);
 	m_scene->addItem(pLineItem);
-	m_scene->addItem(selector);
 
 	setScene(m_scene);
 }
 
-ZenoHeatMapEditor::ZenoHeatMapEditor(QWidget* parent)
-	: QWidget(parent)
+void ZenoRampBar::initRamps(const COLOR_RAMPS& ramps)
+{
+	QLinearGradient grad(0, 0, 272, 0);
+	for (COLOR_RAMP ramp : ramps)
+	{
+		int y = m_barHeight / 2;
+		ZenoRampSelector* selector = new ZenoRampSelector(this);
+		selector->setRect(0, 0, m_szSelector, m_szSelector);
+		qreal xPos = 272 * ramp.pos, yPos = (m_barHeight - m_szSelector) / 2.;
+
+		QColor clr(ramp.r * 255, ramp.g * 255, ramp.b * 255);
+		xPos = qMin(272. - 10, xPos);
+		selector->initRampPos(QPointF(xPos, yPos), clr);
+		m_scene->addItem(selector);
+		grad.setColorAt(ramp.pos, clr);
+
+		m_ramps[selector] = ramp;
+	}
+	m_pColorItem->setBrush(QBrush(grad));
+}
+
+void ZenoRampBar::removeRamp()
+{
+	for (ZenoRampSelector* pSelector : m_ramps.keys())
+	{
+		if (pSelector->isSelected())
+		{
+			m_ramps.remove(pSelector);
+			m_scene->removeItem(pSelector);
+		}
+	}
+	refreshBar();
+}
+
+void ZenoRampBar::newRamp()
+{
+
+}
+
+COLOR_RAMPS ZenoRampBar::colorRamps() const
+{
+	auto vals = m_ramps.values();
+	qSort(vals.begin(), vals.end(), [=](const COLOR_RAMP& lhs, const COLOR_RAMP& rhs) {
+		return lhs.pos < rhs.pos;
+		});
+	return vals.toVector();
+}
+
+void ZenoRampBar::updateRampPos(ZenoRampSelector* pSelector)
+{
+	COLOR_RAMP& ramp = m_ramps[pSelector];
+	ramp.pos = pSelector->x() / 272;
+	refreshBar();
+}
+
+void ZenoRampBar::updateRampColor(const QColor& clr)
+{
+	for (ZenoRampSelector* pSelector : m_ramps.keys())
+	{
+		//find selection ramp.
+		//todo: actually only one selector should be selected.
+		if (pSelector->isSelected())
+		{
+			COLOR_RAMP& ramp = m_ramps[pSelector];
+			ramp.r = clr.red() / 255.;
+			ramp.g = clr.green() / 255.;
+			ramp.b = clr.blue() / 255.;
+		}
+	}
+	refreshBar();
+}
+
+void ZenoRampBar::refreshBar()
+{
+	QLinearGradient grad(0, 0, 272, 0);
+	for (COLOR_RAMP rmp : m_ramps)
+	{
+		QColor clr(rmp.r * 255, rmp.g * 255, rmp.b * 255);
+		grad.setColorAt(rmp.pos, clr);
+	}
+	m_pColorItem->setBrush(QBrush(grad));
+}
+
+
+/////////////////////////////////////////////////////////////////////
+ZenoHeatMapEditor::ZenoHeatMapEditor(const COLOR_RAMPS& colorRamps, QWidget* parent)
+	: QDialog(parent)
+	, m_colorRamps(colorRamps)
 {
 	setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	m_ui = new Ui::HeatMapEditor;
@@ -127,11 +208,20 @@ ZenoHeatMapEditor::ZenoHeatMapEditor(QWidget* parent)
 	installFilters();
 }
 
+ZenoHeatMapEditor::~ZenoHeatMapEditor()
+{
+}
+
 void ZenoHeatMapEditor::init()
 {
 	initRamps();
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
+}
+
+COLOR_RAMPS ZenoHeatMapEditor::colorRamps() const
+{
+	return m_ui->rampBarView->colorRamps();
 }
 
 void ZenoHeatMapEditor::installFilters()
@@ -140,10 +230,13 @@ void ZenoHeatMapEditor::installFilters()
 
 void ZenoHeatMapEditor::initSignals()
 {
+	connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onAddRampBtnClicked()));
+	connect(m_ui->btnDelete, SIGNAL(clicked()), this, SLOT(onRemoveRampBtnClicked()));
 }
 
 void ZenoHeatMapEditor::initRamps()
 {
+	m_ui->rampBarView->initRamps(m_colorRamps);
 }
 
 bool ZenoHeatMapEditor::eventFilter(QObject* watched, QEvent* event)
@@ -184,4 +277,14 @@ void ZenoHeatMapEditor::createDrag(const QPoint& pos, QWidget* widget)
 void ZenoHeatMapEditor::dropEvent(QDropEvent* event)
 {
 	QWidget::dropEvent(event);
+}
+
+void ZenoHeatMapEditor::onAddRampBtnClicked()
+{
+	m_ui->rampBarView->newRamp();
+}
+
+void ZenoHeatMapEditor::onRemoveRampBtnClicked()
+{
+	m_ui->rampBarView->removeRamp();
 }

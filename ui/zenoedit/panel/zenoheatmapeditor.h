@@ -7,22 +7,24 @@ namespace Ui
 }
 
 #include <QtWidgets>
+#include <zenoui/model/modeldata.h>
+
+class ZenoRampBar;
 
 class ZenoRampSelector : public QGraphicsEllipseItem
 {
 	typedef QGraphicsEllipseItem _base;
 public:
-	ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* parent = nullptr);
-	void setColor(const QColor& clr);
+	ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent = nullptr);
+	void initRampPos(const QPointF& pos, const QColor& clr);
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+	static const int m_size = 10;
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
-	QColor m_color;
-	int m_y;
-	static const int m_size = 10;
+	ZenoRampBar* m_rampBar;
 };
 
 class ZenoRampGroove : public QGraphicsLineItem
@@ -37,16 +39,30 @@ class ZenoRampBar : public QGraphicsView
 	Q_OBJECT
 public:
 	ZenoRampBar(QWidget* parent = nullptr);
+	void initRamps(const COLOR_RAMPS& ramps);
+	COLOR_RAMPS colorRamps() const;
+	void updateRampPos(ZenoRampSelector* pSelector);
+	void updateRampColor(const QColor& clr);
+	void removeRamp();
+	void newRamp();
 
 private:
+	void refreshBar();
+
+	const int m_barHeight;
+	const int m_szSelector;
+	QMap<ZenoRampSelector*, COLOR_RAMP> m_ramps;
 	QGraphicsScene* m_scene;
+	QGraphicsRectItem* m_pColorItem;
 };
 
-class ZenoHeatMapEditor : public QWidget
+class ZenoHeatMapEditor : public QDialog
 {
 	Q_OBJECT
 public:
-	ZenoHeatMapEditor(QWidget* parent = nullptr);
+	ZenoHeatMapEditor(const COLOR_RAMPS& colorRamps, QWidget* parent = nullptr);
+	~ZenoHeatMapEditor();
+	COLOR_RAMPS colorRamps() const;
 
 signals:
 	void colorPicked(QColor);
@@ -57,6 +73,10 @@ protected:
 	void mousePressEvent(QMouseEvent* event);
 	void dropEvent(QDropEvent* event);
 
+private slots:
+	void onAddRampBtnClicked();
+	void onRemoveRampBtnClicked();
+
 private:
 	void initSignals();
 	void init();
@@ -65,6 +85,8 @@ private:
 	void createDrag(const QPoint& pos, QWidget* widget);
 
 	Ui::HeatMapEditor* m_ui;
+
+	COLOR_RAMPS m_colorRamps;
 };
 
 

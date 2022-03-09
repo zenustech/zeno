@@ -207,6 +207,7 @@ ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePo
     palette.setColor(QPalette::Text, Qt::white);
     pBtn->setPalette(palette);
     setWidget(pBtn);
+    connect(pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
 }
 
 
