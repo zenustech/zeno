@@ -8,9 +8,64 @@
 #include <cstring>
 
 namespace zeno {
+<<<<<<< HEAD
 
 
 struct TransformPrimitive : zeno::INode {
+=======
+struct MatrixObject : zeno::IObject{//ZhxxHappyObject
+    std::variant<glm::mat3, glm::mat4> m;
+};
+
+/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
+    virtual void apply() override {
+        auto &dst = std::get<glm::mat4>(get_input<zeno::MatrixObject>("dst")->m);
+        auto &src = std::get<glm::mat4>(get_input<zeno::MatrixObject>("src")->m);
+        dst = src;
+    }
+};
+ZENDEFNODE(SetMatrix, {
+    {
+    {"dst" },
+    {"src" },
+    },
+    {},
+    {},
+    {"math"},
+});*/
+
+struct MakeLocalSys : zeno::INode{
+    virtual void apply() override {
+        zeno::vec3f front = {1,0,0};
+        zeno::vec3f up = {0,1,0};
+        zeno::vec3f right = {0,0,1};
+        if (has_input("front"))
+            front = get_input<zeno::NumericObject>("front")->get<zeno::vec3f>();
+        if (has_input("up"))
+            up = get_input<zeno::NumericObject>("up")->get<zeno::vec3f>();
+        if (has_input("right"))
+            right = get_input<zeno::NumericObject>("right")->get<zeno::vec3f>();
+
+        auto oMat = std::make_shared<MatrixObject>();
+        oMat->m = glm::mat4(glm::mat3(front[0], up[0], right[0],
+                            front[1], up[1], right[1],
+                            front[2], up[2], right[2]));
+        set_output("LocalSys", oMat);                    
+    }
+};
+ZENDEFNODE(MakeLocalSys, {
+    {
+    {"vec3f", "front", "1,0,0"},
+    {"vec3f", "up", "0,1,0"},
+    {"vec3f", "right", "0,0,1"},
+    },
+    {{"LocalSys"}},
+    {},
+    {"math"},
+});
+
+struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
+>>>>>>> origin/master
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
         auto vector4 = matrix * glm::vec4(vector, 1.0f);
         return glm::vec3(vector4) / vector4.w;

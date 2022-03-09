@@ -1,10 +1,10 @@
 #pragma once
-#include <memory>
 
-#include <zeno/utils/vec.h>
-#include <zeno/types/ListObject.h>
-#include <zeno/types/PrimitiveObject.h>
+#ifndef _MSC_VER
+#warning "<zeno/utils/prim_ops.h> is deprecated, use <zeno/types/PrimitiveTools.h> instead"
+#endif
 
+<<<<<<< HEAD
 namespace zeno {
 
 // cihou zhxx
@@ -38,3 +38,6 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
         }
 
 }
+=======
+#include <zeno/types/PrimitiveTools.h>
+>>>>>>> origin/master

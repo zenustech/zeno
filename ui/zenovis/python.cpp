@@ -1,9 +1,13 @@
 #if 0
 #include "stdafx.hpp"
 #include "main.hpp"
+<<<<<<< HEAD:ui/zenovis/python.cpp
 #include "zenvis.h"
 
 #ifndef ZENVIS_LIB
+=======
+#include "zenvisapi.hpp"
+>>>>>>> origin/master:zenvis/python.cpp
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -31,6 +35,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("get_background_color", zenvis::get_background_color);
     m.def("set_smooth_shading", zenvis::set_smooth_shading);
     m.def("set_render_wireframe", zenvis::set_render_wireframe);
+    m.def("setup_env_map", zenvis::setup_env_map);
 }
 
 #endif

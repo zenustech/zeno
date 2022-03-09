@@ -27,12 +27,12 @@
      "name": "SetMaterial",
      "inputs": {
       "prim": [
-       "e14b31f3-ParticlesWrangle",
+       "4a2ca553-SDFToPrimitive",
        "prim",
        null
       ],
       "mtl": [
-       "4252fd79-MakeMaterial",
+       "f25efa88-ShaderFinalize",
        "mtl",
        null
       ],
@@ -44,69 +44,12 @@
      },
      "params": {},
      "uipos": [
-      6659.888738030341,
-      -190.79629239931538
+      6482.136782723079,
+      -81.20076167305855
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "4252fd79-MakeMaterial": {
-     "name": "MakeMaterial",
-     "inputs": {
-      "vert": [
-       null,
-       null,
-       ""
-      ],
-      "frag": [
-       "f25efa88-ShaderFinalize",
-       "code",
-       ""
-      ],
-      "common": [
-       "f25efa88-ShaderFinalize",
-       "commonCode",
-       ""
-      ],
-      "extensions": [
-       null,
-       null,
-       ""
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      6121.231485070484,
-      -90.41168565274677
-     ],
-     "options": []
-    },
-    "eeee2052-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
-     "inputs": {
-      "prim": [
-       "4a2ca553-SDFToPrimitive",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -522.304201714171,
-      -265.9875393661547
-     ],
-     "options": []
     },
     "0e0316ea-PrintString": {
      "name": "PrintString",
@@ -190,10 +133,12 @@
       "value": "vec3 ModelColor = vec3(0.75, 0.2, 0.01);\n    vec3 PolkaDotColor = vec3(1, 1, 1);\n    vec3 Spacing = spacing;\n    float DotSize = 0.12;\n    float insidesphere,sphereradius,scaledpointlength;\n    vec3 scaledpoint,finalcolor;\n    scaledpoint = pos - (Spacing*floor(pos / Spacing));\n    scaledpoint = scaledpoint - Spacing / 2.0;\n    scaledpointlength = length(scaledpoint);\n    insidesphere = step(scaledpointlength,DotSize);\n    finalcolor = vec3(mix(ModelColor,PolkaDotColor,insidesphere));\n    return  vec3(clamp(vec4(finalcolor, 1.0),0.0,1.0));"
      },
      "uipos": [
-      4101.043439453912,
-      -447.7792306925477
+      3905.9086578342567,
+      -69.65138719846281
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "1c54e185-DynamicNumber": {
      "name": "DynamicNumber",
@@ -211,13 +156,13 @@
      },
      "params": {
       "speed": "0.1",
-      "x": 0.305,
+      "x": 0.285,
       "y": 0.291,
       "z": 0.246,
       "w": 0.0,
       "type": "clamp",
       "_POINTS": "0",
-      "_TMP": "0.305 0.291 0.246 0.0"
+      "_TMP": ""
      },
      "uipos": [
       3524.4658373619222,
@@ -619,8 +564,8 @@
      },
      "params": {},
      "uipos": [
-      4542.282549658589,
-      -243.31015285536898
+      4459.025042834204,
+      -40.36997997092888
      ],
      "options": []
     },
@@ -692,7 +637,7 @@
      },
      "params": {},
      "uipos": [
-      5186.6003228320305,
+      5188.146583922018,
       418.609663384898
      ],
      "options": []
@@ -708,7 +653,7 @@
       "metallic": [
        "afcf9379-ShaderBinaryMath",
        "out",
-       1.0
+       0.0
       ],
       "roughness": [
        null,
@@ -719,6 +664,41 @@
        null,
        null,
        1.0
+      ],
+      "subsurface": [
+       null,
+       null,
+       0.5
+      ],
+      "specularTint": [
+       null,
+       null,
+       0.5
+      ],
+      "anisotropic": [
+       null,
+       null,
+       0.5
+      ],
+      "sheen": [
+       null,
+       null,
+       0.5
+      ],
+      "sheenTint": [
+       null,
+       null,
+       0.5
+      ],
+      "clearcoat": [
+       null,
+       null,
+       0.5
+      ],
+      "clearcoatGloss": [
+       null,
+       null,
+       0.5
       ],
       "normal": [
        null,
@@ -733,7 +713,7 @@
       "exposure": [
        null,
        null,
-       2.2
+       35.0
       ],
       "commonCode": [
        null,
@@ -755,39 +735,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      5733.178697649928,
-      80.50355998434381
-     ],
-     "options": []
-    },
-    "e14b31f3-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "eeee2052-PrimitiveCalcNormal",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@nrm = @nrm"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -59.87208713272534,
-      -110.08738601823691
+      5643.920320329191,
+      73.08814098993042
      ],
      "options": []
     },
@@ -822,8 +771,8 @@
      },
      "params": {},
      "uipos": [
-      -1597.9665771442394,
-      -113.97631452978848
+      489.60610897910635,
+      -348.8695961696577
      ],
      "options": []
     },
@@ -847,8 +796,8 @@
       "allowQuads": false
      },
      "uipos": [
-      -1115.7086539877737,
-      -203.4670473862824
+      971.8640321355721,
+      -438.36032902615165
      ],
      "options": []
     },
@@ -878,17 +827,17 @@
      },
      "params": {},
      "uipos": [
-      5424.358834625856,
-      413.72740610887683
+      5446.449830177549,
+      407.10408171209394
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 3449.302624567517,
-    "y": 2.260986951943778,
-    "width": 1874.9999999999989,
-    "height": 953.1249999999985
+    "x": 3717.396236438893,
+    "y": -453.5597990064826,
+    "width": 2929.687499999998,
+    "height": 1489.2578124999977
    }
   }
  },
@@ -1681,6 +1630,41 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BuildPrimitiveBvh": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "numeric:float",
+     "thickness",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "BulletComposeTransform": {
@@ -5164,6 +5148,66 @@
     "FLIPSolver"
    ]
   },
+  "FileReadString": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "FileWriteString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
   "FinalOutput": {
    "inputs": [
     [
@@ -7774,52 +7818,7 @@
    ],
    "params": [],
    "categories": [
-    "primitive"
-   ]
-  },
-  "MakeMaterial": {
-   "inputs": [
-    [
-     "string",
-     "vert",
-     ""
-    ],
-    [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
-     ""
-    ],
-    [
-     "string",
-     "extensions",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
+    "math"
    ]
   },
   "MakeMultilineString": {
@@ -8322,6 +8321,56 @@
     "string"
    ]
   },
+  "MakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "LINEAR"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "LINEAR"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "MakeTransformMatrix": {
    "inputs": [
     [
@@ -8784,6 +8833,41 @@
    "params": [],
    "categories": [
     "Volume"
+   ]
+  },
+  "MaterialTexture2D": {
+   "inputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
    ]
   },
   "MeshCopy": {
@@ -13375,6 +13459,61 @@
     "MPM"
    ]
   },
+  "QueryNearestPrimitive": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "pid",
+     ""
+    ],
+    [
+     "NumericObject",
+     "id",
+     ""
+    ],
+    [
+     "NumericObject",
+     "dist",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "segment",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -15155,36 +15294,6 @@
     "shader"
    ]
   },
-  "SetMatrix": {
-   "inputs": [
-    [
-     "",
-     "dst",
-     ""
-    ],
-    [
-     "",
-     "src",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "SetRandomSeed": {
    "inputs": [
     [
@@ -15508,41 +15617,6 @@
     "particles"
    ]
   },
-  "ShaderAddTexture2D": {
-   "inputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "texture",
-     "tex",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
-   ]
-  },
   "ShaderBinaryMath": {
    "inputs": [
     [
@@ -15586,13 +15660,8 @@
   "ShaderCihouUnrealEngine": {
    "inputs": [
     [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "string",
-     "common",
+     "MaterialObject",
+     "mtl",
      ""
     ],
     [
@@ -15761,6 +15830,41 @@
      "0.5"
     ],
     [
+     "float",
+     "subsurface",
+     "0.5"
+    ],
+    [
+     "float",
+     "specularTint",
+     "0.5"
+    ],
+    [
+     "float",
+     "anisotropic",
+     "0.5"
+    ],
+    [
+     "float",
+     "sheen",
+     "0.5"
+    ],
+    [
+     "float",
+     "sheenTint",
+     "0.5"
+    ],
+    [
+     "float",
+     "clearcoat",
+     "0.5"
+    ],
+    [
+     "float",
+     "clearcoatGloss",
+     "0.5"
+    ],
+    [
      "vec3f",
      "normal",
      "0,0,1"
@@ -15793,13 +15897,8 @@
    ],
    "outputs": [
     [
-     "string",
-     "code",
-     ""
-    ],
-    [
-     "string",
-     "commonCode",
+     "MaterialObject",
+     "mtl",
      ""
     ],
     [
@@ -15839,7 +15938,7 @@
    ],
    "outputs": [
     [
-     "tree",
+     "shader",
      "out",
      ""
     ],
@@ -15874,7 +15973,7 @@
    ],
    "outputs": [
     [
-     "tree",
+     "shader",
      "out",
      ""
     ],
@@ -15945,32 +16044,27 @@
     "shader"
    ]
   },
-  "ShaderMakeTexture2D": {
+  "ShaderMakeVec": {
    "inputs": [
     [
-     "readpath",
-     "path",
+     "float",
+     "x",
      ""
     ],
     [
-     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
-     "wrapS",
-     "REPEAT"
+     "float",
+     "y",
+     ""
     ],
     [
-     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
-     "wrapT",
-     "REPEAT"
+     "float",
+     "z",
+     ""
     ],
     [
-     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
-     "minFilter",
-     "NEAREST"
-    ],
-    [
-     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
-     "magFilter",
-     "NEAREST"
+     "float",
+     "w",
+     ""
     ],
     [
      "",
@@ -15980,8 +16074,8 @@
    ],
    "outputs": [
     [
-     "texture",
-     "tex",
+     "vec4f",
+     "out",
      ""
     ],
     [
@@ -15995,25 +16089,25 @@
     "shader"
    ]
   },
-  "ShaderMakeVec": {
+  "ShaderPackVec": {
    "inputs": [
     [
-     "tree",
+     "shader",
      "x",
      ""
     ],
     [
-     "tree",
+     "shader",
      "y",
      ""
     ],
     [
-     "tree",
+     "shader",
      "z",
      ""
     ],
     [
-     "tree",
+     "shader",
      "w",
      ""
     ],
@@ -16107,6 +16201,46 @@
    "outputs": [
     [
      "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTexture2D": {
+   "inputs": [
+    [
+     "int",
+     "texId",
+     "0"
+    ],
+    [
+     "vec2f",
+     "coord",
+     "0,0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
      "out",
      ""
     ],

@@ -4,7 +4,7 @@ add_library(zeno_nodep INTERFACE)  # deprecated
 add_library(zenodes SHARED dummy.cpp)
 target_link_libraries(zenodes PUBLIC zenocore)
 
-set(ZENO_EXTENSIONS ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning Functional TreeSketch)
+set(ZENO_EXTENSIONS ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning Functional TreeSketch HerculesTools)
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
 

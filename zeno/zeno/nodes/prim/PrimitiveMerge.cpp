@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <zeno/zeno.h>
-#include <zeno/utils/prim_ops.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>

@@ -1,0 +1,14509 @@
+{
+ "graph": {
+  "main": {
+   "nodes": {
+    "ab6bbbdf-ShaderFinalize": {
+     "name": "ShaderFinalize",
+     "inputs": {
+      "basecolor": [
+       "995d9f8b-getStoneColor",
+       "getStoneColor_out",
+       null
+      ],
+      "metallic": [
+       null,
+       null,
+       0.0
+      ],
+      "roughness": [
+       null,
+       null,
+       0.4
+      ],
+      "specular": [
+       null,
+       null,
+       0.5
+      ],
+      "normal": [
+       "b84d1120-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "emission": [
+       null,
+       null,
+       null
+      ],
+      "exposure": [
+       null,
+       null,
+       1.0
+      ],
+      "commonCode": [
+       null,
+       null,
+       ""
+      ],
+      "extensionsCode": [
+       null,
+       null,
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "backend": "GLSL"
+     },
+     "uipos": [
+      7305.3003315854785,
+      -465.78706032301574
+     ],
+     "options": []
+    },
+    "3cde9c7c-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/home/virgilwjj/Projects/zeno/assets/Pig_Head.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7685.970576772094,
+      -553.2386775191893
+     ],
+     "options": []
+    },
+    "145b4e4b-SetMaterial": {
+     "name": "SetMaterial",
+     "inputs": {
+      "prim": [
+       "3cde9c7c-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "mtl": [
+       "ab6bbbdf-ShaderFinalize",
+       "mtl",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      7975.46594500847,
+      -457.31602505336247
+     ],
+     "options": []
+    },
+    "995d9f8b-getStoneColor": {
+     "name": "getStoneColor",
+     "inputs": {
+      "getStoneColor_p": [
+       "7d45e4c3-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "getStoneColor_c": [
+       "f4e33bdd-ShaderMakeVec",
+       "out",
+       null
+      ],
+      "getStoneColor_l": [
+       "3c65331e-ShaderMakeVec",
+       "out",
+       null
+      ],
+      "getStoneColor_n": [
+       "b84d1120-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "getStoneColor_e": [
+       "7d45e4c3-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6944.439673013236,
+      -469.28937293046295
+     ],
+     "options": []
+    },
+    "7d45e4c3-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "pos"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6607.698675496678,
+      -609.1390728476813
+     ],
+     "options": []
+    },
+    "f4e33bdd-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       0.2
+      ],
+      "y": [
+       null,
+       null,
+       null
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6610.827814569526,
+      -420.9290169497076
+     ],
+     "options": []
+    },
+    "b84d1120-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "nrm"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6619.422516556282,
+      53.40397350993369
+     ],
+     "options": []
+    },
+    "3c65331e-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       0.0
+      ],
+      "y": [
+       null,
+       null,
+       1.0
+      ],
+      "z": [
+       null,
+       null,
+       0.0
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6607.982673267317,
+      -181.93069306930664
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 7067.641608995088,
+    "y": -646.0802349186495,
+    "width": 1199.9999999999993,
+    "height": 629.9999999999991
+   }
+  },
+  "noise_3": {
+   "nodes": {
+    "5cb94876-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       "6262a675-ShaderExtractVec",
+       "x",
+       0.0
+      ],
+      "y": [
+       "6262a675-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -84.46363134032566,
+      149.40934261517282
+     ],
+     "options": []
+    },
+    "7237d226-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "837401bb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "eef9a6c2-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      776.3244999309269,
+      -134.28353482837585
+     ],
+     "options": []
+    },
+    "05a43f40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "837401bb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "d4f0325f-ShaderFillVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      536.0185205747524,
+      803.2487966987122
+     ],
+     "options": []
+    },
+    "d4f0325f-ShaderFillVec": {
+     "name": "ShaderFillVec",
+     "inputs": {
+      "in": [
+       null,
+       null,
+       5.0
+      ],
+      "type": [
+       null,
+       null,
+       "vec2"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      295.2989517237984,
+      873.5555415224247
+     ],
+     "options": []
+    },
+    "1c538021-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "05a43f40-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "a0d9e554-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      827.9483474467146,
+      1443.0204363916753
+     ],
+     "options": []
+    },
+    "0f218613-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0
+     },
+     "uipos": [
+      517.911372132212,
+      369.51593662686076
+     ],
+     "options": []
+    },
+    "eef9a6c2-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0
+     },
+     "uipos": [
+      512.2295979263218,
+      -54.657477190866594
+     ],
+     "options": []
+    },
+    "a119e4b3-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "2bec4458-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "2316cf22-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "z",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2264.36950461491,
+      427.1608984786615
+     ],
+     "options": []
+    },
+    "d1106bf6-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 1.0
+     },
+     "uipos": [
+      564.8536363412421,
+      1719.5971893288245
+     ],
+     "options": []
+    },
+    "e2b3baf1-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       2.0
+      ],
+      "in2": [
+       "b5a9db73-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -438.2055069941116,
+      867.3807845768539
+     ],
+     "options": []
+    },
+    "a66766b8-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "fca02d0d-hash12_2",
+       "hash12_out",
+       0.0
+      ],
+      "in2": [
+       "968b6510-hash12_3",
+       "hash12_out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "x",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1398.6754762366668,
+      285.4569102793299
+     ],
+     "options": []
+    },
+    "837401bb-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "5cb94876-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "f211ff13-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      237.4252272148177,
+      262.5592436705578
+     ],
+     "options": []
+    },
+    "b5a9db73-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "207d176c-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -748.7772845176622,
+      646.7698642690312
+     ],
+     "options": []
+    },
+    "2a967170-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "207d176c-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "floor"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -831.3163739679646,
+      318.10032147590437
+     ],
+     "options": []
+    },
+    "08a9d9d6-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "837401bb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "0f218613-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      779.2681910007339,
+      301.04847189737706
+     ],
+     "options": []
+    },
+    "5c0c7644-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 1.0
+     },
+     "uipos": [
+      515.1566151833458,
+      575.3779209342033
+     ],
+     "options": []
+    },
+    "71953127-ShaderFillVec": {
+     "name": "ShaderFillVec",
+     "inputs": {
+      "in": [
+       null,
+       null,
+       5.0
+      ],
+      "type": [
+       null,
+       null,
+       "vec2"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -403.2804366938324,
+      428.68966237111346
+     ],
+     "options": []
+    },
+    "c3484332-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "a119e4b3-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "max"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2518.4213748176976,
+      429.606437709061
+     ],
+     "options": []
+    },
+    "ab775a05-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "dca78b6a-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "1e740b46-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4.193405601596481,
+      1958.8784804099053
+     ],
+     "options": []
+    },
+    "ca9ce505-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "05a43f40-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "d1106bf6-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      834.528756589521,
+      1665.3602511320971
+     ],
+     "options": []
+    },
+    "0d577939-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "05a43f40-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "8a8f521e-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      826.6127087744119,
+      1215.1271966470001
+     ],
+     "options": []
+    },
+    "16492ad0-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "05a43f40-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "9e11a9b7-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      823.829379723594,
+      994.097171330002
+     ],
+     "options": []
+    },
+    "6262a675-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
+     "inputs": {
+      "vec": [
+       "2a967170-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -390.2802657643084,
+      141.60613431665723
+     ],
+     "options": []
+    },
+    "1de0249b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "837401bb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "5c0c7644-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      783.9287522032977,
+      519.9259442314274
+     ],
+     "options": []
+    },
+    "2316cf22-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "a5ba5327-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "035c6fee-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1933.8710678015295,
+      975.0409945511823
+     ],
+     "options": []
+    },
+    "a0d9e554-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0
+     },
+     "uipos": [
+      559.4925544711801,
+      1494.3026535019649
+     ],
+     "options": []
+    },
+    "53562889-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "837401bb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "0977dcb3-NumericVec2",
+       "vec2",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      781.3179289702872,
+      82.45824886402903
+     ],
+     "options": []
+    },
+    "035c6fee-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "f4f730eb-hash12_6",
+       "hash12_out",
+       0.0
+      ],
+      "in2": [
+       "a6a985ab-hash12_7",
+       "hash12_out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "x",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1425.14188746097,
+      1432.118577746967
+     ],
+     "options": []
+    },
+    "8b1175c0-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
+     "inputs": {
+      "vec": [
+       "ab775a05-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      811.1417709508053,
+      1966.0843413753498
+     ],
+     "options": []
+    },
+    "a5ba5327-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "13aad9b4-hash12_4",
+       "hash12_out",
+       0.0
+      ],
+      "in2": [
+       "48cd6e3c-hash12_5",
+       "hash12_out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "x",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1436.7002352498544,
+      980.8604418568627
+     ],
+     "options": []
+    },
+    "8a8f521e-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0
+     },
+     "uipos": [
+      548.598982371713,
+      1287.2871140693367
+     ],
+     "options": []
+    },
+    "f211ff13-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6262a675-ShaderExtractVec",
+       "z",
+       0.0
+      ],
+      "in2": [
+       "71953127-ShaderFillVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -70.695874917547,
+      400.66689138167885
+     ],
+     "options": []
+    },
+    "2bec4458-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "cc2acbc9-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "a66766b8-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2003.1296009341136,
+      141.54075157521476
+     ],
+     "options": []
+    },
+    "cc2acbc9-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "4e8a61f2-hash12_0",
+       "hash12_out",
+       0.0
+      ],
+      "in2": [
+       "17b3ed96-hash12_1",
+       "hash12_out",
+       0.0
+      ],
+      "in3": [
+       "8b1175c0-ShaderExtractVec",
+       "x",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1389.0750367969315,
+      -88.48586621713058
+     ],
+     "options": []
+    },
+    "1e740b46-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       3.0
+      ],
+      "in2": [
+       "e2b3baf1-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sub"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -347.6732794256484,
+      1504.3667526551055
+     ],
+     "options": []
+    },
+    "9e11a9b7-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0
+     },
+     "uipos": [
+      547.1620699011687,
+      1082.4968461638668
+     ],
+     "options": []
+    },
+    "0977dcb3-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0
+     },
+     "uipos": [
+      512.9611315536021,
+      149.93348504977325
+     ],
+     "options": []
+    },
+    "dca78b6a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "b5a9db73-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "b5a9db73-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -437.83113817344133,
+      652.7489983711117
+     ],
+     "options": []
+    },
+    "207d176c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "noise_3_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1138.7250125165513,
+      320.6762221243288
+     ],
+     "options": []
+    },
+    "940df83c-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "c3484332-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "noise_3_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2765.273903018677,
+      431.63550001829066
+     ],
+     "options": []
+    },
+    "4e8a61f2-hash12_0": {
+     "name": "hash12_0",
+     "inputs": {
+      "hash12_p": [
+       "7237d226-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1061.7691949503312,
+      -98.45496171357618
+     ],
+     "options": []
+    },
+    "17b3ed96-hash12_1": {
+     "name": "hash12_1",
+     "inputs": {
+      "hash12_p": [
+       "53562889-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1040.5338110513246,
+      104.24643004966887
+     ],
+     "options": []
+    },
+    "fca02d0d-hash12_2": {
+     "name": "hash12_2",
+     "inputs": {
+      "hash12_p": [
+       "08a9d9d6-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1036.672832160596,
+      330.1136951572847
+     ],
+     "options": []
+    },
+    "968b6510-hash12_3": {
+     "name": "hash12_3",
+     "inputs": {
+      "hash12_p": [
+       "1de0249b-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1048.2557688327815,
+      530.8845974751656
+     ],
+     "options": []
+    },
+    "13aad9b4-hash12_4": {
+     "name": "hash12_4",
+     "inputs": {
+      "hash12_p": [
+       "16492ad0-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1102.8675054082812,
+      940.9461949834763
+     ],
+     "options": []
+    },
+    "48cd6e3c-hash12_5": {
+     "name": "hash12_5",
+     "inputs": {
+      "hash12_p": [
+       "0d577939-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1090.3404387417222,
+      1167.5600165562912
+     ],
+     "options": []
+    },
+    "f4f730eb-hash12_6": {
+     "name": "hash12_6",
+     "inputs": {
+      "hash12_p": [
+       "1c538021-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1099.60678807947,
+      1397.6743584437088
+     ],
+     "options": []
+    },
+    "a6a985ab-hash12_7": {
+     "name": "hash12_7",
+     "inputs": {
+      "hash12_p": [
+       "ca9ce505-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1098.8104611832573,
+      1611.741506816536
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -2744.5377348691886,
+    "y": -800.2631401374271,
+    "width": 7152.557373046875,
+    "height": 3558.3972930908203
+   }
+  },
+  "getStoneColor": {
+   "nodes": {
+    "913683dd-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "f0e3ec3b-ShaderMakeVec",
+       "out",
+       1.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.35
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1473.8640376952285,
+      -3008.285520088599
+     ],
+     "options": []
+    },
+    "3559eadd-noise_3": {
+     "name": "noise_3",
+     "inputs": {
+      "noise_3_p": [
+       "e009d462-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      621.1226047849837,
+      -2794.9504598700055
+     ],
+     "options": []
+    },
+    "ede89a53-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "e5308129-ShaderMakeVec",
+       "out",
+       1.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.9
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1476.5088165199363,
+      -2777.9692246913505
+     ],
+     "options": []
+    },
+    "fe3a7265-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       1.0
+      ],
+      "in2": [
+       "38b513e1-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sub"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      944.2036543384002,
+      -2583.336779409457
+     ],
+     "options": []
+    },
+    "20d09ded-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       "4b86aecc-ShaderExtractVec",
+       "x",
+       null
+      ],
+      "y": [
+       null,
+       null,
+       0.0
+      ],
+      "z": [
+       "4b86aecc-ShaderExtractVec",
+       "z",
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      130.96924353515624,
+      -2792.270213984708
+     ],
+     "options": []
+    },
+    "38b513e1-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "b9a839a9-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       1.0
+      ],
+      "op": [
+       null,
+       null,
+       "min"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      675.2037899409315,
+      -2514.365689290305
+     ],
+     "options": []
+    },
+    "f0e3ec3b-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       0.42
+      ],
+      "y": [
+       null,
+       null,
+       0.3
+      ],
+      "z": [
+       null,
+       null,
+       0.2
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1193.193021510086,
+      -3021.387895758205
+     ],
+     "options": []
+    },
+    "6db0b37a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "3559eadd-noise_3",
+       "noise_3_out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       70.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      872.4952868186647,
+      -2806.5358115967097
+     ],
+     "options": []
+    },
+    "e5308129-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       0.51
+      ],
+      "y": [
+       null,
+       null,
+       0.41
+      ],
+      "z": [
+       null,
+       null,
+       0.32
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1192.178356717262,
+      -2778.2275579694533
+     ],
+     "options": []
+    },
+    "2fa4aa7c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "fe3a7265-ShaderBinaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.5
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1209.4041514256605,
+      -2515.1353622864463
+     ],
+     "options": []
+    },
+    "e009d462-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "20d09ded-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       20.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      373.5600795754267,
+      -2791.5909912101074
+     ],
+     "options": []
+    },
+    "b9a839a9-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "0d26eb5e-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      379.32475434490607,
+      -2504.247088604792
+     ],
+     "options": []
+    },
+    "4b86aecc-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
+     "inputs": {
+      "vec": [
+       "12664fe7-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -122.12482542758153,
+      -2790.2485986764964
+     ],
+     "options": []
+    },
+    "ef9354f7-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "913683dd-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "ede89a53-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in3": [
+       "38b513e1-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1873.1995144668185,
+      -2781.4707178362246
+     ],
+     "options": []
+    },
+    "12664fe7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -401.3861507321312,
+      -2791.2062351433647
+     ],
+     "options": []
+    },
+    "93a45523-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_c",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -391.52351621226353,
+      -2513.0799416830996
+     ],
+     "options": []
+    },
+    "bf2352ec-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_l",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -393.4960431162367,
+      -2256.6514441665436
+     ],
+     "options": []
+    },
+    "0f1ce2fc-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_n",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -387.81924937989925,
+      -1992.0593050298312
+     ],
+     "options": []
+    },
+    "13cf399c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_e",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -375.346484044715,
+      -1732.155769881665
+     ],
+     "options": []
+    },
+    "0d26eb5e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "93a45523-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "6db0b37a-ShaderBinaryMath",
+       "out",
+       70.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      119.36095191687582,
+      -2505.1898340672055
+     ],
+     "options": []
+    },
+    "3c45acff-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "c3ad8e14-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "getStoneColor_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3980.426712589328,
+      -2978.1733044347557
+     ],
+     "options": []
+    },
+    "a9698d21-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "13cf399c-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "neg"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -120.85802909171265,
+      -1769.1457978176186
+     ],
+     "options": []
+    },
+    "e0228eea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "0f1ce2fc-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "a9698d21-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      158.41958861146395,
+      -1983.2868176324905
+     ],
+     "options": []
+    },
+    "3e812d14-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "e0228eea-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "max"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      408.81150280288284,
+      -1980.7703159823254
+     ],
+     "options": []
+    },
+    "cbffad40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       1.0
+      ],
+      "in2": [
+       "3e812d14-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sub"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      660.4616678193847,
+      -1982.028566807408
+     ],
+     "options": []
+    },
+    "1cdc4850-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "cbffad40-ShaderBinaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       null,
+       null,
+       5.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      897.0128229348961,
+      -1983.2868176324905
+     ],
+     "options": []
+    },
+    "767a1d9c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "1cdc4850-ShaderBinaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.75
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1139.0228992550283,
+      -1986.1587751407415
+     ],
+     "options": []
+    },
+    "12ed9a6c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "767a1d9c-ShaderBinaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       "2fa4aa7c-ShaderBinaryMath",
+       "out",
+       0.75
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1398.583058083411,
+      -2016.8663865268804
+     ],
+     "options": []
+    },
+    "1b59be72-diffuse": {
+     "name": "diffuse",
+     "inputs": {
+      "diffuse_n": [
+       "0f1ce2fc-SubInput",
+       "port",
+       null
+      ],
+      "diffuse_l": [
+       "bf2352ec-SubInput",
+       "port",
+       null
+      ],
+      "diffuse_p": [
+       "ed4fa695-ShaderMakeVec",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      488.6775608503376,
+      -1748.6107511488904
+     ],
+     "options": []
+    },
+    "ed4fa695-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       0.5
+      ],
+      "y": [
+       null,
+       null,
+       null
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      266.67339494912875,
+      -1690.2556828539743
+     ],
+     "options": []
+    },
+    "a5c4edfe-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       1.2
+      ],
+      "y": [
+       null,
+       null,
+       1.07
+      ],
+      "z": [
+       null,
+       null,
+       0.98
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -408.8636099308633,
+      -1322.9639813262631
+     ],
+     "options": []
+    },
+    "b4f729a4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "1b59be72-diffuse",
+       "diffuse_out",
+       0.0
+      ],
+      "in2": [
+       "40ef17fc-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1059.6417420768103,
+      -1734.153154266155
+     ],
+     "options": []
+    },
+    "40ef17fc-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "a5c4edfe-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.25
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -50.37689101971455,
+      -1278.812893732152
+     ],
+     "options": []
+    },
+    "d5f68958-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "ef9354f7-ShaderTernaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       "b4f729a4-ShaderBinaryMath",
+       "out",
+       0.75
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2037.1453518127823,
+      -2274.807805668795
+     ],
+     "options": []
+    },
+    "76d7063c-specular_0": {
+     "name": "specular_0",
+     "inputs": {
+      "specular_n": [
+       "0f1ce2fc-SubInput",
+       "port",
+       null
+      ],
+      "specular_l": [
+       "bf2352ec-SubInput",
+       "port",
+       null
+      ],
+      "specular_e": [
+       "13cf399c-SubInput",
+       "port",
+       null
+      ],
+      "specular_s": [
+       "81dd3a40-ShaderMakeVec",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1759.443542744852,
+      -1606.4484520713868
+     ],
+     "options": []
+    },
+    "81dd3a40-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       8.0
+      ],
+      "y": [
+       null,
+       null,
+       null
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1419.3858977591626,
+      -1328.6364807783568
+     ],
+     "options": []
+    },
+    "207a23ea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "76d7063c-specular_0",
+       "specular_out",
+       0.0
+      ],
+      "in2": [
+       "40ef17fc-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1997.1746766370497,
+      -1355.8146986001384
+     ],
+     "options": []
+    },
+    "5f8aa72a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "207a23ea-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2293.870221191505,
+      -1354.808097940073
+     ],
+     "options": []
+    },
+    "e440a4f7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "5f8aa72a-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "2fa4aa7c-ShaderBinaryMath",
+       "out",
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2627.6212525446417,
+      -1388.1517448047593
+     ],
+     "options": []
+    },
+    "295b1d57-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "d5f68958-ShaderBinaryMath",
+       "out",
+       1.0
+      ],
+      "in2": [
+       "e440a4f7-ShaderBinaryMath",
+       "out",
+       0.75
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2658.40669669727,
+      -2199.8534108152467
+     ],
+     "options": []
+    },
+    "deb5ee06-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "12664fe7-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "normalize"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -113.67715231262855,
+      -3023.860249975725
+     ],
+     "options": []
+    },
+    "20ed03ba-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "deb5ee06-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.4
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      159.84495087425285,
+      -3075.345317916113
+     ],
+     "options": []
+    },
+    "e5185aab-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "0f1ce2fc-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "20ed03ba-ShaderBinaryMath",
+       "out",
+       0.4
+      ],
+      "op": [
+       null,
+       null,
+       "sub"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      452.5357189745,
+      -3153.6173663123586
+     ],
+     "options": []
+    },
+    "d8c590c3-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "e5185aab-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "normalize"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      703.7059953897301,
+      -3169.8628290258207
+     ],
+     "options": []
+    },
+    "6c6c61ce-specular_1": {
+     "name": "specular_1",
+     "inputs": {
+      "specular_e": [
+       "13cf399c-SubInput",
+       "port",
+       null
+      ],
+      "specular_n": [
+       "d8c590c3-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "specular_l": [
+       "bf2352ec-SubInput",
+       "port",
+       null
+      ],
+      "specular_s": [
+       "1a1f6782-ShaderMakeVec",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1260.2898572537758,
+      -3413.862519531751
+     ],
+     "options": []
+    },
+    "1a1f6782-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       80.0
+      ],
+      "y": [
+       null,
+       null,
+       null
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      960.0453795379522,
+      -3237.4793729372896
+     ],
+     "options": []
+    },
+    "2995a47d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6c6c61ce-specular_1",
+       "specular_out",
+       0.0
+      ],
+      "in2": [
+       "40ef17fc-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1548.2383199257404,
+      -3329.9411484117118
+     ],
+     "options": []
+    },
+    "073e4f40-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "2995a47d-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1873.6141192244197,
+      -3289.146297442239
+     ],
+     "options": []
+    },
+    "41cc5c0a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "073e4f40-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "2fa4aa7c-ShaderBinaryMath",
+       "out",
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2158.686571782175,
+      -3230.165790016497
+     ],
+     "options": []
+    },
+    "346bf0c4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "295b1d57-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "41cc5c0a-ShaderBinaryMath",
+       "out",
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2538.1278362211183,
+      -3076.8164707095666
+     ],
+     "options": []
+    },
+    "4867ddc4-ShaderFillVec": {
+     "name": "ShaderFillVec",
+     "inputs": {
+      "in": [
+       null,
+       null,
+       1.0
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2777.274133663362,
+      -2778.1981616130315
+     ],
+     "options": []
+    },
+    "c9dc8fe4-ShaderTernaryMath": {
+     "name": "ShaderTernaryMath",
+     "inputs": {
+      "in1": [
+       "346bf0c4-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "4867ddc4-ShaderFillVec",
+       "out",
+       0.0
+      ],
+      "in3": [
+       "12ed9a6c-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mix"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3097.8135313531307,
+      -2809.674092409237
+     ],
+     "options": []
+    },
+    "6bb4c18e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "c9dc8fe4-ShaderTernaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "8f4743f4-ShaderBinaryMath",
+       "out",
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3570.0832027019796,
+      -3009.6839048681436
+     ],
+     "options": []
+    },
+    "52ef8366-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
+     "inputs": {
+      "vec": [
+       "12664fe7-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -113.99634207042513,
+      -3359.892187338846
+     ],
+     "options": []
+    },
+    "3aa395ea-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "52ef8366-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      250.6671565594056,
+      -3485.4530863242535
+     ],
+     "options": []
+    },
+    "a4a98dc8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "3aa395ea-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.5
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      512.7372112211216,
+      -3475.917904290424
+     ],
+     "options": []
+    },
+    "02303f7f-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "a4a98dc8-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "abs"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      803.7077145214508,
+      -3508.94698844884
+     ],
+     "options": []
+    },
+    "0b4900b6-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "02303f7f-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sqrt"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1069.3657500515662,
+      -3662.9106880414543
+     ],
+     "options": []
+    },
+    "21e790cd-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "0b4900b6-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.4
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1400.787051361384,
+      -3650.991710499169
+     ],
+     "options": []
+    },
+    "8f4743f4-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "21e790cd-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.6
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1676.6192244224399,
+      -3612.7526815181463
+     ],
+     "options": []
+    },
+    "7cf770d6-ShaderExtractVec": {
+     "name": "ShaderExtractVec",
+     "inputs": {
+      "vec": [
+       "0f1ce2fc-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      209.06737141876704,
+      -971.1846125007839
+     ],
+     "options": []
+    },
+    "827da701-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "7cf770d6-ShaderExtractVec",
+       "y",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      532.6369886744527,
+      -1000.8254853805674
+     ],
+     "options": []
+    },
+    "c47a2b09-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "827da701-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.5
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      855.5552668303931,
+      -1031.7288137505145
+     ],
+     "options": []
+    },
+    "3a831653-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "c47a2b09-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.4
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1244.1200785117553,
+      -1021.4072249510091
+     ],
+     "options": []
+    },
+    "eb50bd0b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "3a831653-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.6
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1523.5085918564978,
+      -973.88613861386
+     ],
+     "options": []
+    },
+    "c3ad8e14-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6bb4c18e-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "eb50bd0b-ShaderBinaryMath",
+       "out",
+       1.5
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3786.8810140653745,
+      -2595.183029426596
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 2816.9558367236045,
+    "y": -3119.04971546677,
+    "width": 1851.2499999999989,
+    "height": 762.4999999999989
+   }
+  },
+  "hash12_0": {
+   "nodes": {
+    "8955db4f-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "204fa196-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "ac158445-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      123.17381658873268,
+      205.36036711898163
+     ],
+     "options": []
+    },
+    "204fa196-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -143.18619185721315,
+      94.56116948384644
+     ],
+     "options": []
+    },
+    "ac158445-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -141.4815888166725,
+      349.80969144330584
+     ],
+     "options": []
+    },
+    "227aade4-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "2e67de86-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1088.4842051022463,
+      209.52717455141408
+     ],
+     "options": []
+    },
+    "2e67de86-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "9a610109-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      839.10709361576,
+      214.26218299735996
+     ],
+     "options": []
+    },
+    "d4666970-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "8955db4f-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      363.58597875089487,
+      210.66357657844105
+     ],
+     "options": []
+    },
+    "9a610109-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "d4666970-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      594.275590237381,
+      212.1787792811437
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -165.06105132450335,
+    "y": -113.93315397350983,
+    "width": 1851.2499999999995,
+    "height": 762.5
+   }
+  },
+  "hash12_1": {
+   "nodes": {
+    "bdff862d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "c6d02b54-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "4f37e503-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      158.52149870793795,
+      226.5689763905048
+     ],
+     "options": []
+    },
+    "c6d02b54-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -107.83850973800787,
+      115.7697787553696
+     ],
+     "options": []
+    },
+    "4f37e503-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -106.13390669746724,
+      371.018300714829
+     ],
+     "options": []
+    },
+    "a3ffda39-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "253c2cb2-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1123.8318872214516,
+      230.73578382293724
+     ],
+     "options": []
+    },
+    "253c2cb2-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "9cac236d-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      874.4547757349653,
+      235.47079226888312
+     ],
+     "options": []
+    },
+    "f713b3b4-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "bdff862d-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      398.93366087010014,
+      231.8721858499642
+     ],
+     "options": []
+    },
+    "9cac236d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "f713b3b4-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      629.6232723565863,
+      233.38738855266686
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -141.59271523178802,
+    "y": -41.25579470198673,
+    "width": 1481.0,
+    "height": 610.0
+   }
+  },
+  "hash12_2": {
+   "nodes": {
+    "3d4e934f-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "064c4337-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "c0327813-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      108.02480996621614,
+      221.51930751633262
+     ],
+     "options": []
+    },
+    "064c4337-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -158.33519847972968,
+      110.72010988119743
+     ],
+     "options": []
+    },
+    "c0327813-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -156.63059543918905,
+      365.9686318406568
+     ],
+     "options": []
+    },
+    "295c6fe9-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "d6e016fd-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1073.3351984797296,
+      225.68611494876507
+     ],
+     "options": []
+    },
+    "d6e016fd-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "0bafd70a-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      823.9580869932435,
+      230.42112339471095
+     ],
+     "options": []
+    },
+    "738b13d5-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "3d4e934f-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      348.43697212837833,
+      226.82251697579204
+     ],
+     "options": []
+    },
+    "0bafd70a-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "738b13d5-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      579.1265836148644,
+      228.3377196784947
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -137.35099337748335,
+    "y": -144.97599337748338,
+    "width": 1480.999999999999,
+    "height": 610.0
+   }
+  },
+  "hash12_3": {
+   "nodes": {
+    "479417f8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "9be52793-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "2c53fd33-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      94.89567089336845,
+      240.7080492381869
+     ],
+     "options": []
+    },
+    "9be52793-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -171.46433755257738,
+      129.90885160305172
+     ],
+     "options": []
+    },
+    "2c53fd33-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -169.75973451203674,
+      385.1573735625111
+     ],
+     "options": []
+    },
+    "db4bdf7d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "f0d89569-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1060.206059406882,
+      244.87485667061935
+     ],
+     "options": []
+    },
+    "f0d89569-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "16ff6654-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      810.8289479203958,
+      249.60986511656523
+     ],
+     "options": []
+    },
+    "da728cb1-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "479417f8-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      335.30783305553064,
+      246.01125869764633
+     ],
+     "options": []
+    },
+    "16ff6654-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "da728cb1-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      565.9974445420168,
+      247.52646140034898
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -460.62448261589407,
+    "y": 29.666804635762787,
+    "width": 2314.0624999999986,
+    "height": 953.125
+   }
+  },
+  "hash12_4": {
+   "nodes": {
+    "29cdfb25-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -154.61072788952026,
+      362.93883051615353
+     ],
+     "options": []
+    },
+    "4e557fe9-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "11a104a8-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "29cdfb25-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      110.04467751588493,
+      218.4895061918293
+     ],
+     "options": []
+    },
+    "f96a22ce-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6e3dbdeb-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      581.1464511645332,
+      225.30791835399137
+     ],
+     "options": []
+    },
+    "11a104a8-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -156.3153309300609,
+      107.6903085566941
+     ],
+     "options": []
+    },
+    "6e3dbdeb-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "4e557fe9-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      350.4568396780471,
+      223.79271565128872
+     ],
+     "options": []
+    },
+    "330757d7-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "56cee7a4-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1075.3550660293986,
+      222.65631362426174
+     ],
+     "options": []
+    },
+    "56cee7a4-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "f96a22ce-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      825.9779545429122,
+      227.39132207020762
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -866.9650248344369,
+    "y": -409.81218956953626,
+    "width": 2314.062499999999,
+    "height": 953.125
+   }
+  },
+  "hash12_5": {
+   "nodes": {
+    "808e5372-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -156.6305954391891,
+      306.38253912542507
+     ],
+     "options": []
+    },
+    "1a05e3a8-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "685a700f-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "808e5372-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      108.02480996621608,
+      161.93321480110083
+     ],
+     "options": []
+    },
+    "7a8bf227-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "9ba5ebd1-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      579.1265836148643,
+      168.7516269632629
+     ],
+     "options": []
+    },
+    "685a700f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -158.33519847972974,
+      51.134017165965645
+     ],
+     "options": []
+    },
+    "9ba5ebd1-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "1a05e3a8-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      348.4369721283783,
+      167.23642426056026
+     ],
+     "options": []
+    },
+    "21043978-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "d5342e5b-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1073.3351984797298,
+      166.10002223353328
+     ],
+     "options": []
+    },
+    "d5342e5b-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "7a8bf227-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      823.9580869932433,
+      170.83503067947916
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -382.3230546357614,
+    "y": -144.29428807947016,
+    "width": 1851.25,
+    "height": 762.5
+   }
+  },
+  "hash12_6": {
+   "nodes": {
+    "9108d195-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -258.6339066974673,
+      304.36267157575617
+     ],
+     "options": []
+    },
+    "1e200e70-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "8b18e012-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "9108d195-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6.021498707937894,
+      159.91334725143196
+     ],
+     "options": []
+    },
+    "1f65f155-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "f5d536a2-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      477.1232723565862,
+      166.73175941359403
+     ],
+     "options": []
+    },
+    "8b18e012-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -260.33850973800793,
+      49.11414961629677
+     ],
+     "options": []
+    },
+    "f5d536a2-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "1e200e70-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      246.43366087010008,
+      165.21655671089138
+     ],
+     "options": []
+    },
+    "26663431-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "7a53a116-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      971.3318872214516,
+      164.0801546838644
+     ],
+     "options": []
+    },
+    "7a53a116-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "1f65f155-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      721.9547757349652,
+      168.8151631298103
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -277.2773178807946,
+    "y": -98.92301324503302,
+    "width": 1481.0,
+    "height": 610.0
+   }
+  },
+  "hash12_7": {
+   "nodes": {
+    "f9df4ff6-ShaderMakeVec": {
+     "name": "ShaderMakeVec",
+     "inputs": {
+      "x": [
+       null,
+       null,
+       127.1
+      ],
+      "y": [
+       null,
+       null,
+       311.7
+      ],
+      "z": [
+       null,
+       null,
+       null
+      ],
+      "w": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -135.42198616766598,
+      409.3957841585376
+     ],
+     "options": []
+    },
+    "a3bc0d85-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "929563e8-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "f9df4ff6-ShaderMakeVec",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      129.2334192377392,
+      264.9464598342134
+     ],
+     "options": []
+    },
+    "e5f6286d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "bd2e987b-ShaderUnaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       437.545
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      600.3351928863875,
+      271.76487199637546
+     ],
+     "options": []
+    },
+    "929563e8-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -137.1265892082066,
+      154.1472621990782
+     ],
+     "options": []
+    },
+    "bd2e987b-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "a3bc0d85-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "sin"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      369.6455813999014,
+      270.2496692936728
+     ],
+     "options": []
+    },
+    "1b4ab50d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "c4555a1d-ShaderUnaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "hash12_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1094.5438077512529,
+      269.11326726664583
+     ],
+     "options": []
+    },
+    "c4555a1d-ShaderUnaryMath": {
+     "name": "ShaderUnaryMath",
+     "inputs": {
+      "in1": [
+       "e5f6286d-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "fract"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      845.1666962647665,
+      273.8482757125917
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -181.1554296385334,
+    "y": -236.84787546659854,
+    "width": 2314.0625,
+    "height": 953.125
+   }
+  },
+  "diffuse": {
+   "nodes": {
+    "79080223-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "diffuse_n",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      361.5445544554455,
+      121.18811881188111
+     ],
+     "options": []
+    },
+    "88233fc0-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "diffuse_l",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      363.5643564356436,
+      362.5544554455446
+     ],
+     "options": []
+    },
+    "066d532c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "diffuse_p",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      367.49744740099027,
+      618.5653426670793
+     ],
+     "options": []
+    },
+    "0a49636b-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "79080223-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "88233fc0-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      700.6188118811879,
+      234.80198019801986
+     ],
+     "options": []
+    },
+    "6ea35e46-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "0a49636b-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "max"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      944.0996287128714,
+      234.09189356435644
+     ],
+     "options": []
+    },
+    "764facca-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6ea35e46-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "066d532c-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1245.018564356436,
+      411.8502475247525
+     ],
+     "options": []
+    },
+    "560d9813-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "764facca-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "diffuse_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1511.6955445544556,
+      399.22648514851494
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -174.365717821781,
+    "y": -1.1834777227718405,
+    "width": 2892.578125,
+    "height": 1195.3125
+   }
+  },
+  "specular_0": {
+   "nodes": {
+    "7f1480a7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_n",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -907.80477089457,
+      -1638.741939733524
+     ],
+     "options": []
+    },
+    "2215529c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_l",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -907.1735827757583,
+      -1380.0810486444152
+     ],
+     "options": []
+    },
+    "5573f2ac-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_e",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -911.3009613339267,
+      -1113.9869312248607
+     ],
+     "options": []
+    },
+    "aef45cad-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_s",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -905.1370148611544,
+      -855.1011793684249
+     ],
+     "options": []
+    },
+    "6e05b36d-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "aef45cad-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -579.0149348797188,
+      -873.4697398572863
+     ],
+     "options": []
+    },
+    "3f9071e7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       3.1415
+      ],
+      "in2": [
+       null,
+       null,
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -570.6011479443845,
+      -635.5907175800587
+     ],
+     "options": []
+    },
+    "f58b9903-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6e05b36d-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "3f9071e7-ShaderBinaryMath",
+       "out",
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "div"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -245.10162655669865,
+      -739.4655435392172
+     ],
+     "options": []
+    },
+    "e11b339e-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "5573f2ac-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "7f1480a7-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "reflect"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -362.26592111115406,
+      -1462.5704321530784
+     ],
+     "options": []
+    },
+    "eb55ca20-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "e11b339e-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "2215529c-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -87.3045968537283,
+      -1270.8470410639698
+     ],
+     "options": []
+    },
+    "3efb9529-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "eb55ca20-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "max"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      203.04193779973707,
+      -1193.5264965095143
+     ],
+     "options": []
+    },
+    "6c4147f7-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "3efb9529-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "aef45cad-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      474.76842294825167,
+      -1008.2727836382271
+     ],
+     "options": []
+    },
+    "72cd7ecf-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "6c4147f7-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "f58b9903-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      776.1949595838488,
+      -867.1439897896038
+     ],
+     "options": []
+    },
+    "0d655242-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "72cd7ecf-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1074.3080667930074,
+      -862.3176197014235
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -2787.837415638528,
+    "y": -2021.9670663965771,
+    "width": 5649.566650390625,
+    "height": 2334.5947265625
+   }
+  },
+  "specular_1": {
+   "nodes": {
+    "c1ac705c-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "cf86b8fa-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "71c4e115-ShaderBinaryMath",
+       "out",
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "div"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      105.63244447613727,
+      602.7106861076732
+     ],
+     "options": []
+    },
+    "d4f38533-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_e",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -560.5668903010908,
+      228.18929842202965
+     ],
+     "options": []
+    },
+    "cf86b8fa-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "f205cba4-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -228.28086384688288,
+      468.706489789604
+     ],
+     "options": []
+    },
+    "5913ec52-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_n",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -557.070699861734,
+      -296.56571008663377
+     ],
+     "options": []
+    },
+    "d827aecb-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "843783a5-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       null,
+       null,
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "max"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      553.776008832573,
+      148.64973313737596
+     ],
+     "options": []
+    },
+    "71c4e115-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       null,
+       null,
+       3.1415
+      ],
+      "in2": [
+       null,
+       null,
+       8.0
+      ],
+      "op": [
+       null,
+       null,
+       "add"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -219.86707691154857,
+      706.5855120668316
+     ],
+     "options": []
+    },
+    "ca691c58-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_l",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -556.4395117429224,
+      -37.9048189975249
+     ],
+     "options": []
+    },
+    "28ce53dc-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "d827aecb-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "f205cba4-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "pow"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      825.5024939810876,
+      333.9034460086632
+     ],
+     "options": []
+    },
+    "04164df5-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "7d0667b5-ShaderBinaryMath",
+       "out",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_out",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1425.0421378258434,
+      479.8586099454668
+     ],
+     "options": []
+    },
+    "f205cba4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "specular_s",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -554.4029438283185,
+      487.07505027846537
+     ],
+     "options": []
+    },
+    "7d0667b5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "28ce53dc-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "c1ac705c-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "mul"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1126.9290306166847,
+      475.0322398572865
+     ],
+     "options": []
+    },
+    "af409fe5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "d4f38533-SubInput",
+       "port",
+       0.0
+      ],
+      "in2": [
+       "5913ec52-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "reflect"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -11.531850078318143,
+      -120.3942025061881
+     ],
+     "options": []
+    },
+    "843783a5-ShaderBinaryMath": {
+     "name": "ShaderBinaryMath",
+     "inputs": {
+      "in1": [
+       "af409fe5-ShaderBinaryMath",
+       "out",
+       0.0
+      ],
+      "in2": [
+       "ca691c58-SubInput",
+       "port",
+       0.0
+      ],
+      "op": [
+       null,
+       null,
+       "dot"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      263.4294741791076,
+      71.32918858292055
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -1243.5762008818065,
+    "y": -607.9192208771656,
+    "width": 5649.566650390625,
+    "height": 2334.5947265625
+   }
+  },
+  "getPixel": {
+   "nodes": {},
+   "view_rect": {
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1481.0,
+    "height": 612.0
+   }
+  }
+ },
+ "views": {},
+ "descs": {
+  "AABBCollideDetect": {
+   "inputs": [
+    [
+     "vec3f",
+     "bminA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxA",
+     ""
+    ],
+    [
+     "vec3f",
+     "bminB",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmaxB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "overlap",
+     ""
+    ],
+    [
+     "bool",
+     "AinsideB",
+     ""
+    ],
+    [
+     "bool",
+     "BinsideA",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "AppendList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Assign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "BeginFor": {
+   "inputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginForEach": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginSubstep": {
+   "inputs": [
+    [
+     "float",
+     "total_dt",
+     ""
+    ],
+    [
+     "float",
+     "min_scale",
+     "0.05"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "elapsed_time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachePrimitive": {
+   "inputs": [
+    [
+     "",
+     "inPrim",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "CachedByKey": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedIf": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedOnce": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "Curvemap": {
+   "inputs": [
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "res",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "DelUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictGetKeyList": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "keys",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "zany",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSize": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictUnion": {
+   "inputs": [
+    [
+     "dict1",
+     "dict",
+     ""
+    ],
+    [
+     "dict2",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DynamicNumber": {
+   "inputs": [
+    [
+     "",
+     "frame",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 100 10 1 0.1 0.01 0.001",
+     "speed",
+     "1"
+    ],
+    [
+     "floatslider",
+     "x",
+     "0"
+    ],
+    [
+     "floatslider",
+     "y",
+     "0"
+    ],
+    [
+     "floatslider",
+     "z",
+     "0"
+    ],
+    [
+     "floatslider",
+     "w",
+     "0"
+    ],
+    [
+     "enum clamp zero cycle",
+     "type",
+     "clamp"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "EndFor": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "EndForEach": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "bool",
+     "accept",
+     "1"
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "droppedList",
+     ""
+    ],
+    [
+     "",
+     "accumate",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "0"
+    ]
+   ],
+   "categories": [
+    "control"
+   ]
+  },
+  "ExitProcess": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "status",
+     "-1"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "ExportObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExportZpmPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExtendList": {
+   "inputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "list2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list1",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "ExtractList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "FileReadString": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "FileWriteString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "FinalOutput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    [
+     "",
+     "extraArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "FUNC",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "GetFrameNum": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FrameNum",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFramePortion": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePortion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTimeElapsed": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetPerlinNoise": {
+   "inputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "seed",
+     ""
+    ],
+    [
+     "float",
+     "freq",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "noise",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "GetTime": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    [
+     "",
+     "true",
+     ""
+    ],
+    [
+     "",
+     "false",
+     ""
+    ],
+    [
+     "bool",
+     "cond",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ImportObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ImportZpmPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "IntegrateFrameTime": {
+   "inputs": [
+    [
+     "",
+     "desired_dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actual_dt",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "min_scale",
+     "0.0001"
+    ]
+   ],
+   "categories": [
+    "frame"
+   ]
+  },
+  "LineAddVert": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "vert",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ListGetItem": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "ListLength": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "length",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Make1DLinePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "n",
+     "2"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum X Y Z",
+     "Direction",
+     "X"
+    ],
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasLines",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make2DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum XZ XY YZ",
+     "Direction",
+     "XZ"
+    ],
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ],
+    [
+     "bool",
+     "hasFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPointsInAABB": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "4"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isStaggered",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPrimitive": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "2"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "sizeX",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "sizeY",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "sizeZ",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeBoxPrimitive": {
+   "inputs": [
+    [
+     "float",
+     "size_x",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_y",
+     "2.0"
+    ],
+    [
+     "float",
+     "size_z",
+     "2.0"
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "use_quads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeCubePrimitive": {
+   "inputs": [
+    [
+     "",
+     "spacing",
+     ""
+    ],
+    [
+     "",
+     "nx",
+     ""
+    ],
+    [
+     "",
+     "ny",
+     ""
+    ],
+    [
+     "",
+     "nz",
+     ""
+    ],
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeCurvemap": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "input_min",
+     "0"
+    ],
+    [
+     "float",
+     "input_max",
+     "1"
+    ],
+    [
+     "float",
+     "output_min",
+     "0"
+    ],
+    [
+     "float",
+     "output_max",
+     "1"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "MakeDict": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "MakeGCTest": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "42"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "MakeHeatmap": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeList": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeLocalSys": {
+   "inputs": [
+    [
+     "vec3f",
+     "front",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "up",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "right",
+     "0,0,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "LocalSys",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeMultilineString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeMutable": {
+   "inputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "MakePointPrimitive": {
+   "inputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakePrimitive": {
+   "inputs": [
+    [
+     "int",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakePrimitiveFromList": {
+   "inputs": [
+    [
+     "ListObject",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeReadPath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    [
+     "",
+     "obj0",
+     ""
+    ],
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "",
+     "obj3",
+     ""
+    ],
+    [
+     "",
+     "obj4",
+     ""
+    ],
+    [
+     "",
+     "obj5",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "1"
+    ]
+   ],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "LINEAR"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "LINEAR"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "MakeVisualAABBPrimitive": {
+   "inputs": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "vec3f",
+     "boundMin",
+     "-0.5,-0.5,-0.5"
+    ],
+    [
+     "vec3f",
+     "boundMax",
+     "0.5,0.5,0.5"
+    ],
+    [
+     "int",
+     "OpenTop",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points edges trifaces quadfaces",
+     "type",
+     "edges"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeWritePath": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "string"
+   ]
+  },
+  "MaterialTexture2D": {
+   "inputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "MoveAssign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveClone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveDelete": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "NumericCounter": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericFloat": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInt": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3i",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIntVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInterpolation": {
+   "inputs": [
+    [
+     "NumericObject",
+     "src",
+     ""
+    ],
+    [
+     "NumericObject",
+     "srcMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "srcMax",
+     "1"
+    ],
+    [
+     "NumericObject",
+     "dstMin",
+     "0"
+    ],
+    [
+     "NumericObject",
+     "dstMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isClamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericOperator": {
+   "inputs": [
+    [
+     "NumericObject",
+     "lhs",
+     ""
+    ],
+    [
+     "NumericObject",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "ret",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum add sub mul div mod and or xor shr shl cmpge cmple cmpgt cmplt cmpne cmpeq land lor pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat anytrue alltrue copy copyr",
+     "op_type",
+     "add"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRandom": {
+   "inputs": [
+    [
+     "float",
+     "scale",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ],
+    [
+     "bool",
+     "symmetric",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRangeList": {
+   "inputs": [
+    [
+     "int",
+     "start",
+     "0"
+    ],
+    [
+     "int",
+     "end",
+     "1"
+    ],
+    [
+     "int",
+     "skip",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "NumericVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2f",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericWrangle": {
+   "inputs": [
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "DictObject:NumericObject",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "OrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "PackNumericIntVec2": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PackNumericVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum float vec2f vec3f vec4f",
+     "type",
+     "vec3f"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PackNumericVecInt": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ],
+    [
+     "int",
+     "w",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "veci",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum int vec2i vec3i vec4i",
+     "type",
+     "vec3i"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim1",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "prim2",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesBuildHashGrid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "hashgrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "HashGrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "normal",
+     ""
+    ],
+    [
+     "",
+     "tangent",
+     ""
+    ],
+    [
+     "",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "boundMin2D",
+     ""
+    ],
+    [
+     "",
+     "boundMax2D",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "PortalIn": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PortalOut": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PrimitiveAddAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "fillValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBent": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "1,0,0"
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "float",
+     "midPoint",
+     "0.5"
+    ],
+    [
+     "float",
+     "biasDir",
+     "0.5"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "useOrigin",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBoundingBox": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "bmin",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "exWidth",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcCentroid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "centroid",
+     ""
+    ],
+    [
+     "float",
+     "totalArea",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcNormal": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClearConnect": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClip": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "distance",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reverse",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "heatmap",
+     ""
+    ],
+    [
+     "float",
+     "min",
+     "0"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rho"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveCurvemap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "curvemap",
+     ""
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "int",
+     "sourceX",
+     "0"
+    ],
+    [
+     "int",
+     "sourceY",
+     "1"
+    ],
+    [
+     "int",
+     "sourceZ",
+     "2"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveDuplicate": {
+   "inputs": [
+    [
+     "",
+     "meshPrim",
+     ""
+    ],
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "float",
+     "uniScale",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "attrFromMesh",
+     "1"
+    ],
+    [
+     "bool",
+     "attrFromParticles",
+     "1"
+    ],
+    [
+     "string",
+     "scaleByAttr",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFaceToEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clearFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFillAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFilterByAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rad"
+    ],
+    [
+     "enum cmpgt cmplt cmpge cmple cmpeq cmpne",
+     "acceptIf",
+     "cmpgt"
+    ],
+    [
+     "enum any all",
+     "vecSelType",
+     "all"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetFaceCount": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetSize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "valueB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSimpleLink": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSolidify": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "count",
+     "4"
+    ],
+    [
+     "float",
+     "radius",
+     "0.1"
+    ],
+    [
+     "string",
+     "radiusAttr",
+     ""
+    ],
+    [
+     "bool",
+     "isTri",
+     "1"
+    ],
+    [
+     "bool",
+     "sealEnd",
+     "1"
+    ],
+    [
+     "bool",
+     "lineSort",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLineSort": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "reversed",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveLinearMap": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMerge": {
+   "inputs": [
+    [
+     "",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "coef",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePerlinNoiseAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "noise"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePrintAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject",
+     "min",
+     "-1"
+    ],
+    [
+     "NumericObject",
+     "max",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     ""
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomizeAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ],
+    [
+     "float",
+     "min",
+     "-1"
+    ],
+    [
+     "float",
+     "minY",
+     "-1"
+    ],
+    [
+     "float",
+     "minZ",
+     "-1"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "float",
+     "maxY",
+     "1"
+    ],
+    [
+     "float",
+     "maxZ",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveReduction": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum avg max min absmax",
+     "op",
+     "avg"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveResize": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveScale": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "axis",
+     "0,1,0"
+    ],
+    [
+     "float",
+     "scale",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveScatter": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "npoints",
+     "100"
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "points",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum tris lines",
+     "type",
+     "tris"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveShade": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shade",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum points lines tris quads",
+     "primtype",
+     "points"
+    ],
+    [
+     "readpath",
+     "vertpath",
+     "assets/particles.vert"
+    ],
+    [
+     "readpath",
+     "fragpath",
+     "assets/particles.frag"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveSimpleLines": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimplePoints": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleQuads": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleTris": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSplitEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveTraceTrail": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "parsPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "trailPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveTwist": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "direction",
+     "0,1,0"
+    ],
+    [
+     "",
+     "tangent",
+     ""
+    ],
+    [
+     "float",
+     "angle",
+     "45"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    [
+     "",
+     "primA",
+     ""
+    ],
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveWireframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "removeFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "PrintNumeric": {
+   "inputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintNumeric"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PrintString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "ProjectAndNormalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "enum XY YX YZ ZY ZX XZ",
+     "plane",
+     "XY"
+    ],
+    [
+     "float",
+     "directionScale",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightScale",
+     "1"
+    ],
+    [
+     "float",
+     "heightOffset",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "direction",
+     ""
+    ],
+    [
+     "float",
+     "length",
+     ""
+    ],
+    [
+     "float",
+     "height",
+     ""
+    ],
+    [
+     "float",
+     "phase",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "ReadMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ReadObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadObjPrimitiveDict": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ReadPlyPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ResizeList": {
+   "inputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "int",
+     "newSize",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Route": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SetFrameTime": {
+   "inputs": [
+    [
+     "",
+     "time",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SetMaterial": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "SetMatrix": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "SetRandomSeed": {
+   "inputs": [
+    [
+     "",
+     "routeIn",
+     ""
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "routeOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "SetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "ShaderBinaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "enum add sub mul div mod pow atan2 min max dot cross distance",
+     "op",
+     "add"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCihouUnrealEngine": {
+   "inputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "code",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCustomFunc": {
+   "inputs": [
+    [
+     "string",
+     "args",
+     "vec3 arg1, vec3 arg2"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "rettype",
+     "vec3"
+    ],
+    [
+     "string",
+     "code",
+     "return arg1 + arg2;"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderExtractVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFillVec": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFinalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "basecolor",
+     "1,1,1"
+    ],
+    [
+     "float",
+     "metallic",
+     "0.0"
+    ],
+    [
+     "float",
+     "roughness",
+     "0.4"
+    ],
+    [
+     "float",
+     "specular",
+     "0.5"
+    ],
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "emission",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "exposure",
+     "1.0"
+    ],
+    [
+     "string",
+     "commonCode",
+     ""
+    ],
+    [
+     "string",
+     "extensionsCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum GLSL HLSL",
+     "backend",
+     "GLSL"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInputAttr": {
+   "inputs": [
+    [
+     "enum pos clr nrm uv",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInvokeFunc": {
+   "inputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "list",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderLinearFit": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "float",
+     "inMin",
+     "0"
+    ],
+    [
+     "float",
+     "inMax",
+     "1"
+    ],
+    [
+     "float",
+     "outMin",
+     "0"
+    ],
+    [
+     "float",
+     "outMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderMakeVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderPackVec": {
+   "inputs": [
+    [
+     "shader",
+     "x",
+     ""
+    ],
+    [
+     "shader",
+     "y",
+     ""
+    ],
+    [
+     "shader",
+     "z",
+     ""
+    ],
+    [
+     "shader",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderReduceVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "in",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum average sum",
+     "op",
+     "average"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTernaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
+    ],
+    [
+     "enum mix clamp smoothstep add3",
+     "op",
+     "mix"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTexture2D": {
+   "inputs": [
+    [
+     "int",
+     "texId",
+     "0"
+    ],
+    [
+     "vec2f",
+     "coord",
+     "0,0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderUnaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
+     "op",
+     "sqrt"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "SpdlogErrorMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "error from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "SpdlogInfoMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "StringEqual": {
+   "inputs": [
+    [
+     "string",
+     "lhs",
+     ""
+    ],
+    [
+     "string",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "StringFormat": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "SubCategory": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubInput": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "input1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubOutput": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubResult": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "Subgraph": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "DoNotUseThisNodeDirectly"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubstepDt": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "float",
+     "desired_dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "actual_dt",
+     ""
+    ],
+    [
+     "float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "SyncPrimitiveAttributes": {
+   "inputs": [
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim1",
+     ""
+    ],
+    [
+     "",
+     "prim2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "TransformPrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "offset",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "eulerXYZ",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "quatRotation",
+     "0,0,0,1"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "",
+     "Matrix",
+     ""
+    ],
+    [
+     "",
+     "local",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "Matrix",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TranslatePrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TriggerAbortSignal": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerDivideZero": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerException": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "exception occurred!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerSegFault": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "X",
+     ""
+    ],
+    [
+     "float",
+     "Y",
+     ""
+    ],
+    [
+     "float",
+     "Z",
+     ""
+    ],
+    [
+     "float",
+     "W",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "UpdateMutable": {
+   "inputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "anyobj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mutable",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "VDBWrangle": {
+   "inputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "enum true false",
+     "ModifyActive",
+     "false"
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "WriteObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "WritePlyPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "noise_3": {
+   "inputs": [
+    [
+     "",
+     "noise_3_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "noise_3_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "getStoneColor": {
+   "inputs": [
+    [
+     "",
+     "getStoneColor_p",
+     ""
+    ],
+    [
+     "",
+     "getStoneColor_c",
+     ""
+    ],
+    [
+     "",
+     "getStoneColor_l",
+     ""
+    ],
+    [
+     "",
+     "getStoneColor_n",
+     ""
+    ],
+    [
+     "",
+     "getStoneColor_e",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "getStoneColor_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_0": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_1": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_2": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_3": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_4": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_5": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_6": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "hash12_7": {
+   "inputs": [
+    [
+     "",
+     "hash12_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "hash12_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "diffuse": {
+   "inputs": [
+    [
+     "",
+     "diffuse_n",
+     ""
+    ],
+    [
+     "",
+     "diffuse_l",
+     ""
+    ],
+    [
+     "",
+     "diffuse_p",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "diffuse_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "specular_0": {
+   "inputs": [
+    [
+     "",
+     "specular_n",
+     ""
+    ],
+    [
+     "",
+     "specular_l",
+     ""
+    ],
+    [
+     "",
+     "specular_e",
+     ""
+    ],
+    [
+     "",
+     "specular_s",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "specular_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "specular_1": {
+   "inputs": [
+    [
+     "",
+     "specular_e",
+     ""
+    ],
+    [
+     "",
+     "specular_n",
+     ""
+    ],
+    [
+     "",
+     "specular_l",
+     ""
+    ],
+    [
+     "",
+     "specular_s",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "specular_out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "getPixel": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "Blackboard": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
+   ]
+  }
+ },
+ "version": "v1"
+}

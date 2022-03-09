@@ -9,7 +9,12 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
+<<<<<<< HEAD:ui/zenovis/main.cpp
 #include <zeno/utils/logger.h>
+=======
+#include <Hg/OpenGL/stdafx.hpp>
+#include "zenvisapi.hpp"
+>>>>>>> origin/master:zenvis/main.cpp
 
 namespace zenvis {
 
@@ -104,7 +109,7 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 
 void initialize() {
   gladLoadGL();
-
+  setup_env_map("Default");
   auto version = (const char *)glGetString(GL_VERSION);
   zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
@@ -149,22 +154,50 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-#extension GL_EXT_gpu_shader4 : enable
+//#extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
 //
 //
 
-vec3 ACESToneMapping(vec3 color, float adapted_lum)
-{
-	const float A = 2.51f;
-	const float B = 0.03f;
-	const float C = 2.43f;
-	const float D = 0.59f;
-	const float E = 0.14f;
+const mat3x3 ACESInputMat = mat3x3
+(
+    0.59719, 0.35458, 0.04823,
+    0.07600, 0.90834, 0.01566,
+    0.02840, 0.13383, 0.83777
+);
 
-	color *= adapted_lum;
-	return (color * (A * color + B)) / (color * (C * color + D) + E);
+// ODT_SAT => XYZ => D60_2_D65 => sRGB
+const mat3x3 ACESOutputMat = mat3x3
+(
+     1.60475, -0.53108, -0.07367,
+    -0.10208,  1.10813, -0.00605,
+    -0.00327, -0.07276,  1.07602
+);
+
+vec3 RRTAndODTFit(vec3 v)
+{
+    vec3 a = v * (v + 0.0245786f) - 0.000090537f;
+    vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    return a / b;
 }
+
+vec3 ACESFitted(vec3 color, float gamma)
+{
+    color = color * ACESInputMat;
+
+    // Apply RRT and ODT
+    color = RRTAndODTFit(color);
+
+    color = color * ACESOutputMat;
+
+    // Clamp to [0, 1]
+  	color = clamp(color, 0.0, 1.0);
+    
+    color = pow(color, vec3(1. / gamma));
+
+    return color;
+}
+
 
 uniform samplerRect hdr_image;
 out vec4 oColor;
@@ -192,7 +225,8 @@ void main(void)
 	// Compute the corresponding exposure
 	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
 	// Apply the exposure to this texel
-  oColor.xyz = ACESToneMapping(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, exposure);
+  //oColor.rgb = 1.0 - exp2(-texture2DRect(hdr_image, gl_FragCoord.xy).rgb * exposure);
+	//oColor.a = 1.0f;
 	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
   
 }
@@ -220,9 +254,13 @@ void ScreenFillQuad(GLuint tex)
   glDisableVertexAttribArray(0);
   glUseProgram(0);
 }
+<<<<<<< HEAD:ui/zenovis/main.cpp
 
 static void paint_graphics(void);
 static void zhxx_paint_graphics(void) {
+=======
+static void paint_graphics(GLuint target_fbo = 0) {
+>>>>>>> origin/master:zenvis/main.cpp
   if(tmProg==nullptr)
   {
     std::cout<<"compiling zxx glprog"<<std::endl;
@@ -237,7 +275,7 @@ static void zhxx_paint_graphics(void) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -273,7 +311,7 @@ static void zhxx_paint_graphics(void) {
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-        CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
+        CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
     }
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
     CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
@@ -325,6 +363,19 @@ static void paint_graphics(void) {
       draw_small_axis();
   }
   vao->unbind();
+<<<<<<< HEAD:ui/zenovis/main.cpp
+=======
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+  ScreenFillQuad(texRect);
+  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //drawScreenQuad here:
+  CHECK_GL(glFlush());
+>>>>>>> origin/master:zenvis/main.cpp
 }
 
 double get_time() {
@@ -374,14 +425,13 @@ void set_show_grid(bool flag) {
 std::vector<char> record_frame_offline() {
     std::vector<char> pixels(nx * ny * 3);
 
-    // multi-sampling buffer
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -391,37 +441,16 @@ std::vector<char> record_frame_offline() {
                 GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
-    paint_graphics();
+    paint_graphics(fbo);
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        // normal buffer as intermedia
-        GLuint sfbo, srbo1, srbo2;
-        CHECK_GL(glGenRenderbuffers(1, &srbo1));
-        CHECK_GL(glGenRenderbuffers(1, &srbo2));
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo1));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo2));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
-
-        CHECK_GL(glGenFramebuffers(1, &sfbo));
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sfbo));
-        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srbo1));
-        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, srbo2));
-        CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, sfbo));
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
         CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0]));
-
-        CHECK_GL(glDeleteRenderbuffers(1, &srbo1));
-        CHECK_GL(glDeleteRenderbuffers(1, &srbo2));
-        CHECK_GL(glDeleteFramebuffers(1, &sfbo));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));

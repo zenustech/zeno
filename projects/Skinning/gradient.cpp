@@ -88,7 +88,7 @@ struct EvalGradientOnPrimAttr : zeno::INode {
 
         auto gradAttrName = attrName + "_grad";
         auto& gattr = prim->add_attr<zeno::vec3f>(gradAttrName);
-        gattr.resize(prim->size());
+        // gattr.resize(prim->size());
         for(size_t i = 0;i < prim->size();++i){
             gattr[i] = zeno::vec3f(p_grads[i][0],p_grads[i][1],p_grads[i][2]);
             // std::cout << gradAttrName << "<" << i << ">\t:" << p_grads[i].transpose() << std::endl;

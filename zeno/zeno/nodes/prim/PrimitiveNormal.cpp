@@ -10,23 +10,17 @@
 #endif
 
 namespace zeno {
-
-
-struct PrimitiveCalcNormal : zeno::INode {
-
-  // for parallel atomic float add
-  template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&val) {
+// for parallel atomic float add
+template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&val) {
     using Src = std::remove_cv_t<std::remove_reference_t<SrcT>>;
     using Dst = std::remove_cv_t<std::remove_reference_t<DstT>>;
     static_assert(sizeof(Src) == sizeof(Dst),
                   "Source Type and Destination Type must be of the same size");
     return reinterpret_cast<Dst const volatile &>(val);
   }
-
-  virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-
-    auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+ZENO_API void getNormal(zeno::PrimitiveObject* prim)
+{
+        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
     auto &pos = prim->attr<zeno::vec3f>("pos");
 
 #if defined(_OPENMP) && defined(__GNUG__)
@@ -81,6 +75,15 @@ struct PrimitiveCalcNormal : zeno::INode {
     for (size_t i = 0; i < nrm.size(); i++) {
         nrm[i] = -zeno::normalize(nrm[i]);
     }
+}
+struct PrimitiveCalcNormal : zeno::INode {
+
+  
+
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+
+    getNormal(prim.get());
 
     set_output("prim", get_input("prim"));
   }
