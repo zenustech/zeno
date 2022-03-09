@@ -1,7 +1,99 @@
 #include "ui_zenoheatmapeditor.h"
 #include "zenoheatmapeditor.h"
-#include <QtWidgets>
+#include <zenoui/style/zenostyle.h>
+#include <zenoui/nodesys/zenosvgitem.h>
 
+
+ZenoRampSelector::ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* parent)
+	: _base(parent)
+	, m_color(clr)
+{
+	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
+	setRect(0, 0, m_size, m_size);
+	QColor borderClr(0, 0, 0);
+	QPen pen(borderClr, 2);
+	pen.setJoinStyle(Qt::MiterJoin);
+	setPen(pen);
+	setBrush(m_color);
+
+	m_y = y - m_size / 2;
+	setPos(0, m_y);
+}
+
+void ZenoRampSelector::setColor(const QColor& clr)
+{
+	m_color = clr;
+	setBrush(m_color);
+}
+
+void ZenoRampSelector::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+	Q_UNUSED(widget);
+	painter->setPen(this->pen());
+	painter->setBrush(this->brush());
+	if ((this->spanAngle() != 0) && (qAbs((this->spanAngle()) % (360 * 16) == 0)))
+		painter->drawEllipse(rect());
+	else
+		painter->drawPie(rect(), startAngle(), spanAngle());
+}
+
+QVariant ZenoRampSelector::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+	if (change == QGraphicsItem::ItemSelectedHasChanged)
+	{
+		bool bSelected = isSelected();
+		if (bSelected)
+		{
+			QPen pen(QColor(255, 128, 0), 2);
+			setPen(pen);
+		}
+		else
+		{
+			QColor borderClr(0, 0, 0);
+			QPen pen(borderClr, 2);
+			setPen(pen);
+		}
+	}
+	else if (change == QGraphicsItem::ItemPositionHasChanged)
+	{
+		int x = pos().x();
+		x = qMax(0, x);
+		QPointF fixPos(pos().x(), m_y);
+		setPos(QPointF(x, m_y));
+	}
+	return _base::itemChange(change, value);
+}
+
+
+ZenoRampBar::ZenoRampBar(QWidget* parent)
+	: QGraphicsView(parent)
+{
+	static const int barHeight = ZenoStyle::dpiScaled(32);
+	setFixedHeight(barHeight);
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+	m_scene = new QGraphicsScene;
+	QGraphicsRectItem* pColorItem = new QGraphicsRectItem(0, 0, 272, barHeight);
+
+	QLinearGradient initBg(0, 0, 272, 0);
+	initBg.setColorAt(0, QColor("#5338B0"));
+	initBg.setColorAt(1, QColor("#12D7F6"));
+	QBrush brush(initBg);
+	pColorItem->setBrush(brush);
+
+	QGraphicsLineItem* pLineItem = new QGraphicsLineItem;
+	int y = barHeight / 2;
+	pLineItem->setLine(0, y, 272, y);
+
+	ZenoRampSelector* selector = new ZenoRampSelector(QColor("#5338B0"), y);
+
+	m_scene->addItem(pColorItem);
+	m_scene->addItem(pLineItem);
+	m_scene->addItem(selector);
+
+	setScene(m_scene);
+}
 
 ZenoHeatMapEditor::ZenoHeatMapEditor(QWidget* parent)
 	: QWidget(parent)
@@ -23,7 +115,6 @@ void ZenoHeatMapEditor::init()
 
 void ZenoHeatMapEditor::installFilters()
 {
-	//m_ui->rampSelector2->installEventFilter(this);
 }
 
 void ZenoHeatMapEditor::initSignals()
@@ -32,35 +123,10 @@ void ZenoHeatMapEditor::initSignals()
 
 void ZenoHeatMapEditor::initRamps()
 {
-	m_ui->rampSelector2->raise();
 }
 
 bool ZenoHeatMapEditor::eventFilter(QObject* watched, QEvent* event)
 {
-	if (watched == m_ui->rampSelector2)
-	{
-		if (event->type() == QEvent::MouseMove)
-		{
-			QMouseEvent* pMouseEvent = static_cast<QMouseEvent*>(event);
-			QPoint newPos = pMouseEvent->pos();
-			QRect rcWtf = m_ui->rampSelector2->geometry();
-			int X = rcWtf.left();
-			int newX = newPos.x();
-			newPos.setY(rcWtf.y());
-			if (newX > X)
-			{
-				rcWtf.moveRight(newX);
-			}
-			else
-			{
-				rcWtf.moveLeft(newX);
-			}
-			m_ui->rampSelector2->move(newPos);
-			//m_ui->rampSelector2->setGeometry(rcWtf);
-			//m_ui->rampSelector2->updateGeometry();
-			//m_ui->rampSelector2->update();
-		}
-	}
 	return QWidget::eventFilter(watched, event);
 }
 

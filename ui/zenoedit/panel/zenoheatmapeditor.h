@@ -6,6 +6,35 @@ namespace Ui
 	class HeatMapEditor;
 }
 
+#include <QtWidgets>
+
+class ZenoRampSelector : public QGraphicsEllipseItem
+{
+	typedef QGraphicsEllipseItem _base;
+public:
+	ZenoRampSelector(const QColor& clr, int y, QGraphicsItem* parent = nullptr);
+	void setColor(const QColor& clr);
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
+private:
+	QColor m_color;
+	int m_y;
+	static const int m_size = 12;
+};
+
+class ZenoRampBar : public QGraphicsView
+{
+	Q_OBJECT
+public:
+	ZenoRampBar(QWidget* parent = nullptr);
+
+private:
+	QGraphicsScene* m_scene;
+};
+
 class ZenoHeatMapEditor : public QWidget
 {
 	Q_OBJECT
