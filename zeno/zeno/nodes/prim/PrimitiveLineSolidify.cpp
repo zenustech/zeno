@@ -51,7 +51,7 @@ struct PrimitiveLineSolidify : zeno::INode {
         auto radiusAttr = get_input<zeno::StringObject>("radiusAttr")->get();
         bool isTri = get_input2<bool>("isTri");
         bool sealEnd = get_input2<bool>("sealEnd");
-        
+
         if (get_input2<bool>("lineSort"))
             primLineSort(prim.get());
 
@@ -85,8 +85,8 @@ struct PrimitiveLineSolidify : zeno::INode {
 
             for (int a = 0; a < count; a++) {
                 float ang = a * (float{M_PI} * 2 / count);
-                sinang[a] = std::sin(ang) * 1;
-                cosang[a] = std::cos(ang) * 1;
+                sinang[a] = std::sin(ang) * radius;
+                cosang[a] = std::cos(ang) * radius;
             }
 
             std::vector<vec3f> bidirections(n);
@@ -118,9 +118,8 @@ struct PrimitiveLineSolidify : zeno::INode {
                 auto bitangent = bidirections[i];
                 for (int a = 0; a < count; a++) {
                     auto offs = tangent * sinang[a] + bitangent * cosang[a];
-                    if (prim->has_attr(radiusAttr))
-                        offs *= prim->attr<float>(radiusAttr)[i];
-                    else offs *= radius;
+                    if constexpr (has_radius_attr.value)
+                        offs *= radattr[i];
                     prim->verts[i + n * a] = currpos + offs;
                 }
             }
