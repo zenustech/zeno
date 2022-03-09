@@ -59,3 +59,40 @@ QPushButton#btnOpen:hover
     border-color: rgb(255,255,255);
 	color: rgb(255, 255, 255);
 }
+
+QComboBox QAbstractItemView {
+    border: 0.5px solid rgba(0,0,0,1);
+    background: #272727;
+    selection-background-color: #4B9EF4;
+    font: 15px 'HarmonyOS Sans';
+	color: #8A8A8C;
+    outline: 0px;
+}
+
+QSpinBox {
+    border: 0.5px solid rgba(0,0,0,1);
+	background: #17171A;
+	color: #FFFFFF;
+	font: 10px "HarmonyOS Sans";
+    padding-right: 0px;
+}
+
+QSpinBox::down-button
+{
+	image: url(:/icons/spinbox-downbutton.svg);
+}
+
+QSpinBox::up-button
+{
+	image: url(:/icons/spinbox-upbutton.svg);
+}
+
+QSpinBox::down-button:hover
+{
+	image: url(:/icons/spinbox-downbutton-hover.svg);
+}
+
+QSpinBox::up-button:hover
+{
+	image: url(:/icons/spinbox-upbutton-hover.svg);
+}
