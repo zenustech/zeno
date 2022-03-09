@@ -99,10 +99,12 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-GLuint envTexture;
-unsigned int loadCubemap(std::vector<std::string> faces)
+
+/* begin zhxx happy */
+static GLuint envTexture = (GLuint)-1;
+static unsigned int loadCubemap(std::vector<std::string> faces)
 {
-    unsigned int textureID;
+    unsigned int textureID = 0xffffffffu;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
@@ -131,7 +133,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
 
     return textureID;
 }  
-void setupEnvMap()
+static void setupEnvMap()
 {
   std::vector<std::string> faces
   {
@@ -143,8 +145,12 @@ void setupEnvMap()
     "assets/back.jpg"
   };
   envTexture = loadCubemap(faces);  
-
 }
+unsigned int getGlobalEnvMap() {
+    return envTexture;
+}
+/* end zhxx happy */
+
 void initialize() {
   gladLoadGL();
   setupEnvMap();
@@ -372,7 +378,6 @@ static void paint_graphics(GLuint target_fbo = 0) {
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->SetEnvMap(envTexture);
     gra->draw();
   }
   if (show_grid) {
