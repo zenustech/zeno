@@ -210,6 +210,16 @@ class QDMDisplayMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+C'))
         self.addAction(action)
 
+class QDMEnvTexMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('EnvTex')
+
+        for name in ['Default', 'Lake', 'Sea', 'Daylight', 'Forest']:
+            action = QAction(name, self)
+            self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -243,6 +253,10 @@ class DisplayWidget(QWidget):
         self.recordDisplay = QDMRecordMenu()
         self.recordDisplay.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.recordDisplay)
+
+        self.envTexDisplay = QDMEnvTexMenu()
+        self.envTexDisplay.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.envTexDisplay)
 
         self.view = ViewportWidget()
         self.view.parent_widget = self
@@ -298,6 +312,9 @@ class DisplayWidget(QWidget):
 
         elif name == 'Reset Camera':
             self.view.camera.reset()
+
+        elif name in ['Default', 'Lake', 'Sea', 'Daylight', 'Forest']:
+            zenvis.core.setup_env_map(name)
 
     def get_output_path(self, extname):
         dir_path = 'outputs'

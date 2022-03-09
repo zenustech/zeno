@@ -9,6 +9,8 @@
 #include <array>
 #include <stb_image_write.h>
 #include <GL/gl.h>
+#include <spdlog/spdlog.h>
+
 namespace zenvis {
 
 int curr_frameid = -1;
@@ -99,7 +101,9 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-GLuint envTexture;
+static GLuint envTexture;
+static std::unordered_map<std::string, GLuint> envTextureCache;
+
 unsigned int loadCubemap(std::vector<std::string> faces)
 {
     unsigned int textureID;
@@ -131,23 +135,26 @@ unsigned int loadCubemap(std::vector<std::string> faces)
 
     return textureID;
 }  
-void setupEnvMap()
+void setup_env_map(std::string name)
 {
+  if (envTextureCache.count(name)) {
+    envTexture = envTextureCache[name];
+  }
   std::vector<std::string> faces
   {
-    "assets/right.jpg",
-    "assets/left.jpg",
-    "assets/top.jpg",
-    "assets/bottom.jpg",
-    "assets/front.jpg",
-    "assets/back.jpg"
+    fmt::format("assets/sky_box/{}/right.jpg", name),
+    fmt::format("assets/sky_box/{}/left.jpg", name),
+    fmt::format("assets/sky_box/{}/top.jpg", name),
+    fmt::format("assets/sky_box/{}/bottom.jpg", name),
+    fmt::format("assets/sky_box/{}/front.jpg", name),
+    fmt::format("assets/sky_box/{}/back.jpg", name)
   };
-  envTexture = loadCubemap(faces);  
-
+  envTexture = loadCubemap(faces);
+  envTextureCache[name] = envTexture;
 }
 void initialize() {
   gladLoadGL();
-  setupEnvMap();
+  setup_env_map("Default");
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 

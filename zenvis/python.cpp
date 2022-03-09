@@ -33,6 +33,7 @@ void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();
 void set_smooth_shading(bool smooth);
 void set_render_wireframe(bool render_wireframe);
+void setup_env_map(std::string name);
 
 };
 
@@ -58,6 +59,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("get_background_color", zenvis::get_background_color);
     m.def("set_smooth_shading", zenvis::set_smooth_shading);
     m.def("set_render_wireframe", zenvis::set_render_wireframe);
+    m.def("setup_env_map", zenvis::setup_env_map);
 }
 
 
