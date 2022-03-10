@@ -79,13 +79,13 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     }
 }
 
-void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
+void computeTrianglesTangent(zeno::PrimitiveObject *prim)
 {
-    const auto &tris = prim->tris;
+    auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
-    auto &tang = prim->add_attr<zeno::vec3f>("tang");
+    auto &tang = tris.add_attr<zeno::vec3f>("tang");
 #pragma omp parallel for
-    for (size_t i = 0; i < obj.count; ++i)
+    for (size_t i = 0; i < tris.size(); ++i)
     {
         const auto &pos0 = pos[tris[i][0]];
         const auto &pos1 = pos[tris[i][1]];
@@ -99,7 +99,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
         auto deltaUV0 = uv1 - uv0;
         auto deltaUV1 = uv2 - uv0;
 
-        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[1] * deltaUV0[0]);
+        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1]);
 
         zeno::vec3f tangent;
         tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
@@ -116,7 +116,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
-    const auto &tang = prim->attr<zeno::vec3f>("tang");
+    const auto &tang = tris.attr<zeno::vec3f>("tang");
     obj.count = prim->tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
@@ -262,7 +262,7 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        computeTrianglesTangent(prim, triObj);
+        computeTrianglesTangent(prim);
         parseTrianglesDrawBuffer(prim, triObj);
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
@@ -610,6 +610,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
+varying vec3 iTangent;
 
 void main()
 {
@@ -617,6 +618,7 @@ void main()
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
+  iTangent = vTangent;
 
   gl_Position = mVP * vec4(position, 1.0);
 }

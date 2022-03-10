@@ -112,18 +112,13 @@ struct ReadObjPrimitive : zeno::INode {
             uv0.reserve(triuvSize);
             uv1.reserve(triuvSize);
             uv2.reserve(triuvSize);
+#pragma omp parallel for
             for (size_t i = 0; i < triuvSize; ++i)
             {
                 const auto &index = triuv[i];
                 uv0[i] = index[0] != -1 ? uv[index[0]] : vec3f{0.0f, 0.0f, 0.0f}; 
                 uv1[i] = index[1] != -1 ? uv[index[1]] : vec3f{0.0f, 0.0f, 0.0f}; 
                 uv2[i] = index[2] != -1 ? uv[index[2]] : vec3f{0.0f, 0.0f, 0.0f};
-                std::cout << "zeno\n";
-#define ppp(a) std::cout << a[i][0] << ' ' << a[i][1] << ' ' << a[i][2] << '\n';
-                ppp(uv0)
-                ppp(uv1)
-                ppp(uv2)
-#undef ppp
             }
         }
         prim->resize(pos.size());
