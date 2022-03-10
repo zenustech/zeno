@@ -82,7 +82,7 @@ struct PrimitiveBoundingBox : zeno::INode {
 
         auto exwidth = get_param<float>("exWidth");
         if (exwidth) {
-            bmin += exwidth;
+            bmin -= exwidth;
             bmax += exwidth;
         }
         set_output2("bmin", bmin);
