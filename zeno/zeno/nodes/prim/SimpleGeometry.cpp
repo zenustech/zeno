@@ -51,7 +51,7 @@ ZENDEFNODE(CreateCube, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 struct CreateCone : zeno::INode {
@@ -83,7 +83,7 @@ ZENDEFNODE(CreateCone, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 struct CreateDisk : zeno::INode {
@@ -111,7 +111,7 @@ ZENDEFNODE(CreateDisk, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 struct CreatePlane : zeno::INode {
@@ -136,7 +136,7 @@ ZENDEFNODE(CreatePlane, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 struct CreateCylinder : zeno::INode {
@@ -163,7 +163,7 @@ struct CreateCylinder : zeno::INode {
         }
         // Bottom
         for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg * 2 + 1, i + seg, (i + 1) % seg + seg));
+            tris.push_back(vec3i(i + seg, seg * 2 + 1, (i + 1) % seg + seg));
         }
         // Side
         for (size_t i = 0; i < seg; i++) {
@@ -171,8 +171,8 @@ struct CreateCylinder : zeno::INode {
             size_t _1 = (i + 1) % seg;
             size_t _2 = (i + 1) % seg + seg;
             size_t _3 = i + seg;
-            tris.push_back(vec3i(_0, _1, _2));
-            tris.push_back(vec3i(_0, _2, _3));
+            tris.push_back(vec3i(_1, _0, _2));
+            tris.push_back(vec3i(_2, _0, _3));
         }
         set_output("prim", std::move(prim));
     }
@@ -182,7 +182,7 @@ ZENDEFNODE(CreateCylinder, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 struct CreateSphere : zeno::INode {
@@ -236,7 +236,7 @@ ZENDEFNODE(CreateSphere, {
     {},
     {"prim"},
     {},
-    {"Create"},
+    {"create"},
 });
 
 }
