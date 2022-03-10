@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/ticktock.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -85,15 +86,16 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     auto &tang = prim->add_attr<zeno::vec3f>("tang");
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
     for (size_t i = 0; i < obj.count; ++i)
     {
         const auto &pos0 = pos[tris[i][0]];
         const auto &pos1 = pos[tris[i][1]];
         const auto &pos2 = pos[tris[i][2]];
-        const auto &uv0 = tris.has_attr("uv0") ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv1 = tris.has_attr("uv1") ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv2 = tris.has_attr("uv2") ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv0 = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv1 = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv2 = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
 
         auto edge0 = pos1 - pos0;
         auto edge1 = pos2 - pos0;
@@ -112,44 +114,52 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
 
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
+    TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
     const auto &tang = prim->attr<zeno::vec3f>("tang");
-    obj.count = prim->tris.size();
+    obj.count = tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
     std::vector<zeno::vec3i> trisdata(obj.count);
-    #pragma omp parallel for
+
+#pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
         mem[15 * i + 0] = pos[tris[i][0]];
         mem[15 * i + 1] = clr[tris[i][0]];
         mem[15 * i + 2] = nrm[tris[i][0]];
-        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 4] = tang[i];
         mem[15 * i + 5] = pos[tris[i][1]];
         mem[15 * i + 6] = clr[tris[i][1]];
         mem[15 * i + 7] = nrm[tris[i][1]];
-        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 9] = tang[i];
         mem[15 * i + 10] = pos[tris[i][2]];
         mem[15 * i + 11] = clr[tris[i][2]];
         mem[15 * i + 12] = nrm[tris[i][2]];
-        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 14] = tang[i];
 
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
     }
+    TOCK(parse);
+
+    TICK(bindvbo);
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
     if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
     }
+    TOCK(bindebo);
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
@@ -654,6 +664,7 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform bool mSmoothShading;
+uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
 varying vec3 position;
@@ -1311,6 +1322,14 @@ void main()
   vec3 color = studioShading(albedo, viewdir, normal);
   
   gl_FragColor = vec4(color, 1.0);
+  if (mNormalCheck) {
+      float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
+      if (gl_FrontFacing) {
+        gl_FragColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+      } else {
+        gl_FragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+      }
+  }
 }
 )";
     }

@@ -185,6 +185,11 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(False)
         self.addAction(action)
 
+        action = QAction('Normal Check', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
         action = QAction('Wireframe', self)
         action.setCheckable(True)
         action.setChecked(False)
@@ -278,6 +283,10 @@ class DisplayWidget(QWidget):
         elif name == 'Smooth Shading':
             checked = act.isChecked()
             zenvis.core.set_smooth_shading(checked)
+
+        elif name == 'Normal Check':
+            checked = act.isChecked()
+            zenvis.core.set_normal_check(checked)
 
         elif name == 'Wireframe':
             checked = act.isChecked()
