@@ -7,7 +7,6 @@
 #include <vector>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/ticktock.h>
-#include <zeno/utils/streamed_write.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
