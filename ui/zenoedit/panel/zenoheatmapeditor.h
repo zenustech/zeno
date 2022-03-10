@@ -10,6 +10,7 @@ namespace Ui
 #include <zenoui/model/modeldata.h>
 
 class ZenoRampBar;
+class ZenoHSVColorView;
 
 class ZenoRampSelector : public QGraphicsEllipseItem
 {
@@ -39,20 +40,65 @@ class ZenoRampBar : public QGraphicsView
 	Q_OBJECT
 public:
 	ZenoRampBar(QWidget* parent = nullptr);
-	void initRamps(const COLOR_RAMPS& ramps);
+	void initRamps(int width);
+	void setColorRamps(const COLOR_RAMPS& ramps);
 	COLOR_RAMPS colorRamps() const;
 	void updateRampPos(ZenoRampSelector* pSelector);
 	void updateRampColor(const QColor& clr);
 	void removeRamp();
 	void newRamp();
+	COLOR_RAMP colorRamp() const;
+
+protected:
+	void resizeEvent(QResizeEvent* event) override;
+
+private slots:
+	void onSelectionChanged();
 
 private:
 	void refreshBar();
 
 	const int m_barHeight;
 	const int m_szSelector;
+	int m_width;
+
+	COLOR_RAMPS m_initRamps;
 	QMap<ZenoRampSelector*, COLOR_RAMP> m_ramps;
+
+	ZenoRampSelector* m_currSelector;
 	QGraphicsScene* m_scene;
+	QGraphicsRectItem* m_pColorItem;
+	ZenoRampGroove* m_pLineItem;
+};
+
+class HSVSelctor : public QGraphicsEllipseItem
+{
+	typedef QGraphicsEllipseItem _base;
+public:
+	HSVSelctor(QGraphicsItem* parent = nullptr);
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+	static const int m_size = 10;
+
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
+private:
+	ZenoHSVColorView* m_colorView;
+};
+
+class ZenoHSVColorView : public QGraphicsView
+{
+	Q_OBJECT
+public:
+	ZenoHSVColorView(QWidget* parent = nullptr);
+	void initHSVColorView(const QSize& sz);
+
+protected:
+	void resizeEvent(QResizeEvent* event) override;
+
+private:
+	QGraphicsScene* m_scene;
+	HSVSelctor* m_selector;
 	QGraphicsRectItem* m_pColorItem;
 };
 
@@ -82,6 +128,7 @@ private:
 	void init();
 	void installFilters();
 	void initRamps();
+	void initColorView();
 	void createDrag(const QPoint& pos, QWidget* widget);
 
 	Ui::HeatMapEditor* m_ui;
