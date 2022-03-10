@@ -2,32 +2,35 @@
 
 #include <type_traits>
 #include <array>
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
 
 namespace zeno {
 inline namespace streamed_write_h {
 
 namespace details {
 #ifdef __SSE__
-template <class T, class = std::enable_if_t<sizeof(T) == 4>>
+template <class T, std::enable_if_t<sizeof(T) == 4, int> = 0>
 static void stream_write(T *dst, T const *src) {
     _mm_stream_si32((int *)dst, *(int const *)src);
 }
 
-template <class T, class = std::enable_if_t<sizeof(T) == 16>>
+template <class T, std::enable_if_t<sizeof(T) == 16, int> = 0>
 static void stream_write(T *dst, T const *src) {
-    _mm_stream_ps(dst, _mm_load_ps(src));
+    _mm_stream_ps((float *)dst, _mm_load_ps((float const *)src));
 }
 
-template <class T, class = std::enable_if_t<sizeof(T) % 4 == 0 && sizeof(T) % 16 != 0>>
+template <class T, std::enable_if_t<sizeof(T) != 4 && sizeof(T) % 4 == 0 && sizeof(T) % 16 != 0, int> = 0>
 static void stream_write(T *dst, T const *src) {
     for (std::size_t i = 0; i < sizeof(T) / 4; i++)
-        _mm_stream_si32(i[(int *)dst], i[(int const *)src]);
+        stream_write((float *)dst, (float const *)src + i);
 }
 
-template <class T, class = std::enable_if_t<sizeof(T) % 16 == 0>>
+template <class T, std::enable_if_t<sizeof(T) != 16 && sizeof(T) % 16 == 0, int> = 0>
 static void stream_write(T *dst, T const *src) {
     for (std::size_t i = 0; i < sizeof(T) / 16; i++)
-        _mm_stream_ps((i * 4)[(float *)dst], (i * 4)[(float const *)src]);
+        stream_write((std::array<float, 4> *)dst + i*4, (std::array<float, 4> const *)src + i*4);
 }
 #else
 template <class T>
@@ -62,7 +65,7 @@ struct streamed_array {
 
     streamed_array(T *data) : m_data(data) {}
 
-    streamed operator[](std::size_t i) const {
+    streamed<T> operator[](std::size_t i) const {
         return {m_data[i]};
     }
 };
