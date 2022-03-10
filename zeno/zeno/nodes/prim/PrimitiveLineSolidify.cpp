@@ -15,33 +15,6 @@
 
 namespace zeno {
 
-struct PrimitiveLineSimpleLink : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-
-        prim->lines.clear();
-        intptr_t n = prim->verts.size();
-        for (intptr_t i = 1; i < n; i++) {
-            prim->lines.emplace_back(i - 1, i);
-        }
-        prim->lines.update();
-        set_output("prim", std::move(prim));
-    }
-};
-
-
-ZENDEFNODE(PrimitiveLineSimpleLink, {
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    },
-    {"primitive"},
-});
-
 
 struct PrimitiveLineSolidify : zeno::INode {
     virtual void apply() override {
