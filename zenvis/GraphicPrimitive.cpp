@@ -1274,12 +1274,11 @@ void main()
   
   gl_FragColor = vec4(color, 1.0);
   if (mNormalCheck) {
-      normal = normalize(cross(dFdx(position), dFdy(position)));
-      normal = (mView * vec4(normal, 0)).xyz;
-      if (normal.z > 0) {
-        gl_FragColor = vec4(0.42, 0.42, 0.93, 1.0);
+      float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
+      if (gl_FrontFacing) {
+        gl_FragColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
       } else {
-        gl_FragColor = vec4(0.87, 0.22, 0.2, 1.0);
+        gl_FragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
       }
   }
 }
