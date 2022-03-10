@@ -27,6 +27,7 @@ void new_frame_offline(std::string path);
 void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();
 void set_smooth_shading(bool smooth);
+void set_normal_check(bool check);
 void set_render_wireframe(bool render_wireframe);
 void setup_env_map(std::string name);
 
