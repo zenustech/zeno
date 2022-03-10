@@ -54,7 +54,7 @@ template <typename T>
 static std::vector<char> serialize(const AttrVector<T> &arr)
 {
     std::vector<char> str;
-    str.reserve(serializeSize(arr));
+    str.resize(serializeSize(arr));
 
     auto buff{str.data()};
     auto attrVectorHeader{reinterpret_cast<AttrVectorHeader *>(buff)};
@@ -62,7 +62,7 @@ static std::vector<char> serialize(const AttrVector<T> &arr)
     attrVectorHeader->size = arr.size();
     attrVectorHeader->nattrs = arr.num_attrs();
     memcpy(attrVectorHeader->buff, arr.data(), sizeof(T) * arr.size());
-    buff += sizeof(T) * arr.size();
+    buff = attrVectorHeader->buff + sizeof(T) * arr.size();
 
     arr.foreach_attr(
         [&buff](const auto &key, const auto &attr)
@@ -87,7 +87,7 @@ static std::vector<char> serialize(const AttrVector<T> &arr)
             attributeHeader->namelen = key.size();
             memcpy(attributeHeader->name, key.c_str(), sizeof(attributeHeader->name));
             memcpy(attributeHeader->buff, attr.data(), sizeof(U) * attr.size());
-            buff += sizeof(U) * attr.size();
+            buff = attributeHeader->buff + sizeof(U) * attr.size();
         });
 
     return str;
@@ -97,16 +97,16 @@ template <typename T>
 static void deserialize(const std::vector<char> &str, AttrVector<T> &arr)
 {
     auto buff{str.data()};
-    auto attrVectorHeader{reinterpret_cast<AttrVectorHeader *>(buff)};
+    auto attrVectorHeader{reinterpret_cast<const AttrVectorHeader *>(buff)};
 
     arr.values.reserve(attrVectorHeader->size);
     std::copy_n((T *)attrVectorHeader->buff, attrVectorHeader->size, std::back_inserter(arr.values));
 
-    buff += sizeof(T) * attrVectorHeader->size;
+    buff = attrVectorHeader->buff + sizeof(T) * attrVectorHeader->size;
 
     for (std::size_t i{0}; i < attrVectorHeader->nattrs; ++i)
     {
-        auto attributeHeader{reinterpret_cast<AttributeHeader *>(buff)};
+        auto attributeHeader{reinterpret_cast<const AttributeHeader *>(buff)};
         
         std::string key{attributeHeader->name, attributeHeader->namelen};
 
@@ -116,7 +116,7 @@ static void deserialize(const std::vector<char> &str, AttrVector<T> &arr)
             attr.clear();
             attr.reserve(attributeHeader->size);
             std::copy_n((vec3f *)attributeHeader->buff, attributeHeader->size, std::back_inserter(attr));
-            buff += sizeof(vec3f) * attributeHeader->size;
+            buff = attributeHeader->buff + sizeof(vec3f) * attributeHeader->size;
         }
         else if (attributeHeader->type == AttributeType::Float)
         {
@@ -124,7 +124,7 @@ static void deserialize(const std::vector<char> &str, AttrVector<T> &arr)
             attr.clear();
             attr.reserve(attributeHeader->size);
             std::copy_n((float *)attributeHeader->buff, attributeHeader->size, std::back_inserter(attr));
-            buff += sizeof(float) * attributeHeader->size;
+            buff = attributeHeader->buff + sizeof(float) * attributeHeader->size;
         }
     }
 }
@@ -175,25 +175,19 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
     fwrite(&size, sizeof(size_t), 1, fp);
     fwrite(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
 
-    /*
-    size = prim->tris.size();
-    fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
-    */
     const auto trisStr{serialize(prim->tris)};
     size = trisStr.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(trisStr.data(), sizeof(trisStr[0]), trisStr.size(), fp);
+    if (size != 0) {
+      fwrite(trisStr.data(), sizeof(trisStr[0]), trisStr.size(), fp);
+    }
 
-    /*
-    size = prim->quads.size();
-    fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
-    */
     const auto quadsStr{serialize(prim->quads)};
     size = quadsStr.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(quadsStr.data(), sizeof(quadsStr[0]), quadsStr.size(), fp);
+    if (size != 0) {
+      fwrite(quadsStr.data(), sizeof(quadsStr[0]), quadsStr.size(), fp);
+    }
 
     if (prim->mtl != nullptr)
     {
@@ -278,12 +272,20 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     fread(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
 
     fread(&size, sizeof(size_t), 1, fp);
-    prim->tris.resize(size);
-    fread(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
+    if (size != 0) {
+      std::vector<char> trisStr;
+      trisStr.resize(size);
+      fread(trisStr.data(), sizeof(trisStr[0]), trisStr.size(), fp);
+      deserialize(trisStr, prim->tris);
+    }
 
     fread(&size, sizeof(size_t), 1, fp);
-    prim->quads.resize(size);
-    fread(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
+    if (size != 0) {
+      std::vector<char> quadsStr;
+      quadsStr.resize(size);
+      fread(quadsStr.data(), sizeof(quadsStr[0]), quadsStr.size(), fp);
+      deserialize(quadsStr, prim->quads);
+    }
 
     fread(&size, sizeof(size_t), 1, fp);
     if (size != 0)
