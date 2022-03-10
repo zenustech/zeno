@@ -58,7 +58,7 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     obj.count = prim->lines.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 2 * 4);
-    //std::vector<zeno::vec2i> linesdata(obj.count);
+    std::vector<zeno::vec2i> linesdata(obj.count);
     #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
@@ -70,15 +70,15 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[8 * i + 5] = clr[lines[i][1]];
         mem[8 * i + 6] = nrm[lines[i][1]];
         mem[8 * i + 7] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
-        //linesdata[i] = zeno::vec2i(i*2, i*2+1);
+        linesdata[i] = zeno::vec2i(i*2, i*2+1);
 
     }
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
-    /*if(obj.count)
+    if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(linesdata[0]), obj.count * sizeof(linesdata[0]));
-    }*/
+    }
 }
 
 void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
