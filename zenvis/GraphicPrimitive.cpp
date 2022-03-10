@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/ticktock.h>
+#include <zeno/utils/variantswitch.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -57,7 +59,7 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     obj.count = prim->lines.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 2 * 4);
-    std::vector<zeno::vec2i> linesdata(obj.count);
+    //std::vector<zeno::vec2i> linesdata(obj.count);
     #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
@@ -69,15 +71,15 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[8 * i + 5] = clr[lines[i][1]];
         mem[8 * i + 6] = nrm[lines[i][1]];
         mem[8 * i + 7] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
-        linesdata[i] = zeno::vec2i(i*2, i*2+1);
+        //linesdata[i] = zeno::vec2i(i*2, i*2+1);
 
     }
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
-    if(obj.count)
+    /*if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(linesdata[0]), obj.count * sizeof(linesdata[0]));
-    }
+    }*/
 }
 
 void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
@@ -85,15 +87,16 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     auto &tang = prim->add_attr<zeno::vec3f>("tang");
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
     for (size_t i = 0; i < obj.count; ++i)
     {
         const auto &pos0 = pos[tris[i][0]];
         const auto &pos1 = pos[tris[i][1]];
         const auto &pos2 = pos[tris[i][2]];
-        const auto &uv0 = tris.has_attr("uv0") ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv1 = tris.has_attr("uv1") ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv2 = tris.has_attr("uv2") ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv0 = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv1 = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv2 = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
 
         auto edge0 = pos1 - pos0;
         auto edge1 = pos2 - pos0;
@@ -110,46 +113,76 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
     }
 }
 
+template <class T, bool enabled, class AttVec>
+auto make_attr_accessor(AttVec &attvec, std::string const &name) {
+    if constexpr (enabled) {
+        auto &arr = attvec.template attr<T>(name);
+        return [&] (std::size_t i) -> decltype(auto) {
+            return arr[i];
+        };
+    } else {
+        return [] (std::size_t) {
+            return T{};
+        };
+    }
+}
+
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
+    TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
     const auto &tang = prim->attr<zeno::vec3f>("tang");
-    obj.count = prim->tris.size();
+    obj.count = tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
-    std::vector<zeno::vec3i> trisdata(obj.count);
-    #pragma omp parallel for
-    for(int i=0; i<obj.count;i++)
-    {
-        mem[15 * i + 0] = pos[tris[i][0]];
-        mem[15 * i + 1] = clr[tris[i][0]];
-        mem[15 * i + 2] = nrm[tris[i][0]];
-        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0, 0, 0);
-        mem[15 * i + 4] = tang[i];
-        mem[15 * i + 5] = pos[tris[i][1]];
-        mem[15 * i + 6] = clr[tris[i][1]];
-        mem[15 * i + 7] = nrm[tris[i][1]];
-        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0, 0, 0);
-        mem[15 * i + 9] = tang[i];
-        mem[15 * i + 10] = pos[tris[i][2]];
-        mem[15 * i + 11] = clr[tris[i][2]];
-        mem[15 * i + 12] = nrm[tris[i][2]];
-        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0, 0, 0);
-        mem[15 * i + 14] = tang[i];
+    static std::vector<zeno::vec3f> mem;
+    mem.resize(obj.count * 3 * 5);
+    static std::vector<zeno::vec3i> trisdata;
+    trisdata.resize(obj.count);
 
-        trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
+    zeno::boolean_switch(has_uv, [&] (auto has_uv) {
+        auto uv0 = make_attr_accessor<zeno::vec3f, has_uv.value>(tris, "uv0");
+        auto uv1 = make_attr_accessor<zeno::vec3f, has_uv.value>(tris, "uv1");
+        auto uv2 = make_attr_accessor<zeno::vec3f, has_uv.value>(tris, "uv2");
 
-    }
+        #pragma omp parallel for
+        for(int i=0; i<obj.count;i++)
+        {
+            mem[15 * i + 0] = pos[tris[i][0]];
+            mem[15 * i + 1] = clr[tris[i][0]];
+            mem[15 * i + 2] = nrm[tris[i][0]];
+            mem[15 * i + 3] = uv0(i);
+            mem[15 * i + 4] = tang[i];
+            mem[15 * i + 5] = pos[tris[i][1]];
+            mem[15 * i + 6] = clr[tris[i][1]];
+            mem[15 * i + 7] = nrm[tris[i][1]];
+            mem[15 * i + 8] = uv1(i);
+            mem[15 * i + 9] = tang[i];
+            mem[15 * i + 10] = pos[tris[i][2]];
+            mem[15 * i + 11] = clr[tris[i][2]];
+            mem[15 * i + 12] = nrm[tris[i][2]];
+            mem[15 * i + 13] = uv2(i);
+            mem[15 * i + 14] = tang[i];
+
+            trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
+
+        }
+    });
+    TOCK(parse);
+
+    TICK(bindvbo);
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
     if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
     }
+    TOCK(bindebo);
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
