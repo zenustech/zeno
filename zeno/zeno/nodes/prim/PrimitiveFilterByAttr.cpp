@@ -1,3 +1,4 @@
+#include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -107,6 +108,7 @@ struct PrimitiveFilterByAttr : INode {
     });
     prim->resize(revamp.size());
     
+    
     set_output("prim", get_input("prim"));
   }
 };
@@ -126,4 +128,61 @@ ZENDEFNODE(PrimitiveFilterByAttr,
     }});
 
 
+
+struct SubLine : INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("line");
+    auto attrName = get_param<std::string>("attrName");
+    auto acceptIf = get_param<std::string>("acceptIf");
+    auto vecSelType = get_param<std::string>("vecSelType");
+    
+    std::vector<int> revamp;
+    prim->attr_visit(attrName, [&] (auto const &attr) {
+        using T = std::decay_t<decltype(attr[0])>;
+        auto value = get_input2<T>("value");
+        std::visit([&] (auto op, auto aop) {
+            for (int i = 0; i < attr.size(); i++) {
+                if (aop(op(attr[i], value)))
+                    revamp.emplace_back(i);
+            }
+        }
+        , get_variant_ops(acceptIf)
+        , get_anyall_ops(vecSelType)
+        );
+    });
+
+    prim->foreach_attr([&] (auto const &key, auto &arr) {
+        for (int i = 0; i < revamp.size(); i++) {
+            arr[i] = arr[revamp[i]];
+        }
+    });
+    prim->resize(revamp.size());
+    int i=0;
+    for(i=0;i<prim->lines.size();i++)
+    {
+        if(prim->lines[i][0]>=prim->verts.size()||prim->lines[i][1]>=prim->verts.size())
+            break;
+    }
+    prim->lines.resize(i);
+    
+    set_output("prim", get_input("line"));
+  }
+};
+ZENDEFNODE(SubLine,
+    { /* inputs: */ {
+    "line",
+    {"NumericObject", "value", "0"},
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    {"string", "attrName", "rad"},
+    {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
+    {"enum any all", "vecSelType", "all"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+
 }
+
