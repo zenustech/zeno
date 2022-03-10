@@ -4,6 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/variantswitch.h>
+#include <zeno/utils/ticktock.h>
 #include <zeno/utils/parallel.h>
 #include <sstream>
 #include <iostream>
@@ -25,13 +26,18 @@ struct PrimitiveLineSolidify : zeno::INode {
         bool isTri = get_input2<bool>("isTri");
         bool sealEnd = get_input2<bool>("sealEnd");
 
-        if (get_input2<bool>("lineSort"))
-            primLineSort(prim.get());
-
         intptr_t n = prim->verts.size();
         if (n >= 2 && count >= 2) {
 
+            TICK(linesort);
+            if (get_input2<bool>("lineSort"))
+                primLineSort(prim.get());
+            TOCK(linesort);
+
+            TICK(resizeprim);
             prim->lines.clear();
+            prim->tris.clear();
+            prim->quads.clear();
 
             if (sealEnd) {
                 prim->verts.resize(count * n + 2);
@@ -40,7 +46,9 @@ struct PrimitiveLineSolidify : zeno::INode {
             } else {
                 prim->verts.resize(count * n);
             }
+            TOCK(resizeprim);
 
+            TICK(calcdirs);
             std::vector<vec3f> directions(n);
 #pragma omp parallel for
             for (intptr_t i = 1; i < n - 1; i++) {
@@ -52,7 +60,9 @@ struct PrimitiveLineSolidify : zeno::INode {
             }
             directions[0] = normalize(prim->verts[1] - prim->verts[0]);
             directions[n - 1] = normalize(prim->verts[n - 1] - prim->verts[n - 2]);
+            TOCK(calcdirs);
 
+            TICK(sincosangs);
             std::vector<float> sinang(count);
             std::vector<float> cosang(count);
 
@@ -64,7 +74,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 sinang[a] = std::sin(ang) * radius;
                 cosang[a] = std::cos(ang) * radius;
             }
+            TOCK(sincosangs);
 
+            TICK(calcbidirs);
             std::vector<vec3f> bidirections(n);
             orthonormal first_orb(directions[0]);
             directions[0] = first_orb.tangent;
@@ -77,7 +89,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 //printf("%f %f %f\n", directions[i][0], directions[i][1], directions[i][2]);
                 //printf("%f %f %f\n", bidirections[i][0], bidirections[i][1], bidirections[i][2]);
             }
+            TOCK(calcbidirs);
 
+            TICK(dupverts);
             boolean_switch(!radiusAttr.empty(), [&] (auto has_radius_attr) {
 
                 decltype(auto) radattr = [&] () -> decltype(auto) {
@@ -101,13 +115,18 @@ struct PrimitiveLineSolidify : zeno::INode {
             }
 
             });
+            TOCK(dupverts);
 
+            TICK(emitfaces);
             boolean_switch(isTri, [&] (auto isTri) {
 
-                if constexpr (isTri.value)
+                if constexpr (isTri.value) {
+                    if (sealEnd) prim->tris.reserve(n * count * 2);
                     prim->tris.resize((n - 1) * count * 2);
-                else
+                } else {
+                    if (sealEnd) prim->tris.reserve(count * 2);
                     prim->quads.resize((n - 1) * count);
+                }
 
 #pragma omp parallel for
                 for (intptr_t i = 0; i < n - 1; i++) {
@@ -136,7 +155,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 }
 
             });
+            TOCK(emitfaces);
 
+            TICK(sealend);
             if (sealEnd) {
                 for (int a = 0; a < count - 1; a++) {
                     prim->tris.emplace_back(count * n, n * a, n * (a+1));
@@ -146,7 +167,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
                 prim->tris.update();
             }
+            TOCK(sealend);
 
+            TICK(copyattr);
             prim->verts.foreach_attr([&] (auto const &key, auto &attr) {
                 for (int a = 1; a < count; a++) {
                     intptr_t na = n * a;
@@ -159,6 +182,7 @@ struct PrimitiveLineSolidify : zeno::INode {
                     attr[count * n + 1] = attr[n - 1];
                 }
             });
+            TOCK(copyattr);
 
         }
 
