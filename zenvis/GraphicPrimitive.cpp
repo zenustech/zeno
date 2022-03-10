@@ -387,7 +387,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, envmap));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -671,7 +671,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
-uniform samplerCube skybox;
+uniform sampler2D skySphere;
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
 
@@ -968,14 +968,16 @@ vec3 cubem(in vec3 p, in float ofst)
     else return tex( vec2(p.y,p.x)/p.z,ofst );
 }
 
-
+const float PI = 3.14159265358979323846;
 
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
     //if(reflVec.y>-0.5) return vec3(0,0,0);
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
-    return textureCube(skybox, reflVec).rgb;
+    float u = atan(reflVec.x, reflVec.z) * ( 1 / PI) * 0.5 + 0.5;
+    float v = 1.0 - (asin(reflVec.y) * (2 / PI) * 0.5 + 0.5);
+    return texture2D(skySphere, vec2(u, v)).rgb;
 }
 
 /**
@@ -1070,8 +1072,6 @@ vec3 ACESToneMapping(vec3 color, float adapted_lum)
 	color *= adapted_lum;
 	return (color * (A * color + B)) / (color * (C * color + D) + E);
 }
-
-const float PI = 3.14159265358979323846;
 
 float sqr(float x) { return x*x; }
 
