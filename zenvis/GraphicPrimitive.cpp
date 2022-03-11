@@ -520,14 +520,15 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform float mPointScale;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
-attribute vec3 vNormal;
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
 
-varying vec3 position;
-varying vec3 color;
-varying float radius;
-varying float opacity;
+out vec3 position;
+out vec3 color;
+out float radius;
+out float opacity;
+
 void main()
 {
   position = vPosition;
@@ -554,10 +555,13 @@ uniform mat4 mInvVP;
 uniform mat4 mView;
 uniform mat4 mProj;
 
-varying vec3 position;
-varying vec3 color;
-varying float radius;
-varying float opacity;
+in vec3 position;
+in vec3 color;
+in float radius;
+in float opacity;
+
+out vec4 fragColor;
+
 void main()
 {
   const vec3 lightDir = vec3(0.577, 0.577, 0.577);
@@ -579,7 +583,7 @@ void main()
   }
   else
     oColor = color;
-  gl_FragColor = vec4(oColor, 1.0 - opacity);
+  fragColor = vec4(oColor, 1.0 - opacity);
 }
 )";
     }
@@ -602,11 +606,11 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
+in vec3 vPosition;
+in vec3 vColor;
 
-varying vec3 position;
-varying vec3 color;
+out vec3 position;
+out vec3 color;
 
 void main()
 {
@@ -628,12 +632,14 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-varying vec3 position;
-varying vec3 color;
+in vec3 position;
+in vec3 color;
+
+out vec4 fragColor;
 
 void main()
 {
-  gl_FragColor = vec4(color, 1.0);
+  fragColor = vec4(color, 1.0);
 }
 )";
     }
@@ -656,17 +662,17 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
-attribute vec3 vNormal;
-attribute vec3 vTexCoord;
-attribute vec3 vTangent;
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
 
-varying vec3 position;
-varying vec3 iColor;
-varying vec3 iNormal;
-varying vec3 iTexCoord;
-varying vec3 iTangent;
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
 
 void main()
 {
@@ -717,13 +723,16 @@ uniform mat4 mInvProj;
 uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
-
-varying vec3 position;
-varying vec3 iColor;
-varying vec3 iNormal;
-varying vec3 iTexCoord;
-varying vec3 iTangent;
 uniform samplerCube skybox;
+
+in vec3 position;
+in vec3 iColor;
+in vec3 iNormal;
+in vec3 iTexCoord;
+in vec3 iTangent;
+
+out vec4 fragColor;
+
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
 
@@ -1361,7 +1370,7 @@ vec3 calcRayDir(vec3 pos)
 void main()
 {
   if (mRenderWireframe) {
-    gl_FragColor = vec4(0.89, 0.57, 0.15, 1.0);
+    fragColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
   }
   vec3 normal;
@@ -1379,13 +1388,13 @@ void main()
   vec3 albedo = iColor;
   vec3 color = studioShading(albedo, viewdir, normal, tangent, bitangent);
   
-  gl_FragColor = vec4(color, 1.0);
+  fragColor = vec4(color, 1.0);
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {
-        gl_FragColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+        fragColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
       } else {
-        gl_FragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+        fragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
       }
   }
 }
