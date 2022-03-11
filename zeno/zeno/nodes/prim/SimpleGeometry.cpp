@@ -3,11 +3,13 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <spdlog/spdlog.h>
 
 namespace zeno {
 struct CreateCube : zeno::INode {
@@ -191,41 +193,42 @@ struct CreateSphere : zeno::INode {
 
         size_t seg = 32;
 
+        std::vector<vec3f> uvs(19 * 33);
         auto &pos = prim->verts;
-        for (auto i = -80; i <= 80; i += 10) {
+        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+        for (auto i = -90; i <= 90; i += 10) {
             float r = cos(i / 180.0 * M_PI);
             float h = sin(i / 180.0 * M_PI);
-            for (size_t i = 0; i < seg; i++) {
-                float rad = 2 * M_PI * i / 32;
+            for (size_t j = 0; j <= seg; j++) {
+                float rad = 2 * M_PI * j / 32;
                 pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r));
+                uvs.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
+                nrm.push_back(zeno::normalize(pos[pos.size()-1]));
             }
         }
-        size_t offset = pos.size();
-        pos.push_back(vec3i(0, -1, 0));
-        pos.push_back(vec3i(0, 1, 0));
-        
+
         auto &tris = prim->tris;
+        auto &uv0  = tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1  = tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2  = tris.add_attr<zeno::vec3f>("uv2");
         size_t count = 0;
-        for (auto i = -80; i < 80; i += 10) {
+        for (auto i = -90; i < 90; i += 10) {
             for (size_t i = 0; i < seg; i++) {
-                size_t _0 = i + seg * count;
-                size_t _1 = (i + 1) % seg + seg * count;
-                size_t _2 = (i + 1) % seg + seg * (count + 1);
-                size_t _3 = i  + seg * (count + 1);
-                tris.push_back(vec3i(_2, _1, _0));
-                tris.push_back(vec3i(_3, _2, _0));
+                size_t _0 = i + (seg + 1) * count;
+                size_t _1 = i + 1 + (seg + 1) * count;
+                size_t _2 = i + 1 + (seg + 1) * (count + 1);
+                size_t _3 = i + (seg + 1) * (count + 1);
+                tris.push_back(vec3i(_1, _0, _2));
+                tris.attr<zeno::vec3f>("uv0").push_back(uvs[_1]);
+                tris.attr<zeno::vec3f>("uv1").push_back(uvs[_0]);
+                tris.attr<zeno::vec3f>("uv2").push_back(uvs[_2]);
+
+                tris.push_back(vec3i(_2, _0, _3));
+                tris.attr<zeno::vec3f>("uv0").push_back(uvs[_2]);
+                tris.attr<zeno::vec3f>("uv1").push_back(uvs[_0]);
+                tris.attr<zeno::vec3f>("uv2").push_back(uvs[_3]);
             }
             count += 1;
-        }
-        for (size_t i = 0; i < seg; i++) {
-            size_t _0 = i;
-            size_t _1 = (i + 1) % seg;
-            tris.push_back(vec3i(_0, offset, _1));
-        }
-        for (size_t i = 0; i < seg; i++) {
-            size_t _0 = i + seg * count;
-            size_t _1 = (i + 1) % seg + seg * count;
-            tris.push_back(vec3i(_0, _1, offset + 1));
         }
 
         set_output("prim", std::move(prim));
