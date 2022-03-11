@@ -1282,7 +1282,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
-    new_normal = new_normal;
+    new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent;//   = normalize(cross(up, new_normal));
     vec3 bitangent;// = cross(new_normal, tangent);
