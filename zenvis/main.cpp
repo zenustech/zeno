@@ -163,16 +163,16 @@ static void my_paint_graphics() {
 static bool enable_hdr = true;
 /* BEGIN ZHXX HAPPY */
 namespace {
-auto qvert = R"(
-#version 330 core
+auto qvert = R"(#version 130
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
 void main()
 {
     gl_Position = vec4(quad_vertices[gl_VertexID], 0.0, 1.0);
 }
 )";
-auto qfrag = R"(#version 330 core
+auto qfrag = R"(#version 130
 // #extension GL_EXT_gpu_shader4 : enable
+#extension GL_ARB_texture_rectangle : enable
 // hdr_adaptive.fs
 
 const mat3x3 ACESInputMat = mat3x3
@@ -215,8 +215,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 
-uniform samplerRect hdr_image;
-out vec4 oColor;
+uniform sampler2DRect hdr_image;
 void main(void)
 {
 	int i;
@@ -243,7 +242,7 @@ void main(void)
 	// Apply the exposure to this texel
   //oColor.rgb = 1.0 - exp2(-texture2DRect(hdr_image, gl_FragCoord.xy).rgb * exposure);
 	//oColor.a = 1.0f;
-	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
+	gl_FragColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
   
 }
 )";
