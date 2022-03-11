@@ -114,12 +114,6 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
         tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
         tang[i] = zeno::normalize(tangent);
-        std::cout << "uv: \n";
-        std::cout<<uv0[0]<<" "<<uv0[1]<<" "<<uv0[2]<<std::endl;
-        std::cout<<uv1[0]<<" "<<uv1[1]<<" "<<uv1[2]<<std::endl;
-        std::cout<<uv2[0]<<" "<<uv2[1]<<" "<<uv2[2]<<std::endl;
-        std::cout << "tang: \n";
-        std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
     }
 }
 
