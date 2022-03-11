@@ -463,6 +463,217 @@ ZENDEFNODE(ToZSParticles, {
                               {"MPM"},
                           });
 
+struct ToBoundaryParticles : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToBoundaryParticles\n");
+
+    // primitive
+    auto inParticles = get_input<PrimitiveObject>("prim");
+    auto &pos = inParticles->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel"))
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+
+    auto &tris = inParticles->tris;
+
+    auto outParticles = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    outParticles->prim = inParticles;
+
+    /// category, size
+    std::size_t size{pos.size()};
+    // (mesh）
+    std::size_t eleSize{0};
+    std::vector<float> dofVol{};
+    std::vector<float> eleVol{};
+    std::vector<vec3f> elePos{};
+    std::vector<vec3f> eleVel{};
+
+    ZenoParticles::category_e category{ZenoParticles::surface};
+    bool bindMesh = get_input2<int>("category") != ZenoParticles::mpm;
+    if (bindMesh) {
+      category = ZenoParticles::surface;
+      eleSize = tris.size();
+      dofVol.resize(size, 0.f);
+
+      eleVol.resize(eleSize);
+      elePos.resize(eleSize);
+      eleVel.resize(eleSize);
+    }
+    outParticles->category = category;
+
+    float dx = get_input2<float>("dx");
+
+    // per vertex (node) vol, pos, vel
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    if (bindMesh) {
+      switch (category) {
+      // surface
+      case ZenoParticles::surface: {
+        const auto triArea = [&pos](vec3i tri) {
+          using TV3 = zs::vec<float, 3>;
+          TV3 p0 = TV3{pos[tri[0]][0], pos[tri[0]][1], pos[tri[0]][2]};
+          TV3 p1 = TV3{pos[tri[1]][0], pos[tri[1]][1], pos[tri[1]][2]};
+          TV3 p2 = TV3{pos[tri[2]][0], pos[tri[2]][1], pos[tri[2]][2]};
+          return (p1 - p0).cross(p2 - p0).norm() * 0.5f;
+        };
+        for (std::size_t i = 0; i != eleSize; ++i) {
+          auto tri = tris[i];
+          auto v = triArea(tri) * dx;
+          eleVol[i] = v;
+          elePos[i] = (pos[tri[0]] + pos[tri[1]] + pos[tri[2]]) / 3;
+          if (velsPtr)
+            eleVel[i] =
+                (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+          for (auto pi : tri)
+            dofVol[pi] += v / 3;
+        }
+      } break;
+      default:;
+      } // end switch
+    }   // end bindmesh
+
+    // particles
+    auto &pars = outParticles->getParticles(); // tilevector
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{
+        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}};
+    std::vector<zs::PropertyTag> eleTags{{"mass", 1},
+                                         {"pos", 3},
+                                         {"vel", 3},
+                                         {"vol", 1},
+                                         {"inds", (int)category + 1}};
+
+    for (auto tag : eleTags)
+      fmt::print("boundary element tag: [{}, {}]\n", tag.name, tag.numChannels);
+
+    float density = (float)1e10;
+    {
+      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
+      ompExec(zs::range(size),
+              [pars = proxy<execspace_e::host>({}, pars), &pos, velsPtr,
+               &dofVol, category, &inParticles, density](size_t pi) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+
+                // volume, mass
+                float vol = dofVol[pi];
+                pars("vol", pi) = vol;
+                pars("mass", pi) = vol * density; // unstoppable mass
+
+                // pos
+                pars.tuple<3>("pos", pi) = pos[pi];
+
+                // vel
+                if (velsPtr != nullptr)
+                  pars.tuple<3>("vel", pi) = velsPtr[pi];
+                else
+                  pars.tuple<3>("vel", pi) = vec3::zeros();
+              });
+
+      pars = pars.clone({memsrc_e::um, 0});
+    }
+    if (bindMesh) {
+      auto &eles = outParticles->getQuadraturePoints(); // tilevector
+      outParticles->elements =
+          typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
+      ompExec(zs::range(eleSize),
+              [eles = proxy<execspace_e::host>({}, eles), velsPtr, &eleVol,
+               &elePos, &eleVel, category, &tris, density](size_t ei) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+                // vol, mass
+                eles("vol", ei) = eleVol[ei];
+                eles("mass", ei) = eleVol[ei] * density;
+
+                // pos
+                eles.tuple<3>("pos", ei) = elePos[ei];
+
+                // vel
+                if (velsPtr != nullptr)
+                  eles.tuple<3>("vel", ei) = eleVel[ei];
+                else
+                  eles.tuple<3>("vel", ei) = vec3::zeros();
+
+                // element-vertex indices
+
+                const auto &tri = tris[ei];
+                for (int i = 0; i != 3; ++i) {
+                  eles("inds", i, ei) = tri[i];
+                }
+              });
+      eles = eles.clone({memsrc_e::um, 0});
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ToBoundaryParticles\n");
+    set_output("ZSParticles", outParticles);
+  }
+};
+
+ZENDEFNODE(ToBoundaryParticles, {
+                                    {"prim", {"float", "dx", "0.1"}},
+                                    {"ZSParticles"},
+                                    {},
+                                    {"MPM"},
+                                });
+
+struct EnqueueZSPrimitive : INode {
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing EnqueueZSPrimitive\n");
+
+    std::shared_ptr<ZenoPrimitiveSequence> zsprimseq{};
+    if (has_input<ZenoPrimitiveSequence>("ZSPrimitiveSequence"))
+      zsprimseq = get_input<ZenoPrimitiveSequence>("ZSPrimitiveSequence");
+    else {
+      zsprimseq = std::make_shared<ZenoPrimitiveSequence>();
+    }
+
+    if (has_input<ZenoParticles>("ZSPrimitive")) {
+      zsprimseq->push(get_input<ZenoParticles>("ZSPrimitive"));
+    }
+    if (has_input<ZenoParticles>("ZSPrimitive1")) {
+      zsprimseq->push(get_input<ZenoParticles>("ZSPrimitive1"));
+    }
+    if (zsprimseq->valid()) {
+      auto cudaPol = cuda_exec().device(0);
+      auto numV = zsprimseq->numParticles();
+      auto numE = zsprimseq->numElements();
+      auto dt = get_input2<float>("dt");
+      cudaPol(
+          Collapse{numV},
+          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevParticles()),
+           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextParticles()),
+           dt] __device__(int pi) mutable {
+            prev.tuple<3>("vel", pi) =
+                (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+          });
+      cudaPol(
+          Collapse{numE},
+          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevElements()),
+           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextElements()),
+           dt] __device__(int pi) mutable {
+            prev.tuple<3>("vel", pi) =
+                (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+          });
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing EnqueueZSPrimitive\n");
+    set_output("ZSPrimitiveSequence", std::move(zsprimseq));
+  }
+};
+ZENDEFNODE(EnqueueZSPrimitive,
+           {
+               {"ZSPrimitiveSequence", "dt", "ZSPrimitive", "ZSPrimitive"},
+               {"ZSPrimitiveSequence"},
+               {},
+               {"MPM"},
+           });
+
 /// this requires further polishing
 struct UpdatePrimitiveFromZSParticles : INode {
   void apply() override {
