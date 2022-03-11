@@ -68,6 +68,31 @@ ZENDEFNODE(OrthonormalBase, {
 });
 
 
+struct PixarOrthonormalBase : INode {
+    virtual void apply() override {
+        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        vec3f tangent{}, bitangent{};
+        if (has_input("tangent")) {
+            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            guidedPixarONB(normal, tangent, bitangent);
+        } else {
+            pixarONB(normal, tangent, bitangent);
+        }
+
+        set_output("normal", std::make_shared<NumericObject>(normal));
+        set_output("tangent", std::make_shared<NumericObject>(tangent));
+        set_output("bitangent", std::make_shared<NumericObject>(bitangent));
+    }
+};
+
+ZENDEFNODE(PixarOrthonormalBase, {
+    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {},
+    {"math"},
+});
+
+
 struct AABBCollideDetect : INode {
     virtual void apply() override {
         auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();

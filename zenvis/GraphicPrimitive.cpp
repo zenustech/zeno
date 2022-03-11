@@ -661,6 +661,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
+varying vec3 iTangent;
 
 void main()
 {
@@ -668,6 +669,7 @@ void main()
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
+  iTangent = vTangent;
 
   gl_Position = mVP * vec4(position, 1.0);
 }
@@ -692,6 +694,15 @@ void pixarONB(vec3 n, out vec3 b1, out vec3 b2){
     b2 = cross(n, b1);
 }
 
+void guidedPixarONB(vec3 n, inout vec3 b1, out vec3 b2) {
+    if (abs(dot(b1,n)) > 0.996) {
+        pixarONB(n, b1, b2);
+    } else {
+        b2 = normalize(cross(n, b1));
+        b1 = cross(n, b2);
+    }
+}
+
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
@@ -706,6 +717,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
+varying vec3 iTangent;
 uniform samplerCube skybox;
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -735,7 +747,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (
 !mtl ?
 R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -1257,17 +1269,20 @@ vec3 ACESFitted(vec3 color, float gamma)
     return color;
 }
 
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 bitangent) {
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
+    vec3 att_tang = tangent;
+    vec3 att_bitang = bitangent;
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     /* custom_shader_end */
     mat_metallic = clamp(mat_metallic, 0, 1);
-    vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
+    mat_normal = normalize(mat_normal);
+    vec3 new_normal = mat_normal.z * normal + mat_normal.x * tangent + mat_normal.y * bitangent;
     vec3 color = vec3(0,0,0);
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
@@ -1277,7 +1292,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent;//   = normalize(cross(up, new_normal));
     vec3 bitangent;// = cross(new_normal, tangent);
-    pixarONB(new_normal, tangent, bitangent);
+    guidedPixarONB(new_normal, tangent, bitangent);
     light_dir = vec3(1,1,0);
     color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
@@ -1351,10 +1366,13 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
+
+  vec3 tangent, bitangent;
+  pixarONB(normal, tangent, bitangent);
   normal = faceforward(normal, -viewdir, normal);
 
   vec3 albedo = iColor;
-  vec3 color = studioShading(albedo, viewdir, normal);
+  vec3 color = studioShading(albedo, viewdir, normal, tangent, bitangent);
   
   gl_FragColor = vec4(color, 1.0);
   if (mNormalCheck) {

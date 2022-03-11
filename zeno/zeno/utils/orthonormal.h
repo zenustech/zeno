@@ -37,11 +37,23 @@ struct orthonormal {
 
 // Get orthonormal basis from surface normal
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
-static std::tuple<vec3f, vec3f> pixarONB(vec3f const &n) {
+static void pixarONB(vec3f const &n, vec3f /*out*/ &b1, vec3f /*out*/ &b2) {
 	vec3f up = std::abs(n[2]) < 0.999f ? vec3f(0.0f, 0.0f, 1.0f) : vec3f(1.0f, 0.0f, 0.0f);
-    vec3f b1 = normalize(cross(up, n));
-    vec3f b2 = cross(n, b1);
-    return {b1, b2};
+    b1 = normalize(cross(up, n));
+    b2 = cross(n, b1);
+}
+
+static void guidedONB(vec3f const &n, vec3f /*inout*/ &b1, vec3f /*out*/ &b2) {
+    b2 = normalize(cross(n, b1));
+    b1 = cross(n, b2);
+}
+
+static void guidedPixarONB(vec3f const &n, vec3f /*inout*/ &b1, vec3f /*out*/ &b2) {
+    if (std::abs(dot(b1,n)) > 0.996f) {
+        pixarONB(n, b1, b2);
+    } else {
+        guidedONB(n, b1, b2);
+    }
 }
 
 }
