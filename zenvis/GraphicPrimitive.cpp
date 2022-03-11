@@ -79,36 +79,6 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     }
 }
 
-void computeTrianglesTangent(zeno::PrimitiveObject *prim)
-{
-    auto &tris = prim->tris;
-    const auto &pos = prim->attr<zeno::vec3f>("pos");
-    auto &tang = tris.add_attr<zeno::vec3f>("tang");
-#pragma omp parallel for
-    for (size_t i = 0; i < tris.size(); ++i)
-    {
-        const auto &pos0 = pos[tris[i][0]];
-        const auto &pos1 = pos[tris[i][1]];
-        const auto &pos2 = pos[tris[i][2]];
-        const auto &uv0 = tris.has_attr("uv0") ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv1 = tris.has_attr("uv1") ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        const auto &uv2 = tris.has_attr("uv2") ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-
-        auto edge0 = pos1 - pos0;
-        auto edge1 = pos2 - pos0;
-        auto deltaUV0 = uv1 - uv0;
-        auto deltaUV1 = uv2 - uv0;
-
-        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1]);
-
-        zeno::vec3f tangent;
-        tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
-        tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
-        tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
-        tang[i] = zeno::normalize(tangent);
-    }
-}
-
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -262,7 +232,6 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        computeTrianglesTangent(prim);
         parseTrianglesDrawBuffer(prim, triObj);
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
@@ -352,19 +321,16 @@ struct GraphicPrimitive : IGraphic {
         //printf("TRIS\n");
         triObj.vbo->bind();
         triObj.vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
         triObj.vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
         triObj.vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
         triObj.vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/4,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
         GL_FLOAT, /*count=*/3);
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
@@ -604,13 +570,11 @@ attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
 attribute vec3 vTexCoord;
-attribute vec3 vTangent;
 
 varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
-varying vec3 iTangent;
 
 void main()
 {
@@ -618,7 +582,6 @@ void main()
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
-  iTangent = vTangent;
 
   gl_Position = mVP * vec4(position, 1.0);
 }
