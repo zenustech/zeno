@@ -337,16 +337,12 @@ struct GraphicPrimitive : IGraphic {
         obj.vbo->bind();
         for (size_t i = 0; i < obj.attlut.size(); i++) {
             int index = obj.attlut[i];
-            printf("attlut: %d -> %d\n", i, index);
             if (index != -1) {
                 obj.vbo->attribute(/*index=*/i,
                     /*offset=*/offset * index, /*stride=*/stride,
                     GL_FLOAT, /*count=*/3);
             } else {
-                obj.vbo->attribute(/*index=*/i,
-                    /*offset=*/0, /*stride=*/0,
-                    GL_FLOAT, /*count=*/3);
-                //obj.vbo->disable_attribute(i);
+                obj.vbo->disable_attribute(i);
             }
         }
     };
@@ -505,17 +501,6 @@ struct GraphicPrimitive : IGraphic {
     }
   }
 
-  Program *cihou_attr_location(Program *prog) {
-      if (prog) {
-          prog->attribute_location("vPosition", 0);
-          prog->attribute_location("vColor", 1);
-          prog->attribute_location("vNormal", 2);
-          prog->attribute_location("vTexCoord", 3);
-          prog->attribute_location("vTangent", 4);
-      }
-      return prog;
-  }
-
   Program *get_points_program(std::string const &path) {
     auto vert = hg::file_get_content(path + ".points.vert");
     auto frag = hg::file_get_content(path + ".points.frag");
@@ -596,7 +581,7 @@ void main()
 )";
     }
 
-    return cihou_attr_location(compile_program(vert, frag));
+    return compile_program(vert, frag);
   }
 
   Program *get_lines_program(std::string const &path) {
@@ -650,7 +635,7 @@ void main()
 )";
     }
 
-    return cihou_attr_location(compile_program(vert, frag));
+    return compile_program(vert, frag);
   }
 
   Program *get_tris_program(std::string const &path, std::shared_ptr<zeno::MaterialObject> mtl) {
@@ -1391,7 +1376,7 @@ void main()
     }
 
 //printf("!!!!%s!!!!\n", frag.c_str());
-    return cihou_attr_location(compile_program(vert, frag));
+    return compile_program(vert, frag);
   }
 };
 
