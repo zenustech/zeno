@@ -286,7 +286,8 @@ struct GraphicPrimitive : IGraphic {
         if (!enable_uv) {
             lineObj.count = lines_count;
             lineObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-            lineObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+            lineObj.ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+            lineObj.vbo = nullptr;
         } else {
             parseLinesDrawBuffer(prim, lineObj);
         }
@@ -303,7 +304,8 @@ struct GraphicPrimitive : IGraphic {
         if (!enable_uv) {
             triObj.count = tris_count;
             triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-            triObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+            triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+            triObj.vbo = nullptr;
         } else {
             computeTrianglesTangent(prim, triObj);
             parseTrianglesDrawBuffer(prim, triObj);
