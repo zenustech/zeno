@@ -15,6 +15,7 @@ namespace zenvis {
 
 int curr_frameid = -1;
 
+static int num_samples = 16;
 static bool show_grid = true;
 static bool smooth_shading = false;
 static bool normal_check = false;
@@ -294,7 +295,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -303,7 +304,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT24, nx, ny));
 
     
     if(tonemapfbo!=0)
@@ -485,6 +486,10 @@ void set_normal_check(bool check) {
 
 void set_render_wireframe(bool render_wireframe_) {
     render_wireframe = render_wireframe_;
+}
+
+void set_num_samples(int num_samples_) {
+    num_samples = num_samples_;
 }
 
 }

@@ -125,6 +125,8 @@ class ViewportWidget(QGLWidget):
         self.record_path = None
         self.record_res = None
 
+        zenvis.core.set_num_samples(nsamples)
+
     def initializeGL(self):
         zenvis.initializeGL()
 

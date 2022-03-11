@@ -522,7 +522,7 @@ struct GraphicPrimitive : IGraphic {
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -557,7 +557,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -603,7 +603,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -629,7 +629,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -657,7 +657,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -690,7 +690,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 130
 )" + (mtl ? mtl->extensions : "") + R"(
 const float minDot = 1e-5;
 
@@ -895,11 +895,11 @@ vec3 UELighting(
 {
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    vec3 half = normalize(toLight + toView);
+    vec3 halfVec = normalize(toLight + toView);
     float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, half);
+    float NoH = dot(surfNorm, halfVec);
     float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, half);
+    float VoH = dot(toView, halfVec);
     float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 
