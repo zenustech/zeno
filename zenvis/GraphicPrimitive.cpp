@@ -653,7 +653,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 130
+#version 140
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -688,7 +688,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 130
+#version 140
 )" + (mtl ? mtl->extensions : "") + R"(
 const float minDot = 1e-5;
 
@@ -809,7 +809,7 @@ float CalculateAttenuation( // GGX/Schlick-Beckmann
     in vec3  vector,
     in float k)
 {
-    float d = max(dot(surfNorm, vector), 0.0);
+    float d = max(dot_c(surfNorm, vector), 0.0);
  	return (d / ((d * (1.0 - k)) + k));
 }
 float CalculateAttenuationAnalytical(// Smith for analytical light
@@ -860,7 +860,7 @@ vec3 CalculateSpecularAnalytical(
     sfresnel = CalculateFresnel(surfNorm, toView, fresnel0);
 
     vec3  numerator   = (sfresnel * ndf * geoAtten); // FDG
-    float denominator = 4.0 * dot(surfNorm, toLight) * dot(surfNorm, toView);
+    float denominator = 4.0 * dot_c(surfNorm, toLight) * dot_c(surfNorm, toView);
 
     return (numerator / denominator);
 }
@@ -907,11 +907,11 @@ vec3 UELighting(
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
     vec3 halfVec = normalize(toLight + toView);
-    float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, halfVec);
-    float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, halfVec);
-    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+    float NoL = dot_c(surfNorm, toLight);
+    float NoH = dot_c(surfNorm, halfVec);
+    float NoV = dot_c(surfNorm, toView);
+    float VoH = dot_c(toView, halfVec);
+    float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 
 }
@@ -930,7 +930,7 @@ vec3 CalculateLightingAnalytical(
     vec3 specular = CalculateSpecularAnalytical(surfNorm, toLight, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
 
-    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+    float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
 
     return ((kd * diffuse) + specular) * angle;
 }
@@ -1036,7 +1036,7 @@ vec3 SampleEnvironment(in vec3 reflVec)
 {
     //if(reflVec.y>-0.5) return vec3(0,0,0);
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
-    return textureCube(skybox, reflVec).rgb;
+    return texture(skybox, reflVec).rgb;
 }
 
 /**
@@ -1079,10 +1079,10 @@ vec3 CalculateSpecularIBL(
         // The light sample vector
         vec3 L = normalize((2.0 * dot(toView, H) * H) - toView);
         
-        float NoV = clamp(dot(surfNorm, toView), 0.0, 1.0);
-        float NoL = clamp(dot(surfNorm, L), 0.0, 1.0);
-        float NoH = clamp(dot(surfNorm, H), 0.0, 1.0);
-        float VoH = clamp(dot(toView, H), 0.0, 1.0);
+        float NoV = clamp(dot_c(surfNorm, toView), 0.0, 1.0);
+        float NoL = clamp(dot_c(surfNorm, L), 0.0, 1.0);
+        float NoH = clamp(dot_c(surfNorm, H), 0.0, 1.0);
+        float VoH = clamp(dot_c(toView, H), 0.0, 1.0);
         
         if(NoL > 0.0)
         {
@@ -1192,13 +1192,13 @@ float clearcoat,
 float clearcoatGloss,
 vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
 {
-    float NdotL = dot(N,L);
-    float NdotV = dot(N,V);
+    float NdotL = dot_c(N,L);
+    float NdotV = dot_c(N,V);
     //if (NdotL < 0 || NdotV < 0) return vec3(0);
 
     vec3 H = normalize(L+V);
-    float NdotH = dot(N,H);
-    float LdotH = dot(L,H);
+    float NdotH = dot_c(N,H);
+    float LdotH = dot_c(L,H);
 
     vec3 Cdlin = mon2lin(baseColor);
     float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
@@ -1238,7 +1238,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float Dr = GTR1(NdotH, mix(.1,.001,clearcoatGloss));
     float Fr = mix(.04, 1.0, FH);
     float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
-    float angle = clamp(dot(N, L), 0.0, 1.0);
+    float angle = clamp(dot_c(N, L), 0.0, 1.0);
     return (((1/PI) * mix(Fd, ss, subsurface)*Cdlin + Fsheen)
         * (1-metallic)
         + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
@@ -1296,19 +1296,19 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 b
     /* custom_shader_end */
     mat_metallic = clamp(mat_metallic, 0, 1);
     mat_normal = normalize(mat_normal);
-    normal = mat_normal.z * normal + mat_normal.x * tangent + mat_normal.y * bitangent;
+    mat3 TBN = mat3(iTangent, normalize(cross(iNormal, iTangent)), iNormal);
+    vec3 new_normal = TBN*mat_normal;
     vec3 color = vec3(0,0,0);
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-
-    normal = normalize(gl_NormalMatrix * normal);
-    //vec3 up        = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    //vec3 tangent;//   = normalize(cross(up, normal));
-    //vec3 bitangent;// = cross(normal, tangent);
-    guidedPixarONB(normal, tangent, bitangent);
+    mat3 normalMatrix = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
+    new_normal = new_normal;
+    vec3 X;
+    vec3 Y;
+    guidedPixarONB(normal, X, Y);
     light_dir = vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(X), normalize(Y)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           normal,
@@ -1345,7 +1345,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 b
 
     color +=  
         CalculateLightingIBL(
-            normal,
+            new_normal,
             view_dir,
             albedo2,
             roughness,
