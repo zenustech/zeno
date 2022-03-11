@@ -660,6 +660,7 @@ attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
 attribute vec3 vTexCoord;
+attribute vec3 vTangent;
 
 varying vec3 position;
 varying vec3 iColor;
