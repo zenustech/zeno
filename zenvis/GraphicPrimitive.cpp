@@ -1303,7 +1303,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 b
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
 
-    normal = normalize(gl_NormalMatrix * normal);
+    normal = normalize(/* gl_NormalMatrix */ normal);
     //vec3 up        = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     //vec3 tangent;//   = normalize(cross(up, normal));
     //vec3 bitangent;// = cross(normal, tangent);
@@ -1374,22 +1374,14 @@ void main()
     fragColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
   }
+
   vec3 normal;
   if (mSmoothShading) {
     normal = normalize(iNormal);
   } else {
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
-  vec3 viewdir = -calcRayDir(position);
 
-  vec3 tangent, bitangent;
-  pixarONB(normal, tangent, bitangent);
-  normal = faceforward(normal, -viewdir, normal);
-
-  vec3 albedo = iColor;
-  vec3 color = studioShading(albedo, viewdir, normal, tangent, bitangent);
-  
-  fragColor = vec4(color, 1.0);
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {
@@ -1397,7 +1389,19 @@ void main()
       } else {
         fragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
       }
+      return;
   }
+
+  vec3 tangent, bitangent;
+  pixarONB(normal, tangent, bitangent);
+
+  vec3 viewdir = -calcRayDir(position);
+  normal = faceforward(normal, -viewdir, normal);
+
+  vec3 albedo = iColor;
+  vec3 color = studioShading(albedo, viewdir, normal, tangent, bitangent);
+  
+  fragColor = vec4(color, 1.0);
 }
 )";
     }
