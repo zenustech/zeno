@@ -114,10 +114,12 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
         tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
         tang[i] = zeno::normalize(tangent);
-        // std::cout<<uv0[0]<<" "<<uv0[1]<<" "<<uv0[2]<<std::endl;
-        // std::cout<<uv1[0]<<" "<<uv1[1]<<" "<<uv1[2]<<std::endl;
-        // std::cout<<uv2[0]<<" "<<uv2[1]<<" "<<uv2[2]<<std::endl;
-        // std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
+        std::cout << "uv: \n";
+        std::cout<<uv0[0]<<" "<<uv0[1]<<" "<<uv0[2]<<std::endl;
+        std::cout<<uv1[0]<<" "<<uv1[1]<<" "<<uv1[2]<<std::endl;
+        std::cout<<uv2[0]<<" "<<uv2[1]<<" "<<uv2[2]<<std::endl;
+        std::cout << "tang: \n";
+        std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
     }
 }
 
@@ -287,7 +289,7 @@ struct GraphicPrimitive : IGraphic {
         // lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         // lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
         // lines_prog = get_lines_program(path);
-        if (prim->lines.has_attr("uv0")&&prim->lines.has_attr("uv1")) {
+        if (!(prim->lines.has_attr("uv0")&&prim->lines.has_attr("uv1"))) {
             lineObj.count = lines_count;
             lineObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
             lineObj.ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
@@ -305,7 +307,7 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        if (prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2")) {
+        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
             triObj.count = tris_count;
             triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
             triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
