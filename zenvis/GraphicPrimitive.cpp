@@ -28,16 +28,18 @@ void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &uv = prim->attr<zeno::vec3f>("uv");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     obj.count = prim->size();
 
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 4);
+    std::vector<zeno::vec3f> mem(obj.count * 5);
     for (int i = 0; i < obj.count; i++)
     {
-      mem[4 * i + 0] = pos[i];
-      mem[4 * i + 1] = clr[i];
-      mem[4 * i + 2] = nrm[i];
-      mem[4 * i + 3] = uv[i];
+      mem[5 * i + 0] = pos[i];
+      mem[5 * i + 1] = clr[i];
+      mem[5 * i + 2] = nrm[i];
+      mem[5 * i + 3] = uv[i];
+      mem[5 * i + 4] = tang[i];
     }
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -53,23 +55,26 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     auto const &lines = prim->lines;
     bool has_uv = lines.has_attr("uv0")&&lines.has_attr("uv1");
     obj.count = prim->lines.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 2 * 4);
+    std::vector<zeno::vec3f> mem(obj.count * 2 * 5);
     std::vector<zeno::vec2i> linesdata(obj.count);
     #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
-        mem[8 * i + 0] = pos[lines[i][0]];
-        mem[8 * i + 1] = clr[lines[i][0]];
-        mem[8 * i + 2] = nrm[lines[i][0]];
-        mem[8 * i + 3] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
-        mem[8 * i + 4] = pos[lines[i][1]];
-        mem[8 * i + 5] = clr[lines[i][1]];
-        mem[8 * i + 6] = nrm[lines[i][1]];
-        mem[8 * i + 7] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 0] = pos[lines[i][0]];
+        mem[10 * i + 1] = clr[lines[i][0]];
+        mem[10 * i + 2] = nrm[lines[i][0]];
+        mem[10 * i + 3] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 4] = tang[lines[i][0]];
+        mem[10 * i + 5] = pos[lines[i][1]];
+        mem[10 * i + 6] = clr[lines[i][1]];
+        mem[10 * i + 7] = nrm[lines[i][1]];
+        mem[10 * i + 8] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 9] = tang[lines[i][1]];
         linesdata[i] = zeno::vec2i(i*2, i*2+1);
 
     }
@@ -85,7 +90,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
-    auto &tang = prim->add_attr<zeno::vec3f>("tang");
+    auto &tang = prim->attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
     for (size_t i = 0; i < obj.count; ++i)
@@ -133,17 +138,17 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[15 * i + 1] = clr[tris[i][0]];
         mem[15 * i + 2] = nrm[tris[i][0]];
         mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 4] = tang[i];
+        mem[15 * i + 4] = tang[tris[i][0]];
         mem[15 * i + 5] = pos[tris[i][1]];
         mem[15 * i + 6] = clr[tris[i][1]];
         mem[15 * i + 7] = nrm[tris[i][1]];
         mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 9] = tang[i];
+        mem[15 * i + 9] = tang[tris[i][1]];
         mem[15 * i + 10] = pos[tris[i][2]];
         mem[15 * i + 11] = clr[tris[i][2]];
         mem[15 * i + 12] = nrm[tris[i][2]];
         mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 14] = tang[i];
+        mem[15 * i + 14] = tang[tris[i][2]];
 
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
@@ -238,21 +243,30 @@ struct GraphicPrimitive : IGraphic {
             uv[i] = zeno::vec3f(0.0f);
         }
     }
-    bool enable_uv = true;
+    if (!prim->has_attr("tang"))
+    {
+        auto &tang = prim->add_attr<zeno::vec3f>("tang");
+        for (size_t i = 0; i < tang.size(); i++) {
+            tang[i] = zeno::vec3f(0.0f);
+        }
+    }
+    bool enable_uv = false;
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &uv = prim->attr<zeno::vec3f>("uv");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(vertex_count * 4);
+    std::vector<zeno::vec3f> mem(vertex_count * 5);
     for (int i = 0; i < vertex_count; i++)
     {
-      mem[4 * i + 0] = pos[i];
-      mem[4 * i + 1] = clr[i];
-      mem[4 * i + 2] = nrm[i];
-      mem[4 * i + 3] = uv[i];
+      mem[5 * i + 0] = pos[i];
+      mem[5 * i + 1] = clr[i];
+      mem[5 * i + 2] = nrm[i];
+      mem[5 * i + 3] = uv[i];
+      mem[5 * i + 4] = tang[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -320,16 +334,19 @@ struct GraphicPrimitive : IGraphic {
     auto vbobind = [&] (auto &vbo) {
         vbo->bind();
         vbo->attribute(/*index=*/0,
-            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
             GL_FLOAT, /*count=*/3);
         vbo->attribute(/*index=*/1,
-            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
             GL_FLOAT, /*count=*/3);
         vbo->attribute(/*index=*/2,
-            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
             GL_FLOAT, /*count=*/3);
         vbo->attribute(/*index=*/3,
-            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 12, /*stride=*/sizeof(float) * 15,
             GL_FLOAT, /*count=*/3);
     };
     auto vbounbind = [&] (auto &vbo) {
@@ -337,6 +354,7 @@ struct GraphicPrimitive : IGraphic {
         vbo->disable_attribute(1);
         vbo->disable_attribute(2);
         vbo->disable_attribute(3);
+        vbo->disable_attribute(4);
         vbo->unbind();
     };
 
@@ -387,28 +405,13 @@ struct GraphicPrimitive : IGraphic {
     if (tris_count) {
         //printf("TRIS\n");
         if (triObj.vbo) {
-            triObj.vbo->bind();
-            triObj.vbo->attribute(/*index=*/0,
-            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
-            GL_FLOAT, /*count=*/3);
-            triObj.vbo->attribute(/*index=*/1,
-            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
-            GL_FLOAT, /*count=*/3);
-            triObj.vbo->attribute(/*index=*/2,
-            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
-            GL_FLOAT, /*count=*/3);
-            triObj.vbo->attribute(/*index=*/3,
-            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
-            GL_FLOAT, /*count=*/3);
-            triObj.vbo->attribute(/*index=*/4,
-            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
-            GL_FLOAT, /*count=*/3);
+            vbobind(triObj.vbo);
         } else {
             vbobind(vbo);
         }
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
-        triObj.prog->set_uniform("mRenderWireframe", false);
+        triObj.prog->set_uniform("mRenderWireframe", render_wireframe);
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
@@ -420,7 +423,6 @@ struct GraphicPrimitive : IGraphic {
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
-          triObj.prog->set_uniform("mRenderWireframe", true);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
           CHECK_GL(glDrawElements(GL_TRIANGLES, triObj.count * 3, GL_UNSIGNED_INT, 0));
           glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -428,14 +430,9 @@ struct GraphicPrimitive : IGraphic {
         }
         triObj.ebo->unbind();
         if (triObj.vbo) {
-            triObj.vbo->disable_attribute(0);
-            triObj.vbo->disable_attribute(1);
-            triObj.vbo->disable_attribute(2);
-            triObj.vbo->disable_attribute(3);
-            triObj.vbo->disable_attribute(4);
-            triObj.vbo->unbind();
+            vbounbind(triObj.vbo);
         } else {
-            vbobind(vbo);
+            vbounbind(vbo);
         }
     }
 
