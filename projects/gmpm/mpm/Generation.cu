@@ -643,7 +643,7 @@ struct EnqueueZSPrimitive : INode {
       auto cudaPol = cuda_exec().device(0);
       auto numV = zsprimseq->numParticles();
       auto numE = zsprimseq->numElements();
-      auto dt = get_input2<float>("dt");
+      auto dt = get_input2<float>("framedt"); // framedt
       cudaPol(
           Collapse{numV},
           [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevParticles()),
@@ -656,9 +656,9 @@ struct EnqueueZSPrimitive : INode {
           Collapse{numE},
           [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevElements()),
            next = proxy<execspace_e::cuda>({}, zsprimseq->getNextElements()),
-           dt] __device__(int pi) mutable {
-            prev.tuple<3>("vel", pi) =
-                (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+           dt] __device__(int ei) mutable {
+            prev.tuple<3>("vel", ei) =
+                (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
           });
     }
 
@@ -668,7 +668,7 @@ struct EnqueueZSPrimitive : INode {
 };
 ZENDEFNODE(EnqueueZSPrimitive,
            {
-               {"ZSPrimitiveSequence", "dt", "ZSPrimitive", "ZSPrimitive"},
+               {"ZSPrimitiveSequence", "framedt", "ZSPrimitive", "ZSPrimitive"},
                {"ZSPrimitiveSequence"},
                {},
                {"MPM"},
