@@ -114,10 +114,10 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
-    auto &tang = prim->attr<zeno::vec3f>("tang");
+    auto &tang = prim->add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
-    for (size_t i = 0; i < obj.count; ++i)
+    for (intptr_t i = 0; i < tris.size(); ++i)
     {
         const auto &pos0 = pos[tris[i][0]];
         const auto &pos1 = pos[tris[i][1]];
@@ -131,7 +131,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
         auto deltaUV0 = uv1 - uv0;
         auto deltaUV1 = uv2 - uv0;
 
-        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[1] * deltaUV0[0]);
+        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1]);
 
         zeno::vec3f tangent;
         tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
@@ -190,6 +190,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     }
     TOCK(bindebo);
 }
+
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
   size_t vertex_count;
@@ -241,7 +242,7 @@ struct GraphicPrimitive : IGraphic {
 #pragma omp parallel for
         for (size_t i = 0; i < nrm.size(); i++) {
             auto opa = prim->has_attr("opa") ? prim->attr<float>("opa")[i] : 0.0f;
-            auto rad = prim->has_attr("rad") ? prim->attr<float>("rad")[i] : 0.0f;
+            auto rad = prim->has_attr("rad") ? prim->attr<float>("rad")[i] : 1.5f;
             nrm[i] = zeno::vec3f(rad, opa, 0.0f);
         }
     }

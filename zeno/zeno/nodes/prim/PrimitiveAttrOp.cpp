@@ -45,7 +45,7 @@ ZENDEFNODE(PrimitiveFillAttr,
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
-    {"enum float float3", "attrType", ""},
+    {"enum float float3", "attrType", "float"},
     }, /* category: */ {
     "primitive",
     }});
