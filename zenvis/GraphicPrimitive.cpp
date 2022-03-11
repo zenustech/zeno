@@ -1011,7 +1011,9 @@ vec3 SampleEnvironment(in vec3 reflVec)
 {
     //if(reflVec.y>-0.5) return vec3(0,0,0);
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
-    return texture(skybox, reflVec).rgb;
+    //here we have the problem reflVec is in eyespace but we need it in world space
+    vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
+    return texture(skybox, r).rgb;
 }
 
 /**
