@@ -234,35 +234,18 @@ struct GraphicPrimitive : IGraphic {
     {
         zeno::getNormal(prim);
     }
-    if (!prim->has_attr("nrm")) {
+    ;
+    if (auto draw_all_points = !prim->points.size() && !prim->lines.size() && !prim->tris.size();
+        !prim->has_attr("nrm") && (prim->has_attr("opa") || prim->has_attr("rad") || prim->points.size() || draw_all_points)) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
-
-        if (prim->has_attr("rad")) {
-            if (prim->has_attr("opa")) {
-                auto &rad = prim->attr<float>("rad");
-                auto &opa = prim->attr<float>("opa");
-                for (size_t i = 0; i < nrm.size(); i++) {
-                    nrm[i] = zeno::vec3f(rad[i], opa[i], 0.0f);
-                }
-            } else {
-                auto &rad = prim->attr<float>("rad");
-                for (size_t i = 0; i < nrm.size(); i++) {
-                    nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
-                }
-            }
-        } else if (prim->tris.size()) {
-            // for (size_t i = 0; i < nrm.size(); i++) {
-            //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
-            // }
-            
-
-        } else {
-            for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
-            }
+#pragma omp parallel for
+        for (size_t i = 0; i < nrm.size(); i++) {
+            auto opa = prim->has_attr("opa") ? prim->attr<float>("opa")[i] : 0.0f;
+            auto rad = prim->has_attr("rad") ? prim->attr<float>("rad")[i] : 0.0f;
+            nrm[i] = zeno::vec3f(rad, opa, 0.0f);
         }
     }
-    if (!prim->has_attr("uv"))
+    /*if (!prim->has_attr("uv"))
     {
         auto &uv = prim->add_attr<zeno::vec3f>("uv");
         for (size_t i = 0; i < uv.size(); i++) {
@@ -275,8 +258,8 @@ struct GraphicPrimitive : IGraphic {
         for (size_t i = 0; i < tang.size(); i++) {
             tang[i] = zeno::vec3f(0.0f);
         }
-    }
-    bool enable_uv = false;
+    }*/
+    bool enable_uv = prim->tris.has_attr("uv0") && prim->tris.has_attr("uv1") && prim->tris.has_attr("uv2");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
