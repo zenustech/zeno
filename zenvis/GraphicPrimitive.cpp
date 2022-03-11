@@ -238,13 +238,13 @@ struct GraphicPrimitive : IGraphic {
     }
     ;
     if (auto draw_all_points = !prim->points.size() && !prim->lines.size() && !prim->tris.size();
-        !prim->has_attr("nrm") && (prim->has_attr("opa") || prim->has_attr("rad") || prim->points.size() || draw_all_points)) {
-        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+        !prim->has_attr("tang") && (prim->has_attr("opa") || prim->has_attr("rad") || prim->points.size() || draw_all_points)) {
+        auto &tang = prim->add_attr<zeno::vec3f>("tang");
 #pragma omp parallel for
-        for (size_t i = 0; i < nrm.size(); i++) {
+        for (size_t i = 0; i < tang.size(); i++) {
             auto opa = prim->has_attr("opa") ? prim->attr<float>("opa")[i] : 0.0f;
             auto rad = prim->has_attr("rad") ? prim->attr<float>("rad")[i] : 1.5f;
-            nrm[i] = zeno::vec3f(rad, opa, 0.0f);
+            tang[i] = zeno::vec3f(rad, opa, 0.0f);
         }
     }
     /*if (!prim->has_attr("uv"))
@@ -518,6 +518,8 @@ uniform float mPointScale;
 attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
+attribute vec3 vTexCoord;
+attribute vec3 vTangent;
 
 varying vec3 position;
 varying vec3 color;
@@ -527,8 +529,8 @@ void main()
 {
   position = vPosition;
   color = vColor;
-  radius = vNormal.x;
-  opacity = vNormal.y;
+  radius = vTangent.x;
+  opacity = vTangent.y;
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
@@ -661,6 +663,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
+varying vec3 iTangent;
 
 void main()
 {
@@ -668,6 +671,7 @@ void main()
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
+  iTangent = vTangent;
 
   gl_Position = mVP * vec4(position, 1.0);
 }
@@ -706,6 +710,7 @@ varying vec3 position;
 varying vec3 iColor;
 varying vec3 iNormal;
 varying vec3 iTexCoord;
+varying vec3 iTangent;
 uniform samplerCube skybox;
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -1262,6 +1267,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
+    vec3 att_tang = iTangent;
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
