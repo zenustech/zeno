@@ -185,4 +185,64 @@ ZENDEFNODE(ExtendZSLevelSet,
                {"Volume"},
            });
 
+struct ZSLevelSetFloodFill : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ZSLevelSetFloodFill\n");
+
+    auto zsfield = get_input<ZenoLevelSet>("ZSField");
+    auto &field = zsfield->getBasicLevelSet()._ls;
+    auto sdfZsField = get_input<ZenoLevelSet>("ZSSdfField");
+
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+    using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+    using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
+    match(
+        [&](auto &lsPtr, const auto &sdfLs)
+            -> std::enable_if_t<
+                is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+          using ls_t = RM_CVREF_T(*lsPtr);
+          using sdf_ls_t = RM_CVREF_T(sdfLs);
+          if constexpr (is_same_v<sdf_ls_t, basic_ls_t>) {
+            match([&cudaPol, &lsPtr](const auto &sdfLsPtr) {
+              extend_level_set_domain(
+                  cudaPol, *lsPtr,
+                  get_level_set_view<execspace_e::cuda>(sdfLsPtr));
+            })(sdfLs._ls);
+          } else if constexpr (is_same_v<sdf_ls_t, const_sdf_vel_ls_t>) {
+            match([&cudaPol, &lsPtr](auto lsv) {
+              extend_level_set_domain(cudaPol, *lsPtr, SdfVelFieldView{lsv});
+            })(sdfLs.template getView<execspace_e::cuda>());
+          } else if constexpr (is_same_v<sdf_ls_t, const_transition_ls_t>) {
+            match([&cudaPol, &lsPtr, &sdfLs](auto fieldPair) {
+              auto &fvSrc = std::get<0>(fieldPair);
+              auto &fvDst = std::get<1>(fieldPair);
+              extend_level_set_domain(
+                  cudaPol, *lsPtr,
+                  TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                         SdfVelFieldView{fvDst}, sdfLs._stepDt,
+                                         sdfLs._alpha});
+            })(sdfLs.template getView<zs::execspace_e::cuda>());
+          }
+        },
+        [](auto &lsPtr, ...) {
+          throw std::runtime_error(fmt::format("levelset [{}] is not a spls!",
+                                               get_var_type_str(lsPtr)));
+        })(field, sdfZsField->getLevelSet());
+
+    fmt::print(fg(fmt::color::cyan), "done executing ZSLevelSetFloodFill\n");
+    set_output("ZSField", zsfield);
+  }
+};
+
+ZENDEFNODE(ZSLevelSetFloodFill, {
+                                    {"ZSField", "ZSSdfField"},
+                                    {"ZSField"},
+                                    {},
+                                    {"Volume"},
+                                });
+
 } // namespace zeno

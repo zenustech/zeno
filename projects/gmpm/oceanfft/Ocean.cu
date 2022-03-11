@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
 //-------attached some cuda library for FFT-----------------
 
 

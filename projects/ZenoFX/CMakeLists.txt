@@ -22,7 +22,7 @@ if (ZENOFX_ENABLE_OPENVDB)
 endif()
 
 if (ZENOFX_ENABLE_LBVH)
-    target_sources(zeno_ZenoFX PRIVATE pnbvhw.cpp LinearBVH.cpp LinearBVH.h SpatialUtils.hpp)
+    target_sources(zeno_ZenoFX PRIVATE pnbvhw.cpp LinearBvh.cpp LinearBvh.h SpatialUtils.hpp)
 endif()
 
 find_package(OpenMP)

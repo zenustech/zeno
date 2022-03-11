@@ -8,13 +8,16 @@
 #include <cmath>
 #include <array>
 #include <stb_image_write.h>
-#include <GL/gl.h>
+#include <Hg/OpenGL/stdafx.hpp>
+#include "zenvisapi.hpp"
+
 namespace zenvis {
 
 int curr_frameid = -1;
 
 static bool show_grid = true;
 static bool smooth_shading = false;
+static bool normal_check = false;
 bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
@@ -87,6 +90,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
   pro->set_uniform("mSmoothShading", smooth_shading);
+  pro->set_uniform("mNormalCheck", normal_check);
   pro->set_uniform("mCameraRadius", camera_radius);
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
@@ -99,55 +103,10 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-GLuint envTexture;
-unsigned int loadCubemap(std::vector<std::string> faces)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-    int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-            );
-            stbi_image_free(data);
-        }
-        else
-        {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-            stbi_image_free(data);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    return textureID;
-}  
-void setupEnvMap()
-{
-  std::vector<std::string> faces
-  {
-    "assets/right.jpg",
-    "assets/left.jpg",
-    "assets/top.jpg",
-    "assets/bottom.jpg",
-    "assets/front.jpg",
-    "assets/back.jpg"
-  };
-  envTexture = loadCubemap(faces);  
-
-}
 void initialize() {
   gladLoadGL();
-  setupEnvMap();
+  setup_env_map("Default");
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -193,7 +152,7 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-#extension GL_EXT_gpu_shader4 : enable
+//#extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
 //
 //
@@ -372,7 +331,6 @@ static void paint_graphics(GLuint target_fbo = 0) {
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->SetEnvMap(envTexture);
     gra->draw();
   }
   if (show_grid) {
@@ -504,6 +462,9 @@ std::tuple<float, float, float> get_background_color() {
 
 void set_smooth_shading(bool smooth) {
     smooth_shading = smooth;
+}
+void set_normal_check(bool check) {
+    normal_check = check;
 }
 
 void set_render_wireframe(bool render_wireframe_) {

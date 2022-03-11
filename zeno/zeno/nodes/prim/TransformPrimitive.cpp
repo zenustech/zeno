@@ -10,11 +10,11 @@
 #include <cstring>
 #include <variant>
 namespace zeno {
-struct MatrixObject : zeno::IObject{//ZhxxHappyObject
+struct MatrixObject : zeno::IObjectClone<MatrixObject>{//ZhxxHappyObject
     std::variant<glm::mat3, glm::mat4> m;
 };
 
-/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
+/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!fixed using iobjclone now
     virtual void apply() override {
         auto &dst = std::get<glm::mat4>(get_input<zeno::MatrixObject>("dst")->m);
         auto &src = std::get<glm::mat4>(get_input<zeno::MatrixObject>("src")->m);

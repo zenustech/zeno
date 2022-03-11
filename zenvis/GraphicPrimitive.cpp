@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/ticktock.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -13,6 +14,7 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern unsigned int getGlobalEnvMap();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -79,46 +81,87 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     }
 }
 
+
+void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    const auto &tris = prim->tris;
+    const auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto &tang = prim->add_attr<zeno::vec3f>("tang");
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+#pragma omp parallel for
+    for (size_t i = 0; i < obj.count; ++i)
+    {
+        const auto &pos0 = pos[tris[i][0]];
+        const auto &pos1 = pos[tris[i][1]];
+        const auto &pos2 = pos[tris[i][2]];
+        auto uv0 = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv1 = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        auto uv2 = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+
+        auto edge0 = pos1 - pos0;
+        auto edge1 = pos2 - pos0;
+        auto deltaUV0 = uv1 - uv0;
+        auto deltaUV1 = uv2 - uv0;
+
+        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[1] * deltaUV0[0]);
+
+        zeno::vec3f tangent;
+        tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+        tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+        tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+        tang[i] = zeno::normalize(tangent);
+    }
+}
+
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
+    TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+
     const auto &tang = tris.attr<zeno::vec3f>("tang");
     obj.count = prim->tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
     std::vector<zeno::vec3i> trisdata(obj.count);
-    #pragma omp parallel for
+
+#pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
         mem[15 * i + 0] = pos[tris[i][0]];
         mem[15 * i + 1] = clr[tris[i][0]];
         mem[15 * i + 2] = nrm[tris[i][0]];
-        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 4] = tang[i];
         mem[15 * i + 5] = pos[tris[i][1]];
         mem[15 * i + 6] = clr[tris[i][1]];
         mem[15 * i + 7] = nrm[tris[i][1]];
-        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 9] = tang[i];
         mem[15 * i + 10] = pos[tris[i][2]];
         mem[15 * i + 11] = clr[tris[i][2]];
         mem[15 * i + 12] = nrm[tris[i][2]];
-        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0, 0, 0);
+        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 14] = tang[i];
 
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
     }
+    TOCK(parse);
+
+    TICK(bindvbo);
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
     if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
     }
+    TOCK(bindebo);
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
@@ -157,6 +200,10 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
+    if(prim->tris.size())
+    {
+        zeno::getNormal(prim);
+    }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
 
@@ -177,7 +224,7 @@ struct GraphicPrimitive : IGraphic {
             // for (size_t i = 0; i < nrm.size(); i++) {
             //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
             // }
-            zeno::getNormal(prim);
+            
 
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
@@ -337,7 +384,8 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniform("mRenderWireframe", false);
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
+        if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -613,6 +661,7 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform bool mSmoothShading;
+uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
 varying vec3 position;
@@ -1192,7 +1241,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 bitangent;// = cross(new_normal, tangent);
     pixarONB(new_normal, tangent, bitangent);
     light_dir = vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,0,0,0,0.5,0,1,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
@@ -1270,6 +1319,14 @@ void main()
   vec3 color = studioShading(albedo, viewdir, normal);
   
   gl_FragColor = vec4(color, 1.0);
+  if (mNormalCheck) {
+      float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
+      if (gl_FrontFacing) {
+        gl_FragColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+      } else {
+        gl_FragColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+      }
+  }
 }
 )";
     }
