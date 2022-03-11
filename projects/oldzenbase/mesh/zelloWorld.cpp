@@ -21,25 +21,7 @@ struct StringToMesh : zeno::INode {
             auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
             auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
             auto &tris = prim->tris;
-            std::vector<zeno::vec3i> triuv;
-            read_obj_file(pos, uv, norm, tris, triuv, path.c_str());
-            if (!triuv.empty())
-            {
-                auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-                auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-                auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
-                const auto triuvSize = triuv.size();
-                uv0.reserve(triuvSize);
-                uv1.reserve(triuvSize);
-                uv2.reserve(triuvSize);
-                for (size_t i = 0; i < triuvSize; ++i)
-                {
-                    const auto &index = triuv[i];
-                    uv0[i] = index[0] != -1 ? uv[index[0]] : vec3f{0.0f, 0.0f, 0.0f};
-                    uv1[i] = index[1] != -1 ? uv[index[1]] : vec3f{0.0f, 0.0f, 0.0f};
-                    uv2[i] = index[2] != -1 ? uv[index[2]] : vec3f{0.0f, 0.0f, 0.0f};
-                }
-            }
+            read_obj_file(pos, uv, norm, tris, path.c_str());
             prim->resize(pos.size());
             alphaset->arr.push_back(prim);
         }
