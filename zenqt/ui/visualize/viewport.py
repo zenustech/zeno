@@ -217,13 +217,21 @@ class QDMDisplayMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+C'))
         self.addAction(action)
 
+def get_env_tex_names():
+    ns = os.listdir('assets/sky_sphere')
+    ns = filter(lambda s: s.lower().endswith('.jpg'), ns)
+    ns = map(lambda s: s[:-4], ns)
+    return list(ns)
+
+env_texs = get_env_tex_names()
+
 class QDMEnvTexMenu(QMenu):
     def __init__(self):
         super().__init__()
 
         self.setTitle('EnvTex')
 
-        for name in ['Default', 'Lake', 'Sea', 'Daylight', 'Forest']:
+        for name in env_texs:
             action = QAction(name, self)
             self.addAction(action)
 
@@ -324,7 +332,7 @@ class DisplayWidget(QWidget):
         elif name == 'Reset Camera':
             self.view.camera.reset()
 
-        elif name in ['Default', 'Lake', 'Sea', 'Daylight', 'Forest']:
+        elif name in env_texs:
             zenvis.core.setup_env_map(name)
 
     def get_output_path(self, extname):
