@@ -420,7 +420,7 @@ struct GraphicPrimitive : IGraphic {
 
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
-        triObj.prog->set_uniform("mRenderWireframe", render_wireframe);
+        triObj.prog->set_uniformi("mRenderWireframe", false);
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
@@ -432,6 +432,7 @@ struct GraphicPrimitive : IGraphic {
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
+          triObj.prog->set_uniformi("mRenderWireframe", true);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
           CHECK_GL(glDrawElements(GL_TRIANGLES, triObj.count * 3, GL_UNSIGNED_INT, 0));
           glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
