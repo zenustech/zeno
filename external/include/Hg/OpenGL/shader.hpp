@@ -57,6 +57,10 @@ namespace hg::OpenGL {
 
     void use() const { CHECK_GL(glUseProgram(pro)); }
 
+    void attribute_location(const char *name, int index) const {
+        CHECK_GL(glBindAttribLocation(pro, index, name));
+    }
+
     void set_uniformi(const char *name, int val) const {
       GLuint loc;
       CHECK_GL(loc = glGetUniformLocation(pro, name));
