@@ -178,6 +178,7 @@ struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
+  drawObject pointObj;
   drawObject lineObj;
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
@@ -237,6 +238,7 @@ struct GraphicPrimitive : IGraphic {
             uv[i] = zeno::vec3f(0.0f);
         }
     }
+    bool enable_uv = true;
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -256,9 +258,10 @@ struct GraphicPrimitive : IGraphic {
 
     points_count = prim->points.size();
     if (points_count) {
-        points_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        points_ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
-        points_prog = get_points_program(path);
+        pointObj.count = points_count;
+        pointObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        pointObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        pointObj.prog = get_points_program(path);
     }
 
     lines_count = prim->lines.size();
@@ -266,7 +269,13 @@ struct GraphicPrimitive : IGraphic {
         // lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         // lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
         // lines_prog = get_lines_program(path);
-        parseLinesDrawBuffer(prim, lineObj);
+        if (!enable_uv) {
+            lineObj.count = lines_count;
+            lineObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            lineObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        } else {
+            parseLinesDrawBuffer(prim, lineObj);
+        }
         lineObj.prog = get_lines_program(path);
     }
 
@@ -277,8 +286,14 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        computeTrianglesTangent(prim, triObj);
-        parseTrianglesDrawBuffer(prim, triObj);
+        if (!enable_uv) {
+            triObj.count = tris_count;
+            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            triObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        } else {
+            computeTrianglesTangent(prim, triObj);
+            parseTrianglesDrawBuffer(prim, triObj);
+        }
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
@@ -286,7 +301,7 @@ struct GraphicPrimitive : IGraphic {
 
     draw_all_points = !points_count && !lines_count && !tris_count;
     if (draw_all_points) {
-        points_prog = get_points_program(path);
+        pointObj.prog = get_points_program(path);
     }
 
     if ((prim->mtl != nullptr) && !prim->mtl->tex2Ds.empty())
@@ -302,85 +317,95 @@ struct GraphicPrimitive : IGraphic {
         textures[id]->bind_to(id);
     }
 
-    vbo->bind();
-    vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
+    auto vbobind = [&] (auto &vbo) {
+        vbo->bind();
+        vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
+            GL_FLOAT, /*count=*/3);
+    };
+    auto vbounbind = [&] (auto &vbo) {
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->disable_attribute(2);
+        vbo->disable_attribute(3);
+        vbo->unbind();
+    };
+
+    if (draw_all_points || points_count)
+        vbobind(vbo);
 
     if (draw_all_points) {
         //printf("ALLPOINTS\n");
-        points_prog->use();
-        set_program_uniforms(points_prog);
+        pointObj.prog->use();
+        set_program_uniforms(pointObj.prog);
         CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
     }
 
     if (points_count) {
         //printf("POINTS\n");
-        points_prog->use();
-        set_program_uniforms(points_prog);
-        points_ebo->bind();
-        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 1,
+        pointObj.prog->use();
+        set_program_uniforms(pointObj.prog);
+        pointObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/pointObj.count * 1,
               GL_UNSIGNED_INT, /*first=*/0));
-        points_ebo->unbind();
+        pointObj.ebo->unbind();
     }
-    vbo->disable_attribute(0);
-    vbo->disable_attribute(1);
-    vbo->disable_attribute(2);
-    vbo->disable_attribute(3);
-    vbo->unbind();
+
+    if (draw_all_points || points_count)
+        vbounbind(vbo);
 
 
     if (lines_count) {
         //printf("LINES\n");
-        lineObj.vbo->bind();
-        lineObj.vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
+        if (lineObj.vbo) {
+            vbobind(lineObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
         lineObj.prog->use();
         set_program_uniforms(lineObj.prog);
         lineObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_LINES, /*count=*/lineObj.count * 2,
               GL_UNSIGNED_INT, /*first=*/0));
         lineObj.ebo->unbind();
-        lineObj.vbo->unbind();
+        if (lineObj.vbo) {
+            vbounbind(lineObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
     }
 
     if (tris_count) {
         //printf("TRIS\n");
-        triObj.vbo->bind();
-        triObj.vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/4,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
-        GL_FLOAT, /*count=*/3);
+        if (triObj.vbo) {
+            triObj.vbo->bind();
+            triObj.vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+            triObj.vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+            triObj.vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+            triObj.vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+            triObj.vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        } else {
+            vbobind(vbo);
+        }
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
         triObj.prog->set_uniform("mRenderWireframe", false);
@@ -402,7 +427,16 @@ struct GraphicPrimitive : IGraphic {
           glDisable(GL_POLYGON_OFFSET_LINE);
         }
         triObj.ebo->unbind();
-        triObj.vbo->unbind();
+        if (triObj.vbo) {
+            triObj.vbo->disable_attribute(0);
+            triObj.vbo->disable_attribute(1);
+            triObj.vbo->disable_attribute(2);
+            triObj.vbo->disable_attribute(3);
+            triObj.vbo->disable_attribute(4);
+            triObj.vbo->unbind();
+        } else {
+            vbobind(vbo);
+        }
     }
 
     
