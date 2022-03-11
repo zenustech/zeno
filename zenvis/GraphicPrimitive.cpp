@@ -79,9 +79,9 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
-    auto const &tang = prim->attr<zeno::vec3f>("tang");
     auto const &lines = prim->lines;
     bool has_uv = lines.has_attr("uv0")&&lines.has_attr("uv1");
+    bool has_tang = lines.has_attr("tang");
     obj.count = prim->lines.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 2 * 5);
@@ -93,12 +93,12 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[i + 1 * obj.count] = clr[lines[i][0]];
         mem[i + 2 * obj.count] = nrm[lines[i][0]];
         mem[i + 3 * obj.count] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
-        mem[i + 4 * obj.count] = tang[lines[i][0]];
+        mem[i + 4 * obj.count] = has_tang?lines.attr<zeno::vec3f>("tang")[i]:zeno::vec3f(0,0,0);
         mem[i + 5 * obj.count] = pos[lines[i][1]];
         mem[i + 6 * obj.count] = clr[lines[i][1]];
         mem[i + 7 * obj.count] = nrm[lines[i][1]];
         mem[i + 8 * obj.count] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
-        mem[i + 9 * obj.count] = tang[lines[i][1]];
+        mem[i + 9 * obj.count] = has_tang?lines.attr<zeno::vec3f>("tang")[i]:zeno::vec3f(0,0,0);
         linesdata[i] = zeno::vec2i(i*2, i*2+1);
 
     }
@@ -112,9 +112,10 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 
 void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
 {
-    const auto &tris = prim->tris;
+    auto &tris = prim->tris;
+    if (tris.has_attr("tang")) return;
+    auto &tang = tris.add_attr<zeno::vec3f>("tang");
     const auto &pos = prim->attr<zeno::vec3f>("pos");
-    auto &tang = prim->add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
     for (intptr_t i = 0; i < tris.size(); ++i)
