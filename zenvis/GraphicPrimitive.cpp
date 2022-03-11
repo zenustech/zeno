@@ -150,7 +150,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
-    const auto &tang = prim->attr<zeno::vec3f>("tang");
+    bool has_tang = tris.has_attr("tang");
     obj.count = tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
@@ -159,21 +159,22 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
+        auto mytang = has_tang?tris.attr<zeno::vec3f>("tang")[i]:zeno::vec3f(0,0,0);
         mem[i + 0 * obj.count] = pos[tris[i][0]];
         mem[i + 1 * obj.count] = clr[tris[i][0]];
         mem[i + 2 * obj.count] = nrm[tris[i][0]];
         mem[i + 3 * obj.count] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[i + 4 * obj.count] = tang[tris[i][0]];
+        mem[i + 4 * obj.count] = mytang;
         mem[i + 5 * obj.count] = pos[tris[i][1]];
         mem[i + 6 * obj.count] = clr[tris[i][1]];
         mem[i + 7 * obj.count] = nrm[tris[i][1]];
         mem[i + 8 * obj.count] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[i + 9 * obj.count] = tang[tris[i][1]];
+        mem[i + 9 * obj.count] = mytang;
         mem[i + 10 * obj.count] = pos[tris[i][2]];
         mem[i + 11 * obj.count] = clr[tris[i][2]];
         mem[i + 12 * obj.count] = nrm[tris[i][2]];
         mem[i + 13 * obj.count] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[i + 14 * obj.count] = tang[tris[i][2]];
+        mem[i + 14 * obj.count] = mytang;
 
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
@@ -234,7 +235,7 @@ struct GraphicPrimitive : IGraphic {
     }
     if(prim->tris.size())
     {
-        zeno::getNormal(prim);
+        zeno::primCalcNormal(prim);
     }
     ;
     if (auto draw_all_points = !prim->points.size() && !prim->lines.size() && !prim->tris.size();
@@ -747,7 +748,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (
 !mtl ?
 R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 bitangent) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -1282,36 +1283,36 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 b
     /* custom_shader_end */
     mat_metallic = clamp(mat_metallic, 0, 1);
     mat_normal = normalize(mat_normal);
-    vec3 new_normal = mat_normal.z * normal + mat_normal.x * tangent + mat_normal.y * bitangent;
+    normal = mat_normal.z * normal + mat_normal.x * tangent + mat_normal.y * bitangent;
     vec3 color = vec3(0,0,0);
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
 
-    new_normal = normalize(gl_NormalMatrix * new_normal);
-    //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent;//   = normalize(cross(up, new_normal));
-    vec3 bitangent;// = cross(new_normal, tangent);
-    guidedPixarONB(new_normal, tangent, bitangent);
+    normal = normalize(gl_NormalMatrix * normal);
+    //vec3 up        = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    //vec3 tangent;//   = normalize(cross(up, normal));
+    //vec3 bitangent;// = cross(normal, tangent);
+    guidedPixarONB(normal, tangent, bitangent);
     light_dir = vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
- //           new_normal,
+ //           normal,
  //           normalize(light_dir),
  //           normalize(view_dir),
  //           albedo2,
  //           roughness,
  //           mat_metallic) * vec3(1, 1, 1) * mat_zenxposure;
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
-//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+//             mat_metallic, mat_specular, normal, light_dir, view_dir);
 
     light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
-//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+//             mat_metallic, mat_specular, normal, light_dir, view_dir);
 //    color +=  
 //        CalculateLightingAnalytical(
-//            new_normal,
+//            normal,
 //            light_dir,
 //            view_dir,
 //            albedo2,
@@ -1320,18 +1321,18 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent, vec3 b
 //    light_dir = vec3(0,-0.2,-1);
 //    color +=  
 //        CalculateLightingAnalytical(
-//            new_normal,
+//            normal,
 //            light_dir,
 //            view_dir,
 //            albedo2,
 //            roughness,
 //            mat_metallic) * vec3(0.15, 0.2, 0.22)*6;
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
-//             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
+//             mat_metallic, mat_specular, normal, light_dir, view_dir);
 
     color +=  
         CalculateLightingIBL(
-            new_normal,
+            normal,
             view_dir,
             albedo2,
             roughness,
