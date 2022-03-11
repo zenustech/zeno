@@ -660,14 +660,14 @@ out vec3 position;
 out vec3 iColor;
 out vec3 iNormal;
 out vec3 iTexCoord;
-
+out vec3 iTangent;
 void main()
 {
   position = vPosition;
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
-
+  iTangent = vTangent;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
@@ -705,6 +705,7 @@ in vec3 position;
 in vec3 iColor;
 in vec3 iNormal;
 in vec3 iTexCoord;
+in vec3 iTangent;
 out vec4 fColor;
 uniform samplerCube skybox;
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
@@ -1272,8 +1273,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
+    mat3 TBN = mat3(normalize(iTangent), normalize(cross(normal, iTangent)), normalize(normal));
 
-    new_normal = normalize(new_normal);
+    new_normal = TBN*mat_normal;
+    new_normal = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent;//   = normalize(cross(up, new_normal));
     vec3 bitangent;// = cross(new_normal, tangent);
@@ -1330,12 +1333,12 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 
 vec3 calcRayDir(vec3 pos)
 {
-  vec4 vpos = mVP * vec4(pos, 1);
-  vec2 uv = vpos.xy / vpos.w;
-  vec4 ro = mInvVP * vec4(uv, -1, 1);
-  vec4 re = mInvVP * vec4(uv, +1, 1);
-  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
-  return rd;
+  vec4 vpos = mView * vec4(pos, 1);
+//   vec2 uv = vpos.xy / vpos.w;
+//   vec4 ro = mInvVP * vec4(uv, -1, 1);
+//   vec4 re = mInvVP * vec4(uv, +1, 1);
+//   vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
+  return normalize(vpos.xyz);
 }
 
 void main()
@@ -1351,7 +1354,7 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
-  normal = faceforward(normal, -viewdir, normal);
+  //normal = faceforward(normal, -viewdir, normal);
 
   vec3 albedo = iColor;
   vec3 color = studioShading(albedo, viewdir, normal);
