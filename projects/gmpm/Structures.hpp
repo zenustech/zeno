@@ -100,12 +100,66 @@ struct ZenoParticles : IObject {
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
 
+  std::size_t numParticles() const noexcept { return particles.size(); }
+  std::size_t numElements() const noexcept { return (*elements).size(); }
+
   particles_t particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim;
   ZenoConstitutiveModel model{};
+};
+
+struct ZenoPrimitiveSequence : IObjectClone<ZenoPrimitiveSequence> {
+  ZenoPrimitiveSequence() = default;
+  ZenoPrimitiveSequence(std::shared_ptr<ZenoParticles> prev,
+                        std::shared_ptr<ZenoParticles> next)
+      : prev{prev}, next{next}, stepDt{0}, alpha{0} {}
+
+  bool valid() const noexcept {
+    if (!(prev.expired() || next.expired())) {
+      auto p = prev.lock();
+      auto n = next.lock();
+      if (p->elements && n->elements)
+        return p->numParticles() == n->numParticles() &&
+               p->numElements() == n->numElements() &&
+               p->category == n->category;
+    }
+    return false;
+  }
+  std::size_t numParticles() const noexcept {
+    return prev.lock()->numParticles();
+  }
+  std::size_t numElements() const noexcept {
+    return prev.lock()->numElements();
+  }
+  auto &getPrevParticles() noexcept { return prev.lock()->particles; }
+  const auto &getPrevParticles() const noexcept {
+    return prev.lock()->particles;
+  }
+  auto &getNextParticles() noexcept { return next.lock()->particles; }
+  const auto &getNextParticles() const noexcept {
+    return next.lock()->particles;
+  }
+  auto &getPrevElements() noexcept { return prev.lock()->particles; }
+  const auto &getPrevElements() const noexcept {
+    return prev.lock()->particles;
+  }
+  auto &getNextElements() noexcept { return *next.lock()->elements; }
+  const auto &getNextElements() const noexcept {
+    return *next.lock()->elements;
+  }
+
+  void setStepDt(float dt) noexcept { stepDt = dt; }
+  void advance(float ratio) noexcept { alpha += ratio; }
+  void push(std::shared_ptr<ZenoParticles> prim) {
+    prev = next;
+    next = prim;
+  }
+
+  std::weak_ptr<ZenoParticles> prev, next;
+  float stepDt, alpha;
 };
 
 struct ZenoPartition : IObject {
