@@ -10,7 +10,6 @@ namespace Ui
 #include <zenoui/model/modeldata.h>
 
 class ZenoRampBar;
-class ZenoHSVColorView;
 
 class ZenoRampSelector : public QGraphicsEllipseItem
 {
@@ -51,6 +50,10 @@ public:
 
 protected:
 	void resizeEvent(QResizeEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
+
+signals:
+	void rampSelected(COLOR_RAMP);
 
 private slots:
 	void onSelectionChanged();
@@ -71,26 +74,14 @@ private:
 	ZenoRampGroove* m_pLineItem;
 };
 
-class HSVSelctor : public QGraphicsEllipseItem
-{
-	typedef QGraphicsEllipseItem _base;
-public:
-	HSVSelctor(QGraphicsItem* parent = nullptr);
-	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
-	static const int m_size = 10;
-
-protected:
-	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
-
-private:
-	ZenoHSVColorView* m_colorView;
-};
-
 class SVColorView : public QWidget
 {
 	Q_OBJECT
 public:
 	SVColorView(QWidget* parent = nullptr);
+
+signals:
+	void colorChanged(const QColor& clr);
 
 public slots:
 	void setColor(const QColor& clr);
@@ -102,22 +93,6 @@ protected:
 
 private:
 	QColor m_color;
-};
-
-class ZenoHSVColorView : public QGraphicsView
-{
-	Q_OBJECT
-public:
-	ZenoHSVColorView(QWidget* parent = nullptr);
-	void initHSVColorView(const QSize& sz);
-
-protected:
-	void resizeEvent(QResizeEvent* event) override;
-
-private:
-	QGraphicsScene* m_scene;
-	HSVSelctor* m_selector;
-	QGraphicsRectItem* m_pColorItem;
 };
 
 class ZenoHeatMapEditor : public QDialog
@@ -140,6 +115,7 @@ protected:
 private slots:
 	void onAddRampBtnClicked();
 	void onRemoveRampBtnClicked();
+	void onRampColorClicked(COLOR_RAMP ramp);
 
 private:
 	void initSignals();

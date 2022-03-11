@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>325</width>
-    <height>908</height>
+    <width>293</width>
+    <height>496</height>
    </rect>
   </property>
   <property name="palette">
@@ -326,120 +326,6 @@
       </widget>
      </item>
      <item>
-      <widget class="ZenoHSVColorView" name="hsvColorView">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>200</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>200</height>
-        </size>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::Panel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Plain</enum>
-       </property>
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QFrame" name="color_view">
-       <property name="minimumSize">
-        <size>
-         <width>200</width>
-         <height>200</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>5000</width>
-         <height>5000</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">/* ALL CHANGES HERE WILL BE OVERWRITTEN */;
-background-color: qlineargradient(x1:1, x2:0, stop:0 hsl(0%,100%,50%), stop:1 rgba(255, 255, 255, 255));
-        </string>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Plain</enum>
-       </property>
-       <property name="lineWidth">
-        <number>0</number>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QFrame" name="black_overlay">
-          <property name="styleSheet">
-           <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(0, 0, 0, 0), stop:1 rgba(0, 0, 0, 255));
-border: 1px solid black;
-           </string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Plain</enum>
-          </property>
-          <property name="lineWidth">
-           <number>0</number>
-          </property>
-          <widget class="QLabel" name="selector">
-           <property name="geometry">
-            <rect>
-             <x>70</x>
-             <y>100</y>
-             <width>12</width>
-             <height>12</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel{
-	border: 1px solid #FFFFFF;
-	border-radius: 6px;
-	background: transparent;
-}
-</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
         <widget class="QLabel" name="colorPicker">
@@ -482,6 +368,9 @@ QSlider::handle:horizontal {
     width: 4px;
     /*margin: -2px 0;  handle is placed by default on the contents rect of the groove. Expand outside the groove */
 }</string>
+         </property>
+         <property name="maximum">
+          <number>360</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -915,7 +804,7 @@ QSlider::handle:horizontal {
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="spinBox_2">
+          <widget class="QSpinBox" name="spRedOrH">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -989,7 +878,7 @@ QSlider::handle:horizontal {
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="spinBox_3">
+          <widget class="QSpinBox" name="spGreenOrS">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -1059,7 +948,7 @@ QSlider::handle:horizontal {
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="spinBox_4">
+          <widget class="QSpinBox" name="spBlueOrV">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -1115,12 +1004,6 @@ QSlider::handle:horizontal {
   </customwidget>
   <customwidget>
    <class>ZenoRampBar</class>
-   <extends>QGraphicsView</extends>
-   <header>panel/zenoheatmapeditor.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ZenoHSVColorView</class>
    <extends>QGraphicsView</extends>
    <header>panel/zenoheatmapeditor.h</header>
    <container>1</container>

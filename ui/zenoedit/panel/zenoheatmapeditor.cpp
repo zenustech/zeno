@@ -2,6 +2,7 @@
 #include "zenoheatmapeditor.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/nodesys/zenosvgitem.h>
+#include <zenoui/util/uihelper.h>
 
 
 ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)
@@ -32,6 +33,20 @@ void ZenoRampSelector::initRampPos(const QPointF& pos, const QColor& clr)
 void ZenoRampSelector::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	Q_UNUSED(widget);
+
+	bool bSelected = isSelected();
+	if (bSelected)
+	{
+		QPen pen(QColor(255, 128, 0), 1);
+		setPen(pen);
+	}
+	else
+	{
+		QColor borderClr(0, 0, 0);
+		QPen pen(borderClr, 1);
+		setPen(pen);
+	}
+
 	painter->setRenderHint(QPainter::Antialiasing, true);
 	painter->setPen(this->pen());
 	painter->setBrush(this->brush());
@@ -43,20 +58,8 @@ void ZenoRampSelector::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
 QVariant ZenoRampSelector::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	if (change == QGraphicsItem::ItemSelectedHasChanged)
+	if (change == QGraphicsItem::ItemSelectedChange)
 	{
-		bool bSelected = isSelected();
-		if (bSelected)
-		{
-			QPen pen(QColor(255, 128, 0), 1);
-			setPen(pen);
-		}
-		else
-		{
-			QColor borderClr(0, 0, 0);
-			QPen pen(borderClr, 1);
-			setPen(pen);
-		}
 	}
 	else if (change == QGraphicsItem::ItemPositionChange)
 	{
@@ -112,10 +115,13 @@ ZenoRampBar::ZenoRampBar(QWidget* parent)
 	m_scene->addItem(m_pLineItem);
 
 	setScene(m_scene);
+
+	connect(m_scene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
 }
 
 void ZenoRampBar::onSelectionChanged()
 {
+	BlockSignalScope scope(m_scene);
 	bool noSelection = true;
 	for (auto iter = m_ramps.begin(); iter != m_ramps.end(); iter++)
 	{
@@ -132,8 +138,16 @@ void ZenoRampBar::onSelectionChanged()
 			break;
 		}
 	}
+	if (m_currSelector == nullptr)
+	{
+		m_currSelector = m_ramps.firstKey();
+		Q_ASSERT(m_currSelector);
+	}
 	if (noSelection)
 		m_currSelector->setSelected(true);
+	m_currSelector->update();
+
+	emit rampSelected(m_ramps[m_currSelector]);
 }
 
 void ZenoRampBar::initRamps(int width)
@@ -160,10 +174,8 @@ void ZenoRampBar::initRamps(int width)
 		m_ramps[selector] = ramp;
 	}
 	m_pColorItem->setBrush(QBrush(grad));
-	m_currSelector = m_ramps.firstKey();
-
-	m_currSelector->setSelected(true);
-	connect(m_scene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
+	BlockSignalScope scope(m_scene);
+	onSelectionChanged();
 }
 
 void ZenoRampBar::removeRamp()
@@ -172,8 +184,15 @@ void ZenoRampBar::removeRamp()
 	{
 		if (pSelector->isSelected())
 		{
-			m_ramps.remove(pSelector);
-			m_scene->removeItem(pSelector);
+			if (m_ramps.size() > 2)
+			{
+				BlockSignalScope scope(m_scene);
+				m_ramps.remove(pSelector);
+				m_scene->removeItem(pSelector);
+				m_currSelector = nullptr;
+				onSelectionChanged();
+				break;
+			}
 		}
 	}
 	refreshBar();
@@ -187,6 +206,11 @@ void ZenoRampBar::newRamp()
 COLOR_RAMP ZenoRampBar::colorRamp() const
 {
 	return m_ramps[m_currSelector];
+}
+
+void ZenoRampBar::mousePressEvent(QMouseEvent* event)
+{
+	QGraphicsView::mousePressEvent(event);
 }
 
 void ZenoRampBar::resizeEvent(QResizeEvent* event)
@@ -246,53 +270,6 @@ void ZenoRampBar::refreshBar()
 }
 
 
-HSVSelctor::HSVSelctor(QGraphicsItem* parent)
-	: QGraphicsEllipseItem(parent)
-{
-	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
-}
-
-void HSVSelctor::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
-	Q_UNUSED(widget);
-	painter->setRenderHint(QPainter::Antialiasing, true);
-	painter->setPen(this->pen());
-	painter->setBrush(Qt::NoBrush);
-	if ((this->spanAngle() != 0) && (qAbs((this->spanAngle()) % (360 * 16) == 0)))
-		painter->drawEllipse(rect());
-	else
-		painter->drawPie(rect(), startAngle(), spanAngle());
-}
-
-QVariant HSVSelctor::itemChange(GraphicsItemChange change, const QVariant& value)
-{
-	if (change == QGraphicsItem::ItemSelectedHasChanged)
-	{
-		bool bSelected = isSelected();
-		if (bSelected)
-		{
-			QPen pen(QColor(255, 128, 0), 1);
-			setPen(pen);
-		}
-		else
-		{
-			QColor borderClr(0, 0, 0);
-			QPen pen(borderClr, 1);
-			setPen(pen);
-		}
-	}
-	else if (change == QGraphicsItem::ItemPositionChange)
-	{
-		return value;
-	}
-	else if (change == QGraphicsItem::ItemPositionHasChanged)
-	{
-		//
-	}
-	return _base::itemChange(change, value);
-}
-
-
 SVColorView::SVColorView(QWidget* parent)
 	: QWidget(parent)
 {
@@ -301,32 +278,49 @@ SVColorView::SVColorView(QWidget* parent)
 void SVColorView::setColor(const QColor& clr)
 {
 	m_color = clr;
+	update();
 }
 
 void SVColorView::mousePressEvent(QMouseEvent* event)
 {
 	QWidget::mousePressEvent(event);
+
+	QPointF pos = event->pos();
+	qreal m_H = m_color.hueF();
+	qreal m_S = pos.x() / this->width();
+	qreal m_V = pos.y() / this->height();
+
+	m_color.setHsvF(m_H, m_S, m_V);
+	emit colorChanged(m_color);
+	update();
 }
 
 void SVColorView::mouseMoveEvent(QMouseEvent* event)
 {
 	QWidget::mouseMoveEvent(event);
+
+	QPointF pos = event->pos();
+	qreal m_H = m_color.hueF();
+	qreal m_S = pos.x() / this->width();
+	qreal m_V = pos.y() / this->height();
+
+	m_color.setHsvF(m_H, m_S, m_V);
+	emit colorChanged(m_color);
+	update();
 }
 
 void SVColorView::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 
-	QRect rect = this->rect();
+	painter.setRenderHint(QPainter::Antialiasing);
 
-	int m_nHValue = 0;
-	m_color.getHsv(&m_nHValue, 0, 0);
-	m_nHValue = 134;
+	QRect rect = this->rect();
 
 	QLinearGradient linearGradientH(rect.topLeft(), rect.topRight());
 	linearGradientH.setColorAt(0, QColor(255, 255, 255));
 	QColor color;
-	color.setHsv(m_nHValue, 255, 255);
+	color.setHsvF(m_color.hueF(), 1, 1);
 	linearGradientH.setColorAt(1, color);
 	painter.fillRect(rect, linearGradientH);
 
@@ -334,53 +328,11 @@ void SVColorView::paintEvent(QPaintEvent* event)
 	linearGradientV.setColorAt(0, QColor(0, 0, 0, 0));
 	linearGradientV.setColorAt(1, QColor(0, 0, 0, 255));
 	painter.fillRect(rect, linearGradientV);
-}
 
-
-/////////////////////////////////////////////////////////////////////
-ZenoHSVColorView::ZenoHSVColorView(QWidget* parent)
-	: QGraphicsView(parent)
-	, m_pColorItem(nullptr)
-{
-	m_scene = new QGraphicsScene;
-	m_pColorItem = new QGraphicsRectItem;
-	m_pColorItem->setZValue(-10);
-
-	m_selector = new HSVSelctor;
-	m_selector->setRect(0, 0, 10, 10);
-	m_selector->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
-	m_selector->setZValue(10);
-	m_selector->setPos(QPointF(50, 50));
-
-	m_scene->addItem(m_pColorItem);
-	m_scene->addItem(m_selector);
-	setScene(m_scene);
-}
-
-void ZenoHSVColorView::resizeEvent(QResizeEvent* event)
-{
-	QSize sz = event->size();
-	QGraphicsView::resizeEvent(event);
-	initHSVColorView(sz);
-}
-
-void ZenoHSVColorView::initHSVColorView(const QSize& sz)
-{
-	m_pColorItem->setRect(0, 0, sz.width(), sz.height());
-
-	QLinearGradient grad(0, 0, sz.width(), sz.height());
-
-	QGradientStops stops;
-	stops.append(QGradientStop(0, QColor(0, 0, 0, 0)));
-	stops.append(QGradientStop(0.5, QColor(0, 255, 0)));
-	stops.append(QGradientStop(1.0, QColor(0, 0, 0, 255)));
-
-	grad.setStops(stops);
-
-	grad.setSpread(QGradient::PadSpread);
-
-	QBrush brush(grad);
-	m_pColorItem->setBrush(brush);
+	static const int nLenSelector = ZenoStyle::dpiScaled(6);
+	QPointF center(m_color.saturationF() * this->width(), m_color.valueF() * this->height());
+	painter.setPen(QPen(QColor(0,0,0)));
+	painter.drawEllipse(center, nLenSelector, nLenSelector);
 }
 
 
@@ -422,6 +374,7 @@ void ZenoHeatMapEditor::initSignals()
 {
 	connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onAddRampBtnClicked()));
 	connect(m_ui->btnDelete, SIGNAL(clicked()), this, SLOT(onRemoveRampBtnClicked()));
+	connect(m_ui->rampBarView, SIGNAL(rampSelected(COLOR_RAMP)), this, SLOT(onRampColorClicked(COLOR_RAMP)));
 }
 
 void ZenoHeatMapEditor::initRamps()
@@ -433,10 +386,7 @@ void ZenoHeatMapEditor::initColorView()
 {
 	COLOR_RAMP ramp = m_ui->rampBarView->colorRamp();
 	QColor clr(ramp.r * 255, ramp.g * 255, ramp.b * 255);
-	QColor hsvClr = clr.toHsv();
-	int h = 0, s = 0, v = 0;
-	hsvClr.getHsv(&h, &s, &v);
-	m_ui->hvColorView->setColor(hsvClr);
+	m_ui->hvColorView->setColor(clr);
 }
 
 bool ZenoHeatMapEditor::eventFilter(QObject* watched, QEvent* event)
@@ -487,4 +437,12 @@ void ZenoHeatMapEditor::onAddRampBtnClicked()
 void ZenoHeatMapEditor::onRemoveRampBtnClicked()
 {
 	m_ui->rampBarView->removeRamp();
+}
+
+void ZenoHeatMapEditor::onRampColorClicked(COLOR_RAMP ramp)
+{
+	QColor clr(ramp.r, ramp.g, ramp.b);
+	m_ui->hvColorView->setColor(clr);
+	int h = clr.hue();
+	m_ui->hueSlider->setValue(h);
 }
