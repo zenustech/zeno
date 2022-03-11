@@ -193,7 +193,8 @@ struct CreateSphere : zeno::INode {
 
         size_t seg = 32;
 
-        std::vector<vec3f> uvs(19 * 33);
+        std::vector<vec3f> uvs;
+        uvs.reserve(19 * 33);
         auto &pos = prim->verts;
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
         for (auto i = -90; i <= 90; i += 10) {
