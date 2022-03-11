@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>313</width>
-    <height>702</height>
+    <width>325</width>
+    <height>908</height>
    </rect>
   </property>
   <property name="palette">
@@ -306,6 +306,22 @@
        </property>
        <property name="renderHints">
         <set>QPainter::TextAntialiasing</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="SVColorView" name="hvColorView" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>200</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -1106,6 +1122,12 @@ QSlider::handle:horizontal {
   <customwidget>
    <class>ZenoHSVColorView</class>
    <extends>QGraphicsView</extends>
+   <header>panel/zenoheatmapeditor.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SVColorView</class>
+   <extends>QWidget</extends>
    <header>panel/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>

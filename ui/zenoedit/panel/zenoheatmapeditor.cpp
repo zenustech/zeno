@@ -293,6 +293,50 @@ QVariant HSVSelctor::itemChange(GraphicsItemChange change, const QVariant& value
 }
 
 
+SVColorView::SVColorView(QWidget* parent)
+	: QWidget(parent)
+{
+}
+
+void SVColorView::setColor(const QColor& clr)
+{
+	m_color = clr;
+}
+
+void SVColorView::mousePressEvent(QMouseEvent* event)
+{
+	QWidget::mousePressEvent(event);
+}
+
+void SVColorView::mouseMoveEvent(QMouseEvent* event)
+{
+	QWidget::mouseMoveEvent(event);
+}
+
+void SVColorView::paintEvent(QPaintEvent* event)
+{
+	QPainter painter(this);
+
+	QRect rect = this->rect();
+
+	int m_nHValue = 0;
+	m_color.getHsv(&m_nHValue, 0, 0);
+	m_nHValue = 134;
+
+	QLinearGradient linearGradientH(rect.topLeft(), rect.topRight());
+	linearGradientH.setColorAt(0, QColor(255, 255, 255));
+	QColor color;
+	color.setHsv(m_nHValue, 255, 255);
+	linearGradientH.setColorAt(1, color);
+	painter.fillRect(rect, linearGradientH);
+
+	QLinearGradient linearGradientV(rect.topLeft(), rect.bottomLeft());
+	linearGradientV.setColorAt(0, QColor(0, 0, 0, 0));
+	linearGradientV.setColorAt(1, QColor(0, 0, 0, 255));
+	painter.fillRect(rect, linearGradientV);
+}
+
+
 /////////////////////////////////////////////////////////////////////
 ZenoHSVColorView::ZenoHSVColorView(QWidget* parent)
 	: QGraphicsView(parent)
@@ -362,6 +406,7 @@ void ZenoHeatMapEditor::init()
 	initRamps();
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
+	initColorView();
 }
 
 COLOR_RAMPS ZenoHeatMapEditor::colorRamps() const
@@ -391,7 +436,7 @@ void ZenoHeatMapEditor::initColorView()
 	QColor hsvClr = clr.toHsv();
 	int h = 0, s = 0, v = 0;
 	hsvClr.getHsv(&h, &s, &v);
-
+	m_ui->hvColorView->setColor(hsvClr);
 }
 
 bool ZenoHeatMapEditor::eventFilter(QObject* watched, QEvent* event)

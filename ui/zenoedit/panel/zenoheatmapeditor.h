@@ -86,6 +86,24 @@ private:
 	ZenoHSVColorView* m_colorView;
 };
 
+class SVColorView : public QWidget
+{
+	Q_OBJECT
+public:
+	SVColorView(QWidget* parent = nullptr);
+
+public slots:
+	void setColor(const QColor& clr);
+
+protected:
+	void mousePressEvent(QMouseEvent* event);
+	void mouseMoveEvent(QMouseEvent* event);
+	void paintEvent(QPaintEvent* event);
+
+private:
+	QColor m_color;
+};
+
 class ZenoHSVColorView : public QGraphicsView
 {
 	Q_OBJECT
