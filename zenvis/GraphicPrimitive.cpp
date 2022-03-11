@@ -110,6 +110,7 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     }
 }
 
+
 void computeTrianglesTangent(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     auto &tris = prim->tris;
@@ -309,6 +310,7 @@ struct GraphicPrimitive : IGraphic {
             computeTrianglesTangent(prim, triObj);
             parseTrianglesDrawBuffer(prim, triObj);
         }
+
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
@@ -409,11 +411,13 @@ struct GraphicPrimitive : IGraphic {
 
     if (tris_count) {
         //printf("TRIS\n");
+
         if (triObj.vbo) {
             vbobind(triObj);
         } else {
             vbobind(simpleDraw);
         }
+
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
         triObj.prog->set_uniform("mRenderWireframe", render_wireframe);
@@ -656,7 +660,6 @@ attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
 attribute vec3 vTexCoord;
-attribute vec3 vTangent;
 
 varying vec3 position;
 varying vec3 iColor;
