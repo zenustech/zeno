@@ -1,7 +1,16 @@
 #pragma once
 
+#ifdef ZENO_NOTICKTOCK
+
+#define TICK(x)
+#define TOCK(x)
+
+#else
+
 #include <chrono>
 #include <cstdio>
 
 #define TICK(x) auto bench_##x = std::chrono::steady_clock::now();
 #define TOCK(x) std::printf("%s: %lfs\n", #x, std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - bench_##x).count());
+
+#endif

@@ -70,7 +70,7 @@ struct PrimitiveLineSolidify : zeno::INode {
                 radius = 1.f; // cihou jiayaozhang
             }
             for (int a = 0; a < count; a++) {
-                float ang = a * (float{M_PI} * 2 / count);
+                float ang = a * (float(M_PI) * 2 / count);
                 sinang[a] = std::sin(ang) * radius;
                 cosang[a] = std::cos(ang) * radius;
             }
