@@ -1,22 +1,28 @@
 #pragma once
 
-#include <type_traits>
 #include <array>
-#if defined(__SSE__) && __has_include(<xmmintrin.h>)
-#include <xmmintrin.h>
+#include <cstring>
+#include <type_traits>
+#if defined(__SSE2__) && __has_include(<emmintrin.h>)
+#include <emmintrin.h>
 #endif
 
 namespace zeno {
 inline namespace streamed_write_h {
 
 namespace details {
-#if defined(__SSE__) && __has_include(<xmmintrin.h>)
+#if defined(__SSE2__) && __has_include(<emmintrin.h>)
 template <class T, std::enable_if_t<sizeof(T) == 4, int> = 0>
 static void stream_write(T *dst, T const *src) {
     _mm_stream_si32((int *)dst, *(int const *)src);
 }
 
-template <class T, std::enable_if_t<sizeof(T) == 16, int> = 0>
+template <class T, std::enable_if_t<sizeof(T) == 16 && alignof(T) == 16, int> = 0>
+static void stream_write(T *dst, T const *src) {
+    _mm_stream_ps((float *)dst, _mm_load_ps((float const *)src));
+}
+
+template <class T, std::enable_if_t<sizeof(T) == 16 && alignof(T) != 16, int> = 0>
 static void stream_write(T *dst, T const *src) {
     _mm_stream_ps((float *)dst, _mm_loadu_ps((float const *)src));
 }

@@ -22,7 +22,7 @@ struct ShaderInputAttr : ShaderNode {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv", "attr", "pos"},
+        {"enum pos clr nrm uv tang bitang", "attr", "pos"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {

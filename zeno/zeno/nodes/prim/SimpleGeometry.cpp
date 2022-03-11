@@ -212,8 +212,8 @@ struct CreateSphere : zeno::INode {
                 size_t _1 = (i + 1) % seg + seg * count;
                 size_t _2 = (i + 1) % seg + seg * (count + 1);
                 size_t _3 = i  + seg * (count + 1);
-                tris.push_back(vec3i(_0, _1, _2));
-                tris.push_back(vec3i(_0, _2, _3));
+                tris.push_back(vec3i(_2, _1, _0));
+                tris.push_back(vec3i(_3, _2, _0));
             }
             count += 1;
         }

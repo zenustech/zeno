@@ -35,6 +35,7 @@ static auto primGetVal(PrimitiveObject *prim, size_t i) {
     return ret;
 }
 
+// makeXinxinVeryHappy
 static void primAppendVal(PrimitiveObject *prim, PrimitiveObject *primB, size_t i) {
     primB->foreach_attr([&] (auto const &name, auto const &arr) {
         using T = std::decay_t<decltype(arr[0])>;
@@ -42,7 +43,7 @@ static void primAppendVal(PrimitiveObject *prim, PrimitiveObject *primB, size_t 
     });
 }
 
-ZENO_API void getNormal(zeno::PrimitiveObject* prim);
+ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim);
 
 
 ZENO_API std::shared_ptr<PrimitiveObject>
@@ -53,7 +54,6 @@ ZENO_API void read_obj_file(
     std::vector<zeno::vec3f> &uvs,
     std::vector<zeno::vec3f> &normals,
     std::vector<zeno::vec3i> &indices,
-    std::vector<zeno::vec3i> &uv_indices,
     const char *path
 );
 
