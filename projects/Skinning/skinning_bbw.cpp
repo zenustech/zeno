@@ -97,12 +97,17 @@ struct GenerateSkinningWeight : zeno::INode {
         auto tfg = get_input<PrimitiveObject>("skinBone");
         auto attr_prefix = get_param<std::string>("attr_prefix");
         // auto BonesID = get_input2<int>("BID");
+
         auto sp_influence_radius = get_param<float>("sp_radius");
         auto bone_influence_radius = get_param<float>("bone_radius");
         auto cage_influence_radius = get_param<float>("cage_radius");
+
         // auto duplicate = (int)get_param<float>("duplicate");
-        // auto bone_type = get_param<std::string>(("boneType"));
+
+        // auto bone_type = std::get<std::string>(get_param("boneType"));
+
         auto duplicate = (int)get_param<float>("duplicate");
+
         Eigen::MatrixXd V;
         Eigen::MatrixXi T;
         Eigen::MatrixXd C;
@@ -149,7 +154,7 @@ struct GenerateSkinningWeight : zeno::INode {
         // std::cout << "BE : " << std::endl << BE << std::endl;
         boundary_conditions(V,T,C,Eigen::VectorXi(),BE,Eigen::MatrixXi(),b,bc,sp_influence_radius,bone_influence_radius,cage_influence_radius);
 
-        // std::cout << "nm BINDING POINTS : " << b.size() << std::endl;
+        std::cout << "nm BINDING POINTS : " << b.size() << std::endl;
 
         // compute BBW weights matrix
         igl::BBWData bbw_data;

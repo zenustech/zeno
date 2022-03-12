@@ -82,7 +82,7 @@ struct DoSkinning : zeno::INode {
         size_t dim = 3;
         size_t nm_handles = 0;
 
-        // std::cout << "CHECKOUT_1" << std::endl;
+        std::cout << "CHECKOUT_1" << std::endl;
 
         while(true){
             std::string attr_name = attr_prefix + "_" + std::to_string(nm_handles);
@@ -113,6 +113,10 @@ struct DoSkinning : zeno::INode {
 
         std::vector<Eigen::Vector3d> Ts;
         RotationList Qs;
+
+
+
+        std::cout << "CHECKOUT_2" << std::endl;
 
         auto do_FK = get_param<int>("FK");
         if(!do_FK){
@@ -179,7 +183,7 @@ struct DoSkinning : zeno::INode {
 
 
 
-        // std::cout << "CHECKOUT_3" << std::endl;
+        std::cout << "CHECKOUT_3" << std::endl;
 
         Eigen::MatrixXd T(nm_handles*(dim+1),dim);
         for(int e = 0;e<nm_handles;e++){
@@ -231,7 +235,7 @@ struct DoSkinning : zeno::INode {
         }
 
 
-        // std::cout << "CHECKOUT_4" << std::endl;
+        std::cout << "CHECKOUT_4" << std::endl;
 
         for(size_t i = 0;i < deformed_shape->size();++i)
             deformed_shape->verts[i] = zeno::vec3f(U.row(i)[0],U.row(i)[1],U.row(i)[2]);
