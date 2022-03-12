@@ -23,7 +23,7 @@ struct NumericObject : IObjectClone<NumericObject> {
     return std::visit([] (auto const &val) -> T {
         using V = std::decay_t<decltype(val)>;
         if constexpr (!std::is_constructible_v<T, V>) {
-            throw Exception("NumericObject expect `" + typeid(T).name() + "`, got `" + typeid(V).name());
+            throw Exception((std::string)"NumericObject expect `" + typeid(T).name() + "`, got `" + typeid(V).name());
         } else {
             return T(val);
         }
