@@ -43,6 +43,19 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         return ident, data
 
     def load(self, ident, data):
+        if data['params']['_POINTS'] != '':
+            txt = data['params']['_POINTS'].split()
+            l = int(txt[0])
+            for i in range(l):
+                k = int(txt[i * 5 + 1])
+                v = [
+                    float(txt[i * 5 + 2]),
+                    float(txt[i * 5 + 3]),
+                    float(txt[i * 5 + 4]),
+                    float(txt[i * 5 + 5]),
+                ]
+                self.keyframes[k] = v
+
         return super().load(ident, data)
 
     def add_keyframe(self):
