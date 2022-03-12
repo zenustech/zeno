@@ -15,6 +15,9 @@
 #include <Hg/IterUtils.h>
 namespace zenvis {
 extern unsigned int getGlobalEnvMap();
+extern unsigned int getIrradianceMap();
+extern unsigned int getPrefilterMap();
+extern unsigned int getBRDFLut();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -418,6 +421,21 @@ struct GraphicPrimitive : IGraphic {
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
             CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+
+        triObj.prog->set_uniformi("irradianceMap",id+1);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+        if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+
+        triObj.prog->set_uniformi("prefilterMap",id+2);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+        if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+        triObj.prog->set_uniformi("brdfLUT",id+3);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+        if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -1022,15 +1040,7 @@ vec3 SampleEnvironment(in vec3 reflVec)
     vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
     return texture(skybox, r).rgb;
 }
-vec3 SampleEnvCube(in vec3 reflVec)
-{
-    //if(reflVec.y>-0.5) return vec3(0,0,0);
-    //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
-    //here we have the problem reflVec is in eyespace but we need it in world space
-    vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
-    return texture(skyboxCube, r).rgb;
 
-}
 /**
  * Performs the Riemann Sum approximation of the IBL lighting integral.
  *
@@ -1108,7 +1118,7 @@ vec3 CalculateLightingIBL(
     kD *= 1.0 - metallic;
     vec3 irradiance = texture(irradianceMap, m*N).rgb;
     vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
-    const float MAX_REFLECTION_LOD = 4.0;
+    const float MAX_REFLECTION_LOD = 7.0;
     vec3 R = reflect(-V, N); 
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;

@@ -13,6 +13,7 @@
 
 namespace zenvis {
 
+
 int curr_frameid = -1;
 
 static int num_samples = 16;
@@ -104,9 +105,10 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-
+extern void preIntegrate(GLuint inEnvMap);
 void initialize() {
   gladLoadGL();
+  
   setup_env_map("Default");
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
@@ -359,7 +361,7 @@ void main()
     vec3 R = N;
     vec3 V = R;
 
-    const uint SAMPLE_COUNT = 1024u;
+    const uint SAMPLE_COUNT = 2048u;
     vec3 prefilteredColor = vec3(0.0);
     float totalWeight = 0.0;
     
@@ -379,7 +381,7 @@ void main()
             float HdotV = max(dot(H, V), 0.0);
             float pdf = D * NdotH / (4.0 * HdotV) + 0.0001; 
 
-            float resolution = 512.0; // resolution of source cubemap (per face)
+            float resolution = 1024.0; // resolution of source cubemap (per face)
             float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
             float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
@@ -529,7 +531,7 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
 
     vec3 N = vec3(0.0, 0.0, 1.0);
     
-    const uint SAMPLE_COUNT = 1024u;
+    const uint SAMPLE_COUNT = 2048u;
     for(uint i = 0u; i < SAMPLE_COUNT; ++i)
     {
         // generates a sample vector that's biased towards the
@@ -572,6 +574,15 @@ unsigned int envCubemap=0;
 unsigned int irradianceMap=0;
 unsigned int prefilterMap=0;    
 unsigned int brdfLUTTexture=0;
+}
+unsigned int getIrradianceMap() {
+    return irradianceMap;
+}
+unsigned int getPrefilterMap() {
+    return prefilterMap;
+}
+unsigned int getBRDFLut() {
+    return brdfLUTTexture;
 }
 unsigned int cubeVAO = 0;
 unsigned int cubeVBO = 0;
@@ -673,7 +684,7 @@ static void renderQuad()
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
 }
-static void preIntegrate(GLuint inEnvMap)
+void preIntegrate(GLuint inEnvMap)
 {
   glEnable(GL_DEPTH_TEST);
   // set depth function to less than AND equal for skybox depth trick.
@@ -724,7 +735,7 @@ static void preIntegrate(GLuint inEnvMap)
     glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 64, 64, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -734,7 +745,7 @@ static void preIntegrate(GLuint inEnvMap)
   }
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
   glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 64, 64);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 128, 128);
 
   // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
   // -----------------------------------------------------------------------------
@@ -744,7 +755,7 @@ static void preIntegrate(GLuint inEnvMap)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 
-  glViewport(0, 0, 64, 64); // don't forget to configure the viewport to the capture dimensions.
+  glViewport(0, 0, 128, 128); // don't forget to configure the viewport to the capture dimensions.
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
   for (unsigned int i = 0; i < 6; ++i)
   {
@@ -761,7 +772,7 @@ static void preIntegrate(GLuint inEnvMap)
     glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -781,12 +792,12 @@ static void preIntegrate(GLuint inEnvMap)
   glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-  unsigned int maxMipLevels = 5;
+  unsigned int maxMipLevels = 8;
   for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
   {
       // reisze framebuffer according to mip-level size.
-      unsigned int mipWidth  = static_cast<unsigned int>(512 * std::pow(0.5, mip));
-      unsigned int mipHeight = static_cast<unsigned int>(512 * std::pow(0.5, mip));
+      unsigned int mipWidth  = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
+      unsigned int mipHeight = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
       glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
       glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
       glViewport(0, 0, mipWidth, mipHeight);
@@ -810,7 +821,7 @@ static void preIntegrate(GLuint inEnvMap)
 
     // pre-allocate enough memory for the LUT texture.
     glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 1024, 1024, 0, GL_RG, GL_FLOAT, 0);
     // be sure to set wrapping mode to GL_CLAMP_TO_EDGE
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -820,10 +831,10 @@ static void preIntegrate(GLuint inEnvMap)
   // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
   glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
 
-  glViewport(0, 0, 512, 512);
+  glViewport(0, 0, 1024, 1024);
   preintBRDFProg->use();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   renderQuad();
