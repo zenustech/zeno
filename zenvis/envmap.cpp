@@ -17,35 +17,52 @@ namespace zenvis {
 /* begin zhxx happy */
 static GLuint envTexture = (GLuint)-1;
 static std::unordered_map<std::string, GLuint> envTextureCache;
-static unsigned int loadCubemap(std::string path) {
-    unsigned int textureID;
+static unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID = 0xffffffffu;
     glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    // set the texture wrapping/filtering options (on the currently bound texture object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load and generate the texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
     int width, height, nrChannels;
-    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture" << std::endl;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
     }
-    stbi_image_free(data);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
 }  
-void setup_env_map(std::string name) {
+void setup_env_map(std::string name)
+{
   if (envTextureCache.count(name)) {
     envTexture = envTextureCache.at(name);
   } else {
-    std::string path = fmt::format("assets/sky_sphere/{}.jpg", name);
-    fmt::print("{}\n", path);
-    envTexture = loadCubemap(path);
+    std::vector<std::string> faces
+    {
+      fmt::format("assets/sky_box/{}/right.jpg", name),
+      fmt::format("assets/sky_box/{}/left.jpg", name),
+      fmt::format("assets/sky_box/{}/top.jpg", name),
+      fmt::format("assets/sky_box/{}/bottom.jpg", name),
+      fmt::format("assets/sky_box/{}/front.jpg", name),
+      fmt::format("assets/sky_box/{}/back.jpg", name)
+    };
+    envTexture = loadCubemap(faces);
     envTextureCache[name] = envTexture;
   }
 }

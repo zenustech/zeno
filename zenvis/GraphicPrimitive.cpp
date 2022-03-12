@@ -417,7 +417,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, envmap));
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -709,7 +709,7 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
-uniform sampler2D skybox;
+uniform samplerCube skybox;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -1016,10 +1016,7 @@ vec3 SampleEnvironment(in vec3 reflVec)
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
     //here we have the problem reflVec is in eyespace but we need it in world space
     vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
-    float u = atan(r.x, r.z) * ( 1 / PI) * 0.5 + 0.5;
-    float v = 1.0 - (asin(r.y) * (2 / PI) * 0.5 + 0.5);
-    return texture(skybox, vec2(u, v)).rgb;
-
+    return texture(skybox, r).rgb;
 }
 
 /**
