@@ -4,6 +4,20 @@
 #include <QUuid>
 
 
+BlockSignalScope::BlockSignalScope(QObject* pObj)
+    : m_pObject(pObj)
+{
+    if (m_pObject)
+        m_pObject->blockSignals(true);
+}
+
+BlockSignalScope::~BlockSignalScope()
+{
+	if (m_pObject)
+		m_pObject->blockSignals(false);
+}
+
+
 NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 {
     NODE_DESCS _descs;

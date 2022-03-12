@@ -5,6 +5,17 @@
 #include <rapidjson/document.h>
 #include <zenoui/include/igraphsmodel.h>
 
+
+class BlockSignalScope
+{
+public:
+    BlockSignalScope(QObject* pObj);
+    ~BlockSignalScope();
+
+private:
+    QObject* m_pObject;
+};
+
 class UiHelper
 {
 public:

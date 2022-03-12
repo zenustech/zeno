@@ -1,4 +1,5 @@
 #include "heatmapnode.h"
+#include "panel/zenoheatmapeditor.h"
 
 MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
 	: ZenoNode(params, parent)
@@ -29,6 +30,17 @@ QGraphicsLinearLayout* MakeHeatMapNode::initCustomParamWidgets()
 
 	ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
 	pParamLayout->addItem(pEditBtn);
+	connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
 	return pParamLayout;
+}
+
+void MakeHeatMapNode::onEditClicked()
+{
+	COLOR_RAMPS ramps = index().data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
+	ZenoHeatMapEditor* editor = new ZenoHeatMapEditor(ramps);
+	int ret = editor->exec();
+	COLOR_RAMPS newRamps = editor->colorRamps();
+	//set
+	editor->deleteLater();
 }
