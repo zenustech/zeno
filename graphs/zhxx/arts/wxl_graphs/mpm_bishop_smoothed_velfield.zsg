@@ -80,7 +80,7 @@
       ]
      },
      "params": {
-      "value": 0.015
+      "value": 0.05
      },
      "uipos": [
       -637.6875960502122,
@@ -117,12 +117,12 @@
      "name": "ToZSLevelSet",
      "inputs": {
       "VDBGrid": [
-       "14cb95de-ImportVDBGrid",
-       "data",
+       "625d139a-VDBSmooth",
+       "inoutVDB",
        null
       ],
       "SRC": [
-       "14cb95de-ImportVDBGrid",
+       "625d139a-VDBSmooth",
        "DST",
        null
       ]
@@ -131,8 +131,8 @@
       "path": ""
      },
      "uipos": [
-      679.3910311008021,
-      676.8296243425381
+      811.756470194286,
+      727.254553521008
      ],
      "options": [
       "ONCE"
@@ -148,7 +148,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/bishop_vdb/vel_{frame}.vdb"
+      "value": "assets/cloth/do_not_share/bishop_vdb/vel_v1_{frame}.vdb"
      },
      "uipos": [
       106.20750708215292,
@@ -176,8 +176,8 @@
       "type": ""
      },
      "uipos": [
-      381.5276203966006,
-      622.0072592067987
+      350.0120396600568,
+      610.661650141643
      ],
      "options": [
       "ONCE"
@@ -204,8 +204,8 @@
      },
      "params": {},
      "uipos": [
-      1024.256373937677,
-      559.4015580736543
+      1115.021246458923,
+      640.0814447592064
      ],
      "options": [
       "ONCE"
@@ -261,12 +261,12 @@
      "name": "ToZSLevelSet",
      "inputs": {
       "VDBGrid": [
-       "f3268ccf-ImportVDBGrid",
-       "data",
+       "563d8b0f-VDBSmooth",
+       "inoutVDB",
        null
       ],
       "SRC": [
-       "f3268ccf-ImportVDBGrid",
+       "563d8b0f-VDBSmooth",
        "DST",
        null
       ]
@@ -275,8 +275,8 @@
       "path": ""
      },
      "uipos": [
-      1125.6780687482205,
-      1333.9811173700596
+      1320.3182953771147,
+      1338.0151117043372
      ],
      "options": []
     },
@@ -298,8 +298,8 @@
       "type": ""
      },
      "uipos": [
-      850.7244603504442,
-      1327.8420821354734
+      827.7811175742402,
+      1226.487974486749
      ],
      "options": []
     },
@@ -380,7 +380,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/bishop_vdb/vel_{frame+1}.vdb"
+      "value": "assets/cloth/do_not_share/bishop_vdb/vel_v1_{frame+1}.vdb"
      },
      "uipos": [
       543.9033688646622,
@@ -2925,7 +2925,7 @@
       "rhs": [
        null,
        null,
-       2.0
+       4.0
       ],
       "SRC": [
        null,
@@ -3338,13 +3338,75 @@
       877.8945427728606
      ],
      "options": []
+    },
+    "563d8b0f-VDBSmooth": {
+     "name": "VDBSmooth",
+     "inputs": {
+      "inoutVDB": [
+       "f3268ccf-ImportVDBGrid",
+       "data",
+       null
+      ],
+      "width": [
+       null,
+       null,
+       1
+      ],
+      "iterations": [
+       null,
+       null,
+       3
+      ],
+      "SRC": [
+       "f3268ccf-ImportVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1065.6026768670827,
+      1277.8023217392972
+     ],
+     "options": []
+    },
+    "625d139a-VDBSmooth": {
+     "name": "VDBSmooth",
+     "inputs": {
+      "inoutVDB": [
+       "14cb95de-ImportVDBGrid",
+       "data",
+       null
+      ],
+      "width": [
+       null,
+       null,
+       1
+      ],
+      "iterations": [
+       null,
+       null,
+       3
+      ],
+      "SRC": [
+       "14cb95de-ImportVDBGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      576.1048158640198,
+      666.8696883852659
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -266.38369159735703,
-    "y": 253.77596480445845,
-    "width": 8940.696716308588,
-    "height": 5304.813385009738
+    "x": -1358.039653420512,
+    "y": 575.6173824796899,
+    "width": 7152.55737304687,
+    "height": 4243.850708007791
    }
   }
  },

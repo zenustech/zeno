@@ -360,4 +360,47 @@ ZENDEFNODE(RefineMeshParticles, {
                                     {"MPM"},
                                 });
 
+struct UpdateZSPrimitiveSequence : INode {
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green),
+               "begin executing UpdateZSPrimitiveSequence\n");
+
+    auto zsprimseq = get_input<ZenoPrimitiveSequence>("ZSPrimitiveSequence");
+    auto dt = get_input2<float>("stepdt");
+    if (zsprimseq->valid()) {
+      auto cudaPol = cuda_exec().device(0);
+      auto numV = zsprimseq->numParticles();
+      auto numE = zsprimseq->numElements();
+      cudaPol(
+          Collapse{numV},
+          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevParticles()),
+           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextParticles()),
+           dt] __device__(int pi) mutable {
+            prev.tuple<3>("pos", pi) =
+                prev.pack<3>("pos", pi) + prev.pack<3>("vel", pi) * dt;
+          });
+      cudaPol(
+          Collapse{numE},
+          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevElements()),
+           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextElements()),
+           dt] __device__(int ei) mutable {
+            prev.tuple<3>("pos", ei) =
+                prev.pack<3>("pos", ei) + prev.pack<3>("vel", ei) * dt;
+          });
+    }
+
+    fmt::print(fg(fmt::color::cyan),
+               "done executing UpdateZSPrimitiveSequence\n");
+    set_output("ZSLevelSetSequence", std::move(zsprimseq));
+  }
+};
+ZENDEFNODE(UpdateZSPrimitiveSequence,
+           {
+               {"ZSPrimitiveSequence", {"float", "stepdt", "0.1"}},
+               {"ZSPrimitiveSequence"},
+               {},
+               {"MPM"},
+           });
+
 } // namespace zeno

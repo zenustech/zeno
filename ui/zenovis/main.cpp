@@ -15,12 +15,12 @@
 
 namespace zenvis {
 
-static void paint_graphics(GLuint target_fbo = 0);
-
 int curr_frameid = -1;
 
+static int num_samples = 16;
 static bool show_grid = true;
 static bool smooth_shading = false;
+static bool normal_check = false;
 bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
@@ -93,6 +93,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
   pro->set_uniform("mSmoothShading", smooth_shading);
+  pro->set_uniform("mNormalCheck", normal_check);
   pro->set_uniform("mCameraRadius", camera_radius);
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
@@ -108,7 +109,7 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 
 void initialize() {
   gladLoadGL();
-  setup_env_map("Default");
+  setup_env_map("forest");
   auto version = (const char *)glGetString(GL_VERSION);
   zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
@@ -142,8 +143,29 @@ static void draw_small_axis() {
 }
 
 
-#if 0
-/* BEGIN MAKE_ZHXX_HAPPY */
+
+
+static void my_paint_graphics() {
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  vao->bind();
+  for (auto const &[key, gra]: current_frame_data()->graphics) {
+    gra->draw();
+  }
+  if (show_grid) {
+      axis->draw();
+      grid->draw();
+      draw_small_axis();
+  }
+  vao->unbind();
+}
+
+
+static bool enable_hdr = true;
+/* BEGIN ZHXX HAPPY */
+namespace {
+
 auto qvert = R"(
 #version 330 core
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
@@ -153,10 +175,8 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-//#extension GL_EXT_gpu_shader4 : enable
+// #extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
-//
-//
 
 const mat3x3 ACESInputMat = mat3x3
 (
@@ -254,12 +274,20 @@ void ScreenFillQuad(GLuint tex)
   glUseProgram(0);
 }
 
-static void zhxx_paint_graphics(GLuint target_fbo = 0) {
-  if(tmProg==nullptr)
+static void paint_graphics(GLuint target_fbo = 0) {
+  if(enable_hdr && tmProg==nullptr)
   {
-    std::cout<<"compiling zxx glprog"<<std::endl;
+    std::cout<<"compiling zhxx hdr program"<<std::endl;
     tmProg = compile_program(qvert, qfrag);
+    if (!tmProg) {
+    std::cout<<"failed to compile zhxx hdr program, giving up"<<std::endl;
+        enable_hdr = false;
+    }
   }
+    if (!enable_hdr) {
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+        return my_paint_graphics();
+    }
   
   if(msfborgb==0||oldnx!=nx||oldny!=ny)
   {
@@ -269,7 +297,7 @@ static void zhxx_paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -278,7 +306,7 @@ static void zhxx_paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT24, nx, ny));
 
     
     if(tonemapfbo!=0)
@@ -328,18 +356,7 @@ static void zhxx_paint_graphics(GLuint target_fbo = 0) {
   CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
 
-  paint_graphics();
-  /*CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-  ScreenFillQuad(texRect);
-  //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  //drawScreenQuad here:
-  CHECK_GL(glFlush());*/
-
+  my_paint_graphics();
   CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
   glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -351,26 +368,10 @@ static void zhxx_paint_graphics(GLuint target_fbo = 0) {
   //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
-/* END MAKE_ZHXX_HAPPY */
-#endif
-
-static void paint_graphics(GLuint target_fbo) {
-  CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->draw();
-  }
-  if (show_grid) {
-      axis->draw();
-      grid->draw();
-      draw_small_axis();
-  }
-  vao->unbind();
 }
+/* END ZHXX HAPPY */
 
-double get_time() {
+static double get_time() {
   static auto start = std::chrono::system_clock::now();
   auto now = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = now - start;
@@ -482,9 +483,15 @@ std::tuple<float, float, float> get_background_color() {
 void set_smooth_shading(bool smooth) {
     smooth_shading = smooth;
 }
+void set_normal_check(bool check) {
+    normal_check = check;
+}
 
 void set_render_wireframe(bool render_wireframe_) {
     render_wireframe = render_wireframe_;
 }
 
+void set_num_samples(int num_samples_) {
+    num_samples = num_samples_;
+}
 }

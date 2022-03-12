@@ -87,6 +87,11 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             }
             prim->polys.emplace_back(beg, cnt);
 
+        } else if (match(it, "l")) {
+            int x = takeu(it) - 1;
+            int y = takeu(it) - 1;
+            prim->lines.emplace_back(x, y);
+
         //} else if (match(it, "o ")) {
             // todo: support tag verts to be multi components of primitive
             //std::string_view o_name(it, nit - it);

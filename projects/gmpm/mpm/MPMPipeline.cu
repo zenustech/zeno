@@ -1144,4 +1144,75 @@ ZENDEFNODE(TransformZSLevelSet,
                {"MPM"},
            });
 
+struct ZSBoundaryPrimitiveToZSGrid : INode {
+  void p2g_momentum(zs::CudaExecutionPolicy &cudaPol,
+                    const typename ZenoParticles::particles_t &pars,
+                    const typename ZenoPartition::table_t &partition,
+                    typename ZenoGrid::grid_t &grid) {
+    using namespace zs;
+    cudaPol(range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             table = proxy<execspace_e::cuda>(partition),
+             grid = proxy<execspace_e::cuda>({}, grid),
+             dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+              using grid_t = RM_CVREF_T(grid);
+              const auto Dinv = 4.f * dxinv * dxinv;
+              auto pos = pars.pack<3>("pos", pi);
+              auto vel = pars.pack<3>("vel", pi);
+              auto mass = pars("mass", pi);
+              // auto vol = pars("vol", pi);
+
+              auto arena = make_local_arena(grid.dx, pos);
+
+              for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto localIndex = coord & (grid_t::side_length - 1);
+                auto blockno = table.query(coord - localIndex);
+                if (blockno < 0)
+                  printf("THE HELL!");
+                auto block = grid.block(blockno);
+                auto W = arena.weight(loc);
+                const auto cellid = grid_t::coord_to_cellid(localIndex);
+                atomic_add(exec_cuda, &block("m", cellid), mass * W);
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &block("v", d, cellid),
+                             W * mass * vel[d]);
+              }
+            });
+  }
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing ZSBoundaryPrimitiveToZSGrid\n");
+
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto zsgrid = get_input<ZenoGrid>("ZSGrid");
+    auto &grid = zsgrid->get();
+
+    using namespace zs;
+    auto cudaPol = cuda_exec().device(0);
+
+    for (auto &&parObjPtr : parObjPtrs) {
+      auto &pars = parObjPtr->getParticles();
+      auto &eles = parObjPtr->getQuadraturePoints();
+      fmt::print("[boundary particle p2g] dx: {}, npars: {}, neles: {}\n",
+                 grid.dx, pars.size(), eles.size());
+      p2g_momentum(cudaPol, pars, partition, grid);
+      p2g_momentum(cudaPol, eles, partition, grid);
+    }
+
+    fmt::print(fg(fmt::color::cyan),
+               "done executing ZSBoundaryPrimitiveToZSGrid\n");
+    set_output("ZSGrid", zsgrid);
+  }
+};
+
+ZENDEFNODE(ZSBoundaryPrimitiveToZSGrid,
+           {
+               {"ZSPrimitive", "ZSPartition", "ZSGrid"},
+               {"ZSGrid"},
+               {},
+               {"MPM"},
+           });
+
 } // namespace zeno
