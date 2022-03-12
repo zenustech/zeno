@@ -107,7 +107,7 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 
 void initialize() {
   gladLoadGL();
-  setup_env_map("forest");
+  setup_env_map("Default");
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
