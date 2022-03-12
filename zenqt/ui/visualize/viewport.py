@@ -218,9 +218,7 @@ class QDMDisplayMenu(QMenu):
         self.addAction(action)
 
 def get_env_tex_names():
-    ns = os.listdir('assets/sky_sphere')
-    ns = filter(lambda s: s.lower().endswith('.jpg'), ns)
-    ns = map(lambda s: s[:-4], ns)
+    ns = os.listdir('assets/sky_box')
     return list(ns)
 
 env_texs = get_env_tex_names()
