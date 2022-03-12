@@ -16,6 +16,13 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         button = QDMOneClickButton(self)
         button.setPos(50, self.height)
         button.setWidthHeight(100, 20)
+        button.setText('Clear Temp')
+        self.height += 40
+        button.callback = self.clear_temp
+
+        button = QDMOneClickButton(self)
+        button.setPos(50, self.height)
+        button.setWidthHeight(100, 20)
         button.setText('Add Keyframe')
         self.height += 40
         button.callback = self.add_keyframe
@@ -67,6 +74,9 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         ]
         f = zenvis.status['target_frame']
         self.keyframes[f] = v
+        self.tmp_value = None
+
+    def clear_temp(self):
         self.tmp_value = None
 
     def value_modify(self):
