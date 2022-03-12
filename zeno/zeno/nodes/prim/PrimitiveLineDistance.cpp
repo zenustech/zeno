@@ -11,11 +11,11 @@
 
 namespace zeno {
 
-/* AWAK, NIKOLA TESLA'S JOB IS DJ, I.E. DJTESLA */
+/* AWAK, NIKOLA TESLA'S JOB IS DJ, I.E. DJ-TESLA */
+/* THAT EXPLAINS WHY DJ COULD DRIVE THE TESLA CAR */
 ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start) {
+    if (!prim->verts.size()) return;
     if (!prim->lines.size()) return;
-
-    const float kFloatMax = std::numeric_limits<float>::max();
 
     std::unordered_multimap<int, std::pair<int, float>> neigh;
     for (int i = 0; i < prim->lines.size(); i++) {
@@ -25,39 +25,39 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int s
         neigh.emplace(line[1], std::pair{line[0], dist});
     }
 
-    auto &result = prim->add_attr<float>(resAttr);
-    std::fill(result.begin(), result.end(), kFloatMax);
+    auto &result = prim->verts.add_attr<float>(resAttr);
+    std::fill(result.begin(), result.end(), -1);
     result[start] = 0;
 
-    std::vector<float> table(prim->verts.size(), kFloatMax);
+    std::vector<float> table(prim->verts.size(), -1);
     {
         auto [b, e] = neigh.equal_range(start);
         for (auto it = b; it != e; ++it) {
             table[it->second.first] = it->second.second;
         }
     }
-    table[start] = kFloatMax;
+    table[start] = -1;
 
-    for (int i = 0; i < prim->verts.size(); i++) {
-        float minValue = kFloatMax;
-        int minIndex = -1;
+    for (int i = 1; i < prim->verts.size(); i++) {
+        float minValue = std::numeric_limits<float>::max();
+        int minIndex = 0;
         for (int j = 0; j < table.size(); j++) {
-            if (table[j] < minValue) {
+            if (table[j] >= 0 && table[j] < minValue) {
                 minValue = table[j];
                 minIndex = j;
             }
         }
-        assert(minIndex != -1);
         result[minIndex] = minValue;
-        table[minIndex] = kFloatMax;
+        //printf("%d %f\n", minIndex, minValue);
+        table[minIndex] = -1;
         for (int j = 0; j < table.size(); j++) {
             auto [b, e] = neigh.equal_range(minIndex);
             auto jit = std::find_if(b, e, [&] (auto const &pa) {
-                return pa.first == j;
+                return pa.second.first == j;
             });
-            if (jit != e && result[j] < kFloatMax) {
+            if (jit != e && result[j] < 0) {
                 float newDist = result[minIndex] + jit->second.second;
-                if (newDist < table[j]) {
+                if (table[j] < 0 || newDist < table[j]) {
                     table[j] = newDist;
                 }
             }
