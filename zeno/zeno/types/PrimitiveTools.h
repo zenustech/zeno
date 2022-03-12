@@ -4,6 +4,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 
 namespace zeno {
 
@@ -43,12 +44,6 @@ static void primAppendVal(PrimitiveObject *prim, PrimitiveObject *primB, size_t 
     });
 }
 
-ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim);
-
-
-ZENO_API std::shared_ptr<PrimitiveObject>
-primitive_merge(std::shared_ptr<ListObject> list);
-
 ZENO_API void read_obj_file(
     std::vector<zeno::vec3f> &vertices,
     std::vector<zeno::vec3f> &uvs,
@@ -56,6 +51,9 @@ ZENO_API void read_obj_file(
     std::vector<zeno::vec3i> &indices,
     const char *path
 );
+
+ZENO_API std::shared_ptr<PrimitiveObject>
+primitive_merge(std::shared_ptr<ListObject> list);
 
 static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t index)
         {
