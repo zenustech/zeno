@@ -170,16 +170,16 @@ struct GraphicPrimitive : IGraphic {
   size_t vertex_count;
   bool draw_all_points;
 
-  Program *points_prog;
-  std::unique_ptr<Buffer> points_ebo;
+  //Program *points_prog;
+  //std::unique_ptr<Buffer> points_ebo;
   size_t points_count;
 
-  Program *lines_prog;
-  std::unique_ptr<Buffer> lines_ebo;
+  //Program *lines_prog;
+  //std::unique_ptr<Buffer> lines_ebo;
   size_t lines_count;
 
-  Program *tris_prog;
-  std::unique_ptr<Buffer> tris_ebo;
+  //Program *tris_prog;
+  //std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
   drawObject pointObj;
