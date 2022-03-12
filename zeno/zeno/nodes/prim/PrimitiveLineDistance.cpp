@@ -12,7 +12,7 @@
 namespace zeno {
 
 /* AWAK, NIKOLA TESLA'S JOB IS DJ, I.E. DJTESLA */
-ZENO_API void primLineDistance(PrimitiveObject *prim, int start) {
+ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start) {
     if (!prim->lines.size()) return;
 
     const float kFloatMax = std::numeric_limits<float>::max();
@@ -25,7 +25,8 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, int start) {
         neigh.emplace(line[1], std::pair{line[0], dist});
     }
 
-    std::vector<float> result(prim->verts.size(), kFloatMax);
+    auto &result = prim->add_attr<float>(resAttr);
+    std::fill(result.begin(), result.end(), kFloatMax);
     result[start] = 0;
 
     std::vector<float> table(prim->verts.size(), kFloatMax);
@@ -67,7 +68,9 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, int start) {
 struct PrimitiveLineDistance : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        primLineDistance(prim.get(), get_param<int>("start"));
+        primLineDistance(prim.get(),
+                         get_input2<std::string>("resAttr"),
+                         get_input2<int>("start"));
         set_output("prim", std::move(prim));
     }
 };
@@ -75,12 +78,13 @@ struct PrimitiveLineDistance : zeno::INode {
 ZENDEFNODE(PrimitiveLineDistance, {
     {
     {"PrimitiveObject", "prim"},
+    {"string", "resAttr", "len"},
+    {"int", "start", "0"},
     },
     {
     {"PrimitiveObject", "prim"},
     },
     {
-    {"int", "start", "0"},
     },
     {"primitive"},
 });
