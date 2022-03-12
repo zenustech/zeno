@@ -6,6 +6,10 @@
 
 namespace zeno {
 
+struct MatrixObject : zeno::IObject{
+    std::variant<glm::mat3, glm::mat4> m;
+};
+
 struct ParticlesToSegments : zeno::INode {
     virtual void apply() override {
         auto particles = get_input<zeno::PrimitiveObject>("particles");
@@ -46,7 +50,7 @@ ZENDEFNODE(ParticlesToSegments, {
     {"FEM"},
 });
 
-struct RetrieveRigidTransformQuat : zeno::INode {
+struct RetrieveRigidTransform : zeno::INode {
     virtual void apply() override {
         auto objRef = get_input<zeno::PrimitiveObject>("refObj");
         auto objNew = get_input<zeno::PrimitiveObject>("newObj");
@@ -92,14 +96,27 @@ struct RetrieveRigidTransformQuat : zeno::INode {
         auto retq = std::make_shared<zeno::NumericObject>();
         retq->set<zeno::vec4f>(zeno::vec4f(quat.x(),quat.y(),quat.z(),quat.w()));
 
+        auto retA = std::make_shared<MatrixObject>();
+        // T = T.transpose();
+        std::cout << "T : " << std::endl << T << std::endl;
+        retA->m = glm::mat4(
+            T(0,0),T(0,1),T(0,2),T(3,0),
+            T(1,0),T(1,1),T(1,2),T(3,1),
+            T(2,0),T(2,1),T(2,2),T(3,2),
+            T(0,3),T(1,3),T(2,3),T(3,3)
+        );
+
+
         set_output("quat",std::move(retq));
         set_output("trans",std::move(retb));
+        set_output("mat",std::move(retA));
+
     }
 };
 
-ZENDEFNODE(RetrieveRigidTransformQuat,{
+ZENDEFNODE(RetrieveRigidTransform,{
     {{"refObj"},{"newObj"}},
-    {"quat","trans"},
+    {"quat","trans","mat"},
     {},
     {"FEM"},
 });
@@ -570,16 +587,25 @@ struct ExtractSurfaceMeshByTag : zeno::INode {
 
         const auto& surf_tag = vprim->attr<float>("surface_tag");
 
-        for(size_t elm_id = 0;elm_id < vprim->quads.size();++elm_id){
-            const auto& tet = vprim->quads[elm_id];
-            //0,1,2;1,2,3;2,3,0;3,0,1
-            for(size_t i = 0;i < 4;++i){
-                auto tris = zeno::vec3i(tet[i],tet[(i+1)%4],tet[(i+2)%4]);
-                if( fabs(surf_tag[tris[0]] - 1.0) < 1e-6 && 
-                    fabs(surf_tag[tris[1]] - 1.0) < 1e-6 && 
-                    fabs(surf_tag[tris[2]] - 1.0) < 1e-6){
-                    primSurf->tris.push_back(tris);
-                }
+        // for(size_t elm_id = 0;elm_id < vprim->quads.size();++elm_id){
+        //     const auto& tet = vprim->quads[elm_id];
+        //     //0,1,2;1,2,3;2,3,0;3,0,1
+        //     for(size_t i = 0;i < 4;++i){
+        //         auto tris = zeno::vec3i(tet[i],tet[(i+1)%4],tet[(i+2)%4]);
+        //         if( fabs(surf_tag[tris[0]] - 1.0) < 1e-6 && 
+        //             fabs(surf_tag[tris[1]] - 1.0) < 1e-6 && 
+        //             fabs(surf_tag[tris[2]] - 1.0) < 1e-6){
+        //             primSurf->tris.push_back(tris);
+        //         }
+        //     }
+        // }
+
+        for(size_t t = 0;t < vprim->tris.size();++t){
+            const auto tri = vprim->tris[t];
+            if( fabs(surf_tag[tri[0]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tri[1]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tri[2]] - 1.0) < 1e-6){
+                    primSurf->tris.push_back(tri);
             }
         }
 
