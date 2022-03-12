@@ -18,4 +18,8 @@ struct disable_copy_allow_move {
     disable_copy_allow_move &operator=(disable_copy_allow_move &&) = default;
 };
 
+struct explicit_default_ctor {
+    explicit explicit_default_ctor() = default;
+};
+
 };

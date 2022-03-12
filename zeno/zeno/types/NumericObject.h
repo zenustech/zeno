@@ -3,7 +3,6 @@
 #include <zeno/utils/vec.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/Exception.h>
-#include <zeno/utils/variantswitch.h>
 #include <variant>
 
 namespace zeno {

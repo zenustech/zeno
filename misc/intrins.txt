@@ -1,0 +1,8 @@
+xmmintrin SSE
+emmintrin SSE2
+pmmintrin SSE3
+tmmintrin SSSE3
+smmintrin SSE4.1
+nmmintrin SSE4.2
+immintrin AVX
+immintrin AVX2
