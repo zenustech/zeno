@@ -386,7 +386,7 @@ void finalize() {
 }
 
 void new_frame() {
-  paint_graphics();
+  my_paint_graphics();
   renderFPS.tick();
 }
 

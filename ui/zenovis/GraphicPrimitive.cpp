@@ -289,7 +289,7 @@ struct GraphicPrimitive : IGraphic {
             lineObj.ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
             lineObj.vbo = nullptr;
         } else {
-            parseLinesDrawBuffer(prim, lineObj);
+            parseLinesDrawBuffer(prim.get(), lineObj);
         }
         lineObj.prog = get_lines_program();
     }
@@ -317,7 +317,7 @@ struct GraphicPrimitive : IGraphic {
 
     draw_all_points = !points_count && !lines_count && !tris_count;
     if (draw_all_points) {
-        pointObj.prog = get_points_program(path);
+        pointObj.prog = get_points_program();
     }
 
     if ((prim->mtl != nullptr) && !prim->mtl->tex2Ds.empty())
