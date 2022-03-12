@@ -1305,15 +1305,16 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-    mat3 TBN = mat3(normalize(iTangent), normalize(cross(normal, iTangent)), normalize(normal));
+    vec3 tan = normalize(iTangent - dot(normalize(iNormal), iTangent)*normalize(iNormal));
+    mat3 TBN = mat3(tan, normalize(cross(iNormal, tan)), normalize(iNormal));
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
     new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent;//   = normalize(cross(up, new_normal));
-    vec3 bitangent;// = cross(new_normal, tangent);
-    pixarONB(new_normal, tangent, bitangent);
+    vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
+    vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
+    //pixarONB(new_normal, tangent, bitangent);
     light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*vec3(1,1,0);
     color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
