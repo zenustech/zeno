@@ -1,4 +1,5 @@
 #include "MyShader.hpp"
+#include "glad/glad.h"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -109,7 +110,7 @@ extern void preIntegrate(GLuint inEnvMap);
 void initialize() {
   gladLoadGL();
   
-  setup_env_map("Default");
+  
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -126,6 +127,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  setup_env_map("Default");
 }
 
 static void draw_small_axis() {
@@ -686,6 +688,10 @@ static void renderQuad()
 }
 void preIntegrate(GLuint inEnvMap)
 {
+  CHECK_GL(glDisable(GL_BLEND));
+  CHECK_GL(glDisable(GL_DEPTH_TEST));
+  CHECK_GL((GL_PROGRAM_POINT_SIZE));
+  CHECK_GL(glDisable(GL_MULTISAMPLE));
   glEnable(GL_DEPTH_TEST);
   // set depth function to less than AND equal for skybox depth trick.
   glDepthFunc(GL_LEQUAL);
@@ -757,6 +763,9 @@ void preIntegrate(GLuint inEnvMap)
 
   glViewport(0, 0, 128, 128); // don't forget to configure the viewport to the capture dimensions.
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
   for (unsigned int i = 0; i < 6; ++i)
   {
       preintIrradianceProg->set_uniform("view", captureViews[i]);
@@ -792,6 +801,8 @@ void preIntegrate(GLuint inEnvMap)
   glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   unsigned int maxMipLevels = 8;
   for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
   {
@@ -829,18 +840,31 @@ void preIntegrate(GLuint inEnvMap)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   }
   // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
+  glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
   glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
   glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
 
   glViewport(0, 0, 1024, 1024);
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   preintBRDFProg->use();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   renderQuad();
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glUseProgram(0);
+  CHECK_GL(glEnable(GL_BLEND));
+  CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+  CHECK_GL(glEnable(GL_DEPTH_TEST));
+  CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+  //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
+  //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+  //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+  //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+  //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+  CHECK_GL(glEnable(GL_MULTISAMPLE));
 
 }
 static void paint_graphics(GLuint target_fbo = 0) {
