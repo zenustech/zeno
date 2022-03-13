@@ -80,7 +80,8 @@ struct PrimitiveBoundingBox : zeno::INode {
             bmax = zeno::max(pos[i], bmax);
         }
 
-        auto exwidth = get_param<float>("exWidth");
+        // auto exwidth = get_param<float>("exWidth");
+        auto exwidth = get_input2<float>("exWidth");
         if (exwidth) {
             bmin -= exwidth;
             bmax += exwidth;
@@ -93,10 +94,10 @@ struct PrimitiveBoundingBox : zeno::INode {
 ZENDEFNODE(PrimitiveBoundingBox,
     { /* inputs: */ {
     {"PrimitiveObject", "prim"},
+    {"float", "exWidth", "0"},
     }, /* outputs: */ {
     {"vec3f", "bmin"}, {"vec3f", "bmax"},
     }, /* params: */ {
-    {"float", "exWidth", "0"},
     }, /* category: */ {
     "primitive",
     }});
