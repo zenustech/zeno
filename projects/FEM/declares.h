@@ -3,8 +3,8 @@
 #include <zeno/zeno.h>
 #include <zeno/logger.h>
 #include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/StringObject.h>
 
@@ -28,6 +28,10 @@
 #include <time.h>
 
 #include <Eigen/Geometry> 
+
+
+#include <type_traits>
+#include <variant>
 
 namespace zeno {
 
