@@ -11,7 +11,7 @@
 
 namespace zeno {
 
-std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list) {
+ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list) {
     auto outprim = std::make_shared<PrimitiveObject>();
 
     size_t len = 0;
