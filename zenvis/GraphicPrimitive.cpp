@@ -212,7 +212,9 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
-    if(prim->tris.size()&&!prim->has_attr("nrm"))
+    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>0.999;
+    bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("norm"));
+    if(prim->tris.size() && need_computeNormal)
     {
         zeno::primCalcNormal(prim, 1);
     }
