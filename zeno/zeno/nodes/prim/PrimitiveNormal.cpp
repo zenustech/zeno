@@ -18,7 +18,7 @@ template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&v
                   "Source Type and Destination Type must be of the same size");
     return reinterpret_cast<Dst const volatile &>(val);
   }
-ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim)
+ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
 {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
     auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -73,7 +73,7 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim)
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = normalize(nrm[i]);
+        nrm[i] = flip * normalize(nrm[i]);
     }
 }
 struct PrimitiveCalcNormal : zeno::INode {
@@ -82,15 +82,17 @@ struct PrimitiveCalcNormal : zeno::INode {
 
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-
-    primCalcNormal(prim.get());
+    auto flip = get_input<NumericObject>("flip")->get<int>() == 1? -1.0f:1.0f;
+    primCalcNormal(prim.get(), flip);
 
     set_output("prim", get_input("prim"));
   }
 };
 
 ZENDEFNODE(PrimitiveCalcNormal, {
-    {"prim"},
+    {"prim",
+    {"int", "flip", "0"}
+    },
     {"prim"},
     {},
     {"primitive"},

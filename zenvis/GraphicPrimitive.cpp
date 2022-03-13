@@ -123,7 +123,6 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         {
             tang[i] = abs(n[0]) < 0.999 ? zeno::vec3f(1.0, 0.0, 0.0) : zeno::vec3f(0.0, 1.0, 0.0);
         }
-        std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
     }
 }
 
@@ -215,7 +214,7 @@ struct GraphicPrimitive : IGraphic {
     }
     if(prim->tris.size()&&!prim->has_attr("nrm"))
     {
-        zeno::primCalcNormal(prim);
+        zeno::primCalcNormal(prim, 1);
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
