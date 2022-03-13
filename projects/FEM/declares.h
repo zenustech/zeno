@@ -29,8 +29,11 @@
 
 #include <Eigen/Geometry> 
 
+
 #include <type_traits>
 #include <variant>
+
+namespace zeno {
 
 namespace zeno {
 struct MuscleModelObject : zeno::IObject {
