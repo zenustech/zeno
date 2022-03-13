@@ -93,6 +93,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
 {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
@@ -117,6 +118,12 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
         tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
         tang[i] = zeno::normalize(tangent);
+        zeno::vec3f n = nrm[tris[i][0]];
+        if(!has_uv)
+        {
+            tang[i] = abs(n[0]) < 0.999 ? zeno::vec3f(1.0, 0.0, 0.0) : zeno::vec3f(0.0, 1.0, 0.0);
+        }
+        std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
     }
 }
 
@@ -304,15 +311,10 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
-            triObj.count = tris_count;
-            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-            triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-            triObj.vbo = nullptr;
-        } else {
-            computeTrianglesTangent(prim);
-            parseTrianglesDrawBuffer(prim, triObj);
-        }
+        
+        computeTrianglesTangent(prim);
+        parseTrianglesDrawBuffer(prim, triObj);
+        
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);

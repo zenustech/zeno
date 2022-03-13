@@ -54,7 +54,7 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim)
 #endif
     for (size_t i = 0; i < prim->tris.size(); i++) {
         auto ind = prim->tris[i];
-        auto n = cross(pos[ind[2]] - pos[ind[0]], pos[ind[1]] - pos[ind[0]]);
+        auto n = cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]);
 
 #if defined(_OPENMP) && defined(__GNUG__)
         for (int j = 0; j != 3; ++j) {
