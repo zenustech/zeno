@@ -79,6 +79,7 @@ class SVColorView : public QWidget
 	Q_OBJECT
 public:
 	SVColorView(QWidget* parent = nullptr);
+	QColor color() const;
 
 signals:
 	void colorChanged(const QColor& clr);
@@ -92,6 +93,8 @@ protected:
 	void paintEvent(QPaintEvent* event);
 
 private:
+	void updateColorByMouse(const QPointF& pos);
+
 	QColor m_color;
 };
 
@@ -116,6 +119,11 @@ private slots:
 	void onAddRampBtnClicked();
 	void onRemoveRampBtnClicked();
 	void onRampColorClicked(COLOR_RAMP ramp);
+	void setColor(const QColor& clr);
+	void onRedChanged(int);
+	void onGreenChanged(int);
+	void onBlueChanged(int);
+	void onHueChanged(int);
 
 private:
 	void initSignals();
