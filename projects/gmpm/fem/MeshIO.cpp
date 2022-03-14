@@ -1,3 +1,4 @@
+#include "../Structures.hpp"
 #include "../ZensimGeometry.h"
 #include "../ZensimMesh.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -10,6 +11,8 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
+
+static ZpcInitializer g_zpc_initializer{};
 
 struct MakeFEMMeshFromFile2 : zeno::INode {
   virtual void apply() override {

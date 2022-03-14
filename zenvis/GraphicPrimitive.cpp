@@ -15,6 +15,9 @@
 #include <Hg/IterUtils.h>
 namespace zenvis {
 extern unsigned int getGlobalEnvMap();
+extern unsigned int getIrradianceMap();
+extern unsigned int getPrefilterMap();
+extern unsigned int getBRDFLut();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -90,6 +93,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
 {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
 #pragma omp parallel for
@@ -114,6 +118,11 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
         tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
         tang[i] = zeno::normalize(tangent);
+        zeno::vec3f n = nrm[tris[i][0]];
+        if(!has_uv)
+        {
+            tang[i] = abs(n[0]) < 0.999 ? zeno::vec3f(1.0, 0.0, 0.0) : zeno::vec3f(0.0, 1.0, 0.0);
+        }
     }
 }
 
@@ -203,9 +212,11 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
-    if(prim->tris.size()&&!prim->has_attr("nrm"))
+    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>0.999;
+    bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("nrm"));
+    if(prim->tris.size() && need_computeNormal)
     {
-        zeno::primCalcNormal(prim);
+        zeno::primCalcNormal(prim, 1);
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
@@ -301,15 +312,10 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
-            triObj.count = tris_count;
-            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-            triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-            triObj.vbo = nullptr;
-        } else {
-            computeTrianglesTangent(prim);
-            parseTrianglesDrawBuffer(prim, triObj);
-        }
+        
+        computeTrianglesTangent(prim);
+        parseTrianglesDrawBuffer(prim, triObj);
+        
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
@@ -417,7 +423,22 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
         if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, envmap));
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+
+        triObj.prog->set_uniformi("irradianceMap",id+1);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+        if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+
+        triObj.prog->set_uniformi("prefilterMap",id+2);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+        if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+        triObj.prog->set_uniformi("brdfLUT",id+3);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+        if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -709,7 +730,11 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
-uniform sampler2D skybox;
+uniform samplerCube skybox;
+
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -1016,10 +1041,7 @@ vec3 SampleEnvironment(in vec3 reflVec)
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
     //here we have the problem reflVec is in eyespace but we need it in world space
     vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
-    float u = atan(r.x, r.z) * ( 1 / PI) * 0.5 + 0.5;
-    float v = 1.0 - (asin(r.y) * (2 / PI) * 0.5 + 0.5);
-    return texture(skybox, vec2(u, v)).rgb;
-
+    return texture(skybox, r).rgb;
 }
 
 /**
@@ -1085,21 +1107,27 @@ vec3 CalculateSpecularIBL(
 }
 
 vec3 CalculateLightingIBL(
-    in vec3  surfNorm,
-    in vec3  toView,
+    in vec3  N,
+    in vec3  V,
     in vec3  albedo,
     in float roughness,
     in float metallic)
 {
-    vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
-    //vec3 F = fresnelSchlickRoughness(dot_c(surfNorm, toView), 0.04);
-    vec3 ks       = vec3(0);
-    vec3 diffuse  = CalculateDiffuse(albedo) * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
-    vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
-    vec3 kd       = (1.0 - ks);
-    
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    return ((kd * diffuse) + specular);
+    return (kD * diffuse + specular);
 
 }
 
@@ -1280,15 +1308,16 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-    mat3 TBN = mat3(normalize(iTangent), normalize(cross(normal, iTangent)), normalize(normal));
+    vec3 tan = normalize(iTangent - dot(normalize(iNormal), iTangent)*normalize(iNormal));
+    mat3 TBN = mat3(tan, normalize(cross(iNormal, tan)), normalize(iNormal));
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
     new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent;//   = normalize(cross(up, new_normal));
-    vec3 bitangent;// = cross(new_normal, tangent);
-    pixarONB(new_normal, tangent, bitangent);
+    vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
+    vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
+    //pixarONB(new_normal, tangent, bitangent);
     light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*vec3(1,1,0);
     color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  

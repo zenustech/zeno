@@ -21,6 +21,14 @@
 
 namespace zeno {
 
+struct ZpcInitializer {
+  ZpcInitializer() {
+    printf("Initializing Zpc resource\n");
+    (void)zs::Resource::instance();
+    printf("Initialized Zpc resource!\n");
+  }
+};
+
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
                 zs::StvkWithHencky<float>>;

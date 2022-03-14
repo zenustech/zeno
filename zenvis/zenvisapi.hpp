@@ -30,6 +30,6 @@ void set_num_samples(int num_samples);
 void set_smooth_shading(bool smooth);
 void set_normal_check(bool check);
 void set_render_wireframe(bool render_wireframe);
-void setup_env_map(std::string name);
+unsigned int setup_env_map(std::string name);
 
 }
