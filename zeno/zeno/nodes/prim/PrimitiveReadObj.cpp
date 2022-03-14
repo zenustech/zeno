@@ -77,6 +77,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             while (it != nit) {
                 int x = takeu(it) - 1;
                 if (*it == '/' && it[1] != '/') {
+                    ++it;
                     int xt = takeu(it) - 1;
                     loop_uvs.push_back(xt);
                 }

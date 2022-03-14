@@ -14,6 +14,8 @@
 
 namespace zeno {
 
+static ZpcInitializer g_zpc_initializer{};
+
 struct ZSParticleToZSLevelSet : INode {
   template <typename LsT>
   void p2g(zs::CudaExecutionPolicy &cudaPol,
@@ -27,7 +29,7 @@ struct ZSParticleToZSLevelSet : INode {
               // gotcha");
               using ls_t = RM_CVREF_T(lsv);
               auto pos = pars.pack<3>("pos", pi); // this is required
-              auto vol = pars("vol", pi);                  // as weight
+              auto vol = pars("vol", pi);         // as weight
 #if 0
               auto vel = pars.pack<3>("vel", pi);
               auto vol = pars("vol", pi);
