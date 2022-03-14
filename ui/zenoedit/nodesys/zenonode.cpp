@@ -681,6 +681,33 @@ void ZenoNode::onNameUpdated(const QString& newName)
 	}
 }
 
+void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded)
+{
+    ZenoParamWidget* pParamControl = nullptr;
+
+	if (bInput)
+	{
+		Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
+        pParamControl = m_inSockets[sockName].socket_control;
+	}
+	else
+	{
+		Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
+        pParamControl = m_outSockets[sockName].socket_control;
+	}
+
+    if (bAdded)
+    {
+        if (pParamControl)
+            pParamControl->show();
+    }
+    else
+    {
+        if (pParamControl)
+            pParamControl->hide();
+    }
+}
+
 QGraphicsLayout* ZenoNode::initSockets()
 {
     m_pSocketsLayout = new QGraphicsLinearLayout(Qt::Vertical);
@@ -694,14 +721,22 @@ QGraphicsLayout* ZenoNode::initSockets()
             ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
             socket->setZValue(ZVALUE_ELEMENT);
 
+            QGraphicsLinearLayout* pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+
             ZenoTextLayoutItem *pSocketItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
-            m_pSocketsLayout->addItem(pSocketItem);
+            pMiniLayout->addItem(pSocketItem);
+
+            m_pSocketsLayout->addItem(pMiniLayout);
+
+            _socket_ctrl socket_ctrl;
 
             const INPUT_SOCKET& inSocket = inputs[inSock];
-            if (!inSocket.info.type.isEmpty())
+            //dont need lineedit except "int£¬float£¬vec3f£¬string".
+            const QString& sockType = inSocket.info.type;
+            if (sockType == "int" || sockType == "float" || sockType == "vec3f" || sockType == "string")
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), m_renderParams.lineEditParam);
-                m_pSocketsLayout->addItem(pSocketEditor);
+                pMiniLayout->addItem(pSocketEditor);
                 connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]()
                 {
                     const QString& textValue = pSocketEditor->text();
@@ -719,9 +754,9 @@ QGraphicsLayout* ZenoNode::initSockets()
 						pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex);
                     }
 				});
+                socket_ctrl.socket_control = pSocketEditor;
             }
 
-            _socket_ctrl socket_ctrl;
             socket_ctrl.socket = socket;
             socket_ctrl.socket_text = pSocketItem;
             m_inSockets.insert(inSock, socket_ctrl);
