@@ -1303,6 +1303,8 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    //normal = normalize(normal);
+
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
@@ -1318,8 +1320,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-    vec3 tan = normalize(old_tangent - dot(normalize(normal), old_tangent)*normalize(normal));
-    mat3 TBN = mat3(tan, normalize(cross(normal, tan)), normalize(normal));
+    vec3 tan = normalize(old_tangent - dot(normal, old_tangent)*normal);
+    mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
