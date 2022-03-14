@@ -2,10 +2,11 @@
 #define __SERIALIZE_H__
 
 #include <QtWidgets>
+#include <zenoui/util/jsonhelper.h>
 
 class GraphsModel;
 class SubGraphModel;
 
-void serializeScene(GraphsModel* pModel, QJsonArray& ret);
+void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer);
 
 #endif

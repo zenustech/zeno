@@ -100,12 +100,11 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 
 		const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-		QJsonObject inputsArr;
 		for (const INPUT_SOCKET& inSock : inputs)
 		{
 			writer.Key(inSock.info.name.toLatin1());
 
-			QJsonValue deflVal = QJsonValue::fromVariant(inSock.info.defaultValue);
+			QVariant deflVal = inSock.info.defaultValue;
 			if (!inSock.linkIndice.isEmpty())
 			{
 				for (QPersistentModelIndex linkIdx : inSock.linkIndice)
@@ -117,7 +116,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			}
 			else
 			{
-				AddVariantListWithNull({ QJsonValue::Null, QJsonValue::Null, deflVal }, writer);
+				AddVariantListWithNull({ QVariant(), QVariant(), deflVal}, writer);
 			}
 		}
 	}
@@ -126,7 +125,6 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 
 		const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
-		QJsonObject paramsObj;
 		for (const PARAM_INFO& info : params)
 		{
 			writer.Key(info.name.toLatin1());
@@ -196,7 +194,6 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 
 	for (auto name : descs.keys())
 	{
-		QJsonObject descObj;
 		const NODE_DESC& desc = descs[name];
 
 		writer.Key(name.toLatin1());
@@ -225,7 +222,6 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 			writer.Key("outputs");
 			JsonArrayBatch _batchArr(writer);
 
-			QJsonArray outputs;
 			for (OUTPUT_SOCKET outSock : desc.outputs)
 			{
 				AddVariantToStringList({ outSock.info.type , outSock.info.name, outSock.info.defaultValue }, writer);
