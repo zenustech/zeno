@@ -86,7 +86,7 @@ struct ZenoConstitutiveModel : IObject {
   PlasticModel plasticModel;
 };
 
-struct ZenoParticles : IObject {
+struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
@@ -111,44 +111,13 @@ struct ZenoParticles : IObject {
   std::size_t numParticles() const noexcept { return particles.size(); }
   std::size_t numElements() const noexcept { return (*elements).size(); }
 
+  bool asBoundary = false;
   particles_t particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim;
   ZenoConstitutiveModel model{};
-};
-
-struct ZenoPrimitiveSequence : IObjectClone<ZenoPrimitiveSequence> {
-  ZenoPrimitiveSequence() = default;
-  ZenoPrimitiveSequence(std::shared_ptr<ZenoParticles> prev,
-                        std::shared_ptr<ZenoParticles> next)
-      : prev{prev}, next{next} {}
-
-  bool valid() const noexcept {
-    if (prev->elements && next->elements)
-      return prev->numParticles() == next->numParticles() &&
-             prev->numElements() == next->numElements() &&
-             prev->category == next->category;
-    return false;
-  }
-  std::size_t numParticles() const noexcept { return prev->numParticles(); }
-  std::size_t numElements() const noexcept { return prev->numElements(); }
-  auto &getPrevParticles() noexcept { return prev->particles; }
-  const auto &getPrevParticles() const noexcept { return prev->particles; }
-  auto &getNextParticles() noexcept { return next->particles; }
-  const auto &getNextParticles() const noexcept { return next->particles; }
-  auto &getPrevElements() noexcept { return prev->particles; }
-  const auto &getPrevElements() const noexcept { return prev->particles; }
-  auto &getNextElements() noexcept { return *next->elements; }
-  const auto &getNextElements() const noexcept { return *next->elements; }
-
-  void push(std::shared_ptr<ZenoParticles> prim) {
-    prev = next;
-    next = prim;
-  }
-
-  std::shared_ptr<ZenoParticles> prev, next;
 };
 
 struct ZenoPartition : IObject {
