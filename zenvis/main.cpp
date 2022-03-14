@@ -690,7 +690,7 @@ void preIntegrate(GLuint inEnvMap)
 {
   CHECK_GL(glDisable(GL_BLEND));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
-  CHECK_GL((GL_PROGRAM_POINT_SIZE));
+  //CHECK_GL((GL_PROGRAM_POINT_SIZE));///????ZHXX???
   CHECK_GL(glDisable(GL_MULTISAMPLE));
   glEnable(GL_DEPTH_TEST);
   // set depth function to less than AND equal for skybox depth trick.
