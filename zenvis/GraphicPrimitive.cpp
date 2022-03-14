@@ -122,9 +122,9 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
             tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
             //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
             auto tanlen = zeno::length(tangent);
-            if (std::abs(tanlen) < 1e-8) {
+            if (std::abs(tanlen) < 1e-8) {//fix by BATE
                 zeno::vec3f n = nrm[tris[i][0]], unused;
-                zeno::pixarONB(n, tang[i], unused);
+                zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
             } else {
                 tang[i] = tangent * (1.f / tanlen);
             }
