@@ -122,16 +122,18 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
             tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
             //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
             auto tanlen = zeno::length(tangent);
-            if (std::abs(tanlen) < 1e-8) {//fix by BATE
+            tangent * (1.f / (tanlen + 1e-8));
+            /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
                 zeno::vec3f n = nrm[tris[i][0]], unused;
                 zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
             } else {
                 tang[i] = tangent * (1.f / tanlen);
-            }
+            }*/
 
         } else {
-            zeno::vec3f n = nrm[tris[i][0]], unused;
-            zeno::pixarONB(n, tang[i], unused);
+            tang[i] = zeno::vec3f(0);
+            //zeno::vec3f n = nrm[tris[i][0]], unused;
+            //zeno::pixarONB(n, tang[i], unused);
         }
     }
 }
@@ -1407,6 +1409,11 @@ void main()
 
   //normal = faceforward(normal, -viewdir, normal);
   vec3 tangent = iTangent;
+  if (tangent == vec3(0)) {
+   vec3 unusedbitan;
+   pixarONB(normal, tangent, unusedbitan);
+  }
+
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
   fColor = vec4(color, 1.0);
