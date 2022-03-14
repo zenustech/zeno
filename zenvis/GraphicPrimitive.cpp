@@ -7,6 +7,7 @@
 #include <vector>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/ticktock.h>
+#include <zeno/utils/orthonormal.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -96,32 +97,43 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    //printf("!!has_uv = %d\n", has_uv);
 #pragma omp parallel for
     for (size_t i = 0; i < prim->tris.size(); ++i)
     {
-        const auto &pos0 = pos[tris[i][0]];
-        const auto &pos1 = pos[tris[i][1]];
-        const auto &pos2 = pos[tris[i][2]];
-        auto uv0 = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        auto uv1 = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        auto uv2 = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        if(has_uv) {
+            const auto &pos0 = pos[tris[i][0]];
+            const auto &pos1 = pos[tris[i][1]];
+            const auto &pos2 = pos[tris[i][2]];
+            auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
+            auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
+            auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
 
-        auto edge0 = pos1 - pos0;
-        auto edge1 = pos2 - pos0;
-        auto deltaUV0 = uv1 - uv0;
-        auto deltaUV1 = uv2 - uv0;
+            auto edge0 = pos1 - pos0;
+            auto edge1 = pos2 - pos0;
+            auto deltaUV0 = uv1 - uv0;
+            auto deltaUV1 = uv2 - uv0;
 
-        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+            auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
 
-        zeno::vec3f tangent;
-        tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
-        tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
-        tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
-        tang[i] = zeno::normalize(tangent);
-        zeno::vec3f n = nrm[tris[i][0]];
-        if(!has_uv)
-        {
-            tang[i] = abs(n[0]) < 0.999 ? zeno::vec3f(1.0, 0.0, 0.0) : zeno::vec3f(0.0, 1.0, 0.0);
+            zeno::vec3f tangent;
+            tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+            tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+            tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+            //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
+            auto tanlen = zeno::length(tangent);
+            tangent * (1.f / (tanlen + 1e-8));
+            /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+                zeno::vec3f n = nrm[tris[i][0]], unused;
+                zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+            } else {
+                tang[i] = tangent * (1.f / tanlen);
+            }*/
+
+        } else {
+            tang[i] = zeno::vec3f(0);
+            //zeno::vec3f n = nrm[tris[i][0]], unused;
+            //zeno::pixarONB(n, tang[i], unused);
         }
     }
 }
@@ -764,7 +776,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (
 !mtl ?
 R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -1292,12 +1304,14 @@ vec3 ACESFitted(vec3 color, float gamma)
     return color;
 }
 
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    //normal = normalize(normal);
+
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
-    vec3 att_tang = iTangent;
+    vec3 att_tang = old_tangent;
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
@@ -1308,8 +1322,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-    vec3 tan = normalize(iTangent - dot(normalize(iNormal), iTangent)*normalize(iNormal));
-    mat3 TBN = mat3(tan, normalize(cross(iNormal, tan)), normalize(iNormal));
+    vec3 tan = normalize(old_tangent - dot(normal, old_tangent)*normal);
+    mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
@@ -1391,10 +1405,16 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
-  //normal = faceforward(normal, -viewdir, normal);
-
   vec3 albedo = iColor;
-  vec3 color = studioShading(albedo, viewdir, normal);
+
+  //normal = faceforward(normal, -viewdir, normal);
+  vec3 tangent = iTangent;
+  if (tangent == vec3(0)) {
+   vec3 unusedbitan;
+   pixarONB(normal, tangent, unusedbitan);
+  }
+
+  vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
   fColor = vec4(color, 1.0);
   if (mNormalCheck) {
