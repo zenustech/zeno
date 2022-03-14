@@ -60,10 +60,19 @@ decltype(auto) index_switch(std::size_t i, Func &&func) {
     return std::visit(std::forward<Func>(func), index_variant<N, HasMono>(i));
 }
 
-template <class ...Ts, class Enum, class = std::enable_if_t<std::is_enum_v<Enum>>>
-std::variant<Ts...> enum_variant(Enum e) {
-    return index_switch<sizeof...(Ts)>(std::size_t{std::underlying_type_t<Enum>(e)}, [&] (auto index) {
-        return std::variant<Ts...>{std::in_place_index<index.value>};
+template <class Variant, class Enum, class = std::enable_if_t<std::is_enum_v<Enum>>>
+Variant enum_variant(Enum e) {
+    std::size_t index{std::underlying_type_t<Enum>(e)};
+    return index_switch<std::variant_size_v<Variant>>(index, [&] (auto index) {
+        return Variant{std::in_place_index<index.value>};
+    });
+}
+
+template <class To, class From>
+To variant_cast(From from) {
+    static_assert(std::variant_size_v<From> == std::variant_size_v<To>);
+    return index_switch<std::variant_size_v<From>>(from.index(), [&] (auto index) {
+        return To{std::in_place_index<index.value>};
     });
 }
 
@@ -73,6 +82,22 @@ auto const &typeid_of_variant(Variant const &var) {
         return typeid(std::decay_t<decltype(val)>);
     }, var);
 }
+
+template <class Variant, class T>
+struct variant_index {
+};
+
+template <class T, class ...Ts>
+struct variant_index<std::variant<T, Ts...>, T> : std::integral_constant<std::size_t, 0> {
+};
+
+template <class T, class T0, class ...Ts>
+struct variant_index<std::variant<T0, Ts...>, T> : variant_index<std::variant<Ts...>, T> {
+};
+
+template <class Enum, class Variant, class T>
+struct variant_enum : std::integral_constant<Enum, Enum{std::underlying_type_t<Enum>(variant_index<Variant, T>::value)}> {
+};
 
 }
 }
