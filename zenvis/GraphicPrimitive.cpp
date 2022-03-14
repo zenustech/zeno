@@ -1169,6 +1169,33 @@ vec3 CalculateLightingIBL(
 
 }
 
+vec3 CalculateLightingIBLToon(
+    in vec3  N,
+    in vec3  V,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = 0.2 * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = clamp(smoothstep(0.3,0.35,length(prefilteredColor))+0.2, 0,1)*vec3(1,1,1);
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    brdf.r = ceil(brdf.r/0.2)*0.2;
+    vec3 specular = prefilteredColor * (F * brdf.r + smoothstep(0.6,0.6,brdf.y));
+
+    return (kD * diffuse + specular);
+
+}
+
 vec3 ACESToneMapping(vec3 color, float adapted_lum)
 {
 	const float A = 2.51f;
@@ -1227,8 +1254,9 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
-float toonSpecular(float NoV, vec3 V, vec3 L, vec3 N)
+float toonSpecular(vec3 V, vec3 L, vec3 N)
 {
+    float NoV = dot(N,V);
     float _SpecularSize = 0.3;
     float specularFalloff = NoV;
     specularFalloff = pow(specularFalloff, 2);
@@ -1257,12 +1285,12 @@ float clearcoatGloss,
 vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 {
     float NoL = dot(N,L);
-    float shad1 = smoothstep(0.3, 0.35, NoL);
-    float shad2 = smoothstep(0,0.1, NoL);
+    float shad1 = smoothstep(0.3, 0.31, NoL);
+    float shad2 = smoothstep(0,0.01, NoL);
     vec3 diffuse = CalculateDiffuse(baseColor);
-    vec3 shadowC1 = diffuse * 0.5;
+    vec3 shadowC1 = diffuse * 0.4;
     vec3 C1 = mix(shadowC1, diffuse, shad1);
-    vec3 shadowC2 = shadowC1 * 0.5;
+    vec3 shadowC2 = shadowC1 * 0.4;
     vec3 C2 = mix(shadowC2, C1, shad2);
 
     vec3 H = normalize(L+V);
@@ -1293,7 +1321,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     ls = ceil(ls/0.2)*0.2;
 
 
-    return (kD*C2 + norms * ls)*histThings(vec3(dot_c(N, L)));
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N));
 }
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
@@ -1465,19 +1493,20 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 
 
     vec3 ibl =  
-        CalculateLightingIBL(
+        mix(CalculateLightingIBL(
             new_normal,
             view_dir,
             albedo2,
             roughness,
-            mat_metallic);
-    if(mat_toon==1.0)
-    {
-        vec3 norms = ibl/(length(ibl)+0.00001);
-        float ls = length(ibl);
-        ls = ceil(ls/0.3)*0.3;
-        ibl = norms * ls;
-    }
+            mat_metallic),
+            CalculateLightingIBLToon(
+            new_normal,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic),
+            mat_toon);
+    
     color += ibl;
     color = ACESFitted(color.rgb, 2.2);
     return color;
