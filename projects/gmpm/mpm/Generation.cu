@@ -491,7 +491,7 @@ struct ToBoundaryParticles : INode {
     std::vector<vec3f> eleVel{};
 
     ZenoParticles::category_e category{ZenoParticles::surface};
-    bool bindMesh = get_input2<int>("category") != ZenoParticles::mpm;
+    bool bindMesh = true;
     if (bindMesh) {
       category = ZenoParticles::surface;
       eleSize = tris.size();
@@ -578,9 +578,9 @@ struct ToBoundaryParticles : INode {
       pars = pars.clone({memsrc_e::um, 0});
     }
     if (bindMesh) {
-      auto &eles = outParticles->getQuadraturePoints(); // tilevector
       outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
+      auto &eles = outParticles->getQuadraturePoints(); // tilevector
       ompExec(zs::range(eleSize),
               [eles = proxy<execspace_e::host>({}, eles), velsPtr, &eleVol,
                &elePos, &eleVel, category, &tris, density](size_t ei) mutable {
@@ -621,58 +621,96 @@ ZENDEFNODE(ToBoundaryParticles, {
                                     {"MPM"},
                                 });
 
-struct EnqueueZSPrimitive : INode {
+struct BuildPrimitiveSequence : INode {
   void apply() override {
     using namespace zs;
-    fmt::print(fg(fmt::color::green), "begin executing EnqueueZSPrimitive\n");
+    fmt::print(fg(fmt::color::green),
+               "begin executing BuildPrimitiveSequence\n");
 
-    std::shared_ptr<ZenoPrimitiveSequence> zsprimseq{};
-    if (has_input<ZenoPrimitiveSequence>("ZSPrimitiveSequence"))
-      zsprimseq = get_input<ZenoPrimitiveSequence>("ZSPrimitiveSequence");
-    else {
-      zsprimseq = std::make_shared<ZenoPrimitiveSequence>();
-    }
+    std::shared_ptr<ZenoParticles> zsprimseq{};
 
-    if (has_input<ZenoParticles>("ZSPrimitive")) {
-      zsprimseq->push(get_input<ZenoParticles>("ZSPrimitive"));
-    }
-    if (has_input<ZenoParticles>("ZSPrimitive1")) {
-      zsprimseq->push(get_input<ZenoParticles>("ZSPrimitive1"));
-    }
-    if (zsprimseq->valid()) {
-      auto cudaPol = cuda_exec().device(0);
-      auto numV = zsprimseq->numParticles();
-      auto numE = zsprimseq->numElements();
+    if (!has_input<ZenoParticles>("ZSParticles"))
+      throw std::runtime_error(
+          fmt::format("no incoming prim for prim sequence!\n"));
+    auto next = get_input<ZenoParticles>("ZSParticles");
+
+    auto numV = next->numParticles();
+    auto numE = next->numElements();
+
+    fmt::print("checking size V: {}, size E: {}\n", numV, numE);
+
+    auto cudaPol = cuda_exec().device(0);
+    if (has_input<ZenoParticles>("ZSPrimitiveSequence")) {
+      zsprimseq = get_input<ZenoParticles>("ZSPrimitiveSequence");
+      if (numV != zsprimseq->numParticles() || numE != zsprimseq->numElements())
+        throw std::runtime_error(
+            fmt::format("prim size mismatch with current sequence prim!\n"));
+
       auto dt = get_input2<float>("framedt"); // framedt
-      cudaPol(
-          Collapse{numV},
-          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevParticles()),
-           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextParticles()),
-           dt] __device__(int pi) mutable {
-            prev.tuple<3>("vel", pi) =
-                (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
-          });
+      {
+        cudaPol(Collapse{numV},
+                [prev = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+                 next = proxy<execspace_e::cuda>({}, next->getParticles()),
+                 dt] __device__(int pi) mutable {
+                  prev.tuple<3>("vel", pi) =
+                      (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+                });
+        cudaPol(
+            Collapse{numE},
+            [prev =
+                 proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
+             next = proxy<execspace_e::cuda>({}, next->getQuadraturePoints()),
+             dt] __device__(int ei) mutable {
+              prev.tuple<3>("vel", ei) =
+                  (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
+            });
+      }
+    } else {
+      zsprimseq = std::make_shared<ZenoParticles>();
+      zsprimseq->category = ZenoParticles::surface;
+      zsprimseq->asBoundary = true;
+      std::vector<zs::PropertyTag> tags{
+          {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}};
+      std::vector<zs::PropertyTag> eleTags{
+          {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}, {"inds", (int)3}};
+      zsprimseq->particles =
+          typename ZenoParticles::particles_t{tags, numV, memsrc_e::device, 0};
+      zsprimseq->elements = typename ZenoParticles::particles_t{
+          eleTags, numE, memsrc_e::device, 0};
+      cudaPol(Collapse{numV},
+              [seq = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+               next = proxy<execspace_e::cuda>(
+                   {}, next->getParticles())] __device__(int pi) mutable {
+                seq("mass", pi) = next("mass", pi);
+                seq("vol", pi) = next("vol", pi);
+                seq.tuple<3>("pos", pi) = next.pack<3>("pos", pi);
+                seq.tuple<3>("vel", pi) = next.pack<3>("vel", pi);
+              });
       cudaPol(
           Collapse{numE},
-          [prev = proxy<execspace_e::cuda>({}, zsprimseq->getPrevElements()),
-           next = proxy<execspace_e::cuda>({}, zsprimseq->getNextElements()),
-           dt] __device__(int ei) mutable {
-            prev.tuple<3>("vel", ei) =
-                (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
+          [seq = proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
+           next = proxy<execspace_e::cuda>(
+               {}, next->getQuadraturePoints())] __device__(int ei) mutable {
+            seq("mass", ei) = next("mass", ei);
+            seq("vol", ei) = next("vol", ei);
+            seq.tuple<3>("pos", ei) = next.pack<3>("pos", ei);
+            seq.tuple<3>("vel", ei) = next.pack<3>("vel", ei);
+            seq.tuple<3>("inds", ei) = next.pack<3>("inds", ei);
           });
     }
 
-    fmt::print(fg(fmt::color::cyan), "done executing EnqueueZSPrimitive\n");
-    set_output("ZSPrimitiveSequence", std::move(zsprimseq));
+    fmt::print(fg(fmt::color::cyan), "done executing BuildPrimitiveSequence\n");
+    set_output("ZSPrimitiveSequence", zsprimseq);
   }
 };
-ZENDEFNODE(EnqueueZSPrimitive,
-           {
-               {"ZSPrimitiveSequence", "framedt", "ZSPrimitive", "ZSPrimitive"},
-               {"ZSPrimitiveSequence"},
-               {},
-               {"MPM"},
-           });
+ZENDEFNODE(BuildPrimitiveSequence, {
+                                       {"ZSPrimitiveSequence",
+                                        {"float", "framedt", "0.1"},
+                                        "ZSParticles"},
+                                       {"ZSPrimitiveSequence"},
+                                       {},
+                                       {"MPM"},
+                                   });
 
 /// this requires further polishing
 struct UpdatePrimitiveFromZSParticles : INode {
