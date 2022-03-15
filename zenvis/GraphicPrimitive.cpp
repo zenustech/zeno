@@ -1444,12 +1444,13 @@ vec3 ACESFitted(vec3 color, float gamma)
 
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
-
+    vec3 L1 = vec3(1,1,0);
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
+    float att_NoL = dot(normal, L1);
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
@@ -1470,7 +1471,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
     vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
     //pixarONB(new_normal, tangent, bitangent);
-    light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*vec3(1,1,0);
+    light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*L1;
     color += mix(BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)),
     ToonBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
@@ -1524,6 +1525,14 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
             mat_toon);
     
     color += ibl;
+
+    float r = smoothstep(0.5,0.6,mat_roughness);
+    float m = smoothstep(0.2, 0.5, mat_metallic);
+    float shift = 1 - r + m;
+    float stroke = clamp(mat_stroke+shift, 0, 1);
+    stroke = pow(stroke,4);
+    color = mix(color, mix(color*stroke, color, stroke), mat_toon);
+
     color = ACESFitted(color.rgb, 2.2);
     return color;
 

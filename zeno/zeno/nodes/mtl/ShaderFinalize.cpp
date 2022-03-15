@@ -36,6 +36,7 @@ struct ShaderFinalize : INode {
             {3, "mat_emission"},
             {1, "mat_zenxposure"},
             {1, "mat_toon"},
+            {1, "mat_stroke"}
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
@@ -52,6 +53,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
             get_input<IObject>("exposure", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("toon", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("stroke", std::make_shared<NumericObject>(float(1.0f))),
         });
         auto commonCode = em.getCommonCode();
 
@@ -81,6 +83,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "emission", "0,0,0"},
         {"float", "exposure", "1.0"},
         {"float", "toon", "0.0"},
+        {"float", "stroke", "1.0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
     },
