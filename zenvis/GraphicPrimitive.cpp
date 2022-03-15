@@ -1117,6 +1117,44 @@ vec3 CalculateSpecularIBL(
     
     return (totalSpec / float(IBLSteps));
 }
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.1415926 * denom * denom;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
 vec3 CalculateLightingIBL(
     in vec3  N,
@@ -1138,6 +1176,35 @@ vec3 CalculateLightingIBL(
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    return (kD * diffuse + specular);
+
+}
+
+vec3 CalculateLightingIBLToon(
+    in vec3  N,
+    in vec3  V,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = clamp(smoothstep(0.5,0.5,length(prefilteredColor)), 0,1)*vec3(1,1,1);
+    vec3 specularColor = mix(prefilteredColor+0.2, prefilteredColor2, prefilteredColor);
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    brdf.r = ceil(brdf.r/0.2)*0.2;
+    vec3 specular = specularColor * (F * brdf.r + smoothstep(0.7,0.7,brdf.y));
 
     return (kD * diffuse + specular);
 
@@ -1201,7 +1268,75 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
+float toonSpecular(vec3 V, vec3 L, vec3 N)
+{
+    float NoV = dot(N,V);
+    float _SpecularSize = 0.3;
+    float specularFalloff = NoV;
+    specularFalloff = pow(specularFalloff, 2);
+    vec3 reflectionDirection = reflect(L, N);
+    float towardsReflection = dot(V, -reflectionDirection);
+    float specularChange = fwidth(towardsReflection);
+    float specularIntensity = smoothstep(1 - _SpecularSize, 1 - _SpecularSize + specularChange, towardsReflection);
+    return specularIntensity;
+}
+vec3 histThings(vec3 s)
+{
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.2)*0.2;
+    return norms * ls;
+}
+vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
+{
+    float NoL = dot(N,L);
+    float shad1 = smoothstep(0.3, 0.31, NoL);
+    float shad2 = smoothstep(0,0.01, NoL);
+    vec3 diffuse = mon2lin(baseColor)/PI;
+    vec3 shadowC1 = diffuse * 0.4;
+    vec3 C1 = mix(shadowC1, diffuse, shad1);
+    vec3 shadowC2 = shadowC1 * 0.4;
+    vec3 C2 = mix(shadowC2, C1, shad2);
 
+    vec3 H = normalize(L+V);
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, baseColor, metallic);
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);    
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);        
+    
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 s = numerator / denominator;
+    
+    // kS is equal to Fresnel
+    vec3 kS = F;
+    // for energy conservation, the diffuse and specular light can't
+    // be above 1.0 (unless the surface emits light); to preserve this
+    // relationship the diffuse component (kD) should equal 1.0 - kS.
+    vec3 kD = vec3(1.0) - kS;
+    // multiply kD by the inverse metalness such that only non-metals 
+    // have diffuse lighting, or a linear blend if partly metal (pure metals
+    // have no diffuse light).
+    kD *= 1.0 - metallic;	                
+
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.4)*0.4;
+
+
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N));
+}
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
@@ -1211,15 +1346,15 @@ float sheen,
 float sheenTint,
 float clearcoat,
 float clearcoatGloss,
-vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 {
-    float NdotL = dot_c(N,L);
-    float NdotV = dot_c(N,V);
+    float NdotL = dot(N,L);
+    float NdotV = dot(N,V);
     //if (NdotL < 0 || NdotV < 0) return vec3(0);
 
     vec3 H = normalize(L+V);
-    float NdotH = dot_c(N,H);
-    float LdotH = dot_c(L,H);
+    float NdotH = dot(N,H);
+    float LdotH = dot(L,H);
 
     vec3 Cdlin = mon2lin(baseColor);
     float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
@@ -1247,6 +1382,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float ay = max(.001, sqr(roughness)*aspect);
     float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
     float FH = SchlickFresnel(LdotH);
+    
     vec3 Fs = mix(Cspec0, vec3(1), FH);
     float Gs;
     Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
@@ -1260,7 +1396,9 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float Fr = mix(.04, 1.0, FH);
     float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
     float angle = clamp(dot(N, L), 0.0, 1.0);
-    return (((1/PI) * mix(Fd, ss, subsurface)*Cdlin + Fsheen)
+    float c1 = (1/PI) * mix(Fd, ss, subsurface);
+    
+    return ((c1 * Cdlin + Fsheen)
         * (1-metallic)
         + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
 }
@@ -1333,7 +1471,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
     //pixarONB(new_normal, tangent, bitangent);
     light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    color += mix(BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)),
+    ToonBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
@@ -1368,13 +1507,23 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    color +=  
-        CalculateLightingIBL(
+
+    vec3 ibl =  
+        mix(CalculateLightingIBL(
             new_normal,
             view_dir,
             albedo2,
             roughness,
-            mat_metallic);
+            mat_metallic),
+            CalculateLightingIBLToon(
+            new_normal,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic),
+            mat_toon);
+    
+    color += ibl;
     color = ACESFitted(color.rgb, 2.2);
     return color;
 
