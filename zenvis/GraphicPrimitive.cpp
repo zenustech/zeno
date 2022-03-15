@@ -1195,14 +1195,16 @@ vec3 CalculateLightingIBLToon(
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
     vec3 irradiance = texture(irradianceMap, m*N).rgb;
-    vec3 diffuse      = 0.2 * CalculateDiffuse(albedo);
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
     const float MAX_REFLECTION_LOD = 7.0;
     vec3 R = reflect(-V, N); 
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
-    prefilteredColor = clamp(smoothstep(0.3,0.35,length(prefilteredColor))+0.2, 0,1)*vec3(1,1,1);
+    vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = clamp(smoothstep(0.5,0.5,length(prefilteredColor)), 0,1)*vec3(1,1,1);
+    vec3 specularColor = mix(prefilteredColor+0.2, prefilteredColor2, prefilteredColor);
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     brdf.r = ceil(brdf.r/0.2)*0.2;
-    vec3 specular = prefilteredColor * (F * brdf.r + smoothstep(0.6,0.6,brdf.y));
+    vec3 specular = specularColor * (F * brdf.r + smoothstep(0.7,0.7,brdf.y));
 
     return (kD * diffuse + specular);
 
@@ -1299,7 +1301,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     float NoL = dot(N,L);
     float shad1 = smoothstep(0.3, 0.31, NoL);
     float shad2 = smoothstep(0,0.01, NoL);
-    vec3 diffuse = CalculateDiffuse(baseColor);
+    vec3 diffuse = mon2lin(baseColor)/PI;
     vec3 shadowC1 = diffuse * 0.4;
     vec3 C1 = mix(shadowC1, diffuse, shad1);
     vec3 shadowC2 = shadowC1 * 0.4;
@@ -1330,7 +1332,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 
     vec3 norms = s/(length(s)+0.00001);
     float ls = length(s);
-    ls = ceil(ls/0.2)*0.2;
+    ls = ceil(ls/0.4)*0.4;
 
 
     return (kD*C2 + norms * ls * toonSpecular(V, L, N));
