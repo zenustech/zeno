@@ -95,32 +95,22 @@ ZenoRampGroove::ZenoRampGroove(QGraphicsItem* parent)
 /////////////////////////////////////////////////////////////////////
 ZenoRampBar::ZenoRampBar(QWidget* parent)
 	: QGraphicsView(parent)
-	, m_barHeight(ZenoStyle::dpiScaled(32))
 	, m_pColorItem(nullptr)
 	, m_szSelector(ZenoStyle::dpiScaled(10))
 	, m_currSelector(nullptr)
 	, m_pLineItem(nullptr)
 {
-	setFixedHeight(m_barHeight);
-
-	int width = this->width();
-
 	m_scene = new QGraphicsScene;
-	m_pColorItem = new QGraphicsRectItem;
-
-	m_pLineItem = new ZenoRampGroove;
-	int y = m_barHeight / 2;
-
-	m_scene->addItem(m_pColorItem);
-	m_scene->addItem(m_pLineItem);
 
 	setScene(m_scene);
-
 	connect(m_scene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
 }
 
 void ZenoRampBar::onSelectionChanged()
 {
+	if (m_ramps.empty())
+		return;
+
 	BlockSignalScope scope(m_scene);
 	bool noSelection = true;
 	for (auto iter = m_ramps.begin(); iter != m_ramps.end(); iter++)
@@ -147,26 +137,60 @@ void ZenoRampBar::onSelectionChanged()
 		m_currSelector->setSelected(true);
 	m_currSelector->update();
 
+	Q_ASSERT(m_ramps.find(m_currSelector) != m_ramps.end());
 	emit rampSelected(m_ramps[m_currSelector]);
 }
 
-void ZenoRampBar::initRamps(int width)
+void ZenoRampBar::onResizeInit(QSize sz)
 {
-	m_width = width;
-	m_pColorItem->setRect(0, 0, m_width, m_barHeight);
-	int y = m_barHeight / 2;
-	m_pLineItem->setLine(0, y, m_width, y);
+	int W = sz.width();
+	int H = sz.height();
+	m_pColorItem->setRect(0, 0, W, H);
+	m_pLineItem->setLine(0, H / 2, W, H / 2);
 
-	QLinearGradient grad(0, 0, m_width, 0);
-	for (COLOR_RAMP ramp : m_initRamps)
+	QLinearGradient grad(0, 0, W, 0);
+	for (auto iter = m_ramps.begin(); iter != m_ramps.end(); iter++)
 	{
-		int y = m_barHeight / 2;
+		ZenoRampSelector* pSelector = iter.key();
+		COLOR_RAMP& ramp = iter.value();
+		QColor clr(ramp.r * 255, ramp.g * 255, ramp.b * 255);
+
+		qreal xPos = W * ramp.pos, yPos = (H - m_szSelector) / 2.;
+		xPos = qMin(W - 10., xPos);
+		pSelector->initRampPos(QPointF(xPos, yPos), clr);
+		grad.setColorAt(ramp.pos, clr);
+	}
+
+	m_pColorItem->setBrush(QBrush(grad));
+}
+
+void ZenoRampBar::setColorRamps(const COLOR_RAMPS& ramps)
+{
+	m_currSelector = nullptr;
+	m_ramps.clear();
+	m_scene->clear();
+
+	m_pColorItem = new QGraphicsRectItem;
+	m_pLineItem = new ZenoRampGroove;
+	m_scene->addItem(m_pColorItem);
+	m_scene->addItem(m_pLineItem);
+
+	int W = width();
+	int H = height();
+
+	m_pColorItem->setRect(0, 0, W, H);
+	int y = H / 2;
+	m_pLineItem->setLine(0, y, W, y);
+
+	QLinearGradient grad(0, 0, W, 0);
+	for (COLOR_RAMP ramp : ramps)
+	{
 		ZenoRampSelector* selector = new ZenoRampSelector(this);
 		selector->setRect(0, 0, m_szSelector, m_szSelector);
-		qreal xPos = m_width * ramp.pos, yPos = (m_barHeight - m_szSelector) / 2.;
+		qreal xPos = W * ramp.pos, yPos = (H - m_szSelector) / 2.;
 
 		QColor clr(ramp.r * 255, ramp.g * 255, ramp.b * 255);
-		xPos = qMin(m_width - 10., xPos);
+		xPos = qMin(W - 10., xPos);
 		selector->initRampPos(QPointF(xPos, yPos), clr);
 		m_scene->addItem(selector);
 		grad.setColorAt(ramp.pos, clr);
@@ -200,11 +224,46 @@ void ZenoRampBar::removeRamp()
 
 void ZenoRampBar::newRamp()
 {
+	typedef std::pair<ZenoRampSelector*, COLOR_RAMP> _PAIR;
 
+	std::vector<_PAIR> L;
+	for (ZenoRampSelector* pSelector : m_ramps.keys())
+	{
+		COLOR_RAMP ramp = m_ramps[pSelector];
+		L.push_back(std::pair(pSelector, ramp));
+	}
+
+	std::sort(L.begin(), L.end(), [=](const _PAIR& lhs, const _PAIR& rhs) {
+		return lhs.second.pos < rhs.second.pos;
+	});
+
+	for (int i = 0; i < L.size(); i++)
+	{
+		if (m_currSelector == L[i].first && i + 1 < L.size())
+		{
+			COLOR_RAMP p = L[i].second;
+			COLOR_RAMP n = L[i + 1].second;
+
+			COLOR_RAMP newRamp((p.pos + n.pos) / 2, (p.r + n.r) / 2, (p.g + n.g) / 2, (p.b + n.b) / 2);
+			QColor clr(newRamp.r * 255, newRamp.g * 255, newRamp.b * 255);
+
+			ZenoRampSelector* selector = new ZenoRampSelector(this);
+			m_ramps[selector] = newRamp;
+
+			qreal xPos = width() * newRamp.pos, yPos = (height() - m_szSelector) / 2.;
+			selector->initRampPos(QPointF(xPos, yPos), clr);
+
+			m_scene->addItem(selector);
+
+			break;
+		}
+	}
+	refreshBar();
 }
 
 COLOR_RAMP ZenoRampBar::colorRamp() const
 {
+	Q_ASSERT(m_ramps.find(m_currSelector) != m_ramps.end());
 	return m_ramps[m_currSelector];
 }
 
@@ -217,12 +276,7 @@ void ZenoRampBar::resizeEvent(QResizeEvent* event)
 {
 	QSize sz = event->size();
 	QGraphicsView::resizeEvent(event);
-	initRamps(sz.width());
-}
-
-void ZenoRampBar::setColorRamps(const COLOR_RAMPS& ramps)
-{
-	m_initRamps = ramps;
+	onResizeInit(sz);
 }
 
 COLOR_RAMPS ZenoRampBar::colorRamps() const
@@ -236,8 +290,9 @@ COLOR_RAMPS ZenoRampBar::colorRamps() const
 
 void ZenoRampBar::updateRampPos(ZenoRampSelector* pSelector)
 {
+	Q_ASSERT(m_ramps.find(pSelector) != m_ramps.end());
 	COLOR_RAMP& ramp = m_ramps[pSelector];
-	ramp.pos = pSelector->x() / m_width;
+	ramp.pos = pSelector->x() / width();
 	refreshBar();
 }
 
@@ -257,7 +312,7 @@ void ZenoRampBar::updateRampColor(const QColor& clr)
 
 void ZenoRampBar::refreshBar()
 {
-	QLinearGradient grad(0, 0, m_width, 0);
+	QLinearGradient grad(0, 0, width(), 0);
 	for (COLOR_RAMP rmp : m_ramps)
 	{
 		QColor clr(rmp.r * 255, rmp.g * 255, rmp.b * 255);
@@ -279,12 +334,9 @@ QColor SVColorView::color() const
 
 void SVColorView::setColor(const QColor& clr)
 {
-	if (m_color != clr)
-	{
-		m_color = clr;
-		update();
-		emit colorChanged(m_color);
-	}
+	m_color = clr;
+	update();
+	emit colorChanged(m_color);
 }
 
 void SVColorView::mousePressEvent(QMouseEvent* event)
@@ -339,12 +391,11 @@ void SVColorView::paintEvent(QPaintEvent* event)
 /////////////////////////////////////////////////////////////////////
 ZenoHeatMapEditor::ZenoHeatMapEditor(const COLOR_RAMPS& colorRamps, QWidget* parent)
 	: QDialog(parent)
-	, m_colorRamps(colorRamps)
 {
 	setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	m_ui = new Ui::HeatMapEditor;
 	m_ui->setupUi(this);
-	init();
+	init(colorRamps);
 	initSignals();
 	installFilters();
 }
@@ -353,11 +404,12 @@ ZenoHeatMapEditor::~ZenoHeatMapEditor()
 {
 }
 
-void ZenoHeatMapEditor::init()
+void ZenoHeatMapEditor::init(COLOR_RAMPS colorRamps)
 {
-	initRamps();
+	initRamps(colorRamps);
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
+	//m_ui->clrHex->setFont(QFont("HarmonyOS Sans", 10));
 	initColorView();
 }
 
@@ -380,6 +432,47 @@ void ZenoHeatMapEditor::initSignals()
 	connect(m_ui->spGreenOrS, SIGNAL(valueChanged(int)), this, SLOT(onGreenChanged(int)));
 	connect(m_ui->spBlueOrV, SIGNAL(valueChanged(int)), this, SLOT(onBlueChanged(int)));
 	connect(m_ui->hueSlider, SIGNAL(valueChanged(int)), this, SLOT(onHueChanged(int)));
+
+	connect(m_ui->cbPreset, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onCurrentIndexChanged(const QString&)));
+
+	connect(m_ui->clrHex, SIGNAL(editingFinished()), this, SLOT(onClrHexEditFinished()));
+}
+
+void ZenoHeatMapEditor::onClrHexEditFinished()
+{
+	const QString& text = m_ui->clrHex->text();
+	QColor clr(text);
+	setColor(clr);
+}
+
+void ZenoHeatMapEditor::onCurrentIndexChanged(const QString& text)
+{
+	COLOR_RAMPS ramps;
+	if (text == "BlackBody")
+	{
+		ramps = { {0, 0,0,0}, {0.33, 1,0,0}, {0.66, 1,1,0}, {1, 1,1,1} };
+		m_ui->rampBarView->setColorRamps(ramps);
+	}
+	else if (text == "Grayscale")
+	{
+		ramps = { {0, 0,0,0}, {1, 1,1,1} };
+		m_ui->rampBarView->setColorRamps(ramps);
+	}
+	else if (text == "InfraRed")
+	{
+		ramps = { {0, 0.2, 0, 1}, {0.25, 0, 0.85, 1}, {0.5, 0, 1, 0.1}, {0.75, 0.95, 1, 0}, {1, 1, 0, 0} };
+		m_ui->rampBarView->setColorRamps(ramps);
+	}
+	else if (text == "TwoTone")
+	{
+		ramps = { {0, 0,1,1}, {0.49, 0,0,1}, {0.5, 1,1,1}, {0.51, 1,0,0}, {1, 1,1,0} };
+		m_ui->rampBarView->setColorRamps(ramps);
+	}
+	else if (text == "WhiteToRed")
+	{
+		ramps = { {0, 1,1,1}, {1, 1,0,0} };
+		m_ui->rampBarView->setColorRamps(ramps);
+	}
 }
 
 void ZenoHeatMapEditor::onRedChanged(int value)
@@ -417,9 +510,9 @@ void ZenoHeatMapEditor::onHueChanged(int value)
 		setColor(clr);
 }
 
-void ZenoHeatMapEditor::initRamps()
+void ZenoHeatMapEditor::initRamps(COLOR_RAMPS colorRamps)
 {
-	m_ui->rampBarView->setColorRamps(m_colorRamps);
+	m_ui->rampBarView->setColorRamps(colorRamps);
 }
 
 void ZenoHeatMapEditor::initColorView()
@@ -487,15 +580,20 @@ void ZenoHeatMapEditor::onRampColorClicked(COLOR_RAMP ramp)
 
 void ZenoHeatMapEditor::setColor(const QColor& clr)
 {
-	m_ui->hvColorView->setColor(clr);
+	BlockSignalScope scope1(m_ui->hvColorView);
+	BlockSignalScope scope2(m_ui->hueSlider);
+	BlockSignalScope scope3(m_ui->spRedOrH);
+	BlockSignalScope scope4(m_ui->spGreenOrS);
+	BlockSignalScope scope5(m_ui->spBlueOrV);
+	BlockSignalScope scope6(m_ui->clrHex);
+	BlockSignalScope scope7(m_ui->rampBarView);
 
+	m_ui->hvColorView->setColor(clr);
 	int hueSliderValue = 360 - clr.hue();
 	m_ui->hueSlider->setValue(hueSliderValue);
-
 	m_ui->spRedOrH->setValue(clr.red());
 	m_ui->spGreenOrS->setValue(clr.green());
 	m_ui->spBlueOrV->setValue(clr.blue());
 	m_ui->clrHex->setText(clr.name());
-
 	m_ui->rampBarView->updateRampColor(clr);
 }
