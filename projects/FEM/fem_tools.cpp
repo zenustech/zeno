@@ -66,7 +66,7 @@ struct RetrieveRigidTransform : zeno::INode {
         parallel_test.col(1) << objRef->verts[idx1][0],objRef->verts[idx1][1],objRef->verts[idx1][2];
         for(idx2 = idx1 + 1;idx2 < objRef->size();++idx2){
             parallel_test.col(2) << objRef->verts[idx2][0],objRef->verts[idx2][1],objRef->verts[idx2][2];
-            if(fabs(parallel_test.determinant()) > 1e-8)
+            if(fabs(parallel_test.determinant()) > 1e-3)
                 break;
         }
 
@@ -75,7 +75,7 @@ struct RetrieveRigidTransform : zeno::INode {
         refTet.col(2) << parallel_test.col(2),1.0;
         for(idx3 = idx2 + 1;idx3 < objRef->size();++idx3){
             refTet.col(3) << objRef->verts[idx3][0],objRef->verts[idx3][1],objRef->verts[idx3][2],1.0;
-            if(fabs(refTet.determinant()) > 1e-8)
+            if(fabs(refTet.determinant()) > 1e-3)
                 break;
         }
 
@@ -98,7 +98,7 @@ struct RetrieveRigidTransform : zeno::INode {
 
         auto retA = std::make_shared<MatrixObject>();
         // T = T.transpose();
-        std::cout << "T : " << std::endl << T << std::endl;
+        // std::cout << "T : " << std::endl << T << std::endl;
         retA->m = glm::mat4(
             T(0,0),T(0,1),T(0,2),T(3,0),
             T(1,0),T(1,1),T(1,2),T(3,1),
