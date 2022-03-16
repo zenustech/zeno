@@ -1,15 +1,17 @@
 from numpy import vdot
 from . import *
 from ..visualize import zenvis
+from .curve_canvas import ControlPoint
+from .frame_curve_editor import CurveWindow
 
 class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.keyframes = {
-            'x': [(0, 0)],
-            'y': [(0, 0)],
-            'z': [(0, 0)],
-            'w': [(0, 0)],
+            'x': [ControlPoint(0, 0)],
+            'y': [ControlPoint(0, 0)],
+            'z': [ControlPoint(0, 0)],
+            'w': [ControlPoint(0, 0)],
         }
         self.base_value = 1
         self.tmp_value = None
@@ -36,6 +38,7 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         button2.setPos(50, self.height)
         button2.setWidthHeight(100, 20)
         button2.setText('Edit Curve')
+        button2.callback = self.edit_keyframe
         self.height += 60
 
         def callback(text):
@@ -50,26 +53,54 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
             txt += ' {}'.format(k)
             txt += ' {}'.format(len(v))
             for p in v:
-                txt += ' {} {}'.format(p[0], p[1])
+                txt += ' {} {} {} {} {} {} {}'.format(
+                    p.pos.x,
+                    p.pos.y,
+                    p.cp_type,
+                    p.left_handler.x,
+                    p.left_handler.y,
+                    p.right_handler.x,
+                    p.right_handler.y,
+                )
         data['params']['_CONTROL_POINTS'] = txt
         v = self.tmp_value
         data['params']['_TMP'] = '' if self.tmp_value == None else '{} {} {} {}'.format(v[0], v[1], v[2], v[3])
         return ident, data
 
     def load(self, ident, data):
+        if data['params']['_CONTROL_POINTS'] != '':
+            txt = data['params']['_CONTROL_POINTS'].split()
+            txt = (s for s in txt)
+            c = int(next(txt))
+            for i in range(c):
+                k = next(txt)
+                l = int(next(txt))
+                ls = []
+                for j in range(l):
+                    pos_x = int(next(txt))
+                    pos_y = float(next(txt))
+                    cp = ControlPoint(pos_x, pos_y)
+                    cp.cp_type = next(txt)
+                    cp.left_handler.x = float(next(txt))
+                    cp.left_handler.y = float(next(txt))
+                    cp.right_handler.x = float(next(txt))
+                    cp.right_handler.y = float(next(txt))
+                    ls.append(cp)
+                self.keyframes[k] = ls
+        print(self.keyframes)
         return super().load(ident, data)
 
     def add_keyframe(self):
         f = zenvis.status['target_frame']
         for c in 'xyzw':
             ch = self.keyframes[c]
-            ps = list(filter(lambda p: p[0] <= f, ch))
+            ps = list(filter(lambda p: p.pos.x <= f, ch))
             l = len(ps)
             v = self.params[c].getValue()
-            if ps[-1][0] < f:
-                ch.insert(l, (f, v))
+            if ps[-1].pos.x < f:
+                ch.insert(l, ControlPoint(f, v))
             else:
-                ch[l-1] = (f, v)
+                ch[l-1] = ControlPoint(f, v)
         self.tmp_value = None
 
     def clear_temp(self):
@@ -83,3 +114,8 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
             self.params['w'].getValue(),
         ]
         self.tmp_value = v
+
+    def edit_keyframe(self):
+        self.curve_editor = CurveWindow(self.keyframes)
+        self.curve_editor.show()
+        pass
