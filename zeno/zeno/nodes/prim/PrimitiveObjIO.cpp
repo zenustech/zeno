@@ -213,8 +213,6 @@ read_obj_file_dict(
     auto is = std::ifstream(path);
     bool has_read_o_tag = false;
 
-    std::cout << "READING" << std::endl;
-
     while (!is.eof()) {
         std::string line;
         std::getline(is, line);
@@ -256,11 +254,9 @@ read_obj_file_dict(
                 last_index = index;
             }
         } else if (zeno::starts_with(line, "o ")) {
-            std::cout << "PARSING O " << std::endl;
             // if we have already parse the o tag, the subname, vertices and faces data should have already been read
             if(has_read_o_tag){
                 auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
-                std::cout << "FINDING : " << sub_name << "\t" << pre_vert_offset << "\t" << vert_offset << std::endl;
                 sub_prim->tris = sub_indices;
                 for(size_t i = 0;i < sub_prim->tris.size();++i){
                     sub_prim->tris[i] -= zeno::vec3i(pre_vert_offset);
@@ -286,8 +282,6 @@ read_obj_file_dict(
         sub_prim->verts = vertices;
         sub_prim->tris = indices;
     }else{
-        std::cout << "FINDING : " << sub_name << "\t" << pre_vert_offset << "\t" << vert_offset << std::endl;
-
         zeno::log_debug("sub_mesh: {}\n", sub_name);
         sub_prim->verts = std::vector(vertices.begin() + pre_vert_offset,vertices.end() - 0);
         sub_prim->tris = sub_indices;

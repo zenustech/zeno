@@ -210,4 +210,17 @@ ZENDEFNODE(ViewCVFiber, {
     {},
     {"Hercules"},
 });
+struct MarkEmbeddedInterior : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
+[["addNode", "SubInput", "cbac5454-SubInput"], ["setNodeParam", "cbac5454-SubInput", "name", "MarkInterior"], ["setNodeParam", "cbac5454-SubInput", "type", ""], ["setNodeParam", "cbac5454-SubInput", "defl", ""], ["completeNode", "cbac5454-SubInput"], ["addNode", "SubInput", "6654f17a-SubInput"], ["setNodeParam", "6654f17a-SubInput", "name", "Volume"], ["setNodeParam", "6654f17a-SubInput", "type", ""], ["setNodeParam", "6654f17a-SubInput", "defl", ""], ["completeNode", "6654f17a-SubInput"], ["addNode", "PrimitiveToSDF", "d335cb12-PrimitiveToSDF"], ["bindNodeInput", "d335cb12-PrimitiveToSDF", "PrimitiveMesh", "cbac5454-SubInput", "port"], ["bindNodeInput", "d335cb12-PrimitiveToSDF", "Dx", "8e5b4adf-SubInput", "port"], ["setNodeParam", "d335cb12-PrimitiveToSDF", "type", "cell"], ["completeNode", "d335cb12-PrimitiveToSDF"], ["addNode", "SubInput", "8e5b4adf-SubInput"], ["setNodeParam", "8e5b4adf-SubInput", "name", "Dx"], ["setNodeParam", "8e5b4adf-SubInput", "type", "float"], ["setNodeParam", "8e5b4adf-SubInput", "defl", "0.1"], ["completeNode", "8e5b4adf-SubInput"], ["addNode", "SampleVDBToPrimitive", "b358e75a-SampleVDBToPrimitive"], ["bindNodeInput", "b358e75a-SampleVDBToPrimitive", "prim", "d065d073-ParticlesWrangle", "prim"], ["bindNodeInput", "b358e75a-SampleVDBToPrimitive", "vdbGrid", "d335cb12-PrimitiveToSDF", "sdf"], ["setNodeInput", "b358e75a-SampleVDBToPrimitive", "sampleBy", "pos"], ["setNodeInput", "b358e75a-SampleVDBToPrimitive", "primAttr", "sdf"], ["setNodeParam", "b358e75a-SampleVDBToPrimitive", "SampleType", "Clamp"], ["completeNode", "b358e75a-SampleVDBToPrimitive"], ["addNode", "SubOutput", "b72cae46-SubOutput"], ["bindNodeInput", "b72cae46-SubOutput", "port", "b358e75a-SampleVDBToPrimitive", "prim"], ["setNodeParam", "b72cae46-SubOutput", "name", "primOut"], ["setNodeParam", "b72cae46-SubOutput", "type", ""], ["setNodeParam", "b72cae46-SubOutput", "defl", ""], ["completeNode", "b72cae46-SubOutput"], ["addNode", "SubCategory", "1f5788fc-SubCategory"], ["setNodeParam", "1f5788fc-SubCategory", "name", "Hercules"], ["completeNode", "1f5788fc-SubCategory"], ["addNode", "ParticlesWrangle", "d065d073-ParticlesWrangle"], ["bindNodeInput", "d065d073-ParticlesWrangle", "prim", "6654f17a-SubInput", "port"], ["setNodeInput", "d065d073-ParticlesWrangle", "zfxCode", "@sdf = 1"], ["completeNode", "d065d073-ParticlesWrangle"]]
+)ZSL";
+    }
+};
+ZENDEFNODE(MarkEmbeddedInterior, {
+    {{"", "MarkInterior", ""}, {"", "Volume", ""}, {"float", "Dx", "0.1"}},
+    {{"", "primOut", ""}},
+    {},
+    {"Hercules"},
+});
 }
