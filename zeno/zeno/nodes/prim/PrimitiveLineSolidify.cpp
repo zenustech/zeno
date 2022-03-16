@@ -29,12 +29,12 @@ struct PrimitiveLineSolidify : zeno::INode {
         intptr_t n = prim->verts.size();
         if (n >= 2 && count >= 2) {
 
-            TICK(linesort);
+            //TICK(linesort);
             if (get_input2<bool>("lineSort"))
                 primLineSort(prim.get());
-            TOCK(linesort);
+            //TOCK(linesort);
 
-            TICK(resizeprim);
+            //TICK(resizeprim);
             prim->lines.clear();
             prim->tris.clear();
             prim->quads.clear();
@@ -46,9 +46,9 @@ struct PrimitiveLineSolidify : zeno::INode {
             } else {
                 prim->verts.resize(count * n);
             }
-            TOCK(resizeprim);
+            //TOCK(resizeprim);
 
-            TICK(calcdirs);
+            //TICK(calcdirs);
             std::vector<vec3f> directions(n);
 #pragma omp parallel for
             for (intptr_t i = 1; i < n - 1; i++) {
@@ -60,9 +60,9 @@ struct PrimitiveLineSolidify : zeno::INode {
             }
             directions[0] = normalize(prim->verts[1] - prim->verts[0]);
             directions[n - 1] = normalize(prim->verts[n - 1] - prim->verts[n - 2]);
-            TOCK(calcdirs);
+            //TOCK(calcdirs);
 
-            TICK(sincosangs);
+            //TICK(sincosangs);
             std::vector<float> sinang(count);
             std::vector<float> cosang(count);
 
@@ -74,9 +74,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 sinang[a] = std::sin(ang) * radius;
                 cosang[a] = std::cos(ang) * radius;
             }
-            TOCK(sincosangs);
+            //TOCK(sincosangs);
 
-            TICK(calcbidirs);
+            //TICK(calcbidirs);
             std::vector<vec3f> bidirections(n);
             orthonormal first_orb(directions[0]);
             directions[0] = first_orb.tangent;
@@ -89,9 +89,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 //printf("%f %f %f\n", directions[i][0], directions[i][1], directions[i][2]);
                 //printf("%f %f %f\n", bidirections[i][0], bidirections[i][1], bidirections[i][2]);
             }
-            TOCK(calcbidirs);
+            //TOCK(calcbidirs);
 
-            TICK(dupverts);
+            //TICK(dupverts);
             boolean_switch(!radiusAttr.empty(), [&] (auto has_radius_attr) {
 
                 decltype(auto) radattr = [&] () -> decltype(auto) {
@@ -115,9 +115,9 @@ struct PrimitiveLineSolidify : zeno::INode {
             }
 
             });
-            TOCK(dupverts);
+            //TOCK(dupverts);
 
-            TICK(emitfaces);
+            //TICK(emitfaces);
             boolean_switch(isTri, [&] (auto isTri) {
 
                 if constexpr (isTri.value) {
@@ -155,9 +155,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 }
 
             });
-            TOCK(emitfaces);
+            //TOCK(emitfaces);
 
-            TICK(sealend);
+            //TICK(sealend);
             if (sealEnd) {
                 for (int a = 0; a < count - 1; a++) {
                     prim->tris.emplace_back(count * n, n * a, n * (a+1));
@@ -167,9 +167,9 @@ struct PrimitiveLineSolidify : zeno::INode {
                 prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
                 prim->tris.update();
             }
-            TOCK(sealend);
+            //TOCK(sealend);
 
-            TICK(copyattr);
+            //TICK(copyattr);
             prim->verts.foreach_attr([&] (auto const &key, auto &attr) {
                 for (int a = 1; a < count; a++) {
                     intptr_t na = n * a;
@@ -182,7 +182,7 @@ struct PrimitiveLineSolidify : zeno::INode {
                     attr[count * n + 1] = attr[n - 1];
                 }
             });
-            TOCK(copyattr);
+            //TOCK(copyattr);
 
         }
 
