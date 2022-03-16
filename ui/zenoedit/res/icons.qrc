@@ -90,5 +90,6 @@
 	<file>icons/spinbox-downbutton-hover.svg</file>
 	<file>icons/spinbox-upbutton-hover.svg</file>
 	<file>icons/circle-selector.svg</file>
+	<file>icons/ic_layout_container.svg</file>
 </qresource>
 </RCC>

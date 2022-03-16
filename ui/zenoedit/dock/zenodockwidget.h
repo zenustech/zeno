@@ -2,25 +2,16 @@
 #define __ZENO_DOCKWIDGET_H__
 
 #include <QtWidgets>
-#include "zenomainwindow.h"
 
-class ZenoDockTitleWidget : public QWidget
+class ZenoMainWindow;
+
+enum DOCK_TYPE
 {
-    Q_OBJECT
-public:
-    ZenoDockTitleWidget(QWidget* parent = nullptr);
-    ~ZenoDockTitleWidget();
-    QSize sizeHint() const override;
-
-private slots:
-    void onDockSwitchClicked();
-
-signals:
-    void dockOptionsClicked();
-    void dockSwitchClicked(DOCK_TYPE);
-
-protected:
-    void paintEvent(QPaintEvent* event) override;
+    DOCK_EMPTY,
+	DOCK_VIEW,
+	DOCK_EDITOR,
+	DOCK_NODE_PARAMS,
+	DOCK_NODE_DATA,
 };
 
 class ZenoDockWidget : public QDockWidget
@@ -33,6 +24,8 @@ public:
                          Qt::WindowFlags flags = Qt::WindowFlags());
     explicit ZenoDockWidget(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoDockWidget();
+
+    void setWidget(DOCK_TYPE m_type, QWidget* widget);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -50,6 +43,8 @@ private slots:
 
 private:
     void init(ZenoMainWindow* pMainWin);
+
+    DOCK_TYPE m_type;
 };
 
 
