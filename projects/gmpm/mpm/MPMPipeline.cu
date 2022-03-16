@@ -29,7 +29,8 @@ struct ZSPartitionForZSParticles : INode {
     using namespace zs;
     std::size_t cnt = 0;
     for (auto &&parObjPtr : parObjPtrs)
-      cnt += parObjPtr->getParticles().size() / 8;
+      cnt += (std::size_t)std::ceil(parObjPtr->getParticles().size() /
+                                    get_input2<float>("ppc") / grid.block_size);
     if (partition._tableSize * 3 / 2 < partition.evaluateTableSize(cnt) ||
         partition._tableSize / 2 < cnt)
       partition.resize(cuda_exec(), cnt);
@@ -88,7 +89,7 @@ struct ZSPartitionForZSParticles : INode {
 
 ZENDEFNODE(ZSPartitionForZSParticles,
            {
-               {"ZSPartition", "ZSGrid", "ZSParticles"},
+               {"ZSPartition", "ZSGrid", "ZSParticles", {"float", "ppc", "8"}},
                {"ZSPartition"},
                {},
                {"MPM"},
@@ -258,6 +259,56 @@ ZENDEFNODE(
         {},
         {"MPM"},
     });
+
+struct ApplyGridBoundaryOnZSGrid : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing ApplyGridBoundaryOnZSGrid\n");
+
+    auto zsgrid = get_input<ZenoGrid>("ZSGrid");
+    auto &grid = zsgrid->get();
+    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto &boundaryGrid = get_input<ZenoGrid>("BoundaryZSGrid")->get();
+    auto &boundaryPartition =
+        get_input<ZenoPartition>("BoundaryZSPartition")->get();
+
+    using namespace zs;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    cudaPol(Collapse{boundaryPartition.size(), boundaryGrid.block_size},
+            [grid = proxy<execspace_e::cuda>({}, grid),
+             boundaryGrid = proxy<execspace_e::cuda>({}, boundaryGrid),
+             table = proxy<execspace_e::cuda>(partition),
+             boundaryTable = proxy<execspace_e::cuda>(
+                 boundaryPartition)] __device__(int bi, int ci) mutable {
+              using table_t = RM_CVREF_T(table);
+              auto boundaryBlock = boundaryGrid.block(bi);
+              if (boundaryBlock("m", ci) == 0.f)
+                return;
+              auto blockid = boundaryTable._activeKeys[bi];
+              auto blockno = table.query(blockid);
+              if (blockno == table_t::sentinel_v)
+                return;
+
+              auto block = grid.block(blockno);
+              block.set("v", ci, boundaryBlock.pack<3>("v", ci));
+            });
+
+    fmt::print(fg(fmt::color::cyan),
+               "done executing ApplyGridBoundaryOnZSGrid\n");
+    set_output("ZSGrid", zsgrid);
+  }
+};
+
+ZENDEFNODE(ApplyGridBoundaryOnZSGrid,
+           {
+               {"ZSPartition", "ZSGrid", "BoundaryZSPartition",
+                "BoundaryZSGrid"},
+               {"ZSGrid"},
+               {},
+               {"MPM"},
+           });
 
 struct ApplyBoundaryOnZSGrid : INode {
   template <typename LsView>
@@ -1212,8 +1263,8 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
     // }
 
     fmt::print("p2g boundary iterating par: {}\n", (void *)parObjPtr.get());
-    puts("done boundary p2g");
-    getchar();
+    // puts("done boundary p2g");
+    // getchar();
 
     fmt::print(fg(fmt::color::cyan),
                "done executing ZSBoundaryPrimitiveToZSGrid\n");
