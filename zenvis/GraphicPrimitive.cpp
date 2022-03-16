@@ -1268,10 +1268,10 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
-float toonSpecular(vec3 V, vec3 L, vec3 N)
+float toonSpecular(vec3 V, vec3 L, vec3 N, roughness)
 {
     float NoV = dot(N,V);
-    float _SpecularSize = 0.3;
+    float _SpecularSize = (1-roughness)*(1-roughness);
     float specularFalloff = NoV;
     specularFalloff = pow(specularFalloff, 2);
     vec3 reflectionDirection = reflect(L, N);
@@ -1335,7 +1335,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     ls = ceil(ls/0.4)*0.4;
 
 
-    return (kD*C2 + norms * ls * toonSpecular(V, L, N));
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N, roughness));
 }
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
