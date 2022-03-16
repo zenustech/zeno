@@ -188,6 +188,31 @@ struct PrimitiveFilterByAttr : INode {
             prim->lines.resize(linesrevamp.size());
         }
 
+        if (prim->polys.size()) {
+            std::vector<int> polysrevamp;
+            polysrevamp.reserve(prim->polys.size());
+            for (int i = 0; i < prim->polys.size(); i++) {
+                auto &poly = prim->polys[i];
+                bool succ = [&] {
+                    for (int p = poly.first; p < poly.first + poly.second; p++)
+                        if (!mock(prim->loops[p]))
+                            return false;
+                    return true;
+                }();
+                if (succ)
+                    polysrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < polysrevamp.size(); i++) {
+                prim->polys[i] = prim->polys[polysrevamp[i]];
+            }
+            prim->polys.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < polysrevamp.size(); i++) {
+                    arr[i] = arr[polysrevamp[i]];
+                }
+            });
+            prim->polys.resize(polysrevamp.size());
+        }
+
     }
     
     set_output("prim", get_input("prim"));
@@ -211,7 +236,8 @@ ZENDEFNODE(PrimitiveFilterByAttr,
 
 
 
-struct SubLine : INode { // deprecated zhxx-happy-node, filterbyattr already auto-mock lines
+/*
+struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already auto-mock lines!
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("line");
     auto attrName = get_param<std::string>("attrName");
@@ -264,6 +290,7 @@ ZENDEFNODE(SubLine,
     }, /* category: */ {
     "primitive",
     }});
+*/
 
 
 
