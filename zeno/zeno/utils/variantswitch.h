@@ -60,10 +60,14 @@ decltype(auto) index_switch(std::size_t i, Func &&func) {
     return std::visit(std::forward<Func>(func), index_variant<N, HasMono>(i));
 }
 
-template <class Variant, class Enum, class = std::enable_if_t<std::is_enum_v<Enum>>>
+template <class Variant, class Enum>
 Variant enum_variant(Enum e) {
-    std::size_t index{std::underlying_type_t<Enum>(e)};
-    return index_switch<std::variant_size_v<Variant>>(index, [&] (auto index) {
+    std::size_t index;
+    if constexpr (std::is_enum_v<Enum>)
+        index = std::size_t{std::underlying_type_t<Enum>(e)};
+    else
+        index = std::size_t{e};
+    return index_switch<std::variant_size_v<Variant>>(index, [] (auto index) {
         return Variant{std::in_place_index<index.value>};
     });
 }
@@ -71,7 +75,7 @@ Variant enum_variant(Enum e) {
 template <class To, class From>
 To variant_cast(From from) {
     static_assert(std::variant_size_v<From> == std::variant_size_v<To>);
-    return index_switch<std::variant_size_v<From>>(from.index(), [&] (auto index) {
+    return index_switch<std::variant_size_v<From>>(from.index(), [] (auto index) {
         return To{std::in_place_index<index.value>};
     });
 }
