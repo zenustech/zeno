@@ -5,7 +5,12 @@ from ..visualize import zenvis
 class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.keyframes = {}
+        self.keyframes = {
+            'x': [(0, 0)],
+            'y': [(0, 0)],
+            'z': [(0, 0)],
+            'w': [(0, 0)],
+        }
         self.base_value = 1
         self.tmp_value = None
 
@@ -42,38 +47,29 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         ident, data = super().dump()
         txt = '{}'.format(len(self.keyframes))
         for k, v in self.keyframes.items():
-            txt += " {} {} {} {} {}".format(k, v[0], v[1], v[2], v[3])
-
-        data['params']['_POINTS'] = txt
+            txt += ' {}'.format(k)
+            txt += ' {}'.format(len(v))
+            for p in v:
+                txt += ' {} {}'.format(p[0], p[1])
+        data['params']['_CONTROL_POINTS'] = txt
         v = self.tmp_value
         data['params']['_TMP'] = '' if self.tmp_value == None else '{} {} {} {}'.format(v[0], v[1], v[2], v[3])
         return ident, data
 
     def load(self, ident, data):
-        if data['params']['_POINTS'] != '':
-            txt = data['params']['_POINTS'].split()
-            l = int(txt[0])
-            for i in range(l):
-                k = int(txt[i * 5 + 1])
-                v = [
-                    float(txt[i * 5 + 2]),
-                    float(txt[i * 5 + 3]),
-                    float(txt[i * 5 + 4]),
-                    float(txt[i * 5 + 5]),
-                ]
-                self.keyframes[k] = v
-
         return super().load(ident, data)
 
     def add_keyframe(self):
-        v = [
-            self.params['x'].getValue(),
-            self.params['y'].getValue(),
-            self.params['z'].getValue(),
-            self.params['w'].getValue(),
-        ]
         f = zenvis.status['target_frame']
-        self.keyframes[f] = v
+        for c in 'xyzw':
+            ch = self.keyframes[c]
+            ps = list(filter(lambda p: p[0] <= f, ch))
+            l = len(ps)
+            v = self.params[c].getValue()
+            if ps[-1][0] < f:
+                ch.insert(l, (f, v))
+            else:
+                ch[l-1] = (f, v)
         self.tmp_value = None
 
     def clear_temp(self):
