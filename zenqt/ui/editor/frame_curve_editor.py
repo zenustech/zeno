@@ -4,6 +4,8 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 
+from zenqt.ui.editor.curve_editor import lerp
+
 from .curve_canvas import MainCanvas, ControlPoint, Bazier, ValuePoint
 
 half_len = 2
@@ -169,13 +171,18 @@ class CurveWindowState:
             return 0
         i = len(list(filter(lambda p: p.pos.x <= x, ps))) - 1
         p1 = ps[i].pos
-        if p1.x == x:
+        if p1.x == x or ps[i].cp_type == 'constant':
             return p1.y
-        p2 = ps[i + 1].pos
-        h1 = ps[i].pos + ps[i].right_handler
-        h2 = ps[i+1].pos + ps[i+1].left_handler
-        b = Bazier(p1, p2, h1, h2)
-        return b.query(x)
+        elif ps[i].cp_type == 'straight':
+            p2 = ps[i + 1].pos
+            t = (x - p1.x) / (p2.x - p1.x)
+            return lerp(p1.y, p2.y, t)
+        else:
+            p2 = ps[i + 1].pos
+            h1 = ps[i].pos + ps[i].right_handler
+            h2 = ps[i+1].pos + ps[i+1].left_handler
+            b = Bazier(p1, p2, h1, h2)
+            return b.query(x)
 
     def add_point(self):
         if type(self.sel_point_index) == int:
