@@ -983,7 +983,8 @@ struct ZSParticlesToPrimitiveObject : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing "
                                       "ZSParticlesToPrimitiveObject\n");
-    auto &zspars = get_input<ZenoParticles>("ZSParticles")->getParticles();
+    auto zsprim = get_input<ZenoParticles>("ZSParticles");
+    auto &zspars = zsprim->getParticles();
     const auto size = zspars.size();
 
     auto prim = std::make_shared<PrimitiveObject>();
@@ -994,6 +995,7 @@ struct ZSParticlesToPrimitiveObject : INode {
 
     static_assert(sizeof(zs::vec<float, 3>) == sizeof(zeno::vec3f),
                   "zeno::vec3f != zs::vec<float, 3>");
+    /// verts
     for (auto &&prop : zspars.getPropertyTags()) {
       if (prop.numChannels == 3) {
         zs::Vector<zs::vec<float, 3>> dst{size, memsrc_e::device, 0};
@@ -1017,6 +1019,58 @@ struct ZSParticlesToPrimitiveObject : INode {
         copy(zs::mem_device, prim->add_attr<float>(prop.name.asString()).data(),
              dst.data(), sizeof(float) * size);
       }
+    }
+    /// elements
+    if (zsprim->isMeshPrimitive()) {
+      auto &zseles = zsprim->getQuadraturePoints();
+      int nVertsPerEle = static_cast<int>(zsprim->category) + 1;
+      auto numEle = zseles.size();
+      switch (zsprim->category) {
+      case ZenoParticles::curve: {
+        zs::Vector<zs::vec<int, 2>> dst{numEle, memsrc_e::device, 0};
+        cudaExec(zs::range(numEle),
+                 [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
+                  dst = zs::proxy<execspace_e::cuda>(
+                      dst)] __device__(size_t ei) mutable {
+                   dst[ei] = zseles.pack<2>("inds", ei).cast<int>();
+                 });
+
+        prim->lines.resize(numEle);
+        auto &lines = prim->lines.values;
+        copy(zs::mem_device, lines.data(), dst.data(),
+             sizeof(zeno::vec2i) * numEle);
+      } break;
+      case ZenoParticles::surface: {
+        zs::Vector<zs::vec<int, 3>> dst{numEle, memsrc_e::device, 0};
+        cudaExec(zs::range(numEle),
+                 [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
+                  dst = zs::proxy<execspace_e::cuda>(
+                      dst)] __device__(size_t ei) mutable {
+                   dst[ei] = zseles.pack<3>("inds", ei).cast<int>();
+                 });
+
+        prim->tris.resize(numEle);
+        auto &tris = prim->tris.values;
+        copy(zs::mem_device, tris.data(), dst.data(),
+             sizeof(zeno::vec3i) * numEle);
+      } break;
+      case ZenoParticles::tet: {
+        zs::Vector<zs::vec<int, 4>> dst{numEle, memsrc_e::device, 0};
+        cudaExec(zs::range(numEle),
+                 [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
+                  dst = zs::proxy<execspace_e::cuda>(
+                      dst)] __device__(size_t ei) mutable {
+                   dst[ei] = zseles.pack<4>("inds", ei).cast<int>();
+                 });
+
+        prim->quads.resize(numEle);
+        auto &quads = prim->quads.values;
+        copy(zs::mem_device, quads.data(), dst.data(),
+             sizeof(zeno::vec4i) * numEle);
+      } break;
+      default:
+        break;
+      };
     }
     fmt::print(fg(fmt::color::cyan), "done executing "
                                      "ZSParticlesToPrimitiveObject\n");
