@@ -8,6 +8,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/ticktock.h>
+#include <zeno/utils/orthonormal.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -15,7 +16,11 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern void ensureGlobalMapExist();
 extern unsigned int getGlobalEnvMap();
+extern unsigned int getIrradianceMap();
+extern unsigned int getPrefilterMap();
+extern unsigned int getBRDFLut();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -91,30 +96,47 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
 {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    //printf("!!has_uv = %d\n", has_uv);
 #pragma omp parallel for
     for (size_t i = 0; i < prim->tris.size(); ++i)
     {
-        const auto &pos0 = pos[tris[i][0]];
-        const auto &pos1 = pos[tris[i][1]];
-        const auto &pos2 = pos[tris[i][2]];
-        auto uv0 = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        auto uv1 = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        auto uv2 = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        if(has_uv) {
+            const auto &pos0 = pos[tris[i][0]];
+            const auto &pos1 = pos[tris[i][1]];
+            const auto &pos2 = pos[tris[i][2]];
+            auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
+            auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
+            auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
 
-        auto edge0 = pos1 - pos0;
-        auto edge1 = pos2 - pos0;
-        auto deltaUV0 = uv1 - uv0;
-        auto deltaUV1 = uv2 - uv0;
+            auto edge0 = pos1 - pos0;
+            auto edge1 = pos2 - pos0;
+            auto deltaUV0 = uv1 - uv0;
+            auto deltaUV1 = uv2 - uv0;
 
-        auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+            auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
 
-        zeno::vec3f tangent;
-        tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
-        tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
-        tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
-        tang[i] = zeno::normalize(tangent);
+            zeno::vec3f tangent;
+            tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+            tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+            tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+            //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
+            auto tanlen = zeno::length(tangent);
+            tangent * (1.f / (tanlen + 1e-8));
+            /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+                zeno::vec3f n = nrm[tris[i][0]], unused;
+                zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+            } else {
+                tang[i] = tangent * (1.f / tanlen);
+            }*/
+
+        } else {
+            tang[i] = zeno::vec3f(0);
+            //zeno::vec3f n = nrm[tris[i][0]], unused;
+            //zeno::pixarONB(n, tang[i], unused);
+        }
     }
 }
 
@@ -187,6 +209,7 @@ struct GraphicPrimitive : IGraphic {
   drawObject lineObj;
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
+  bool prim_has_mtl = false;
 
   GraphicPrimitive(std::shared_ptr<zeno::PrimitiveObject> prim) {
       zeno::log_trace("rendering primitive size {}", prim->size());
@@ -203,9 +226,11 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
-    if(prim->tris.size()&&!prim->has_attr("nrm"))
+    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>0.999;
+    bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("nrm"));
+    if(prim->tris.size() && need_computeNormal)
     {
-        zeno::primCalcNormal(prim.get());
+        zeno::primCalcNormal(prim.get(), 1);
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
@@ -325,9 +350,12 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
+    prim_has_mtl = prim->mtl != nullptr;
   }
 
   virtual void draw() override {
+      if (prim_has_mtl) ensureGlobalMapExist();
+
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
@@ -414,10 +442,28 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
         triObj.prog->set_uniformi("mRenderWireframe", false);
-        triObj.prog->set_uniformi("skybox",id);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, envmap));
+
+        if (prim_has_mtl) {
+            triObj.prog->set_uniformi("skybox",id);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+            if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+
+            triObj.prog->set_uniformi("irradianceMap",id+1);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+
+            triObj.prog->set_uniformi("prefilterMap",id+2);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+            triObj.prog->set_uniformi("brdfLUT",id+3);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+        }
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -683,7 +729,11 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
-uniform sampler2D skybox;
+uniform samplerCube skybox;
+
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
 
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
@@ -713,7 +763,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (
 !mtl ?
 R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -858,11 +908,11 @@ vec3 UELighting(
 {
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    vec3 half = normalize(toLight + toView);
+    vec3 halfVec = normalize(toLight + toView);
     float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, half);
+    float NoH = dot(surfNorm, halfVec);
     float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, half);
+    float VoH = dot(toView, halfVec);
     float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 
@@ -990,10 +1040,7 @@ vec3 SampleEnvironment(in vec3 reflVec)
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
     //here we have the problem reflVec is in eyespace but we need it in world space
     vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
-    float u = atan(r.x, r.z) * ( 1 / PI) * 0.5 + 0.5;
-    float v = 1.0 - (asin(r.y) * (2 / PI) * 0.5 + 0.5);
-    return texture(skybox, vec2(u, v)).rgb;
-
+    return texture(skybox, r).rgb;
 }
 
 /**
@@ -1057,23 +1104,96 @@ vec3 CalculateSpecularIBL(
     
     return (totalSpec / float(IBLSteps));
 }
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.1415926 * denom * denom;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
 vec3 CalculateLightingIBL(
-    in vec3  surfNorm,
-    in vec3  toView,
+    in vec3  N,
+    in vec3  V,
     in vec3  albedo,
     in float roughness,
     in float metallic)
 {
-    vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
-    //vec3 F = fresnelSchlickRoughness(dot_c(surfNorm, toView), 0.04);
-    vec3 ks       = vec3(0);
-    vec3 diffuse  = CalculateDiffuse(albedo) * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
-    vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
-    vec3 kd       = (1.0 - ks);
-    
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    return ((kd * diffuse) + specular);
+    return (kD * diffuse + specular);
+
+}
+
+vec3 CalculateLightingIBLToon(
+    in vec3  N,
+    in vec3  V,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = clamp(smoothstep(0.5,0.5,length(prefilteredColor)), 0,1)*vec3(1,1,1);
+    vec3 specularColor = mix(prefilteredColor+0.2, prefilteredColor2, prefilteredColor);
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    brdf.r = ceil(brdf.r/0.2)*0.2;
+    vec3 specular = specularColor * (F * brdf.r + smoothstep(0.7,0.7,brdf.y));
+
+    return (kD * diffuse + specular);
 
 }
 
@@ -1135,7 +1255,75 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
+float toonSpecular(vec3 V, vec3 L, vec3 N)
+{
+    float NoV = dot(N,V);
+    float _SpecularSize = 0.3;
+    float specularFalloff = NoV;
+    specularFalloff = pow(specularFalloff, 2);
+    vec3 reflectionDirection = reflect(L, N);
+    float towardsReflection = dot(V, -reflectionDirection);
+    float specularChange = fwidth(towardsReflection);
+    float specularIntensity = smoothstep(1 - _SpecularSize, 1 - _SpecularSize + specularChange, towardsReflection);
+    return specularIntensity;
+}
+vec3 histThings(vec3 s)
+{
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.2)*0.2;
+    return norms * ls;
+}
+vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
+{
+    float NoL = dot(N,L);
+    float shad1 = smoothstep(0.3, 0.31, NoL);
+    float shad2 = smoothstep(0,0.01, NoL);
+    vec3 diffuse = mon2lin(baseColor)/PI;
+    vec3 shadowC1 = diffuse * 0.4;
+    vec3 C1 = mix(shadowC1, diffuse, shad1);
+    vec3 shadowC2 = shadowC1 * 0.4;
+    vec3 C2 = mix(shadowC2, C1, shad2);
 
+    vec3 H = normalize(L+V);
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, baseColor, metallic);
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);    
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);        
+    
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 s = numerator / denominator;
+    
+    // kS is equal to Fresnel
+    vec3 kS = F;
+    // for energy conservation, the diffuse and specular light can't
+    // be above 1.0 (unless the surface emits light); to preserve this
+    // relationship the diffuse component (kD) should equal 1.0 - kS.
+    vec3 kD = vec3(1.0) - kS;
+    // multiply kD by the inverse metalness such that only non-metals 
+    // have diffuse lighting, or a linear blend if partly metal (pure metals
+    // have no diffuse light).
+    kD *= 1.0 - metallic;	                
+
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.4)*0.4;
+
+
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N));
+}
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
@@ -1145,15 +1333,15 @@ float sheen,
 float sheenTint,
 float clearcoat,
 float clearcoatGloss,
-vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 {
-    float NdotL = dot_c(N,L);
-    float NdotV = dot_c(N,V);
+    float NdotL = dot(N,L);
+    float NdotV = dot(N,V);
     //if (NdotL < 0 || NdotV < 0) return vec3(0);
 
     vec3 H = normalize(L+V);
-    float NdotH = dot_c(N,H);
-    float LdotH = dot_c(L,H);
+    float NdotH = dot(N,H);
+    float LdotH = dot(L,H);
 
     vec3 Cdlin = mon2lin(baseColor);
     float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
@@ -1181,6 +1369,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float ay = max(.001, sqr(roughness)*aspect);
     float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
     float FH = SchlickFresnel(LdotH);
+    
     vec3 Fs = mix(Cspec0, vec3(1), FH);
     float Gs;
     Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
@@ -1194,7 +1383,9 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float Fr = mix(.04, 1.0, FH);
     float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
     float angle = clamp(dot(N, L), 0.0, 1.0);
-    return (((1/PI) * mix(Fd, ss, subsurface)*Cdlin + Fsheen)
+    float c1 = (1/PI) * mix(Fd, ss, subsurface);
+    
+    return ((c1 * Cdlin + Fsheen)
         * (1-metallic)
         + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
 }
@@ -1238,12 +1429,15 @@ vec3 ACESFitted(vec3 color, float gamma)
     return color;
 }
 
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    //normal = normalize(normal);
+    vec3 L1 = vec3(1,1,0);
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
-    vec3 att_tang = iTangent;
+    vec3 att_tang = old_tangent;
+    float att_NoL = dot(normal, L1);
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
@@ -1254,17 +1448,19 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
-    mat3 TBN = mat3(normalize(iTangent), normalize(cross(normal, iTangent)), normalize(normal));
+    vec3 tan = normalize(old_tangent - dot(normal, old_tangent)*normal);
+    mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
     new_normal = TBN*mat_normal;
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
     new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent;//   = normalize(cross(up, new_normal));
-    vec3 bitangent;// = cross(new_normal, tangent);
-    pixarONB(new_normal, tangent, bitangent);
-    light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
+    vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
+    //pixarONB(new_normal, tangent, bitangent);
+    light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*L1;
+    color += mix(BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)),
+    ToonBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
@@ -1299,13 +1495,31 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    color +=  
-        CalculateLightingIBL(
+
+    vec3 ibl =  
+        mix(CalculateLightingIBL(
             new_normal,
             view_dir,
             albedo2,
             roughness,
-            mat_metallic);
+            mat_metallic),
+            CalculateLightingIBLToon(
+            new_normal,
+            view_dir,
+            albedo2,
+            roughness,
+            mat_metallic),
+            mat_toon);
+    
+    color += ibl;
+
+    float r = smoothstep(0.5,0.6,mat_roughness);
+    float m = smoothstep(0.2, 0.5, mat_metallic);
+    float shift = 1 - r + m;
+    float stroke = clamp(mat_stroke+shift, 0, 1);
+    stroke = pow(stroke,4);
+    color = mix(color, mix(color*stroke, color, stroke), mat_toon);
+
     color = ACESFitted(color.rgb, 2.2);
     return color;
 
@@ -1336,10 +1550,16 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
-  //normal = faceforward(normal, -viewdir, normal);
-
   vec3 albedo = iColor;
-  vec3 color = studioShading(albedo, viewdir, normal);
+
+  //normal = faceforward(normal, -viewdir, normal);
+  vec3 tangent = iTangent;
+  if (tangent == vec3(0)) {
+   vec3 unusedbitan;
+   pixarONB(normal, tangent, unusedbitan);
+  }
+
+  vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
   fColor = vec4(color, 1.0);
   if (mNormalCheck) {

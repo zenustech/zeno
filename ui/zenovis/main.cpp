@@ -1,4 +1,5 @@
 #include "MyShader.hpp"
+#include "glad/glad.h"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -14,6 +15,7 @@
 #include "zenvisapi.hpp"
 
 namespace zenvis {
+
 
 int curr_frameid = -1;
 
@@ -106,10 +108,10 @@ static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-
 void initialize() {
   gladLoadGL();
-  setup_env_map("forest");
+  
+  
   auto version = (const char *)glGetString(GL_VERSION);
   zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
@@ -126,6 +128,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  //setup_env_map("Default");
 }
 
 static void draw_small_axis() {
@@ -218,7 +221,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 
-uniform samplerRect hdr_image;
+uniform sampler2DRect hdr_image;
 out vec4 oColor;
 void main(void)
 {
@@ -273,7 +276,6 @@ void ScreenFillQuad(GLuint tex)
   glDisableVertexAttribArray(0);
   glUseProgram(0);
 }
-
 static void paint_graphics(GLuint target_fbo = 0) {
   if(enable_hdr && tmProg==nullptr)
   {

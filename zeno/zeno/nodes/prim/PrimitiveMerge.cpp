@@ -11,7 +11,7 @@
 
 namespace zeno {
 
-std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list) {
+ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list, std::string tagAttr) {
     auto outprim = std::make_shared<PrimitiveObject>();
 
     size_t len = 0;
@@ -50,8 +50,13 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
     outprim->polys.resize(nTotalPolys);
 #endif
 
+    int tagcounter = 0;
+    if (!tagAttr.empty()) {
+        outprim->add_attr<int>(tagAttr);
+    }
+
     for (auto const &prim: list->get<PrimitiveObject>()) {
-        const auto base = outprim->size();
+        //const auto base = outprim->size();
         prim->foreach_attr([&] (auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             //fix pyb
@@ -68,11 +73,26 @@ std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObjec
             //for (auto const &val: arr) outarr.push_back(val);
             //end fix pyb
         });
+<<<<<<< HEAD
 #if defined(_MSC_VER) && defined(_OPENMP)
 #define omp_size_t intptr_t
 #else
 #define omp_size_t size_t
 #endif
+=======
+        if (!tagAttr.empty()) {
+            auto &tagArr = outprim->attr<int>(tagAttr);
+#if defined(_OPENMP)
+            for (std::size_t i = 0; i < prim->size(); i++) {
+                tagArr[len + i] = tagcounter;
+            }
+#else
+            for (std::size_t i = 0; i < prim->size(); i++) {
+                tagArr.push_back(tagcounter);
+            }
+#endif
+        }
+>>>>>>> origin/master
 #if defined(_OPENMP)
         auto concat = [&](auto &dst, const auto &src, size_t &offset) {
 #pragma omp parallel for
@@ -137,7 +157,7 @@ struct PrimitiveMerge : zeno::INode {
         set_output("prim", std::move(outprim));
     }
     else
-    {
+    { // dage, weishenme buyong Assign jiedian ne?
         auto dst = get_input<PrimitiveObject>("dst");
         auto outprim = primitive_merge(list);
         *dst = *outprim;
