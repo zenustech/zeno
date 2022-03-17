@@ -39,7 +39,6 @@ class ZenoRampBar : public QGraphicsView
 	Q_OBJECT
 public:
 	ZenoRampBar(QWidget* parent = nullptr);
-	void initRamps(int width);
 	void setColorRamps(const COLOR_RAMPS& ramps);
 	COLOR_RAMPS colorRamps() const;
 	void updateRampPos(ZenoRampSelector* pSelector);
@@ -58,14 +57,13 @@ signals:
 private slots:
 	void onSelectionChanged();
 
+
 private:
 	void refreshBar();
+	void onResizeInit(QSize sz);
 
-	const int m_barHeight;
 	const int m_szSelector;
-	int m_width;
 
-	COLOR_RAMPS m_initRamps;
 	QMap<ZenoRampSelector*, COLOR_RAMP> m_ramps;
 
 	ZenoRampSelector* m_currSelector;
@@ -79,6 +77,7 @@ class SVColorView : public QWidget
 	Q_OBJECT
 public:
 	SVColorView(QWidget* parent = nullptr);
+	QColor color() const;
 
 signals:
 	void colorChanged(const QColor& clr);
@@ -92,6 +91,8 @@ protected:
 	void paintEvent(QPaintEvent* event);
 
 private:
+	void updateColorByMouse(const QPointF& pos);
+
 	QColor m_color;
 };
 
@@ -116,18 +117,24 @@ private slots:
 	void onAddRampBtnClicked();
 	void onRemoveRampBtnClicked();
 	void onRampColorClicked(COLOR_RAMP ramp);
+	void setColor(const QColor& clr);
+	void onRedChanged(int);
+	void onGreenChanged(int);
+	void onBlueChanged(int);
+	void onHueChanged(int);
+
+	void onCurrentIndexChanged(const QString& text);
+	void onClrHexEditFinished();
 
 private:
 	void initSignals();
-	void init();
+	void init(COLOR_RAMPS colorRamps);
 	void installFilters();
-	void initRamps();
+	void initRamps(COLOR_RAMPS colorRamps);
 	void initColorView();
 	void createDrag(const QPoint& pos, QWidget* widget);
 
 	Ui::HeatMapEditor* m_ui;
-
-	COLOR_RAMPS m_colorRamps;
 };
 
 

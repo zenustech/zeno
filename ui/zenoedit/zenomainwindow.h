@@ -2,15 +2,7 @@
 #define __ZENO_MAINWINDOW_H__
 
 #include <QtWidgets>
-
-enum DOCK_TYPE
-{
-	DOCK_VIEW,
-	DOCK_EDITOR,
-	DOCK_NODE_PARAMS,
-	DOCK_NODE_DATA,
-	DOCK_TIMER
-};
+#include "dock/zenodockwidget.h"
 
 class ZenoDockWidget;
 class ZenoGraphsEditor;

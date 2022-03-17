@@ -43,18 +43,6 @@ QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option,
             QSize sz = dpiScaledSize(QSize(120, 37));
             return sz;
         }
-        case CT_MenuItem:
-        {
-            if (const QStyleOptionMenuItem* pOption = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
-            {
-                if (pOption->menuItemType != QStyleOptionMenuItem::Separator)
-                {
-                    QSize sz = dpiScaledSize(QSize(187, 28));
-                    return sz;
-                }
-                break;
-            }
-        }
     }
     return base::sizeFromContents(type, option, size, widget);
 }
@@ -136,11 +124,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             }
             break;
         }
-        case PE_FrameMenu:
-        {
-            painter->fillRect(option->rect, QColor(51, 51, 51));
-            return;
-        }
         case PE_FrameLineEdit:
         {
             if (qobject_cast<const ZenoGvLineEdit *>(w))
@@ -177,42 +160,7 @@ void ZenoStyle::drawItemText(QPainter* painter, const QRect& rect, int flags, co
 
 void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
-    if (CE_MenuBarEmptyArea == element)
-    {
-        painter->fillRect(option->rect, QColor(45, 45, 48));
-        return;
-    }
-    else if (CE_MenuBarItem == element)
-    {
-        if (const QStyleOptionMenuItem* mbi = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
-        {
-            QStyleOptionMenuItem optItem(*mbi);
-            bool disabled = !(option->state & State_Enabled);
-            int alignment = Qt::AlignCenter | Qt::TextShowMnemonic | Qt::TextDontClip | Qt::TextSingleLine;
-            QPalette::ColorRole textRole = disabled ? QPalette::Text : QPalette::ButtonText;
-
-            if (option->state & State_Selected)
-            {
-                if (option->state & State_Sunken)
-                {
-                    painter->fillRect(option->rect, QColor(23, 160, 252));
-                }
-                else
-                {
-                    painter->fillRect(option->rect, QColor(71, 71, 71));
-                }
-            }
-            else
-            {
-                painter->fillRect(option->rect, QColor(45, 45, 48));
-            }
-
-            optItem.palette.setBrush(QPalette::All, textRole, QColor(190, 190, 190));
-            drawItemText(painter, optItem.rect, alignment, optItem.palette, optItem.state & State_Enabled, optItem.text, textRole);
-        }
-        return;
-    }
-    else if (CE_TabBarTab == element) {
+    if (CE_TabBarTab == element) {
         if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option)) {
             proxy()->drawControl(CE_TabBarTabShape, tab, painter, widget);
             proxy()->drawControl(CE_TabBarTabLabel, tab, painter, widget);
@@ -291,18 +239,6 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
     {
         if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
         {
-            return;
-        }
-    }
-    else if (CE_MenuItem == element)
-    {
-        return drawMenuItem(element, option, painter, widget);
-    }
-    else if (CE_MenuEmptyArea == element)
-    {
-        if (const QStyleOptionMenuItem* menuitem = qstyleoption_cast<const QStyleOptionMenuItem*>(option))
-        {
-            painter->fillRect(option->rect, QColor(58, 58, 58));
             return;
         }
     }
@@ -445,7 +381,6 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
     }
     switch (m)
     {
-        case QStyle::PM_MenuPanelWidth: return 1;
         case QStyle::PM_SmallIconSize:
         {
             if (widget && (widget->objectName() == "qt_dockwidget_closebutton" ||
@@ -503,151 +438,6 @@ void ZenoStyle::drawDropdownArrow(QPainter* painter, QRect downArrowRect) const
     QPointF bottomPoint = QPointF(arrowRect.center().x(), arrowRect.bottom());
     QPixmap px = QIcon(":/icons/downarrow.png").pixmap(ZenoStyle::dpiScaledSize(QSize(16, 16)));
     painter->drawPixmap(arrowRect.topLeft(), px);
-}
-
-void ZenoStyle::drawNewItemMenu(const QStyleOptionMenuItem* menuitem, QPainter* p, const QWidget* w) const
-{
-    //todo
-}
-
-void ZenoStyle::drawMenuItem(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
-{
-    //base QProxyStyle::drawControl
-    if (const QStyleOptionMenuItem* menuitem = qstyleoption_cast<const QStyleOptionMenuItem*>(option)) {
-        // windows always has a check column, regardless whether we have an icon or not
-        const qreal factor = 1;// QWindowsXPStylePrivate::nativeMetricScaleFactor(widget);
-        int checkcol = qRound(qreal(25) * factor);
-        const int gutterWidth = qRound(qreal(3) * factor);
-        {
-            const QSizeF size(16, 16);
-            const QMarginsF margins(3,3,3,3);
-            checkcol = qMax(menuitem->maxIconWidth, qRound(gutterWidth + size.width() + margins.left() + margins.right()));
-        }
-        QRect rect = option->rect;
-
-        //draw vertical menu line
-        if (option->direction == Qt::LeftToRight)
-            checkcol += rect.x();
-        QPoint p1 = QStyle::visualPos(option->direction, menuitem->rect, QPoint(checkcol, rect.top()));
-        QPoint p2 = QStyle::visualPos(option->direction, menuitem->rect, QPoint(checkcol, rect.bottom()));
-        QRect gutterRect(p1.x(), p1.y(), gutterWidth, p2.y() - p1.y() + 1);
-        painter->fillRect(gutterRect, QColor(58, 58, 58));
-
-        int x, y, w, h;
-        menuitem->rect.getRect(&x, &y, &w, &h);
-        int tab = menuitem->tabWidth;
-        bool dis = !(menuitem->state & State_Enabled);
-        bool checked = menuitem->checkType != QStyleOptionMenuItem::NotCheckable
-            ? menuitem->checked : false;
-        bool act = menuitem->state & State_Selected;
-
-        if (menuitem->menuItemType == QStyleOptionMenuItem::Separator) {
-            int yoff = y - 2 + h / 2;
-            const int separatorSize = 0;// qRound(qreal(6) * QWindowsStylePrivate::nativeMetricScaleFactor(widget));
-            QPoint p1 = QPoint(/*x + checkcol*/0, yoff);
-            QPoint p2 = QPoint(x + w + separatorSize, yoff);
-            
-            QPen pen(QColor(148, 148, 148));
-            painter->setPen(pen);
-            painter->fillRect(option->rect, QColor(58, 58, 58));
-            painter->drawLine(p1, p2);
-            return;
-        }
-
-        QRect vCheckRect = visualRect(option->direction, menuitem->rect, QRect(menuitem->rect.x(),
-            menuitem->rect.y(), checkcol - (gutterWidth + menuitem->rect.x()), menuitem->rect.height()));
-
-        if (act)
-        {
-            painter->fillRect(option->rect, QColor(24, 160, 251));
-        }
-        else
-        {
-            painter->fillRect(option->rect, QColor(58, 58, 58));
-        }
-
-        if (menuitem->checkType != QStyleOptionMenuItem::NotCheckable)
-        {
-            const QSizeF size(12, 12);
-            const QMarginsF margins(0, 0, 0, 0);
-            QRect checkRect(0, 0, qRound(size.width() + margins.left() + margins.right()),
-                qRound(size.height() + margins.bottom() + margins.top()));
-            checkRect.moveCenter(vCheckRect.center());
-            QRect _checkRc = checkRect;
-
-            QPen pen(QColor(148, 148, 148));
-            painter->setPen(pen);
-            painter->drawRect(checkRect);
-            if (checked)
-            {
-                QIcon iconChecked(":/icons/checked.png");
-                painter->drawPixmap(checkRect, iconChecked.pixmap(size.width(), size.height()));
-            }
-        }
-
-        if (!menuitem->icon.isNull()) {
-            QIcon::Mode mode = dis ? QIcon::Disabled : QIcon::Normal;
-            if (act && !dis)
-                mode = QIcon::Active;
-            QPixmap pixmap;
-            if (checked)
-                pixmap = menuitem->icon.pixmap(proxy()->pixelMetric(PM_SmallIconSize, option, widget), mode, QIcon::On);
-            else
-                pixmap = menuitem->icon.pixmap(proxy()->pixelMetric(PM_SmallIconSize, option, widget), mode);
-            const int pixw = pixmap.width() / pixmap.devicePixelRatio();
-            const int pixh = pixmap.height() / pixmap.devicePixelRatio();
-            QRect pmr(0, 0, pixw, pixh);
-            pmr.moveCenter(vCheckRect.center());
-            painter->setPen(menuitem->palette.text().color());
-            painter->drawPixmap(pmr.topLeft(), pixmap);
-        }
-
-        const QColor textColor = QColor(200, 200, 200);// menuitem->palette.text().color();
-        if (dis)
-            painter->setPen(textColor);
-        else
-            painter->setPen(textColor);
-
-        const int windowsItemFrame = 2, windowsItemHMargin = 3, windowsItemVMargin = 4, windowsRightBorder = 15, windowsArrowHMargin = 6;
-
-        int xm = 12;// todo: windowsItemFrame + checkcol + windowsItemHMargin + (gutterWidth - menuitem->rect.x()) - 1;
-        int xpos = menuitem->rect.x() + xm;
-        QRect textRect(xpos, y + windowsItemVMargin, w - xm - windowsRightBorder - tab + 1, h - 2 * windowsItemVMargin);
-        QRect vTextRect = visualRect(option->direction, menuitem->rect, textRect);
-        QString s = menuitem->text;
-        if (!s.isEmpty()) {    // draw text
-            painter->save();
-            int t = s.indexOf(QLatin1Char('\t'));
-            int text_flags = Qt::AlignVCenter | Qt::TextShowMnemonic | Qt::TextDontClip | Qt::TextSingleLine;
-            if (!proxy()->styleHint(SH_UnderlineShortcut, menuitem, widget))
-                text_flags |= Qt::TextHideMnemonic;
-            text_flags |= Qt::AlignLeft;
-            if (t >= 0) {
-                QRect vShortcutRect = visualRect(option->direction, menuitem->rect,
-                    QRect(textRect.topRight(), QPoint(menuitem->rect.right(), textRect.bottom())));
-                painter->drawText(vShortcutRect, text_flags, s.mid(t + 1));
-                s = s.left(t);
-            }
-            QFont font = menuitem->font;
-            if (menuitem->menuItemType == QStyleOptionMenuItem::DefaultItem)
-                font.setBold(true);
-            painter->setFont(font);
-            painter->drawText(vTextRect, text_flags, s.left(t));
-            painter->restore();
-        }
-        if (menuitem->menuItemType == QStyleOptionMenuItem::SubMenu) {// draw sub menu arrow
-            int dim = (h - 2 * windowsItemFrame) / 2;
-            PrimitiveElement arrow;
-            arrow = (option->direction == Qt::RightToLeft) ? PE_IndicatorArrowLeft : PE_IndicatorArrowRight;
-            xpos = x + w - windowsArrowHMargin - windowsItemFrame - dim;
-            QRect  vSubMenuRect = visualRect(option->direction, menuitem->rect, QRect(xpos, y + h / 2 - dim / 2, dim, dim));
-            QStyleOptionMenuItem newMI = *menuitem;
-            newMI.rect = vSubMenuRect;
-            newMI.state = dis ? State_None : State_Enabled;
-            newMI.palette.setColor(QPalette::ButtonText, QColor(214, 214, 214));    //arrow color
-            proxy()->drawPrimitive(arrow, &newMI, painter, widget);
-        }
-    }
 }
 
 void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const

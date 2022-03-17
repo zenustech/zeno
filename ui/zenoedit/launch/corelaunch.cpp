@@ -1,6 +1,7 @@
 #include "corelaunch.h"
 #include "model/graphsmodel.h"
 #include <zenoui/model/modelrole.h>
+#include <zenoui/util/jsonhelper.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
@@ -173,12 +174,14 @@ void killProgramJSON()
 
 void launchProgram(GraphsModel* pModel, int nframes)
 {
-    QJsonArray ret;
-    ret.push_back(QJsonArray({"setAdhocNumFrames", nframes}));
-    serializeScene(pModel, ret);
-
-    QJsonDocument doc(ret);
-    std::string progJson = doc.toJson(QJsonDocument::Compact).toStdString();
+	rapidjson::StringBuffer s;
+	RAPIDJSON_WRITER writer(s);
+    {
+        JsonArrayBatch batch(writer);
+        JsonHelper::AddVariantList({"setAdhocNumFrames", nframes}, writer);
+        serializeScene(pModel, writer);
+    }
+    std::string progJson(s.GetString());
     launchProgramJSON(std::move(progJson));
 }
 

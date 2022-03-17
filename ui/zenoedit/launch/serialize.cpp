@@ -4,8 +4,9 @@
 #include <model/modeldata.h>
 #include <model/modelrole.h>
 
+using namespace JsonHelper;
 
-static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, QJsonArray& ret, QString const &graphIdPrefix)
+static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, RAPIDJSON_WRITER& writer, QString const &graphIdPrefix)
 {
 	const QString& name = pModel->name();
 	const NODES_DATA& nodes = pModel->nodes();
@@ -44,20 +45,20 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
         }
 
         if (opts & OPT_MUTE) {
-            ret.push_back(QJsonArray({ "addNode", "HelperMute", ident }));
+            AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
 
             if (graphNames.indexOf(name) != -1)
             {
                 auto nextGraphIdPrefix = ident + "/";
                 SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
-                serializeGraph(pSubModel, pGraphsModel, graphNames, ret, nextGraphIdPrefix);
+                serializeGraph(pSubModel, pGraphsModel, graphNames, writer, nextGraphIdPrefix);
                 //ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
                 //serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
                 //ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
 
             } else {
-                ret.push_back(QJsonArray({ "addNode", name, ident }));
+                AddStringList({ "addNode", name, ident }, writer);
             }
         }
 
@@ -81,28 +82,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 const QVariant& defl = input.info.defaultValue;
                 if (!defl.isNull())
                 {
-                    QVariant::Type varType = defl.type();
-                    if (varType == QVariant::Double)
-                    {
-                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toDouble() }));
-                    }
-                    else if (varType == QVariant::Int)
-                    {
-                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toInt() }));
-                    }
-                    else if (varType == QVariant::String)
-                    {
-                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toString() }));
-                    }
-                    else if (varType == QVariant::Bool)
-                    {
-                        ret.push_back(QJsonArray({ "setNodeInput", ident, inputName, defl.toBool() }));
-                    }
-                    else if (varType != QVariant::Invalid)
-                    {
-                        zeno::log_warn("bad qt variant type {}", defl.typeName() ? defl.typeName() : "(null)");
-                        Q_ASSERT(false);
-                    }
+                    AddVariantList({ "setNodeInput", ident, inputName, defl }, writer);
                 }
             }
             else
@@ -112,66 +92,37 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                     Q_ASSERT(linkIdx.isValid());
                     const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
                     const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
-                    ret.push_back(QJsonArray({ "bindNodeInput", ident, inputName, outId, outSock }));
+                    AddStringList({ "bindNodeInput", ident, inputName, outId, outSock }, writer);
                 }
             }
         }
 
 		for (PARAM_INFO param_info : params)
 		{
-			QVariant value = param_info.value;
-			QVariant::Type varType = value.type();
-
-			if (param_info.name == "_KEYS")
-			{
-				int j;
-				j = 0;
-			}
-
-			if (varType == QVariant::Double)
-			{
-				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toDouble()}));
-			}
-			else if (varType == QVariant::Int)
-			{
-				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toInt()}));
-			}
-			else if (varType == QVariant::String)
-			{
-				ret.push_back(QJsonArray({"setNodeParam", ident, param_info.name, value.toString()}));
-			}
-			else if (varType == QVariant::Bool)
-			{
-				ret.push_back(QJsonArray({ "setNodeParam", ident, param_info.name, value.toBool() }));
-			}
-			else if (varType != QVariant::Invalid)
-			{
-                zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
-				Q_ASSERT(false);
-			}
+            AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, writer);
 		}
 
         if (opts & OPT_ONCE) {
-            ret.push_back(QJsonArray({ "addNode", "HelperOnce", noOnceIdent }));
+            AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
             for (OUTPUT_SOCKET output : outputs) {
                 if (output.info.name == "DST") continue;
-                ret.push_back(QJsonArray({"bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name}));
+                AddStringList({ "bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name }, writer);
             }
-            ret.push_back(QJsonArray({"completeNode", ident}));
+            AddStringList({ "completeNode", ident }, writer);
             ident = noOnceIdent;//must before OPT_VIEW branch
         }
 
-		ret.push_back(QJsonArray({"completeNode", ident}));
+        AddStringList({ "completeNode", ident }, writer);
 
 		if (opts & OPT_VIEW) {
             for (OUTPUT_SOCKET output : outputs)
             {
                 //if (output.info.name == "DST") continue;//qmap wants to put DST/SRC as first socket, skip it
                 auto viewerIdent = ident + ".TOVIEW";
-                ret.push_back(QJsonArray({"addNode", "ToView", viewerIdent}));
-                ret.push_back(QJsonArray({"bindNodeInput", viewerIdent, "object", ident, output.info.name}));
-                ret.push_back(QJsonArray({"completeNode", viewerIdent}));
-                break;
+                AddStringList({"addNode", "ToView", viewerIdent}, writer);
+                AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                AddStringList({"completeNode", viewerIdent}, writer);
+                break;  //???
             }
         }
 
@@ -193,7 +144,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 	}
 }
 
-void serializeScene(GraphsModel* pModel, QJsonArray& ret)
+void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer)
 {
 	//QJsonArray item = { "clearAllState" };
     //ret.push_back(item);
@@ -203,5 +154,5 @@ void serializeScene(GraphsModel* pModel, QJsonArray& ret)
 		graphs.push_back(pModel->subGraph(i)->name());
 
     SubGraphModel* pSubModel = pModel->subGraph("main");
-    serializeGraph(pSubModel, pModel, graphs, ret, "");
+    serializeGraph(pSubModel, pModel, graphs, writer, "");
 }

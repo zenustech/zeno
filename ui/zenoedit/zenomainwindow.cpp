@@ -44,6 +44,11 @@ void ZenoMainWindow::init()
     initDocks();
     verticalLayout();
     //onlyEditorLayout();
+
+    QPalette pal = palette();
+	pal.setColor(QPalette::Window, QColor(11, 11, 11));
+	setAutoFillBackground(true);
+	setPalette(pal);
 }
 
 void ZenoMainWindow::initMenu()
@@ -186,14 +191,6 @@ void ZenoMainWindow::initMenu()
             onToggleDockWidget(DOCK_EDITOR, pAction->isChecked());
             });
         pView->addAction(pAction);
-
-        pAction = new QAction(tr("timeline"));
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            onToggleDockWidget(DOCK_TIMER, pAction->isChecked());
-            });
-        pView->addAction(pAction);
     }
 
     QMenu *pWindow = new QMenu(tr("Window"));
@@ -208,6 +205,30 @@ void ZenoMainWindow::initMenu()
     pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
+
+    /* up-right-bottom-left */
+    pMenuBar->setStyleSheet(
+    "\
+    QMenuBar {\
+        background-color: rgb(28, 28, 28);\
+        spacing: 3px; \
+        color: rgba(255,255,255,0.50);\
+    }\
+    \
+    QMenuBar::item {\
+        padding: 4px 8px 4px 8px;\
+        background: transparent;\
+    }\
+    \
+    QMenuBar::item:selected {\
+        background: #4B9EF4;\
+    }\
+    \
+    QMenuBar::item:pressed {\
+        background: #4B9EF4;\
+    }\
+    "
+    );
 
     setMenuBar(pMenuBar);
 }
@@ -234,7 +255,7 @@ void ZenoMainWindow::initDocks()
 	m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
 	m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 	DisplayWidget* view = new DisplayWidget;
-	m_viewDock->setWidget(view);
+	m_viewDock->setWidget(DOCK_VIEW, view);
 	m_docks.insert(DOCK_VIEW, m_viewDock);
 
     //m_parameter = new ZenoDockWidget("parameter", this);
@@ -254,7 +275,7 @@ void ZenoMainWindow::initDocks()
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_pEditor = new ZenoGraphsEditor(this);
-    m_editor->setWidget(m_pEditor);
+    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
     m_docks.insert(DOCK_EDITOR, m_editor);
 
     for (QMap<DOCK_TYPE, ZenoDockWidget*>::iterator it = m_docks.begin(); it != m_docks.end(); it++)
@@ -287,7 +308,7 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
     if (ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(pDockWidget->widget()))
     {
         ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor(this);
-        pDock->setWidget(pEditor2);
+        pDock->setWidget(DOCK_EDITOR, pEditor2);
         //only one model.
         pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
         m_docks.insert(DOCK_EDITOR, pDock);
@@ -380,7 +401,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         {
             ZenoGraphsEditor* pEditor2 = new ZenoGraphsEditor(this);
             pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-            pDock->setWidget(pEditor2);
+            pDock->setWidget(type, pEditor2);
             break;
         }
         case DOCK_VIEW:
@@ -397,7 +418,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
 			pal.setColor(QPalette::Window, QColor(255, 0, 0));
             pWidget->setAutoFillBackground(true);
             pWidget->setPalette(pal);
-            pDock->setWidget(pWidget);
+            pDock->setWidget(type, pWidget);
             break;
         }
         case DOCK_NODE_DATA:
@@ -407,7 +428,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
 			pal.setColor(QPalette::Window, QColor(0, 0, 255));
 			pWidget->setAutoFillBackground(true);
 			pWidget->setPalette(pal);
-			pDock->setWidget(pWidget);
+			pDock->setWidget(type, pWidget);
             break;
         }
     }

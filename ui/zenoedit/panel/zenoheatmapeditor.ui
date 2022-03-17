@@ -413,26 +413,6 @@ QSlider::handle:horizontal {
         <number>6</number>
        </property>
        <item>
-        <widget class="QLabel" name="label">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">QLabel
-{
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #8A8A8C;
-}</string>
-         </property>
-         <property name="text">
-          <string>#</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QLineEdit" name="clrHex">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">

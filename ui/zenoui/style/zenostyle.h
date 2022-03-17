@@ -64,8 +64,6 @@ private:
     void drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* opt, QPainter* p, const QWidget* widget) const;
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect) const;
-    void drawNewItemMenu(const QStyleOptionMenuItem* menuitem, QPainter* p, const QWidget* w) const;
-    void drawMenuItem(ControlElement element, const QStyleOption* opt, QPainter* p, const QWidget* w) const;
 };
 
 #endif

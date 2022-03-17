@@ -1,5 +1,8 @@
 #include "heatmapnode.h"
 #include "panel/zenoheatmapeditor.h"
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
+
 
 MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
 	: ZenoNode(params, parent)
@@ -41,6 +44,7 @@ void MakeHeatMapNode::onEditClicked()
 	ZenoHeatMapEditor* editor = new ZenoHeatMapEditor(ramps);
 	int ret = editor->exec();
 	COLOR_RAMPS newRamps = editor->colorRamps();
-	//set
+	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+	pModel->setData2(subGraphIndex(), index(), QVariant::fromValue(newRamps), ROLE_COLORRAMPS);
 	editor->deleteLater();
 }

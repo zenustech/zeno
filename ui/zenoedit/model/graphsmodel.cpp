@@ -256,7 +256,6 @@ NODE_DESCS GraphsModel::getCoreDescs()
 			auto _L = rest.mid(1, rest.length() - 2).split("}{");
 			QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
 			QStringList z_categories = categories.split('%', QtSkipEmptyParts);
-			QJsonArray z_inputs;
 
 			NODE_DESC desc;
 			for (QString input : inputs.split("%", QtSkipEmptyParts))

@@ -210,7 +210,9 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModel
 	pEdge->updatePos(outSockPos, inSockPos);
 	addItem(pEdge);
 	m_links[linkId] = pEdge;
-	
+
+    pNode->onSocketLinkChanged(inSock, true, true);
+    m_nodes[outId]->onSocketLinkChanged(outSock, false, true);
     //outNode->toggleSocket(false, outSock, true);
 }
 
@@ -225,9 +227,17 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, cons
 
     const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
     Q_ASSERT(m_links.find(linkId) != m_links.end());
-    
+
     delete m_links[linkId];
 	m_links.remove(linkId);
+
+	const QString& inId = linkIdx.data(ROLE_INNODE).toString();
+	const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
+	const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+	const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+
+	m_nodes[inId]->onSocketLinkChanged(inSock, true, false);
+	m_nodes[outId]->onSocketLinkChanged(outSock, false, false);
 }
 
 void ZenoSubGraphScene::onLinkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)

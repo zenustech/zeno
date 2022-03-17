@@ -21,6 +21,9 @@ class ZenoNode : public QGraphicsWidget
     {
         ZenoSocketItem* socket;
         ZenoTextLayoutItem* socket_text;
+        ZenoParamWidget* socket_control;
+
+        _socket_ctrl() : socket(nullptr), socket_text(nullptr), socket_control(nullptr) {}
     };
 
 public:
@@ -63,6 +66,7 @@ public slots:
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
     void onSocketUpdated(const SOCKET_UPDATE_INFO& info);
+    void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
     void onNameUpdated(const QString& newName);
 
 protected:
