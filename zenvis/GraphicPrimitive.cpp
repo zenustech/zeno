@@ -1303,6 +1303,7 @@ vec3 histThings(vec3 s)
     ls = ceil(ls/0.2)*0.2;
     return norms * ls;
 }
+)" + R"(
 vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
