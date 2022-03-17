@@ -15,6 +15,7 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern void ensureGlobalMapExist();
 extern unsigned int getGlobalEnvMap();
 extern unsigned int getIrradianceMap();
 extern unsigned int getPrefilterMap();
@@ -207,6 +208,8 @@ struct GraphicPrimitive : IGraphic {
   drawObject lineObj;
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
+
+  bool prim_has_mtl = false;
   
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -343,9 +346,12 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
+    prim_has_mtl = prim->mtl != nullptr;
   }
 
   virtual void draw() override {
+      if (prim_has_mtl) ensureGlobalMapExist();
+
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
@@ -432,25 +438,28 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
         triObj.prog->set_uniformi("mRenderWireframe", false);
-        triObj.prog->set_uniformi("skybox",id);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
-        triObj.prog->set_uniformi("irradianceMap",id+1);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
-        if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+        if (prim_has_mtl) {
+            triObj.prog->set_uniformi("skybox",id);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+            if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
-        triObj.prog->set_uniformi("prefilterMap",id+2);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
-        if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+            triObj.prog->set_uniformi("irradianceMap",id+1);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
 
-        triObj.prog->set_uniformi("brdfLUT",id+3);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
-        if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+            triObj.prog->set_uniformi("prefilterMap",id+2);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+            triObj.prog->set_uniformi("brdfLUT",id+3);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+        }
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
