@@ -59,7 +59,7 @@ class ValuePoint:
         v = ValuePoint(-self.x, -self.y)
         return v
 
-class Bazier:
+class Bezier:
     def __init__(self, p1: ValuePoint, p2: ValuePoint, h1: ValuePoint, h2: ValuePoint):
         self.p1 = p1
         self.p2 = p2

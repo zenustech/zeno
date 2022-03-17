@@ -6,7 +6,7 @@ from PySide2.QtCore import *
 
 from zenqt.ui.editor.curve_editor import lerp
 
-from .curve_canvas import MainCanvas, ControlPoint, Bazier, ValuePoint
+from .curve_canvas import MainCanvas, ControlPoint, Bezier, ValuePoint
 
 half_len = 2
 
@@ -70,10 +70,10 @@ class ChannelsWidget(QGroupBox):
     def set_cur_value(self):
         s = self.curve_wnd.widget_state
         f = self.curve_wnd.widget_state.cur_frame
-        self.label_x.setText('{:.3f}'.format(s.quary_value(f, 'x')))
-        self.label_y.setText('{:.3f}'.format(s.quary_value(f, 'y')))
-        self.label_z.setText('{:.3f}'.format(s.quary_value(f, 'z')))
-        self.label_w.setText('{:.3f}'.format(s.quary_value(f, 'w')))
+        self.label_x.setText('{:.3f}'.format(s.query_value(f, 'x')))
+        self.label_y.setText('{:.3f}'.format(s.query_value(f, 'y')))
+        self.label_z.setText('{:.3f}'.format(s.query_value(f, 'z')))
+        self.label_w.setText('{:.3f}'.format(s.query_value(f, 'w')))
 
     def paintEvent(self, e):
         super().paintEvent(e)
@@ -163,7 +163,7 @@ class CurveWindowState:
         self.cur_frame = cur_frame
         self.widget.update()
 
-    def quary_value(self, x: float, sel_channel: str) -> float:
+    def query_value(self, x: float, sel_channel: str) -> float:
         ps = self.data[sel_channel]
         if len(ps) == 0:
             return 0
@@ -181,7 +181,7 @@ class CurveWindowState:
             p2 = ps[i + 1].pos
             h1 = ps[i].pos + ps[i].right_handler
             h2 = ps[i+1].pos + ps[i+1].left_handler
-            b = Bazier(p1, p2, h1, h2)
+            b = Bezier(p1, p2, h1, h2)
             return b.query(x)
 
     def add_point(self):
