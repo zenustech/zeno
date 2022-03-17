@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+#include <array>
+#include <vector>
+#include <tuple>
+
 namespace zenvis {
 
 void initialize();
