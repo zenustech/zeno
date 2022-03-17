@@ -64,7 +64,6 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     pModel->clearDirty();
     pModel->initDescriptors();
     setCurrentModel(pModel);
-    emit modelInited(pModel);
     return pModel;
 }
 

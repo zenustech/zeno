@@ -1,6 +1,10 @@
 #include "zenodocktitlewidget.h"
 #include <comctrl/ziconbutton.h>
 #include <comctrl/ztoolbutton.h>
+#include <zenoui/style/zenostyle.h>
+#include <zenoui/include/igraphsmodel.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -20,11 +24,11 @@ void ZenoDockTitleWidget::setupUi()
 
 	QHBoxLayout* pHLayout = new QHBoxLayout;
 
-	ZToolButton* pDockSwitchBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/ic_layout_container.svg"), QSize(16, 16));
+	ZToolButton* pDockSwitchBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/ic_layout_container.svg"), ZenoStyle::dpiScaledSize(QSize(16, 16)));
 	pDockSwitchBtn->setMargins(QMargins(10, 10, 10, 10));
 	pDockSwitchBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
 
-	ZToolButton* pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"), QSize(16, 16));
+	ZToolButton* pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"), ZenoStyle::dpiScaledSize(QSize(16, 16)));
 	pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
 	pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
 
@@ -121,6 +125,16 @@ ZenoEditorDockTitleWidget::~ZenoEditorDockTitleWidget()
 
 }
 
+void ZenoEditorDockTitleWidget::initModel()
+{
+	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+	if (pModel)
+		setTitle(pModel->fileName());
+
+	auto graphsMgr = zenoApp->graphsManagment();
+	connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(onModelInited(IGraphsModel*)));
+}
+
 void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 {
 	pHLayout->addWidget(initMenu());
@@ -195,4 +209,73 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 	);
 
 	return pMenuBar;
+}
+
+void ZenoEditorDockTitleWidget::setTitle(const QString& title)
+{
+	m_title = title;
+	update();
+}
+
+void ZenoEditorDockTitleWidget::onModelInited(IGraphsModel* pModel)
+{
+	const QString& fn = pModel->fileName();
+	if (fn.isEmpty())
+	{
+		m_title = "newFile";
+	}
+	else
+	{
+		m_title = fn;
+	}
+
+	connect(pModel, SIGNAL(modelClear()), this, SLOT(onModelClear()));
+	connect(pModel, SIGNAL(pathChanged(const QString&)), this, SLOT(onPathChanged(const QString&)));
+	connect(pModel, SIGNAL(dirtyChanged()), this, SLOT(onDirtyChanged()));
+	update();
+}
+
+void ZenoEditorDockTitleWidget::onModelClear()
+{
+	m_title = "";
+	update();
+}
+
+void ZenoEditorDockTitleWidget::onDirtyChanged()
+{
+	IGraphsModel* pModel = qobject_cast<IGraphsModel*>(sender());
+	Q_ASSERT(pModel);
+	bool bDirty = pModel->isDirty();
+	QString name = pModel->fileName();
+	if (name.isEmpty())
+		name = "newFile";
+	if (bDirty)
+	{
+		m_title = name + "*";
+	}
+	else
+	{
+		m_title = name;
+	}
+	update();
+}
+
+void ZenoEditorDockTitleWidget::onPathChanged(const QString& newPath)
+{
+	QFileInfo fi(newPath);
+	QString fn;
+	if (fi.isFile())
+		fn = fi.fileName();
+	m_title = fn;
+	update();
+}
+
+void ZenoEditorDockTitleWidget::paintEvent(QPaintEvent* event)
+{
+	ZenoDockTitleWidget::paintEvent(event);
+
+	QPainter p(this);
+	p.setPen(QPen(QColor(255,255,255, 128)));
+	p.setFont(QFont("HarmonyOS Sans", 11));
+	p.drawText(rect(), Qt::AlignCenter, m_title);
 }

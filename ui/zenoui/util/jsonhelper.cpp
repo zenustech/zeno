@@ -35,9 +35,10 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
-			else if (varType != QVariant::Invalid)
+			else
 			{
-				zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
+				if (varType != QVariant::Invalid)
+					zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
 				Q_ASSERT(false);
 			}
 		}
@@ -66,9 +67,10 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
-			else if (varType != QVariant::Invalid)
+			else
 			{
-				zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
+				if (varType != QVariant::Invalid)
+					zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
 				writer.Null();
 			}
 		}

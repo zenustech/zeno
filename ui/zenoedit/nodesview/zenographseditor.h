@@ -19,6 +19,10 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
+    QString getCurrentFileName();
+
+signals:
+    void modelLoaded(const QString& fn);
 
 public slots:
     void resetModel(IGraphsModel* pModel);

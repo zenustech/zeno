@@ -18,30 +18,13 @@ ZenoSubnetPanel::ZenoSubnetPanel(QWidget* parent)
 {
 	QVBoxLayout* pMainLayout = new QVBoxLayout;
 
-	QHBoxLayout* pLabelLayout = new QHBoxLayout;
-	QLabel* pIcon = new QLabel;
-	pIcon->setPixmap(QIcon(":/icons/ic_File.svg").pixmap(ZenoStyle::dpiScaledSize(QSize(16, 16)), QIcon::Normal));
-
-	m_pTextLbl = new QLabel("");
-	QFont font = QFont("HarmonyOS Sans", 12);
-	font.setBold(false);
-	m_pTextLbl->setFont(font);
-	QPalette pal = m_pTextLbl->palette();
-	pal.setColor(QPalette::WindowText, QColor(128, 124, 122));
-	m_pTextLbl->setPalette(pal);
-
-	pLabelLayout->addWidget(pIcon);
-	pLabelLayout->addWidget(m_pTextLbl);
-	pLabelLayout->addStretch();
-	pLabelLayout->setContentsMargins(12, 5, 5, 0);
-	pMainLayout->addLayout(pLabelLayout);
-
 	m_pListView = new ZenoSubnetListView;
 	m_pTreeView = new ZenoSubnetTreeView;
 	pMainLayout->addWidget(m_pListView);
 	pMainLayout->addWidget(m_pTreeView);
 
 	m_pNewSubnetBtn = new ZTextLabel("Add New Subnet");
+	QFont font = QFont("HarmonyOS Sans", 12);
 	font.setPointSize(13);
 	font.setBold(false);
 	m_pNewSubnetBtn->setFont(font);
@@ -73,7 +56,6 @@ void ZenoSubnetPanel::initModel(IGraphsModel* pModel)
 	QString fn = pModel->fileName();
 	if (fn.isEmpty())
 		fn = "newFile";
-	m_pTextLbl->setText(fn);
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 }
 

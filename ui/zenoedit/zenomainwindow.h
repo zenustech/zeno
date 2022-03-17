@@ -60,7 +60,6 @@ private:
 
     //QVector<ZenoDockWidget*> m_docks;
     QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;
-    QString currFilePath;//TODO:luzh fix me
 
     ZenoGraphsEditor* m_pEditor;
 };

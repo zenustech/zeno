@@ -186,6 +186,9 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 	connect(pModel, SIGNAL(modelClear()), this, SLOT(onCurrentModelClear()));
     connect(pModel, &QAbstractItemModel::rowsInserted, this, &ZenoGraphsEditor::onGraphsItemInserted);
     connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoGraphsEditor::onGraphsItemAboutToBeRemoved);
+
+    const QString& fn = pModel->fileName();
+    emit modelLoaded(fn);
 }
 
 void ZenoGraphsEditor::onGraphsItemInserted(const QModelIndex& parent, int first, int last)

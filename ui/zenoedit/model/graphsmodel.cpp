@@ -37,6 +37,7 @@ QItemSelectionModel* GraphsModel::selectionModel() const
 void GraphsModel::setFilePath(const QString& fn)
 {
     m_filePath = fn;
+    emit pathChanged(m_filePath);
 }
 
 SubGraphModel* GraphsModel::subGraph(const QString& name) const
@@ -546,11 +547,13 @@ bool GraphsModel::isDirty() const
 void GraphsModel::markDirty()
 {
     m_dirty = true;
+    emit dirtyChanged();
 }
 
 void GraphsModel::clearDirty()
 {
     m_dirty = false;
+    emit dirtyChanged();
 }
 
 void GraphsModel::onRemoveCurrentItem()

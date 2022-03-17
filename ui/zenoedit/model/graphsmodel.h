@@ -32,7 +32,6 @@ class GraphsModel : public IGraphsModel
 public:
     GraphsModel(QObject* parent = nullptr);
     ~GraphsModel();
-    void setFilePath(const QString& fn);
     SubGraphModel* subGraph(const QString& name) const;
     SubGraphModel *subGraph(int idx) const;
     SUBMODEL_SCENE subGraphScene(int idx) const;
@@ -50,11 +49,12 @@ public:
     void removeGraph(int idx) override;
     void initDescriptors() override;
     bool isDirty() const override;
-    void markDirty();
-    void clearDirty();
+    void markDirty() override;
+    void clearDirty() override;
     NODE_CATES getCates() override;
-    QString filePath() const;
+    QString filePath() const override;
     QString fileName() const override;
+    void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex index(const QString& subGraphName) const;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;

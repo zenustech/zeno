@@ -3,6 +3,9 @@
 #include "zenomainwindow.h"
 #include <comctrl/ziconbutton.h>
 #include <comctrl/ztoolbutton.h>
+#include "nodesview/zenographseditor.h"
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,9 +36,11 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
     ZenoDockTitleWidget* pTitleWidget = nullptr;
 	if (m_type == DOCK_EDITOR)
 	{
-        pTitleWidget = new ZenoEditorDockTitleWidget;
-        pTitleWidget->setupUi();
-        setTitleBarWidget(pTitleWidget);
+        ZenoEditorDockTitleWidget* pEditorTitle = new ZenoEditorDockTitleWidget;
+        pEditorTitle->setupUi();
+        pEditorTitle->initModel();
+        setTitleBarWidget(pEditorTitle);
+        pTitleWidget = pEditorTitle;
 	}
 	else
 	{

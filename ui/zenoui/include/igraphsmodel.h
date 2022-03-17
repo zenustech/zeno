@@ -73,11 +73,17 @@ public:
 	virtual QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& idx) = 0;
 	virtual void removeGraph(int idx) = 0;
 	virtual QString fileName() const = 0;
+	virtual QString filePath() const = 0;
+	virtual void setFilePath(const QString& fn) = 0;
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
+	virtual void markDirty() = 0;
+	virtual void clearDirty() = 0;
 
 signals:
 	void clearLayout2();
 	void modelClear();
+	void dirtyChanged();
+	void pathChanged(const QString& path);
 	void reloaded(const QModelIndex& subGpIdx);
 	void clearLayout(const QModelIndex& subGpIdx);
 	void _dataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);

@@ -32,7 +32,6 @@ private:
 	ZenoSubnetListView* m_pListView;
 	ZenoSubnetTreeView* m_pTreeView;
 	ZTextLabel* m_pNewSubnetBtn;
-	QLabel* m_pTextLbl;
 	bool m_bListView;
 };
 

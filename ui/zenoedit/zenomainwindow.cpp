@@ -14,6 +14,7 @@
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/utils/log.h>
+#include <zenoui/style/zenostyle.h>
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -56,8 +57,6 @@ void ZenoMainWindow::initMenu()
     QMenuBar *pMenuBar = new QMenuBar(this);
     if (!pMenuBar)
         return;
-
-    pMenuBar->setMaximumHeight(26);//todo: sizehint
 
     QMenu *pFile = new QMenu(tr("File"));
     {
@@ -207,16 +206,16 @@ void ZenoMainWindow::initMenu()
     pMenuBar->addMenu(pHelp);
 
     /* up-right-bottom-left */
-    pMenuBar->setStyleSheet(
+    const QString& qssTemplate =
     "\
     QMenuBar {\
         background-color: rgb(28, 28, 28);\
-        spacing: 3px; \
+        spacing: %1px; \
         color: rgba(255,255,255,0.50);\
     }\
     \
     QMenuBar::item {\
-        padding: 4px 8px 4px 8px;\
+        padding: %2px %3px %4px %5px;\
         background: transparent;\
     }\
     \
@@ -227,8 +226,12 @@ void ZenoMainWindow::initMenu()
     QMenuBar::item:pressed {\
         background: #4B9EF4;\
     }\
-    "
-    );
+    ";
+
+    qreal spacing = ZenoStyle::dpiScaled(3), padding_left = ZenoStyle::dpiScaled(8),
+        padding_right = ZenoStyle::dpiScaled(8), padding_top = ZenoStyle::dpiScaled(4), padding_bottom = ZenoStyle::dpiScaled(4);
+    QString qss = qssTemplate.arg(spacing).arg(padding_top).arg(padding_right).arg(padding_bottom).arg(padding_left);
+    pMenuBar->setStyleSheet(qss);
 
     setMenuBar(pMenuBar);
 }
@@ -375,8 +378,6 @@ bool ZenoMainWindow::openFile(QString filePath)
     IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
-
-    currFilePath = filePath;
     return true;
 }
 
@@ -452,20 +453,25 @@ void ZenoMainWindow::saveQuit()
 		}
     }
     pGraphsMgm->clear();
-    currFilePath.clear();
 }
 
 void ZenoMainWindow::save()
 {
-    if (currFilePath.isEmpty())
-        return saveAs();
-    saveFile(currFilePath);
+	auto pGraphsMgm = zenoApp->graphsManagment();
+	Q_ASSERT(pGraphsMgm);
+	IGraphsModel* pModel = pGraphsMgm->currentModel();
+    if (pModel)
+    {
+        QString currFilePath = pModel->filePath();
+		if (currFilePath.isEmpty())
+			return saveAs();
+		saveFile(currFilePath);
+    }
 }
 
 bool ZenoMainWindow::saveFile(QString filePath)
 {
-    //temp:
-    GraphsModel* pModel = qobject_cast<GraphsModel*>(zenoApp->graphsManagment()->currentModel());
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
@@ -476,6 +482,8 @@ bool ZenoMainWindow::saveFile(QString filePath)
     }
     f.write(strContent.toUtf8());
     f.close();
+    pModel->setFilePath(filePath);
+    pModel->clearDirty();
     return true;
 }
 

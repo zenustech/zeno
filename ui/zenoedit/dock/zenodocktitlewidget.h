@@ -25,18 +25,31 @@ private slots:
 	void onDockSwitchClicked();
 };
 
+class IGraphsModel;
+
 class ZenoEditorDockTitleWidget : public ZenoDockTitleWidget
 {
 	Q_OBJECT
 public:
 	ZenoEditorDockTitleWidget(QWidget* parent = nullptr);
 	~ZenoEditorDockTitleWidget();
+	void initModel();
+
+public slots:
+	void setTitle(const QString& title);
+	void onModelInited(IGraphsModel* pModel);
+	void onModelClear();
+	void onPathChanged(const QString& newPath);
+	void onDirtyChanged();
 
 protected:
 	void initTitleContent(QHBoxLayout* pHLayout) override;
+	void paintEvent(QPaintEvent* event) override;
 
 private:
 	QMenuBar* initMenu();
+
+	QString m_title;
 };
 
 
