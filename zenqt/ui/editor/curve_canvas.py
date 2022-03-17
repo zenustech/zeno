@@ -306,19 +306,19 @@ class MainCanvas(QWidget):
         s = self.get_selected()
         if type(s) == int:
             self.get_ps()[s].cp_type = 'constant'
-            self.update()
+            self.curve_wnd.update()
 
     def straight(self):
         s = self.get_selected()
         if type(s) == int:
             self.get_ps()[s].cp_type = 'straight'
-            self.update()
+            self.curve_wnd.update()
 
     def free(self):
         s = self.get_selected()
         if type(s) == int:
             self.get_ps()[s].cp_type = 'free'
-            self.update()
+            self.curve_wnd.update()
 
     def align(self):
         s = self.get_selected()
@@ -326,7 +326,7 @@ class MainCanvas(QWidget):
             self.get_ps()[s].cp_type = 'align'
             self.get_ps()[s].left_handler = ValuePoint(-5, 0)
             self.get_ps()[s].right_handler = ValuePoint(5, 0)
-            self.update()
+            self.curve_wnd.update()
 
     def sync_cur_frame(self, pos: QPoint):
         self.cur_frame = int(self.canvas_to_raw(pos).x)

@@ -87,7 +87,6 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
                     cp.right_handler.y = float(next(txt))
                     ls.append(cp)
                 self.keyframes[k] = ls
-        print(self.keyframes)
         return super().load(ident, data)
 
     def add_keyframe(self):
