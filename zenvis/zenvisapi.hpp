@@ -1,7 +1,7 @@
 #pragma once
 
 namespace zenvis {
-
+void setLight(float x, float y, float z);
 void initialize();
 void finalize();
 void new_frame();

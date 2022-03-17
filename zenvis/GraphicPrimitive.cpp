@@ -19,6 +19,7 @@ extern unsigned int getGlobalEnvMap();
 extern unsigned int getIrradianceMap();
 extern unsigned int getPrefilterMap();
 extern unsigned int getBRDFLut();
+extern glm::vec3 getLight();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -431,6 +432,7 @@ struct GraphicPrimitive : IGraphic {
         }
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
+        triObj.prog->set_uniform("light0",getLight());
         triObj.prog->set_uniformi("mRenderWireframe", false);
         triObj.prog->set_uniformi("skybox",id);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
@@ -1268,10 +1270,10 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
-float toonSpecular(vec3 V, vec3 L, vec3 N, roughness)
+float toonSpecular(vec3 V, vec3 L, vec3 N, float roughness)
 {
     float NoV = dot(N,V);
-    float _SpecularSize = (1-roughness)*(1-roughness);
+    float _SpecularSize = pow((1-roughness),5);
     float specularFalloff = NoV;
     specularFalloff = pow(specularFalloff, 2);
     vec3 reflectionDirection = reflect(L, N);
@@ -1441,10 +1443,10 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
-
+uniform vec3 light0;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
-    vec3 L1 = vec3(1,1,0);
+    vec3 L1 = light0;
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;

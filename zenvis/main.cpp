@@ -103,14 +103,22 @@ void set_program_uniforms(Program *pro) {
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-
+static glm::vec3 light;
+extern glm::vec3 getLight()
+{
+  return light;
+}
+void setLight(float x, float y, float z)
+{
+  light = glm::vec3(x,y,z);
+}
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 extern void preIntegrate(GLuint inEnvMap);
 void initialize() {
   gladLoadGL();
   
-  
+  setLight(1,1,0);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
