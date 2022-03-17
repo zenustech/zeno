@@ -99,7 +99,7 @@ struct PrimMerge : INode {
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
                 auto prim = primList[primIdx].get();
                 auto vbase = bases[primIdx];
-                auto base = linebases[primIdx];
+                auto base = tribases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
                     auto &outarr = [&] () -> auto & {
@@ -125,7 +125,7 @@ struct PrimMerge : INode {
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
                 auto prim = primList[primIdx].get();
                 auto vbase = bases[primIdx];
-                auto base = linebases[primIdx];
+                auto base = quadbases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
                     auto &outarr = [&] () -> auto & {
@@ -146,6 +146,58 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->quads.values);
                 prim->quads.foreach_attr(core);
+            }
+
+            for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+                auto prim = primList[primIdx].get();
+                auto vbase = bases[primIdx];
+                auto base = loopbases[primIdx];
+                auto core = [&] (auto key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &outarr = [&] () -> auto & {
+                        if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                            return outprim->loops.values;
+                        } else {
+                            return outprim->loops.add_attr<T>(key);
+                        }
+                    }();
+                    size_t n = std::min(arr.size(), prim->loops.size());
+                    for (size_t i = 0; i < n; i++) {
+                        if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                            outarr[base + i] = vbase + arr[i];
+                        } else {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+                };
+                core(std::true_type{}, prim->loops.values);
+                prim->loops.foreach_attr(core);
+            }
+
+            for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+                auto prim = primList[primIdx].get();
+                auto lbase = loopbases[primIdx];
+                auto base = polybases[primIdx];
+                auto core = [&] (auto key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &outarr = [&] () -> auto & {
+                        if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                            return outprim->polys.values;
+                        } else {
+                            return outprim->polys.add_attr<T>(key);
+                        }
+                    }();
+                    size_t n = std::min(arr.size(), prim->polys.size());
+                    for (size_t i = 0; i < n; i++) {
+                        if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                            outarr[base + i] = {arr[i].first + lbase, arr[i].second};
+                        } else {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+                };
+                core(std::true_type{}, prim->polys.values);
+                prim->polys.foreach_attr(core);
             }
         }
 
