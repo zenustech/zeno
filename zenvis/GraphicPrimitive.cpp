@@ -921,11 +921,11 @@ vec3 UELighting(
 {
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    vec3 half = normalize(toLight + toView);
+    vec3 halfVec = normalize(toLight + toView);
     float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, half);
+    float NoH = dot(surfNorm, halfVec);
     float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, half);
+    float VoH = dot(toView, halfVec);
     float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 

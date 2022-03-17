@@ -219,7 +219,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 
-uniform samplerRect hdr_image;
+uniform sampler2DRect hdr_image;
 out vec4 oColor;
 void main(void)
 {
