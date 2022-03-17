@@ -310,9 +310,17 @@ ZENDEFNODE(PrimitiveCurvemap, {
     {"primitive"},
 });
 
+    struct ControlPoint {
+        int f;
+        float v;
+        std::string cp_type;
+        zeno::vec2f left_handler;
+        zeno::vec2f right_handler;
+    };
+
 
     static zeno::vec4f query_cur_value(
-        std::map<std::string, std::vector<std::tuple<int, float>>> keyframes_table,
+        std::map<std::string, std::vector<ControlPoint>> keyframes_table,
         int cur_frame
     ) {
         zeno::vec4f v;
@@ -327,22 +335,37 @@ ZENDEFNODE(PrimitiveCurvemap, {
             std::vector<int> less;
             std::vector<int> more;
             for (auto it = keyframes.begin(); it != keyframes.end(); it++) {
-                if (std::get<0>(*it) <= cur_frame) {
-                    less.push_back(std::get<0>(*it));
+                if (it->f <= cur_frame) {
+                    less.push_back(it->f);
                 } else {
-                    more.push_back(std::get<0>(*it));
+                    more.push_back(it->f);
                 }
             }
             if (less.size() == 0) {
                 v[i] = 0;
             } else if (more.size() == 0 || less.back() == cur_frame) {
-                v[i] = std::get<1>(keyframes[less.size() -1]);
+                v[i] = keyframes[less.size() -1].v;
             } else {
+                ControlPoint p = keyframes[less.size() -1];
+                ControlPoint n = keyframes[less.size()];
                 float t = (float)(cur_frame - less.back()) / (more.front() - less.back());
-                v[i] = lerp(
-                    std::get<1>(keyframes[less.size() -1]),
-                    std::get<1>(keyframes[less.size()]),
-                    t);
+                if (p.cp_type == "constant") {
+                    v[i] = p.v;
+                } else if (p.cp_type == "straight") {
+                    v[i] = lerp(p.v, n.v, t);
+                } else {
+                    float x_scale = n.f - p.f;
+                    float y_scale = n.v - p.v;
+
+                    v[i] = eval_bezier_value(
+                        zeno::vec2f(p.f, p.v),
+                        zeno::vec2f(n.f, n.v),
+                        zeno::vec2f(p.f, p.v) + p.right_handler,
+                        zeno::vec2f(n.f, n.v) + n.left_handler,
+                        (float)cur_frame
+                    );
+
+                }
             }
         }
         return v;
@@ -351,7 +374,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
 #ifdef ZENO_GLOBALSTATE
     struct DynamicNumber : zeno::INode {
         virtual void apply() override {
-            std::map<std::string, std::vector<std::tuple<int, float>>> keyframes_table;
+            std::map<std::string, std::vector<ControlPoint>> keyframes_table;
             auto _tmp = get_param<std::string>("_TMP");
             auto _points = get_param<std::string>("_CONTROL_POINTS");
             zeno::vec4f v;
@@ -375,13 +398,18 @@ ZENDEFNODE(PrimitiveCurvemap, {
                     ss >> channel_name;
                     int frame_count = 0;
                     ss >> frame_count;
-                    keyframes_table[channel_name] = std::vector<std::tuple<int, float>>();
+                    keyframes_table[channel_name] = std::vector<ControlPoint>();
                     for (int j = 0; j < frame_count; j++) {
-                        int f = 0;
-                        float v = 0;
-                        ss >> f >> v;
-                        keyframes_table[channel_name].emplace_back(f, v);
-                        max_frame = f > max_frame? f : max_frame;
+                        ControlPoint cp;
+                        ss >> cp.f;
+                        ss >> cp.v;
+                        ss >> cp.cp_type;
+                        ss >> cp.left_handler[0];
+                        ss >> cp.left_handler[1];
+                        ss >> cp.right_handler[0];
+                        ss >> cp.right_handler[1];
+                        keyframes_table[channel_name].emplace_back(cp);
+                        max_frame = cp.f > max_frame? cp.f : max_frame;
                     }
                 }
                 int cur_frame = zeno::state.frameid;
