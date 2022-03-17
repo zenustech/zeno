@@ -31,6 +31,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("set_normal_check", zenvis::set_normal_check);
     m.def("set_render_wireframe", zenvis::set_render_wireframe);
     m.def("setup_env_map", zenvis::setup_env_map);
+    m.def("setLight", zenvis::setLight);
 }
 
 
