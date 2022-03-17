@@ -68,6 +68,16 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
         return ident, data
 
     def load(self, ident, data):
+        if data['params']['_TMP'] != '':
+            txt = data['params']['_TMP'].split()
+            v = [
+                float(txt[0]),
+                float(txt[1]),
+                float(txt[2]),
+                float(txt[3]),
+            ]
+            self.tmp_value = v
+        
         if data['params']['_CONTROL_POINTS'] != '':
             txt = data['params']['_CONTROL_POINTS'].split()
             txt = (s for s in txt)
