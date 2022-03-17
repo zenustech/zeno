@@ -15,8 +15,8 @@
 
 namespace zenvis {
 /* begin zhxx happy */
-extern void preIntegrate(GLuint inEnvMap);
 static GLuint envTexture = (GLuint)-1;
+extern void preIntegrate(GLuint inEnvMap);
 static std::unordered_map<std::string, GLuint> envTextureCache;
 static unsigned int loadCubemap(std::vector<std::string> faces)
 {
@@ -49,6 +49,10 @@ static unsigned int loadCubemap(std::vector<std::string> faces)
 
     return textureID;
 }  
+void ensureGlobalMapExist() {
+    if (envTexture == (GLuint)-1)
+        setup_env_map("Default");
+}
 unsigned int setup_env_map(std::string name)
 {
   if (envTextureCache.count(name)) {
@@ -72,5 +76,4 @@ unsigned int setup_env_map(std::string name)
 unsigned int getGlobalEnvMap() {
     return envTexture;
 }
-/* end zhxx happy */
 }

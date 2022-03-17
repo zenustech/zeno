@@ -14,9 +14,17 @@ struct ShaderNode : INode {
     ZENO_API virtual void apply() override;
     ZENO_API virtual int determineType(EmissionPass *em) = 0;
     ZENO_API virtual void emitCode(EmissionPass *em) = 0;
+    ZENO_API virtual std::shared_ptr<ShaderNode> clone() const = 0;
 
     ZENO_API ShaderNode();
-    ZENO_API ~ShaderNode();
+    ZENO_API ~ShaderNode() override;
+};
+
+template <class Derived>
+struct ShaderNodeClone : ShaderNode {
+    virtual std::shared_ptr<ShaderNode> clone() const override {
+        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
+    }
 };
 
 struct EmissionPass {

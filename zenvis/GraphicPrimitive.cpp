@@ -15,6 +15,7 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern void ensureGlobalMapExist();
 extern unsigned int getGlobalEnvMap();
 extern unsigned int getIrradianceMap();
 extern unsigned int getPrefilterMap();
@@ -208,6 +209,8 @@ struct GraphicPrimitive : IGraphic {
   drawObject lineObj;
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
+
+  bool prim_has_mtl = false;
   
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -326,8 +329,15 @@ struct GraphicPrimitive : IGraphic {
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
         
-        computeTrianglesTangent(prim);
-        parseTrianglesDrawBuffer(prim, triObj);
+        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
+            triObj.count = tris_count;
+            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+            triObj.vbo = nullptr;
+        } else {
+            computeTrianglesTangent(prim);
+            parseTrianglesDrawBuffer(prim, triObj);
+        }
         
         triObj.prog = get_tris_program(path, prim->mtl);
         if(!triObj.prog)
@@ -344,9 +354,12 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
+    prim_has_mtl = prim->mtl != nullptr;
   }
 
   virtual void draw() override {
+      if (prim_has_mtl) ensureGlobalMapExist();
+
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
@@ -434,25 +447,28 @@ struct GraphicPrimitive : IGraphic {
         set_program_uniforms(triObj.prog);
         triObj.prog->set_uniform("light0",getLight());
         triObj.prog->set_uniformi("mRenderWireframe", false);
-        triObj.prog->set_uniformi("skybox",id);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
-        triObj.prog->set_uniformi("irradianceMap",id+1);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
-        if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+        if (prim_has_mtl) {
+            triObj.prog->set_uniformi("skybox",id);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+            if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
-        triObj.prog->set_uniformi("prefilterMap",id+2);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
-        if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+            triObj.prog->set_uniformi("irradianceMap",id+1);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
 
-        triObj.prog->set_uniformi("brdfLUT",id+3);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
-        if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+            triObj.prog->set_uniformi("prefilterMap",id+2);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+            triObj.prog->set_uniformi("brdfLUT",id+3);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+        }
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -923,11 +939,11 @@ vec3 UELighting(
 {
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    vec3 half = normalize(toLight + toView);
+    vec3 halfVec = normalize(toLight + toView);
     float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, half);
+    float NoH = dot(surfNorm, halfVec);
     float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, half);
+    float VoH = dot(toView, halfVec);
     float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 

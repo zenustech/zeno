@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 namespace zeno {
+namespace {
 
 #define DEFINE_FUNCTOR(type, func) \
 struct type { \
@@ -103,7 +104,6 @@ struct PrimitiveFilterByAttr : INode {
         , get_anyall_ops(vecSelType)
         );
     });
-    
 
     prim->foreach_attr([&] (auto const &key, auto &arr) {
         for (int i = 0; i < revamp.size(); i++) {
@@ -117,6 +117,8 @@ struct PrimitiveFilterByAttr : INode {
             || prim->tris.size()
             || prim->quads.size()
             || prim->lines.size()
+            || prim->polys.size()
+            || prim->points.size()
          )) {
 
         std::vector<int> unrevamp(old_prim_size, -1);
@@ -213,6 +215,25 @@ struct PrimitiveFilterByAttr : INode {
             prim->polys.resize(polysrevamp.size());
         }
 
+        if (prim->points.size()) {
+            std::vector<int> pointsrevamp;
+            pointsrevamp.reserve(prim->points.size());
+            for (int i = 0; i < prim->points.size(); i++) {
+                auto &point = prim->points[i];
+                if (mock(point))
+                    pointsrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < pointsrevamp.size(); i++) {
+                prim->points[i] = prim->points[pointsrevamp[i]];
+            }
+            prim->points.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < pointsrevamp.size(); i++) {
+                    arr[i] = arr[pointsrevamp[i]];
+                }
+            });
+            prim->points.resize(pointsrevamp.size());
+        }
+
     }
     
     set_output("prim", get_input("prim"));
@@ -294,5 +315,6 @@ ZENDEFNODE(SubLine,
 
 
 
+}
 }
 

@@ -149,7 +149,7 @@ struct PrimitiveMerge : zeno::INode {
         set_output("prim", std::move(outprim));
     }
     else
-    {
+    { // dage, weishenme buyong Assign jiedian ne?
         auto dst = get_input<PrimitiveObject>("dst");
         auto outprim = primitive_merge(list);
         *dst = *outprim;
