@@ -73,13 +73,11 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
             //for (auto const &val: arr) outarr.push_back(val);
             //end fix pyb
         });
-<<<<<<< HEAD
 #if defined(_MSC_VER) && defined(_OPENMP)
 #define omp_size_t intptr_t
 #else
 #define omp_size_t size_t
 #endif
-=======
         if (!tagAttr.empty()) {
             auto &tagArr = outprim->attr<int>(tagAttr);
 #if defined(_OPENMP)
@@ -92,7 +90,6 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
             }
 #endif
         }
->>>>>>> origin/master
 #if defined(_OPENMP)
         auto concat = [&](auto &dst, const auto &src, size_t &offset) {
 #pragma omp parallel for
