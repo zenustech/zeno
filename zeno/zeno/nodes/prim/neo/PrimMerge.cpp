@@ -68,6 +68,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->verts.values);
                 prim->verts.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->verts.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->verts.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -94,6 +100,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->lines.values);
                 prim->lines.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->lines.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->lines.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -120,6 +132,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->tris.values);
                 prim->tris.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->tris.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->tris.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -146,6 +164,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->quads.values);
                 prim->quads.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->quads.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->quads.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -172,6 +196,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->loops.values);
                 prim->loops.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->loops.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->loops.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -198,6 +228,12 @@ struct PrimMerge : INode {
                 };
                 core(std::true_type{}, prim->polys.values);
                 prim->polys.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->polys.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->polys.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
             }
         }
 
