@@ -9,7 +9,7 @@
 #include <zeno/utils/vec.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 
 namespace zeno {
 struct CreateCube : zeno::INode {

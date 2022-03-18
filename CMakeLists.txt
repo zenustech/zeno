@@ -14,7 +14,12 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(zeno LANGUAGES C CXX)
+project(zeno
+    LANGUAGES C CXX
+    VERSION 0.0.1
+    DESCRIPTION "Open-source node system framework for simulation and others"
+    HOMEPAGE_URL https://github.com/zenustech/zeno
+    )
 
 if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
     message(WARNING "The binary directory of CMake cannot be the same as source directory!"
@@ -41,12 +46,13 @@ option(ZENO_BUILD_TESTER "Build ZENO Quick Tester" OFF)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" ON)
+option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
 option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
@@ -121,4 +127,32 @@ endif()
 if (ZENO_BUILD_TESTER)
     message(STATUS "Building Zeno Quick Tester")
     add_subdirectory(ui/zenotest)
+endif()
+
+if (ZENO_INSTALL_TARGET AND NOT WIN32)
+    message(STATUS "Adding Zeno Installation Target")
+    set(targets zenodes zenocore zenoinclude zenoedit)
+    if (ZENO_MULTIPROCESS)
+        list(APPEND targets zenorunner)
+    endif()
+    install(
+        TARGETS ${targets}
+        EXPORT ZenoTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        PUBLIC_HEADER DESTINATION include
+        )
+    install(
+        EXPORT ZenoTargets
+        FILE ZenoTargets.cmake
+        NAMESPACE Zeno::
+        DESTINATION lib/cmake/Zeno
+        )
+    configure_file(misc/ZenoConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake @ONLY)
+    install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/ZenoConfigVersion.cmake"
+        DESTINATION lib/cmake/Zeno
+        )
 endif()

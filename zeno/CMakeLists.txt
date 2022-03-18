@@ -23,7 +23,9 @@ endif()
 
 # we are not using shared libraries now, so no need for this:
 target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
-target_include_directories(zenocore PUBLIC .)
+target_include_directories(zenocore PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}>)
 
 target_link_libraries(zenocore PUBLIC zenoinclude)
 if (ZENO_ENABLE_SPDLOG)
