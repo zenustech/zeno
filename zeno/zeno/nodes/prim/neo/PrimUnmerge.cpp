@@ -35,7 +35,7 @@ struct PrimUnmerge : INode {
             } else if (method == "faces") {
                 auto const &tagArr = prim->tris.attr<int>(tagAttr);
                 int tagMax = -1;
-#ifdef __GNUG__
+#if defined(__GNUC__) || defined(__clang__)
 #pragma omp parallel for reduction(max:tagMax)
 #endif
                 for (size_t i = 0; i < prim->tris.size(); i++) {
