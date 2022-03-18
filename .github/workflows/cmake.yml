@@ -29,7 +29,7 @@ jobs:
     outputs:
       build: ${{ steps.ci-skip-step.outputs.ci-skip-not == 'true' && 'true' || 'false' }}
       deploy: ${{ (steps.ci-skip-step.outputs.ci-skip-not == 'true' && steps.is-release-step.outputs.ci-skip == 'true') && 'true' || 'false' }}
-      type: ${{ needs.check.outputs.deploy && 'Release' || 'Debug' }}
+      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'Release' || 'Debug' }}
 
   release:
     runs-on: ubuntu-latest

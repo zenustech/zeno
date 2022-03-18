@@ -16,7 +16,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(zeno
     LANGUAGES C CXX
-    VERSION 2021.3.18
     DESCRIPTION "Open-source node system framework for simulation and others"
     HOMEPAGE_URL https://github.com/zenustech/zeno
     )
@@ -131,12 +130,12 @@ endif()
 
 if (ZENO_INSTALL_TARGET)
     message(STATUS "Adding Zeno Installation Target")
-    set(targets zenodes zenocore zenoinclude zenoedit)
+    set(ZENO_TARGETS zenodes zenocore zenoinclude zenoedit)
     if (ZENO_MULTIPROCESS)
-        list(APPEND targets zenorunner)
+        list(APPEND ZENO_TARGETS zenorunner)
     endif()
     install(
-        TARGETS ${targets}
+        TARGETS ${ZENO_TARGETS}
         EXPORT ZenoTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
