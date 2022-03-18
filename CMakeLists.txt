@@ -129,7 +129,7 @@ if (ZENO_BUILD_TESTER)
     add_subdirectory(ui/zenotest)
 endif()
 
-if (ZENO_INSTALL_TARGET AND NOT WIN32)
+if (ZENO_INSTALL_TARGET)
     message(STATUS "Adding Zeno Installation Target")
     set(targets zenodes zenocore zenoinclude zenoedit)
     if (ZENO_MULTIPROCESS)

@@ -25,7 +25,10 @@ endif()
 target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 target_include_directories(zenocore PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:include/Zeno-${PROJECT_VERSION}/zenocore>)
+if (ZENO_INSTALL_TARGET)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include/Zeno-${PROJECT_VERSION}/zenocore)
+endif()
 
 target_link_libraries(zenocore PUBLIC zenoinclude)
 if (ZENO_ENABLE_SPDLOG)
