@@ -76,8 +76,8 @@ void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     if (subgraph.HasMember("view_rect"))
     {
         const auto& obj = subgraph["view_rect"];
-        Q_ASSERT(obj.HasMember("x") && obj.HasMember("y") && obj.HasMember("width") && obj.HasMember("height"));
-        viewRect = QRectF(obj["x"].GetFloat(), obj["y"].GetFloat(), obj["width"].GetFloat(), obj["height"].GetFloat());
+        if (obj.HasMember("x") && obj.HasMember("y") && obj.HasMember("width") && obj.HasMember("height"))
+            viewRect = QRectF(obj["x"].GetFloat(), obj["y"].GetFloat(), obj["width"].GetFloat(), obj["height"].GetFloat());
     } 
     else if (subgraph.HasMember("view"))
     {
