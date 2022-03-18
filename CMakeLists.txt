@@ -149,10 +149,9 @@ if (ZENO_INSTALL_TARGET AND NOT WIN32)
         NAMESPACE Zeno::
         DESTINATION lib/cmake/Zeno
         )
-    configure_file(misc/ZenoConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake @ONLY)
+    configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
     install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/ZenoConfigVersion.cmake"
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
         DESTINATION lib/cmake/Zeno
         )
 endif()
