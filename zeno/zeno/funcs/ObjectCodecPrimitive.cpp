@@ -1,5 +1,6 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/log.h>
 #include <algorithm>
@@ -92,6 +93,10 @@ std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it) {
     decodeAttrVector(obj->quads, it);
     decodeAttrVector(obj->loops, it);
     decodeAttrVector(obj->polys, it);
+    if (*it++ == '1') {
+        obj->mtl = std::make_shared<MaterialObject>();
+        obj->mtl->deserialize(it);
+    }
     return obj;
 }
 
@@ -103,6 +108,13 @@ bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator
     encodeAttrVector(obj->quads, it);
     encodeAttrVector(obj->loops, it);
     encodeAttrVector(obj->polys, it);
+    if (obj->mtl) {
+        *it++ = '1';
+        for (char c: obj->mtl->serialize())
+            *it++ = c;
+    } else {
+        *it++ = '0';
+    }
     return true;
 }
 
