@@ -17,18 +17,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - id: ci-skip-step
-      uses: mstachniuk/ci-skip@v1.2.0
-      with:
-        commit-filter: '[skip ci]'
     - id: is-release-step
       uses: mstachniuk/ci-skip@v1.2.0
       with:
         commit-filter: '[release]'
 
     outputs:
-      build: ${{ steps.ci-skip-step.outputs.ci-skip-not == 'true' && 'true' || 'false' }}
-      deploy: ${{ (steps.ci-skip-step.outputs.ci-skip-not == 'true' && steps.is-release-step.outputs.ci-skip == 'true') && 'true' || 'false' }}
+      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' }}
       type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'Release' || 'Debug' }}
 
   release:
@@ -37,6 +32,7 @@ jobs:
     needs: [check]
 
     steps:
+    - uses: actions/checkout@v2
     - name: Versioning
       id: versioning
       run: python -c "import datetime; d = datetime.datetime.now(); print('::set-output name=version::{}.{}.{}'.format(d.year, d.month, d.day))"
@@ -66,7 +62,6 @@ jobs:
         - os: windows-latest
 
     runs-on: ${{ matrix.os }}
-    if: ${{ needs.check.outputs.build == 'true' }}
     needs: [check]
     #continue-on-error: true
 
