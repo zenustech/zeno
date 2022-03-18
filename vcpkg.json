@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "features": {
     "qt": {
-      "description": "Install Qt with vcpkg",
+      "description": "Install Qt via vcpkg",
       "dependencies": [
         {
           "name": "qt",
