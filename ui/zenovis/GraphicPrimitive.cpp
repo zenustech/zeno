@@ -326,15 +326,15 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(nullptr);
-        /*if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
+        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
             triObj.count = tris_count;
             triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
             triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
             triObj.vbo = nullptr;
-        } else {*/
+        } else {
             computeTrianglesTangent(prim.get());
             parseTrianglesDrawBuffer(prim.get(), triObj);
-        /*}*/
+        }
         triObj.prog = get_tris_program(prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(nullptr);
