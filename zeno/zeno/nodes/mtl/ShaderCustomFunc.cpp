@@ -80,7 +80,7 @@ ZENDEFNODE(ShaderCustomFunc, {
 });
 
 
-struct ShaderInvokeFunc : ShaderNode {
+struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
     virtual int determineType(EmissionPass *em) override {
         auto func = get_input<ShaderCustomFuncObject>("func");
         auto args = get_input<ListObject>("args");

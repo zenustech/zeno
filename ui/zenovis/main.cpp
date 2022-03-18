@@ -105,13 +105,21 @@ void set_program_uniforms(Program *pro) {
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-
+static glm::vec3 light;
+extern glm::vec3 getLight()
+{
+  return light;
+}
+void setLight(float x, float y, float z)
+{
+  light = glm::vec3(x,y,z);
+}
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
   
-  
+  setLight(1,1,0);
   auto version = (const char *)glGetString(GL_VERSION);
   zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 

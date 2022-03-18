@@ -36,6 +36,7 @@ ZENO_API void prim_polys_to_tris(PrimitiveObject *prim) {
         }
     }
     prim->loops.clear();
+    prim->polys.clear();
 }
 
 ZENO_API void prim_polys_to_tris_with_uv(PrimitiveObject *prim) {
@@ -83,6 +84,7 @@ ZENO_API void prim_polys_to_tris_with_uv(PrimitiveObject *prim) {
         }
     }
     prim->loops.clear();
+    prim->polys.clear();
 }
 
 namespace {

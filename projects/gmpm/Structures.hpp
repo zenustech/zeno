@@ -105,6 +105,9 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
       throw std::runtime_error("quadrature points not binded.");
     return *elements;
   }
+  bool isMeshPrimitive() const noexcept {
+    return elements.has_value() && category != category_e::mpm;
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
 

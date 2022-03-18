@@ -12,10 +12,9 @@ namespace zeno {
 struct ShaderNode;
 
 struct ShaderObject : IObjectClone<ShaderObject> {
-    ShaderNode *node;
-    std::any extra_data;
+    std::shared_ptr<ShaderNode> node;
 
-    ZENO_API explicit ShaderObject(ShaderNode *node) : node(std::move(node)) {}
+    explicit ShaderObject(ShaderNode *node) : node(node->clone()) {}
 };
 
 }

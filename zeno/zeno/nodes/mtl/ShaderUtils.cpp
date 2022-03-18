@@ -6,7 +6,7 @@
 namespace zeno {
 
 
-struct ShaderLinearFit : ShaderNode {
+struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
     virtual int determineType(EmissionPass *em) override {
         auto in = em->determineType(get_input("in").get());
         auto inMin = em->determineType(get_input("inMin").get());

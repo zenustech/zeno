@@ -7,7 +7,7 @@
 namespace zeno {
 
 
-struct ShaderPackVec : ShaderNode {
+struct ShaderPackVec : ShaderNodeClone<ShaderPackVec> {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -78,7 +78,7 @@ ZENDEFNODE(ShaderMakeVec, {
 });
 
 
-struct ShaderFillVec : ShaderNode {
+struct ShaderFillVec : ShaderNodeClone<ShaderFillVec> {
     virtual int determineType(EmissionPass *em) override {
         auto tin = em->determineType(get_input("in").get());
         if (tin != 1)

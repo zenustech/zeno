@@ -44,11 +44,11 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
 
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         assert(tree->node);
-        if (auto it = varmap.find(tree->node); it != varmap.end())
+        if (auto it = varmap.find(tree->node.get()); it != varmap.end())
             return variables.at(it->second).type;
         int type = tree->node->determineType(this);
-        varmap[tree->node] = variables.size();
-        variables.push_back(VarInfo{type, tree->node});
+        varmap[tree->node.get()] = variables.size();
+        variables.push_back(VarInfo{type, tree->node.get()});
         return type;
 
     } else {
@@ -162,7 +162,7 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
         }, num->value);
 
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
-        return "tmp" + std::to_string(varmap.at(tree->node));
+        return "tmp" + std::to_string(varmap.at(tree->node.get()));
     }
 }
 

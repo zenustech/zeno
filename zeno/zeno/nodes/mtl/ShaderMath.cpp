@@ -20,7 +20,7 @@ static auto &toHlsl() {
 }
 
 
-struct ShaderTernaryMath : ShaderNode {
+struct ShaderTernaryMath : ShaderNodeClone<ShaderTernaryMath> {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -78,7 +78,7 @@ ZENDEFNODE(ShaderTernaryMath, {
 });
 
 
-struct ShaderBinaryMath : ShaderNode {
+struct ShaderBinaryMath : ShaderNodeClone<ShaderBinaryMath> {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");
@@ -156,7 +156,7 @@ ZENDEFNODE(ShaderBinaryMath, {
 });
 
 
-struct ShaderUnaryMath : ShaderNode {
+struct ShaderUnaryMath : ShaderNodeClone<ShaderUnaryMath> {
     virtual int determineType(EmissionPass *em) override {
         auto op = get_input2<std::string>("op");
         auto in1 = get_input("in1");

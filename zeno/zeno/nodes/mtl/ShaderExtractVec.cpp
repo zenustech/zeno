@@ -7,7 +7,7 @@ namespace zeno {
 
 
 namespace {
-struct ImplShaderExtractVec : ShaderNode {
+struct ImplShaderExtractVec : ShaderNodeClone<ImplShaderExtractVec> {
     int comp{};
 
     virtual int determineType(EmissionPass *em) override {
@@ -30,7 +30,6 @@ struct ShaderExtractVec : INode {
             node->inputs["vec"] = get_input("vec");
             node->comp = i;
             auto shader = std::make_shared<ShaderObject>(node.get());
-            shader->extra_data = std::move(node);
             set_output(std::string{} + "xyzw"[i], std::move(shader));
         }
     }
@@ -52,7 +51,7 @@ ZENDEFNODE(ShaderExtractVec, {
 });
 
 
-struct ShaderReduceVec : ShaderNode {
+struct ShaderReduceVec : ShaderNodeClone<ShaderReduceVec> {
     int tyin{};
 
     virtual int determineType(EmissionPass *em) override {

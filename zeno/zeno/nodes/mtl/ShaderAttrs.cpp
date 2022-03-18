@@ -7,7 +7,7 @@
 namespace zeno {
 
 
-struct ShaderInputAttr : ShaderNode {
+struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual int determineType(EmissionPass *em) override {
         auto type = get_input2<std::string>("type");
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};

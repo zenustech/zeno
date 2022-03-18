@@ -21,6 +21,7 @@ extern unsigned int getGlobalEnvMap();
 extern unsigned int getIrradianceMap();
 extern unsigned int getPrefilterMap();
 extern unsigned int getBRDFLut();
+extern glm::vec3 getLight();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -230,6 +231,7 @@ struct GraphicPrimitive : IGraphic {
     bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("nrm"));
     if(prim->tris.size() && need_computeNormal)
     {
+        std::cout<<"computing normal\n";
         zeno::primCalcNormal(prim.get(), 1);
     }
     if (!prim->has_attr("nrm")) {
@@ -326,6 +328,7 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(nullptr);
+
         if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
             triObj.count = tris_count;
             triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
@@ -335,6 +338,7 @@ struct GraphicPrimitive : IGraphic {
             computeTrianglesTangent(prim.get());
             parseTrianglesDrawBuffer(prim.get(), triObj);
         }
+        
         triObj.prog = get_tris_program(prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(nullptr);
@@ -441,6 +445,7 @@ struct GraphicPrimitive : IGraphic {
         }
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
+        triObj.prog->set_uniform("light0",getLight());
         triObj.prog->set_uniformi("mRenderWireframe", false);
 
         if (prim_has_mtl) {
@@ -1150,15 +1155,15 @@ vec3 CalculateLightingIBL(
     in float roughness,
     in float metallic)
 {
-    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    mat3 m = inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz));
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 irradiance = texture(irradianceMap, m*N).rgb;
-    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
     const float MAX_REFLECTION_LOD = 7.0;
+    vec3 irradiance = textureLod(prefilterMap, m*N,  MAX_REFLECTION_LOD).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
     vec3 R = reflect(-V, N); 
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
@@ -1255,10 +1260,10 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
-float toonSpecular(vec3 V, vec3 L, vec3 N)
+float toonSpecular(vec3 V, vec3 L, vec3 N, float roughness)
 {
     float NoV = dot(N,V);
-    float _SpecularSize = 0.3;
+    float _SpecularSize = pow((1-roughness),5);
     float specularFalloff = NoV;
     specularFalloff = pow(specularFalloff, 2);
     vec3 reflectionDirection = reflect(L, N);
@@ -1274,6 +1279,7 @@ vec3 histThings(vec3 s)
     ls = ceil(ls/0.2)*0.2;
     return norms * ls;
 }
+)" + R"(
 vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
@@ -1322,7 +1328,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     ls = ceil(ls/0.4)*0.4;
 
 
-    return (kD*C2 + norms * ls * toonSpecular(V, L, N));
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N, roughness));
 }
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
@@ -1428,10 +1434,10 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
-
+uniform vec3 light0;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
-    vec3 L1 = vec3(1,1,0);
+    vec3 L1 = light0;
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
