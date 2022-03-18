@@ -27,13 +27,13 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      build: ${{ steps.ci-skip-step.outputs.ci-skip-not }}
+      build: ${{ steps.ci-skip-step.outputs.ci-skip-not == 'true' && 'true' || 'false' }}
       deploy: ${{ (steps.ci-skip-step.outputs.ci-skip-not == 'true' && steps.is-release-step.outputs.ci-skip == 'true') && 'true' || 'false' }}
       type: ${{ needs.check.outputs.deploy && 'Release' || 'Debug' }}
 
   release:
     runs-on: ubuntu-latest
-    if: ${{ needs.check.outputs.build == 'true' && needs.check.outputs.deploy == 'true' }}
+    if: ${{ needs.check.outputs.deploy == 'true' }}
     needs: [check]
 
     steps:
@@ -118,7 +118,7 @@ jobs:
         - os: Linux
         - os: Windows
 
-    if: ${{ needs.check.outputs.build == 'true' && needs.check.outputs.deploy == 'true' }}
+    if: ${{ needs.check.outputs.deploy == 'true' }}
     needs: [release, build]
     runs-on: ubuntu-latest
     #continue-on-error: true

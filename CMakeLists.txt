@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(zeno
     LANGUAGES C CXX
-    VERSION 0.0.1
+    VERSION 2021.3.18
     DESCRIPTION "Open-source node system framework for simulation and others"
     HOMEPAGE_URL https://github.com/zenustech/zeno
     )
