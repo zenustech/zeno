@@ -723,12 +723,13 @@ struct RefineMeshParticles : INode {
                                    vol * 0.25f);
                 }
               });
-          cudaPol(range(curVertCnt),
-                  [pars = proxy<execspace_e::cuda>({}, pars)] __device__(
-                      int pi) mutable {
-                    pars.tuple<3>("nrm", pi) =
-                        pars.pack<3>("nrm", pi).normalized();
-                  });
+          if (hasNormalProperty)
+            cudaPol(range(curVertCnt),
+                    [pars = proxy<execspace_e::cuda>({}, pars)] __device__(
+                        int pi) mutable {
+                      pars.tuple<3>("nrm", pi) =
+                          pars.pack<3>("nrm", pi).normalized();
+                    });
           fmt::print("done refinement iter [{}].\n", cnt);
           if (cnt++ >= limits<int>::max())
             break;

@@ -651,9 +651,7 @@
       2382.9822936240403,
       2783.9006851812997
      ],
-     "options": [
-      "ONCE"
-     ],
+     "options": [],
      "socket_keys": [
       "obj0",
       "obj1",
@@ -932,8 +930,8 @@
      },
      "params": {},
      "uipos": [
-      5087.269085886378,
-      1929.2900245095304
+      5141.988796555456,
+      1985.6191384335807
      ],
      "options": []
     },
@@ -1567,7 +1565,7 @@
       "E": [
        null,
        null,
-       600.0
+       200.0
       ],
       "nu": [
        null,
@@ -1746,9 +1744,7 @@
       1472.9499999999925,
       2724.6118303571297
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "2cd76650-RefineMeshParticles": {
      "name": "RefineMeshParticles",
@@ -1774,9 +1770,7 @@
       1470.8839285714214,
       2920.312499999986
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "9dc059d7-RefineMeshParticles": {
      "name": "RefineMeshParticles",
@@ -1802,9 +1796,7 @@
       1471.2812499999934,
       3122.5491071428423
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "4f92f4f2-ZSParticlesToPrimitiveObject": {
      "name": "ZSParticlesToPrimitiveObject",
@@ -2286,7 +2278,9 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "type": "sticky"
+     },
      "uipos": [
       5548.783642728746,
       2327.1029956844836
@@ -2399,8 +2393,8 @@
     }
    },
    "view_rect": {
-    "x": -1824.5587311748532,
-    "y": 584.106474298859,
+    "x": -2430.0067102943726,
+    "y": 680.0343836119082,
     "width": 8940.696716308588,
     "height": 5304.813385009738
    }
@@ -2663,7 +2657,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum sticky slip separate",
+     "type",
+     "sticky"
+    ]
+   ],
    "categories": [
     "MPM"
    ]
@@ -13885,6 +13885,51 @@
     "shader"
    ]
   },
+  "ShaderBlendMode": {
+   "inputs": [
+    [
+     "float",
+     "base",
+     "0"
+    ],
+    [
+     "float",
+     "blend",
+     "0"
+    ],
+    [
+     "float",
+     "opacity",
+     "0"
+    ],
+    [
+     "enum add average colorBurn colorDodge darken difference exclusion glow hardLight hardMix lighten linearBurn linearDodge linearLight multiply negation normal overlay phoenix pinLight reflect screen softLight subtract vividLight",
+     "mode",
+     "normal"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "ShaderCihouUnrealEngine": {
    "inputs": [
     [
@@ -14116,6 +14161,31 @@
      "float",
      "stroke",
      "1.0"
+    ],
+    [
+     "vec3f",
+     "shape",
+     "1.0"
+    ],
+    [
+     "float",
+     "style",
+     "1.0"
+    ],
+    [
+     "float",
+     "strokeNoise",
+     "0"
+    ],
+    [
+     "vec3f",
+     "shad",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "strokeTint",
+     "0,0,0"
     ],
     [
      "string",
