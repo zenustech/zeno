@@ -17,7 +17,7 @@
 namespace zeno {
 
 #ifndef ZENO_ENABLE_SPDLOG
-static log_level::level_enum curr_level;
+static log_level::level_enum curr_level = log_level::info;
 
 ZENO_API void set_log_level(log_level::level_enum level) {
     curr_level = level;
