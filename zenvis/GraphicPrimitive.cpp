@@ -1543,6 +1543,27 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
+float softLight0(float a, float b)
+{
+float G;
+float res;
+if(b<=0.25)
+    G = ((16*b-12)*b+4)*b;
+else
+   G = sqrt(b);
+if(a<=0.5)
+   res = b - (1-2*a)*b*(1-b);
+else
+   res = b+(2*a-1)*(G-b);
+return res;
+}
+float linearLight0(float a, float b)
+{
+    if(a>0.5)
+        return b + 2 * (a-0.5);
+   else
+       return b + a - 1;
+}
 uniform vec3 light0;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
@@ -1574,8 +1595,11 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
     //pixarONB(new_normal, tangent, bitangent);
     light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*L1;
-    color += mix(BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)),
-    ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
+
+    vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+
+    color += mix(photoReal, NPR, mat_toon);
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
@@ -1611,29 +1635,25 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
 
-    vec3 ibl =  
-        mix(CalculateLightingIBL(
-            new_normal,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic),
-            CalculateLightingIBLToon(
-            new_normal,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic),
-            mat_toon);
+    vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
+    vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
+    vec3 ibl = mix(iblPhotoReal, iblNPR,mat_toon);
     
     color += ibl;
 
-    float r = smoothstep(0.5,0.6,mat_roughness);
-    float m = smoothstep(0.2, 0.5, mat_metallic);
-    float shift = 1 - r + m;
-    float stroke = clamp(mat_stroke+shift, 0, 1);
-    stroke = pow(stroke,4);
-    color = mix(color, mix(color*stroke, color, stroke), mat_toon);
+    vec3 realColor = photoReal + iblPhotoReal;
+    float brightness0 = 0.2126*realColor.x + 0.7152*realColor.y + 0.0722*realColor.z;
+    float brightness1 = smoothstep(mat_shape.x, mat_shape.y, att_NoL);
+    float brightness = mix(brightness1, brightness0, mat_style);
+    
+    float brightnessNoise = softLight0(mat_strokeNoise, brightness);
+    brightnessNoise = smoothstep(mat_shad.x, mat_shad.y, brightnessNoise);
+    float stroke = linearLight0(brightnessNoise, mat_stroke);
+    stroke = clamp(stroke + mat_stroke, 0,1);
+    vec3 strokeColor = clamp(vec3(stroke) + mat_strokeTint, vec3(0), vec3(1));
+
+    //strokeColor = pow(strokeColor,vec3(2.0));
+    color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
 
     color = ACESFitted(color.rgb, 2.2);
     return color;
