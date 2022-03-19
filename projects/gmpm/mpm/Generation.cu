@@ -540,12 +540,10 @@ struct ToBoundaryParticles : INode {
 
     // attributes
     std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"mass", 1},
-                                         {"pos", 3},
-                                         {"vel", 3},
-                                         {"nrm", 3},
-                                         {"inds", (int)category + 1}};
+        {"mass", 1}, {"vol", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
+    std::vector<zs::PropertyTag> eleTags{
+        {"mass", 1}, {"vol", 1}, {"pos", 3},
+        {"vel", 3},  {"nrm", 3}, {"inds", (int)category + 1}};
 
     for (auto tag : eleTags)
       fmt::print("boundary element tag: [{}, {}]\n", tag.name, tag.numChannels);
@@ -561,6 +559,7 @@ struct ToBoundaryParticles : INode {
 
                 // mass
                 float vol = dofVol[pi];
+                pars("vol", pi) = vol;
                 pars("mass", pi) = vol * density; // unstoppable mass
 
                 // pos
@@ -587,6 +586,7 @@ struct ToBoundaryParticles : INode {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
                 // mass
+                eles("vol", ei) = eleVol[ei];
                 eles("mass", ei) = eleVol[ei] * density;
 
                 // pos
@@ -686,9 +686,10 @@ struct BuildPrimitiveSequence : INode {
       zsprimseq->category = ZenoParticles::surface;
       zsprimseq->asBoundary = true;
       std::vector<zs::PropertyTag> tags{
-          {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}};
-      std::vector<zs::PropertyTag> eleTags{
-          {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}, {"inds", (int)3}};
+          {"mass", 1}, {"vol", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
+      std::vector<zs::PropertyTag> eleTags{{"mass", 1}, {"vol", 1},
+                                           {"pos", 3},  {"vel", 3},
+                                           {"nrm", 3},  {"inds", (int)3}};
       zsprimseq->particles =
           typename ZenoParticles::particles_t{tags, numV, memsrc_e::device, 0};
       zsprimseq->elements = typename ZenoParticles::particles_t{
@@ -701,6 +702,7 @@ struct BuildPrimitiveSequence : INode {
                 seq("vol", pi) = next("vol", pi);
                 seq.tuple<3>("pos", pi) = next.pack<3>("pos", pi);
                 seq.tuple<3>("vel", pi) = next.pack<3>("vel", pi);
+                seq.tuple<3>("nrm", pi) = next.pack<3>("nrm", pi);
               });
       cudaPol(
           Collapse{numE},
@@ -711,6 +713,7 @@ struct BuildPrimitiveSequence : INode {
             seq("vol", ei) = next("vol", ei);
             seq.tuple<3>("pos", ei) = next.pack<3>("pos", ei);
             seq.tuple<3>("vel", ei) = next.pack<3>("vel", ei);
+            seq.tuple<3>("nrm", ei) = next.pack<3>("nrm", ei);
             seq.tuple<3>("inds", ei) = next.pack<3>("inds", ei);
           });
     }
