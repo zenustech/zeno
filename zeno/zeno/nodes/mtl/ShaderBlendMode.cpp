@@ -182,15 +182,10 @@ namespace zeno
             }
             const auto& code = mapIter->second;
 
-            EmissionPass::CommonFunc blendFunc
-            {
-                rettype : 1,
-                argTypes : {1, 1},
-                code : 
-                "(float base, float blend) {\n"
-                + code +
-                "}\n",
-            };
+            EmissionPass::CommonFunc blendFunc;
+            blendFunc.rettype = 1;
+            blendFunc.argTypes = {1, 1};
+            blendFunc.code = "(float base, float blend) {\n" + code + "}\n";
             const auto blendFuncName = em->addCommonFunc(std::move(blendFunc));
 
             const auto base = get_input("base");
