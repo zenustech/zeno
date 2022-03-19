@@ -54,6 +54,7 @@ struct PrimMerge : INode {
                 auto base = bases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->verts.values;
@@ -65,6 +66,21 @@ struct PrimMerge : INode {
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->verts.values;
+                        size_t n = std::min(arr.size(), prim->verts.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->verts.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->verts.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->verts.values);
                 prim->verts.foreach_attr(core);
@@ -82,6 +98,7 @@ struct PrimMerge : INode {
                 auto base = linebases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->lines.values;
@@ -97,6 +114,21 @@ struct PrimMerge : INode {
                             outarr[base + i] = arr[i];
                         }
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->lines.values;
+                        size_t n = std::min(arr.size(), prim->lines.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->lines.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->lines.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->lines.values);
                 prim->lines.foreach_attr(core);
@@ -114,6 +146,7 @@ struct PrimMerge : INode {
                 auto base = tribases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->tris.values;
@@ -129,6 +162,21 @@ struct PrimMerge : INode {
                             outarr[base + i] = arr[i];
                         }
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->tris.values;
+                        size_t n = std::min(arr.size(), prim->tris.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->tris.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->tris.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->tris.values);
                 prim->tris.foreach_attr(core);
@@ -146,6 +194,7 @@ struct PrimMerge : INode {
                 auto base = quadbases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->quads.values;
@@ -161,6 +210,21 @@ struct PrimMerge : INode {
                             outarr[base + i] = arr[i];
                         }
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->quads.values;
+                        size_t n = std::min(arr.size(), prim->quads.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->quads.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->quads.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->quads.values);
                 prim->quads.foreach_attr(core);
@@ -178,6 +242,7 @@ struct PrimMerge : INode {
                 auto base = loopbases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->loops.values;
@@ -193,6 +258,21 @@ struct PrimMerge : INode {
                             outarr[base + i] = arr[i];
                         }
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->loops.values;
+                        size_t n = std::min(arr.size(), prim->loops.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->loops.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->loops.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->loops.values);
                 prim->loops.foreach_attr(core);
@@ -210,6 +290,7 @@ struct PrimMerge : INode {
                 auto base = polybases[primIdx];
                 auto core = [&] (auto key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
+#if 0
                     auto &outarr = [&] () -> auto & {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                             return outprim->polys.values;
@@ -225,6 +306,21 @@ struct PrimMerge : INode {
                             outarr[base + i] = arr[i];
                         }
                     }
+#else
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->polys.values;
+                        size_t n = std::min(arr.size(), prim->polys.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = {arr[i].first + lbase, arr[i].second};
+                        }
+                    } else {
+                        auto &outarr = outprim->polys.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->polys.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+#endif
                 };
                 core(std::true_type{}, prim->polys.values);
                 prim->polys.foreach_attr(core);

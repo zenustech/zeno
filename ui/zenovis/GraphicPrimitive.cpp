@@ -449,6 +449,12 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniformi("mRenderWireframe", false);
 
         if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            for (int texId{0}; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.prog->set_uniformi(texName.c_str(), texId);
+            }
             triObj.prog->set_uniformi("skybox",id);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
             if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
@@ -512,7 +518,6 @@ struct GraphicPrimitive : IGraphic {
     for (const auto &tex2D : tex2Ds)
     {
       auto tex = std::make_unique<Texture>();
-      tex->load(tex2D->path.c_str());
 
 #define SET_TEX_WRAP(TEX_WRAP, TEX_2D_WRAP)                                    \
   if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::REPEAT)               \
@@ -547,6 +552,8 @@ struct GraphicPrimitive : IGraphic {
       SET_TEX_FILTER(tex->mag_filter, tex2D->magFilter)
 
 #undef SET_TEX_FILTER
+
+      tex->load(tex2D->path.c_str());
       textures.push_back(std::move(tex));
     }
   }
@@ -1195,7 +1202,7 @@ vec3 CalculateLightingIBLToon(
     prefilteredColor = clamp(smoothstep(0.5,0.5,length(prefilteredColor)), 0,1)*vec3(1,1,1);
     vec3 specularColor = mix(prefilteredColor+0.2, prefilteredColor2, prefilteredColor);
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    brdf.r = ceil(brdf.r/0.2)*0.2;
+    brdf.r = (floor(brdf.r/0.33)+0.165)*0.33;
     vec3 specular = specularColor * (F * brdf.r + smoothstep(0.7,0.7,brdf.y));
 
     return (kD * diffuse + specular);
@@ -1270,7 +1277,7 @@ float toonSpecular(vec3 V, vec3 L, vec3 N, float roughness)
     float towardsReflection = dot(V, -reflectionDirection);
     float specularChange = fwidth(towardsReflection);
     float specularIntensity = smoothstep(1 - _SpecularSize, 1 - _SpecularSize + specularChange, towardsReflection);
-    return specularIntensity;
+    return clamp(specularIntensity,0,1);
 }
 vec3 histThings(vec3 s)
 {
@@ -1280,6 +1287,9 @@ vec3 histThings(vec3 s)
     return norms * ls;
 }
 )" + R"(
+float V_Kelemen(float LoH) {
+    return 0.25 / (LoH * LoH);
+}
 vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
@@ -1329,6 +1339,85 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 
 
     return (kD*C2 + norms * ls * toonSpecular(V, L, N, roughness));
+}
+vec3 ToonDisneyBRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
+{
+    float NdotL = dot(N,L);
+    float NdotV = dot(N,V);
+    //if (NdotL < 0 || NdotV < 0) return vec3(0);
+
+    vec3 H = normalize(L+V);
+    float NdotH = dot(N,H);
+    float LdotH = dot(L,H);
+
+    vec3 Cdlin = mon2lin(baseColor);
+    float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
+
+    vec3 Ctint = Cdlum > 0 ? Cdlin/Cdlum : vec3(1); // normalize lum. to isolate hue+sat
+    vec3 Cspec0 = mix(specular*.08*mix(vec3(1), Ctint, specularTint), Cdlin, metallic);
+    vec3 Csheen = mix(vec3(1), Ctint, sheenTint);
+
+    // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
+    // and mix in diffuse retro-reflection based on roughness
+    float FL = SchlickFresnel(NdotL), FV = SchlickFresnel(NdotV);
+    float Fd90 = 0.5 + 2 * LdotH*LdotH * roughness;
+    float viewIndp = mix(1.0, Fd90, FL);
+    float Fd = (floor(viewIndp/0.33)+0.165) * 0.33 * mix(1.0, Fd90, FV);
+
+    // Based on Hanrahan-Krueger brdf approximation of isotropic bssrdf
+    // 1.25 scale is used to (roughly) preserve albedo
+    // Fss90 used to "flatten" retroreflection based on roughness
+    float Fss90 = LdotH*LdotH*roughness;
+    float Fss = mix(1.0, Fss90, FL) * mix(1.0, Fss90, FV);
+    float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+
+    // specular
+    float aspect = sqrt(1-anisotropic*.9);
+    float ax = max(.001, sqr(roughness)/aspect);
+    float ay = max(.001, sqr(roughness)*aspect);
+    float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
+    float FH = SchlickFresnel(LdotH);
+    
+    vec3 Fs = mix(Cspec0, vec3(1), FH);
+    float Gs;
+    Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+    Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+    // sheen
+    vec3 Fsheen = FH * sheen * Csheen;
+
+    // clearcoat (ior = 1.5 -> F0 = 0.04)
+    float Dr = GTR1(NdotH, mix(.1,.001,clearcoatGloss));
+    float Fr = mix(.04, 1.0, FH);
+    float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
+    float angle = clamp(dot(N, L), 0.0, 1.0);
+    float c1 = (1/PI) * mix(Fd, ss, subsurface);
+
+    float shad1 = smoothstep(0.3, 0.31, NdotL);
+    float shad2 = smoothstep(0,0.01, NdotL);
+    vec3 shadowC1 = vec3(1,1,1) * 0.4;
+    vec3 C1 = mix(shadowC1, vec3(1,1,1), shad1);
+    vec3 shadowC2 = shadowC1 * 0.4;
+    vec3 C2 = mix(shadowC2, C1, shad2);
+    //c1 *= C2.x;
+    
+    Fsheen = Fsheen/(length(Fsheen)+1e-5) * (floor(length(Fsheen)/0.2)+0.1)*0.2;
+    vec3 fspecularTerm = (Gs*Fs*Ds);
+    vec3 fcoatTerm =  vec3(.25*clearcoat*Gr*Fr*Dr);
+
+    return (c1 * Cdlin  + Fsheen * angle)
+        * (1-metallic)
+        + (normalize(fspecularTerm) * ceil(length(fspecularTerm)/0.3) * 0.3 + fcoatTerm)* toonSpecular(V, L, N, roughness) ;
+        
 }
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
@@ -1466,7 +1555,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //pixarONB(new_normal, tangent, bitangent);
     light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*L1;
     color += mix(BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)),
-    ToonBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
+    ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)), mat_toon) * vec3(1, 1, 1) * mat_zenxposure;
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
