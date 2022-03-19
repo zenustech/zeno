@@ -864,8 +864,8 @@
      "name": "ZSGridToZSParticle",
      "inputs": {
       "ZSGrid": [
-       "8c9fdef5-PortalOut",
-       "port",
+       "3fd7f368-ApplyGridBoundaryOnZSGrid",
+       "ZSGrid",
        null
       ],
       "ZSPartition": [
@@ -884,15 +884,15 @@
        null
       ],
       "SRC": [
-       "433cce72-ApplyBoundaryOnZSGrid",
+       "3fd7f368-ApplyGridBoundaryOnZSGrid",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5826.7012366090885,
-      1741.7344918444915
+      5879.7225132048325,
+      1751.4730936682
      ],
      "options": []
     },
@@ -1875,87 +1875,16 @@
       "VIEW"
      ]
     },
-    "698c2224-ToZSLevelSet": {
-     "name": "ToZSLevelSet",
-     "inputs": {
-      "VDBGrid": [
-       "2d633ba5-ImportVDBGrid",
-       "data",
-       null
-      ],
-      "SRC": [
-       "2d633ba5-ImportVDBGrid",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      1779.0790111346673,
-      1085.123613938066
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "e55e3bfc-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "assets/cloth/do_not_share/bishop_vdb/sdf_v1_0.vdb"
-     },
-     "uipos": [
-      1206.6506053415828,
-      1003.6258278400869
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "2d633ba5-ImportVDBGrid": {
-     "name": "ImportVDBGrid",
-     "inputs": {
-      "path": [
-       "e55e3bfc-MakeString",
-       "value",
-       null
-      ],
-      "SRC": [
-       "e55e3bfc-MakeString",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "type": ""
-     },
-     "uipos": [
-      1483.4456449097183,
-      1021.7788023443363
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
-    },
     "532a51d3-PortalIn": {
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "cf7048c3-ToZSBoundary",
-       "ZSBoundary",
+       "ac0bf1e7-ToBoundaryParticles",
+       "ZSParticles",
        null
       ],
       "SRC": [
-       "cf7048c3-ToZSBoundary",
+       "ac0bf1e7-ToBoundaryParticles",
        "DST",
        null
       ]
@@ -1968,56 +1897,6 @@
       1244.8454626684454
      ],
      "options": []
-    },
-    "cf7048c3-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       "698c2224-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      2095.0987876969075,
-      1106.8324438664977
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "db33fd49-PortalOut": {
      "name": "PortalOut",
@@ -2157,8 +2036,8 @@
      },
      "params": {},
      "uipos": [
-      4805.158862082044,
-      2070.419773461236
+      4805.158862082043,
+      2071.772357047862
      ],
      "options": []
     },
@@ -2180,8 +2059,206 @@
      ],
      "options": []
     },
-    "433cce72-ApplyBoundaryOnZSGrid": {
-     "name": "ApplyBoundaryOnZSGrid",
+    "ac0bf1e7-ToBoundaryParticles": {
+     "name": "ToBoundaryParticles",
+     "inputs": {
+      "prim": [
+       "d7af5010-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "dx": [
+       "c415d859-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       "d7af5010-ImportObjPrimitive",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2102.8299970077223,
+      1193.8960194871343
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "d7af5010-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       "c5cf0fc4-MakeString",
+       "value",
+       ""
+      ],
+      "SRC": [
+       "c5cf0fc4-MakeString",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1798.9964477849262,
+      1249.3480920259954
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "c415d859-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx"
+     },
+     "uipos": [
+      1804.7606964895895,
+      1036.2005855493117
+     ],
+     "options": []
+    },
+    "c5cf0fc4-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "assets/cloth/do_not_share/output/bishop/bishop_body.0.obj"
+     },
+     "uipos": [
+      1518.8816291320782,
+      1263.1915117151148
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4b2337b5-ZSBoundaryPrimitiveToZSGrid": {
+     "name": "ZSBoundaryPrimitiveToZSGrid",
+     "inputs": {
+      "ZSParticles": [
+       "67fc052d-PortalOut",
+       "port",
+       null
+      ],
+      "ZSPartition": [
+       "68dfc3bf-PortalOut",
+       "port",
+       null
+      ],
+      "ZSGrid": [
+       "2e018ed6-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "c9c872d3-ZSGridFromZSPartition",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5122.263810348968,
+      2943.20676933494
+     ],
+     "options": []
+    },
+    "2e018ed6-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       "68dfc3bf-PortalOut",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "boundary_grid"
+     },
+     "uipos": [
+      3659.3907904346283,
+      2774.0247998676346
+     ],
+     "options": []
+    },
+    "67fc052d-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       "2e018ed6-PortalOut",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "bodyboundary"
+     },
+     "uipos": [
+      3589.051822676332,
+      2975.5824168064732
+     ],
+     "options": []
+    },
+    "8b735fa8-UpdateZSGrid": {
+     "name": "UpdateZSGrid",
+     "inputs": {
+      "gravity": [
+       null,
+       null,
+       0.0
+      ],
+      "ZSPartition": [
+       "68dfc3bf-PortalOut",
+       "port",
+       null
+      ],
+      "ZSGrid": [
+       "2e018ed6-PortalOut",
+       "port",
+       null
+      ],
+      "dt": [
+       "71878c26-PortalOut",
+       "port",
+       null
+      ],
+      "Accel": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "4b2337b5-ZSBoundaryPrimitiveToZSGrid",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5483.514208694561,
+      2859.7674472016115
+     ],
+     "options": []
+    },
+    "3fd7f368-ApplyGridBoundaryOnZSGrid": {
+     "name": "ApplyGridBoundaryOnZSGrid",
      "inputs": {
       "ZSPartition": [
        "50437419-PortalOut",
@@ -2193,46 +2270,137 @@
        "ZSGrid",
        null
       ],
-      "ZSBoundary": [
-       "ed615f92-PortalOut",
+      "BoundaryZSPartition": [
+       "68dfc3bf-PortalOut",
        "port",
        null
       ],
+      "BoundaryZSGrid": [
+       "8b735fa8-UpdateZSGrid",
+       "ZSGrid",
+       null
+      ],
       "SRC": [
-       "ed615f92-PortalOut",
+       "8b735fa8-UpdateZSGrid",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5596.652735562286,
-      1972.4050151975575
+      5548.783642728746,
+      2327.1029956844836
      ],
      "options": []
     },
-    "ed615f92-PortalOut": {
+    "68dfc3bf-PortalOut": {
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       "bff4cb04-UpdateZSGrid",
+       "b68f1795-ApplyWindImpulseOnZSGrid",
        "DST",
        null
       ]
      },
      "params": {
-      "name": "bodyboundary"
+      "name": "boundary_partition"
      },
      "uipos": [
-      5287.043182465779,
-      2252.870618825977
+      3796.922391392201,
+      2621.312716116136
+     ],
+     "options": []
+    },
+    "c9c872d3-ZSGridFromZSPartition": {
+     "name": "ZSGridFromZSPartition",
+     "inputs": {
+      "ZSPartition": [
+       "56891294-ExpandZSPartition",
+       "ZSPartition",
+       null
+      ],
+      "ZSGrid": [
+       "2e018ed6-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "56891294-ExpandZSPartition",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4636.706207399624,
+      2954.8667093296667
+     ],
+     "options": []
+    },
+    "56891294-ExpandZSPartition": {
+     "name": "ExpandZSPartition",
+     "inputs": {
+      "ZSPartition": [
+       "2b0a487c-ZSPartitionForZSParticles",
+       "ZSPartition",
+       null
+      ],
+      "SRC": [
+       "2b0a487c-ZSPartitionForZSParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "offset": 0,
+      "extent": 2
+     },
+     "uipos": [
+      4333.873159912469,
+      2920.2152975355607
+     ],
+     "options": []
+    },
+    "2b0a487c-ZSPartitionForZSParticles": {
+     "name": "ZSPartitionForZSParticles",
+     "inputs": {
+      "ZSPartition": [
+       "68dfc3bf-PortalOut",
+       "port",
+       null
+      ],
+      "ZSGrid": [
+       "2e018ed6-PortalOut",
+       "port",
+       null
+      ],
+      "ZSParticles": [
+       "67fc052d-PortalOut",
+       "port",
+       null
+      ],
+      "ppc": [
+       null,
+       null,
+       2.0
+      ],
+      "SRC": [
+       "67fc052d-PortalOut",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4056.291054974315,
+      2907.972574037481
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -1835.370093745904,
-    "y": 540.4461410266208,
+    "x": -1824.5587311748532,
+    "y": 584.106474298859,
     "width": 8940.696716308588,
     "height": 5304.813385009738
    }
