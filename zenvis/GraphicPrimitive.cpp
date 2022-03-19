@@ -450,6 +450,12 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniformi("mRenderWireframe", false);
 
         if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            for (int texId{0}; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.prog->set_uniformi(texName.c_str(), texId);
+            }
             triObj.prog->set_uniformi("skybox",id);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
             if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
@@ -513,7 +519,6 @@ struct GraphicPrimitive : IGraphic {
     for (const auto &tex2D : tex2Ds)
     {
       auto tex = std::make_unique<Texture>();
-      tex->load(tex2D->path.c_str());
 
 #define SET_TEX_WRAP(TEX_WRAP, TEX_2D_WRAP)                                    \
   if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::REPEAT)               \
@@ -548,6 +553,8 @@ struct GraphicPrimitive : IGraphic {
       SET_TEX_FILTER(tex->mag_filter, tex2D->magFilter)
 
 #undef SET_TEX_FILTER
+
+      tex->load(tex2D->path.c_str());
       textures.push_back(std::move(tex));
     }
   }
