@@ -82,11 +82,11 @@ To build ZENO from source, you need:
 
 ## Install from package manager
 
-Arch Linux users may try:
+Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
 ```bash
 yay -S zeno
 ```
-for installing Zeno from [AUR](https://aur.archlinux.org).
+The package is maintained by @archibate.
 
 
 ## Contributors

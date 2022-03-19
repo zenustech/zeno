@@ -48,7 +48,7 @@ sudo apt-get install -y qt5-default
 
 ```bash
 sudo pacman -S git cmake make g++
-sudo pacman -S qt5
+sudo pacman -S qt5-base
 ```
 
 ### Mac OS X
