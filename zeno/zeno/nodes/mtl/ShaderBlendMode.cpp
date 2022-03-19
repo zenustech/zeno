@@ -6,262 +6,258 @@
 namespace zeno
 {
     // reference: https://github.com/jamieowen/glsl-blend
-    static constexpr char blend_mode_str[] =
-        "add" " "
-        "average" " "
-        "colorBurn" " "
-        "colorDodge" " "
-        "darken" " "
-        "difference" " "
-        "exclusion" " "
-        "glow" " "
-        "hardLight" " "
-        "hardMix" " "
-        "lighten" " "
-        "linearBurn" " "
-        "linearDodge" " "
-        "linearLight" " "
-        "multiply" " "
-        "negation" " "
-        "normal" " "
-        "overlay" " "
-        "phoenix" " "
-        "pinLight" " "
-        "reflect" " "
-        "screen" " "
-        "softLight" " "
-        "subtract" " "
-        "vividLight" " "
-    ;
+    static const std::string BLEND_ENUM_STR =
+        "enum"
+        " " "add"
+        " " "average"
+        " " "colorBurn"
+        " " "colorDodge"
+        " " "darken"
+        " " "difference"
+        " " "exclusion"
+        " " "glow"
+        " " "hardLight"
+        " " "hardMix"
+        " " "lighten"
+        " " "linearBurn"
+        " " "linearDodge"
+        " " "linearLight"
+        " " "multiply"
+        " " "negation"
+        " " "normal"
+        " " "overlay"
+        " " "phoenix"
+        " " "pinLight"
+        " " "reflect"
+        " " "screen"
+        " " "softLight"
+        " " "subtract"
+        " " "vividLight"
+    ; // BLEND_ENUM_STR
 
-    static const std::unordered_map<std::string, std::string> blend_func_code = {
+    static const std::unordered_map<std::string, std::string> BLEND_CODE_MAP =
+    {
         {
             "add",
-            "return (min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity));"
+            "   return min(base + blend, 1.0);\n"
         },
         {  
             "average",
-            "return ((base + blend) / 2.0 * opacity + base * (1.0 - opacity));"
+            "   return (base + blend) / 2.0;\n"
         },
         {   
             "colorBurn", 
-            "float r = (blend.r == 0.0) ? blend.r : max((1.0 - ((1.0 - base.r) / blend.r)), 0.0);\n"
-            "float g = (blend.g == 0.0) ? blend.g : max((1.0 - ((1.0 - base.g) / blend.g)), 0.0);\n"
-            "float b = (blend.b == 0.0) ? blend.b : max((1.0 - ((1.0 - base.b) / blend.b)), 0.0);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);\n"
         },
         {   
             "colorDodge", 
-            "float r = (blend.r == 1.0) ? blend.r : min(base.r / (1.0 - blend.r), 1.0);\n"
-            "float g = (blend.g == 1.0) ? blend.g : min(base.g / (1.0 - blend.g), 1.0);\n"
-            "float b = (blend.b == 1.0) ? blend.b : min(base.b / (1.0 - blend.b), 1.0);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return = (blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0);\n"
         },
         {   
             "darken", 
-            "float r = min(blend.r, base.r);\n"
-            "float g = min(blend.g, base.g);\n"
-            "float b = min(blend.b, base.b);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return min(blend, base);\n"
         },
         {   
             "difference", 
-            "return (abs(base - blend) * opacity + base * (1.0 - opacity));"
+            "   return abs(base - blend);\n"
         },
         {   
             "exclusion", 
-            "return ((base + blend - 2.0 * base * blend) * opacity + base * (1.0 - opacity));"
+            "   return (base + blend - 2.0 * base * blend);\n"
         },
         {
             "glow",
-            "float r = (blend.r == 1.0) ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0);\n"
-            "float g = (blend.g == 1.0) ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0);\n"
-            "float b = (blend.b == 1.0) ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);\n"
         },
         {
             "hardLight",
-            "float r = base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r));\n"
-            "float g = base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g));\n"
-            "float b = base.b < 0.5 ? (2.0 * base.r * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b));\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend));\n"
         },
         {
             "hardMix",
-            "float r = 0.0;\n"
-            "if (blend.r < 0.5) {\n"
-            "   float tempBlendR = 2.0 * blend.r;\n"
-            "   r = (tempBlendR == 0.0) ? tempBlendR : max((1.0 - ((1.0 - base.r) / tempBlendR)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendR = 2.0 * (blend.r - 0.5);\n"
-            "   r = (tempBlendR == 1.0) ? tempBlendR : min(base.r / (1.0 - tempBlendR), 1.0);\n"
-            "}\n"
-            "r = (r < 0.5) ? 0.0 : 1.0;\n"
-            "float g = 0.0;\n"
-            "if (blend.g < 0.5) {\n"
-            "   float tempBlendG = 2.0 * blend.g;\n"
-            "   g = (tempBlendG == 0.0) ? tempBlendG : max((1.0 - ((1.0 - base.g) / tempBlendG)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendG = 2.0 * (blend.g - 0.5);\n"
-            "   g = (tempBlendG == 1.0) ? tempBlendG : min(base.g / (1.0 - tempBlendG), 1.0);\n"
-            "}\n"
-            "g = (g < 0.5) ? 0.0 : 1.0;\n"
-            "float b = 0.0;\n"
-            "if (blend.b < 0.5) {\n"
-            "   float tempBlendB = 2.0 * blend.b;\n"
-            "   b = (tempBlendB == 0.0) ? tempBlendB : max((1.0 - ((1.0 - base.b) / tempBlendB)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendB = 2.0 * (blend.b - 0.5);\n"
-            "   b = (tempBlendB == 1.0) ? tempBlendB : min(base.b / (1.0 - tempBlendB), 1.0);\n"
-            "}\n"
-            "b = (b < 0.5) ? 0.0 : 1.0;\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   if (blend < 0.5) {\n"
+            "       blend = 2.0 * blend;\n"
+            "       blend = (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);\n"
+            "   } else {\n"
+            "       blend = 2.0 * (blend - 0.5);\n"
+            "       blend = (blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0);\n"
+            "   }\n"
+            "   return (blend < 0.5) ? 0.0 : 1.0;\n"
         },
         {
             "lighten",
-            "float r = max(blend.r, base.r);\n"
-            "float g = max(blend.g, base.g);\n"
-            "float b = max(blend.b, base.b);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return max(blend, base);\n"
         },
         {
             "linearBurn",
-            "return (max(base + blend - vec3(1.0), vec3(1.0)) * opacity + base * (1.0 - opacity));"
+            "   return max(base + blend - 1.0, 1.0);\n"
         },
         {
             "linearDodge",
-            "return (min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity));"
+            "   return min(base + blend, 1.0);\n"
         },
         {
             "linearLight",
-            "float r = blend.r < 0.5 ? max(base.r + 2.0 * blend.r - 1.0, 0.0) : min(base.r + 2.0 * (blend.r - 0.5), 1.0);\n"
-            "float g = blend.g < 0.5 ? max(base.g + 2.0 * blend.g - 1.0, 0.0) : min(base.g + 2.0 * (blend.g - 0.5), 1.0);\n"
-            "float b = blend.b < 0.5 ? max(base.b + 2.0 * blend.b - 1.0, 0.0) : min(base.b + 2.0 * (blend.b - 0.5), 1.0);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (blend < 0.5) ? max(base + 2.0 * blend - 1.0, 0.0) : min(base + 2.0 * (blend - 0.5), 1.0);\n"
         },
         {
             "multiply",
-            "return (base * blend * opacity + base * (1.0 - opacity));"
+            "   return base * blend;\n"
         },
         {
             "negation",
-            "return ((vec3(1.0) - abs(vec3(1.0) - base - blend)) * opacity + base * (1.0 - opacity));"
+            "   return (1.0 - abs(1.0 - base - blend));\n"
         },
         {
             "normal",
-            "return (blend * opacity + base * (1.0 - opacity));"
+            "   return blend;\n"
         },
         {
             "overlay",
-            "float r = base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r));\n"
-            "float g = base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g));\n"
-            "float b = base.b < 0.5 ? (2.0 * base.r * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b));\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (base < 0.5) ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend));\n"
         },
         {
             "phoenix",
-            "return ((min(base, blend) - max(base, blend) + vec3(1.0)) * opacity + base * (1.0 - opacity));"
+            "   return (min(base, blend) - max(base, blend) + 1.0)\n;"
         },
         {
             "pinLight",
-            "float r = base.r < 0.5 ? min(blend.r, base.r) : max(blend.r, base.r);\n"
-            "float g = base.g < 0.5 ? min(blend.g, base.g) : max(blend.g, base.g);\n"
-            "float b = base.b < 0.5 ? min(blend.b, base.b) : max(blend.b, base.b);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (base < 0.5) ? min(blend, base) : max(blend, base);\n"
         },
         {
             "reflect",
-            "float r = (blend.r == 1.0) ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0);\n"
-            "float g = (blend.g == 1.0) ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0);\n"
-            "float b = (blend.b == 1.0) ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0);\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);\n"
         },
         {
             "screen",
-            "float r = 1.0 - ((1.0 - base.r) * (1.0 - blend.r));\n"
-            "float g = 1.0 - ((1.0 - base.g) * (1.0 - blend.g));\n"
-            "float b = 1.0 - ((1.0 - base.b) * (1.0 - blend.b));\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return 1.0 - ((1.0 - base) * (1.0 - blend));\n"
         },
         {
             "softLight",
-            "float r = (blend.r < 0.5) ? (2.0 * base.r * blend.r + base.r * base.r * (1.0 - 2.0 * blend.r)) : (sqrt(base.r) * (2.0 * blend.r - 1.0) + 2.0 * base.r * (1.0 - blend.r));\n"
-            "float g = (blend.g < 0.5) ? (2.0 * base.g * blend.g + base.g * base.g * (1.0 - 2.0 * blend.g)) : (sqrt(base.g) * (2.0 * blend.g - 1.0) + 2.0 * base.g * (1.0 - blend.g));\n"
-            "float b = (blend.b < 0.5) ? (2.0 * base.b * blend.b + base.b * base.b * (1.0 - 2.0 * blend.b)) : (sqrt(base.b) * (2.0 * blend.b - 1.0) + 2.0 * base.b * (1.0 - blend.b));\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   return (blend < 0.5) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));\n"
         },
         {
             "subtract",
-            "return (max(base + blend - vec3(1.0), vec3(0.0)) * opacity + base * (1.0 - opacity));"
+            "   return max(base + blend - 1.0, 0.0);\n"
         },
         {
             "vividLight",
-            "float r = 0.0;\n"
-            "if (blend.r < 0.5) {\n"
-            "   float tempBlendR = 2.0 * blend.r;\n"
-            "   r = (tempBlendR == 0.0) ? tempBlendR : max((1.0 - ((1.0 - base.r) / tempBlendR)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendR = 2.0 * (blend.r - 0.5);\n"
-            "   r = (tempBlendR == 1.0) ? tempBlendR : min(base.r / (1.0 - tempBlendR), 1.0);\n"
-            "}\n"
-            "float g = 0.0;\n"
-            "if (blend.g < 0.5) {\n"
-            "   float tempBlendG = 2.0 * blend.g;\n"
-            "   g = (tempBlendG == 0.0) ? tempBlendG : max((1.0 - ((1.0 - base.g) / tempBlendG)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendG = 2.0 * (blend.g - 0.5);\n"
-            "   g = (tempBlendG == 1.0) ? tempBlendG : min(base.g / (1.0 - tempBlendG), 1.0);\n"
-            "}\n"
-            "float b = 0.0;\n"
-            "if (blend.b < 0.5) {\n"
-            "   float tempBlendB = 2.0 * blend.b;\n"
-            "   b = (tempBlendB == 0.0) ? tempBlendB : max((1.0 - ((1.0 - base.b) / tempBlendB)), 0.0);\n"
-            "} else {\n"
-            "   float tempBlendB = 2.0 * (blend.b - 0.5);\n"
-            "   b = (tempBlendB == 1.0) ? tempBlendB : min(base.b / (1.0 - tempBlendB), 1.0);\n"
-            "}\n"
-            "return (vec3(r, g, b) * opacity + base * (1.0 - opacity));"
+            "   if (blend < 0.5) {\n"
+            "       blend = 2.0 * blend;\n"
+            "       return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);\n"
+            "   } else {\n"
+            "       blend = 2.0 * (blend - 0.5);\n"
+            "       return (blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0);\n"
+            "   }\n"
         },
-    };
+    }; // BLEND_CODE_MAP
 
     struct ShaderBlendMode
         : ShaderNodeClone<ShaderBlendMode>
     {
         virtual int determineType(EmissionPass *em) override
         {
-            auto base = get_input("base");
-            auto tBase = em->determineType(base.get());
-            if (tBase != 3) throw zeno::Exception("base's dimension mismatch: " + std::to_string(tBase));
+            const auto base = get_input("base");
+            const auto baseDim = em->determineType(base.get());
+            const auto blend = get_input("blend");
+            const auto blendDim = em->determineType(blend.get());
+            if (baseDim != blendDim)
+                throw zeno::Exception("base and blend's dimension mismatch: " + std::to_string(baseDim) + ", " + std::to_string(blendDim));
 
-            auto blend = get_input("blend");
-            auto tBlend = em->determineType(blend.get());
-            if (tBlend != 3) throw zeno::Exception("blend's dimension mismatch: " + std::to_string(tBlend));
+            const auto opacity = get_input("opacity");
+            const auto opacityDim = em->determineType(opacity.get());
+            if (opacityDim != 1)
+                throw zeno::Exception("opacity's dimension mismatch: " + std::to_string(opacityDim));
 
-            auto opacity = get_input("opacity");
-            auto tOpacity = em->determineType(opacity.get());
-            if (tOpacity != 1) throw zeno::Exception("opacity's dimension mismatch: " + std::to_string(tOpacity));
-
-            return 3;
-        }
+            return baseDim;
+        } // determineType
 
         virtual void emitCode(EmissionPass *em) override
         {
-            auto mode = get_input2<std::string>("mode");
-            auto base = em->determineExpr(get_input("base").get(), this);
-            auto blend = em->determineExpr(get_input("blend").get(), this);
-            auto opacity = em->determineExpr(get_input("opacity").get());
-
-            EmissionPass::CommonFunc comm
+            const auto mode = get_input2<std::string>("mode");
+            const auto mapIter = BLEND_CODE_MAP.find(mode);
+            if (mapIter == std::end(BLEND_CODE_MAP))
             {
-                rettype : 3,
-                argTypes : {3, 3, 1},
-                code : "(vec3 base, vec3 blend, float opacity) {\n" + blend_func_code.at(mode) + "\n}",
-            };
-            auto blendFuncName = em->addCommonFunc(std::move(comm));
+                throw zeno::Exception("mode mismatch: " + mode);
+            }
+            const auto& code = mapIter->second;
 
-            return em->emitCode(blendFuncName + "(" + base + ", " + blend + ", " + opacity + ")");
-        }
-    };
+            EmissionPass::CommonFunc blendFunc
+            {
+                rettype : 1,
+                argTypes : {1, 1},
+                code : 
+                "(float base, float blend) {\n"
+                + code +
+                "}\n",
+            };
+            const auto blendFuncName = em->addCommonFunc(std::move(blendFunc));
+
+            const auto base = get_input("base");
+            const auto baseDim = em->determineType(base.get());
+
+            EmissionPass::CommonFunc opacityFunc;
+            switch (baseDim)
+            {
+            case 1:
+                opacityFunc.rettype = 1;
+                opacityFunc.argTypes = {1, 1, 1};
+                opacityFunc.code = 
+                "(float base, float blend, float opacity) {\n"
+                "   float newBlend = " + blendFuncName + "(base, blend);\n"
+                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "}\n";
+                break;
+            case 2:
+                opacityFunc.rettype = 2;
+                opacityFunc.argTypes = {2, 2, 1};
+                opacityFunc.code = 
+                "(vec2 base, vec2 blend, float opacity) {\n"
+                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   vec2 newBlend = vec2(r, g);\n"
+                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "}\n";
+                break;
+            case 3:
+                opacityFunc.rettype = 3;
+                opacityFunc.argTypes = {3, 3, 1};
+                opacityFunc.code = 
+                "(vec3 base, vec3 blend, float opacity) {\n"
+                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   float b = " + blendFuncName + "(base.b, blend.b);\n"
+                "   vec3 newBlend = vec3(r, g, b);\n"
+                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "}\n";
+                break;
+            case 4:
+                opacityFunc.rettype = 4;
+                opacityFunc.argTypes = {4, 4, 1};
+                opacityFunc.code = 
+                "(vec4 base, vec4 blend, float opacity) {\n"
+                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   float b = " + blendFuncName + "(base.b, blend.b);\n"
+                "   float a = " + blendFuncName + "(base.a, blend.a);\n"
+                "   vec4 newBlend = vec4(r, g, b, a);\n"
+                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "}\n";
+                break;
+            default:
+                throw zeno::Exception("base's dimension mismatch: " + std::to_string(baseDim));
+                break;
+            }
+            const auto opacityFuncName = em->addCommonFunc(std::move(opacityFunc));
+
+            const auto baseExpr = em->determineExpr(base.get());
+            const auto blend = get_input("blend");
+            const auto blendExpr = em->determineExpr(blend.get());
+            const auto opacity = get_input("opacity");
+            const auto opacityExpr = em->determineExpr(opacity.get());
+            return em->emitCode(opacityFuncName + "(" + baseExpr + ", " + blendExpr + ", " + opacityExpr + ")");
+        } // emitCode
+    }; // struct ShaderBlendMode
 
     ZENDEFNODE(
         ShaderBlendMode,
@@ -270,7 +266,7 @@ namespace zeno
                 {"float", "base", "0"},
                 {"float", "blend", "0"},
                 {"float", "opacity", "0"},
-                {(std::string) "enum " + blend_mode_str, "mode", "add"},
+                {BLEND_ENUM_STR, "mode", "normal"},
             },
             {
                 {"shader", "out"},
