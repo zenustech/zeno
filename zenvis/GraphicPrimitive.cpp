@@ -1441,9 +1441,9 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     vec3 fspecularTerm = (Gs*Fs*Ds);
     vec3 fcoatTerm =  vec3(.25*clearcoat*Gr*Fr*Dr);
 
-    return (c1 * Cdlin  + Fsheen * angle)
+    return ((c1 * Cdlin  + Fsheen)
         * (1-metallic)
-        + (normalize(fspecularTerm) * ceil(length(fspecularTerm)/0.3) * 0.3 + fcoatTerm)* toonSpecular(V, L, N, roughness) ;
+        + (normalize(fspecularTerm) * ceil(length(fspecularTerm)/0.3) * 0.3 + fcoatTerm)* toonSpecular(V, L, N, roughness)) * C2 ;
         
 }
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
@@ -1571,6 +1571,10 @@ float linearLight0(float a, float b)
    else
        return b + a - 1;
 }
+float brightness(vec3 c)
+{
+    return sqrt(c.x * c.r * 0.241 + c.y * c.y * 0.691 + c.z * c.z * 0.068);
+}
 uniform vec3 light0;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
@@ -1618,7 +1622,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    light_dir = vec3(0,1,-1);
+//    light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 //    color +=  
@@ -1649,8 +1653,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     color += ibl;
 
     vec3 realColor = photoReal + iblPhotoReal;
-    float brightness0 = 0.2126*realColor.x + 0.7152*realColor.y + 0.0722*realColor.z;
-    float brightness1 = smoothstep(mat_shape.x, mat_shape.y, att_NoL);
+    float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
+    float brightness1 = smoothstep(mat_shape.x, mat_shape.y, dot(new_normal, light_dir));
     float brightness = mix(brightness1, brightness0, mat_style);
     
     float brightnessNoise = softLight0(mat_strokeNoise, brightness);
