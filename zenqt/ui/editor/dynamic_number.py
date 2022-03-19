@@ -78,7 +78,7 @@ class QDMGraphicsNode_DynamicNumber(QDMGraphicsNode):
             ]
             self.tmp_value = v
         
-        if data['params']['_CONTROL_POINTS'] != '':
+        if '_CONTROL_POINTS' in data['params'] and data['params']['_CONTROL_POINTS'] != '':
             txt = data['params']['_CONTROL_POINTS'].split()
             txt = (s for s in txt)
             c = int(next(txt))
