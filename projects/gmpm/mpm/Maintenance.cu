@@ -476,11 +476,11 @@ struct RefineMeshParticles : INode {
                   auto vi = atomic_add(exec_cuda, vertCnt.data(), 1);
                   // insert element
                   auto eleNos = edgeEles[ei];
+                  auto localEdgeNos = edgeLocalNosInEle[ei];
                   int nEleInc =
                       (eleNos[0] != -1 ? 1 : 0) + (eleNos[1] != -1 ? 1 : 0);
                   atomic_add(exec_cuda, eleCnt.data(), nEleInc);
                   // do not modify pars (verts) here, allocate first
-                  auto localEdgeNos = edgeLocalNosInEle[ei];
                   // iterate both sides of this edge
                   for (int no = 0; no != 2; ++no)
                     if (auto eleNo = eleNos[no]; eleNo != -1) {
@@ -489,13 +489,16 @@ struct RefineMeshParticles : INode {
                     }
                 }
               });
+          pars.resize(vertCnt.getVal());
+          eles.resize(eleCnt.getVal());
           fmt::print("verts from {} to {}, {} added\n", prevVertCnt,
                      vertCnt.getVal(), vertCnt.getVal() - prevVertCnt);
           fmt::print("eles from {} to {}, {} added\n", prevEleCnt,
                      eleCnt.getVal(), eleCnt.getVal() - prevEleCnt);
-          pars.resize(vertCnt.getVal());
-          eles.resize(eleCnt.getVal());
+          fmt::print("{} edges in total\n", numEdges);
           /// init additional verts
+          int vertOffset = vertCnt.getVal();
+          int eleOffset = eleCnt.getVal();
           cudaPol(
               range(numEdges),
               [edgeEles = proxy<execspace_e::cuda>(edgeEles),
@@ -509,16 +512,19 @@ struct RefineMeshParticles : INode {
                 float3 xs[2] = {pars.pack<3>("pos", edge[0]),
                                 pars.pack<3>("pos", edge[1])};
                 auto eleNos = edgeEles[ei];
+                auto edgeLocalNos = edgeLocalNosInEle[ei];
                 int eleNo = -1;
                 char localEdgeNo = -1;
-                if (eleNos[0] != -1) {
-                  eleNo = eleNos[0];
-                  localEdgeNo = edgeLocalNosInEle[ei][0];
-                } else if (eleNos[1] != -1) {
-                  eleNo = eleNos[1];
-                  localEdgeNo = edgeLocalNosInEle[ei][1];
-                }
+                for (int no = 0; no != 2; ++no)
+                  if (eleNos[no] != -1) {
+                    eleNo = eleNos[no];
+                    localEdgeNo = edgeLocalNos[no];
+                    break;
+                  }
+                // assert(eleNo != -1); // or this edge wont be generated
                 auto vi = eleSplitVertNos[eleNo][localEdgeNo];
+                if (vi == -1)
+                  return; // this edge is refined enough
                 // mass, vol only zero initialized
                 pars("mass", vi) = 0.f;
                 pars("vol", vi) = 0.f;
@@ -554,7 +560,7 @@ struct RefineMeshParticles : INode {
                     ++numSplits;
                 // [-1, -1, -1]
                 if (numSplits == 0)
-                  return;
+                  return; // no splitting points along the edges
                 // inds, xs
                 int inds[3] = {(int)eles("inds", 0, ei),
                                (int)eles("inds", 1, ei),
