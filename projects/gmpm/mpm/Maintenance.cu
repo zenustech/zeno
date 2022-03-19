@@ -395,7 +395,9 @@ struct RefineMeshParticles : INode {
 
         Vector<int> vertCnt{1, memsrc_e::device, 0},
             eleCnt{1, memsrc_e::device, 0};
-        int prevVertCnt{}, prevEleCnt{};
+        int prevVertCnt{}, curVertCnt{}, prevEleCnt{};
+
+        const bool hasNormalProperty = pars.hasProperty("nrm");
 
         auto probeSize = [&]() { // side effects: (prev) vert/eleCnt
           prevVertCnt = pars.size();
@@ -515,7 +517,8 @@ struct RefineMeshParticles : INode {
                 auto edgeLocalNos = edgeLocalNosInEle[ei];
                 int eleNo = -1;
                 char localEdgeNo = -1;
-                for (int no = 0; no != 2; ++no)
+                int no = 0;
+                for (; no != 2; ++no)
                   if (eleNos[no] != -1) {
                     eleNo = eleNos[no];
                     localEdgeNo = edgeLocalNos[no];
@@ -533,14 +536,28 @@ struct RefineMeshParticles : INode {
                 pars.tuple<3>("vel", vi) = (pars.pack<3>("vel", edge[0]) +
                                             pars.pack<3>("vel", edge[1])) *
                                            0.5f;
-                pars.tuple<9>("F", vi) = (pars.pack<3, 3>("F", edge[0]) +
-                                          pars.pack<3, 3>("F", edge[1])) *
-                                         0.5f;
-                pars.tuple<9>("C", vi) = (pars.pack<3, 3>("C", edge[0]) +
-                                          pars.pack<3, 3>("C", edge[1])) *
-                                         0.5f;
+                // F, C
+                auto F = eles.pack<3, 3>("F", eleNo);
+                auto C = eles.pack<3, 3>("C", eleNo);
+                if (auto eid = eleNos[1]; no == 0 && eid != -1) {
+                  F = (F + eles.pack<3, 3>("F", eid)) * 0.5f;
+                  C = (C + eles.pack<3, 3>("C", eid)) * 0.5f;
+                }
+                pars.tuple<9>("F", vi) = F;
+                pars.tuple<9>("C", vi) = C;
               });
-          return prevVertCnt != vertCnt.getVal();
+          if (curVertCnt = vertCnt.getVal(); prevVertCnt != curVertCnt) {
+            // optional: nrm
+            if (hasNormalProperty) {
+              // init normal property
+              cudaPol(range(curVertCnt), [pars = proxy<execspace_e::cuda>(
+                                              {}, pars)] __device__(int pi) {
+                pars.tuple<3>("nrm", pi) = float3::zeros();
+              });
+            }
+            return true;
+          }
+          return false;
         };
 
         int cnt = 0;
@@ -551,16 +568,14 @@ struct RefineMeshParticles : INode {
               [eles = proxy<execspace_e::cuda>({}, eles),
                pars = proxy<execspace_e::cuda>({}, pars),
                eleSplitVertNos = proxy<execspace_e::cuda>(eleSplitVertNos),
-               eleCnt = proxy<execspace_e::cuda>(eleCnt), dx,
+               eleCnt = proxy<execspace_e::cuda>(eleCnt), dx, hasNormalProperty,
                rho = model.density] __device__(int ei) mutable {
                 auto splitVerts = eleSplitVertNos[ei];
                 int numSplits = 0;
                 for (int d = 0; d != 3; ++d)
                   if (auto splitVert = splitVerts[d]; splitVert != -1)
                     ++numSplits;
-                // [-1, -1, -1]
-                if (numSplits == 0)
-                  return; // no splitting points along the edges
+
                 // inds, xs
                 int inds[3] = {(int)eles("inds", 0, ei),
                                (int)eles("inds", 1, ei),
@@ -574,6 +589,18 @@ struct RefineMeshParticles : INode {
                 auto Ce = eles.pack<3, 3>("C", ei);
                 auto Fe = eles.pack<3, 3>("F", ei);
                 auto d2 = col(eles.pack<3, 3>("d", ei), 2);
+                auto nrm = zs::vec<float, 3>::zeros();
+                if (hasNormalProperty)
+                  nrm = eles.pack<3>("nrm", ei);
+
+                // [-1, -1, -1]
+                if (numSplits == 0) {
+                  if (hasNormalProperty)
+                    for (int i = 0; i != 3; ++i)
+                      for (int d = 0; d != 3; ++d)
+                        atomic_add(exec_cuda, &pars("nrm", d, inds[i]), nrm[d]);
+                  return; // no splitting points along the edges
+                }
 
                 {
                   const auto vole_div_3 = vol / 3.f;
@@ -594,6 +621,8 @@ struct RefineMeshParticles : INode {
                   eles.tuple<3>("vel", e) = vele;
                   eles.tuple<9>("C", e) = Ce;
                   eles.tuple<9>("F", e) = Fe;
+                  if (hasNormalProperty)
+                    eles.tuple<3>("nrm", e) = nrm;
                   mat3 d{};
                   {
                     auto d0 = p1 - p0;
@@ -613,6 +642,10 @@ struct RefineMeshParticles : INode {
                     atomic_add(exec_cuda, &pars("vol", is[i]), vol_div3);
                     atomic_add(exec_cuda, &pars("mass", is[i]), mass_div3);
                   }
+                  if (hasNormalProperty)
+                    for (int i = 0; i != 3; ++i)
+                      for (int j = 0; j != 3; ++j)
+                        atomic_add(exec_cuda, &pars("nrm", j, is[i]), nrm[j]);
                 };
 
                 // reserve additional elements [eleId, eleId + numSplits - 1]
@@ -690,6 +723,12 @@ struct RefineMeshParticles : INode {
                                    vol * 0.25f);
                 }
               });
+          cudaPol(range(curVertCnt),
+                  [pars = proxy<execspace_e::cuda>({}, pars)] __device__(
+                      int pi) mutable {
+                    pars.tuple<3>("nrm", pi) =
+                        pars.pack<3>("nrm", pi).normalized();
+                  });
           fmt::print("done refinement iter [{}].\n", cnt);
           if (cnt++ >= limits<int>::max())
             break;
@@ -727,6 +766,7 @@ struct UpdateZSPrimitiveSequence : INode {
     cudaPol(Collapse{numV},
             [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
              dt] __device__(int pi) mutable {
+              pars.tuple<3>("nrm", pi) = zs::vec<float, 3>::zeros();
               pars.tuple<3>("pos", pi) =
                   pars.pack<3>("pos", pi) + pars.pack<3>("vel", pi) * dt;
             });
@@ -736,6 +776,29 @@ struct UpdateZSPrimitiveSequence : INode {
       eles.tuple<3>("pos", ei) =
           eles.pack<3>("pos", ei) + eles.pack<3>("vel", ei) * dt;
     });
+    // normal
+    cudaPol(
+        Collapse{numE},
+        [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+         eles = proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
+         dt] __device__(int ei) mutable {
+          int inds[3] = {(int)eles("inds", 0, ei), (int)eles("inds", 1, ei),
+                         (int)eles("inds", 2, ei)};
+          zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
+                                  pars.pack<3>("pos", inds[1]),
+                                  pars.pack<3>("pos", inds[2])};
+          auto n = (xs[1] - xs[0]).cross(xs[2] - xs[0]).normalized();
+          eles.tuple<3>("nrm", ei) = n;
+          for (int i = 0; i != 3; ++i)
+            for (int d = 0; d != 3; ++d)
+              atomic_add(exec_cuda, &pars("nrm", d, inds[i]), n[d]);
+        });
+    cudaPol(Collapse{numV},
+            [pars = proxy<execspace_e::cuda>(
+                 {}, zsprimseq->getParticles())] __device__(int pi) mutable {
+              pars.tuple<3>("nrm", pi) =
+                  pars.pack<3>("nrm", pi) / pars("outdgr", pi);
+            });
 
     fmt::print(fg(fmt::color::cyan),
                "done executing UpdateZSPrimitiveSequence\n");

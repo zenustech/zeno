@@ -491,8 +491,7 @@ struct ToBoundaryParticles : INode {
     std::vector<vec3f> eleVel{};
 
     ZenoParticles::category_e category{ZenoParticles::surface};
-    bool bindMesh = true;
-    if (bindMesh) {
+    {
       category = ZenoParticles::surface;
       eleSize = tris.size();
       dofVol.resize(size, 0.f);
@@ -509,7 +508,7 @@ struct ToBoundaryParticles : INode {
     using namespace zs;
     auto ompExec = zs::omp_exec();
 
-    if (bindMesh) {
+    {
       switch (category) {
       // surface
       case ZenoParticles::surface: {
@@ -541,11 +540,11 @@ struct ToBoundaryParticles : INode {
 
     // attributes
     std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"vol", 1}};
+        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
     std::vector<zs::PropertyTag> eleTags{{"mass", 1},
                                          {"pos", 3},
                                          {"vel", 3},
-                                         {"vol", 1},
+                                         {"nrm", 3},
                                          {"inds", (int)category + 1}};
 
     for (auto tag : eleTags)
@@ -560,9 +559,8 @@ struct ToBoundaryParticles : INode {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
 
-                // volume, mass
+                // mass
                 float vol = dofVol[pi];
-                pars("vol", pi) = vol;
                 pars("mass", pi) = vol * density; // unstoppable mass
 
                 // pos
@@ -573,21 +571,22 @@ struct ToBoundaryParticles : INode {
                   pars.tuple<3>("vel", pi) = velsPtr[pi];
                 else
                   pars.tuple<3>("vel", pi) = vec3::zeros();
-              });
 
-      pars = pars.clone({memsrc_e::um, 0});
+                // init nrm
+                pars.tuple<3>("nrm", pi) = vec3::zeros();
+              });
     }
-    if (bindMesh) {
+    {
       outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
       auto &eles = outParticles->getQuadraturePoints(); // tilevector
       ompExec(zs::range(eleSize),
-              [eles = proxy<execspace_e::host>({}, eles), velsPtr, &eleVol,
+              [pars = proxy<execspace_e::host>({}, pars),
+               eles = proxy<execspace_e::host>({}, eles), velsPtr, &eleVol,
                &elePos, &eleVel, category, &tris, density](size_t ei) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
-                // vol, mass
-                eles("vol", ei) = eleVol[ei];
+                // mass
                 eles("mass", ei) = eleVol[ei] * density;
 
                 // pos
@@ -600,14 +599,31 @@ struct ToBoundaryParticles : INode {
                   eles.tuple<3>("vel", ei) = vec3::zeros();
 
                 // element-vertex indices
-
+                // inds
                 const auto &tri = tris[ei];
-                for (int i = 0; i != 3; ++i) {
+                for (int i = 0; i != 3; ++i)
                   eles("inds", i, ei) = tri[i];
+
+                // nrm
+                {
+                  zs::vec<float, 3> xs[3] = {pars.pack<3>("pos", tri[0]),
+                                             pars.pack<3>("pos", tri[1]),
+                                             pars.pack<3>("pos", tri[2])};
+                  auto n = (xs[1] - xs[0]).cross(xs[2] - xs[0]).normalized();
+                  eles.tuple<3>("nrm", ei) = n;
+                  // nrm of verts
+                  for (int i = 0; i != 3; ++i)
+                    for (int d = 0; d != 3; ++d)
+                      atomic_add(exec_omp, &pars("nrm", d, tri[i]), n[d]);
                 }
               });
       eles = eles.clone({memsrc_e::um, 0});
     }
+    ompExec(zs::range(size),
+            [pars = proxy<execspace_e::host>({}, pars)](size_t pi) mutable {
+              pars.tuple<3>("nrm", pi) = pars.pack<3>("nrm", pi).normalized();
+            });
+    pars = pars.clone({memsrc_e::um, 0});
 
     fmt::print(fg(fmt::color::cyan), "done executing ToBoundaryParticles\n");
     set_output("ZSParticles", outParticles);
