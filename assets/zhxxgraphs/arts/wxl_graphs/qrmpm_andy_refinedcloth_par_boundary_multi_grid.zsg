@@ -87,7 +87,7 @@
       ]
      },
      "params": {
-      "value": 960
+      "value": 480
      },
      "uipos": [
       -1214.0841772987199,
@@ -322,7 +322,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_cloth_1.obj"
+       "assets/cloth/do_not_share/output/char_cloth2.obj"
       ],
       "SRC": [
        null,
@@ -346,7 +346,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_cloth_2.obj"
+       "assets/cloth/do_not_share/output/char_cloth1.obj"
       ],
       "SRC": [
        null,
@@ -370,7 +370,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_pants.obj"
+       "assets/cloth/do_not_share/output/char_cloth3.obj"
       ],
       "SRC": [
        null,
@@ -447,8 +447,8 @@
      },
      "params": {},
      "uipos": [
-      1001.3597865897179,
-      2915.4741868259935
+      1004.0015514073473,
+      2910.190657190735
      ],
      "options": [
       "ONCE"
@@ -645,17 +645,17 @@
        null
       ],
       "obj0": [
-       "2b1b9830-ToZSParticles",
+       "bfa4f512-RefineMeshParticles",
        "ZSParticles",
        null
       ],
       "obj1": [
-       "e7448882-ToZSParticles",
+       "d99632ca-RefineMeshParticles",
        "ZSParticles",
        null
       ],
       "obj2": [
-       "9b5f5e1d-ToZSParticles",
+       "f569c2b4-RefineMeshParticles",
        "ZSParticles",
        null
       ],
@@ -1588,7 +1588,7 @@
       "E": [
        null,
        null,
-       600.0
+       200.0
       ],
       "nu": [
        null,
@@ -1671,7 +1671,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/output/bishop/bishop_body.{frame}.obj"
+      "value": "assets/cloth/do_not_share/output/char/char.{frame}.obj"
      },
      "uipos": [
       619.0155342668259,
@@ -1691,7 +1691,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/output/bishop/bishop_body.{frame+1}.obj"
+      "value": "assets/cloth/do_not_share/output/char/char.{frame+1}.obj"
      },
      "uipos": [
       841.6169850440265,
@@ -2277,13 +2277,91 @@
       1748.8596112310927
      ],
      "options": []
+    },
+    "bfa4f512-RefineMeshParticles": {
+     "name": "RefineMeshParticles",
+     "inputs": {
+      "ZSParticles": [
+       "2b1b9830-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "dx": [
+       "58762a44-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1495.8544179806158,
+      2723.007011065716
+     ],
+     "options": []
+    },
+    "d99632ca-RefineMeshParticles": {
+     "name": "RefineMeshParticles",
+     "inputs": {
+      "ZSParticles": [
+       "e7448882-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "dx": [
+       "58762a44-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1497.0352868540958,
+      2918.7274411094086
+     ],
+     "options": []
+    },
+    "f569c2b4-RefineMeshParticles": {
+     "name": "RefineMeshParticles",
+     "inputs": {
+      "ZSParticles": [
+       "9b5f5e1d-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "dx": [
+       "58762a44-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1504.7492401215732,
+      3122.777355623085
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -36.20369892225335,
-    "y": 1215.5242653012795,
-    "width": 7152.55737304687,
-    "height": 4243.850708007791
+    "x": -1500.4503926410496,
+    "y": 487.46594974018467,
+    "width": 8940.696716308588,
+    "height": 5304.813385009738
    }
   }
  },
