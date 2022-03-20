@@ -28,14 +28,16 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     frameid = clamp(frameid, 0, (int)mesh.getNumSamples() - 1);
     Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)frameid));
 
     if (auto marr = mesamp.getPositions()) {
-        log_info("[alembic] totally {} positions", marr->size());
+        if (!read_done) {
+            log_info("[alembic] totally {} positions", marr->size());
+        }
         auto &parr = prim->verts;
         for (size_t i = 0; i < marr->size(); i++) {
             auto const &val = (*marr)[i];
@@ -44,7 +46,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     if (auto marr = mesamp.getVelocities()) {
-        log_info("[alembic] totally {} velocities", marr->size());
+        if (!read_done) {
+            log_info("[alembic] totally {} velocities", marr->size());
+        }
         auto &parr = prim->attr<vec3f>("vel");
         for (size_t i = 0; i < marr->size(); i++) {
             auto const &val = (*marr)[i];
@@ -53,7 +57,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     if (auto marr = mesamp.getFaceCounts()) {
-        log_info("[alembic] totally {} faces", marr->size());
+        if (!read_done) {
+            log_info("[alembic] totally {} faces", marr->size());
+        }
         auto &parr = prim->polys;
         int base = 0;
         for (size_t i = 0; i < marr->size(); i++) {
@@ -64,7 +70,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     if (auto marr = mesamp.getFaceIndices()) {
-        log_info("[alembic] totally {} face indices", marr->size());
+        if (!read_done) {
+            log_info("[alembic] totally {} face indices", marr->size());
+        }
         auto &parr = prim->loops;
         for (size_t i = 0; i < marr->size(); i++) {
             int ind = (*marr)[i];
@@ -78,33 +86,42 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
-    int frameid
+    int frameid,
+    bool read_done
 ) {
     {
         auto const &md = obj.getMetaData();
-        log_info("[alembic] meta data: [{}]", md.serialize());
+        if (!read_done) {
+            log_info("[alembic] meta data: [{}]", md.serialize());
+        }
         tree.name = obj.getName();
 
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
-            log_info("[alembic] found a mesh [{}]", obj.getName());
+            if (!read_done) {
+                log_info("[alembic] found a mesh [{}]", obj.getName());
+            }
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid);
+            tree.prim = foundABCMesh(mesh, frameid, read_done);
         }
     }
 
     size_t nch = obj.getNumChildren();
-    log_info("[alembic] found {} children", nch);
+    if (!read_done) {
+        log_info("[alembic] found {} children", nch);
+    }
 
     for (size_t i = 0; i < nch; i++) {
         auto const &name = obj.getChildHeader(i).getName();
-        log_info("[alembic] at {} name: [{}]", i, name);
+        if (!read_done) {
+            log_info("[alembic] at {} name: [{}]", i, name);
+        }
 
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid);
+        traverseABC(child, *childTree, frameid, read_done);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -133,6 +150,8 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 }
 
 struct ReadAlembic : INode {
+    Alembic::Abc::v12::IArchive archive;
+    bool read_done = false;
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
@@ -143,13 +162,16 @@ struct ReadAlembic : INode {
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
-            auto archive = readABC(path);
+            if (read_done == false) {
+                archive = readABC(path);
+            }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid);
+            traverseABC(obj, *abctree, frameid, read_done);
+            read_done = true;
         }
         set_output("abctree", std::move(abctree));
     }
