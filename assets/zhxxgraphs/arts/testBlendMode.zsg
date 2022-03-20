@@ -2,68 +2,11 @@
  "graph": {
   "main": {
    "nodes": {
-    "f84fa6a3-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "/home/zensim/projects/zeno/assets/wall.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1171.5983252762426,
-      -162.47604454419894
-     ],
-     "options": []
-    },
-    "29bf0920-ShaderBlendMode": {
-     "name": "ShaderBlendMode",
-     "inputs": {
-      "base": [
-       null,
-       null,
-       0.0
-      ],
-      "blend": [
-       null,
-       null,
-       0.0
-      ],
-      "opacity": [
-       null,
-       null,
-       0.5
-      ],
-      "mode": [
-       null,
-       null,
-       "add"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      372.5148912292817,
-      -164.2405473066297
-     ],
-     "options": []
-    },
     "e52f1109-ShaderFinalize": {
      "name": "ShaderFinalize",
      "inputs": {
       "basecolor": [
-       "dae10189-ShaderTexture2D",
+       "2c605bf4-ShaderTexture2D",
        "out",
        null
       ],
@@ -118,8 +61,8 @@
        1.0
       ],
       "normal": [
-       null,
-       null,
+       "dae10189-ShaderTexture2D",
+       "out",
        null
       ],
       "emission": [
@@ -171,12 +114,12 @@
      "name": "SetMaterial",
      "inputs": {
       "prim": [
-       "f84fa6a3-ImportObjPrimitive",
+       "a37672bc-ReadObjPrim",
        "prim",
        null
       ],
       "mtl": [
-       "85e8fb80-MaterialTexture2D",
+       "b353f3da-MaterialTexture2D",
        "mtl",
        null
       ],
@@ -188,84 +131,12 @@
      },
      "params": {},
      "uipos": [
-      1572.802140883978,
-      127.29627071823215
+      1571.291379294574,
+      122.76398595002016
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "300f3982-ShaderMakeVec": {
-     "name": "ShaderMakeVec",
-     "inputs": {
-      "x": [
-       null,
-       null,
-       1.0
-      ],
-      "y": [
-       null,
-       null,
-       0.0
-      ],
-      "z": [
-       null,
-       null,
-       0.0
-      ],
-      "w": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -115.8270027624309,
-      -169.34500172651937
-     ],
-     "options": []
-    },
-    "1ac1fa65-ShaderMakeVec": {
-     "name": "ShaderMakeVec",
-     "inputs": {
-      "x": [
-       null,
-       null,
-       0.0
-      ],
-      "y": [
-       null,
-       null,
-       1.0
-      ],
-      "z": [
-       null,
-       null,
-       0.0
-      ],
-      "w": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -124.22414537292813,
-      68.45325448895014
-     ],
-     "options": []
     },
     "25641ad0-MakeTexture2D": {
      "name": "MakeTexture2D",
@@ -273,7 +144,7 @@
       "path": [
        null,
        null,
-       "/home/zensim/projects/zeno/assets/rock.png"
+       "/home/zensim/projects/zeno/arts/backpack/diffuse.jpg"
       ],
       "wrapS": [
        null,
@@ -360,8 +231,8 @@
      },
      "params": {},
      "uipos": [
-      -108.6272013121548,
-      323.28211325966805
+      311.5533657408253,
+      -80.37449890920607
      ],
      "options": []
     },
@@ -386,8 +257,8 @@
      },
      "params": {},
      "uipos": [
-      -398.3522531077349,
-      343.6054040055247
+      21.828313945245217,
+      -60.05120816334943
      ],
      "options": []
     },
@@ -397,7 +268,7 @@
       "path": [
        null,
        null,
-       "/home/zensim/projects/zeno/assets/container2.png"
+       "/home/zensim/projects/zeno/arts/backpack/normal.png"
       ],
       "wrapS": [
        null,
@@ -427,7 +298,7 @@
      },
      "params": {},
      "uipos": [
-      1057.9139330110497,
+      1024.6771780441622,
       602.2153401243093
      ],
      "options": []
@@ -453,8 +324,8 @@
      },
      "params": {},
      "uipos": [
-      1278.0829160911603,
-      378.1077348066299
+      1276.194464104405,
+      372.442378846365
      ],
      "options": []
     },
@@ -479,8 +350,8 @@
      },
      "params": {},
      "uipos": [
-      -379.2105490331491,
-      550.7375474792818
+      40.970018019831,
+      147.0809353104077
      ],
      "options": []
     },
@@ -510,15 +381,286 @@
      },
      "params": {},
      "uipos": [
-      -95.39343059392286,
-      552.0766790400553
+      323.2763748696533,
+      146.90930528177722
+     ],
+     "options": []
+    },
+    "a37672bc-ReadObjPrim": {
+     "name": "ReadObjPrim",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/home/zensim/projects/zeno/arts/backpack/backpack.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true
+     },
+     "uipos": [
+      1165.1748758278145,
+      49.09975165562914
+     ],
+     "options": []
+    },
+    "d8f43fb8-MaterialTexture2D": {
+     "name": "MaterialTexture2D",
+     "inputs": {
+      "mtl": [
+       "85e8fb80-MaterialTexture2D",
+       "mtl",
+       null
+      ],
+      "tex": [
+       "a84b43cf-MakeTexture2D",
+       "tex",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1569.2913417056184,
+      372.3341319438092
+     ],
+     "options": []
+    },
+    "a84b43cf-MakeTexture2D": {
+     "name": "MakeTexture2D",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/home/zensim/projects/zeno/arts/backpack/roughness.jpg"
+      ],
+      "wrapS": [
+       null,
+       null,
+       "REPEAT"
+      ],
+      "wrapT": [
+       null,
+       null,
+       "REPEAT"
+      ],
+      "minFilter": [
+       null,
+       null,
+       "LINEAR"
+      ],
+      "magFilter": [
+       null,
+       null,
+       "LINEAR"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1320.7955788241832,
+      602.1070932217534
+     ],
+     "options": []
+    },
+    "d2f1f036-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "uv"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      39.57167670753927,
+      376.7375637725934
+     ],
+     "options": []
+    },
+    "99f7d067-ShaderTexture2D": {
+     "name": "ShaderTexture2D",
+     "inputs": {
+      "texId": [
+       null,
+       null,
+       2
+      ],
+      "coord": [
+       "d2f1f036-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "type": [
+       null,
+       null,
+       "float"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      323.38879514676546,
+      378.07669533336684
+     ],
+     "options": []
+    },
+    "6ebcc6ca-ShaderInputAttr": {
+     "name": "ShaderInputAttr",
+     "inputs": {
+      "attr": [
+       null,
+       null,
+       "uv"
+      ],
+      "type": [
+       null,
+       null,
+       "vec3"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      34.94496933998971,
+      607.6008191533881
+     ],
+     "options": []
+    },
+    "64fa1706-ShaderTexture2D": {
+     "name": "ShaderTexture2D",
+     "inputs": {
+      "texId": [
+       null,
+       null,
+       3
+      ],
+      "coord": [
+       "6ebcc6ca-ShaderInputAttr",
+       "out",
+       null
+      ],
+      "type": [
+       null,
+       null,
+       "float"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      318.762087779216,
+      608.9399507141618
+     ],
+     "options": []
+    },
+    "b353f3da-MaterialTexture2D": {
+     "name": "MaterialTexture2D",
+     "inputs": {
+      "mtl": [
+       "d8f43fb8-MaterialTexture2D",
+       "mtl",
+       null
+      ],
+      "tex": [
+       "c30bee51-MakeTexture2D",
+       "tex",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1871.3964482867436,
+      390.42196112944686
+     ],
+     "options": []
+    },
+    "c30bee51-MakeTexture2D": {
+     "name": "MakeTexture2D",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/home/zensim/projects/zeno/arts/backpack/specular.jpg"
+      ],
+      "wrapS": [
+       null,
+       null,
+       "REPEAT"
+      ],
+      "wrapT": [
+       null,
+       null,
+       "REPEAT"
+      ],
+      "minFilter": [
+       null,
+       null,
+       "LINEAR"
+      ],
+      "magFilter": [
+       null,
+       null,
+       "LINEAR"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1615.1580322596133,
+      620.194922407391
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -419.2663371892254,
-    "y": -321.49004014157424,
+    "x": -225.8180367960067,
+    "y": -298.9466445496797,
     "width": 2343.75,
     "height": 1425.78125
    }
@@ -7999,9 +8141,9 @@
      "0"
     ],
     [
-     "enum add average colorBurn colorDodge darken difference exclusion glow hardLight hardMix lighten linearBurn linearDodge linearLight multiply negation normal overlay phoenix pinLight reflect screen softLight subtract vividLight ",
+     "enum add average colorBurn colorDodge darken difference exclusion glow hardLight hardMix lighten linearBurn linearDodge linearLight multiply negation normal overlay phoenix pinLight reflect screen softLight subtract vividLight",
      "mode",
-     "add"
+     "normal"
     ],
     [
      "",
