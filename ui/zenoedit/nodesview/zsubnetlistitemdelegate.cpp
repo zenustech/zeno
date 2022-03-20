@@ -127,7 +127,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
         QMouseEvent* me = static_cast<QMouseEvent*>(event);
         if (me->button() == Qt::RightButton)
         {
-            QMenu* menu = new QMenu(qobject_cast<ZenoSubnetListView*>(parent()));
+            QMenu* menu = new QMenu(qobject_cast<QWidget*>(parent()));
             QAction* pCopySubnet = new QAction("Copy subnet");
             QAction* pPasteSubnet = new QAction("Paste subnet");
             QAction* pRename = new QAction("Rename");
