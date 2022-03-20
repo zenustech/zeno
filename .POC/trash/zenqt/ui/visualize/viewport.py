@@ -1,5 +1,5 @@
 import os
-import copy
+import math
 import time
 import numpy as np
 
@@ -180,6 +180,9 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Background Color', self)
         self.addAction(action)
 
+        action = QAction('Set Light', self)
+        self.addAction(action)
+
         self.addSeparator()
 
         action = QAction('Smooth Shading', self)
@@ -247,6 +250,48 @@ class QDMRecordMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+F12'))
         self.addAction(action)
 
+class SetLightDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('Set Light')
+        self.initUI()
+
+    def initUI(self):
+        phi_label = QLabel('Phi:')
+        self.phi_slider = QSlider(Qt.Horizontal)
+        self.phi_slider.setMinimum(0)
+        self.phi_slider.setMaximum(100)
+        self.phi_slider.setValue(0)
+        self.phi_slider.valueChanged.connect(self.set_light)
+
+        theta_label = QLabel('Theta:')
+        self.theta_slider = QSlider(Qt.Horizontal)
+        self.theta_slider.setMinimum(0)
+        self.theta_slider.setMaximum(100)
+        self.theta_slider.setValue(75)
+        self.theta_slider.valueChanged.connect(self.set_light)
+
+        grid = QGridLayout()
+        grid.setSpacing(10)
+
+        grid.addWidget(phi_label, 1, 0)
+        grid.addWidget(self.phi_slider, 1, 1)
+
+        grid.addWidget(theta_label, 2, 0)
+        grid.addWidget(self.theta_slider, 2, 1)
+
+        self.setLayout(grid)
+
+    def set_light(self):
+        phi_int = self.phi_slider.value()
+        theta_int = self.theta_slider.value()
+        phi = phi_int / 100 * math.pi * 2
+        theta = theta_int / 100 * math.pi
+        x = math.sin(theta) * math.cos(phi)
+        y = -math.cos(theta)
+        z = math.sin(theta) * math.sin(phi)
+        zenvis.core.setLight(x, y, z)
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
@@ -279,6 +324,8 @@ class DisplayWidget(QWidget):
         self.camera_keyframe_widget = CameraKeyframeWidget(self)
         zenvis.camera_keyframe = self.camera_keyframe_widget
 
+        self.set_light_dialog = SetLightDialog()
+
     def on_update(self):
         self.view.on_update()
 
@@ -310,6 +357,8 @@ class DisplayWidget(QWidget):
                     c.blueF(),
                 )
 
+        elif name == 'Set Light':
+            self.set_light_dialog.open()
 
         elif name == 'Record Video':
             checked = act.isChecked()
