@@ -940,7 +940,8 @@ struct ZSGridToZSParticle : INode {
                     // damping -> C is omitted here
                     auto skew = 0.5f * (C - C.transpose());
                     auto sym = 0.5f * (C + C.transpose());
-                    C = sym + skew * 0.3;
+                    // C = sym + skew * 0.3;
+                    C = skew + sym * 0.2f;
                     eles.tuple<3 * 3>("C", pi) = C;
 
                     // section 4.3
@@ -1021,9 +1022,9 @@ struct ZSReturnMapping : INode {
       auto F = eles.pack<3, 3>("F", pi);
       // hard code ftm
       constexpr auto gamma = 0.f;
-      constexpr auto k = 500.f;
-      // constexpr auto friction_coeff = 0.1f;
-      constexpr auto friction_coeff = 0.17f;
+      constexpr auto k = 40000.f;
+      constexpr auto friction_coeff = 0.f;
+      // constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::qr(F);
       if (friction_coeff == 0.f) {
         R(0, 2) = R(1, 2) = 0;
