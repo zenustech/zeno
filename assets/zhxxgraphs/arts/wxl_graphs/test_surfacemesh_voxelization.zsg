@@ -27,7 +27,7 @@
      "name": "ZSPoissonDiskSample",
      "inputs": {
       "ZSLevelSet": [
-       "c972b0a5-PrimitiveToSDF",
+       "51e9fa23-PrimitiveToZSLevelSet",
        "ZSLevelSet",
        null
       ],
@@ -78,7 +78,7 @@
      "name": "ZSLevelSetToVDBGrid",
      "inputs": {
       "ZSLevelSet": [
-       "c972b0a5-PrimitiveToSDF",
+       "51e9fa23-PrimitiveToZSLevelSet",
        "ZSLevelSet",
        null
       ],
@@ -640,8 +640,31 @@
      ],
      "options": []
     },
-    "c972b0a5-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
+    "5041dcee-ToTrackerParticles": {
+     "name": "ToTrackerParticles",
+     "inputs": {
+      "prim": [
+       "86831f1f-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1906.4832089552235,
+      -785.4710820895523
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "51e9fa23-PrimitiveToZSLevelSet": {
+     "name": "PrimitiveToZSLevelSet",
      "inputs": {
       "prim": [
        "1147b248-PrimSprayParticles",
@@ -666,17 +689,17 @@
      },
      "params": {},
      "uipos": [
-      2899.506763059701,
-      -413.0236998600745
+      2943.467336683403,
+      -414.57286432160595
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 1995.8135992768252,
-    "y": -846.1748167876585,
-    "width": 2578.1249999999864,
-    "height": 1330.56640625
+    "x": 1568.0776059510222,
+    "y": -1224.7063172767694,
+    "width": 3222.6562499999827,
+    "height": 1663.2080078125
    }
   }
  },
@@ -10293,6 +10316,47 @@
    "inputs": [
     [
      "",
+     "PrimitiveMesh",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum vertex cell",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "PrimitiveToZSLevelSet": {
+   "inputs": [
+    [
+     "",
      "prim",
      ""
     ],
@@ -13691,6 +13755,36 @@
      "float",
      "dx",
      "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ToTrackerParticles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
     ],
     [
      "",

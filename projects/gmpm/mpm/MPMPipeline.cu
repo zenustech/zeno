@@ -62,7 +62,9 @@ struct ZSPartitionForZSParticles : INode {
                   coord[d] = lower_trunc(c[d]);
                 table.insert(coord - (coord & (grid_t::side_length - 1)));
               });
-      if (parObjPtr->category != ZenoParticles::mpm) {
+      if (parObjPtr->category == ZenoParticles::tracker) {
+        ; // do nothing
+      } else if (parObjPtr->category != ZenoParticles::mpm) {
         auto &eles = parObjPtr->getQuadraturePoints();
         cudaPol(range(eles.size()),
                 [eles = proxy<execspace_e::cuda>({}, eles),
@@ -725,7 +727,7 @@ struct ZSParticleToZSGrid : INode {
             p2g_flip(cudaPol, elasticModel, anisoElasticModel, pars, partition,
                      stepDt, grid);
         })(model.getElasticModel(), model.getAnisoElasticModel());
-      else {
+      else if (parObjPtr->category == ZenoParticles::surface) {
         auto &eles = parObjPtr->getQuadraturePoints();
         p2g_apic_momentum(cudaPol, pars, partition, grid);
         p2g_apic_momentum(cudaPol, eles, partition, grid);
@@ -735,6 +737,8 @@ struct ZSParticleToZSGrid : INode {
                               stepDt, grid);
           }
         })(model.getElasticModel());
+      } else if (parObjPtr->category != ZenoParticles::tracker) {
+        // not implemented yet
       }
     }
 
@@ -855,6 +859,36 @@ struct ZSGridToZSParticle : INode {
                     F = tmp * F;
                     pars.tuple<3 * 3>("F", pi) = F;
                   });
+      } else if (parObjPtr->category == ZenoParticles::tracker) {
+        cudaPol(range(pars.size()),
+                [pars = proxy<execspace_e::cuda>({}, pars),
+                 table = proxy<execspace_e::cuda>(partition),
+                 grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
+                 dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+                  using grid_t = RM_CVREF_T(grid);
+                  auto pos = pars.pack<3>("pos", pi);
+                  auto vel = zs::vec<float, 3>::zeros();
+
+                  auto arena = make_local_arena(grid.dx, pos);
+                  for (auto loc : arena.range()) {
+                    auto coord = arena.coord(loc);
+                    auto localIndex = coord & (grid_t::side_length - 1);
+                    auto blockno = table.query(coord - localIndex);
+                    if (blockno < 0)
+                      printf("THE HELL!");
+                    auto block = grid.block(blockno);
+                    auto W = arena.weight(loc);
+                    auto vi =
+                        block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
+
+                    vel += vi * W;
+                  }
+                  // vel
+                  pars.tuple<3>("vel", pi) = vel;
+                  // pos
+                  pos += vel * dt;
+                  pars.tuple<3>("pos", pi) = pos;
+                });
       } else if (parObjPtr->category != ZenoParticles::mpm) {
         cudaPol(range(pars.size()),
                 [pars = proxy<execspace_e::cuda>({}, pars),
@@ -1091,6 +1125,7 @@ struct ZSReturnMapping : INode {
               })(parObjPtr->getModel().getElasticModel(),
                  parObjPtr->getModel().getPlasticModel());
         }
+      } else if (parObjPtr->category == ZenoParticles::tracker) {
       } else {
         auto &eles = parObjPtr->getQuadraturePoints();
         if (parObjPtr->category == ZenoParticles::surface)

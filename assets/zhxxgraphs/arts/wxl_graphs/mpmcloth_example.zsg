@@ -39,8 +39,8 @@
      },
      "params": {},
      "uipos": [
-      475.1746058130701,
-      189.5851894946809
+      -370.9029856394844,
+      161.83042615525278
      ],
      "options": [
       "ONCE"
@@ -97,8 +97,8 @@
      },
      "params": {},
      "uipos": [
-      781.6815815605405,
-      310.0458728669845
+      -64.39600989201415,
+      282.2911095275564
      ],
      "options": [
       "ONCE"
@@ -119,8 +119,8 @@
       "z": 0.0
      },
      "uipos": [
-      208.9092182750759,
-      509.4757670022793
+      -637.1683731774785,
+      481.7210036628511
      ],
      "options": []
     },
@@ -139,8 +139,8 @@
       "z": 4.0
      },
      "uipos": [
-      355.988245630699,
-      728.7540724734038
+      -490.08934582185555,
+      700.9993091339755
      ],
      "options": []
     },
@@ -159,8 +159,8 @@
       "z": -2.0
      },
      "uipos": [
-      272.136801861702,
-      317.68017429711233
+      -573.9407895908523,
+      289.9254109576842
      ],
      "options": []
     },
@@ -197,7 +197,7 @@
        null
       ],
       "prim": [
-       "920cda14-PoissonDiskSample",
+       "3c19dbd4-ZSPoissonDiskSample",
        "prim",
        null
       ],
@@ -214,8 +214,8 @@
      },
      "params": {},
      "uipos": [
-      1235.7209156245947,
-      192.04293301028224
+      1215.3558202964878,
+      -51.2784393353524
      ],
      "options": [
       "ONCE"
@@ -234,8 +234,8 @@
       "value": 0.04
      },
      "uipos": [
-      -645.7392784700085,
-      -127.63916718558292
+      -1155.7956089102627,
+      -498.15178458086194
      ],
      "options": []
     },
@@ -366,8 +366,8 @@
       "name": "dx"
      },
      "uipos": [
-      -383.9951654469564,
-      -246.56058897513512
+      -894.0514958872106,
+      -617.0732063704141
      ],
      "options": []
     },
@@ -639,13 +639,18 @@
        null
       ],
       "obj2": [
+       "44608ee0-ToTrackerParticles",
+       "ZSParticles",
+       null
+      ],
+      "obj3": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "obj0\nobj1\nobj2"
+      "_KEYS": "obj0\nobj1\nobj2\nobj3"
      },
      "uipos": [
       1575.365398296068,
@@ -657,7 +662,8 @@
      "socket_keys": [
       "obj0",
       "obj1",
-      "obj2"
+      "obj2",
+      "obj3"
      ]
     },
     "d241710d-ZSParticleToZSGrid": {
@@ -1476,8 +1482,8 @@
       "op_type": "div"
      },
      "uipos": [
-      -404.0567951318458,
-      58.18417849898583
+      -914.1131255721001,
+      -312.3284388962932
      ],
      "options": []
     },
@@ -1499,8 +1505,8 @@
       "name": "halfdx"
      },
      "uipos": [
-      -112.05841784989855,
-      112.05841784989858
+      -622.1147482901528,
+      -258.45419954538045
      ],
      "options": []
     },
@@ -1520,8 +1526,8 @@
      },
      "params": {},
      "uipos": [
-      6132.730514436145,
-      -56.28151414637744
+      6132.730514436144,
+      -54.7047664260127
      ],
      "options": []
     },
@@ -1554,7 +1560,7 @@
        null
       ],
       "prim": [
-       "39110882-PoissonDiskSample",
+       "69116e31-ZSPoissonDiskSample",
        "prim",
        null
       ],
@@ -1571,8 +1577,8 @@
      },
      "params": {},
      "uipos": [
-      1410.4949290060842,
-      555.115111561866
+      1409.1528528822334,
+      476.58448580050936
      ],
      "options": [
       "ONCE"
@@ -1599,8 +1605,8 @@
      },
      "params": {},
      "uipos": [
-      1068.98275862069,
-      574.9391480730221
+      212.99136587634183,
+      403.7200515269073
      ],
      "options": [
       "ONCE"
@@ -1622,7 +1628,7 @@
       "density": [
        null,
        null,
-       2.0
+       4.0
       ],
       "type": [
        null,
@@ -1642,7 +1648,7 @@
       "E": [
        null,
        null,
-       800.0
+       1500.0
       ],
       "nu": [
        null,
@@ -1662,8 +1668,8 @@
      },
      "params": {},
      "uipos": [
-      1077.484787018255,
-      791.277890466531
+      951.3449693890757,
+      503.52143149996584
      ],
      "options": []
     },
@@ -1721,7 +1727,7 @@
       "E": [
        null,
        null,
-       1400.0
+       400.0
       ],
       "nu": [
        null,
@@ -1912,7 +1918,7 @@
      },
      "params": {
       "x": 2.0,
-      "y": 0.01,
+      "y": 0.005,
       "z": 2.0
      },
      "uipos": [
@@ -1969,8 +1975,8 @@
       "path": ""
      },
      "uipos": [
-      1318.4246957403652,
-      -774.1054766734283
+      1293.8560218567388,
+      -788.1447188926435
      ],
      "options": [
       "ONCE"
@@ -1999,8 +2005,8 @@
       "type": "vertex"
      },
      "uipos": [
-      1038.4259634888435,
-      -697.6713995943202
+      989.3184864497166,
+      -745.3962886459014
      ],
      "options": [
       "ONCE"
@@ -2034,8 +2040,8 @@
       "path": ""
      },
      "uipos": [
-      1309.9226673427986,
-      -517.4662778904662
+      1271.9320408783892,
+      -535.8445746212467
      ],
      "options": [
       "ONCE"
@@ -2057,8 +2063,8 @@
      },
      "params": {},
      "uipos": [
-      1785.9789767685077,
-      413.4140244675454
+      3342.4822726669445,
+      1422.57683454098
      ],
      "options": []
     },
@@ -2088,19 +2094,378 @@
      },
      "params": {},
      "uipos": [
-      2039.6787018255573,
-      369.57728194726155
+      3603.7005167458146,
+      1386.2586110425157
+     ],
+     "options": []
+    },
+    "35440628-PrimitiveToZSLevelSet": {
+     "name": "PrimitiveToZSLevelSet",
+     "inputs": {
+      "prim": [
+       "4ff91564-PrimSprayParticles",
+       "particlesPrim",
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.1
+      ],
+      "thickness": [
+       null,
+       null,
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      505.19520490002844,
+      280.0066823292649
+     ],
+     "options": []
+    },
+    "44608ee0-ToTrackerParticles": {
+     "name": "ToTrackerParticles",
+     "inputs": {
+      "prim": [
+       "2415c7de-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      486.42667173252255,
+      584.1850303951367
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "54157d97-SetMaterial": {
+     "name": "SetMaterial",
+     "inputs": {
+      "prim": [
+       "634e1e39-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "mtl": [
+       "2b233529-ShaderFinalize",
+       "mtl",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3633.4004506898023,
+      1915.6667964271076
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "2b233529-ShaderFinalize": {
+     "name": "ShaderFinalize",
+     "inputs": {
+      "basecolor": [
+       "36ef2a34-NumericVec3",
+       "vec3",
+       null
+      ],
+      "metallic": [
+       null,
+       null,
+       0.0
+      ],
+      "roughness": [
+       null,
+       null,
+       0.9
+      ],
+      "specular": [
+       null,
+       null,
+       0.5
+      ],
+      "subsurface": [
+       null,
+       null,
+       0.0
+      ],
+      "specularTint": [
+       null,
+       null,
+       0.0
+      ],
+      "anisotropic": [
+       null,
+       null,
+       1.0
+      ],
+      "sheen": [
+       null,
+       null,
+       3.0
+      ],
+      "sheenTint": [
+       null,
+       null,
+       1.0
+      ],
+      "clearcoat": [
+       null,
+       null,
+       0.0
+      ],
+      "clearcoatGloss": [
+       null,
+       null,
+       0.0
+      ],
+      "normal": [
+       null,
+       null,
+       null
+      ],
+      "emission": [
+       null,
+       null,
+       null
+      ],
+      "exposure": [
+       null,
+       null,
+       10.0
+      ],
+      "toon": [
+       null,
+       null,
+       0.0
+      ],
+      "stroke": [
+       null,
+       null,
+       1.0
+      ],
+      "shape": [
+       null,
+       null,
+       null
+      ],
+      "style": [
+       null,
+       null,
+       1.0
+      ],
+      "strokeNoise": [
+       null,
+       null,
+       0.0
+      ],
+      "shad": [
+       null,
+       null,
+       null
+      ],
+      "strokeTint": [
+       null,
+       null,
+       null
+      ],
+      "commonCode": [
+       null,
+       null,
+       ""
+      ],
+      "extensionsCode": [
+       null,
+       null,
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "backend": "GLSL"
+     },
+     "uipos": [
+      3248.1592633057576,
+      1715.4627147944545
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "634e1e39-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "2415c7de-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "flip": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      635.2757104194854,
+      870.4330175913391
+     ],
+     "options": []
+    },
+    "36ef2a34-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 1.0
+     },
+     "uipos": [
+      2980.8119079837606,
+      1637.5372124492553
+     ],
+     "options": []
+    },
+    "3f26b98b-PrimitiveToZSLevelSet": {
+     "name": "PrimitiveToZSLevelSet",
+     "inputs": {
+      "prim": [
+       "4ff91564-PrimSprayParticles",
+       "particlesPrim",
+       null
+      ],
+      "dx": [
+       "247d5c2a-NumericFloat",
+       "value",
+       0.1
+      ],
+      "thickness": [
+       "ad4074b5-NumericOperator",
+       "ret",
+       0.1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      926.1226490472452,
+      -420.4407253202612
+     ],
+     "options": []
+    },
+    "69116e31-ZSPoissonDiskSample": {
+     "name": "ZSPoissonDiskSample",
+     "inputs": {
+      "ZSLevelSet": [
+       "3f26b98b-PrimitiveToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.01
+      ],
+      "ppc": [
+       null,
+       null,
+       6.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      1568.3608949416332,
+      -785.1896887159529
+     ],
+     "options": []
+    },
+    "3c19dbd4-ZSPoissonDiskSample": {
+     "name": "ZSPoissonDiskSample",
+     "inputs": {
+      "ZSLevelSet": [
+       "3f26b98b-PrimitiveToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.01
+      ],
+      "ppc": [
+       null,
+       null,
+       2.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      1556.653696498054,
+      -521.8988326848247
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1513.4778790920404,
-    "y": -1564.0769020871267,
-    "width": 8940.696716308588,
-    "height": 4947.185516357419
+    "x": -859.880774226187,
+    "y": -1104.5604530927633,
+    "width": 7152.55737304687,
+    "height": 3957.748413085935
    }
   }
  },
@@ -11754,6 +12119,46 @@
     "openvdb"
    ]
   },
+  "PrimitiveToZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "thickness",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
+   ]
+  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -15065,46 +15470,6 @@
     "FLIPSolver"
    ]
   },
-  "SurfaceMeshToSDF": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "float",
-     "dx",
-     "0.1"
-    ],
-    [
-     "float",
-     "thickness",
-     "0.1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSLevelSet",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Volume"
-   ]
-  },
   "SyncPrimitiveAttributes": {
    "inputs": [
     [
@@ -15156,6 +15521,36 @@
      "float",
      "dx",
      "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ToTrackerParticles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
     ],
     [
      "",
