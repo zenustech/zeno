@@ -27,6 +27,11 @@ static std::string cppdemangle(std::type_info const &type) {
 }
 
 template <class T>
+static std::type_info cpptypeid(T const &t) {
+    return typeid(t);
+}
+
+template <class T>
 static std::string cppdemangle() {
     std::string s{cppdemangle(typeid(std::remove_cv_t<std::remove_reference_t<T>>))};
     if (std::is_const_v<std::remove_reference_t<T>>)
