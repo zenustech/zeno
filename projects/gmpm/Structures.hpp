@@ -90,7 +90,8 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  enum category_e : int { mpm, curve, surface, tet };
+  // tracker particle for 
+  enum category_e : int { mpm, curve, surface, tet, tracker };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }

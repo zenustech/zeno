@@ -637,6 +637,65 @@ ZENDEFNODE(ToBoundaryParticles, {
                                     {"MPM"},
                                 });
 
+struct ToTrackerParticles : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToTrackerParticles\n");
+
+    // primitive
+    auto inParticles = get_input<PrimitiveObject>("prim");
+    auto &obj = inParticles->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel"))
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+
+    auto outParticles = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    outParticles->prim = inParticles;
+
+    /// category, size
+    std::size_t size{obj.size()};
+    outParticles->category = ZenoParticles::category_e::tracker;
+
+    // per vertex (node) vol, pos, vel
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}};
+    {
+      auto &pars = outParticles->getParticles(); // tilevector
+      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
+      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
+                                velsPtr, &obj](size_t pi) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+
+        // pos
+        pars.tuple<3>("pos", pi) = obj[pi];
+
+        // vel
+        if (velsPtr != nullptr)
+          pars.tuple<3>("vel", pi) = velsPtr[pi];
+        else
+          pars.tuple<3>("vel", pi) = vec3::zeros();
+      });
+
+      pars = pars.clone({memsrc_e::um, 0});
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ToTrackerParticles\n");
+    set_output("ZSParticles", outParticles);
+  }
+};
+
+ZENDEFNODE(ToTrackerParticles, {
+                                   {"prim"},
+                                   {"ZSParticles"},
+                                   {},
+                                   {"MPM"},
+                               });
+
 struct BuildPrimitiveSequence : INode {
   void apply() override {
     using namespace zs;
@@ -751,7 +810,7 @@ struct UpdatePrimitiveFromZSParticles : INode {
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
       auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
-      if (parObjPtr->prim->has_attr("vel"))
+      if (parObjPtr->prim->has_attr("vel") && pars.hasProperty("vel"))
         velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
 
       // currently only write back pos and vel (if has)
