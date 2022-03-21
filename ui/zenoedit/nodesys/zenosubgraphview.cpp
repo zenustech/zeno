@@ -307,7 +307,7 @@ LayerPathWidget::LayerPathWidget(QWidget* parent)
 {
 	QHBoxLayout* pLayout = new QHBoxLayout;
 	pLayout->setSpacing(10);
-	pLayout->setContentsMargins(25, 10, 25, 10);
+	pLayout->setContentsMargins(25, 5, 25, 5);
 	setLayout(pLayout);
 }
 
@@ -335,7 +335,7 @@ void LayerPathWidget::setPath(const QString& path)
 
 		ZTextLabel* pLabel = new ZTextLabel;
 		pLabel->setText(item);
-		pLabel->setFont(QFont("HarmonyOS Sans", 14));
+		pLabel->setFont(QFont("HarmonyOS Sans", 11));
 		pLabel->setTextColor(QColor(129, 125, 123));
 		connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
 		pLayout->addWidget(pLabel);
@@ -344,7 +344,7 @@ void LayerPathWidget::setPath(const QString& path)
 		{
 			pLabel = new ZTextLabel;
 			pLabel->setText(">");
-			QFont font("Consolas", 14);
+			QFont font("Consolas", 11);
 			font.setBold(true);
 			pLabel->setFont(font);
 			pLabel->setTextColor(QColor(129, 125, 123));

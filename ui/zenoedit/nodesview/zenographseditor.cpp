@@ -53,6 +53,8 @@ void ZenoGraphsEditor::initUI()
     m_ui->splitter->setStretchFactor(1, 5);
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
+
+    m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
 }
 
 void ZenoGraphsEditor::initModel()
