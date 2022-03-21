@@ -99,7 +99,7 @@ ZENDEFNODE(ZSParticleToZSLevelSet, {
                                    });
 
 /// currently assume mesh resolution
-struct PrimitiveToSDF : INode {
+struct PrimitiveToZSLevelSet : INode {
   using SpLsT = zs::SparseLevelSet<3>;
   using TV = zs::vec<float, 3>;
   using IV = zs::vec<int, 3>;
@@ -155,7 +155,8 @@ struct PrimitiveToSDF : INode {
     });
   }
   void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing PrimitiveToSDF\n");
+    fmt::print(fg(fmt::color::green),
+               "begin executing PrimitiveToZSLevelSet\n");
 
     // primitive
     auto inParticles = get_input<PrimitiveObject>("prim");
@@ -287,12 +288,12 @@ struct PrimitiveToSDF : INode {
             });
 #endif
 
-    fmt::print(fg(fmt::color::cyan), "done executing PrimitiveToSDF\n");
+    fmt::print(fg(fmt::color::cyan), "done executing PrimitiveToZSLevelSet\n");
     set_output("ZSLevelSet", zsspls);
   }
 };
 
-ZENDEFNODE(PrimitiveToSDF,
+ZENDEFNODE(PrimitiveToZSLevelSet,
            {
                {"prim", {"float", "dx", "0.1"}, {"float", "thickness", "0.1"}},
                {"ZSLevelSet"},
