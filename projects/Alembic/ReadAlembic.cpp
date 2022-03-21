@@ -80,6 +80,27 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
+    if (auto uv = mesh.getUVsParam()) {
+        if (!read_done) {
+            log_info("[alembic] totally uv is isIndexed: {}", uv.isIndexed());
+            log_info("[alembic] totally uv is isConstant: {}", uv.isConstant());
+        }
+        auto uvsamp = uv.getIndexedValue();
+        int index_size = (int) uvsamp.getIndices()->size();
+        if (prim->loops.size() == index_size) {
+            log_info("[alembic] totally {} uv indices, per face uv", index_size);
+        } else if (prim->verts.size() == index_size) {
+            log_info("[alembic] totally {} uv indices, per vertex uv", index_size);
+            log_error("[alembic] TODO vertex uv");
+        } else {
+            log_error("[alembic] error uv indices");
+        }
+    } else {
+        if (!read_done) {
+            log_info("[alembic] Not found uv");
+        }
+    }
+
     return prim;
 }
 
