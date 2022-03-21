@@ -13,12 +13,6 @@ struct IGraphic {
   virtual ~IGraphic() = default;
 };
 
-struct FrameData {
-    std::map<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>> graphics;
-};
-
-FrameData *current_frame_data();
-
-extern std::vector<std::unique_ptr<FrameData>> frames;
+std::vector<IGraphic *> current_graphics();
 
 }

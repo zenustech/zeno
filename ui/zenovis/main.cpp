@@ -161,7 +161,7 @@ static void my_paint_graphics() {
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
+  for (auto const &gra: current_graphics()) {
     gra->draw();
   }
   if (show_grid) {

@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <tuple>
+#include <zeno/core/IObject.h>
 
 namespace zenvis {
 void setLight(float x, float y, float z);
@@ -11,9 +12,9 @@ void initialize();
 void finalize();
 void new_frame();
 void clear_graphics();
-void auto_gc_frame_data(int nkeep);
-std::vector<int> get_valid_frames_list();
-void load_file(std::string name, std::string ext, std::string path, int frameid);
+//void auto_gc_frame_data(int nkeep);
+//std::vector<int> get_valid_frames_list();
+void load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs);
 void set_window_size(int nx, int ny);
 void set_curr_frameid(int frameid);
 int get_curr_frameid();
