@@ -108,14 +108,14 @@ struct PrimUnmerge : INode {
                     auto primOut = primList[tag].get();
                     primOut->verts.resize(revamp.size());
 #pragma omp parallel for
-                    for (size_t i = 0; i < revamp.size(); i++) {
+                    for (intptr_t i = 0; i < revamp.size(); i++) {
                         primOut->verts[i] = prim->verts[revamp[i]];
                     }
                     prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
                         using T = std::decay_t<decltype(arr[0])>;
                         auto &outarr = primOut->verts.add_attr<T>(key);
 #pragma omp parallel for
-                        for (size_t i = 0; i < revamp.size(); i++) {
+                        for (intptr_t i = 0; i < revamp.size(); i++) {
                             outarr[i] = arr[revamp[i]];
                         }
                     });
