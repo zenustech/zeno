@@ -268,8 +268,24 @@ QTreeView::item:selected:!active {
            <layout class="QVBoxLayout" name="verticalLayout_233">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout2">
+              <property name="leftMargin">
+               <number>24</number>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="rightMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>8</number>
+              </property>
               <item>
                <widget class="QLabel" name="label_2">
+                <property name="styleSheet">
+                 <string notr="true">color: #858280;
+font: 12pt 'HarmonyOS Sans';</string>
+                </property>
                 <property name="text">
                  <string>SEARCH</string>
                 </property>
@@ -289,29 +305,78 @@ QTreeView::item:selected:!active {
                </spacer>
               </item>
               <item>
-               <widget class="QLabel" name="label_2333">
-                <property name="text">
-                 <string>...</string>
-                </property>
-               </widget>
+               <widget class="ZIconLabel" name="btnSearchOpt"/>
               </item>
              </layout>
             </item>
             <item>
-             <widget class="QLineEdit" name="searchEdit"/>
+             <widget class="QLineEdit" name="searchEdit">
+              <property name="focusPolicy">
+               <enum>Qt::ClickFocus</enum>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLineEdit {
+    border: 1px solid #252525;
+    padding: 0 8px;
+    background: rgb(36,36,36);
+    selection-background-color: #4B9EF4;
+    color: rgba(255,255,255,0.40);
+	font: 16px 'HarmonyOS Sans';
+}
+
+QLineEdit:focus
+{
+    border: 1px solid #4B9EF4;
+    color: rgba(255,255,255,1.0);
+}</string>
+              </property>
+             </widget>
             </item>
             <item>
-             <spacer name="verticalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
+             <widget class="QTreeView" name="searchResView">
+              <property name="styleSheet">
+               <string notr="true">QTreeView
+{
+	background-color: rgb(43,43,43);
+	show-decoration-selected: 1;
+	font: 12pt 'HarmonyOS Sans';
+}
+
+QTreeView::item {
+	color: #858280;
+	border: 1px solid transparent;
+}
+
+QTreeView::item:hover {
+	background-color: transparent;
+}
+
+QTreeView::item:selected {
+	border: 1px solid #4B9EF4;
+	background: #334960;
+	color: #ffffff;
+}
+
+QTreeView::item:selected:active{
+	background: #334960;
+	color: #ffffff;
+}
+
+QTreeView::item:selected:!active {
+	background: #334960;
+	color: #ffffff;
+}</string>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
               </property>
-             </spacer>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+              <attribute name="headerVisible">
+               <bool>false</bool>
+              </attribute>
+             </widget>
             </item>
            </layout>
           </widget>

@@ -161,6 +161,10 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             painter->restore();
         }
     }
+    if (CE_ItemViewItem == element)
+    {
+		return base::drawControl(element, option, painter, widget);
+    }
     return base::drawControl(element, option, painter, widget);
 }
 

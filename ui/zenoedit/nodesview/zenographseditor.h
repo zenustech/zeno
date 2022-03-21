@@ -2,6 +2,7 @@
 #define __ZENO_GRAPHS_EDITOR_H__
 
 #include <QtWidgets>
+#include <zenoui/include/common.h>
 
 class ZToolButton;
 class ZenoWelcomePage;
@@ -36,12 +37,14 @@ public slots:
     void onListItemActivated(const QModelIndex& index);
     void onTreeItemActivated(const QModelIndex& index);
     void onSubnetOptionClicked();
+    void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);
 	void onModelReset();
 	void onSubGraphRename(const QString& oldName, const QString& newName);
+    void onSearchEdited(const QString& content);
 
 private:
     void initUI();
@@ -55,6 +58,7 @@ private:
     IGraphsModel* m_model;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_sideBarModel;
+    int m_searchOpts;
 };
 
 

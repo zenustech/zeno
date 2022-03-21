@@ -1322,3 +1322,41 @@ void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& 
     const QString& subnetNodeName = pSubModel->name();
     updateDescInfo(subnetNodeName, updateInfo, false);
 }
+
+QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
+{
+    QList<SEARCH_RESULT> results;
+    if (content.isEmpty())
+        return results;
+
+    if (searchOpts & SEARCH_SUBNET)
+    {
+        QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
+        for (QModelIndex subgIdx : lst)
+        {
+            SEARCH_RESULT result;
+            result.targetIdx = subgIdx;
+            result.type = SEARCH_SUBNET;
+            results.append(result);
+        }
+    }
+    if (searchOpts & SEARCH_NODE)
+    {
+        for (auto subgInfo : m_subGraphs)
+        {
+            SubGraphModel* pModel = subgInfo.pModel;
+            QModelIndex subgIdx = indexBySubModel(pModel);
+            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
+            for (QModelIndex nodeIdx : lst)
+            {
+                SEARCH_RESULT result;
+                result.targetIdx = nodeIdx;
+                result.subgIdx = subgIdx;
+                result.type = SEARCH_NODE;
+                results.append(result);
+            }
+        }
+    }
+
+    return results;
+}

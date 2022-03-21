@@ -14,12 +14,14 @@
 #include "nodesys/zenosubgraphview.h"
 #include "ui_zenographseditor.h"
 #include "nodesview/zsubnetlistitemdelegate.h"
+#include "searchitemdelegate.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
 	: QWidget(nullptr)
 	, m_mainWin(pMainWin)
     , m_model(nullptr)
+    , m_searchOpts(SEARCHALL)
 {
     initUI();
     initModel();
@@ -44,6 +46,7 @@ void ZenoGraphsEditor::initUI()
     QSize szIcons = ZenoStyle::dpiScaledSize(QSize(20, 20));
 
     m_ui->moreBtn->setIcons(szIcons, ":/icons/more.svg", ":/icons/more_on.svg");
+    m_ui->btnSearchOpt->setIcons(szIcons, ":/icons/more.svg", ":/icons/more_on.svg");
 
     m_ui->subnetBtn->setSize(szIcons, margins);
     m_ui->treeviewBtn->setSize(szIcons, margins);
@@ -95,9 +98,11 @@ void ZenoGraphsEditor::initSignals()
 	connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
 
     connect(m_ui->moreBtn, SIGNAL(clicked()), this, SLOT(onSubnetOptionClicked()));
+    connect(m_ui->btnSearchOpt, SIGNAL(clicked()), this, SLOT(onSearchOptionClicked()));
     connect(m_ui->graphsViewTab, &QTabWidget::tabCloseRequested, this, [=](int index) {
         m_ui->graphsViewTab->removeTab(index);
     });
+    connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
 
     m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
@@ -148,6 +153,63 @@ void ZenoGraphsEditor::onSubGraphRename(const QString& oldName, const QString& n
 		QTabBar* pTabBar = m_ui->graphsViewTab->tabBar();
 		pTabBar->setTabText(idx, newName);
 	}
+}
+
+void ZenoGraphsEditor::onSearchOptionClicked()
+{
+	QMenu* pOptionsMenu = new QMenu;
+
+	QAction* pNode = new QAction(tr("Node"));
+    pNode->setCheckable(true);
+    pNode->setChecked(m_searchOpts & SEARCH_NODE);
+
+	QAction* pSubnet = new QAction(tr("Subnet"));
+    pSubnet->setCheckable(true);
+    pSubnet->setChecked(m_searchOpts & SEARCH_SUBNET);
+
+	QAction* pAnnotation = new QAction(tr("Annotation"));
+    pAnnotation->setCheckable(true);
+    pAnnotation->setEnabled(false);
+
+	QAction* pWrangle = new QAction(tr("wrangle snippet"));
+    pWrangle->setCheckable(true);
+    pWrangle->setChecked(m_searchOpts & SEARCH_WRANGLE);
+
+	pOptionsMenu->addAction(pNode);
+	pOptionsMenu->addAction(pSubnet);
+	pOptionsMenu->addAction(pAnnotation);
+	pOptionsMenu->addAction(pWrangle);
+
+	connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_NODE;
+        else
+            m_searchOpts &= (~(int)SEARCH_NODE);
+	});
+
+	connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
+		if (bChecked)
+			m_searchOpts |= SEARCH_SUBNET;
+		else
+			m_searchOpts &= (~(int)SEARCH_SUBNET);
+		});
+
+	connect(pAnnotation, &QAction::triggered, this, [=](bool bChecked) {
+		if (bChecked)
+			m_searchOpts |= SEARCH_ANNO;
+		else
+			m_searchOpts &= (~(int)SEARCH_ANNO);
+		});
+
+	connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
+		if (bChecked)
+			m_searchOpts |= SEARCH_WRANGLE;
+		else
+			m_searchOpts &= (~(int)SEARCH_WRANGLE);
+		});
+
+	pOptionsMenu->exec(QCursor::pos());
+	pOptionsMenu->deleteLater();
 }
 
 void ZenoGraphsEditor::onSubnetOptionClicked()
@@ -342,4 +404,55 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
 {
     const QString& subgName = nodeIdx.data(ROLE_OBJNAME).toString();
     activateTab(subgName);
+}
+
+void ZenoGraphsEditor::onSearchEdited(const QString& content)
+{
+    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts);
+
+    QStandardItemModel* pModel = new QStandardItemModel(this);
+
+    for (SEARCH_RESULT res : results)
+    {
+        if (res.type == SEARCH_SUBNET)
+		{
+            QString subgName = res.targetIdx.data(ROLE_OBJNAME).toString();
+            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
+            if (lst.size() == 0)
+            {
+				//add subnet
+				QStandardItem* pItem = new QStandardItem(subgName + " (Subnet)");
+				pItem->setData(subgName, ROLE_OBJNAME);
+				pModel->appendRow(pItem);
+            }
+        }
+        else if (res.type == SEARCH_NODE)
+        {
+            QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
+			QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
+
+            QStandardItem* parentItem = nullptr;
+            if (lst.size() == 0)
+            {
+				//add subnet
+                parentItem = new QStandardItem(subgName + " (Subnet)");
+                parentItem->setData(subgName, ROLE_OBJNAME);
+				pModel->appendRow(parentItem);
+            }
+            else
+            {
+                Q_ASSERT(lst.size() == 1);
+                parentItem = pModel->itemFromIndex(lst[0]);
+            }
+
+            QString nodeName = res.targetIdx.data(ROLE_OBJNAME).toString();
+            QStandardItem* pItem = new QStandardItem(nodeName);
+            pItem->setData(nodeName, ROLE_OBJNAME);
+		    parentItem->appendRow(pItem);
+        }
+    }
+
+    m_ui->searchResView->setModel(pModel);
+    m_ui->searchResView->setItemDelegate(new SearchItemDelegate(content));
+    m_ui->searchResView->expandAll();
 }
