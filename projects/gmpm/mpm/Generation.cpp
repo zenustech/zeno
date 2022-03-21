@@ -102,7 +102,7 @@ struct ZSPoissonDiskSample : INode {
                 -> std::enable_if_t<
                     is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
               const auto &ls = *lsPtr;
-              const auto &spls = ls.memspace() == memsrc_e::host
+              const auto &spls = ls.memspace() != memsrc_e::host
                                      ? ls.clone({memsrc_e::host, -1})
                                      : ls;
               sampled = zs::sample_from_levelset(

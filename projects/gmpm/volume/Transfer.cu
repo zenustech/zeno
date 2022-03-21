@@ -99,7 +99,7 @@ ZENDEFNODE(ZSParticleToZSLevelSet, {
                                    });
 
 /// currently assume mesh resolution
-struct SurfaceMeshToSDF : INode {
+struct PrimitiveToSDF : INode {
   using SpLsT = zs::SparseLevelSet<3>;
   using TV = zs::vec<float, 3>;
   using IV = zs::vec<int, 3>;
@@ -155,30 +155,70 @@ struct SurfaceMeshToSDF : INode {
     });
   }
   void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing SurfaceMeshToSDF\n");
+    fmt::print(fg(fmt::color::green), "begin executing PrimitiveToSDF\n");
 
     // primitive
     auto inParticles = get_input<PrimitiveObject>("prim");
     const auto &pos = inParticles->attr<vec3f>("pos");
+
+    std::size_t numEles = 0;
+    const auto &quads = inParticles->quads.values;
     const auto &tris = inParticles->tris.values;
+    const auto &lines = inParticles->lines.values;
+    if (quads.size())
+      numEles = quads.size();
+    else if (tris.size())
+      numEles = tris.size();
+    else if (lines.size())
+      numEles = lines.size();
 
     using namespace zs;
     const auto dx = get_input2<float>("dx");
     Vector<TV> xs{pos.size(), memsrc_e::device, 0},
-        elePos{tris.size(), memsrc_e::device, 0};
+        elePos{numEles, memsrc_e::device, 0};
     zs::copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(),
              sizeof(zeno::vec3f) * pos.size());
-    Vector<zs::vec<int, 3>> inds{tris.size(), memsrc_e::device, 0};
-    zs::copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(),
-             sizeof(zeno::vec3i) * tris.size());
     auto cudaPol = cuda_exec().device(0);
-    cudaPol(range(elePos.size()),
+    {
+      if (quads.size()) {
+        Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device, 0};
+        zs::copy(zs::mem_device, (void *)inds.data(), (void *)quads.data(),
+                 sizeof(zeno::vec4i) * numEles);
+        cudaPol(
+            range(elePos.size()),
+            [elePos = proxy<execspace_e::cuda>(elePos),
+             xs = proxy<execspace_e::cuda>(xs),
+             inds = proxy<execspace_e::cuda>(inds)] __device__(int ei) mutable {
+              const auto is = inds[ei];
+              elePos[ei] =
+                  (xs[is[0]] + xs[is[1]] + xs[is[2]] + xs[is[3]]) / 4.f;
+            });
+      } else if (tris.size()) {
+        Vector<zs::vec<int, 3>> inds{numEles, memsrc_e::device, 0};
+        zs::copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(),
+                 sizeof(zeno::vec3i) * numEles);
+        cudaPol(
+            range(elePos.size()),
             [elePos = proxy<execspace_e::cuda>(elePos),
              xs = proxy<execspace_e::cuda>(xs),
              inds = proxy<execspace_e::cuda>(inds)] __device__(int ei) mutable {
               const auto is = inds[ei];
               elePos[ei] = (xs[is[0]] + xs[is[1]] + xs[is[2]]) / 3.f;
             });
+      } else if (lines.size()) {
+        Vector<zs::vec<int, 2>> inds{numEles, memsrc_e::device, 0};
+        zs::copy(zs::mem_device, (void *)inds.data(), (void *)lines.data(),
+                 sizeof(zeno::vec2i) * numEles);
+        cudaPol(
+            range(elePos.size()),
+            [elePos = proxy<execspace_e::cuda>(elePos),
+             xs = proxy<execspace_e::cuda>(xs),
+             inds = proxy<execspace_e::cuda>(inds)] __device__(int ei) mutable {
+              const auto is = inds[ei];
+              elePos[ei] = (xs[is[0]] + xs[is[1]]) / 2.f;
+            });
+      }
+    }
 
     // 3 ^ (0.3f)
     const float thickness = get_input2<float>("thickness");
@@ -191,14 +231,15 @@ struct SurfaceMeshToSDF : INode {
     // at most one block per particle
     ls._backgroundValue = dx * 2;
     ls._table =
-        typename SpLsT::table_t{pos.size() + tris.size(), memsrc_e::device, 0};
+        typename SpLsT::table_t{pos.size() + numEles, memsrc_e::device, 0};
     ls._table.reset(cudaPol, true);
 
     Vector<IV> mi{1, memsrc_e::device, 0}, ma{1, memsrc_e::device, 0};
     mi.setVal(IV::uniform(limits<int>::max()));
     ma.setVal(IV::uniform(limits<int>::lowest()));
     iterate(cudaPol, nvoxels, xs, ls, mi, ma);
-    iterate(cudaPol, nvoxels, elePos, ls, mi, ma);
+    if (numEles)
+      iterate(cudaPol, nvoxels, elePos, ls, mi, ma);
     ls._min = mi.getVal();
     ls._max = ma.getVal();
 
@@ -219,7 +260,8 @@ struct SurfaceMeshToSDF : INode {
             });
     // compute distance
     p2g(cudaPol, nvoxels, xs, ls);
-    p2g(cudaPol, nvoxels, elePos, ls);
+    if (numEles)
+      p2g(cudaPol, nvoxels, elePos, ls);
     // convert to sdf
     cudaPol(Collapse{nblocks, ls.block_size},
             [grid = proxy<execspace_e::cuda>({}, ls._grid), thickness,
@@ -245,12 +287,12 @@ struct SurfaceMeshToSDF : INode {
             });
 #endif
 
-    fmt::print(fg(fmt::color::cyan), "done executing SurfaceMeshToSDF\n");
+    fmt::print(fg(fmt::color::cyan), "done executing PrimitiveToSDF\n");
     set_output("ZSLevelSet", zsspls);
   }
 };
 
-ZENDEFNODE(SurfaceMeshToSDF,
+ZENDEFNODE(PrimitiveToSDF,
            {
                {"prim", {"float", "dx", "0.1"}, {"float", "thickness", "0.1"}},
                {"ZSLevelSet"},
