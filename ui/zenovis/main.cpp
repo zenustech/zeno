@@ -307,6 +307,12 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
+    /* begin cihou mesa */
+    int max_num_samples = num_samples;
+    CHECK_GL(glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &max_num_samples));
+    num_samples = std::min(num_samples, max_num_samples);
+    printf("num samples: %d\n", num_samples);
+    /* end cihou mesa */
     CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
     
   

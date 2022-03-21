@@ -36,7 +36,7 @@ namespace ansiclr {
         "", "", "", "",
         "", "", "", "",
     };
-    static constexpr const char *bg[16] = {};
+    static constexpr const char *bg[16] = {
         "", "", "", "",
         "", "", "", "",
         "", "", "", "",
