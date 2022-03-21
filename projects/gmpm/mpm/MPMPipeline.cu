@@ -1260,43 +1260,42 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
     const bool hasNormalProperty =
         grid.hasProperty("nrm") && pars.hasProperty("nrm");
 
-    cudaPol(range(pars.size()),
-            [pars = proxy<execspace_e::cuda>({}, pars),
-             table = proxy<execspace_e::cuda>(partition),
-             grid = proxy<execspace_e::cuda>({}, grid), dxinv = 1.f / grid.dx,
-             hasNormalProperty] __device__(size_t pi) mutable {
-              using grid_t = RM_CVREF_T(grid);
-              const auto Dinv = 4.f * dxinv * dxinv;
-              auto pos = pars.pack<3>("pos", pi);
-              auto vel = pars.pack<3>("vel", pi);
-              auto mass = pars("mass", pi);
-              // auto vol = pars("vol", pi);
-              auto nrm = RM_CVREF_T(pos)::zeros();
-              if (hasNormalProperty)
-                nrm = pars.pack<3>("nrm", pi);
+    cudaPol(
+        range(pars.size()),
+        [pars = proxy<execspace_e::cuda>({}, pars),
+         table = proxy<execspace_e::cuda>(partition),
+         grid = proxy<execspace_e::cuda>({}, grid), dxinv = 1.f / grid.dx,
+         hasNormalProperty] __device__(size_t pi) mutable {
+          using grid_t = RM_CVREF_T(grid);
+          const auto Dinv = 4.f * dxinv * dxinv;
+          auto pos = pars.pack<3>("pos", pi);
+          auto vel = pars.pack<3>("vel", pi);
+          auto mass = pars("mass", pi);
+          // auto vol = pars("vol", pi);
+          auto nrm = RM_CVREF_T(pos)::zeros();
+          if (hasNormalProperty)
+            nrm = pars.pack<3>("nrm", pi);
 
-              auto arena =
-                  make_local_arena<grid_e::collocated, kernel_e::quadratic>(
-                      grid.dx, pos);
+          auto arena = make_local_arena<grid_e::collocated, kernel_e::linear>(
+              grid.dx, pos);
 
-              for (auto loc : arena.range()) {
-                auto coord = arena.coord(loc);
-                auto localIndex = coord & (grid_t::side_length - 1);
-                auto blockno = table.query(coord - localIndex);
-                if (blockno < 0)
-                  printf("THE HELL!");
-                auto block = grid.block(blockno);
-                auto W = arena.weight(loc);
-                const auto cellid = grid_t::coord_to_cellid(localIndex);
-                atomic_add(exec_cuda, &block("m", cellid), mass * W);
-                for (int d = 0; d != 3; ++d)
-                  atomic_add(exec_cuda, &block("v", d, cellid),
-                             W * mass * vel[d]);
-                if (hasNormalProperty)
-                  for (int d = 0; d != 3; ++d)
-                    atomic_add(exec_cuda, &block("nrm", d, cellid), nrm[d]);
-              }
-            });
+          for (auto loc : arena.range()) {
+            auto coord = arena.coord(loc);
+            auto localIndex = coord & (grid_t::side_length - 1);
+            auto blockno = table.query(coord - localIndex);
+            if (blockno < 0)
+              printf("THE HELL!");
+            auto block = grid.block(blockno);
+            auto W = arena.weight(loc);
+            const auto cellid = grid_t::coord_to_cellid(localIndex);
+            atomic_add(exec_cuda, &block("m", cellid), mass * W);
+            for (int d = 0; d != 3; ++d)
+              atomic_add(exec_cuda, &block("v", d, cellid), W * mass * vel[d]);
+            if (hasNormalProperty)
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block("nrm", d, cellid), nrm[d]);
+          }
+        });
     if (hasNormalProperty) {
       cudaPol(Collapse{partition.size(), grid.block_size},
               [grid = proxy<execspace_e::cuda>({}, grid),
