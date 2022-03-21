@@ -1,6 +1,5 @@
 #include "zenosubnetlistview.h"
 #include "zenoapplication.h"
-#include "zenosubnettreeview.h"
 #include "graphsmanagment.h"
 #include "style/zenostyle.h"
 #include "../model/graphstreemodel.h"

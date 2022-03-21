@@ -8,6 +8,7 @@ ZIconLabel::ZIconLabel(QWidget* parent)
     , m_bClicked(false)
     , m_bToggleable(false)
 {
+    setStyleSheet("background: transparent");
 }
 
 void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QString& iconHover, const QString& iconNormalOn, const QString& iconHoverOn, const QString& iconDisable)
@@ -55,6 +56,7 @@ void ZIconLabel::mouseReleaseEvent(QMouseEvent* event)
     {
         emit toggled(m_bToggled);
     }
+    emit clicked();
 }
 
 void ZIconLabel::onClicked()

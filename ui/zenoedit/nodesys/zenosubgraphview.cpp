@@ -1,14 +1,15 @@
 #include "zenosubgraphscene.h"
 #include "../graphsmanagment.h"
 #include "zenosubgraphview.h"
-#include "zenographswidget.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
 #include "zenonode.h"
 #include "zenonewmenu.h"
+#include <zenoui/comctrl/zlabel.h>
+#include <zenoui/comctrl/ziconbutton.h>
 
 
-ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
+_ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	: QGraphicsView(parent)
 	, m_scene(nullptr)
 	, _modifiers(Qt::ControlModifier)
@@ -55,40 +56,40 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget *parent)
     setSceneRect(rcView);
 }
 
-void ZenoSubGraphView::redo()
+void _ZenoSubGraphView::redo()
 {
     m_scene->redo();
 }
 
-void ZenoSubGraphView::undo()
+void _ZenoSubGraphView::undo()
 {
     m_scene->undo();
 }
 
-void ZenoSubGraphView::copy()
+void _ZenoSubGraphView::copy()
 {
     m_scene->copy();
 }
 
-void ZenoSubGraphView::paste()
+void _ZenoSubGraphView::paste()
 {
     QPointF pos = mapToScene(m_mousePos);
     m_scene->paste(pos);
 }
 
-void ZenoSubGraphView::find()
+void _ZenoSubGraphView::find()
 {
     ZenoSearchBar *pSearcher = new ZenoSearchBar(m_scene->subGraphIndex());
     pSearcher->show();
     connect(pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
 }
 
-void ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
+void _ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 {
     focusOn(rec.id, rec.pos);
 }
 
-void ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
+void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
 {
 	m_scene->select(nodeId);
     auto items = m_scene->selectedItems();
@@ -103,7 +104,7 @@ void ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
     }
 }
 
-void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
+void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
 {
     m_scene = pScene;
     setScene(m_scene);
@@ -111,7 +112,13 @@ void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
     fitInView(rect, Qt::KeepAspectRatio);
 }
 
-void ZenoSubGraphView::gentle_zoom(qreal factor)
+void _ZenoSubGraphView::setPath(const QString& path)
+{
+    m_path = path;
+    update();
+}
+
+void _ZenoSubGraphView::gentle_zoom(qreal factor)
 {
 	scale(factor, factor);
 	centerOn(target_scene_pos);
@@ -125,18 +132,18 @@ void ZenoSubGraphView::gentle_zoom(qreal factor)
 	emit viewChanged(m_factor);
 }
 
-void ZenoSubGraphView::set_modifiers(Qt::KeyboardModifiers modifiers)
+void _ZenoSubGraphView::set_modifiers(Qt::KeyboardModifiers modifiers)
 {
 	_modifiers = modifiers;
 }
 
-void ZenoSubGraphView::resetTransform()
+void _ZenoSubGraphView::resetTransform()
 {
 	QGraphicsView::resetTransform();
 	m_factor = 1.0;
 }
 
-void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
+void _ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::MidButton)
 	{
@@ -154,7 +161,7 @@ void ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 	QGraphicsView::mousePressEvent(event);
 }
 
-void ZenoSubGraphView::mouseMoveEvent(QMouseEvent* event)
+void _ZenoSubGraphView::mouseMoveEvent(QMouseEvent* event)
 {
     m_mousePos = event->pos();
     QPointF delta = target_viewport_pos - m_mousePos;
@@ -174,7 +181,7 @@ void ZenoSubGraphView::mouseMoveEvent(QMouseEvent* event)
 	QGraphicsView::mouseMoveEvent(event);
 }
 
-void ZenoSubGraphView::mouseReleaseEvent(QMouseEvent* event)
+void _ZenoSubGraphView::mouseReleaseEvent(QMouseEvent* event)
 {
     QGraphicsView::mouseReleaseEvent(event);
 	if (event->button() == Qt::MidButton)
@@ -184,12 +191,12 @@ void ZenoSubGraphView::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-void ZenoSubGraphView::mouseDoubleClickEvent(QMouseEvent* event)
+void _ZenoSubGraphView::mouseDoubleClickEvent(QMouseEvent* event)
 {
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 
-void ZenoSubGraphView::wheelEvent(QWheelEvent* event)
+void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
 {
 	qreal zoomFactor = 1;
     if (event->angleDelta().y() > 0)
@@ -199,12 +206,12 @@ void ZenoSubGraphView::wheelEvent(QWheelEvent* event)
     gentle_zoom(zoomFactor);
 }
 
-void ZenoSubGraphView::resizeEvent(QResizeEvent* event)
+void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 {
     QGraphicsView::resizeEvent(event);
 }
 
-void ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
+void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
     QPoint pos = event->pos();
 
@@ -259,31 +266,167 @@ void ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 	}
 }
 
-void ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
+void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
-    QTransform tf = transform();
-    qreal scale = tf.m11();
-    int innerGrid = SCENE_GRID_SIZE;   //will be associated with scale factor.
+	QTransform tf = transform();
+	qreal scale = tf.m11();
+	int innerGrid = SCENE_GRID_SIZE;   //will be associated with scale factor.
 
-    qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
-    qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
+	qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
+	qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
 
-    QVarLengthArray<QLineF, 100> innerLines;
+	QVarLengthArray<QLineF, 100> innerLines;
 
-    for (qreal x = left; x < rect.right(); x += innerGrid)
+	for (qreal x = left; x < rect.right(); x += innerGrid)
+	{
+		innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
+	}
+	for (qreal y = top; y < rect.bottom(); y += innerGrid)
+	{
+		innerLines.append(QLineF(rect.left(), y, rect.right(), y));
+	}
+
+	painter->fillRect(rect, QColor(0, 0, 0));
+
+	QPen pen;
+	pen.setColor(QColor("#232323"));
+	pen.setWidthF(pen.widthF() / scale);
+	painter->setPen(pen);
+	painter->drawLines(innerLines.data(), innerLines.size());
+}
+
+void _ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
+{
+    drawGrid(painter, rect);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////
+LayerPathWidget::LayerPathWidget(QWidget* parent)
+	: QWidget(parent)
+{
+	QHBoxLayout* pLayout = new QHBoxLayout;
+	pLayout->setSpacing(10);
+	pLayout->setContentsMargins(25, 10, 25, 10);
+	setLayout(pLayout);
+}
+
+void LayerPathWidget::setPath(const QString& path)
+{
+	if (m_path == path)
+		return;
+
+	m_path = path;
+	QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(this->layout());
+	while (pLayout->count() > 0)
+	{
+		QLayoutItem* pItem = pLayout->itemAt(pLayout->count() - 1);
+		pLayout->removeItem(pItem);
+	}
+
+	QStringList L = m_path.split("/", Qt::SkipEmptyParts);
+	for (int i = 0; i < L.length(); i++)
+	{
+		const QString& item = L[i];
+		Q_ASSERT(!item.isEmpty());
+		QColor clrHovered, clrSelected;
+		clrHovered = QColor(67, 67, 67);
+		clrSelected = QColor(33, 33, 33);
+
+		ZTextLabel* pLabel = new ZTextLabel;
+		pLabel->setText(item);
+		pLabel->setFont(QFont("HarmonyOS Sans", 14));
+		pLabel->setTextColor(QColor(129, 125, 123));
+		connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
+		pLayout->addWidget(pLabel);
+
+		if (L.indexOf(item) != L.length() - 1)
+		{
+			pLabel = new ZTextLabel;
+			pLabel->setText(">");
+			QFont font("Consolas", 14);
+			font.setBold(true);
+			pLabel->setFont(font);
+			pLabel->setTextColor(QColor(129, 125, 123));
+			pLayout->addWidget(pLabel);
+		}
+	}
+	pLayout->addStretch();
+	update();
+}
+
+QString LayerPathWidget::path() const
+{
+	return m_path;
+}
+
+void LayerPathWidget::onPathItemClicked()
+{
+	ZTextLabel* pClicked = qobject_cast<ZTextLabel*>(sender());
+	QString path;
+	QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(this->layout());
+
+	bool bStartDeleted = false;
+	for (int i = 0; i < pLayout->count(); i++)
+	{
+		QLayoutItem* pItem = pLayout->itemAt(i);
+		QWidget* w = pItem->widget();
+		if (ZTextLabel* pPathItem = qobject_cast<ZTextLabel*>(w))
+		{
+			if (pPathItem->text() != '>')
+			{
+				path += "/" + pPathItem->text();
+				if (pPathItem == pClicked)
+					break;
+			}
+		}
+	}
+	emit pathUpdated(path);
+}
+
+
+ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
+    : QWidget(parent)
+{
+    QVBoxLayout* pLayout = new QVBoxLayout;
+    pLayout->setSpacing(0);
+    pLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_pathWidget = new LayerPathWidget;
+	m_pathWidget->hide();
+    pLayout->addWidget(m_pathWidget);
+
+    m_view = new _ZenoSubGraphView;
+    pLayout->addWidget(m_view);
+
+    setLayout(pLayout);
+
+	connect(m_pathWidget, SIGNAL(pathUpdated(QString)), this, SIGNAL(pathUpdated(QString)));
+}
+
+void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
+{
+    m_view->initScene(pScene);
+}
+
+void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphName, const QString& objId)
+{
+    if (path.isEmpty())
     {
-        innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
+        m_pathWidget->hide();
     }
-    for (qreal y = top; y < rect.bottom(); y += innerGrid)
+    else
     {
-        innerLines.append(QLineF(rect.left(), y, rect.right(), y));
+        m_pathWidget->show();
+        m_pathWidget->setPath(path);
+
+		if (!objId.isEmpty())
+		{
+			IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+			QModelIndex subgIdx = pModel->index(subGraphName);
+			QModelIndex objIdx = pModel->index(objId, subgIdx);
+			QPointF pos = pModel->data2(subgIdx, objIdx, ROLE_OBJPOS).toPointF();
+			m_view->focusOn(objId, pos);
+		}
     }
-
-    painter->fillRect(rect, QColor(0, 0, 0));
-
-    QPen pen;
-    pen.setColor(QColor("#232323"));
-    pen.setWidthF(pen.widthF() / scale);
-    painter->setPen(pen);
-    painter->drawLines(innerLines.data(), innerLines.size());
 }

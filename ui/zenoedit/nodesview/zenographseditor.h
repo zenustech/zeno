@@ -4,48 +4,58 @@
 #include <QtWidgets>
 
 class ZToolButton;
-class ZenoSubnetListView;
-class ZenoGraphsTabWidget;
-class ZenoSubnetPanel;
-class ZenoGraphsLayerWidget;
-class ZenoSubnetTreeView;
 class ZenoWelcomePage;
 class ZenoMainWindow;
 class IGraphsModel;
 
+namespace Ui
+{
+    class GraphsEditor;
+}
+
 class ZenoGraphsEditor : public QWidget
 {
     Q_OBJECT
+
+    enum SideBarItem
+    {
+        Side_Subnet,
+        Side_Tree,
+        Side_Search
+    };
+
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
-    QString getCurrentFileName();
-
-signals:
-    void modelLoaded(const QString& fn);
 
 public slots:
-    void resetModel(IGraphsModel* pModel);
-    void onCurrentModelClear();
-    void onItemActivated(const QModelIndex& index);
+	void resetModel(IGraphsModel* pModel);
+    void sideButtonToggled(bool bToggled);
+    void onSideBtnToggleChanged(const QItemSelection& selected, const QItemSelection& deselected);
+    void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onListItemActivated(const QModelIndex& index);
+    void onTreeItemActivated(const QModelIndex& index);
+    void onSubnetOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
-    void onGraphsItemInserted(const QModelIndex& parent, int first, int last);
-    void onGraphsItemAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private slots:
-    void onSubnetBtnClicked();
-    void onViewBtnClicked();
+	void onSubGraphsToRemove(const QModelIndex&, int, int);
+	void onModelReset();
+	void onSubGraphRename(const QString& oldName, const QString& newName);
 
 private:
-    QWidget* m_pSideBar;
-    ZToolButton* m_pSubnetBtn;
-    ZToolButton* m_pViewBtn;
-    ZenoSubnetPanel* m_pSubnetPanel;
-    ZenoGraphsTabWidget* m_pTabWidget;
-    ZenoGraphsLayerWidget* m_pLayerWidget;
-    ZenoWelcomePage* m_welcomePage;
+    void initUI();
+    void initSignals();
+    void initModel();
+    int tabIndexOfName(const QString& subGraphName);
+    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "");
+
     ZenoMainWindow* m_mainWin;
-    bool m_bListView;
+    Ui::GraphsEditor* m_ui;
+    IGraphsModel* m_model;
+    QItemSelectionModel* m_selection;
+    QStandardItemModel* m_sideBarModel;
 };
+
 
 #endif

@@ -1,6 +1,5 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
-#include "nodesview/znodeseditwidget.h"
 #include "panel/zenodatapanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"

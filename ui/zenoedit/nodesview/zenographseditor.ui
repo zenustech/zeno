@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GraphsEditor</class>
+ <widget class="QWidget" name="GraphsEditor">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>977</width>
+    <height>581</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Zeno Graphs Editor</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QStackedWidget" name="mainStackedWidget">
+     <property name="styleSheet">
+      <string notr="true">background: rgb(43,43,43);</string>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="mainEditor">
+      <property name="styleSheet">
+       <string notr="true">background: rgb(36, 36, 36);</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_2333">
+       <property name="spacing">
+        <number>1</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>1</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QWidget" name="sidebar" native="true">
+         <property name="styleSheet">
+          <string notr="true">background: rgb(43,43,43);</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>1</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="ZenoCheckButton" name="subnetBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="treeviewBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="searchBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="annotationBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="parameterBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="noteBtn" native="true"/>
+          </item>
+          <item>
+           <widget class="ZenoCheckButton" name="presetBtn" native="true"/>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSplitter" name="splitter">
+         <property name="styleSheet">
+          <string notr="true">QSplitter::handle
+{
+    background-color: rgb(43, 43, 43);
+}</string>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="handleWidth">
+          <number>1</number>
+         </property>
+         <widget class="QStackedWidget" name="stackedWidget">
+          <property name="styleSheet">
+           <string notr="true">background: rgb(43,43,43);</string>
+          </property>
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <widget class="QWidget" name="subnetPage">
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="leftMargin">
+               <number>24</number>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="rightMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>8</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label">
+                <property name="styleSheet">
+                 <string notr="true">color: #858280;
+font: 12pt 'HarmonyOS Sans';</string>
+                </property>
+                <property name="text">
+                 <string>SUBNET</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Expanding</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="ZIconLabel" name="moreBtn"/>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QListView" name="subnetList">
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="treePage">
+           <layout class="QVBoxLayout" name="verticalLayout2_">
+            <item>
+             <widget class="QTreeView" name="subnetTree">
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QTreeView
+{
+	background-color: rgb(43,43,43);
+	show-decoration-selected: 1;
+	font: 12pt 'HarmonyOS Sans';
+}
+
+QTreeView::item {
+	color: #858280;
+	border: 1px solid transparent;
+}
+
+QTreeView::item:hover {
+	background-color: transparent;
+}
+
+QTreeView::item:selected {
+	border: 1px solid #4B9EF4;
+	background: #334960;
+	color: #ffffff;
+}
+
+QTreeView::item:selected:active{
+	background: #334960;
+	color: #ffffff;
+}
+
+QTreeView::item:selected:!active {
+	background: #334960;
+	color: #ffffff;
+}</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+              <attribute name="headerVisible">
+               <bool>false</bool>
+              </attribute>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="searchPage">
+           <layout class="QVBoxLayout" name="verticalLayout_233">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout2">
+              <item>
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>SEARCH</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer233">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_2333">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="searchEdit"/>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="annotationPage"/>
+          <widget class="QWidget" name="paramPage"/>
+          <widget class="QWidget" name="notePage"/>
+          <widget class="QWidget" name="presetPage"/>
+         </widget>
+         <widget class="QTabWidget" name="graphsViewTab">
+          <property name="styleSheet">
+           <string notr="true">QTabBar {
+	font-weight: bold;
+}
+
+QTabWidget::pane { /* The tab widget frame */
+    border: 0px;
+}
+
+QTabBar::tab {
+    background: rgb(58, 58, 58);
+	color: rgb(129, 125, 123);
+	font: 16px 'HarmonyOS Sans';
+	margin-left: 0px;
+	margin-right: 1px;
+
+}
+
+QTabBar::tab:top {
+	margin-right: 1px;
+	margin-left: 0px;
+    padding: 10px 20px 10px 20px;
+}
+
+QTabBar::tab:top:first {
+    margin-left: 0px;
+}
+
+QTabBar::tab:!selected { font-weight: normal; }
+
+QTabBar::tab:selected {
+    background: rgb(48, 48, 48);
+	color: rgb(255, 255, 255);
+	border-bottom: 2px solid rgb(23, 160, 252);
+}
+
+QTabBar::close-button {
+    image: url(:/icons/closebtn.svg);
+    subcontrol-position: right;
+}
+QTabBar::close-button:hover {
+    image: url(:/icons/closebtn_on.svg);
+}</string>
+          </property>
+          <property name="tabsClosable">
+           <bool>true</bool>
+          </property>
+          <property name="movable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="ZenoWelcomePage" name="welcomePage"/>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ZenoCheckButton</class>
+   <extends>QWidget</extends>
+   <header>zenoui/comctrl/zenocheckbutton.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZIconLabel</class>
+   <extends>QLabel</extends>
+   <header>zenoui/comctrl/zlabel.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZenoWelcomePage</class>
+   <extends>QWidget</extends>
+   <header>nodesview/zenowelcomepage.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

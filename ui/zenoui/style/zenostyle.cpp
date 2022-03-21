@@ -36,31 +36,12 @@ QSize ZenoStyle::dpiScaledSize(const QSize &value)
 
 QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const
 {
-    switch (type)
-    {
-        case CT_TabBarTab:
-        {
-            QSize sz = dpiScaledSize(QSize(120, 37));
-            return sz;
-        }
-    }
     return base::sizeFromContents(type, option, size, widget);
 }
 
 void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, QPainter* painter, const QWidget* w) const
 {
     switch (pe) {
-        case PE_FrameTabWidget:
-        {
-            if (const QStyleOptionTabWidgetFrame* tab = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option))
-            {
-                QStyleOptionTabWidgetFrame frameOpt = *tab;
-                frameOpt.rect = w->rect();
-                painter->fillRect(frameOpt.rect, QColor(58, 58, 58));
-                return;
-            }
-            break;
-        }
         case PE_ComboBoxLineEdit: {
             if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option))
             {
@@ -160,89 +141,7 @@ void ZenoStyle::drawItemText(QPainter* painter, const QRect& rect, int flags, co
 
 void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
-    if (CE_TabBarTab == element) {
-        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option)) {
-            proxy()->drawControl(CE_TabBarTabShape, tab, painter, widget);
-            proxy()->drawControl(CE_TabBarTabLabel, tab, painter, widget);
-            proxy()->drawControl(static_cast<ControlElement>(CE_TabBarTabUnderline), tab, painter, widget);
-            proxy()->drawControl(static_cast<ControlElement>(CE_TabBarTabCloseBtn), tab, painter, widget);
-            return;
-        }
-    }
-    else if (CE_TabBarTabShape == element)
-    {
-        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
-        {
-            QRect rect(option->rect);
-            int rotate = 0;
-            bool isDisabled = !(tab->state & State_Enabled);
-            bool hasFocus = tab->state & State_HasFocus;
-            bool isHot = tab->state & State_MouseOver;
-            bool selected = tab->state & State_Selected;
-            bool lastTab = tab->position == QStyleOptionTab::End;
-            bool firstTab = tab->position == QStyleOptionTab::Beginning;
-            bool onlyOne = tab->position == QStyleOptionTab::OnlyOneTab;
-            bool leftAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, widget) == Qt::AlignLeft;
-            bool centerAligned = proxy()->styleHint(SH_TabBar_Alignment, tab, widget) == Qt::AlignCenter;
-            int borderThickness = proxy()->pixelMetric(PM_DefaultFrameWidth, option, widget);
-            int tabOverlap = proxy()->pixelMetric(PM_TabBarTabOverlap, option, widget);
-            painter->fillRect(rect, selected ? QColor(48, 48, 48) : QColor(58, 58, 58));
-            return;
-        }
-    }
-    else if (CE_TabBarTabLabel == element)
-    {
-        if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab *>(option))
-        {
-            QStyleOptionTab _tab(*tab);
-            bool selected = tab->state & State_Selected;
-            QColor textColor;
-            painter->save();
-            if (selected)
-            {
-                textColor = QColor(244, 235, 229);
-            }
-            else
-            {
-                textColor = QColor(129, 125, 123);
-            }
-            _tab.palette.setBrush(QPalette::WindowText, textColor);
-            QFont font("HarmonyOS Sans", 11);
-            font.setBold(false);
-            QPen pen(textColor);
-            painter->setPen(pen);
-            painter->setFont(font);
-            
-            int alignment = Qt::AlignLeft | Qt::AlignVCenter;
-            QRect tr = proxy()->subElementRect(SE_TabBarTabText, &_tab, widget);
-            proxy()->drawItemText(painter, tr, alignment, _tab.palette, _tab.state & State_Enabled, _tab.text, QPalette::WindowText);
-
-            painter->restore();
-            return;
-        }
-    }
-    else if (CE_TabBarTabUnderline == element)
-    {
-        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
-        {
-            static const int height = 2;
-            bool selected = tab->state & State_Selected;
-            if (selected)
-            {
-                QRect rc = QRect(tab->rect.left(), tab->rect.bottom() - height, tab->rect.width(), height);
-                painter->fillRect(rc, QColor(23, 160, 252));
-            }
-            return;
-        }
-    }
-    else if (CE_TabBarTabCloseBtn == element)
-    {
-        if (const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(option))
-        {
-            return;
-        }
-    }
-    else if (CE_ZenoComboBoxLabel == element)
+    if (CE_ZenoComboBoxLabel == element)
     {
         if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(option))
         {

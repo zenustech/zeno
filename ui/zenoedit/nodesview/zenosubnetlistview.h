@@ -6,7 +6,6 @@
 class GraphsModel;
 class GraphsPlainModel;
 class IGraphsModel;
-class ZenoSubnetTreeView;
 
 class ZSubnetListModel : public QStandardItemModel
 {

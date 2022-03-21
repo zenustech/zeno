@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic_sidemenu_tree</title>
+    <g id="ZENO@2NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="子图的右键菜单" transform="translate(-33.000000, -102.000000)">
+            <g id="Vertical_Bar" transform="translate(25.000000, 62.000000)">
+                <g id="hierarchy-side" transform="translate(0.000000, 32.000000)">
+                    <g id="ic_sidemenu_tree" transform="translate(8.000000, 8.000000)">
+                        <rect id="矩形" fill="#000000" fill-rule="nonzero" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                        <path d="M8.91139964,1.40028066 L8.91139964,5.00028066 L4.0480051,5.00028066 L4.0480051,7.34928066 L6.4980051,7.34928066 L6.4989949,6.2 L14.4989949,6.2 L14.4989949,9.8 L6.4989949,9.8 L6.4980051,8.84928066 L4.0470051,8.84928066 L4.0479949,12.149579 L6.4980051,12.1492807 L6.4989949,10.9997193 L14.4989949,10.9997193 L14.4989949,14.5997193 L6.4989949,14.5997193 L6.4980051,13.6492807 L2.5489949,13.649579 L2.5480051,5.00028066 L1.5010051,5.00028066 L1.5010051,1.40028066 L8.91139964,1.40028066 Z" id="形状结合" fill="#858280"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

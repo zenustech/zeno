@@ -58,6 +58,7 @@
 	<file>icons/search_arrow.svg</file>
 	<file>icons/search_arrow_backward.svg</file>
 	<file>icons/closebtn.svg</file>
+	<file>icons/closebtn_on.svg</file>
 	<file>icons/once.svg</file>
 	<file>icons/min_MUTE_dark.svg</file>
 	<file>icons/min_ONCE_dark.svg</file>
@@ -91,5 +92,13 @@
 	<file>icons/spinbox-upbutton-hover.svg</file>
 	<file>icons/circle-selector.svg</file>
 	<file>icons/ic_layout_container.svg</file>
+	<file>icons/ic_sidemenu_subnet.svg</file>
+	<file>icons/ic_sidemenu_subnet_on.svg</file>
+	<file>icons/ic_sidemenu_tree.svg</file>
+	<file>icons/ic_sidemenu_tree_on.svg</file>
+	<file>icons/ic_sidemenu_search.svg</file>
+	<file>icons/ic_sidemenu_search_on.svg</file>
+	<file>icons/more.svg</file>
+	<file>icons/more_on.svg</file>
 </qresource>
 </RCC>

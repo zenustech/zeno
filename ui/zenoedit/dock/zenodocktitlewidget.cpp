@@ -40,17 +40,7 @@ void ZenoDockTitleWidget::setupUi()
 	pHLayout->setContentsMargins(0, 0, 0, 0);
 	pHLayout->setMargin(0);
 
-	QFrame* pLine = new QFrame;
-	pLine->setFrameShape(QFrame::HLine);
-	pLine->setFrameShadow(QFrame::Plain);
-	QPalette pal = pLine->palette();
-	pal.setBrush(QPalette::WindowText, QColor(36, 36, 36));
-	pLine->setPalette(pal);
-	pLine->setFixedHeight(1);       //dpi scaled?
-	pLine->setLineWidth(1);
-
 	pLayout->addLayout(pHLayout);
-	pLayout->addWidget(pLine);
 
 	setLayout(pLayout);
 
