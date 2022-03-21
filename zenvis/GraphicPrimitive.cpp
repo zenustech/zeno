@@ -15,6 +15,14 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern void setCascadeLevels(float far);
+extern void initCascadeShadow();
+extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view);
+extern void setShadowMV(Program* shader);
+extern void EndShadowMap();
+extern unsigned int getShadowMap();
+
 extern void ensureGlobalMapExist();
 extern unsigned int getGlobalEnvMap();
 extern unsigned int getIrradianceMap();
@@ -27,6 +35,7 @@ struct drawObject
     std::unique_ptr<Buffer> ebo;
     size_t count=0;
     Program *prog;
+    Program *shadowprog;
 };
 void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
@@ -228,7 +237,7 @@ struct GraphicPrimitive : IGraphic {
             clr[i] = zeno::vec3f(1.0f);
         }
     }
-    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>0.999;
+    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>1e-5;
     bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("nrm"));
     if(prim->tris.size() && need_computeNormal)
     {
@@ -341,6 +350,7 @@ struct GraphicPrimitive : IGraphic {
         }
         
         triObj.prog = get_tris_program(path, prim->mtl);
+        triObj.shadowprog = get_shadow_program(prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
     }
@@ -357,7 +367,70 @@ struct GraphicPrimitive : IGraphic {
     //load_textures(path);
     prim_has_mtl = prim->mtl != nullptr;
   }
+  
+  virtual void drawShadow() override 
+  {
+    int id = 0;
+    for (id = 0; id < textures.size(); id++) {
+        textures[id]->bind_to(id);
+    }
+    auto vbobind = [&] (auto &vbo) {
+        vbo->bind();
+        vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 12, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+    };
+    auto vbounbind = [&] (auto &vbo) {
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->disable_attribute(2);
+        vbo->disable_attribute(3);
+        vbo->disable_attribute(4);
+        vbo->unbind();
+    };
 
+    if (tris_count) {
+        //printf("TRIS\n");
+        if (triObj.vbo) {
+            vbobind(triObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
+        triObj.shadowprog->use();
+        setShadowMV(triObj.shadowprog);
+        if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            for (int texId{0}; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.shadowprog->set_uniformi(texName.c_str(), texId);
+            }
+        }
+        triObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+              GL_UNSIGNED_INT, /*first=*/0));
+        
+        triObj.ebo->unbind();
+        if (triObj.vbo) {
+            vbounbind(triObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
+    }
+
+  }
   virtual void draw() override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
@@ -456,25 +529,30 @@ struct GraphicPrimitive : IGraphic {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.prog->set_uniformi(texName.c_str(), texId);
             }
-            triObj.prog->set_uniformi("skybox",id);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
+            triObj.prog->set_uniformi("skybox",texsSize);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize));
             if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
 
-            triObj.prog->set_uniformi("irradianceMap",id+1);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+1));
+            triObj.prog->set_uniformi("irradianceMap",texsSize+1);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+1));
             if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
 
-            triObj.prog->set_uniformi("prefilterMap",id+2);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+2));
+            triObj.prog->set_uniformi("prefilterMap",texsSize+2);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+2));
             if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
 
-            triObj.prog->set_uniformi("brdfLUT",id+3);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+id+3));
+            triObj.prog->set_uniformi("brdfLUT",texsSize+3);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+3));
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+
+            triObj.prog->set_uniformi("shadowMap", texsSize+4);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4));
+            if (auto shadowMap = getShadowMap(); shadowMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap));
         }
 
         triObj.ebo->bind();
@@ -557,6 +635,99 @@ struct GraphicPrimitive : IGraphic {
       tex->load(tex2D->path.c_str());
       textures.push_back(std::move(tex));
     }
+  }
+  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
+  {
+auto SMVS = R"(
+#version 460 core
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+
+void main()
+{
+  position = vPosition;
+  iColor = vColor;
+  iNormal = vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = vTangent;
+  gl_Position = mView * vec4(position, 1.0);
+}
+)";
+
+auto SMFS = "#version 460 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+uniform bool mSmoothShading;
+uniform bool mNormalCheck;
+uniform bool mRenderWireframe;
+
+
+in vec3 position;
+in vec3 iColor;
+in vec3 iNormal;
+in vec3 iTexCoord;
+in vec3 iTangent;
+out vec4 fColor;
+
+void main()
+{   
+    vec3 att_pos = position;
+    vec3 att_clr = iColor;
+    vec3 att_nrm = normal;
+    vec3 att_uv = iTexCoord;
+    vec3 att_tang = old_tangent;
+    float att_NoL = dot(normal, L1);
+)" + mtl->frag + R"(
+    if(mat_opacity>=0.99)
+        discard;
+    // gl_FragDepth = gl_FragCoord.z;
+}
+)";
+
+auto SMGS = R"(
+#version 460 core
+
+layout(triangles, invocations = 5) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+layout (std140, binding = 0) uniform LightSpaceMatrices
+{
+    mat4 lightSpaceMatrices[16];
+};
+
+void main()
+{          
+	for (int i = 0; i < 3; ++i)
+	{
+		gl_Position = lightSpaceMatrices[gl_InvocationID] * gl_in[i].gl_Position;
+		gl_Layer = gl_InvocationID;
+		EmitVertex();
+	}
+	EndPrimitive();
+}  
+)";
+    return compile_program(SMVS, SMFS, SMGS);
   }
 
   Program *get_points_program(std::string const &path) {
