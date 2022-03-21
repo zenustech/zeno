@@ -22,7 +22,7 @@ bool __format(Os &os, It fb, It fe, std::tuple<Args const &...> const &args) {
         auto ie = std::find(ib, fe, '}');
         if (ie == fe) return false;
         ++ie;
-        std::string_view fms{ib, ie - ib};
+        auto fms = std::string_view{ib, ie - ib};
         if (auto i = fms.find(':'); i != std::string_view::npos) {
             fms = fms.substr(i + 1);
         }
