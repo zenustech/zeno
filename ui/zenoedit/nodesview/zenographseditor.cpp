@@ -103,6 +103,7 @@ void ZenoGraphsEditor::initSignals()
         m_ui->graphsViewTab->removeTab(index);
     });
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
+    connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
     m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
@@ -348,6 +349,10 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 {
 	auto graphsMgm = zenoApp->graphsManagment();
 	IGraphsModel* pModel = graphsMgm->currentModel();
+
+    if (!pModel->index(subGraphName).isValid())
+        return;
+
 	int idx = tabIndexOfName(subGraphName);
 	if (idx == -1)
 	{
@@ -423,6 +428,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
 				//add subnet
 				QStandardItem* pItem = new QStandardItem(subgName + " (Subnet)");
 				pItem->setData(subgName, ROLE_OBJNAME);
+                pItem->setData(res.targetIdx.data(ROLE_OBJID).toString(), ROLE_OBJID);
 				pModel->appendRow(pItem);
             }
         }
@@ -448,6 +454,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
             QString nodeName = res.targetIdx.data(ROLE_OBJNAME).toString();
             QStandardItem* pItem = new QStandardItem(nodeName);
             pItem->setData(nodeName, ROLE_OBJNAME);
+            pItem->setData(res.targetIdx.data(ROLE_OBJID).toString(), ROLE_OBJID);
 		    parentItem->appendRow(pItem);
         }
     }
@@ -455,4 +462,20 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
     m_ui->searchResView->setModel(pModel);
     m_ui->searchResView->setItemDelegate(new SearchItemDelegate(content));
     m_ui->searchResView->expandAll();
+}
+
+void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
+{
+    QString objId = index.data(ROLE_OBJID).toString();
+    if (index.parent().isValid())
+    {
+        QString parentId = index.parent().data(ROLE_OBJID).toString();
+        QString subgName = index.parent().data(ROLE_OBJNAME).toString();
+        activateTab(subgName, "", objId);
+    }
+    else
+    {
+        QString subgName = index.data(ROLE_OBJNAME).toString();
+        activateTab(subgName);
+    }
 }

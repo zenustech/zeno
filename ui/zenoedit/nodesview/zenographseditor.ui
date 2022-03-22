@@ -32,14 +32,14 @@
    <item>
     <widget class="QStackedWidget" name="mainStackedWidget">
      <property name="styleSheet">
-      <string notr="true">background: rgb(43,43,43);</string>
+      <string notr="true"/>
      </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
      <widget class="QWidget" name="mainEditor">
       <property name="styleSheet">
-       <string notr="true">background: rgb(36, 36, 36);</string>
+       <string notr="true"/>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_2333">
        <property name="spacing">
@@ -334,6 +334,9 @@ QLineEdit:focus
             </item>
             <item>
              <widget class="QTreeView" name="searchResView">
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="styleSheet">
                <string notr="true">QTreeView
 {
@@ -386,6 +389,73 @@ QTreeView::item:selected:!active {
           <widget class="QWidget" name="presetPage"/>
          </widget>
          <widget class="QTabWidget" name="graphsViewTab">
+          <property name="palette">
+           <palette>
+            <active>
+             <colorrole role="Base">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>255</red>
+                <green>255</green>
+                <blue>255</blue>
+               </color>
+              </brush>
+             </colorrole>
+             <colorrole role="Window">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>58</red>
+                <green>58</green>
+                <blue>58</blue>
+               </color>
+              </brush>
+             </colorrole>
+            </active>
+            <inactive>
+             <colorrole role="Base">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>255</red>
+                <green>255</green>
+                <blue>255</blue>
+               </color>
+              </brush>
+             </colorrole>
+             <colorrole role="Window">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>58</red>
+                <green>58</green>
+                <blue>58</blue>
+               </color>
+              </brush>
+             </colorrole>
+            </inactive>
+            <disabled>
+             <colorrole role="Base">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>58</red>
+                <green>58</green>
+                <blue>58</blue>
+               </color>
+              </brush>
+             </colorrole>
+             <colorrole role="Window">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>58</red>
+                <green>58</green>
+                <blue>58</blue>
+               </color>
+              </brush>
+             </colorrole>
+            </disabled>
+           </palette>
+          </property>
+          <property name="autoFillBackground">
+           <bool>true</bool>
+          </property>
           <property name="styleSheet">
            <string notr="true">QTabBar {
 	font-weight: bold;
@@ -398,16 +468,18 @@ QTabWidget::pane { /* The tab widget frame */
 QTabBar::tab {
     background: rgb(58, 58, 58);
 	color: rgb(129, 125, 123);
+	border-right: 1px solid rgb(36, 36, 36);
 	font: 16px 'HarmonyOS Sans';
-	margin-left: 0px;
-	margin-right: 1px;
+	/*margin-right: 1px;*/
+}
 
+QTabBar::tab:first {
+    border-left: 1px solid rgb(36, 36, 36);
 }
 
 QTabBar::tab:top {
-	margin-right: 1px;
-	margin-left: 0px;
-    padding: 10px 20px 10px 20px;
+	/*margin-right: 1px;*/
+    padding: 7px 16px 7px 16px;
 }
 
 QTabBar::tab:top:first {

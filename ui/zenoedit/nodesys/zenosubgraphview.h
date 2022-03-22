@@ -7,6 +7,7 @@
 class ZenoSubGraphScene;
 class ZenoNewnodeMenu;
 class LayerPathWidget;
+class ZenoSearchBar;
 
 class _ZenoSubGraphView : public QGraphicsView
 {
@@ -34,6 +35,7 @@ public slots:
     void copy();
     void paste();
     void find();
+    void esc();
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos);
 
@@ -58,6 +60,7 @@ private:
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;
+    ZenoSearchBar* m_pSearcher;
 };
 
 class LayerPathWidget : public QWidget

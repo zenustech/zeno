@@ -13,13 +13,22 @@ class ZenoSearchBar : public QWidget
 public:
     ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget = nullptr);
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+
+public slots:
+    void activate();
+	void onSearchForward();
+	void onSearchBackward();
+
 signals:
     void searchRequest(const QString&, SEARCH_RANGE, SEARLCH_ELEMENT, int);
     void searchReached(SEARCH_RECORD rec);
 
 private slots:
-    void onSearchForward();
-    void onSearchBackward();
+
     void onSearchExec(const QString& content);
 
 private:

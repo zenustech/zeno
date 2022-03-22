@@ -1,3 +1,4 @@
+
 QLineEdit {
     border: 1px solid #252525;
     padding: 0 8px;
@@ -7,6 +8,20 @@ QLineEdit {
 }
 
 QLineEdit:focus
+{
+    border: 1px solid #4B9EF4;
+    color: rgba(255,255,255,1.0);
+}
+
+QLineEdit#searchEdit
+{
+    border: 1px solid #252525;
+    padding: 0 4px;
+    background: rgb(60, 60, 60);
+    color: rgba(255,255,255,0.40);
+}
+
+QLineEdit#searchEdit:focus
 {
     border: 1px solid #4B9EF4;
     color: rgba(255,255,255,1.0);

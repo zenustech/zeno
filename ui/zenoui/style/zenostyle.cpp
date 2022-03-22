@@ -105,29 +105,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             }
             break;
         }
-        case PE_FrameLineEdit:
-        {
-            if (qobject_cast<const ZenoGvLineEdit *>(w))
-            {
-                return;
-                painter->save();
-                QPalette pal = option->palette;
-                State flags = option->state;
-                if (flags & (State_HasFocus | State_MouseOver))
-                {
-                    painter->setPen(QPen(option->palette.color(QPalette::Active, QPalette::WindowText), 1));
-                    painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
-                }
-                else
-                {
-                    painter->setPen(QPen(option->palette.color(QPalette::Inactive, QPalette::WindowText), 1));
-                    painter->drawRect(option->rect.adjusted(1, 1, -1, -1));
-                }
-                painter->restore();
-                return;
-            }
-            break;
-        }
 
     }
     return base::drawPrimitive(pe, option, painter, w);
@@ -314,20 +291,6 @@ QRect ZenoStyle::subElementRect(SubElement element, const QStyleOption* option, 
         }
     }
     return base::subElementRect(element, option, widget);
-}
-
-void ZenoStyle::drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
-{
-    QColor clrBorder, clrBackground, clrForeground;
-
-    //todo
-    //clrBorder = DrawerFunc::getColorFromWidget(widget, option->state, "border");
-    //clrBackground = DrawerFunc::getColorFromWidget(widget, option->state, "background");
-    //clrForeground = DrawerFunc::getColorFromWidget(widget, option->state, "foreground");
-
-    painter->setPen(clrBorder);
-    painter->setBrush(clrBackground);
-    painter->drawRect(option->rect.adjusted(0, 0, -1, -1));
 }
 
 void ZenoStyle::drawDropdownArrow(QPainter* painter, QRect downArrowRect) const

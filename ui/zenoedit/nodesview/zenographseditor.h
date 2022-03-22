@@ -36,6 +36,7 @@ public slots:
     void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
     void onListItemActivated(const QModelIndex& index);
     void onTreeItemActivated(const QModelIndex& index);
+    void onSearchItemClicked(const QModelIndex& index);
     void onSubnetOptionClicked();
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);

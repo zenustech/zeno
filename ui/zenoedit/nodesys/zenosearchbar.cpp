@@ -10,13 +10,19 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     , m_idx(0)
     , m_index(idx)
 {
-    QVBoxLayout *pMainLayout = new QVBoxLayout;
-
     setWindowFlag(Qt::SubWindow);
     setWindowFlag(Qt::FramelessWindowHint);
 
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, QColor(36, 36, 36));
+    setPalette(pal);
+
     m_pLineEdit = new QLineEdit;
+    m_pLineEdit->setFocusPolicy(Qt::StrongFocus);
+    m_pLineEdit->setObjectName("searchEdit");
     m_pLineEdit->setFixedWidth(200);
+    m_pLineEdit->setFont(QFont("HarmonyOS Sans", 12));
     ZIconButton *pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(20, 20),
                                                    QColor(61, 61, 61), QColor(66, 66, 66));
     ZIconButton *pSearchBackward = new ZIconButton(QIcon(":/icons/search_arrow_backward.svg"), QSize(20, 20),
@@ -29,22 +35,9 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     pEditLayout->addWidget(pSearchBackward);
     pEditLayout->addWidget(pSearchForward);
     pEditLayout->addWidget(pCloseBtn);
-    
-    pMainLayout->addLayout(pEditLayout);
+    pEditLayout->setContentsMargins(10, 6, 10, 6);
 
-    QHBoxLayout* pOptionLayout = new QHBoxLayout;
-    pOptionLayout->addStretch();
-    QComboBox* pSearchElem = new QComboBox;
-    pSearchElem->addItems({"Name", "Object", "Param"});
-
-    QComboBox *pSearchRange = new QComboBox;
-    pSearchRange->addItems({"Current SubGraph", "All Graphs"});
-    pOptionLayout->addWidget(pSearchElem);
-    pOptionLayout->addWidget(pSearchRange);
-
-    pMainLayout->addLayout(pOptionLayout);
-
-    setLayout(pMainLayout);
+    setLayout(pEditLayout);
 
     connect(m_pLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchExec(const QString &)));
     connect(pSearchForward, SIGNAL(clicked()), this, SLOT(onSearchForward()));
@@ -91,4 +84,45 @@ void ZenoSearchBar::onSearchBackward()
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
+}
+
+void ZenoSearchBar::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (QWidget* par = parentWidget())
+    {
+		QSize sz = event->size();
+		int w = par->width();
+		int h = par->height();
+		setGeometry(w - sz.width(), 0, sz.width(), sz.height());
+    }
+}
+
+void ZenoSearchBar::keyPressEvent(QKeyEvent* event)
+{
+    QWidget::keyPressEvent(event);
+    if (event->key() == Qt::Key_Escape)
+    {
+        hide();
+    }
+    else if (event->key() == Qt::Key_F3)
+    {
+        onSearchForward();
+    }
+    else if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_F3)
+    {
+        onSearchBackward();
+    }
+}
+
+void ZenoSearchBar::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    m_pLineEdit->setFocus();
+}
+
+void ZenoSearchBar::activate()
+{
+    show();
+    m_pLineEdit->setFocus();
 }

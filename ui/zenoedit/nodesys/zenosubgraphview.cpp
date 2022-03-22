@@ -16,6 +16,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	, m_factor(1.)
 	, m_dragMove(false)
     , m_menu(nullptr)
+	, m_pSearcher(nullptr)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -29,28 +30,39 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 
 	QAction* ctrlz = new QAction("Undo", this);
     ctrlz->setShortcut(QKeySequence::Undo);
+	ctrlz->setShortcutContext(Qt::WidgetShortcut);
     connect(ctrlz, SIGNAL(triggered()), this, SLOT(undo()));
     addAction(ctrlz);
 
     QAction* ctrly = new QAction("Redo", this);
     ctrly->setShortcut(QKeySequence::Redo);
+	ctrly->setShortcutContext(Qt::WidgetShortcut);
     connect(ctrly, SIGNAL(triggered()), this, SLOT(redo()));
     addAction(ctrly);
 
 	QAction *ctrlc = new QAction("Copy", this);
     ctrlc->setShortcut(QKeySequence::Copy);
+	ctrlc->setShortcutContext(Qt::WidgetShortcut);
     connect(ctrlc, SIGNAL(triggered()), this, SLOT(copy()));
     addAction(ctrlc);
 
 	QAction *ctrlv = new QAction("Paste", this);
     ctrlv->setShortcut(QKeySequence::Paste);
+	ctrlv->setShortcutContext(Qt::WidgetShortcut);
     connect(ctrlv, SIGNAL(triggered()), this, SLOT(paste()));
     addAction(ctrlv);
 
     QAction *ctrlf = new QAction("Find", this);
     ctrlf->setShortcut(QKeySequence::Find);
+	ctrlf->setShortcutContext(Qt::WidgetShortcut);
     connect(ctrlf, SIGNAL(triggered()), this, SLOT(find()));
     addAction(ctrlf);
+
+	QAction* escape = new QAction("Esc", this);
+	escape->setShortcut(QKeySequence("Escape"));
+	escape->setShortcutContext(Qt::WidgetShortcut);
+	connect(escape, SIGNAL(triggered()), this, SLOT(esc()));
+	addAction(escape);
 
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
@@ -79,9 +91,30 @@ void _ZenoSubGraphView::paste()
 
 void _ZenoSubGraphView::find()
 {
-    ZenoSearchBar *pSearcher = new ZenoSearchBar(m_scene->subGraphIndex());
-    pSearcher->show();
-    connect(pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
+	if (m_pSearcher == nullptr)
+	{
+		m_pSearcher = new ZenoSearchBar(m_scene->subGraphIndex(), this);
+		connect(m_pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
+
+		QAction* findNext = new QAction("Find Next", this);
+		findNext->setShortcut(QKeySequence::FindNext);
+		findNext->setShortcutContext(Qt::WidgetShortcut);
+		connect(findNext, SIGNAL(triggered()), m_pSearcher, SLOT(onSearchForward()));
+		addAction(findNext);
+
+		QAction* findPrevious = new QAction("Find Previous", this);
+		findPrevious->setShortcut(QKeySequence::FindPrevious);
+		findPrevious->setShortcutContext(Qt::WidgetShortcut);
+		connect(findPrevious, SIGNAL(triggered()), m_pSearcher, SLOT(onSearchBackward()));
+		addAction(findPrevious);
+	}
+	m_pSearcher->activate();
+}
+
+void _ZenoSubGraphView::esc()
+{
+	if (m_pSearcher)
+		m_pSearcher->hide();
 }
 
 void _ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
@@ -209,6 +242,14 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
 void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 {
     QGraphicsView::resizeEvent(event);
+
+	if (m_pSearcher)
+	{
+		QSize sz = m_pSearcher->size();
+		int w = width();
+		int h = height();
+		m_pSearcher->setGeometry(w - sz.width(), 0, sz.width(), sz.height());
+	}
 }
 
 void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
@@ -309,6 +350,11 @@ LayerPathWidget::LayerPathWidget(QWidget* parent)
 	pLayout->setSpacing(10);
 	pLayout->setContentsMargins(25, 5, 25, 5);
 	setLayout(pLayout);
+
+	setAutoFillBackground(true);
+	QPalette pal = palette();
+	pal.setColor(QPalette::Window, QColor(30, 30, 30));
+	setPalette(pal);
 }
 
 void LayerPathWidget::setPath(const QString& path)
@@ -419,14 +465,13 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
     {
         m_pathWidget->show();
         m_pathWidget->setPath(path);
-
-		if (!objId.isEmpty())
-		{
-			IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-			QModelIndex subgIdx = pModel->index(subGraphName);
-			QModelIndex objIdx = pModel->index(objId, subgIdx);
-			QPointF pos = pModel->data2(subgIdx, objIdx, ROLE_OBJPOS).toPointF();
-			m_view->focusOn(objId, pos);
-		}
     }
+	if (!subGraphName.isEmpty() && !objId.isEmpty())
+	{
+		IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+		QModelIndex subgIdx = pModel->index(subGraphName);
+		QModelIndex objIdx = pModel->index(objId, subgIdx);
+		QPointF pos = pModel->data2(subgIdx, objIdx, ROLE_OBJPOS).toPointF();
+		m_view->focusOn(objId, pos);
+	}
 }

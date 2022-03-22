@@ -61,7 +61,6 @@ public:
     QSize sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const override;
 
 private:
-    void drawZenoLineEdit(PrimitiveElement pe, const QStyleOption* opt, QPainter* p, const QWidget* widget) const;
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect) const;
 };
