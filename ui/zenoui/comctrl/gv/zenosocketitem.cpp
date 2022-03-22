@@ -3,6 +3,7 @@
 ZenoSocketItem::ZenoSocketItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
     : ZenoImageItem(elem, sz, parent)
 {
+    setCheckable(true);
 }
 
 int ZenoSocketItem::type() const

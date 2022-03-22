@@ -689,11 +689,13 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
 	{
 		Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
         pParamControl = m_inSockets[sockName].socket_control;
+        m_inSockets[sockName].socket->toggle(bAdded);
 	}
 	else
 	{
 		Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
         pParamControl = m_outSockets[sockName].socket_control;
+        m_outSockets[sockName].socket->toggle(bAdded);
 	}
 
     if (bAdded)

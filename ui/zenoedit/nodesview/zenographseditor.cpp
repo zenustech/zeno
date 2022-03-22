@@ -127,6 +127,8 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 	connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
+
+    activateTab("main");
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)

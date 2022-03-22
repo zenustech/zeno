@@ -100,5 +100,10 @@
 	<file>icons/ic_sidemenu_search_on.svg</file>
 	<file>icons/more.svg</file>
 	<file>icons/more_on.svg</file>
+	<file>icons/home.svg</file>
+	<file>icons/home-on.svg</file>
+	<file>icons/subnet.svg</file>
+	<file>icons/subnet-on.svg</file>
+	<file>icons/socket-on2.svg</file>
 </qresource>
 </RCC>

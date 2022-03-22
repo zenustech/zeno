@@ -59,12 +59,12 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
 
     for (auto it : m_nodes)
     {
-        ZenoNode *node = it.second;
-        const QString& id = node->nodeId();
-        const INPUT_SOCKETS& inputs = node->inputParams();
+        ZenoNode *inNode = it.second;
+        const QString& id = inNode->nodeId();
+        const INPUT_SOCKETS& inputs = inNode->inputParams();
         for (QString inSock : inputs.keys())
         {
-            QPointF inSockPos = node->getPortPos(true, inSock);
+            QPointF inSockPos = inNode->getPortPos(true, inSock);
             const INPUT_SOCKET& inputSocket = inputs[inSock];
             for (const QPersistentModelIndex& linkIdx : inputSocket.linkIndice)
             {
@@ -80,6 +80,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
                 outNode->toggleSocket(false, outSock, true);
+                inNode->toggleSocket(true, inSock, true);
             }
         }
     }
@@ -433,7 +434,6 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 				{
 					m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
 					addItem(m_tempLink);
-					pSocket->toggle(true);
 				}
 				return;
 			}

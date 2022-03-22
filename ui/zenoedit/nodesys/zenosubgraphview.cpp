@@ -327,10 +327,10 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 		innerLines.append(QLineF(rect.left(), y, rect.right(), y));
 	}
 
-	painter->fillRect(rect, QColor(0, 0, 0));
+	painter->fillRect(rect, QColor(30, 29, 33));
 
 	QPen pen;
-	pen.setColor(QColor("#232323"));
+	pen.setColor(QColor(20, 20, 20));
 	pen.setWidthF(pen.widthF() / scale);
 	painter->setPen(pen);
 	painter->drawLines(innerLines.data(), innerLines.size());

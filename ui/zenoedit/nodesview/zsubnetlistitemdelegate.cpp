@@ -55,36 +55,32 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     QRect rc = option.rect;
 
     //draw icon
-    int icon_xmargin = 5;
-    int icon_sz = 32;
+    int icon_xmargin = 20;
+    int icon_sz = 20;
     int icon_ymargin = (rc.height() - icon_sz) / 2;
-    int icon2text_xoffset = 5;
+    int icon2text_xoffset = 12;
     int button_rightmargin = 10;
     int button_button = 12;
     int text_yoffset = 12;
     int text_xmargin = 12;
 
     QColor bgColor, borderColor, textColor;
+    textColor = QColor(134, 130, 128);
     if (opt.state & QStyle::State_Selected)
     {
-        bgColor = QColor(44, 73, 98);
+        bgColor = QColor(49, 49, 49);
         borderColor = QColor(27, 145, 225);
-        textColor = QColor(255, 255, 255);
 
         painter->fillRect(rc, bgColor);
-        painter->setPen(QPen(borderColor));
-        painter->drawRect(rc.adjusted(0, 0, -1, -1));
+        //painter->setPen(QPen(borderColor));
+        //painter->drawRect(rc.adjusted(0, 0, -1, -1));
     }
     else if (opt.state & QStyle::State_MouseOver)
     {
-        textColor = QColor(255, 255, 255);
-    }
-    else
-    {
-        textColor = QColor(134, 130, 128);
+        //textColor = QColor(255, 255, 255);
     }
 
-    if (!option.icon.isNull())
+    if (!opt.icon.isNull())
     {
         QRect iconRect(opt.rect.x() + icon_xmargin, opt.rect.y() + icon_ymargin, icon_sz, icon_sz);
         QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
@@ -97,7 +93,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     QFontMetricsF fontMetrics(font);
     int w = fontMetrics.horizontalAdvance(opt.text);
     int h = fontMetrics.height();
-    int x = text_xmargin;// opt.rect.x() + icon_xmargin + icon_sz + icon2text_xoffset;
+    int x = opt.rect.x() + icon_xmargin + icon_sz + icon2text_xoffset;
     QRect textRect(x, opt.rect.y(), w, opt.rect.height());
     if (!opt.text.isEmpty())
     {
@@ -111,13 +107,21 @@ QSize ZSubnetListItemDelegate::sizeHint(const QStyleOptionViewItem& option, cons
 {
     int width = option.fontMetrics.horizontalAdvance(option.text);
     QFont fnt = option.font;
-    return ZenoStyle::dpiScaledSize(QSize(180, 30));
+    return ZenoStyle::dpiScaledSize(QSize(180, 35));
 }
 
 void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const
 {
     QStyledItemDelegate::initStyleOption(option, index);
 
+	if (option->text.compare("main", Qt::CaseInsensitive) == 0)
+	{
+		option->icon = QIcon(":/icons/home.svg");
+	}
+	else
+	{
+        option->icon = QIcon(":/icons/subnet.svg");
+	}
 }
 
 bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
