@@ -21,7 +21,8 @@ extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
 extern unsigned int getShadowMap();
-
+extern void setfov(float f);
+extern void setaspect(float f);
 
 int curr_frameid = -1;
 
@@ -57,6 +58,8 @@ void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  setfov(fov);
+  setaspect(nx*1.0/ny);
   center = glm::vec3(cx, cy, cz);
 
   point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
@@ -126,8 +129,9 @@ std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
-  initCascadeShadow();
+  
   setLight(1,1,0);
+  initCascadeShadow();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -161,13 +165,18 @@ static void draw_small_axis() {
   proj = backup_proj;
 }
 
-
+extern float getCamFar()
+{
+  return g_far;
+}
 static void shadowPass()
 {
   BeginShadowMap(g_near, g_far, getLight(), proj, view);
+  vao->bind();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
     gra->drawShadow();
   }
+  vao->unbind();
   EndShadowMap();
 }
 
