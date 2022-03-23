@@ -683,6 +683,35 @@ struct ToTrackerParticles : INode {
 
       pars = pars.clone({memsrc_e::um, 0});
     }
+    if (inParticles->tris.size()) {
+      const auto eleSize = inParticles->tris.size();
+      std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}, {"inds", 3}};
+      outParticles->elements =
+          typename ZenoParticles::particles_t{tags, eleSize, memsrc_e::host};
+      auto &eles = outParticles->getQuadraturePoints();
+
+      auto &tris = inParticles->tris.values;
+      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::host>({}, eles),
+                                   &obj, &tris, velsPtr](size_t ei) mutable {
+        using vec3 = zs::vec<float, 3>;
+        // inds
+        int inds[3] = {(int)tris[ei][0], (int)tris[ei][1], (int)tris[ei][2]};
+        for (int d = 0; d != 3; ++d)
+          eles("inds", d, ei) = inds[d];
+        // pos
+        eles.tuple<3>("pos", ei) =
+            (obj[inds[0]] + obj[inds[1]] + obj[inds[2]]) / 3.f;
+
+        // vel
+        if (velsPtr != nullptr) {
+          eles.tuple<3>("vel", ei) =
+              (velsPtr[inds[0]] + velsPtr[inds[1]] + velsPtr[inds[2]]) / 3.f;
+        } else
+          eles.tuple<3>("vel", ei) = vec3::zeros();
+      });
+
+      eles = eles.clone({memsrc_e::um, 0});
+    }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToTrackerParticles\n");
     set_output("ZSParticles", outParticles);
