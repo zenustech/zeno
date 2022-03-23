@@ -662,7 +662,7 @@ struct GraphicPrimitive : IGraphic {
   Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
   {
 auto SMVS = R"(
-#version 460 core
+#version 420 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -694,7 +694,7 @@ void main()
 }
 )";
 
-auto SMFS = "#version 460 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
+auto SMFS = "#version 420 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
@@ -729,7 +729,7 @@ void main()
 )";
 
 auto SMGS = R"(
-#version 460 core
+#version 420 core
 
 layout(triangles, invocations = 8) in;
 layout(triangle_strip, max_vertices = 3) out;
@@ -759,7 +759,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 460
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -794,7 +794,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 460
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -841,7 +841,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 460
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -895,7 +895,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 460
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -928,7 +928,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 460
+#version 420
 )" + (mtl ? mtl->extensions : "") + R"(
 const float minDot = 1e-5;
 

@@ -345,7 +345,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
 
     
     if(tonemapfbo!=0)
@@ -463,7 +463,7 @@ std::vector<char> record_frame_offline() {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
