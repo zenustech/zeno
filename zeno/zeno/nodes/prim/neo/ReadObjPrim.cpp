@@ -77,6 +77,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             while (it != nit) {
                 int x = takeu(it) - 1;
                 if (*it == '/' && it[1] != '/') {
+                    ++it;
                     int xt = takeu(it) - 1;
                     loop_uvs.push_back(xt);
                 }
@@ -86,6 +87,11 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
                 it = std::find_if(it, nit, [] (char c) { return c != ' '; });
             }
             prim->polys.emplace_back(beg, cnt);
+
+        } else if (match(it, "l")) {
+            int x = takeu(it) - 1;
+            int y = takeu(it) - 1;
+            prim->lines.emplace_back(x, y);
 
         //} else if (match(it, "o ")) {
             // todo: support tag verts to be multi components of primitive
@@ -124,7 +130,7 @@ ZENDEFNODE(ReadObjPrim,
         { /* inputs: */ {
         {"readpath", "path"},
         }, /* outputs: */ {
-        "prim",
+        {"primitive", "prim"},
         }, /* params: */ {
         {"bool", "triangulate", "1"},
         }, /* category: */ {

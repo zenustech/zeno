@@ -27,7 +27,7 @@
      "name": "SetMaterial",
      "inputs": {
       "prim": [
-       "e14b31f3-ParticlesWrangle",
+       "4a2ca553-SDFToPrimitive",
        "prim",
        null
       ],
@@ -50,27 +50,6 @@
      "options": [
       "VIEW"
      ]
-    },
-    "eeee2052-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
-     "inputs": {
-      "prim": [
-       "4a2ca553-SDFToPrimitive",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1565.2684844091746,
-      -500.8808210060239
-     ],
-     "options": []
     },
     "0e0316ea-PrintString": {
      "name": "PrintString",
@@ -183,7 +162,7 @@
       "w": 0.0,
       "type": "clamp",
       "_POINTS": "0",
-      "_TMP": "0.285 0.291 0.246 0.0"
+      "_TMP": ""
      },
      "uipos": [
       3524.4658373619222,
@@ -686,6 +665,41 @@
        null,
        1.0
       ],
+      "subsurface": [
+       null,
+       null,
+       0.5
+      ],
+      "specularTint": [
+       null,
+       null,
+       0.5
+      ],
+      "anisotropic": [
+       null,
+       null,
+       0.5
+      ],
+      "sheen": [
+       null,
+       null,
+       0.5
+      ],
+      "sheenTint": [
+       null,
+       null,
+       0.5
+      ],
+      "clearcoat": [
+       null,
+       null,
+       0.5
+      ],
+      "clearcoatGloss": [
+       null,
+       null,
+       0.5
+      ],
       "normal": [
        null,
        null,
@@ -723,37 +737,6 @@
      "uipos": [
       5643.920320329191,
       73.08814098993042
-     ],
-     "options": []
-    },
-    "e14b31f3-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "eeee2052-PrimitiveCalcNormal",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@nrm = @nrm"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2027.7005989906202,
-      -344.98066765810626
      ],
      "options": []
     },
@@ -851,10 +834,10 @@
     }
    },
    "view_rect": {
-    "x": 4570.813835024044,
-    "y": 70.1554971497427,
-    "width": 1199.9999999999993,
-    "height": 609.9999999999991
+    "x": 3717.396236438893,
+    "y": -453.5597990064826,
+    "width": 2929.687499999998,
+    "height": 1489.2578124999977
    }
   }
  },
@@ -1647,6 +1630,41 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BuildPrimitiveBvh": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "numeric:float",
+     "thickness",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "BulletComposeTransform": {
@@ -7800,7 +7818,7 @@
    ],
    "params": [],
    "categories": [
-    "primitive"
+    "math"
    ]
   },
   "MakeMultilineString": {
@@ -10148,6 +10166,46 @@
     "openvdb"
    ]
   },
+  "ParticlesBuildBvh": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -10175,6 +10233,56 @@
     [
      "hashgrid",
      "hashGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborBvhWrangle": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "primNei",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
@@ -13351,6 +13459,61 @@
     "MPM"
    ]
   },
+  "QueryNearestPrimitive": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "LBvh",
+     "lbvh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "NumericObject",
+     "pid",
+     ""
+    ],
+    [
+     "NumericObject",
+     "id",
+     ""
+    ],
+    [
+     "NumericObject",
+     "dist",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "segment",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     [
@@ -15131,36 +15294,6 @@
     "shader"
    ]
   },
-  "SetMatrix": {
-   "inputs": [
-    [
-     "",
-     "dst",
-     ""
-    ],
-    [
-     "",
-     "src",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "SetRandomSeed": {
    "inputs": [
     [
@@ -15694,6 +15827,41 @@
     [
      "float",
      "specular",
+     "0.5"
+    ],
+    [
+     "float",
+     "subsurface",
+     "0.5"
+    ],
+    [
+     "float",
+     "specularTint",
+     "0.5"
+    ],
+    [
+     "float",
+     "anisotropic",
+     "0.5"
+    ],
+    [
+     "float",
+     "sheen",
+     "0.5"
+    ],
+    [
+     "float",
+     "sheenTint",
+     "0.5"
+    ],
+    [
+     "float",
+     "clearcoat",
+     "0.5"
+    ],
+    [
+     "float",
+     "clearcoatGloss",
      "0.5"
     ],
     [

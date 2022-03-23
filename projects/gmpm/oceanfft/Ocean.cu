@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
 //-------attached some cuda library for FFT-----------------
 
 
@@ -15,6 +15,7 @@
 #include "zensim/container/Vector.hpp"
 #include "zensim/resource/Resource.h"
 #include "zensim/math/Vec.h"
+#include "../Structures.hpp"
 #define MAX_EPSILON 0.10f
 #define THRESHOLD   0.15f
 #define REFRESH_DELAY     10 //ms
@@ -22,6 +23,8 @@
 
 
 namespace zeno {
+
+static ZpcInitializer g_zpc_initializer{};
 
 //---------------
         //---------------

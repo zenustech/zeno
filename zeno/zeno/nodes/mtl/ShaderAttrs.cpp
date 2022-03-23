@@ -6,7 +6,7 @@
 namespace zeno {
 
 
-struct ShaderInputAttr : ShaderNode {
+struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual int determineType(EmissionPass *em) override {
         auto type = get_input2<std::string>("type");
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};
@@ -22,7 +22,7 @@ struct ShaderInputAttr : ShaderNode {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv", "attr", "pos"},
+        {"enum pos clr nrm uv tang bitang NoL", "attr", "pos"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {

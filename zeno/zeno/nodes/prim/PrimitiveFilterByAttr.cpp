@@ -1,3 +1,4 @@
+#include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -6,6 +7,7 @@
 #include <cstdlib>
 
 namespace zeno {
+namespace {
 
 #define DEFINE_FUNCTOR(type, func) \
 struct type { \
@@ -84,11 +86,190 @@ struct PrimitiveFilterByAttr : INode {
     auto attrName = get_param<std::string>("attrName");
     auto acceptIf = get_param<std::string>("acceptIf");
     auto vecSelType = get_param<std::string>("vecSelType");
+    auto valueObj = get_input<NumericObject>("value");
+    
+    std::vector<int> revamp;
+    revamp.reserve(prim->size());
+    prim->attr_visit(attrName, [&] (auto const &attr) {
+        using T = std::decay_t<decltype(attr[0])>;
+        auto value = valueObj->get<T>();
+        std::visit([&] (auto op, auto aop) {
+            int n = std::min(prim->size(), attr.size());
+            for (int i = 0; i < n; i++) {
+                if (aop(op(attr[i], value)))
+                    revamp.emplace_back(i);
+            }
+        }
+        , get_variant_ops(acceptIf)
+        , get_anyall_ops(vecSelType)
+        );
+    });
+
+    prim->foreach_attr([&] (auto const &key, auto &arr) {
+        for (int i = 0; i < revamp.size(); i++) {
+            arr[i] = arr[revamp[i]];
+        }
+    });
+    auto old_prim_size = prim->size();
+    prim->resize(revamp.size());
+
+    if (get_param<bool>("mockTopos") && (0
+            || prim->tris.size()
+            || prim->quads.size()
+            || prim->lines.size()
+            || prim->polys.size()
+            || prim->points.size()
+         )) {
+
+        std::vector<int> unrevamp(old_prim_size, -1);
+        for (int i = 0; i < revamp.size(); i++) {
+            unrevamp[revamp[i]] = i;
+        }
+        auto mock = [&] (int &x) -> bool {
+            int loc = unrevamp[x];
+            if (loc == -1)
+                return false;
+            x = loc;
+            return true;
+        };
+
+        if (prim->tris.size()) {
+            std::vector<int> trisrevamp;
+            trisrevamp.reserve(prim->tris.size());
+            for (int i = 0; i < prim->tris.size(); i++) {
+                auto &tri = prim->tris[i];
+                if (mock(tri[0]) && mock(tri[1]) && mock(tri[2]))
+                    trisrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < trisrevamp.size(); i++) {
+                prim->tris[i] = prim->tris[trisrevamp[i]];
+            }
+            prim->tris.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < trisrevamp.size(); i++) {
+                    arr[i] = arr[trisrevamp[i]];
+                }
+            });
+            prim->tris.resize(trisrevamp.size());
+        }
+
+        if (prim->quads.size()) {
+            std::vector<int> quadsrevamp;
+            quadsrevamp.reserve(prim->quads.size());
+            for (int i = 0; i < prim->quads.size(); i++) {
+                auto &quad = prim->quads[i];
+                if (mock(quad[0]) && mock(quad[1]) && mock(quad[2]) && mock(quad[3]))
+                    quadsrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < quadsrevamp.size(); i++) {
+                prim->quads[i] = prim->quads[quadsrevamp[i]];
+            }
+            prim->quads.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < quadsrevamp.size(); i++) {
+                    arr[i] = arr[quadsrevamp[i]];
+                }
+            });
+            prim->quads.resize(quadsrevamp.size());
+        }
+
+        if (prim->lines.size()) {
+            std::vector<int> linesrevamp;
+            linesrevamp.reserve(prim->lines.size());
+            for (int i = 0; i < prim->lines.size(); i++) {
+                auto &line = prim->lines[i];
+                if (mock(line[0]) && mock(line[1]))
+                    linesrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < linesrevamp.size(); i++) {
+                prim->lines[i] = prim->lines[linesrevamp[i]];
+            }
+            prim->lines.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < linesrevamp.size(); i++) {
+                    arr[i] = arr[linesrevamp[i]];
+                }
+            });
+            prim->lines.resize(linesrevamp.size());
+        }
+
+        if (prim->polys.size()) {
+            std::vector<int> polysrevamp;
+            polysrevamp.reserve(prim->polys.size());
+            for (int i = 0; i < prim->polys.size(); i++) {
+                auto &poly = prim->polys[i];
+                bool succ = [&] {
+                    for (int p = poly.first; p < poly.first + poly.second; p++)
+                        if (!mock(prim->loops[p]))
+                            return false;
+                    return true;
+                }();
+                if (succ)
+                    polysrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < polysrevamp.size(); i++) {
+                prim->polys[i] = prim->polys[polysrevamp[i]];
+            }
+            prim->polys.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < polysrevamp.size(); i++) {
+                    arr[i] = arr[polysrevamp[i]];
+                }
+            });
+            prim->polys.resize(polysrevamp.size());
+        }
+
+        if (prim->points.size()) {
+            std::vector<int> pointsrevamp;
+            pointsrevamp.reserve(prim->points.size());
+            for (int i = 0; i < prim->points.size(); i++) {
+                auto &point = prim->points[i];
+                if (mock(point))
+                    pointsrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < pointsrevamp.size(); i++) {
+                prim->points[i] = prim->points[pointsrevamp[i]];
+            }
+            prim->points.foreach_attr([&] (auto const &key, auto &arr) {
+                for (int i = 0; i < pointsrevamp.size(); i++) {
+                    arr[i] = arr[pointsrevamp[i]];
+                }
+            });
+            prim->points.resize(pointsrevamp.size());
+        }
+
+    }
+    
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitiveFilterByAttr,
+    { /* inputs: */ {
+    "prim",
+    {"NumericObject", "value", "0"},
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    {"string", "attrName", "rad"},
+    {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
+    {"enum any all", "vecSelType", "all"},
+    {"bool", "mockTopos", "1"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+
+#if 0
+struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already auto-mock lines!
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("line");
+    auto attrName = get_param<std::string>("attrName");
+    auto acceptIf = get_param<std::string>("acceptIf");
+    auto vecSelType = get_param<std::string>("vecSelType");
+    auto valueObj = get_input<NumericObject>("value");
     
     std::vector<int> revamp;
     prim->attr_visit(attrName, [&] (auto const &attr) {
         using T = std::decay_t<decltype(attr[0])>;
-        auto value = get_input2<T>("value");
+        auto value = valueObj->get<T>();
         std::visit([&] (auto op, auto aop) {
             for (int i = 0; i < attr.size(); i++) {
                 if (aop(op(attr[i], value)))
@@ -106,14 +287,20 @@ struct PrimitiveFilterByAttr : INode {
         }
     });
     prim->resize(revamp.size());
+    int i=0;
+    for(i=0;i<prim->lines.size();i++)
+    {
+        if(prim->lines[i][0]>=prim->verts.size()||prim->lines[i][1]>=prim->verts.size())
+            break;
+    }
+    prim->lines.resize(i);
     
-    set_output("prim", get_input("prim"));
+    set_output("prim", get_input("line"));
   }
 };
-
-ZENDEFNODE(PrimitiveFilterByAttr,
+ZENDEFNODE(SubLine,
     { /* inputs: */ {
-    "prim",
+    "line",
     {"NumericObject", "value", "0"},
     }, /* outputs: */ {
     "prim",
@@ -124,6 +311,10 @@ ZENDEFNODE(PrimitiveFilterByAttr,
     }, /* category: */ {
     "primitive",
     }});
+#endif
+
 
 
 }
+}
+

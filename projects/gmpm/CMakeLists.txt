@@ -63,7 +63,7 @@ target_sources(zeno_mpm PRIVATE
 )
 endif()
 target_compile_options(zeno_mpm 
-  PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
+  PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
 
 # zeno_zsfluid
@@ -80,7 +80,7 @@ target_link_libraries(zeno_zsfluid PUBLIC zeno ZFX)
 target_include_directories(zeno_zsfluid PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfluid PRIVATE ../zenvdb/include)
 target_compile_options(zeno_zsfluid
-  PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
+  PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
 
 if (${ZS_ENABLE_CUDA})
@@ -88,8 +88,7 @@ if (${ZS_ENABLE_CUDA})
 
     target_compile_features(zeno_zsfem PRIVATE cuda_std_17)
     target_compile_options(zeno_zsfem 
-      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true>
-      PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
+      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
     )
     target_link_options(zeno_zsfem 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>
@@ -104,8 +103,7 @@ if (${ZS_ENABLE_CUDA})
 
     target_compile_features(zeno_zsfft PRIVATE cuda_std_17)
     target_compile_options(zeno_zsfft 
-      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true>
-      PUBLIC        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=554>
+      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
     )
     target_link_options(zeno_zsfft 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>

@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/ticktock.h>
+#include <zeno/utils/orthonormal.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
@@ -13,12 +15,29 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 namespace zenvis {
+extern void setCascadeLevels(float far);
+extern void initCascadeShadow();
+extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
+extern void setShadowMV(Program* shader);
+extern void EndShadowMap();
+extern unsigned int getShadowMap(int i);
+extern float getCamFar();
+extern std::vector<float> getCascadeDistances();
+extern glm::mat4 getLightMV();
+extern void ensureGlobalMapExist();
+extern unsigned int getGlobalEnvMap();
+extern unsigned int getIrradianceMap();
+extern unsigned int getPrefilterMap();
+extern unsigned int getBRDFLut();
+extern glm::vec3 getLight();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
     size_t count=0;
     Program *prog;
+    Program *shadowprog;
 };
 void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
@@ -26,16 +45,18 @@ void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &uv = prim->attr<zeno::vec3f>("uv");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     obj.count = prim->size();
 
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 4);
+    std::vector<zeno::vec3f> mem(obj.count * 5);
     for (int i = 0; i < obj.count; i++)
     {
-      mem[4 * i + 0] = pos[i];
-      mem[4 * i + 1] = clr[i];
-      mem[4 * i + 2] = nrm[i];
-      mem[4 * i + 3] = uv[i];
+      mem[5 * i + 0] = pos[i];
+      mem[5 * i + 1] = clr[i];
+      mem[5 * i + 2] = nrm[i];
+      mem[5 * i + 3] = uv[i];
+      mem[5 * i + 4] = tang[i];
     }
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -51,23 +72,26 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     auto const &lines = prim->lines;
     bool has_uv = lines.has_attr("uv0")&&lines.has_attr("uv1");
     obj.count = prim->lines.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 2 * 4);
+    std::vector<zeno::vec3f> mem(obj.count * 2 * 5);
     std::vector<zeno::vec2i> linesdata(obj.count);
     #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
-        mem[8 * i + 0] = pos[lines[i][0]];
-        mem[8 * i + 1] = clr[lines[i][0]];
-        mem[8 * i + 2] = nrm[lines[i][0]];
-        mem[8 * i + 3] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
-        mem[8 * i + 4] = pos[lines[i][1]];
-        mem[8 * i + 5] = clr[lines[i][1]];
-        mem[8 * i + 6] = nrm[lines[i][1]];
-        mem[8 * i + 7] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 0] = pos[lines[i][0]];
+        mem[10 * i + 1] = clr[lines[i][0]];
+        mem[10 * i + 2] = nrm[lines[i][0]];
+        mem[10 * i + 3] = has_uv? lines.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 4] = tang[lines[i][0]];
+        mem[10 * i + 5] = pos[lines[i][1]];
+        mem[10 * i + 6] = clr[lines[i][1]];
+        mem[10 * i + 7] = nrm[lines[i][1]];
+        mem[10 * i + 8] = has_uv? lines.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
+        mem[10 * i + 9] = tang[lines[i][1]];
         linesdata[i] = zeno::vec2i(i*2, i*2+1);
 
     }
@@ -78,64 +102,126 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         obj.ebo->bind_data(&(linesdata[0]), obj.count * sizeof(linesdata[0]));
     }
 }
+
+void computeTrianglesTangent(zeno::PrimitiveObject *prim)
+{
+    const auto &tris = prim->tris;
+    const auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    //printf("!!has_uv = %d\n", has_uv);
+#pragma omp parallel for
+    for (size_t i = 0; i < prim->tris.size(); ++i)
+    {
+        if(has_uv) {
+            const auto &pos0 = pos[tris[i][0]];
+            const auto &pos1 = pos[tris[i][1]];
+            const auto &pos2 = pos[tris[i][2]];
+            auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
+            auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
+            auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
+
+            auto edge0 = pos1 - pos0;
+            auto edge1 = pos2 - pos0;
+            auto deltaUV0 = uv1 - uv0;
+            auto deltaUV1 = uv2 - uv0;
+
+            auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+
+            zeno::vec3f tangent;
+            tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+            tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+            tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+            //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
+            auto tanlen = zeno::length(tangent);
+            tangent * (1.f / (tanlen + 1e-8));
+            /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+                zeno::vec3f n = nrm[tris[i][0]], unused;
+                zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+            } else {
+                tang[i] = tangent * (1.f / tanlen);
+            }*/
+
+        } else {
+            tang[i] = zeno::vec3f(0);
+            //zeno::vec3f n = nrm[tris[i][0]], unused;
+            //zeno::pixarONB(n, tang[i], unused);
+        }
+    }
+}
+
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
+    TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &tris = prim->tris;
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
-    obj.count = prim->tris.size();
+    obj.count = tris.size();
     obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(obj.count * 3 * 4);
+    std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
     std::vector<zeno::vec3i> trisdata(obj.count);
-    #pragma omp parallel for
+    auto &tang = prim->tris.attr<zeno::vec3f>("tang");
+#pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
-        mem[12 * i + 0] = pos[tris[i][0]];
-        mem[12 * i + 1] = clr[tris[i][0]];
-        mem[12 * i + 2] = nrm[tris[i][0]];
-        mem[12 * i + 3] = has_uv? tris.attr<zeno::vec3f>("uv0")[i]:zeno::vec3f(0,0,0);
-        mem[12 * i + 4] = pos[tris[i][1]];
-        mem[12 * i + 5] = clr[tris[i][1]];
-        mem[12 * i + 6] = nrm[tris[i][1]];
-        mem[12 * i + 7] = has_uv? tris.attr<zeno::vec3f>("uv1")[i]:zeno::vec3f(0,0,0);
-        mem[12 * i + 8] = pos[tris[i][2]];
-        mem[12 * i + 9] = clr[tris[i][2]];
-        mem[12 * i + 10] = nrm[tris[i][2]];
-        mem[12 * i + 11] = has_uv? tris.attr<zeno::vec3f>("uv2")[i]:zeno::vec3f(0,0,0);
-
+        mem[15 * i + 0] = pos[tris[i][0]];
+        mem[15 * i + 1] = clr[tris[i][0]];
+        mem[15 * i + 2] = nrm[tris[i][0]];
+        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 4] = tang[i];
+        mem[15 * i + 5] = pos[tris[i][1]];
+        mem[15 * i + 6] = clr[tris[i][1]];
+        mem[15 * i + 7] = nrm[tris[i][1]];
+        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 9] = tang[i];
+        mem[15 * i + 10] = pos[tris[i][2]];
+        mem[15 * i + 11] = clr[tris[i][2]];
+        mem[15 * i + 12] = nrm[tris[i][2]];
+        mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 14] = tang[i];
 
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
     }
+    TOCK(parse);
+
+    TICK(bindvbo);
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
     if(obj.count)
     {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
     }
+    TOCK(bindebo);
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
   size_t vertex_count;
   bool draw_all_points;
 
-  Program *points_prog;
-  std::unique_ptr<Buffer> points_ebo;
+  //Program *points_prog;
+  //std::unique_ptr<Buffer> points_ebo;
   size_t points_count;
 
-  Program *lines_prog;
-  std::unique_ptr<Buffer> lines_ebo;
+  //Program *lines_prog;
+  //std::unique_ptr<Buffer> lines_ebo;
   size_t lines_count;
 
-  Program *tris_prog;
-  std::unique_ptr<Buffer> tris_ebo;
+  //Program *tris_prog;
+  //std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
+  drawObject pointObj;
   drawObject lineObj;
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
+
+  bool prim_has_mtl = false;
   
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -152,6 +238,13 @@ struct GraphicPrimitive : IGraphic {
         for (size_t i = 0; i < clr.size(); i++) {
             clr[i] = zeno::vec3f(1.0f);
         }
+    }
+    bool primNormalCorrect = prim->has_attr("nrm") && length(prim->attr<zeno::vec3f>("nrm")[0])>1e-5;
+    bool need_computeNormal = !primNormalCorrect || !(prim->has_attr("nrm"));
+    if(prim->tris.size() && need_computeNormal)
+    {
+        std::cout<<"computing normal\n";
+        zeno::primCalcNormal(prim, 1);
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
@@ -173,7 +266,7 @@ struct GraphicPrimitive : IGraphic {
             // for (size_t i = 0; i < nrm.size(); i++) {
             //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
             // }
-            zeno::getNormal(prim);
+            
 
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
@@ -185,31 +278,43 @@ struct GraphicPrimitive : IGraphic {
     {
         auto &uv = prim->add_attr<zeno::vec3f>("uv");
         for (size_t i = 0; i < uv.size(); i++) {
-            uv[i] = zeno::vec3f(1.0f);
+            uv[i] = zeno::vec3f(0.0f);
         }
     }
+    if (!prim->has_attr("tang"))
+    {
+        auto &tang = prim->add_attr<zeno::vec3f>("tang");
+        for (size_t i = 0; i < tang.size(); i++) {
+            tang[i] = zeno::vec3f(0.0f);
+        }
+    }
+    bool enable_uv = false;
+    
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     auto const &uv = prim->attr<zeno::vec3f>("uv");
+    auto const &tang = prim->attr<zeno::vec3f>("tang");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem(vertex_count * 4);
+    std::vector<zeno::vec3f> mem(vertex_count * 5);
     for (int i = 0; i < vertex_count; i++)
     {
-      mem[4 * i + 0] = pos[i];
-      mem[4 * i + 1] = clr[i];
-      mem[4 * i + 2] = nrm[i];
-      mem[4 * i + 3] = uv[i];
+      mem[5 * i + 0] = pos[i];
+      mem[5 * i + 1] = clr[i];
+      mem[5 * i + 2] = nrm[i];
+      mem[5 * i + 3] = uv[i];
+      mem[5 * i + 4] = tang[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
     points_count = prim->points.size();
     if (points_count) {
-        points_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        points_ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
-        points_prog = get_points_program(path);
+        pointObj.count = points_count;
+        pointObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        pointObj.ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        pointObj.prog = get_points_program(path);
     }
 
     lines_count = prim->lines.size();
@@ -217,7 +322,14 @@ struct GraphicPrimitive : IGraphic {
         // lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         // lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
         // lines_prog = get_lines_program(path);
-        parseLinesDrawBuffer(prim, lineObj);
+        if (!(prim->lines.has_attr("uv0")&&prim->lines.has_attr("uv1"))) {
+            lineObj.count = lines_count;
+            lineObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            lineObj.ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+            lineObj.vbo = nullptr;
+        } else {
+            parseLinesDrawBuffer(prim, lineObj);
+        }
         lineObj.prog = get_lines_program(path);
     }
 
@@ -228,15 +340,27 @@ struct GraphicPrimitive : IGraphic {
         // tris_prog = get_tris_program(path, prim->mtl);
         // if (!tris_prog)
         //     tris_prog = get_tris_program(path, nullptr);
-        parseTrianglesDrawBuffer(prim, triObj);
+        
+        if (!(prim->tris.has_attr("uv0")&&prim->tris.has_attr("uv1")&&prim->tris.has_attr("uv2"))) {
+            triObj.count = tris_count;
+            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+            triObj.vbo = nullptr;
+        } else {
+            computeTrianglesTangent(prim);
+            parseTrianglesDrawBuffer(prim, triObj);
+        }
+        
         triObj.prog = get_tris_program(path, prim->mtl);
+        if(prim->mtl!=nullptr)
+            triObj.shadowprog = get_shadow_program(prim->mtl);
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
     if (draw_all_points) {
-        points_prog = get_points_program(path);
+        pointObj.prog = get_points_program(path);
     }
 
     if ((prim->mtl != nullptr) && !prim->mtl->tex2Ds.empty())
@@ -244,96 +368,215 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
+    prim_has_mtl = prim->mtl != nullptr;
   }
+  
+  virtual void drawShadow() override 
+  {
+    if(!prim_has_mtl)
+        return;
+    int id = 0;
+    for (id = 0; id < textures.size(); id++) {
+        textures[id]->bind_to(id);
+    }
+    auto vbobind = [&] (auto &vbo) {
+        vbo->bind();
+        vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 12, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+    };
+    auto vbounbind = [&] (auto &vbo) {
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->disable_attribute(2);
+        vbo->disable_attribute(3);
+        vbo->disable_attribute(4);
+        vbo->unbind();
+    };
 
+    if (tris_count) {
+        //printf("TRIS\n");
+        if (triObj.vbo) {
+            vbobind(triObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
+        triObj.shadowprog->use();
+        setShadowMV(triObj.shadowprog);
+        if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            for (int texId=0; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.shadowprog->set_uniformi(texName.c_str(), texId);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
+                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+            }
+        }
+        triObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+              GL_UNSIGNED_INT, /*first=*/0));
+        
+        triObj.ebo->unbind();
+        if (triObj.vbo) {
+            vbounbind(triObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
+    }
+
+  }
   virtual void draw() override {
+      if (prim_has_mtl) ensureGlobalMapExist();
+
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
     }
 
-    vbo->bind();
-    vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
+    auto vbobind = [&] (auto &vbo) {
+        vbo->bind();
+        vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 12, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+    };
+    auto vbounbind = [&] (auto &vbo) {
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->disable_attribute(2);
+        vbo->disable_attribute(3);
+        vbo->disable_attribute(4);
+        vbo->unbind();
+    };
+
+    if (draw_all_points || points_count)
+        vbobind(vbo);
 
     if (draw_all_points) {
         //printf("ALLPOINTS\n");
-        points_prog->use();
-        set_program_uniforms(points_prog);
+        pointObj.prog->use();
+        set_program_uniforms(pointObj.prog);
         CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
     }
 
     if (points_count) {
         //printf("POINTS\n");
-        points_prog->use();
-        set_program_uniforms(points_prog);
-        points_ebo->bind();
-        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 1,
+        pointObj.prog->use();
+        set_program_uniforms(pointObj.prog);
+        pointObj.ebo->bind();
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/pointObj.count * 1,
               GL_UNSIGNED_INT, /*first=*/0));
-        points_ebo->unbind();
+        pointObj.ebo->unbind();
     }
-    vbo->disable_attribute(0);
-    vbo->disable_attribute(1);
-    vbo->disable_attribute(2);
-    vbo->disable_attribute(3);
-    vbo->unbind();
+
+    if (draw_all_points || points_count)
+        vbounbind(vbo);
 
 
     if (lines_count) {
         //printf("LINES\n");
-        lineObj.vbo->bind();
-        lineObj.vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        lineObj.vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
+        if (lineObj.vbo) {
+            vbobind(lineObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
         lineObj.prog->use();
         set_program_uniforms(lineObj.prog);
         lineObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_LINES, /*count=*/lineObj.count * 2,
               GL_UNSIGNED_INT, /*first=*/0));
         lineObj.ebo->unbind();
-        lineObj.vbo->unbind();
+        if (lineObj.vbo) {
+            vbounbind(lineObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
     }
 
     if (tris_count) {
         //printf("TRIS\n");
-        triObj.vbo->bind();
-        triObj.vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/2,
-        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
-        triObj.vbo->attribute(/*index=*/3,
-        /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 12,
-        GL_FLOAT, /*count=*/3);
+        if (triObj.vbo) {
+            vbobind(triObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
-        triObj.prog->set_uniform("mRenderWireframe", false);
-        triObj.prog->set_uniformi("skybox",id);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0+id));
-        CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, m_envmap));
+        triObj.prog->set_uniform("light0",getLight());
+        triObj.prog->set_uniformi("mRenderWireframe", false);
+
+        if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            for (int texId=0; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.prog->set_uniformi(texName.c_str(), texId);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
+                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+            }
+            triObj.prog->set_uniformi("skybox",texsSize);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize));
+            if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+
+            triObj.prog->set_uniformi("irradianceMap",texsSize+1);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+1));
+            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+
+            triObj.prog->set_uniformi("prefilterMap",texsSize+2);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+2));
+            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+
+            triObj.prog->set_uniformi("brdfLUT",texsSize+3);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+3));
+            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+
+            for(size_t i=0; i<getCascadeDistances().size()+1; i++){
+                auto name = "shadowMap" + std::to_string(i);
+                triObj.prog->set_uniformi(name.c_str(), texsSize+4+i);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4+i));
+                if (auto shadowMap = getShadowMap(i); shadowMap != (unsigned int)-1)
+                    CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+            }
+
+            
+            triObj.prog->set_uniform("farPlane", getCamFar());
+            triObj.prog->set_uniformi("cascadeCount", getCascadeDistances().size());
+            for (size_t i = 0; i < getCascadeDistances().size(); ++i)
+            {
+                auto name = "cascadePlaneDistances[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), getCascadeDistances()[i]);
+            }
+            triObj.prog->set_uniform("lview", getLightMV());
+    
+        }
 
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -341,14 +584,18 @@ struct GraphicPrimitive : IGraphic {
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
-          triObj.prog->set_uniform("mRenderWireframe", true);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+          triObj.prog->set_uniformi("mRenderWireframe", true);
           CHECK_GL(glDrawElements(GL_TRIANGLES, triObj.count * 3, GL_UNSIGNED_INT, 0));
           glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
           glDisable(GL_POLYGON_OFFSET_LINE);
         }
         triObj.ebo->unbind();
-        triObj.vbo->unbind();
+        if (triObj.vbo) {
+            vbounbind(triObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
     }
 
     
@@ -373,7 +620,6 @@ struct GraphicPrimitive : IGraphic {
     for (const auto &tex2D : tex2Ds)
     {
       auto tex = std::make_unique<Texture>();
-      tex->load(tex2D->path.c_str());
 
 #define SET_TEX_WRAP(TEX_WRAP, TEX_2D_WRAP)                                    \
   if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::REPEAT)               \
@@ -408,8 +654,103 @@ struct GraphicPrimitive : IGraphic {
       SET_TEX_FILTER(tex->mag_filter, tex2D->magFilter)
 
 #undef SET_TEX_FILTER
+
+      tex->load(tex2D->path.c_str());
       textures.push_back(std::move(tex));
     }
+  }
+  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
+  {
+auto SMVS = R"(
+#version 420 core
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+
+void main()
+{
+  position = vPosition;
+  iColor = vColor;
+  iNormal = vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = vTangent;
+  gl_Position = mView * vec4(position, 1.0);
+}
+)";
+
+auto SMFS = "#version 420 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+uniform bool mSmoothShading;
+uniform bool mNormalCheck;
+uniform bool mRenderWireframe;
+
+
+in vec3 position;
+in vec3 iColor;
+in vec3 iNormal;
+in vec3 iTexCoord;
+in vec3 iTangent;
+out vec4 fColor;
+
+void main()
+{   
+    vec3 att_pos = position;
+    vec3 att_clr = iColor;
+    vec3 att_nrm = iNormal;
+    vec3 att_uv = iTexCoord;
+    vec3 att_tang = iTangent;
+    float att_NoL = 0;
+)" + mtl->frag + R"(
+    if(mat_opacity>=0.99)
+         discard;
+    //fColor = vec4(gl_FragCoord.zzz,1);
+}
+)";
+
+auto SMGS = R"(
+#version 420 core
+
+layout(triangles, invocations = 8) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+layout (std140, binding = 0) uniform LightSpaceMatrices
+{
+    mat4 lightSpaceMatrices[16];
+};
+
+void main()
+{          
+	for (int i = 0; i < 3; ++i)
+	{
+		gl_Position = lightSpaceMatrices[gl_InvocationID] * gl_in[i].gl_Position;
+		gl_Layer = gl_InvocationID;
+		EmitVertex();
+	}
+	EndPrimitive();
+}  
+)";
+    return compile_program(SMVS, SMFS);
   }
 
   Program *get_points_program(std::string const &path) {
@@ -418,7 +759,7 @@ struct GraphicPrimitive : IGraphic {
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -426,14 +767,14 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform float mPointScale;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
-attribute vec3 vNormal;
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
 
-varying vec3 position;
-varying vec3 color;
-varying float radius;
-varying float opacity;
+out vec3 position;
+out vec3 color;
+out float radius;
+out float opacity;
 void main()
 {
   position = vPosition;
@@ -453,17 +794,18 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
 uniform mat4 mProj;
 
-varying vec3 position;
-varying vec3 color;
-varying float radius;
-varying float opacity;
+in vec3 position;
+in vec3 color;
+in float radius;
+in float opacity;
+out vec4 fColor;
 void main()
 {
   const vec3 lightDir = vec3(0.577, 0.577, 0.577);
@@ -485,7 +827,7 @@ void main()
   }
   else
     oColor = color;
-  gl_FragColor = vec4(oColor, 1.0 - opacity);
+  fColor = vec4(oColor, 1.0 - opacity);
 }
 )";
     }
@@ -499,7 +841,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -508,11 +850,11 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
+in vec3 vPosition;
+in vec3 vColor;
 
-varying vec3 position;
-varying vec3 color;
+out vec3 position;
+out vec3 color;
 
 void main()
 {
@@ -525,7 +867,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 130
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -534,12 +876,12 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-varying vec3 position;
-varying vec3 color;
-
+in vec3 position;
+in vec3 color;
+out vec4 fColor;
 void main()
 {
-  gl_FragColor = vec4(color, 1.0);
+  fColor = vec4(color, 1.0);
 }
 )";
     }
@@ -553,7 +895,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 420
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -562,30 +904,31 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
-attribute vec3 vPosition;
-attribute vec3 vColor;
-attribute vec3 vNormal;
-attribute vec3 vTexCoord;
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
 
-varying vec3 position;
-varying vec3 iColor;
-varying vec3 iNormal;
-varying vec3 iTexCoord;
-
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
 void main()
 {
   position = vPosition;
   iColor = vColor;
   iNormal = vNormal;
   iTexCoord = vTexCoord;
-
+  iTangent = vTangent;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 420
 )" + (mtl ? mtl->extensions : "") + R"(
 const float minDot = 1e-5;
 
@@ -609,22 +952,31 @@ uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform bool mSmoothShading;
+uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
-varying vec3 position;
-varying vec3 iColor;
-varying vec3 iNormal;
-varying vec3 iTexCoord;
+
+in vec3 position;
+in vec3 iColor;
+in vec3 iNormal;
+in vec3 iTexCoord;
+in vec3 iTangent;
+out vec4 fColor;
 uniform samplerCube skybox;
+
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
+
 vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
     vec3 nrm, vec3 idir, vec3 odir) {
 
   vec3 hdir = normalize(idir + odir);
-  float NoH = max(0., dot(hdir, nrm));
-  float NoL = max(0., dot(idir, nrm));
-  float NoV = max(0., dot(odir, nrm));
-  float VoH = clamp(dot(odir, hdir), 0., 1.);
-  float LoH = clamp(dot(idir, hdir), 0., 1.);
+  float NoH = max(0., dot_c(hdir, nrm));
+  float NoL = max(0., dot_c(idir, nrm));
+  float NoV = max(0., dot_c(odir, nrm));
+  float VoH = clamp(dot_c(odir, hdir), 0., 1.);
+  float LoH = clamp(dot_c(idir, hdir), 0., 1.);
 
   vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular;
   vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
@@ -644,7 +996,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (
 !mtl ?
 R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -692,7 +1044,7 @@ float CalculateAttenuation( // GGX/Schlick-Beckmann
     in vec3  vector,
     in float k)
 {
-    float d = max(dot(surfNorm, vector), 0.0);
+    float d = max(dot_c(surfNorm, vector), 0.0);
  	return (d / ((d * (1.0 - k)) + k));
 }
 float CalculateAttenuationAnalytical(// Smith for analytical light
@@ -720,7 +1072,7 @@ vec3 CalculateFresnel(
     in vec3 toView,
     in vec3 fresnel0)
 {
-	float d = max(dot(surfNorm, toView), 0.0); 
+	float d = max(dot_c(surfNorm, toView), 0.0); 
     float p = ((-5.55473 * d) - 6.98316) * d;
         
     return fresnel0 + ((1.0 - fresnel0) * pow(1.0 - d, 5.0));
@@ -743,7 +1095,7 @@ vec3 CalculateSpecularAnalytical(
     sfresnel = CalculateFresnel(surfNorm, toView, fresnel0);
 
     vec3  numerator   = (sfresnel * ndf * geoAtten); // FDG
-    float denominator = 4.0 * dot(surfNorm, toLight) * dot(surfNorm, toView);
+    float denominator = 4.0 * dot_c(surfNorm, toLight) * dot_c(surfNorm, toView);
 
     return (numerator / denominator);
 }
@@ -789,12 +1141,12 @@ vec3 UELighting(
 {
     vec3 ks       = vec3(0.0);
     vec3 diffuse  = CalculateDiffuse(albedo);
-    vec3 half = normalize(toLight + toView);
+    vec3 halfVec = normalize(toLight + toView);
     float NoL = dot(surfNorm, toLight);
-    float NoH = dot(surfNorm, half);
+    float NoH = dot(surfNorm, halfVec);
     float NoV = dot(surfNorm, toView);
-    float VoH = dot(toView, half);
-    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+    float VoH = dot(toView, halfVec);
+    float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
     return (diffuse * (1-metallic) + SpecularGGX(roughness, vec3(0,0,0), NoL, NoH, NoV, NoH))*angle;
 
 }
@@ -813,7 +1165,7 @@ vec3 CalculateLightingAnalytical(
     vec3 specular = CalculateSpecularAnalytical(surfNorm, toLight, toView, fresnel0, ks, roughness);
     vec3 kd       = (1.0 - ks);
 
-    float angle = clamp(dot(surfNorm, toLight), 0.0, 1.0);
+    float angle = clamp(dot_c(surfNorm, toLight), 0.0, 1.0);
 
     return ((kd * diffuse) + specular) * angle;
 }
@@ -912,14 +1264,16 @@ vec3 cubem(in vec3 p, in float ofst)
     else return tex( vec2(p.y,p.x)/p.z,ofst );
 }
 
-
+const float PI = 3.14159265358979323846;
 
 //important to do: load env texture here
 vec3 SampleEnvironment(in vec3 reflVec)
 {
     //if(reflVec.y>-0.5) return vec3(0,0,0);
     //else return vec3(1,1,1);//cubem(reflVec, 0);//texture(TextureEnv, reflVec).rgb;
-    return textureCube(skybox, reflVec).rgb;
+    //here we have the problem reflVec is in eyespace but we need it in world space
+    vec3 r = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))))*reflVec;
+    return texture(skybox, r).rgb;
 }
 
 /**
@@ -962,10 +1316,10 @@ vec3 CalculateSpecularIBL(
         // The light sample vector
         vec3 L = normalize((2.0 * dot(toView, H) * H) - toView);
         
-        float NoV = clamp(dot(surfNorm, toView), 0.0, 1.0);
-        float NoL = clamp(dot(surfNorm, L), 0.0, 1.0);
-        float NoH = clamp(dot(surfNorm, H), 0.0, 1.0);
-        float VoH = clamp(dot(toView, H), 0.0, 1.0);
+        float NoV = clamp(dot_c(surfNorm, toView), 0.0, 1.0);
+        float NoL = clamp(dot_c(surfNorm, L), 0.0, 1.0);
+        float NoH = clamp(dot_c(surfNorm, H), 0.0, 1.0);
+        float VoH = clamp(dot_c(toView, H), 0.0, 1.0);
         
         if(NoL > 0.0)
         {
@@ -983,23 +1337,96 @@ vec3 CalculateSpecularIBL(
     
     return (totalSpec / float(IBLSteps));
 }
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.1415926 * denom * denom;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
 vec3 CalculateLightingIBL(
-    in vec3  surfNorm,
-    in vec3  toView,
+    in vec3  N,
+    in vec3  V,
     in vec3  albedo,
     in float roughness,
     in float metallic)
 {
-    vec3 fresnel0 = mix(vec3(0.04), albedo, metallic);
-    //vec3 F = fresnelSchlickRoughness(dot_c(surfNorm, toView), 0.04);
-    vec3 ks       = vec3(0);
-    vec3 diffuse  = CalculateDiffuse(albedo) * CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, 1.0);
-    vec3 specular = CalculateSpecularIBL(surfNorm, toView, fresnel0, ks, roughness);
-    vec3 kd       = (1.0 - ks);
-    
+    mat3 m = inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 irradiance = textureLod(prefilterMap, m*N,  MAX_REFLECTION_LOD).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;    
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    return ((kd * diffuse) + specular);
+    return (kD * diffuse + specular);
+
+}
+
+vec3 CalculateLightingIBLToon(
+    in vec3  N,
+    in vec3  V,
+    in vec3  albedo,
+    in float roughness,
+    in float metallic)
+{
+    mat3 m = inverse(transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz))));
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, m*N).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    const float MAX_REFLECTION_LOD = 7.0;
+    vec3 R = reflect(-V, N); 
+    vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = clamp(smoothstep(0.5,0.5,length(prefilteredColor)), 0,1)*vec3(1,1,1);
+    vec3 specularColor = mix(prefilteredColor+0.2, prefilteredColor2, prefilteredColor);
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    brdf.r = (floor(brdf.r/0.33)+0.165)*0.33;
+    vec3 specular = specularColor * (F * brdf.r + smoothstep(0.7,0.7,brdf.y));
+
+    return (kD * diffuse + specular);
 
 }
 
@@ -1014,8 +1441,6 @@ vec3 ACESToneMapping(vec3 color, float adapted_lum)
 	color *= adapted_lum;
 	return (color * (A * color + B)) / (color * (C * color + D) + E);
 }
-
-const float PI = 3.14159265358979323846;
 
 float sqr(float x) { return x*x; }
 
@@ -1063,7 +1488,158 @@ vec3 mon2lin(vec3 x)
     return vec3(pow(x[0], 2.2), pow(x[1], 2.2), pow(x[2], 2.2));
 }
 
+float toonSpecular(vec3 V, vec3 L, vec3 N, float roughness)
+{
+    float NoV = dot(N,V);
+    float _SpecularSize = pow((1-roughness),5);
+    float specularFalloff = NoV;
+    specularFalloff = pow(specularFalloff, 2);
+    vec3 reflectionDirection = reflect(L, N);
+    float towardsReflection = dot(V, -reflectionDirection);
+    float specularChange = fwidth(towardsReflection);
+    float specularIntensity = smoothstep(1.0 - _SpecularSize, 1.0 - _SpecularSize + specularChange, towardsReflection);
+    return clamp(specularIntensity,0,1);
+}
+vec3 histThings(vec3 s)
+{
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.2)*0.2;
+    return norms * ls;
+}
+)" + R"(
+float V_Kelemen(float LoH) {
+    return 0.25 / (LoH * LoH);
+}
+vec3 ToonBRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
+{
+    float NoL = dot(N,L);
+    float shad1 = smoothstep(0.3, 0.31, NoL);
+    float shad2 = smoothstep(0.0,0.01, NoL);
+    vec3 diffuse = mon2lin(baseColor)/PI;
+    vec3 shadowC1 = diffuse * 0.4;
+    vec3 C1 = mix(shadowC1, diffuse, shad1);
+    vec3 shadowC2 = shadowC1 * 0.4;
+    vec3 C2 = mix(shadowC2, C1, shad2);
 
+    vec3 H = normalize(L+V);
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, baseColor, metallic);
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);    
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);        
+    
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 s = numerator / denominator;
+    
+    // kS is equal to Fresnel
+    vec3 kS = F;
+    // for energy conservation, the diffuse and specular light can't
+    // be above 1.0 (unless the surface emits light); to preserve this
+    // relationship the diffuse component (kD) should equal 1.0 - kS.
+    vec3 kD = vec3(1.0) - kS;
+    // multiply kD by the inverse metalness such that only non-metals 
+    // have diffuse lighting, or a linear blend if partly metal (pure metals
+    // have no diffuse light).
+    kD *= 1.0 - metallic;	                
+
+    vec3 norms = s/(length(s)+0.00001);
+    float ls = length(s);
+    ls = ceil(ls/0.4)*0.4;
+
+
+    return (kD*C2 + norms * ls * toonSpecular(V, L, N, roughness));
+}
+vec3 ToonDisneyBRDF(vec3 baseColor, float metallic, float subsurface, 
+float specular, 
+float roughness,
+float specularTint,
+float anisotropic,
+float sheen,
+float sheenTint,
+float clearcoat,
+float clearcoatGloss,
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
+{
+    float NdotL = dot(N,L);
+    float NdotV = dot(N,V);
+    //if (NdotL < 0 || NdotV < 0) return vec3(0);
+
+    vec3 H = normalize(L+V);
+    float NdotH = dot(N,H);
+    float LdotH = dot(L,H);
+
+    vec3 Cdlin = mon2lin(baseColor);
+    float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
+
+    vec3 Ctint = Cdlum > 0 ? Cdlin/Cdlum : vec3(1); // normalize lum. to isolate hue+sat
+    vec3 Cspec0 = mix(specular*.08*mix(vec3(1), Ctint, specularTint), Cdlin, metallic);
+    vec3 Csheen = mix(vec3(1), Ctint, sheenTint);
+
+    // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
+    // and mix in diffuse retro-reflection based on roughness
+    float FL = SchlickFresnel(NdotL), FV = SchlickFresnel(NdotV);
+    float Fd90 = 0.5 + 2 * LdotH*LdotH * roughness;
+    float viewIndp = mix(1.0, Fd90, FL);
+    float Fd = (floor(viewIndp/0.33)+0.165) * 0.33 * mix(1.0, Fd90, FV);
+
+    // Based on Hanrahan-Krueger brdf approximation of isotropic bssrdf
+    // 1.25 scale is used to (roughly) preserve albedo
+    // Fss90 used to "flatten" retroreflection based on roughness
+    float Fss90 = LdotH*LdotH*roughness;
+    float Fss = mix(1.0, Fss90, FL) * mix(1.0, Fss90, FV);
+    float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+
+    // specular
+    float aspect = sqrt(1-anisotropic*.9);
+    float ax = max(.001, sqr(roughness)/aspect);
+    float ay = max(.001, sqr(roughness)*aspect);
+    float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
+    float FH = SchlickFresnel(LdotH);
+    
+    vec3 Fs = mix(Cspec0, vec3(1), FH);
+    float Gs;
+    Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+    Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+    // sheen
+    vec3 Fsheen = FH * sheen * Csheen;
+
+    // clearcoat (ior = 1.5 -> F0 = 0.04)
+    float Dr = GTR1(NdotH, mix(.1,.001,clearcoatGloss));
+    float Fr = mix(.04, 1.0, FH);
+    float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
+    float angle = clamp(dot(N, L), 0.0, 1.0);
+    float c1 = (1/PI) * mix(Fd, ss, subsurface);
+
+    float shad1 = smoothstep(0.3, 0.31, NdotL);
+    float shad2 = smoothstep(0.0,0.01, NdotL);
+    vec3 shadowC1 = vec3(1,1,1) * 0.4;
+    vec3 C1 = mix(shadowC1, vec3(1,1,1), shad1);
+    vec3 shadowC2 = shadowC1 * 0.4;
+    vec3 C2 = mix(shadowC2, C1, shad2);
+    //c1 *= C2.x;
+    
+    Fsheen = Fsheen/(length(Fsheen)+1e-5) * (floor(length(Fsheen)/0.2)+0.1)*0.2;
+    vec3 fspecularTerm = (Gs*Fs*Ds);
+    vec3 fcoatTerm =  vec3(.25*clearcoat*Gr*Fr*Dr);
+
+    return ((c1 * Cdlin  + Fsheen)
+        * (1-metallic)
+        + (normalize(fspecularTerm) * ceil(length(fspecularTerm)/0.3) * 0.3 + fcoatTerm)* toonSpecular(V, L, N, roughness)) * C2 ;
+        
+}
 vec3 BRDF(vec3 baseColor, float metallic, float subsurface, 
 float specular, 
 float roughness,
@@ -1073,7 +1649,7 @@ float sheen,
 float sheenTint,
 float clearcoat,
 float clearcoatGloss,
-vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
+vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 {
     float NdotL = dot(N,L);
     float NdotV = dot(N,V);
@@ -1109,6 +1685,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float ay = max(.001, sqr(roughness)*aspect);
     float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
     float FH = SchlickFresnel(LdotH);
+    
     vec3 Fs = mix(Cspec0, vec3(1), FH);
     float Gs;
     Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
@@ -1122,7 +1699,9 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float Fr = mix(.04, 1.0, FH);
     float Gr = smithG_GGX(NdotL, .25) * smithG_GGX(NdotV, .25);
     float angle = clamp(dot(N, L), 0.0, 1.0);
-    return (((1/PI) * mix(Fd, ss, subsurface)*Cdlin + Fsheen)
+    float c1 = (1/PI) * mix(Fd, ss, subsurface);
+    
+    return ((c1 * Cdlin + Fsheen)
         * (1-metallic)
         + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
 }
@@ -1165,12 +1744,183 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
+float softLight0(float a, float b)
+{
+float G;
+float res;
+if(b<=0.25)
+    G = ((16*b-12)*b+4)*b;
+else
+   G = sqrt(b);
+if(a<=0.5)
+   res = b - (1-2*a)*b*(1-b);
+else
+   res = b+(2*a-1)*(G-b);
+return res;
+}
+float linearLight0(float a, float b)
+{
+    if(a>0.5)
+        return b + 2 * (a-0.5);
+   else
+       return b + a - 1;
+}
+float brightness(vec3 c)
+{
+    return sqrt(c.x * c.r * 0.241 + c.y * c.y * 0.691 + c.z * c.z * 0.068);
+}
+uniform vec3 light0;
+uniform sampler2D shadowMap0;
+uniform sampler2D shadowMap1;
+uniform sampler2D shadowMap2;
+uniform sampler2D shadowMap3;
+uniform sampler2D shadowMap4;
+uniform sampler2D shadowMap5;
+uniform sampler2D shadowMap6;
+uniform sampler2D shadowMap7;
+uniform sampler2D shadowMap8;
+uniform float farPlane;
+uniform mat4 lview;
 
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+layout (std140, binding = 0) uniform LightSpaceMatrices
+{
+    mat4 lightSpaceMatrices[16];
+};
+uniform float cascadePlaneDistances[16];
+uniform int cascadeCount;   // number of frusta - 1
+vec3 random3(vec3 c) {
+	float j = 4096.0*sin(dot(c,vec3(17.0, 59.4, 15.0)));
+	vec3 r;
+	r.z = fract(512.0*j);
+	j *= .125;
+	r.x = fract(512.0*j);
+	j *= .125;
+	r.y = fract(512.0*j);
+	return r-0.5;
+}
+float sampleShadowArray(vec2 coord, int layer)
+{
+    vec4 res;
+    if(layer==0)
+    {
+        res = texture(shadowMap0, coord);
+    }
+    if(layer==1)
+        res = texture(shadowMap1, coord);
+    if(layer==2)
+        res = texture(shadowMap2, coord);
+    if(layer==3)
+        res = texture(shadowMap3, coord);
+    if(layer==4)
+        res = texture(shadowMap4, coord);
+    if(layer==5)
+        res = texture(shadowMap5, coord);
+    if(layer==6)
+        res = texture(shadowMap6, coord);
+    if(layer==7)
+        res = texture(shadowMap7, coord);
+
+    return res.r;    
+}
+float PCFLayer(float currentDepth, float bias, vec3 pos, int layer, int k, vec2 coord)
+{
+    float shadow = 0.0;
+    
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap0, 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(pos+vec3(x, y,0)*0.01);
+            float pcfDepth = sampleShadowArray(coord + (vec2(x, y) + noise.xy) * texelSize, layer); 
+            shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    float size = 2.0*float(k)+1.0;
+    return shadow /= (size*size);
+}
+float ShadowCalculation(vec3 fragPosWorldSpace)
+{
+    // select cascade layer
+    vec4 fragPosViewSpace = mView * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrices[i] * vec4(fragPosWorldSpace, 1.0);
+        // perform perspective divide
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        // transform to [0,1] range
+        projCoords = projCoords * 0.5 + 0.5;
+        if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+    {
+        layer = cascadeCount;
+    }
+
+    vec4 fragPosLightSpace = lightSpaceMatrices[layer] * vec4(fragPosWorldSpace, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+    if (currentDepth > 1.0)
+    {
+        return 0.0;
+    }
+    // calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(iNormal);
+    float bias = max(0.0001 * (1.0 - dot(normal, light0)), 0.00001);
+    // float bm = bias;
+    // const float biasModifier = 0.5f;
+    // if (layer == cascadeCount)
+    // {
+    //     bm *= 1 / (farPlane * biasModifier);
+    // }
+    // else
+    // {
+    //     bm *= 1 / (cascadePlaneDistances[layer] * biasModifier);
+    // }
+
+    // PCF
+    float shadow1 = PCFLayer(currentDepth, bias, fragPosWorldSpace, layer, 3, projCoords.xy);
+    float shadow2 = shadow1;
+    float coef = 0.0;
+    if(layer>=1){
+        //bm = 1 / (cascadePlaneDistances[layer-1] * biasModifier);
+        fragPosLightSpace = lightSpaceMatrices[layer-1] * vec4(fragPosWorldSpace, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords * 0.5 + 0.5;
+        shadow2 = PCFLayer(currentDepth, bias, fragPosWorldSpace, layer-1, 3, projCoords.xy);
+        float coef = (depthValue - cascadePlaneDistances[layer-1])/(cascadePlaneDistances[layer] - cascadePlaneDistances[layer-1]);
+    }
+    
+        
+    return mix(shadow1, shadow2, coef);
+}
+
+
+
+
+vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    //normal = normalize(normal);
+    vec3 L1 = light0;
     vec3 att_pos = position;
     vec3 att_clr = iColor;
     vec3 att_nrm = normal;
     vec3 att_uv = iTexCoord;
+    vec3 att_tang = old_tangent;
+    float att_NoL = dot(normal, L1);
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
@@ -1181,14 +1931,22 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
     vec3 light_dir;
     vec3 albedo2 = mat_basecolor;
     float roughness = mat_roughness;
+    vec3 tan = normalize(old_tangent - dot(normal, old_tangent)*normal);
+    mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
-    new_normal = normalize(gl_NormalMatrix * new_normal);
+    new_normal = TBN*mat_normal;
+    mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
+    new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent;//   = normalize(cross(up, new_normal));
-    vec3 bitangent;// = cross(new_normal, tangent);
-    pixarONB(new_normal, tangent, bitangent);
-    light_dir = vec3(1,1,0);
-    color += BRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,0,0,0,0.5,0,1,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
+    vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
+    //pixarONB(new_normal, tangent, bitangent);
+    light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*L1;
+
+    vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+    vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+
+    color += mix(photoReal, NPR, mat_toon);
  //   color +=  
  //       CalculateLightingAnalytical(
  //           new_normal,
@@ -1200,7 +1958,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    light_dir = vec3(0,1,-1);
+//    light_dir = vec3(0,1,-1);
 //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 //    color +=  
@@ -1223,15 +1981,31 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
 //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
 
-    color +=  
-        CalculateLightingIBL(
-            new_normal,
-            view_dir,
-            albedo2,
-            roughness,
-            mat_metallic);
+
+    vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
+    vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
+    vec3 ibl = mix(iblPhotoReal, iblNPR,mat_toon);
+    float shadow = ShadowCalculation(position);
+    
+    //color += ibl;
+    color = color * clamp((1.0-shadow)+0.2,0,1) + ibl;
+    vec3 realColor = (photoReal * clamp((1.0-shadow)+0.2,0,1) + iblPhotoReal);
+    float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
+    float brightness1 = smoothstep(mat_shape.x, mat_shape.y, dot(new_normal, light_dir));
+    float brightness = mix(brightness1, brightness0, mat_style);
+    
+    float brightnessNoise = softLight0(mat_strokeNoise, brightness);
+    brightnessNoise = smoothstep(mat_shad.x, mat_shad.y, brightnessNoise);
+    float stroke = linearLight0(brightnessNoise, mat_stroke);
+    stroke = clamp(stroke + mat_stroke, 0,1);
+    vec3 strokeColor = clamp(vec3(stroke) + mat_strokeTint, vec3(0), vec3(1));
+
+    //strokeColor = pow(strokeColor,vec3(2.0));
+    color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
+
     color = ACESFitted(color.rgb, 2.2);
     return color;
+
 
 }
 )"
@@ -1239,18 +2013,18 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
 
 vec3 calcRayDir(vec3 pos)
 {
-  vec4 vpos = mVP * vec4(pos, 1);
-  vec2 uv = vpos.xy / vpos.w;
-  vec4 ro = mInvVP * vec4(uv, -1, 1);
-  vec4 re = mInvVP * vec4(uv, +1, 1);
-  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
-  return rd;
+  vec4 vpos = mView * vec4(pos, 1);
+//   vec2 uv = vpos.xy / vpos.w;
+//   vec4 ro = mInvVP * vec4(uv, -1, 1);
+//   vec4 re = mInvVP * vec4(uv, +1, 1);
+//   vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
+  return normalize(vpos.xyz);
 }
 
 void main()
 {
   if (mRenderWireframe) {
-    gl_FragColor = vec4(0.89, 0.57, 0.15, 1.0);
+    fColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
   }
   vec3 normal;
@@ -1260,12 +2034,26 @@ void main()
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
-  normal = faceforward(normal, -viewdir, normal);
-
   vec3 albedo = iColor;
-  vec3 color = studioShading(albedo, viewdir, normal);
+
+  //normal = faceforward(normal, -viewdir, normal);
+  vec3 tangent = iTangent;
+  if (tangent == vec3(0)) {
+   vec3 unusedbitan;
+   pixarONB(normal, tangent, unusedbitan);
+  }
+
+  vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
-  gl_FragColor = vec4(color, 1.0);
+  fColor = vec4(color, 1.0);
+  if (mNormalCheck) {
+      float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
+      if (gl_FrontFacing) {
+        fColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+      } else {
+        fColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+      }
+  }
 }
 )";
     }

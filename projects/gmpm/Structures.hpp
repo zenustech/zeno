@@ -21,6 +21,14 @@
 
 namespace zeno {
 
+struct ZpcInitializer {
+  ZpcInitializer() {
+    printf("Initializing Zpc resource\n");
+    (void)zs::Resource::instance();
+    printf("Initialized Zpc resource!\n");
+  }
+};
+
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
                 zs::StvkWithHencky<float>>;
@@ -78,11 +86,12 @@ struct ZenoConstitutiveModel : IObject {
   PlasticModel plasticModel;
 };
 
-struct ZenoParticles : IObject {
+struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  enum category_e : int { mpm, curve, surface, tet };
+  // tracker particle for 
+  enum category_e : int { mpm, curve, surface, tet, tracker };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }
@@ -97,9 +106,16 @@ struct ZenoParticles : IObject {
       throw std::runtime_error("quadrature points not binded.");
     return *elements;
   }
+  bool isMeshPrimitive() const noexcept {
+    return elements.has_value() && category != category_e::mpm;
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
 
+  std::size_t numParticles() const noexcept { return particles.size(); }
+  std::size_t numElements() const noexcept { return (*elements).size(); }
+
+  bool asBoundary = false;
   particles_t particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:

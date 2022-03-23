@@ -5,7 +5,7 @@
 
 namespace zeno
 {
-struct ShaderTexture2D : ShaderNode
+struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 {
     virtual int determineType(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");

@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/variantswitch.h>
@@ -9,7 +10,7 @@
 
 namespace zeno {
 
-void primLineSort(PrimitiveObject *prim, bool reversed) {
+ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed) {
     std::vector<int> visited;
     {
         std::unordered_multimap<int, int> v2l;

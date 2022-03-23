@@ -16,7 +16,7 @@ namespace zeno {
         return it - std::begin(table);
     }
 
-    struct PrimitiveLinearMap : zeno::INode {
+    struct PrimitiveAttrFit : zeno::INode {
         virtual void apply() override {
             auto prim = get_input<zeno::PrimitiveObject>("prim");
             auto refPrim = get_input<zeno::PrimitiveObject>("refPrim");
@@ -139,7 +139,7 @@ namespace zeno {
             set_output("prim", std::move(prim));
         }
     };
-ZENDEFNODE(PrimitiveLinearMap, {
+ZENDEFNODE(PrimitiveAttrFit, {
     {
     {"PrimitiveObject", "prim"},
     {"PrimitiveObject", "refPrim"},

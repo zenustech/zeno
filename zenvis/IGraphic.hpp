@@ -9,12 +9,8 @@ namespace zenvis {
 
 struct IGraphic {
   virtual void draw() = 0;
+  virtual void drawShadow() = 0;
   virtual ~IGraphic() = default;
-  GLuint m_envmap;
-  void SetEnvMap(GLuint inEnv)
-  {
-      m_envmap = inEnv;
-  }
 };
 
 struct FrameData {

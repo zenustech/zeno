@@ -4,7 +4,7 @@
 
 ```bash
 # Install basic dependencies:
-sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin libglvnd libglapi
+sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin libglvnd-dev libglapi-mesa
 
 python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip

@@ -1,5 +1,5 @@
 import os
-import copy
+import math
 import time
 import numpy as np
 
@@ -125,6 +125,8 @@ class ViewportWidget(QGLWidget):
         self.record_path = None
         self.record_res = None
 
+        zenvis.core.set_num_samples(16)
+
     def initializeGL(self):
         zenvis.initializeGL()
 
@@ -178,9 +180,17 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Background Color', self)
         self.addAction(action)
 
+        action = QAction('Set Light', self)
+        self.addAction(action)
+
         self.addSeparator()
 
         action = QAction('Smooth Shading', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
+        action = QAction('Normal Check', self)
         action.setCheckable(True)
         action.setChecked(False)
         self.addAction(action)
@@ -210,6 +220,22 @@ class QDMDisplayMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+C'))
         self.addAction(action)
 
+def get_env_tex_names():
+    ns = os.listdir('assets/sky_box')
+    return list(ns)
+
+env_texs = get_env_tex_names()
+
+class QDMEnvTexMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('EnvTex')
+
+        for name in env_texs:
+            action = QAction(name, self)
+            self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -224,6 +250,48 @@ class QDMRecordMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+F12'))
         self.addAction(action)
 
+class SetLightDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('Set Light')
+        self.initUI()
+
+    def initUI(self):
+        phi_label = QLabel('Phi:')
+        self.phi_slider = QSlider(Qt.Horizontal)
+        self.phi_slider.setMinimum(0)
+        self.phi_slider.setMaximum(100)
+        self.phi_slider.setValue(0)
+        self.phi_slider.valueChanged.connect(self.set_light)
+
+        theta_label = QLabel('Theta:')
+        self.theta_slider = QSlider(Qt.Horizontal)
+        self.theta_slider.setMinimum(0)
+        self.theta_slider.setMaximum(100)
+        self.theta_slider.setValue(75)
+        self.theta_slider.valueChanged.connect(self.set_light)
+
+        grid = QGridLayout()
+        grid.setSpacing(10)
+
+        grid.addWidget(phi_label, 1, 0)
+        grid.addWidget(self.phi_slider, 1, 1)
+
+        grid.addWidget(theta_label, 2, 0)
+        grid.addWidget(self.theta_slider, 2, 1)
+
+        self.setLayout(grid)
+
+    def set_light(self):
+        phi_int = self.phi_slider.value()
+        theta_int = self.theta_slider.value()
+        phi = phi_int / 100 * math.pi * 2
+        theta = theta_int / 100 * math.pi
+        x = math.sin(theta) * math.cos(phi)
+        y = -math.cos(theta)
+        z = math.sin(theta) * math.sin(phi)
+        zenvis.core.setLight(x, y, z)
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
@@ -244,6 +312,10 @@ class DisplayWidget(QWidget):
         self.recordDisplay.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.recordDisplay)
 
+        self.envTexDisplay = QDMEnvTexMenu()
+        self.envTexDisplay.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.envTexDisplay)
+
         self.view = ViewportWidget()
         self.view.parent_widget = self
         self.layout.addWidget(self.view)
@@ -251,6 +323,8 @@ class DisplayWidget(QWidget):
         self.record_video = RecordVideoDialog(self)
         self.camera_keyframe_widget = CameraKeyframeWidget(self)
         zenvis.camera_keyframe = self.camera_keyframe_widget
+
+        self.set_light_dialog = SetLightDialog()
 
     def on_update(self):
         self.view.on_update()
@@ -264,6 +338,10 @@ class DisplayWidget(QWidget):
         elif name == 'Smooth Shading':
             checked = act.isChecked()
             zenvis.core.set_smooth_shading(checked)
+
+        elif name == 'Normal Check':
+            checked = act.isChecked()
+            zenvis.core.set_normal_check(checked)
 
         elif name == 'Wireframe':
             checked = act.isChecked()
@@ -279,6 +357,8 @@ class DisplayWidget(QWidget):
                     c.blueF(),
                 )
 
+        elif name == 'Set Light':
+            self.set_light_dialog.open()
 
         elif name == 'Record Video':
             checked = act.isChecked()
@@ -298,6 +378,9 @@ class DisplayWidget(QWidget):
 
         elif name == 'Reset Camera':
             self.view.camera.reset()
+
+        elif name in env_texs:
+            zenvis.core.setup_env_map(name)
 
     def get_output_path(self, extname):
         dir_path = 'outputs'
