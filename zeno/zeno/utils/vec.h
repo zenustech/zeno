@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <type_traits>
 
 namespace zeno {
 template <class T, class S>
@@ -485,5 +486,30 @@ using vec4L = vec<4, uintptr_t>;
 using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
+
+}
+
+/* specialization for structual-binding */
+
+namespace std {
+
+template <size_t N, class T>
+struct tuple_size<::zeno::vec<N, T>> : integral_constant<size_t, N> {
+};
+
+template <size_t I, size_t N, class T>
+struct tuple_element<I, ::zeno::vec<N, T>> {
+    using type = enable_if_t<(I < N), T>;
+};
+
+template <size_t I, size_t N, class T>
+T const &get(::zeno::vec<N, T> const &t) {
+    return t[I];
+}
+
+template <size_t I, size_t N, class T>
+T &get(::zeno::vec<N, T> &t) {
+    return t[I];
+}
 
 }
