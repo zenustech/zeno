@@ -18,7 +18,7 @@ namespace zenvis {
 extern void setCascadeLevels(float far);
 extern void initCascadeShadow();
 extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
-extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
 extern unsigned int getShadowMap();
@@ -1932,8 +1932,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     float shadow = ShadowCalculation(position);
     
     //color += ibl;
-
-    vec3 realColor = photoReal*(1.0-shadow) + iblPhotoReal;
+    color = color * clamp((1.0-shadow)+0.2,0,1) + ibl;
+    vec3 realColor = (photoReal * clamp((1.0-shadow)+0.2,0,1) + iblPhotoReal);
     float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
     float brightness1 = smoothstep(mat_shape.x, mat_shape.y, dot(new_normal, light_dir));
     float brightness = mix(brightness1, brightness0, mat_style);
@@ -1945,7 +1945,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 strokeColor = clamp(vec3(stroke) + mat_strokeTint, vec3(0), vec3(1));
 
     //strokeColor = pow(strokeColor,vec3(2.0));
-    color = mix(realColor, mix(realColor*strokeColor, realColor, strokeColor), mat_toon);
+    color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
 
     color = ACESFitted(color.rgb, 2.2);
     return color;

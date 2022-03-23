@@ -17,10 +17,11 @@ namespace zenvis {
 extern void setCascadeLevels(float far);
 extern void initCascadeShadow();
 extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
-extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
 extern unsigned int getShadowMap();
+extern int getCascadeCount();
 extern void setfov(float f);
 extern void setaspect(float f);
 
@@ -171,13 +172,15 @@ extern float getCamFar()
 }
 static void shadowPass()
 {
-  BeginShadowMap(g_near, g_far, getLight(), proj, view);
-  vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->drawShadow();
+  for(int i=0;i<getCascadeCount()+1;i++){
+    BeginShadowMap(g_near, g_far, getLight(), proj, view,i);
+    vao->bind();
+    for (auto const &[key, gra]: current_frame_data()->graphics) {
+      gra->drawShadow();
+    }
+    vao->unbind();
+    EndShadowMap();
   }
-  vao->unbind();
-  EndShadowMap();
 }
 
 static void my_paint_graphics() {

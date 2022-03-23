@@ -17,11 +17,10 @@
 #include <zeno/types/TextureObject.h>
 namespace zenvis{
 static glm::mat4 lightMV;
-
 extern void setCascadeLevels(float far);
 extern void initCascadeShadow();
 extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
-extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
 extern unsigned int getShadowMap();
@@ -53,7 +52,8 @@ extern int getCascadeCount()
 static glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
 static unsigned int lightFBO=0;
 static unsigned int lightDepthMaps=0;
-unsigned int depthMapResolution = 4096;
+std::vector<unsigned int> DepthMaps;
+unsigned int depthMapResolution = 8192;
 static unsigned int matricesUBO = 0;
 static void setShadowLightDir(glm::vec3 _dir)
 {
@@ -63,6 +63,7 @@ std::vector<glm::mat4> lightMatricesCache;
 void initCascadeShadow()
 {
     setCascadeLevels(10000);
+    DepthMaps.resize(shadowCascadeLevels.size()+1);
     if(lightFBO==0)
     {
         CHECK_GL(glGenFramebuffers(1, &lightFBO));
@@ -81,7 +82,41 @@ void initCascadeShadow()
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightDepthMaps, 0);
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
+
+        // glGenTextures(1, &lightDepthMaps);
+        // glBindTexture(GL_TEXTURE_2D_ARRAY, lightDepthMaps);
+        // glTexImage3D(
+        //     GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution, int(shadowCascadeLevels.size()) + 1,
+        //     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+        // glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        // glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        // glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        // glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+        // constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        // glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
+
+        // glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
+        // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, lightDepthMaps, 0,0);
+        // glDrawBuffer(GL_NONE);
+        // glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        for(int i=0;i<DepthMaps.size();i++)
+        {
+            CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution, 
+            0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+        }
+
 
         
         int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -231,7 +266,7 @@ void printMat4(glm::mat4 &m)
     }
 }
 static glm::mat4 lightSpaceMatrix;
-void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view)
+void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i)
 {
   CHECK_GL(glDisable(GL_BLEND));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
@@ -252,17 +287,17 @@ void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, 
     // glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-    ////1 shadow map
-    //auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -1000.0f,1000.0f);
+    // //1 shadow map
+    // auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -1000.0f,1000.0f);
     
-    //auto lightView = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f)-lightdir, glm::vec3(0.0, 1.0, 0.0));
-    lightSpaceMatrix = lightMatrices[0];
+    // auto lightView = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f)-lightdir, glm::vec3(0.0, 1.0, 0.0));
+    lightSpaceMatrix = lightMatrices[i];
     lightMV = lightSpaceMatrix;
 
     
     glViewport(0, 0, depthMapResolution, depthMapResolution);
     glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightDepthMaps, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, DepthMaps[i], 0);
     
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
