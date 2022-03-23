@@ -1589,7 +1589,8 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 
     // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
     // and mix in diffuse retro-reflection based on roughness
-    float FL = SchlickFresnel(NdotL), FV = SchlickFresnel(NdotV);
+    float FL = clamp(SchlickFresnel(NdotL),0,1);
+    float FV = clamp(SchlickFresnel(NdotV),0,1);
     float Fd90 = 0.5 + 2 * LdotH*LdotH * roughness;
     float viewIndp = mix(1.0, Fd90, FL);
     float Fd = (floor(viewIndp/0.33)+0.165) * 0.33 * mix(1.0, Fd90, FV);
@@ -1599,7 +1600,8 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     // Fss90 used to "flatten" retroreflection based on roughness
     float Fss90 = LdotH*LdotH*roughness;
     float Fss = mix(1.0, Fss90, FL) * mix(1.0, Fss90, FV);
-    float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+    float NDLV = (NdotL + NdotV)>0?clamp((NdotL + NdotV),0.0001, 2.0):clamp((NdotL + NdotV), -2.0, -0.0001);
+    float ss = 1.25 * (Fss * (1 /NDLV  - .5) + .5);
 
     // specular
     float aspect = sqrt(1-anisotropic*.9);
@@ -1668,7 +1670,8 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
 
     // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
     // and mix in diffuse retro-reflection based on roughness
-    float FL = SchlickFresnel(NdotL), FV = SchlickFresnel(NdotV);
+    float FL = clamp(SchlickFresnel(NdotL),0,1);
+    float FV = clamp(SchlickFresnel(NdotV),0,1);
     float Fd90 = 0.5 + 2 * LdotH*LdotH * roughness;
     float Fd = mix(1.0, Fd90, FL) * mix(1.0, Fd90, FV);
 
@@ -1677,7 +1680,8 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
     // Fss90 used to "flatten" retroreflection based on roughness
     float Fss90 = LdotH*LdotH*roughness;
     float Fss = mix(1.0, Fss90, FL) * mix(1.0, Fss90, FV);
-    float ss = 1.25 * (Fss * (1 / (NdotL + NdotV) - .5) + .5);
+    float NDLV = (NdotL + NdotV)>0?clamp((NdotL + NdotV),0.0001, 2.0):clamp((NdotL + NdotV), -2.0, -0.0001);
+    float ss = 1.25 * (Fss * (1 /NDLV  - .5) + .5);
 
     // specular
     float aspect = sqrt(1-anisotropic*.9);

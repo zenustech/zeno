@@ -228,7 +228,7 @@ glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::
     float midY = 0.5*(maxY + minY);
     minX = midX - size; maxX = midX + size;
     minY = midY - size; maxY = maxY + size;
-    const glm::mat4 lightProjection = glm::ortho(minX*50, maxX*50, minY*50, maxY*50, maxZ, -minZ);
+    const glm::mat4 lightProjection = glm::ortho(minX*20, maxX*20, minY*20, maxY*20, maxZ, -minZ);
     //std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
     lightMV = lightProjection * lightView;
     return lightProjection * lightView;
