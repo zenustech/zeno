@@ -18,19 +18,25 @@ ZENO_API void prim_polys_to_tris(PrimitiveObject *prim) {
     prim->tris.reserve(prim->tris.size() + prim->polys.size());
 
     for (auto [start, len]: prim->polys) {
-        if (len < 3) continue;
-        prim->tris.emplace_back(
-                prim->loops[start],
-                prim->loops[start + 1],
-                prim->loops[start + 2]);
-        for (int i = 3; i < len; i++) {
+        if (len >= 3) {
             prim->tris.emplace_back(
                     prim->loops[start],
-                    prim->loops[start + i - 1],
-                    prim->loops[start + i]);
+                    prim->loops[start + 1],
+                    prim->loops[start + 2]);
+            for (int i = 3; i < len; i++) {
+                prim->tris.emplace_back(
+                        prim->loops[start],
+                        prim->loops[start + i - 1],
+                        prim->loops[start + i]);
+            }
+        /*} else if (len == 2) {
+            prim->lines.emplace_back(
+                    prim->loops[start],
+                    prim->loops[start + 1]);*/
         }
     }
     prim->loops.clear();
+    prim->polys.clear();
 }
 
 ZENO_API void prim_polys_to_tris_with_uv(PrimitiveObject *prim) {
@@ -43,31 +49,42 @@ ZENO_API void prim_polys_to_tris_with_uv(PrimitiveObject *prim) {
     auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
     auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
 
+    /*auto &line_uv0 = prim->lines.add_attr<vec3f>("uv0");
+    auto &line_uv1 = prim->lines.add_attr<vec3f>("uv1");*/
+
     prim->tris.reserve(prim->tris.size() + prim->polys.size());
     uv0.reserve(uv0.size() + prim->polys.size());
     uv1.reserve(uv1.size() + prim->polys.size());
     uv2.reserve(uv2.size() + prim->polys.size());
 
     for (auto [start, len]: prim->polys) {
-        if (len < 3) continue;
-        uv0.push_back(loop_uv[start]);
-        uv1.push_back(loop_uv[start + 1]);
-        uv2.push_back(loop_uv[start + 2]);
-        prim->tris.emplace_back(
-                prim->loops[start],
-                prim->loops[start + 1],
-                prim->loops[start + 2]);
-        for (int i = 3; i < len; i++) {
+        if (len >= 3) {
             uv0.push_back(loop_uv[start]);
-            uv1.push_back(loop_uv[start + i - 1]);
-            uv2.push_back(loop_uv[start + i]);
+            uv1.push_back(loop_uv[start + 1]);
+            uv2.push_back(loop_uv[start + 2]);
             prim->tris.emplace_back(
                     prim->loops[start],
-                    prim->loops[start + i - 1],
-                    prim->loops[start + i]);
+                    prim->loops[start + 1],
+                    prim->loops[start + 2]);
+            for (int i = 3; i < len; i++) {
+                uv0.push_back(loop_uv[start]);
+                uv1.push_back(loop_uv[start + i - 1]);
+                uv2.push_back(loop_uv[start + i]);
+                prim->tris.emplace_back(
+                        prim->loops[start],
+                        prim->loops[start + i - 1],
+                        prim->loops[start + i]);
+            }
+        /*} else if (len == 2) {
+            line_uv0.push_back(loop_uv[start]);
+            line_uv1.push_back(loop_uv[start + 1]);
+            prim->lines.emplace_back(
+                    prim->loops[start],
+                    prim->loops[start + 1]);*/
         }
     }
     prim->loops.clear();
+    prim->polys.clear();
 }
 
 namespace {

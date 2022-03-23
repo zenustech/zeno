@@ -26,9 +26,12 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("new_frame_offline", zenvis::new_frame_offline);
     m.def("set_background_color", zenvis::set_background_color);
     m.def("get_background_color", zenvis::get_background_color);
+    m.def("set_num_samples", zenvis::set_num_samples);
     m.def("set_smooth_shading", zenvis::set_smooth_shading);
+    m.def("set_normal_check", zenvis::set_normal_check);
     m.def("set_render_wireframe", zenvis::set_render_wireframe);
     m.def("setup_env_map", zenvis::setup_env_map);
+    m.def("setLight", zenvis::setLight);
 }
 
 

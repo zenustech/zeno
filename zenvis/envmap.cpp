@@ -16,6 +16,7 @@
 namespace zenvis {
 /* begin zhxx happy */
 static GLuint envTexture = (GLuint)-1;
+extern void preIntegrate(GLuint inEnvMap);
 static std::unordered_map<std::string, GLuint> envTextureCache;
 static unsigned int loadCubemap(std::vector<std::string> faces)
 {
@@ -48,25 +49,31 @@ static unsigned int loadCubemap(std::vector<std::string> faces)
 
     return textureID;
 }  
-void setup_env_map(std::string name)
+void ensureGlobalMapExist() {
+    if (envTexture == (GLuint)-1)
+        setup_env_map("Default");
+}
+unsigned int setup_env_map(std::string name)
 {
   if (envTextureCache.count(name)) {
     envTexture = envTextureCache.at(name);
+  } else {
+    std::vector<std::string> faces
+    {
+      fmt::format("assets/sky_box/{}/right.jpg", name),
+      fmt::format("assets/sky_box/{}/left.jpg", name),
+      fmt::format("assets/sky_box/{}/top.jpg", name),
+      fmt::format("assets/sky_box/{}/bottom.jpg", name),
+      fmt::format("assets/sky_box/{}/front.jpg", name),
+      fmt::format("assets/sky_box/{}/back.jpg", name)
+    };
+    envTexture = loadCubemap(faces);
+    envTextureCache[name] = envTexture;
   }
-  std::vector<std::string> faces
-  {
-    fmt::format("assets/sky_box/{}/right.jpg", name),
-    fmt::format("assets/sky_box/{}/left.jpg", name),
-    fmt::format("assets/sky_box/{}/top.jpg", name),
-    fmt::format("assets/sky_box/{}/bottom.jpg", name),
-    fmt::format("assets/sky_box/{}/front.jpg", name),
-    fmt::format("assets/sky_box/{}/back.jpg", name)
-  };
-  envTexture = loadCubemap(faces);
-  envTextureCache[name] = envTexture;
+  preIntegrate(envTexture);
+  return envTexture;
 }
 unsigned int getGlobalEnvMap() {
     return envTexture;
 }
-/* end zhxx happy */
 }

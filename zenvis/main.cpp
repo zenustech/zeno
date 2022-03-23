@@ -1,4 +1,5 @@
 #include "MyShader.hpp"
+#include "glad/glad.h"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -13,10 +14,23 @@
 
 namespace zenvis {
 
+extern void setCascadeLevels(float far);
+extern void initCascadeShadow();
+extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
+extern void setShadowMV(Program* shader);
+extern void EndShadowMap();
+extern unsigned int getShadowMap();
+extern int getCascadeCount();
+extern void setfov(float f);
+extern void setaspect(float f);
+
 int curr_frameid = -1;
 
+static int num_samples = 16;
 static bool show_grid = true;
 static bool smooth_shading = false;
+static bool normal_check = false;
 bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
@@ -40,11 +54,13 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-
+float g_near, g_far;
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  setfov(fov);
+  setaspect(nx*1.0/ny);
   center = glm::vec3(cx, cy, cz);
 
   point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
@@ -61,6 +77,8 @@ void look_perspective(
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
+    g_near = 0.05;
+    g_far = 20000.0 * std::max(1.0f, (float)radius / 10000.f);
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
@@ -89,6 +107,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
   pro->set_uniform("mSmoothShading", smooth_shading);
+  pro->set_uniform("mNormalCheck", normal_check);
   pro->set_uniform("mCameraRadius", camera_radius);
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
@@ -98,13 +117,22 @@ void set_program_uniforms(Program *pro) {
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-
+static glm::vec3 light;
+extern glm::vec3 getLight()
+{
+  return light;
+}
+void setLight(float x, float y, float z)
+{
+  light = glm::vec3(x,y,z);
+}
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-
 void initialize() {
   gladLoadGL();
-  setup_env_map("Default");
+  
+  setLight(1,1,0);
+  initCascadeShadow();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -121,6 +149,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  //setup_env_map("Default");
 }
 
 static void draw_small_axis() {
@@ -137,10 +166,44 @@ static void draw_small_axis() {
   proj = backup_proj;
 }
 
+extern float getCamFar()
+{
+  return g_far;
+}
+static void shadowPass()
+{
+  for(int i=0;i<getCascadeCount()+1;i++){
+    BeginShadowMap(g_near, g_far, getLight(), proj, view,i);
+    vao->bind();
+    for (auto const &[key, gra]: current_frame_data()->graphics) {
+      gra->drawShadow();
+    }
+    vao->unbind();
+    EndShadowMap();
+  }
+}
+
+static void my_paint_graphics() {
+  
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  vao->bind();
+  for (auto const &[key, gra]: current_frame_data()->graphics) {
+    gra->draw();
+  }
+  if (show_grid) {
+      axis->draw();
+      grid->draw();
+      draw_small_axis();
+  }
+  vao->unbind();
+}
 
 
-
-
+static bool enable_hdr = true;
+/* BEGIN ZHXX HAPPY */
+namespace {
 auto qvert = R"(
 #version 330 core
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
@@ -150,10 +213,8 @@ void main()
 }
 )";
 auto qfrag = R"(#version 330 core
-//#extension GL_EXT_gpu_shader4 : enable
+// #extension GL_EXT_gpu_shader4 : enable
 // hdr_adaptive.fs
-//
-//
 
 const mat3x3 ACESInputMat = mat3x3
 (
@@ -195,7 +256,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 
-uniform samplerRect hdr_image;
+uniform sampler2DRect hdr_image;
 out vec4 oColor;
 void main(void)
 {
@@ -251,11 +312,21 @@ void ScreenFillQuad(GLuint tex)
   glUseProgram(0);
 }
 static void paint_graphics(GLuint target_fbo = 0) {
-  if(tmProg==nullptr)
+  shadowPass();
+  if(enable_hdr && tmProg==nullptr)
   {
-    std::cout<<"compiling glprog"<<std::endl;
+    std::cout<<"compiling zhxx hdr program"<<std::endl;
     tmProg = compile_program(qvert, qfrag);
+    if (!tmProg) {
+    std::cout<<"failed to compile zhxx hdr program, giving up"<<std::endl;
+        enable_hdr = false;
+    }
   }
+    if (!enable_hdr) {
+        
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+        return my_paint_graphics();
+    }
   
   if(msfborgb==0||oldnx!=nx||oldny!=ny)
   {
@@ -265,7 +336,13 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny));
+    /* begin cihou mesa */
+    int max_num_samples = num_samples;
+    CHECK_GL(glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &max_num_samples));
+    num_samples = std::min(num_samples, max_num_samples);
+    printf("num samples: %d\n", num_samples);
+    /* end cihou mesa */
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -274,7 +351,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
 
     
     if(tonemapfbo!=0)
@@ -324,19 +401,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
   CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
 
-  CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->draw();
-  }
-  if (show_grid) {
-      axis->draw();
-      grid->draw();
-      draw_small_axis();
-  }
-  vao->unbind();
+  my_paint_graphics();
   CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
   glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -348,8 +413,10 @@ static void paint_graphics(GLuint target_fbo = 0) {
   //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
+}
+/* END ZHXX HAPPY */
 
-double get_time() {
+static double get_time() {
   static auto start = std::chrono::system_clock::now();
   auto now = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = now - start;
@@ -402,7 +469,7 @@ std::vector<char> record_frame_offline() {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -461,9 +528,15 @@ std::tuple<float, float, float> get_background_color() {
 void set_smooth_shading(bool smooth) {
     smooth_shading = smooth;
 }
+void set_normal_check(bool check) {
+    normal_check = check;
+}
 
 void set_render_wireframe(bool render_wireframe_) {
     render_wireframe = render_wireframe_;
 }
 
+void set_num_samples(int num_samples_) {
+    num_samples = num_samples_;
+}
 }

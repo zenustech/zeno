@@ -44,6 +44,12 @@ namespace hg::OpenGL {
         case 3:
           format = GL_RGB;
           break;
+        case 2:
+          format = GL_RG;
+          break;
+        case 1:
+          format = GL_RED;
+          break;
         default:
           printf("%d\n", nc);
           assert(0);

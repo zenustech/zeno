@@ -1,9 +1,3 @@
 [submodule "projects/gmpm/zecomp"]
 	path = projects/gmpm/zecomp
 	url = https://github.com/zensim-dev/zpc.git
-[submodule "projects/cgmesh/libigl"]
-	path = projects/cgmesh/libigl
-	url = https://github.com/zenustech/libigl.git
-[submodule "projects/FEM/OpenSim"]
-	path = projects/FEM/OpenSim
-	url = https://github.com/zenustech/opensim-core.git

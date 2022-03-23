@@ -46,7 +46,7 @@ void read_obj_file(
         std::vector<zeno::vec3f> &uvs,
         std::vector<zeno::vec3f> &normals,
         std::vector<zeno::vec3i> &indices,
-        std::vector<zeno::vec3i> &uv_indices,
+        //std::vector<zeno::vec3i> &uv_indices,
         //std::vector<zeno::vec3i> &normal_indices,
         const char *path)
 {
@@ -79,10 +79,10 @@ void read_obj_file(
             for (auto i = 2; i < items.size(); i++) {
                 zeno::vec3i index = read_index(items[i]);
                 zeno::vec3i face(first_index[0], last_index[0], index[0]);
-                zeno::vec3i face_uv(first_index[1], last_index[1], index[1]);
+                //zeno::vec3i face_uv(first_index[1], last_index[1], index[1]);
                 //zeno::vec3i face_normal(first_index[2], last_index[2], index[2]);
                 indices.push_back(face);
-                uv_indices.push_back(face_uv);
+                //uv_indices.push_back(face_uv);
                 //normal_indices.push_back(face_normal);
                 last_index = index;
             }
@@ -101,25 +101,7 @@ struct ReadObjPrimitive : zeno::INode {
         auto &tris = prim->tris;
         //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
-        std::vector<zeno::vec3i> triuv;
-        read_obj_file(pos, uv, norm, tris, triuv, /*trinorm,*/ path.c_str());
-        if (!triuv.empty())
-        {
-            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-            auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
-            const auto triuvSize = triuv.size();
-            uv0.reserve(triuvSize);
-            uv1.reserve(triuvSize);
-            uv2.reserve(triuvSize);
-            for (size_t i = 0; i < triuvSize; ++i)
-            {
-                const auto &index = triuv[i];
-                uv0[i] = index[0] != -1 ? uv[index[0]] : vec3f{0.0f, 0.0f, 0.0f}; 
-                uv1[i] = index[1] != -1 ? uv[index[1]] : vec3f{0.0f, 0.0f, 0.0f}; 
-                uv2[i] = index[2] != -1 ? uv[index[2]] : vec3f{0.0f, 0.0f, 0.0f}; 
-            }
-        }
+        read_obj_file(pos, uv, norm, tris, /*triuv, trinorm,*/ path.c_str());
         prim->resize(pos.size());
         set_output("prim", std::move(prim));
     }

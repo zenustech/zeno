@@ -1,7 +1,12 @@
 #pragma once
 
-namespace zenvis {
+#include <string>
+#include <array>
+#include <vector>
+#include <tuple>
 
+namespace zenvis {
+void setLight(float x, float y, float z);
 void initialize();
 void finalize();
 void new_frame();
@@ -26,8 +31,10 @@ void do_screenshot(std::string path);
 void new_frame_offline(std::string path);
 void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();
+void set_num_samples(int num_samples);
 void set_smooth_shading(bool smooth);
+void set_normal_check(bool check);
 void set_render_wireframe(bool render_wireframe);
-void setup_env_map(std::string name);
+unsigned int setup_env_map(std::string name);
 
 }
