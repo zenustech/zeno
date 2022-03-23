@@ -15,6 +15,16 @@
 #include <spdlog/spdlog.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
+
+#ifdef _WIN32
+    #ifdef near
+        #undef near
+    #endif
+    #ifdef far
+        #undef far
+    #endif
+#endif
+
 namespace zenvis{
 static glm::mat4 lightMV;
 extern void setCascadeLevels(float far);
