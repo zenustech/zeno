@@ -13,6 +13,17 @@
 #include <iostream>
 #include <fstream>
 
+template<>
+struct std::hash<zeno::vec3f>
+{
+    std::size_t operator()(zeno::vec3f const& s) const noexcept
+    {
+        std::size_t h0 = std::hash<float>{}(s[0]);
+        std::size_t h1 = std::hash<float>{}(s[1]);
+        std::size_t h2 = std::hash<float>{}(s[2]);
+        return h0 ^ (h1 << 1) ^ (h2 << 2);
+    }
+};
 
 namespace zeno {
 
@@ -130,7 +141,22 @@ ZENDEFNODE(ImportObjPrimitive,
         "primitive",
         }});
 
+bool operator==(const zeno::vec3f& lhs, const zeno::vec3f& rhs) {
+    return lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2];
+}
 
+std::tuple<std::unordered_map<zeno::vec3f, int>, std::vector<zeno::vec3f>>
+compact(std::vector<zeno::vec3f> values) {
+    std::unordered_map<zeno::vec3f, int> mapping;
+    std::vector<zeno::vec3f> buffer;
+    for (const auto& v: values) {
+        if (mapping.count(v) == 0) {
+            mapping[v] = mapping.size();
+            buffer.push_back(v);
+        }
+    }
+    return {std::move(mapping), std::move(buffer)};
+}
 
 static void writeobj(
         std::shared_ptr<zeno::PrimitiveObject> &prim,
@@ -149,42 +175,26 @@ static void writeobj(
         auto &uv1 = prim->tris.attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.attr<zeno::vec3f>("uv2");
 
-        std::map<std::array<float, 3>, int> uvs;
-        std::vector<zeno::vec3f> uv_buffer;
-        for (auto i = 0; i < prim->verts.size(); i++) {
-            auto uv0_i = std::array<float, 3>{uv0[i][0], uv0[i][1], uv0[i][2]};
-            auto uv1_i = std::array<float, 3>{uv1[i][0], uv1[i][1], uv1[i][2]};
-            auto uv2_i = std::array<float, 3>{uv2[i][0], uv2[i][1], uv2[i][2]};
-            if (uvs.count(uv0[i]) == 0) {
-                uvs[uv0_i] = uvs.size();
-                uv_buffer.push_back(uv0[i]);
-            }
-            if (uvs.count(uv1[i]) == 0) {
-                uvs[uv1_i] = uvs.size();
-                uv_buffer.push_back(uv1[i]);
-            }
-            if (uvs.count(uv2[i]) == 0) {
-                uvs[uv2_i] = uvs.size();
-                uv_buffer.push_back(uv2[i]);
-            }
+        std::vector<zeno::vec3f> values;
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            values.push_back(uv0[i]);
+            values.push_back(uv1[i]);
+            values.push_back(uv2[i]);
         }
-        for (auto const& uv : uv_buffer) {
+        auto [mapping, buffer] = compact(std::move(values));
+        for (auto const& uv : buffer) {
             fprintf(fp, "vt %f %f %f\n", uv[0], uv[1], uv[2]);
         }
 
-        for (auto i = 0; i < prim->verts.size(); i++) {
+        for (auto i = 0; i < prim->tris.size(); i++) {
             auto const &ind = prim->tris[i];
-            auto uv0_i = std::array<float, 3>{uv0[i][0], uv0[i][1], uv0[i][2]};
-            auto uv1_i = std::array<float, 3>{uv1[i][0], uv1[i][1], uv1[i][2]};
-            auto uv2_i = std::array<float, 3>{uv2[i][0], uv2[i][1], uv2[i][2]};
             fprintf(fp,
                 "f %d/%d %d/%d %d/%d\n",
-                ind[0] + 1, uvs[uv0_i] + 1,
-                ind[1] + 1, uvs[uv1_i] + 1,
-                ind[2] + 1, uvs[uv2_i] + 1
+                ind[0] + 1, mapping[uv0[i]] + 1,
+                ind[1] + 1, mapping[uv1[i]] + 1,
+                ind[2] + 1, mapping[uv2[i]] + 1
                 );
         }
-
     } else {
         for (auto const &ind: prim->tris) {
             fprintf(fp, "f %d %d %d\n", ind[0] + 1, ind[1] + 1, ind[2] + 1);
