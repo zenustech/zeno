@@ -21,7 +21,7 @@ extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::
 extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
-extern unsigned int getShadowMap();
+extern unsigned int getShadowMap(int i);
 extern float getCamFar();
 extern std::vector<float> getCascadeDistances();
 extern glm::mat4 getLightMV();
@@ -558,10 +558,13 @@ struct GraphicPrimitive : IGraphic {
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
 
-            triObj.prog->set_uniformi("shadowMap", texsSize+4);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4));
-            if (auto shadowMap = getShadowMap(); shadowMap != (unsigned int)-1)
-                CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+            for(size_t i=0; i<getCascadeDistances().size()+1; i++){
+                auto name = "shadowMap" + std::to_string(i);
+                triObj.prog->set_uniformi(name.c_str(), texsSize+4+i);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4+i));
+                if (auto shadowMap = getShadowMap(i); shadowMap != (unsigned int)-1)
+                    CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+            }
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());
@@ -1767,7 +1770,15 @@ float brightness(vec3 c)
     return sqrt(c.x * c.r * 0.241 + c.y * c.y * 0.691 + c.z * c.z * 0.068);
 }
 uniform vec3 light0;
-uniform sampler2D shadowMap;
+uniform sampler2D shadowMap0;
+uniform sampler2D shadowMap1;
+uniform sampler2D shadowMap2;
+uniform sampler2D shadowMap3;
+uniform sampler2D shadowMap4;
+uniform sampler2D shadowMap5;
+uniform sampler2D shadowMap6;
+uniform sampler2D shadowMap7;
+uniform sampler2D shadowMap8;
 uniform float farPlane;
 uniform mat4 lview;
 
@@ -1787,28 +1798,73 @@ vec3 random3(vec3 c) {
 	r.y = fract(512.0*j);
 	return r-0.5;
 }
+float sampleShadowArray(vec2 coord, int layer)
+{
+    vec4 res;
+    if(layer==0)
+    {
+        res = texture(shadowMap0, coord);
+    }
+    if(layer==1)
+        res = texture(shadowMap1, coord);
+    if(layer==2)
+        res = texture(shadowMap2, coord);
+    if(layer==3)
+        res = texture(shadowMap3, coord);
+    if(layer==4)
+        res = texture(shadowMap4, coord);
+    if(layer==5)
+        res = texture(shadowMap5, coord);
+    if(layer==6)
+        res = texture(shadowMap6, coord);
+    if(layer==7)
+        res = texture(shadowMap7, coord);
 
+    return res.r;    
+}
+float PCFLayer(float currentDepth, float bias, vec3 pos, int layer, int k, vec2 coord)
+{
+    float shadow = 0.0;
+    
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap0, 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(pos+vec3(x, y,0)*0.01);
+            float pcfDepth = sampleShadowArray(coord + (vec2(x, y) + noise.xy) * texelSize, layer); 
+            shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    float size = 2.0*float(k)+1.0;
+    return shadow /= (size*size);
+}
 float ShadowCalculation(vec3 fragPosWorldSpace)
 {
     // select cascade layer
-    // vec4 fragPosViewSpace = lview * vec4(fragPosWorldSpace, 1.0);
-    // float depthValue = abs(fragPosViewSpace.z);
+    vec4 fragPosViewSpace = mView * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
 
-    // int layer = -1;
-    // for (int i = 0; i < cascadeCount; ++i)
-    // {
-    //     if (depthValue < cascadePlaneDistances[i])
-    //     {
-    //         layer = i;
-    //         break;
-    //     }
-    // }
-    // if (layer == -1)
-    // {
-    //     layer = cascadeCount;
-    // }
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrices[i] * vec4(fragPosWorldSpace, 1.0);
+        // perform perspective divide
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        // transform to [0,1] range
+        projCoords = projCoords * 0.5 + 0.5;
+        if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+    {
+        layer = cascadeCount;
+    }
 
-    vec4 fragPosLightSpace = lview * vec4(fragPosWorldSpace, 1.0);
+    vec4 fragPosLightSpace = lightSpaceMatrices[layer] * vec4(fragPosWorldSpace, 1.0);
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -1824,33 +1880,33 @@ float ShadowCalculation(vec3 fragPosWorldSpace)
     }
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(iNormal);
-    float bias = max(0.001 * (1.0 - dot(normal, light0)), 0.0001);
+    float bias = max(0.0001 * (1.0 - dot(normal, light0)), 0.00001);
+    // float bm = bias;
     // const float biasModifier = 0.5f;
     // if (layer == cascadeCount)
     // {
-    //     bias *= 1 / (farPlane * biasModifier);
+    //     bm *= 1 / (farPlane * biasModifier);
     // }
     // else
     // {
-    //     bias *= 1 / (cascadePlaneDistances[layer] * biasModifier);
+    //     bm *= 1 / (cascadePlaneDistances[layer] * biasModifier);
     // }
 
     // PCF
-    float shadow = 0.0;
-    vec3 noise = random3(fragPosWorldSpace);
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
-    for(int x = -5; x <= 5; ++x)
-    {
-        for(int y = -5; y <= 5; ++y)
-        {
-            float pcfDepth = texture(shadowMap, projCoords.xy + (vec2(x, y) + noise.xy) * texelSize).r; 
-            shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;        
-        }    
+    float shadow1 = PCFLayer(currentDepth, bias, fragPosWorldSpace, layer, 3, projCoords.xy);
+    float shadow2 = shadow1;
+    float coef = 0.0;
+    if(layer>=1){
+        //bm = 1 / (cascadePlaneDistances[layer-1] * biasModifier);
+        fragPosLightSpace = lightSpaceMatrices[layer-1] * vec4(fragPosWorldSpace, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords * 0.5 + 0.5;
+        shadow2 = PCFLayer(currentDepth, bias, fragPosWorldSpace, layer-1, 3, projCoords.xy);
+        float coef = (depthValue - cascadePlaneDistances[layer-1])/(cascadePlaneDistances[layer] - cascadePlaneDistances[layer-1]);
     }
-    shadow /= 121.0;
     
         
-    return shadow;
+    return mix(shadow1, shadow2, coef);
 }
 
 

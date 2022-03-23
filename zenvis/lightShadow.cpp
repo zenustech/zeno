@@ -23,7 +23,7 @@ extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::
 extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
 extern void setShadowMV(Program* shader);
 extern void EndShadowMap();
-extern unsigned int getShadowMap();
+extern unsigned int getShadowMap(int i);
 
 extern glm::mat4 getLightMV()
 {
@@ -38,9 +38,9 @@ void setCascadeLevels(float far)
 {
     shadowCascadeLevels.resize(0);
     shadowCascadeLevels.push_back(far/8192.0);
-    shadowCascadeLevels.push_back(far/2048.0);
-    shadowCascadeLevels.push_back(far/512.0);
-    shadowCascadeLevels.push_back(far/128.0);
+    shadowCascadeLevels.push_back(far/4096.0);
+    shadowCascadeLevels.push_back(far/1024.0);
+    shadowCascadeLevels.push_back(far/256.0);
     shadowCascadeLevels.push_back(far/32.0);
     shadowCascadeLevels.push_back(far/8.0);
     shadowCascadeLevels.push_back(far/2.0);
@@ -128,14 +128,14 @@ void initCascadeShadow()
 
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     }
-    // if(matricesUBO==0)
-    // {
-    //     CHECK_GL(glGenBuffers(1, &matricesUBO));
-    //     CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO));
-    //     CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW));
-    //     CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO));
-    //     CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
-    // }
+    if(matricesUBO==0)
+    {
+        CHECK_GL(glGenBuffers(1, &matricesUBO));
+        CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO));
+        CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW));
+        CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO));
+        CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+    }
 }
 std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& projview)
 {
@@ -205,7 +205,7 @@ glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::
     }
 
     // Tune this parameter according to the scene
-    float zMult = 5.0f;
+    float zMult = 10.0f;
     if (minZ < 0)
     {
         minZ *= zMult;
@@ -228,7 +228,7 @@ glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::
     float midY = 0.5*(maxY + minY);
     minX = midX - size; maxX = midX + size;
     minY = midY - size; maxY = maxY + size;
-    const glm::mat4 lightProjection = glm::ortho(minX*10, maxX*10, minY*10, maxY*10, maxZ, -minZ);
+    const glm::mat4 lightProjection = glm::ortho(minX*50, maxX*50, minY*50, maxY*50, maxZ, -minZ);
     //std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
     lightMV = lightProjection * lightView;
     return lightProjection * lightView;
@@ -245,11 +245,11 @@ std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &p
         }
         else if (i < shadowCascadeLevels.size())
         {
-            ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i - 1], shadowCascadeLevels[i], proj, view));
+            ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i-1], shadowCascadeLevels[i], proj, view));
         }
         else
         {
-            ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i - 1], far, proj, view));
+            ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i-1], far, proj, view));
         }
     }
     return ret;
@@ -279,12 +279,12 @@ void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, 
 
     // 0. UBO setup
     const auto lightMatrices = getLightSpaceMatrices(near, far, proj, view);
-    // glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
-    // for (size_t i = 0; i < lightMatrices.size(); ++i)
-    // {
-    //     glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
-    // }
-    // glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    for (size_t i = 0; i < lightMatrices.size(); ++i)
+    {
+        glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
     // //1 shadow map
@@ -328,9 +328,9 @@ void EndShadowMap()
   //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
   CHECK_GL(glEnable(GL_MULTISAMPLE));
 }
-unsigned int getShadowMap()
+unsigned int getShadowMap(int i)
 {
-    return lightDepthMaps;
+    return DepthMaps[i];
 }
 
 }
