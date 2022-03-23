@@ -81,19 +81,53 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     if (auto uv = mesh.getUVsParam()) {
-        if (!read_done) {
-            log_info("[alembic] totally uv is isIndexed: {}", uv.isIndexed());
-            log_info("[alembic] totally uv is isConstant: {}", uv.isConstant());
-        }
         auto uvsamp = uv.getIndexedValue();
+        int value_size = (int) uvsamp.getVals()->size();
         int index_size = (int) uvsamp.getIndices()->size();
+        if (!read_done) {
+            log_info("[alembic] totally {} uv value", value_size);
+            log_info("[alembic] totally {} uv indices", index_size);
+            if (prim->loops.size() == index_size) {
+                log_error("[alembic] uv per face");
+            } else if (prim->verts.size() == index_size) {
+                log_error("[alembic] uv per vertex");
+            } else {
+                log_error("[alembic] error uv indices");
+            }
+        }
         if (prim->loops.size() == index_size) {
-            log_info("[alembic] totally {} uv indices, per face uv", index_size);
+            {
+                auto &uv_value = prim->loops.add_attr<zeno::vec3f>("uv_value");
+                auto marr = uvsamp.getVals();
+                for (size_t i = 0; i < marr->size(); i++) {
+                    auto const &val = (*marr)[i];
+                    uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
+                }
+            }
+            {
+                auto &uv_loops = prim->loops.add_attr<int>("uv_loops");
+                auto marr = uvsamp.getIndices();
+                for (size_t i = 0; i < marr->size(); i++) {
+                    int idx = (*marr)[i];
+                    uv_loops.push_back(idx);
+                }
+            }
         } else if (prim->verts.size() == index_size) {
-            log_info("[alembic] totally {} uv indices, per vertex uv", index_size);
-            log_error("[alembic] TODO vertex uv");
-        } else {
-            log_error("[alembic] error uv indices");
+            {
+                auto &uv_value = prim->loops.add_attr<zeno::vec3f>("uv_value");
+                auto marr = uvsamp.getVals();
+                for (size_t i = 0; i < marr->size(); i++) {
+                    auto const &val = (*marr)[i];
+                    uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
+                }
+            }
+            {
+                auto &uv_loops = prim->loops.add_attr<int>("uv_loops");
+                for (size_t i = 0; i < prim->loops.size(); i++) {
+                    int idx = prim->loops[i];
+                    uv_loops.push_back(idx);
+                }
+            }
         }
     } else {
         if (!read_done) {
