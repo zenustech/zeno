@@ -251,8 +251,8 @@ class QDMRecordMenu(QMenu):
         self.addAction(action)
 
 class SetLightDialog(QDialog):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent)
 
         self.setWindowTitle('Set Light')
         self.initUI()
@@ -324,7 +324,7 @@ class DisplayWidget(QWidget):
         self.camera_keyframe_widget = CameraKeyframeWidget(self)
         zenvis.camera_keyframe = self.camera_keyframe_widget
 
-        self.set_light_dialog = SetLightDialog()
+        self.set_light_dialog = SetLightDialog(self)
 
     def on_update(self):
         self.view.on_update()
@@ -358,7 +358,7 @@ class DisplayWidget(QWidget):
                 )
 
         elif name == 'Set Light':
-            self.set_light_dialog.open()
+            self.set_light_dialog.show()
 
         elif name == 'Record Video':
             checked = act.isChecked()
