@@ -4,6 +4,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
@@ -80,6 +81,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
+    prim_triangulate(prim.get());
+
     if (auto uv = mesh.getUVsParam()) {
         auto uvsamp = uv.getIndexedValue();
         int value_size = (int) uvsamp.getVals()->size();
@@ -88,45 +91,47 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             log_info("[alembic] totally {} uv value", value_size);
             log_info("[alembic] totally {} uv indices", index_size);
             if (prim->loops.size() == index_size) {
-                log_error("[alembic] uv per face");
+                log_info("[alembic] uv per face");
             } else if (prim->verts.size() == index_size) {
-                log_error("[alembic] uv per vertex");
+                log_info("[alembic] uv per vertex");
             } else {
                 log_error("[alembic] error uv indices");
             }
         }
-        if (prim->loops.size() == index_size) {
-            {
-                auto &uv_value = prim->loops.add_attr<zeno::vec3f>("uv_value");
-                auto marr = uvsamp.getVals();
-                for (size_t i = 0; i < marr->size(); i++) {
-                    auto const &val = (*marr)[i];
-                    uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
-                }
+        auto uv_value = std::vector<zeno::vec3f>();
+        {
+            auto marr = uvsamp.getVals();
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
             }
+        }
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        auto uv_loops = std::vector<int>();
+        std::vector<int> *uv_loops_ref;
+        if (prim->loops.size() == index_size) {
+            int start = 0;
             {
-                auto &uv_loops = prim->loops.add_attr<int>("uv_loops");
                 auto marr = uvsamp.getIndices();
                 for (size_t i = 0; i < marr->size(); i++) {
                     int idx = (*marr)[i];
                     uv_loops.push_back(idx);
                 }
             }
+            uv_loops_ref = &uv_loops;
         } else if (prim->verts.size() == index_size) {
-            {
-                auto &uv_value = prim->loops.add_attr<zeno::vec3f>("uv_value");
-                auto marr = uvsamp.getVals();
-                for (size_t i = 0; i < marr->size(); i++) {
-                    auto const &val = (*marr)[i];
-                    uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
-                }
-            }
-            {
-                auto &uv_loops = prim->loops.add_attr<int>("uv_loops");
-                for (size_t i = 0; i < prim->loops.size(); i++) {
-                    int idx = prim->loops[i];
-                    uv_loops.push_back(idx);
-                }
+            uv_loops_ref = &(prim->loops.values);
+        }
+        int count = 0;
+        for (auto [start, len]: prim->polys) {
+            if (len < 3) continue;
+            for (int i = 2; i < len; i++) {
+                uv0[count] = uv_value[(*uv_loops_ref)[start]];
+                uv1[count] = uv_value[(*uv_loops_ref)[start + i - 1]];
+                uv2[count] = uv_value[(*uv_loops_ref)[start + i]];
+                count += 1;
             }
         }
     } else {

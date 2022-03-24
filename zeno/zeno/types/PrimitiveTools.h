@@ -22,25 +22,6 @@ static void prim_triangulate(PrimitiveObject *prim) {
                     prim->loops[start + i]);
         }
     }
-    if (prim->loops.has_attr("uv_value")) {
-        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
-
-        auto &uv_value = prim->loops.attr<zeno::vec3f>("uv_value");
-        auto &uv_loops = prim->loops.attr<int>("uv_loops");
-        for (auto [start, len]: prim->polys) {
-            if (len < 3) continue;
-            for (int i = 2; i < len; i++) {
-                int _0 = uv_loops[start];
-                int _1 = uv_loops[start + i - 1];
-                int _2 = uv_loops[start + i];
-                prim->tris.attr<zeno::vec3f>("uv0").push_back(zeno::vec3f(0.5,0.5, 0));
-                prim->tris.attr<zeno::vec3f>("uv1").push_back(zeno::vec3f(0.5,0.5, 0));
-                prim->tris.attr<zeno::vec3f>("uv2").push_back(zeno::vec3f(0.5,0.5, 0));
-            }
-        }
-    }
 }
 
 // makeXinxinVeryHappy
