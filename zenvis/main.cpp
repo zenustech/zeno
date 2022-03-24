@@ -24,6 +24,14 @@ extern unsigned int getShadowMap();
 extern int getCascadeCount();
 extern void setfov(float f);
 extern void setaspect(float f);
+extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp);
+extern void initReflectiveMaps();
+extern void BeginReflective(int i);
+extern void EndReflective();
+extern glm::mat4 getReflectViewMat(int i);
+
+
 
 int curr_frameid = -1;
 
@@ -55,6 +63,8 @@ void set_perspective(
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
 float g_near, g_far, g_fov;
+glm::mat4 g_view, g_proj;
+glm::vec3 g_camPos, g_camView, g_camUp;
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
@@ -74,12 +84,19 @@ void look_perspective(
     view = glm::lookAt(center - back, center, up);
     proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
                       -100.0, 100.0);
+    g_view = view;
+    g_proj = proj;
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.1, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
     g_fov = fov;
     g_near = 0.1;
     g_far = 20000.0 * std::max(1.0f, (float)radius / 10000.f);
+    g_view = view;
+    g_proj = proj;
+    g_camPos = center - back * (float)radius;
+    g_camView = back * (float)radius;
+    g_camUp = up;
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
@@ -136,6 +153,7 @@ void initialize() {
   setLight(1,1,0);
   setLightHight(1000);
   initCascadeShadow();
+  initReflectiveMaps();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -186,9 +204,9 @@ static void shadowPass()
   }
 }
 
-static void my_paint_graphics() {
-  
-  CHECK_GL(glViewport(0, 0, nx, ny));
+
+static void drawSceneDepthSafe()
+{
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
@@ -208,6 +226,21 @@ static void my_paint_graphics() {
     }
     vao->unbind();
   }
+}
+static void reflectivePass()
+{
+  //loop over reflective planes
+  setReflectivePlane(0, glm::vec3(-1,0,0),glm::vec3(10,0,0), g_camPos, g_camView, g_camUp);
+  BeginReflective(0);
+  view = getReflectViewMat(0);
+  drawSceneDepthSafe();
+  EndReflective();
+  view = g_view;
+}
+static void my_paint_graphics() {
+  
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  drawSceneDepthSafe();
 
 }
 

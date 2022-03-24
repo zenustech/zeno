@@ -1,5 +1,7 @@
 #include "MyShader.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/geometric.hpp"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -58,6 +60,104 @@ void setCascadeLevels(float far)
 extern int getCascadeCount()
 {
     return shadowCascadeLevels.size();
+}
+unsigned int reflectFBO = 0;
+unsigned int reflectRBO = 0;
+unsigned int reflectResolution = 2048;
+std::vector<glm::mat4> reflectViews;
+std::vector<unsigned int> reflectiveMaps;
+extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal)
+{
+    glm::vec3 v = glm::normalize(viewDir);
+    glm::vec3 R = v + 2.0f*glm::dot(v, planeNormal) * planeNormal;
+    glm::vec3 RC = camPos - planeNormal * 2.0f * glm::dot((planeCenter - camPos), planeNormal);
+    glm::vec3 Ru = up + 2.0f * glm::dot(up, planeNormal) * planeNormal;
+    return glm::lookAt(RC, RC+R, Ru);
+
+}
+
+struct ReflectivePlane{
+    glm::vec3 n;
+    glm::vec3 c;
+};
+extern glm::mat4 getReflectViewMat(int i)
+{
+    return reflectViews[i];
+}
+std::vector<ReflectivePlane> ReflectivePlanes;
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp)
+{
+    ReflectivePlane p;
+    p.n = n; p.c = c;
+    ReflectivePlanes[i] = p;
+    reflectViews[i] = reflectView(camPos, camView, camUp, p.c, p.n);
+}
+extern void initReflectiveMaps()
+{
+    reflectiveMaps.resize(16);
+    ReflectivePlanes.resize(16);
+    reflectViews.resize(16);
+    if(reflectFBO==0 && reflectRBO==0){
+        glGenFramebuffers(1, &reflectFBO);
+        glGenRenderbuffers(1, &reflectRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, reflectRBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        for(int i=0;i<reflectiveMaps.size();i++)
+        {
+            CHECK_GL(glGenTextures(1, &(reflectiveMaps[i])));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, reflectiveMaps[i]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution, 
+            0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+        }
+    }
+}
+extern void BeginReflective(int i)
+{
+    CHECK_GL(glDisable(GL_BLEND));
+    CHECK_GL(glDisable(GL_DEPTH_TEST));
+    CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));///????ZHXX???
+    CHECK_GL(glDisable(GL_MULTISAMPLE));
+    CHECK_GL(glEnable(GL_DEPTH_TEST));
+    CHECK_GL(glDepthFunc(GL_LESS));
+    
+
+    glBindTexture(GL_TEXTURE_2D, reflectiveMaps[i]);
+    glViewport(0, 0, reflectResolution, reflectResolution);
+    glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectiveMaps[i], 0);
+    
+
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+extern void EndReflective()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(0);
+    CHECK_GL(glEnable(GL_BLEND));
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    CHECK_GL(glEnable(GL_DEPTH_TEST));
+    CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+    //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
+    //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+    //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+    CHECK_GL(glEnable(GL_MULTISAMPLE));
+
 }
 static glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
 static unsigned int lightFBO=0;
@@ -191,6 +291,7 @@ extern float getLightHight()
 {
     return LightHight;
 }
+
 glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::mat4& proj, glm::mat4& view)
 {
     auto p = glm::perspective(glm::radians(gfov), gaspect, nearPlane, farPlane);

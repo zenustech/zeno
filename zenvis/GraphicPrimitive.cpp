@@ -533,40 +533,49 @@ struct GraphicPrimitive : IGraphic {
 
         if (prim_has_mtl) {
             const int &texsSize = textures.size();
+            int texOcp=0;
             for (int texId=0; texId < texsSize; ++ texId)
             {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.prog->set_uniformi(texName.c_str(), texId);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
                 CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                texOcp++;
             }
-            triObj.prog->set_uniformi("skybox",texsSize);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize));
+            triObj.prog->set_uniformi("skybox",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("irradianceMap",texsSize+1);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+1));
+            triObj.prog->set_uniformi("irradianceMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("prefilterMap",texsSize+2);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+2));
+            triObj.prog->set_uniformi("prefilterMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("brdfLUT",texsSize+3);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+3));
+            triObj.prog->set_uniformi("brdfLUT",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+            texOcp++;
 
             for(size_t i=0; i<getCascadeDistances().size()+1; i++){
                 auto name = "shadowMap[" + std::to_string(i) +"]";
-                triObj.prog->set_uniformi(name.c_str(), texsSize+4+i);
-                CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4+i));
+                triObj.prog->set_uniformi(name.c_str(), texOcp);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
                 if (auto shadowMap = getShadowMap(i); shadowMap != (unsigned int)-1)
                     CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+                texOcp++;
             }
+            
+
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());
