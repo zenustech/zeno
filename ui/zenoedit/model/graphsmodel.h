@@ -110,6 +110,8 @@ public:
     QGraphicsScene* scene(const QModelIndex& subgIdx) override;
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
+	void collaspe(const QModelIndex& subgIdx) override;
+	void expand(const QModelIndex& subgIdx) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);

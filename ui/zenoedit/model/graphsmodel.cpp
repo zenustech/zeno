@@ -1360,3 +1360,17 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
 
     return results;
 }
+
+void GraphsModel::collaspe(const QModelIndex& subgIdx)
+{
+	SubGraphModel* pModel = subGraph(subgIdx.row());
+	Q_ASSERT(pModel);
+    pModel->collaspe();
+}
+
+void GraphsModel::expand(const QModelIndex& subgIdx)
+{
+	SubGraphModel* pModel = subGraph(subgIdx.row());
+	Q_ASSERT(pModel);
+    pModel->expand();
+}

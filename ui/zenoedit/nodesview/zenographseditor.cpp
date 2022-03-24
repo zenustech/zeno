@@ -481,3 +481,22 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
         activateTab(subgName);
     }
 }
+
+void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
+{
+    const QString& text = pAction->text();
+    if (text == "Collaspe")
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        Q_ASSERT(pView);
+        QModelIndex subgIdx = pView->scene()->subGraphIndex();
+        m_model->collaspe(subgIdx);
+    }
+    else if (text == "Expand")
+	{
+		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+		Q_ASSERT(pView);
+		QModelIndex subgIdx = pView->scene()->subGraphIndex();
+		m_model->expand(subgIdx);
+    }
+}

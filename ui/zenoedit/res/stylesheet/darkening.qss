@@ -42,9 +42,9 @@ QPushButton#grayButton
 {
     border-width: 0px;
     border-radius: 0px;
-	background-color: rgb(56,56,56);
+	background-color: rgb(71,71,71);
 	font: 14px 'HarmonyOS Sans';
-	color: rgb(116, 116, 116);
+	color: rgb(168, 163, 160);
 }
 
 QPushButton#grayButton:hover

@@ -35,6 +35,9 @@ public:
 	~ZenoEditorDockTitleWidget();
 	void initModel();
 
+signals:
+	void actionTriggered(QAction* action);
+
 public slots:
 	void setTitle(const QString& title);
 	void onModelInited(IGraphsModel* pModel);
@@ -48,6 +51,7 @@ protected:
 
 private:
 	QMenuBar* initMenu();
+	QAction* createAction(const QString& text);
 
 	QString m_title;
 };

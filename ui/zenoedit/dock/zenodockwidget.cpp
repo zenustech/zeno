@@ -41,6 +41,9 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         pEditorTitle->initModel();
         setTitleBarWidget(pEditorTitle);
         pTitleWidget = pEditorTitle;
+        ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(widget);
+        Q_ASSERT(pEditor);
+        connect(pEditorTitle, SIGNAL(actionTriggered(QAction*)), pEditor, SLOT(onMenuActionTriggered(QAction*)));
 	}
 	else
 	{

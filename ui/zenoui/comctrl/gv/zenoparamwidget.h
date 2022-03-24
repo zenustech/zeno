@@ -160,6 +160,8 @@ signals:
     void editingFinished();
 
 private:
+    void initTextFormat();
+
     QString m_value;
     QTextEdit* m_pTextEdit;
 };

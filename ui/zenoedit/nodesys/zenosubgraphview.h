@@ -89,6 +89,7 @@ class ZenoSubGraphView : public QWidget
 public:
 	ZenoSubGraphView(QWidget* parent = nullptr);
 	void initScene(ZenoSubGraphScene* pScene);
+    ZenoSubGraphScene* scene();
 	void resetPath(const QString& path, const QString& subGraphName, const QString& objId);
 
 signals:

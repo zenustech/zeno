@@ -62,8 +62,6 @@ public:
 	virtual void onModelInited() {};
 	virtual void undo() = 0;
 	virtual void redo() = 0;
-
-	//GraphsModel legacy?
 	virtual void initDescriptors() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
 	virtual void newSubgraph(const QString& graphName) = 0;
@@ -80,6 +78,8 @@ public:
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 	virtual void markDirty() = 0;
 	virtual void clearDirty() = 0;
+	virtual void collaspe(const QModelIndex& subgIdx) = 0;
+	virtual void expand(const QModelIndex& subgIdx) = 0;
 
 signals:
 	void clearLayout2();

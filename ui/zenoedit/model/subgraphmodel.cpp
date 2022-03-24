@@ -70,6 +70,22 @@ void SubGraphModel::setInputSocket(const QString& inNode, const QString& inSock,
 	}
 }
 
+void SubGraphModel::collaspe()
+{
+	for (int i = 0; i < rowCount(); i++)
+	{
+		setData(index(i, 0), true, ROLE_COLLASPED);
+	}
+}
+
+void SubGraphModel::expand()
+{
+    for (int i = 0; i < rowCount(); i++)
+    {
+        setData(index(i, 0), false, ROLE_COLLASPED);
+    }
+}
+
 NODES_DATA SubGraphModel::nodes()
 {
     NODES_DATA datas;

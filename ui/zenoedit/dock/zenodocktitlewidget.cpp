@@ -131,26 +131,31 @@ void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 	pHLayout->addStretch();
 }
 
+QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
+{
+	QAction* pAction = new QAction(text);
+	connect(pAction, &QAction::triggered, this, [=]() {
+		emit actionTriggered(qobject_cast<QAction*>(sender()));
+		});
+	return pAction;
+}
+
 QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 {
 	QMenuBar* pMenuBar = new QMenuBar(this);
 
 	QMenu* pAdd = new QMenu(tr("Add"));
 	{
-		QAction* pAction = new QAction(tr("Add Subnet"), pAdd);
-		pAdd->addAction(pAction);
-
-		pAction = new QAction(tr("Add Node"), pAdd);
-		pAdd->addAction(pAction);
+		pAdd->addAction(createAction(tr("Add Subnet")));
+		pAdd->addAction(createAction(tr("Add Node")));
 	}
 
 	QMenu* pEdit = new QMenu(tr("Edit"));
 	{
-		QAction* pAction = new QAction(tr("Undo"), pEdit);
-		pEdit->addAction(pAction);
-
-		pAction = new QAction(tr("Redo"), pEdit);
-		pEdit->addAction(pAction);
+		pEdit->addAction(createAction(tr("Undo")));
+		pEdit->addAction(createAction(tr("Redo")));
+		pEdit->addAction(createAction(tr("Collaspe")));
+		pEdit->addAction(createAction(tr("Expand")));
 	}
 
 	QMenu* pGo = new QMenu(tr("Go"));

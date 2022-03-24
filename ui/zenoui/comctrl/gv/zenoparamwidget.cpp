@@ -200,14 +200,10 @@ ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePo
     , m_width(width)
 {
     QPushButton* pBtn = new QPushButton(name);
+    pBtn->setObjectName("grayButton");
     if (hor == QSizePolicy::Fixed)
         pBtn->setFixedWidth(width);
     pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
-    QPalette palette;
-    palette.setColor(QPalette::Base, QColor(50, 50, 50));
-    palette.setColor(QPalette::Window, QColor(50, 50, 50));
-    palette.setColor(QPalette::Text, Qt::white);
-    pBtn->setPalette(palette);
     setWidget(pBtn);
     connect(pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
 }
@@ -239,12 +235,17 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     , m_pTextEdit(nullptr)
 {
     m_pTextEdit = new QTextEdit;
-    m_pTextEdit->setText(value);
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
     m_pTextEdit->setFont(param.font);
+
+	QTextCharFormat format;
+    QFont font("HarmonyOS Sans", 12);
+	format.setFont(font);
+    m_pTextEdit->setCurrentFont(font);
+    m_pTextEdit->setText(value);
 
     QPalette pal = param.palette;
     pal.setColor(QPalette::Base, QColor(37, 37, 37));
@@ -268,6 +269,11 @@ bool ZenoParamMultilineStr::eventFilter(QObject* object, QEvent* event)
         emit editingFinished();
     }
     return ZenoParamWidget::eventFilter(object, event);
+}
+
+void ZenoParamMultilineStr::initTextFormat()
+{
+
 }
 
 

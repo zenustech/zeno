@@ -95,6 +95,8 @@ public:
     void reload();
     void onModelInited();
     void setInputSocket(const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue);
+    void collaspe();
+    void expand();
 
 public slots:
     void onDoubleClicked(const QString &nodename);

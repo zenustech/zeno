@@ -46,6 +46,7 @@ private slots:
 	void onModelReset();
 	void onSubGraphRename(const QString& oldName, const QString& newName);
     void onSearchEdited(const QString& content);
+    void onMenuActionTriggered(QAction* pAction);
 
 private:
     void initUI();
