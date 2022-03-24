@@ -192,7 +192,7 @@ static void my_paint_graphics() {
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
-  for(int i=6; i>=1; i--)
+  for(int i=5; i>=1; i--)
   {
     CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
