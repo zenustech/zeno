@@ -54,7 +54,7 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-float g_near, g_far;
+float g_near, g_far, g_fov;
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
@@ -76,8 +76,9 @@ void look_perspective(
                       -100.0, 100.0);
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
-    g_near = 0.05;
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.1, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
+    g_fov = fov;
+    g_near = 0.1;
     g_far = 20000.0 * std::max(1.0f, (float)radius / 10000.f);
   }
   camera_radius = radius;
@@ -131,7 +132,7 @@ std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
-  
+  glDepthRangef(0,30000);
   setLight(1,1,0);
   setLightHight(1000);
   initCascadeShadow();
@@ -190,16 +191,24 @@ static void my_paint_graphics() {
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->draw();
+  float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
+  for(int i=6; i>=1; i--)
+  {
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+    proj = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), range[i-1], range[i]);
+    vao->bind();
+    for (auto const &[key, gra]: current_frame_data()->graphics) {
+      gra->draw();
+    }
+    if (show_grid) {
+        axis->draw();
+        grid->draw();
+        draw_small_axis();
+    }
+    vao->unbind();
   }
-  if (show_grid) {
-      axis->draw();
-      grid->draw();
-      draw_small_axis();
-  }
-  vao->unbind();
+
 }
 
 
