@@ -233,7 +233,7 @@ glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::
     lightMV = lightProjection * lightView;
     return lightProjection * lightView;
 }
-
+static std::vector<glm::mat4> lightSpaceMatrices;
 std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view)
 {
     std::vector<glm::mat4> ret;
@@ -252,7 +252,12 @@ std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &p
             ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i-1], far, proj, view));
         }
     }
+    lightSpaceMatrices = ret;
     return ret;
+}
+extern std::vector<glm::mat4> getLightSpaceMatrices()
+{
+    return lightSpaceMatrices;
 }
 void printMat4(glm::mat4 &m)
 {
