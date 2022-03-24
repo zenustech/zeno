@@ -11,6 +11,7 @@ namespace zeno {
 struct PrimitiveWeld : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto tagAttr = get_input<StringObject>("ind")->get();
 
         float dx = 0.00001f;
         float inv_dx = 1.0f / dx;
@@ -23,22 +24,12 @@ struct PrimitiveWeld : INode {
             lut.emplace(posi, i);
         }
 
-        std::vector<int> indices;
-        indices.resize(lut.size());
+        auto &indices = prim->verts.add_attr<int>(tagAttr);
         int curr = 0;
+        std::fill(indices.begin(), indices.end(), 0);
         for (auto const &[key, idx]: lut) {
-            indices[curr++] = idx;
+            indices[idx] = 1;
         }
-
-        prim->foreach_attr([&] (auto const &key, auto &arr) {
-            using T = decltype(value_type_of(arr));
-            std::vector<T> new_arr(indices.size());
-#pragma omp parallel for
-            for (int i = 0; i < indices.size(); i++) {
-                new_arr[i] = arr[indices[i]];
-            }
-            arr = std::move(new_arr);
-        });
 
         set_output("prim", std::move(prim));
     }
@@ -48,6 +39,7 @@ struct PrimitiveWeld : INode {
 ZENDEFNODE(PrimitiveWeld, {
     {
     {"PrimitiveObject", "prim"},
+    {"string", "tagAttr", "tag"},
     },
     {
     {"PrimitiveObject", "prim"},
