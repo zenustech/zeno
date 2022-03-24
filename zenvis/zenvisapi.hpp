@@ -21,6 +21,7 @@ int get_curr_frameid();
 double get_solver_interval();
 double get_render_fps();
 void set_show_grid(bool flag);
+void set_show_light_dir(bool flag);
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,

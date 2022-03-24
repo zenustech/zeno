@@ -293,6 +293,14 @@ class SetLightDialog(QDialog):
         z = math.sin(theta) * math.sin(phi)
         zenvis.core.setLight(x, y, z)
 
+    def showEvent(self, e) -> None:
+        super().showEvent(e)
+        zenvis.core.set_show_light_dir(True)
+
+    def hideEvent(self, e) -> None:
+        super().hideEvent(e)
+        zenvis.core.set_show_light_dir(False)
+
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)

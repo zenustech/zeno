@@ -29,6 +29,7 @@ int curr_frameid = -1;
 
 static int num_samples = 16;
 static bool show_grid = true;
+static bool show_light_dir = false;
 static bool smooth_shading = false;
 static bool normal_check = false;
 bool render_wireframe = false;
@@ -96,6 +97,24 @@ void look_perspective(
                       -100.0, 100.0);
 }
 
+static std::unique_ptr<VAO> vao;
+static std::unique_ptr<IGraphic> grid;
+static std::unique_ptr<IGraphic> axis;
+static std::unique_ptr<IGraphic> light_dir;
+static glm::vec3 light;
+extern glm::vec3 getLight()
+{
+  return light;
+}
+extern void setLightHight(float h);
+void setLight(float x, float y, float z)
+{
+  light = glm::vec3(x,y,z);
+}
+std::unique_ptr<IGraphic> makeGraphicGrid();
+std::unique_ptr<IGraphic> makeGraphicAxis();
+std::unique_ptr<IGraphic> makeGraphicLightDir();
+
 void set_program_uniforms(Program *pro) {
   pro->use();
 
@@ -113,23 +132,9 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
   pro->set_uniform("mGridBlend", grid_blend);
+  pro->set_uniform("mLightDir", light);
 }
 
-static std::unique_ptr<VAO> vao;
-static std::unique_ptr<IGraphic> grid;
-static std::unique_ptr<IGraphic> axis;
-static glm::vec3 light;
-extern glm::vec3 getLight()
-{
-  return light;
-}
-extern void setLightHight(float h);
-void setLight(float x, float y, float z)
-{
-  light = glm::vec3(x,y,z);
-}
-std::unique_ptr<IGraphic> makeGraphicGrid();
-std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
@@ -152,6 +157,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  light_dir = makeGraphicLightDir();
   //setup_env_map("Default");
 }
 
@@ -200,6 +206,9 @@ static void my_paint_graphics() {
     vao->bind();
     for (auto const &[key, gra]: current_frame_data()->graphics) {
       gra->draw();
+    }
+    if (show_light_dir) {
+      light_dir->draw();
     }
     if (show_grid) {
         axis->draw();
@@ -469,6 +478,10 @@ double get_solver_interval() {
 
 void set_show_grid(bool flag) {
     show_grid = flag;
+}
+
+void set_show_light_dir(bool flag) {
+    show_light_dir = flag;
 }
 
 std::vector<char> record_frame_offline() {
