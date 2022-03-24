@@ -118,7 +118,7 @@ signals:
     void textActivated(const QString& text);
 
 private:
-    ZComboBox *m_combobox;
+    ZComboBox* m_combobox;
 };
 
 class ZenoParamPushButton : public ZenoParamWidget

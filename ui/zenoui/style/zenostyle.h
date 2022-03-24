@@ -62,7 +62,7 @@ public:
 
 private:
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
-    void drawDropdownArrow(QPainter* painter, QRect downArrowRect) const;
+    void drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool isDown) const;
 };
 
 #endif

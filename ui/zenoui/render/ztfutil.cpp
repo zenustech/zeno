@@ -483,7 +483,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
 
     param.comboboxParam.font = QFont("HarmonyOS Sans SC", 13);
     param.comboboxParam.textColor = QColor(255, 255, 255);
-    param.comboboxParam.itemBgNormal = QColor(33, 33, 33);
+    param.comboboxParam.itemBgNormal = QColor(58, 58, 58);
     param.comboboxParam.itemBgHovered = QColor(23, 160, 252);
     param.comboboxParam.itemBgSelected = QColor(23, 160, 252);
     param.comboboxParam.margins = QMargins(8, 0, 0, 0);

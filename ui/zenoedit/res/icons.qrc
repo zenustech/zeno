@@ -72,8 +72,8 @@
 	<file>icons/ONCE_light.svg</file>
 	<file>icons/VIEW_dark.svg</file>
 	<file>icons/VIEW_light.svg</file>
-	<file>icons/ic_pop_down.svg</file>
 	<file>icons/ic_openfile.svg</file>
+	<file>icons/ic_openfile-on.svg</file>
 	<file>icons/ic_MUTE.svg</file>
 	<file>icons/ic_ONCE.svg</file>
 	<file>icons/ic_VIEW.svg</file>
@@ -105,5 +105,7 @@
 	<file>icons/subnet.svg</file>
 	<file>icons/subnet-on.svg</file>
 	<file>icons/socket-on2.svg</file>
+	<file>icons/ic_pop_down.svg</file>
+	<file>icons/ic_pop_down-on.svg</file>
 </qresource>
 </RCC>

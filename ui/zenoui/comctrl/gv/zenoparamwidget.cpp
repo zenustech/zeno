@@ -154,14 +154,14 @@ void ZComboBoxItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem 
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
     painter->fillRect(opt.rect, opt.backgroundBrush);
-    painter->setPen(QPen(m_param.textColor));
+    painter->setPen(QPen(QColor(210, 203, 197)));
     painter->drawText(opt.rect.adjusted(m_param.margins.left(), 0, 0, 0), opt.text);
 }
 
 QSize ZComboBoxItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     int w = ((QWidget *) parent())->width();
-    return QSize(w, 24);
+    return ZenoStyle::dpiScaledSize(QSize(w, 28));
 }
 
 
@@ -183,6 +183,8 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
     setWidget(m_combobox);
+
+    setZValue(ZVALUE_POPUPWIDGET);
     connect(m_combobox, SIGNAL(textActivated(const QString&)), this, SIGNAL(textActivated(const QString&)));
 }
 

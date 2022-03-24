@@ -389,16 +389,6 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
             pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
             pVLayout->addItem(pSocketsLayout);
         }
-
-        /*
-        //heapmap stays at the bottom of node layout.
-        COLOR_RAMPS ramps = m_index.data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
-        if (!ramps.isEmpty()) {
-            ZenoHeatMapItem *pItem = new ZenoHeatMapItem(ramps);
-            pVLayout->addItem(pItem);
-        }
-        bodyWidget->setZValue(ZVALUE_ELEMENT);
-        */
     }
     else
     {
@@ -479,6 +469,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
 		    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
 		    pParamLayout->addItem(pComboBox);
+
 		    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
 			    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 			    PARAM_UPDATE_INFO info;
@@ -496,9 +487,18 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    pParamLayout->addItem(pNameItem);
 
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
-		    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...", ZenoStyle::dpiScaled(32), QSizePolicy::Fixed);
+
+			ImageElement elem;
+			elem.image = ":/icons/ic_openfile.svg";
+            elem.imageHovered = ":/icons/ic_openfile-on.svg";
+			elem.imageOn = ":/icons/ic_openfile-on.svg";
+            ZenoSvgLayoutItem* openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
+
 		    pParamLayout->addItem(pFileWidget);
-		    pParamLayout->addItem(pBtn);
+		    pParamLayout->addItem(openBtn);
+			pParamLayout->setItemSpacing(1, 0);
+			pParamLayout->setItemSpacing(2, 0);
+
 		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
 			    });
@@ -510,9 +510,18 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    pParamLayout->addItem(pNameItem);
 
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
-		    ZenoParamPushButton* pBtn = new ZenoParamPushButton("...", ZenoStyle::dpiScaled(32), QSizePolicy::Fixed);
+
+            ImageElement elem;
+			elem.image = ":/icons/ic_openfile.svg";
+            elem.imageHovered = ":/icons/ic_openfile-on.svg";
+			elem.imageOn = ":/icons/ic_openfile-on.svg";
+
+            ZenoSvgLayoutItem* openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
+
 		    pParamLayout->addItem(pFileWidget);
-		    pParamLayout->addItem(pBtn);
+		    pParamLayout->addItem(openBtn);
+            pParamLayout->setItemSpacing(1, 0);
+            pParamLayout->setItemSpacing(2, 0);
 		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
 			    });

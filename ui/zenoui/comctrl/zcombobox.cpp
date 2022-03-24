@@ -29,7 +29,7 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
     QComboBox::initStyleOption(&opt);
     *option = opt;
 
-    option->bdrNormal = QColor(122, 122, 122);
+    option->bdrNormal = QColor(255, 255, 255, 255*0.4);
     option->bdrHoverd = QColor(228, 228, 228);
     option->bdrSelected = QColor(122, 122, 122);
 
@@ -38,7 +38,7 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
 
     option->clrBackground = QColor(50, 50, 50);
     option->clrBgHovered = QColor(50, 50, 50);
-    option->clrText = QColor(229, 229, 229);
+    option->clrText = QColor(255, 255, 255, 255 * 0.4);
 
     option->btnNormal = QColor(50, 50, 50);
     option->btnHovered = QColor(50, 50, 50);

@@ -1,15 +1,16 @@
 
 QLineEdit {
     border: 1px solid #252525;
-    padding: 0 8px;
+    padding: 0 4px;
     background: #252525;
     selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
     color: rgba(255,255,255,0.40);
 }
 
 QLineEdit:focus
 {
-    border: 1px solid #4B9EF4;
+    /*border: 1px solid #4B9EF4;*/
     color: rgba(255,255,255,1.0);
 }
 
@@ -26,6 +27,16 @@ QLineEdit#searchEdit:focus
     border: 1px solid #4B9EF4;
     color: rgba(255,255,255,1.0);
 }
+
+QComboBox QAbstractItemView {
+    border: 0px solid rgba(0,0,0,1);
+    background: #272727;
+    selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+    outline: 0px;
+}
+
 
 QPushButton#grayButton
 {
@@ -75,14 +86,6 @@ QPushButton#btnOpen:hover
 	color: rgb(255, 255, 255);
 }
 
-QComboBox QAbstractItemView {
-    border: 0.5px solid rgba(0,0,0,1);
-    background: #272727;
-    selection-background-color: #4B9EF4;
-    font: 15px 'HarmonyOS Sans';
-	color: #8A8A8C;
-    outline: 0px;
-}
 
 QSpinBox {
     border: 0.5px solid rgba(0,0,0,1);
@@ -175,4 +178,13 @@ QMenuBar::item:selected {
 
 QMenuBar::item:pressed {
     background: #4B9EF4;
+}
+
+QTextEdit {
+    background-color: rgb(36, 37, 36);
+    color: rgb(111, 111, 111);
+}
+
+QTextEdit : focus{
+    color: rgb(255,255,255);
 }
