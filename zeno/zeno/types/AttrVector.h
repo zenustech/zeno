@@ -148,8 +148,17 @@ struct AttrVector {
         }
     }
 
+    template <class Accept = std::tuple<vec3f, float>>
     size_t num_attrs() const {
-        return attrs.size();
+        if constexpr (std::is_void_v<Accept>) {
+            return attrs.size();
+        } else {
+            size_t count = 0;
+            foreach_attr<Accept>([&] (auto const &key, auto const &arr) {
+                count++;
+            });
+            return count;
+        }
     }
 
     auto attr_keys() const {

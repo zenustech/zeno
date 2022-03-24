@@ -13,9 +13,16 @@ ZENO_API void primFilter(PrimitiveObject *prim, std::string tagAttr, int tagValu
     std::vector<int> revamp;
     revamp.reserve(prim->size());
     auto const &tagArr = prim->attr<int>(tagAttr);
-    for (int i = 0; i < prim->size(); i++) {
-        if (tagArr[i] == tagValue)
-            revamp.emplace_back(i);
+    if (!isInversed) {
+        for (int i = 0; i < prim->size(); i++) {
+            if (tagArr[i] == tagValue)
+                revamp.emplace_back(i);
+        }
+    } else {
+        for (int i = 0; i < prim->size(); i++) {
+            if (tagArr[i] != tagValue)
+                revamp.emplace_back(i);
+        }
     }
 
     prim->foreach_attr([&] (auto const &key, auto &arr) {
