@@ -41,7 +41,8 @@ struct ShaderFinalize : INode {
             {1, "mat_style"},
             {1, "mat_strokeNoise"},
             {3,"mat_shad"},
-            {3,"mat_strokeTint"}
+            {3,"mat_strokeTint"},
+            {1,"mat_opacity"}
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
@@ -61,9 +62,10 @@ struct ShaderFinalize : INode {
             get_input<IObject>("stroke", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("shape", std::make_shared<NumericObject>(vec3f(-0.5,0.5,0))),
             get_input<IObject>("style", std::make_shared<NumericObject>(float(1.0))),
-            get_input<IObject>("strokeNoise", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("shad", std::make_shared<NumericObject>(vec3f(0,1,0))),
+            get_input<IObject>("strokeNoise", std::make_shared<NumericObject>(float(1))),
+            get_input<IObject>("shad", std::make_shared<NumericObject>(vec3f(0,0,0))),
             get_input<IObject>("strokeTint", std::make_shared<NumericObject>(vec3f(0,0,0))),
+            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             
         });
         auto commonCode = em.getCommonCode();
@@ -95,11 +97,12 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "exposure", "1.0"},
         {"float", "toon", "0.0"},
         {"float", "stroke", "1.0"},
-        {"vec3f", "shape", "1.0"},
+        {"vec3f", "shape", "-0.5,0.5,0"},
         {"float", "style", "1.0"},
-        {"float", "strokeNoise", "0"},
-        {"vec3f", "shad", "0,1,0"},
+        {"float", "strokeNoise", "1"},
+        {"vec3f", "shad", "0,0,0"},
         {"vec3f", "strokeTint", "0,0,0"},
+        {"float", "opacity", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
     },

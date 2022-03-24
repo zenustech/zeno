@@ -9,6 +9,7 @@ namespace zenvis {
 
 struct IGraphic {
   virtual void draw() = 0;
+  virtual void drawShadow() = 0;
   virtual ~IGraphic() = default;
 };
 

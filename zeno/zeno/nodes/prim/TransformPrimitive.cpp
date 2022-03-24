@@ -14,7 +14,7 @@ struct MatrixObject : zeno::IObjectClone<MatrixObject>{//ZhxxHappyObject
     std::variant<glm::mat3, glm::mat4> m;
 };
 
-/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!fixed using iobjclone now
+/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
     virtual void apply() override {
         auto &dst = std::get<glm::mat4>(get_input<zeno::MatrixObject>("dst")->m);
         auto &src = std::get<glm::mat4>(get_input<zeno::MatrixObject>("src")->m);
@@ -130,6 +130,7 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
                 nrm[i] = zeno::other_to_vec<3>(n);
             }
         }
+        
         auto oMat = std::make_shared<MatrixObject>();
         oMat->m = matrix;
         set_output("outPrim", std::move(outprim));

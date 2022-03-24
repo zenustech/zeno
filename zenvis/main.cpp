@@ -14,6 +14,16 @@
 
 namespace zenvis {
 
+extern void setCascadeLevels(float far);
+extern void initCascadeShadow();
+extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
+extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
+extern void setShadowMV(Program* shader);
+extern void EndShadowMap();
+extern unsigned int getShadowMap();
+extern int getCascadeCount();
+extern void setfov(float f);
+extern void setaspect(float f);
 
 int curr_frameid = -1;
 
@@ -44,11 +54,13 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-
+float g_near, g_far;
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  setfov(fov);
+  setaspect(nx*1.0/ny);
   center = glm::vec3(cx, cy, cz);
 
   point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
@@ -65,6 +77,8 @@ void look_perspective(
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
+    g_near = 0.05;
+    g_far = 20000.0 * std::max(1.0f, (float)radius / 10000.f);
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
@@ -118,6 +132,7 @@ void initialize() {
   gladLoadGL();
   
   setLight(1,1,0);
+  initCascadeShadow();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -151,10 +166,25 @@ static void draw_small_axis() {
   proj = backup_proj;
 }
 
-
-
+extern float getCamFar()
+{
+  return g_far;
+}
+static void shadowPass()
+{
+  for(int i=0;i<getCascadeCount()+1;i++){
+    BeginShadowMap(g_near, g_far, getLight(), proj, view,i);
+    vao->bind();
+    for (auto const &[key, gra]: current_frame_data()->graphics) {
+      gra->drawShadow();
+    }
+    vao->unbind();
+    EndShadowMap();
+  }
+}
 
 static void my_paint_graphics() {
+  
   CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -282,6 +312,7 @@ void ScreenFillQuad(GLuint tex)
   glUseProgram(0);
 }
 static void paint_graphics(GLuint target_fbo = 0) {
+  shadowPass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -292,6 +323,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
   }
     if (!enable_hdr) {
+        
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
         return my_paint_graphics();
     }
@@ -319,7 +351,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
 
     
     if(tonemapfbo!=0)
@@ -437,7 +469,7 @@ std::vector<char> record_frame_offline() {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
