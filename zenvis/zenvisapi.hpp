@@ -6,6 +6,7 @@
 #include <tuple>
 
 namespace zenvis {
+extern void setLightHight(float h);
 void setLight(float x, float y, float z);
 void initialize();
 void finalize();

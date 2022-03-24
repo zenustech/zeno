@@ -182,6 +182,15 @@ extern void setaspect(float f)
 {
     gaspect = f;
 }
+static float LightHight=1000.0;
+extern void setLightHight(float h)
+{
+    LightHight = h;
+}
+extern float getLightHight()
+{
+    return LightHight;
+}
 glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::mat4& proj, glm::mat4& view)
 {
     auto p = glm::perspective(glm::radians(gfov), gaspect, nearPlane, farPlane);
@@ -195,7 +204,7 @@ glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::
     center /= corners.size();
     //std::cout<<center.x<<" "<<center.y<<" "<<center.z<<std::endl;
     glm::vec3 up = lightDir.y>0.99?glm::vec3(0,0,1):glm::vec3(0,1,0);
-    const auto lightView = glm::lookAt(center + 1000.0f*normalize(lightDir), center, up);
+    const auto lightView = glm::lookAt(center + LightHight*normalize(lightDir), center, up);
 
     float minX = std::numeric_limits<float>::max();
     float maxX = std::numeric_limits<float>::min();

@@ -122,6 +122,7 @@ extern glm::vec3 getLight()
 {
   return light;
 }
+extern void setLightHight(float h);
 void setLight(float x, float y, float z)
 {
   light = glm::vec3(x,y,z);
@@ -132,6 +133,7 @@ void initialize() {
   gladLoadGL();
   
   setLight(1,1,0);
+  setLightHight(1000);
   initCascadeShadow();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
