@@ -190,7 +190,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[15 * i + 12] = nrm[tris[i][2]];
         mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 14] = tang[i];
-        std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
+        //std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
     }
