@@ -117,7 +117,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
     case CONTROL_MULTILINE_STRING:
-    case CONTROL_HEAPMAP:
+    case CONTROL_HEATMAP:
     case CONTROL_ENUM:
         return defaultValue;
     default:
@@ -162,6 +162,7 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
 	case CONTROL_READPATH:
 	case CONTROL_WRITEPATH:
 	case CONTROL_MULTILINE_STRING:
+    case CONTROL_ENUM:
 	case CONTROL_STRING: varValue = textValue; break;
 	}
     return varValue;
@@ -218,7 +219,7 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
     } else if (type == "_RAMPS") {
-        return CONTROL_HEAPMAP;
+        return CONTROL_HEATMAP;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
     } else if (type.isEmpty()) {

@@ -85,16 +85,13 @@ private:
 class ZComboBoxItemDelegate : public QStyledItemDelegate {
     Q_OBJECT
 public:
-    ZComboBoxItemDelegate(ComboBoxParam param, QObject *parent = nullptr);
+    ZComboBoxItemDelegate(QObject *parent = nullptr);
     // painting
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
 protected:
     void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const;
-
-private:
-    ComboBoxParam m_param;
 };
 
 class ZenoGvComboBox : public QComboBox

@@ -19,11 +19,30 @@ ZenoApplication::~ZenoApplication()
 
 void ZenoApplication::initStyleSheets()
 {
-	QFile file(":/stylesheet/darkening.qss");
+    QByteArray bytes;
+    QString qss;
+
+	QFile file(":/stylesheet/qlabel.qss");
 	bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     Q_ASSERT(ret);
-    QByteArray bytes = file.readAll();
-    setStyleSheet(bytes);
+    qss = file.readAll();
+
+	file.setFileName(":/stylesheet/qlineedit.qss");
+	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+	Q_ASSERT(ret);
+	qss += file.readAll();
+
+	file.setFileName(":/stylesheet/qcombobox.qss");
+	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+	Q_ASSERT(ret);
+	qss += file.readAll();
+
+    file.setFileName(":/stylesheet/darkening.qss");
+	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+	Q_ASSERT(ret);
+    qss += file.readAll();
+
+    setStyleSheet(qss);
 }
 
 void ZenoApplication::initFonts()

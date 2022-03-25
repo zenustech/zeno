@@ -1,0 +1,26 @@
+QComboBox[cssClass="proppanel"] {
+    border: 0px solid gray;
+    border-radius: 0px;
+    padding: 1px 18px 1px 3px;
+    min-width: 6em;
+    font: 14px 'HarmonyOS Sans';
+    color: rgba(255,255,255,0.40);
+    background: rgb(19,19,19);
+}
+
+QComboBox[cssClass="proppanel"]:editable {
+    background: rgb(19,19,19);
+}
+
+QComboBox[cssClass="proppanel"]:!editable, QComboBox::drop-down:editable {
+     background: rgb(19,19,19);
+}
+
+/* QComboBox gets the "on" state when the popup is open */
+QComboBox[cssClass="proppanel"]:!editable:on, QComboBox::drop-down:editable:on {
+    background: rgb(19,19,19);
+}
+
+QComboBox[cssClass="proppanel"]::drop-down {
+    image: url(:/icons/ic_pop_down.svg);
+}

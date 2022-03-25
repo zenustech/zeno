@@ -1,4 +1,3 @@
-
 QLineEdit {
     border: 1px solid #252525;
     padding: 0 4px;
@@ -10,7 +9,6 @@ QLineEdit {
 
 QLineEdit:focus
 {
-    /*border: 1px solid #4B9EF4;*/
     color: rgba(255,255,255,1.0);
 }
 

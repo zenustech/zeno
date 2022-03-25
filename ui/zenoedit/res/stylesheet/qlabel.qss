@@ -1,0 +1,5 @@
+QLabel[cssClass="proppanel"]
+{
+	font: bold 14px "HarmonyOS Sans";
+	color: rgba(255, 255, 255, 0.7);
+}

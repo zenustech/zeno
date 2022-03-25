@@ -1,0 +1,20 @@
+QLineEdit[cssClass="proppanel"]
+{
+    border: 1px solid rgb(19,19,19);
+    padding: 0 4px;
+    background: rgb(19,19,19);
+    selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
+    color: rgba(255,255,255,0.40);
+}
+
+QLineEdit[cssClass="proppanel"]:focus
+{
+    border: 1px solid #4B9EF4;
+    color: rgba(255,255,255,1.0);
+}
+
+QTextEdit[cssClass="proppanel"] {
+    background-color: rgb(19,19,19);
+    color: rgb(111, 111, 111);
+}

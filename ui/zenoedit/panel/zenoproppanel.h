@@ -11,10 +11,18 @@ class ZenoPropPanel : public QWidget
 public:
     ZenoPropPanel(QWidget* parent = nullptr);
     ~ZenoPropPanel();
-    void init(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 protected:
     void mousePressEvent(QMouseEvent* event);
+
+public slots:
+    void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
+    void onLineEditFinish();
+
+private:
+    QPersistentModelIndex m_subgIdx;
+    QPersistentModelIndex m_idx;
 };
 
 #endif

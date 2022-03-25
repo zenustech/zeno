@@ -84,7 +84,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
     {
         pPropTitle->setTitle("property");
     }
-    panel->init(pModel, subgIdx, nodes, select);
+    panel->reset(pModel, subgIdx, nodes, select);
 }
 
 DOCK_TYPE ZenoDockWidget::type() const

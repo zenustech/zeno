@@ -128,9 +128,8 @@ void ZenoParamLabel::setAlignment(Qt::Alignment alignment)
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-ZComboBoxItemDelegate::ZComboBoxItemDelegate(ComboBoxParam param, QObject *parent)
+ZComboBoxItemDelegate::ZComboBoxItemDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
-    , m_param(param)
 {
 }
 
@@ -141,11 +140,11 @@ void ZComboBoxItemDelegate::initStyleOption(QStyleOptionViewItem* option, const 
     option->backgroundBrush.setStyle(Qt::SolidPattern);
     if (option->state & QStyle::State_MouseOver)
     {
-        option->backgroundBrush.setColor(m_param.itemBgHovered);
+        option->backgroundBrush.setColor(QColor(23, 160, 252));
     }
     else
     {
-        option->backgroundBrush.setColor(m_param.itemBgNormal);
+        option->backgroundBrush.setColor(QColor(58, 58, 58));
     }
 }
 
@@ -155,7 +154,7 @@ void ZComboBoxItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem 
     initStyleOption(&opt, index);
     painter->fillRect(opt.rect, opt.backgroundBrush);
     painter->setPen(QPen(QColor(210, 203, 197)));
-    painter->drawText(opt.rect.adjusted(m_param.margins.left(), 0, 0, 0), opt.text);
+    painter->drawText(opt.rect.adjusted(8, 0, 0, 0), opt.text);
 }
 
 QSize ZComboBoxItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -181,7 +180,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox = new ZComboBox;
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(param, m_combobox));
+    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
     setWidget(m_combobox);
 
     setZValue(ZVALUE_POPUPWIDGET);
