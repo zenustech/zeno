@@ -23,6 +23,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("load_file", zenvis::load_file);
     m.def("do_screenshot", zenvis::do_screenshot);
     m.def("set_show_grid", zenvis::set_show_grid);
+    m.def("set_show_light_dir", zenvis::set_show_light_dir);
     m.def("new_frame_offline", zenvis::new_frame_offline);
     m.def("set_background_color", zenvis::set_background_color);
     m.def("get_background_color", zenvis::get_background_color);
