@@ -97,13 +97,56 @@ extern glm::mat4 getReflectMVP(int i)
 {
     return reflectMVPs[i];
 }
+std::vector<int> reflectMask;
 std::vector<ReflectivePlane> ReflectivePlanes;
+extern std::vector<ReflectivePlane> getReflectivePlanes()
+{
+    return ReflectivePlanes;
+}
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c)
+{
+    
+    if(i<0||i>=16)
+        return;
+    reflectMask[i] = 1;
+    ReflectivePlane p;
+    p.n = n; p.c = c;
+    ReflectivePlanes[i] = p;
+
+}
+extern void clearReflectMask()
+{
+    reflectMask.assign(16,0);
+}
+extern bool renderReflect(int i)
+{
+    return reflectMask[i] == 1 ;
+}
+extern int getReflectivePlaneCount()
+{ 
+  return ReflectivePlanes.size();  
+}
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp)
 {
+    reflectMask[i]=1;
     ReflectivePlane p;
     p.n = n; p.c = c;
     ReflectivePlanes[i] = p;
     reflectViews[i] = reflectView(camPos, camView, camUp, p.c, p.n);
+}
+extern void setReflectivePlane(int i, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp)
+{
+    reflectMask[i] = 1;
+    setReflectivePlane(i, ReflectivePlanes[i].n, ReflectivePlanes[i].c, camPos, camView, camUp);
+}
+static int reflectionID = -1;
+extern void setReflectionViewID(int id)
+{
+    reflectionID = id;
+}
+extern int getReflectionViewID()
+{
+    return reflectionID;
 }
 static int mnx, mny;
 static int moldnx, moldny;
@@ -115,6 +158,7 @@ extern void initReflectiveMaps(int nx, int ny)
     ReflectivePlanes.resize(16);
     reflectViews.resize(16);
     reflectMVPs.resize(16);
+    reflectMask.assign(16,0);
     if(reflectFBO==0 && reflectRBO==0){
         CHECK_GL(glGenFramebuffers(1, &reflectFBO));
         CHECK_GL(glGenRenderbuffers(1, &reflectRBO));
@@ -181,8 +225,52 @@ extern void BeginReflective(int i, int nx, int ny)
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
+extern void BeginSecondReflective(int i, int nx, int ny)
+{
+    CHECK_GL(glDisable(GL_BLEND));
+    CHECK_GL(glDisable(GL_DEPTH_TEST));
+    CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));///????ZHXX???
+    CHECK_GL(glDisable(GL_MULTISAMPLE));
+    CHECK_GL(glEnable(GL_DEPTH_TEST));
+    CHECK_GL(glDepthFunc(GL_LESS));
+    
+
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i+8]));
+    CHECK_GL(glViewport(0, 0, nx, ny));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, reflectiveMaps[i+8], 0));
+    
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 extern void EndReflective()
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(0);
+    CHECK_GL(glEnable(GL_BLEND));
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    CHECK_GL(glEnable(GL_DEPTH_TEST));
+    CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+    //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
+    //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+    //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+    CHECK_GL(glEnable(GL_MULTISAMPLE));
+
+}
+extern void EndSecondReflective()
+{
+    for(int i=0;i<8;i++)
+    {
+
+        auto temp = reflectiveMaps[i];
+        reflectiveMaps[i]=reflectiveMaps[i+8];
+        reflectiveMaps[i+8]=temp;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
     CHECK_GL(glEnable(GL_BLEND));

@@ -35,6 +35,10 @@ extern glm::vec3 getLight();
 extern std::vector<glm::mat4> getLightSpaceMatrices();
 extern glm::mat4 getReflectMVP(int i);
 extern std::vector<unsigned int> getReflectMaps();
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
+extern bool renderReflect(int i);
+extern int getReflectionViewID();
+
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -356,10 +360,33 @@ struct GraphicPrimitive : IGraphic {
         }
         
         triObj.prog = get_tris_program(path, prim->mtl);
-        if(prim->mtl!=nullptr)
+        if(prim->mtl!=nullptr){
             triObj.shadowprog = get_shadow_program(prim->mtl);
+            auto code = prim->mtl->frag;
+            if(code.find("mat_reflection = float(float(1))"))
+            {
+                glm::vec3 c=glm::vec3(0);
+                for(auto v:prim->verts)
+                {
+                    c+=glm::vec3(v[0], v[1], v[2]);
+                }
+                c = c/(prim->verts.size() + 0.000001f);
+                auto n=prim->attr<zeno::vec3f>("nrm")[0];
+                auto idpos = code.find("mat_reflectID");
+                auto idstr0 = code.substr(idpos + 28, 1);
+                auto idstr1 = code.substr(idpos + 29, 1);
+                std::string num;
+                if(idstr1!=")")
+                    num = idstr0+idstr1;
+                else
+                    num = idstr0;
+                auto refID = std::atoi(num.c_str());
+                setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
+            }
+        }
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
+        
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -603,11 +630,19 @@ struct GraphicPrimitive : IGraphic {
             else {
                 triObj.prog->set_uniform("reflectPass",0.0f);
             }
-            triObj.prog->set_uniform("reflectMVP", getReflectMVP(0));
-            triObj.prog->set_uniformi("reflectionMap",texOcp);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[0]));
-            texOcp++;
+            triObj.prog->set_uniform("reflectionViewID", (float)getReflectionViewID());
+            for(int i=0;i<16;i++)
+            {
+                if(!renderReflect(i))
+                    continue;
+                auto name = "reflectMVP[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), getReflectMVP(i));
+                auto name2 = "reflectionMap"+std::to_string(i);
+                triObj.prog->set_uniformi(name2.c_str(),texOcp);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
+                texOcp++;
+            }
     
         }
 
@@ -1923,23 +1958,57 @@ float ShadowCalculation(vec3 fragPosWorldSpace)
     return mix(shadow1, shadow2, coef);
 }
 
-uniform mat4 reflectMVP;
-uniform sampler2DRect reflectionMap;
-vec3 reflectionCalculation(vec3 worldPos)
+uniform mat4 reflectMVP[16];
+uniform sampler2DRect reflectionMap0;
+uniform sampler2DRect reflectionMap1;
+uniform sampler2DRect reflectionMap2;
+uniform sampler2DRect reflectionMap3;
+uniform sampler2DRect reflectionMap4;
+uniform sampler2DRect reflectionMap5;
+uniform sampler2DRect reflectionMap6;
+uniform sampler2DRect reflectionMap7;
+uniform sampler2DRect reflectionMap8;
+uniform sampler2DRect reflectionMap9;
+uniform sampler2DRect reflectionMap10;
+uniform sampler2DRect reflectionMap11;
+uniform sampler2DRect reflectionMap12;
+uniform sampler2DRect reflectionMap13;
+uniform sampler2DRect reflectionMap14;
+uniform sampler2DRect reflectionMap15;
+vec4 sampleReflectRectID(vec2 coord, int id)
 {
-    vec4 fragPosReflectSpace = reflectMVP * vec4(worldPos, 1.0);
+    if(id==0) return texture2DRect(reflectionMap0, coord);
+    if(id==1) return texture2DRect(reflectionMap1, coord);
+    if(id==2) return texture2DRect(reflectionMap2, coord);
+    if(id==3) return texture2DRect(reflectionMap3, coord);
+    if(id==4) return texture2DRect(reflectionMap4, coord);
+    if(id==5) return texture2DRect(reflectionMap5, coord);
+    if(id==6) return texture2DRect(reflectionMap6, coord);
+    if(id==7) return texture2DRect(reflectionMap7, coord);
+    if(id==8) return texture2DRect(reflectionMap8, coord);
+    if(id==9) return texture2DRect(reflectionMap9, coord);
+    if(id==10) return texture2DRect(reflectionMap10, coord);
+    if(id==11) return texture2DRect(reflectionMap11, coord);
+    if(id==12) return texture2DRect(reflectionMap12, coord);
+    if(id==13) return texture2DRect(reflectionMap13, coord);
+    if(id==14) return texture2DRect(reflectionMap14, coord);
+    if(id==15) return texture2DRect(reflectionMap15, coord);
+}
+vec3 reflectionCalculation(vec3 worldPos, int id)
+{
+    vec4 fragPosReflectSpace = reflectMVP[id] * vec4(worldPos, 1.0);
     // perform perspective divide
     vec3 projCoords = fragPosReflectSpace.xyz / fragPosReflectSpace.w;
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
     if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
     {
-        return texture2DRect(reflectionMap, projCoords.xy * vec2(textureSize(reflectionMap,0))).xyz;
+        return sampleReflectRectID(projCoords.xy * vec2(textureSize(reflectionMap0,0)), id ).xyz;
     }
     return vec3(0,0,0);
 }
 uniform float reflectPass;
-
+uniform float reflectionViewID;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
     vec3 L1 = light0;
@@ -1952,7 +2021,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
-    if(reflectPass==1.0 && mat_reflection==1.0)
+    if(reflectPass==1.0 && mat_reflection==1.0 && int(mat_reflectID)==int(reflectionViewID))
         discard;
     /* custom_shader_end */
     mat_metallic = clamp(mat_metallic, 0, 1);
@@ -2034,7 +2103,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
 
     color = ACESFitted(color.rgb, 2.2);
-    color = mix(color, reflectionCalculation(position), mat_reflection);
+    if(mat_reflection==1.0 && mat_reflectID>-1 && mat_reflectID<16)
+        color = mix(color, reflectionCalculation(position, int(mat_reflectID)), mat_reflection);
     return color;
 
 

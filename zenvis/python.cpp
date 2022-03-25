@@ -33,6 +33,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("setup_env_map", zenvis::setup_env_map);
     m.def("setLight", zenvis::setLight);
     m.def("setLightHight", zenvis::setLightHight);
+    m.def("clearReflectMask", zenvis::clearReflectMask);
 }
 
 

@@ -29,10 +29,11 @@ extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos
 extern void initReflectiveMaps(int nx, int ny);
 extern void BeginReflective(int i, int nx, int ny);
 extern void EndReflective();
+extern void BeginSecondReflective(int i, int nx, int ny);
+extern void EndSecondReflective();
 extern glm::mat4 getReflectViewMat(int i);
 extern void setReflectMVP(int i, glm::mat4 mvp);
-
-
+extern void setReflectivePlane(int i, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp);
 
 int curr_frameid = -1;
 
@@ -224,6 +225,8 @@ static void drawSceneDepthSafe(float aspRatio, bool reflect)
     
   }
 }
+extern void setReflectionViewID(int i);
+extern bool renderReflect(int i);
 extern void updateReflectTexture(int nx, int ny);
 static void reflectivePass()
 {
@@ -231,16 +234,22 @@ static void reflectivePass()
   updateReflectTexture(nx, ny);
   
   //loop over reflective planes
-  setReflectivePlane(0, glm::vec3(-1,0,0),glm::vec3(10,0,0), g_camPos, g_camView, g_camUp);
-  BeginReflective(0, nx, ny);
-  vao->bind();
-  view = getReflectViewMat(0);
-  glm::mat4 p = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), g_near, g_far);
-  setReflectMVP(0, p * view);
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), true);
-  vao->unbind();
+  for(int i=0;i<8;i++)
+  {
+    if(!renderReflect(i))
+      continue;
+    setReflectivePlane(i,  g_camPos, g_camView, g_camUp);
+    BeginReflective(i, nx, ny);
+    vao->bind();
+    view = getReflectViewMat(i);
+    setReflectionViewID(i);
+    glm::mat4 p = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), g_near, g_far);
+    setReflectMVP(i, p * view);
+    drawSceneDepthSafe((float)(nx * 1.0 / ny), true);
+    vao->unbind();
+    view = g_view;
+  }
   EndReflective();
-  view = g_view;
 }
 static void my_paint_graphics() {
   
