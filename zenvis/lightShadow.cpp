@@ -65,13 +65,22 @@ unsigned int reflectFBO = 0;
 unsigned int reflectRBO = 0;
 unsigned int reflectResolution = 2048;
 std::vector<glm::mat4> reflectViews;
+std::vector<glm::mat4> reflectMVPs;
 std::vector<unsigned int> reflectiveMaps;
+extern std::vector<unsigned int> getReflectMaps()
+{
+    return reflectiveMaps;
+}
+extern void setReflectMVP(int i, glm::mat4 mvp)
+{
+    reflectMVPs[i] = mvp;
+}
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal)
 {
     glm::vec3 v = glm::normalize(viewDir);
-    glm::vec3 R = v + 2.0f*glm::dot(v, planeNormal) * planeNormal;
-    glm::vec3 RC = camPos - planeNormal * 2.0f * glm::dot((planeCenter - camPos), planeNormal);
-    glm::vec3 Ru = up + 2.0f * glm::dot(up, planeNormal) * planeNormal;
+    glm::vec3 R = v - 2.0f*glm::dot(v, planeNormal) * planeNormal;
+    glm::vec3 RC = camPos + planeNormal * 2.0f * glm::dot((planeCenter - camPos), planeNormal);
+    glm::vec3 Ru = up - 2.0f * glm::dot(up, planeNormal) * planeNormal;
     return glm::lookAt(RC, RC+R, Ru);
 
 }
@@ -84,6 +93,10 @@ extern glm::mat4 getReflectViewMat(int i)
 {
     return reflectViews[i];
 }
+extern glm::mat4 getReflectMVP(int i)
+{
+    return reflectMVPs[i];
+}
 std::vector<ReflectivePlane> ReflectivePlanes;
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp)
 {
@@ -92,37 +105,62 @@ extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos
     ReflectivePlanes[i] = p;
     reflectViews[i] = reflectView(camPos, camView, camUp, p.c, p.n);
 }
-extern void initReflectiveMaps()
+static int mnx, mny;
+static int moldnx, moldny;
+extern void initReflectiveMaps(int nx, int ny)
 {
+    mnx = nx, mny = ny;
+    moldnx = nx, moldny = ny;
     reflectiveMaps.resize(16);
     ReflectivePlanes.resize(16);
     reflectViews.resize(16);
+    reflectMVPs.resize(16);
     if(reflectFBO==0 && reflectRBO==0){
-        glGenFramebuffers(1, &reflectFBO);
-        glGenRenderbuffers(1, &reflectRBO);
+        CHECK_GL(glGenFramebuffers(1, &reflectFBO));
+        CHECK_GL(glGenRenderbuffers(1, &reflectRBO));
 
-        glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO);
-        glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, reflectRBO);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, reflectResolution, reflectResolution));
+        CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, reflectRBO));
+        
         for(int i=0;i<reflectiveMaps.size();i++)
         {
             CHECK_GL(glGenTextures(1, &(reflectiveMaps[i])));
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, reflectiveMaps[i]));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution, 
-            0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-            float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
+            CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGB16F, nx, ny, 
+            0, GL_RGB, GL_FLOAT, 0));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            
 
         }
     }
 }
-extern void BeginReflective(int i)
+extern void updateReflectTexture(int nx, int ny)
+{
+    if(moldnx!=nx || moldny!=ny){
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        
+        for(int i=0;i<reflectiveMaps.size();i++)
+        {
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
+            CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGB16F, nx, ny, 
+            0, GL_RGB, GL_FLOAT, 0));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            
+
+        }
+        moldnx = nx;
+        moldny = ny;
+    }
+}
+extern void BeginReflective(int i, int nx, int ny)
 {
     CHECK_GL(glDisable(GL_BLEND));
     CHECK_GL(glDisable(GL_DEPTH_TEST));
@@ -132,15 +170,15 @@ extern void BeginReflective(int i)
     CHECK_GL(glDepthFunc(GL_LESS));
     
 
-    glBindTexture(GL_TEXTURE_2D, reflectiveMaps[i]);
-    glViewport(0, 0, reflectResolution, reflectResolution);
-    glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, reflectResolution, reflectResolution);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectiveMaps[i], 0);
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
+    CHECK_GL(glViewport(0, 0, nx, ny));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, nx, ny));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, reflectiveMaps[i], 0));
     
 
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 extern void EndReflective()

@@ -33,6 +33,8 @@ extern unsigned int getPrefilterMap();
 extern unsigned int getBRDFLut();
 extern glm::vec3 getLight();
 extern std::vector<glm::mat4> getLightSpaceMatrices();
+extern glm::mat4 getReflectMVP(int i);
+extern std::vector<unsigned int> getReflectMaps();
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -440,7 +442,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void draw() override {
+  virtual void draw(bool reflect) override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
     int id = 0;
@@ -593,6 +595,19 @@ struct GraphicPrimitive : IGraphic {
                 auto name = "lightSpaceMatrices[" + std::to_string(i) + "]";
                 triObj.prog->set_uniform(name.c_str(), matrices[i]);
             }
+
+            if(reflect)
+            {
+                triObj.prog->set_uniform("reflectPass", 1.0f);
+            }
+            else {
+                triObj.prog->set_uniform("reflectPass",0.0f);
+            }
+            triObj.prog->set_uniform("reflectMVP", getReflectMVP(0));
+            triObj.prog->set_uniformi("reflectionMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[0]));
+            texOcp++;
     
         }
 
@@ -1908,8 +1923,22 @@ float ShadowCalculation(vec3 fragPosWorldSpace)
     return mix(shadow1, shadow2, coef);
 }
 
-
-
+uniform mat4 reflectMVP;
+uniform sampler2DRect reflectionMap;
+vec3 reflectionCalculation(vec3 worldPos)
+{
+    vec4 fragPosReflectSpace = reflectMVP * vec4(worldPos, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosReflectSpace.xyz / fragPosReflectSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+    {
+        return texture2DRect(reflectionMap, projCoords.xy * vec2(textureSize(reflectionMap,0))).xyz;
+    }
+    return vec3(0,0,0);
+}
+uniform float reflectPass;
 
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
@@ -1923,6 +1952,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
+    if(reflectPass==1.0 && mat_reflection==1.0)
+        discard;
     /* custom_shader_end */
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
@@ -2003,6 +2034,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
 
     color = ACESFitted(color.rgb, 2.2);
+    color = mix(color, reflectionCalculation(position), mat_reflection);
     return color;
 
 

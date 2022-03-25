@@ -112,7 +112,7 @@ struct GraphicGrid : IGraphic {
     
   }
 
-  virtual void draw() override {
+  virtual void draw(bool reflect) override {
     vbo->bind();
     vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
