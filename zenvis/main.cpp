@@ -39,6 +39,7 @@ int curr_frameid = -1;
 
 static int num_samples = 16;
 static bool show_grid = true;
+static bool show_light_dir = false;
 static bool smooth_shading = false;
 static bool normal_check = false;
 bool render_wireframe = false;
@@ -49,6 +50,7 @@ static glm::vec3 bgcolor(0.23f, 0.23f, 0.23f);
 
 static double last_xpos, last_ypos;
 static glm::vec3 center;
+static glm::vec3 light;
 
 static glm::mat4x4 view(1), proj(1);
 static glm::mat4x4 gizmo_view(1), gizmo_proj(1);
@@ -132,12 +134,13 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
   pro->set_uniform("mGridBlend", grid_blend);
+  pro->set_uniform("mLightDir", light);
 }
 
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-static glm::vec3 light;
+static std::unique_ptr<IGraphic> light_dir;
 extern glm::vec3 getLight()
 {
   return light;
@@ -149,6 +152,7 @@ void setLight(float x, float y, float z)
 }
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
+std::unique_ptr<IGraphic> makeGraphicLightDir();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
@@ -172,6 +176,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  light_dir = makeGraphicLightDir();
   //setup_env_map("Default");
 }
 
@@ -256,6 +261,9 @@ static void my_paint_graphics() {
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
   drawSceneDepthSafe((float)(nx * 1.0 / ny), false);
+    if (show_light_dir) {
+      light_dir->draw(false);
+    }
   if (show_grid) {
         axis->draw(false);
         grid->draw(false);
@@ -523,6 +531,10 @@ double get_solver_interval() {
 
 void set_show_grid(bool flag) {
     show_grid = flag;
+}
+
+void set_show_light_dir(bool flag) {
+    show_light_dir = flag;
 }
 
 std::vector<char> record_frame_offline() {
