@@ -2,6 +2,7 @@
 #include "model/graphsmodel.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "zenomainwindow.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -55,4 +56,12 @@ void ZenoApplication::setIOProcessing(bool bIOProcessing)
 bool ZenoApplication::IsIOProcessing() const
 {
     return m_bIOProcessing;
+}
+
+ZenoMainWindow* ZenoApplication::getMainWindow()
+{
+	foreach(QWidget * widget, topLevelWidgets())
+		if (ZenoMainWindow* mainWindow = qobject_cast<ZenoMainWindow*>(widget))
+			return mainWindow;
+	return nullptr;
 }

@@ -274,3 +274,32 @@ void ZenoEditorDockTitleWidget::paintEvent(QPaintEvent* event)
 	p.setFont(QFont("HarmonyOS Sans", 11));
 	p.drawText(rect(), Qt::AlignCenter, m_title);
 }
+
+
+
+ZenoPropDockTitleWidget::ZenoPropDockTitleWidget(QWidget* parent)
+	: ZenoDockTitleWidget(parent)
+	, m_title("property")
+{
+
+}
+
+ZenoPropDockTitleWidget::~ZenoPropDockTitleWidget()
+{
+}
+
+void ZenoPropDockTitleWidget::setTitle(const QString& title)
+{
+	m_title = title;
+	update();
+}
+
+void ZenoPropDockTitleWidget::paintEvent(QPaintEvent* event)
+{
+	ZenoDockTitleWidget::paintEvent(event);
+
+	QPainter p(this);
+	p.setPen(QPen(QColor(255, 255, 255, 128)));
+	p.setFont(QFont("HarmonyOS Sans", 11));
+	p.drawText(rect(), Qt::AlignCenter, m_title);
+}

@@ -29,6 +29,7 @@ public slots:
     void onToggleDockWidget(DOCK_TYPE, bool);
     void onDockSwitched(DOCK_TYPE);
     void importGraph();
+    void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

@@ -56,5 +56,21 @@ private:
 	QString m_title;
 };
 
+class ZenoPropDockTitleWidget : public ZenoDockTitleWidget
+{
+	Q_OBJECT
+public:
+	ZenoPropDockTitleWidget(QWidget* parent = nullptr);
+	~ZenoPropDockTitleWidget();
+
+public slots:
+	void setTitle(const QString& title);
+
+protected:
+	void paintEvent(QPaintEvent* event) override;
+
+private:
+	QString m_title;
+};
 
 #endif

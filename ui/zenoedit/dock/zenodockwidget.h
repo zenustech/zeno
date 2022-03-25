@@ -26,6 +26,8 @@ public:
     ~ZenoDockWidget();
 
     void setWidget(DOCK_TYPE m_type, QWidget* widget);
+    void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    DOCK_TYPE type() const;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -35,6 +37,7 @@ signals:
     void floatTriggered();
     void splitRequest(bool bHorzonal);
     void dockSwitchClicked(DOCK_TYPE);
+    void nodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes);
 
 private slots:
     void onDockOptionsClicked();

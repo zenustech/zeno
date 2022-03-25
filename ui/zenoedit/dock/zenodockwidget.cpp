@@ -6,6 +6,8 @@
 #include "nodesview/zenographseditor.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "../panel/zenoproppanel.h"
+#include <zenoui/model/modelrole.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,14 +47,49 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         Q_ASSERT(pEditor);
         connect(pEditorTitle, SIGNAL(actionTriggered(QAction*)), pEditor, SLOT(onMenuActionTriggered(QAction*)));
 	}
+    else if (m_type == DOCK_NODE_PARAMS)
+    {
+        ZenoPropDockTitleWidget* pPropTitle = new ZenoPropDockTitleWidget;
+        pPropTitle->setupUi();
+        pTitleWidget = pPropTitle;
+    }
 	else
 	{
         pTitleWidget = new ZenoDockTitleWidget;
         pTitleWidget->setupUi();
-        setTitleBarWidget(pTitleWidget);
 	}
+    setTitleBarWidget(pTitleWidget);
+
 	connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
 	connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
+}
+
+void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+{
+    if (m_type != DOCK_NODE_PARAMS)
+        return;
+
+    ZenoPropPanel* panel = qobject_cast<ZenoPropPanel*>(widget());
+    Q_ASSERT(panel);
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
+    if (select)
+    {
+        const QModelIndex& idx = nodes[0];
+        QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
+        pPropTitle->setTitle(nodeName);
+    }
+    else
+    {
+        pPropTitle->setTitle("property");
+    }
+    panel->init(pModel, subgIdx, nodes, select);
+}
+
+DOCK_TYPE ZenoDockWidget::type() const
+{
+    return m_type;
 }
 
 void ZenoDockWidget::paintEvent(QPaintEvent* event)

@@ -1155,6 +1155,9 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         bool bSelected = isSelected();
         m_headerWidget->toggle(bSelected);
         m_bodyWidget->toggle(bSelected);
+
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        mainWin->onNodesSelected(m_subGpIndex, { index() }, bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {

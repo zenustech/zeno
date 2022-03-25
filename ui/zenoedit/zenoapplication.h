@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class GraphsManagment;
+class ZenoMainWindow;
 
 class GraphsModel;
 
@@ -18,6 +19,7 @@ public:
     void initStyleSheets();
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
+    ZenoMainWindow* getMainWindow();
 
 private:
     QSharedPointer<GraphsManagment> m_pGraphs;

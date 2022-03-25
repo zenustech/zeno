@@ -1,6 +1,7 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include "panel/zenodatapanel.h"
+#include "panel/zenoproppanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
@@ -260,9 +261,9 @@ void ZenoMainWindow::initDocks()
 	m_viewDock->setWidget(DOCK_VIEW, view);
 	m_docks.insert(DOCK_VIEW, m_viewDock);
 
-    //m_parameter = new ZenoDockWidget("parameter", this);
-    //m_parameter->setObjectName(QString::fromUtf8("dock_parameter"));
-    //m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    m_parameter = new ZenoDockWidget("parameter", this);
+    m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
     //m_parameter->setWidget(new QWidget);
 
     //m_pEditor = new ZenoGraphsEditor;
@@ -413,11 +414,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         }
         case DOCK_NODE_PARAMS:
         {
-            QWidget* pWidget = new QWidget;
-			QPalette pal = pWidget->palette();
-			pal.setColor(QPalette::Window, QColor(255, 0, 0));
-            pWidget->setAutoFillBackground(true);
-            pWidget->setPalette(pal);
+            ZenoPropPanel* pWidget = new ZenoPropPanel;
             pDock->setWidget(type, pWidget);
             break;
         }
@@ -527,6 +524,7 @@ void ZenoMainWindow::verticalLayout()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
+    splitDockWidget(m_viewDock, m_parameter, Qt::Horizontal);
 }
 
 void ZenoMainWindow::onlyEditorLayout()
@@ -614,4 +612,14 @@ void ZenoMainWindow::onRunClicked(int nFrames)
     IGraphsModel* pModel = pGraphsMgr->currentModel();
     GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
     launchProgram(pLegacy, nFrames);
+}
+
+void ZenoMainWindow::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+{
+    //dispatch to all property panel.
+    auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget* dock : docks)
+    {
+        dock->onNodesSelected(subgIdx, nodes, select);
+    }
 }
