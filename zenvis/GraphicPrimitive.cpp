@@ -2021,9 +2021,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
-    if(reflectPass==1.0 && mat_reflection==1.0 && int(mat_reflectID)==int(reflectionViewID))
+    if(reflectPass==1.0 && mat_reflection==1.0 )
         discard;
     /* custom_shader_end */
+    vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
     vec3 color = vec3(0,0,0);
@@ -2105,7 +2106,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     color = ACESFitted(color.rgb, 2.2);
     if(mat_reflection==1.0 && mat_reflectID>-1 && mat_reflectID<16)
         color = mix(color, reflectionCalculation(position, int(mat_reflectID)), mat_reflection);
-    return color;
+    return color + colorEmission;
 
 
 }
