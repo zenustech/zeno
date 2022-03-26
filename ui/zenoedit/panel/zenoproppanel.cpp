@@ -66,6 +66,7 @@ QGroupBox* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& sub
 
 	QGroupBox* pParamsBox = new QGroupBox;
 	QVBoxLayout* pLayout = new QVBoxLayout;
+	pLayout->setContentsMargins(15, 20, 15, 20);
 	for (auto paramName : params.keys())
 	{
 		const PARAM_INFO& param = params[paramName];
@@ -229,6 +230,8 @@ QGroupBox* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& sub
 		return nullptr;
 
 	QVBoxLayout* pLayout = new QVBoxLayout;
+	pLayout->setContentsMargins(15, 20, 15, 20);
+
 	for (QString inputSock : inputs.keys())
 	{
 		Q_ASSERT(inputs.find(inputSock) != inputs.end());

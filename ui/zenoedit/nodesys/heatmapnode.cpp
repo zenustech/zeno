@@ -22,29 +22,32 @@ QGraphicsLayout* MakeHeatMapNode::initParams()
 
 void MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param)
 {
-	ZenoNode::initParam(ctrl, pParamLayout, name, param);
-}
+	if (param.control == CONTROL_HEATMAP)
+	{
+		ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
+		pParamLayout->addItem(pNameItem);
 
-QGraphicsLinearLayout* MakeHeatMapNode::initCustomParamWidgets()
-{
-	QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
-	pParamLayout->addItem(pNameItem);
-
-	ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-	pParamLayout->addItem(pEditBtn);
-	connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
-
-	return pParamLayout;
+		ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+		pParamLayout->addItem(pEditBtn);
+		connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+	}
+	else
+	{
+		ZenoNode::initParam(ctrl, pParamLayout, name, param);
+	}
 }
 
 void MakeHeatMapNode::onEditClicked()
 {
-	COLOR_RAMPS ramps = index().data(ROLE_COLORRAMPS).value<COLOR_RAMPS>();
-	ZenoHeatMapEditor* editor = new ZenoHeatMapEditor(ramps);
-	int ret = editor->exec();
-	COLOR_RAMPS newRamps = editor->colorRamps();
-	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-	pModel->setData2(subGraphIndex(), index(), QVariant::fromValue(newRamps), ROLE_COLORRAMPS);
-	editor->deleteLater();
+	PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+	if (params.find("color") != params.end())
+	{
+		const QLinearGradient& grad = params["color"].value.value<QLinearGradient>();
+		ZenoHeatMapEditor* editor = new ZenoHeatMapEditor(grad);
+		int ret = editor->exec();
+		//COLOR_RAMPS newRamps = editor->colorRamps();
+		IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+		//pModel->setData2(subGraphIndex(), index(), QVariant::fromValue(newRamps), ROLE_COLORRAMPS);
+		editor->deleteLater();
+	}
 }

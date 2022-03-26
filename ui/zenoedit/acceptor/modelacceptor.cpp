@@ -319,9 +319,24 @@ void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRam
 	if (!m_currentGraph)
 		return;
 
+	QLinearGradient linearGrad;
+	for (COLOR_RAMP ramp : colorRamps)
+	{
+		linearGrad.setColorAt(ramp.pos, QColor::fromRgbF(ramp.r, ramp.g, ramp.b));
+	}
+
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
-	m_currentGraph->setData(idx, QVariant::fromValue(colorRamps), ROLE_COLORRAMPS);
+
+	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();
+
+	PARAM_INFO param;
+	param.name = "color";
+	param.control = CONTROL_HEATMAP;
+	param.value = QVariant::fromValue(linearGrad);
+	params.insert(param.name, param);
+
+	m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
 }
 
 void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard)

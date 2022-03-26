@@ -4,7 +4,6 @@
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include "zenoheatmapitem.h"
 #include <zenoui/util/uihelper.h>
 #include <zenoui/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
@@ -539,11 +538,6 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			    });
 		    m_paramControls[paramName] = pMultiStrEdit;
 		    break;
-	    }
-	    case CONTROL_HEATMAP:
-	    {
-		    m_bHeapMap = true;
-		    //break;
 	    }
 	    default:
 	    {
