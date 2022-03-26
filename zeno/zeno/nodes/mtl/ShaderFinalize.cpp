@@ -3,6 +3,8 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
 
 namespace zeno {
@@ -79,6 +81,19 @@ struct ShaderFinalize : INode {
         mtl->common = std::move(commonCode);
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
+
+        if (has_input("tex2dList"))
+        {
+            auto tex2dList = get_input<ListObject>("tex2dList")->get<std::shared_ptr<zeno::Texture2DObject>>();
+            for (const auto &tex: tex2dList)
+            {
+                auto texId = mtl->tex2Ds.size();
+                auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
+			    mtl->tex2Ds.push_back(tex);
+                mtl->common.insert(0, texCode);
+            }
+        }
+
         set_output("mtl", std::move(mtl));
     }
 };
@@ -111,6 +126,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "reflectID", "-1"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
+        {"list", "tex2dList"},
     },
     {
         {"MaterialObject", "mtl"},
