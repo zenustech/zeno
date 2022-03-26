@@ -35,6 +35,15 @@ QComboBox QAbstractItemView {
     outline: 0px;
 }
 
+QGroupBox {
+    border: 1px solid rgb(99, 99, 99);
+    border-radius: 2px;
+}
+
+QGroupBox::title {
+    font: 14px 'HarmonyOS Sans';
+    color: rgba(255,255,255,0.40);
+}
 
 QPushButton#grayButton
 {
@@ -186,3 +195,4 @@ QTextEdit {
 QTextEdit : focus{
     color: rgb(255,255,255);
 }
+

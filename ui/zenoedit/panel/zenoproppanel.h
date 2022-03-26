@@ -21,6 +21,9 @@ public slots:
     void onLineEditFinish();
 
 private:
+    QGroupBox* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
+    QGroupBox* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
+
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;
 };
