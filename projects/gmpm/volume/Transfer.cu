@@ -15,8 +15,6 @@
 
 namespace zeno {
 
-static ZpcInitializer g_zpc_initializer{};
-
 struct ZSParticleToZSLevelSet : INode {
   template <typename LsT>
   void p2g(zs::CudaExecutionPolicy &cudaPol,
@@ -177,13 +175,13 @@ struct PrimitiveToZSLevelSet : INode {
     const auto dx = get_input2<float>("dx");
     Vector<TV> xs{pos.size(), memsrc_e::device, 0},
         elePos{numEles, memsrc_e::device, 0};
-    zs::copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(),
+    copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(),
              sizeof(zeno::vec3f) * pos.size());
     auto cudaPol = cuda_exec().device(0);
     {
       if (quads.size()) {
         Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device, 0};
-        zs::copy(zs::mem_device, (void *)inds.data(), (void *)quads.data(),
+        copy(zs::mem_device, (void *)inds.data(), (void *)quads.data(),
                  sizeof(zeno::vec4i) * numEles);
         cudaPol(
             range(elePos.size()),
@@ -196,7 +194,7 @@ struct PrimitiveToZSLevelSet : INode {
             });
       } else if (tris.size()) {
         Vector<zs::vec<int, 3>> inds{numEles, memsrc_e::device, 0};
-        zs::copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(),
+        copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(),
                  sizeof(zeno::vec3i) * numEles);
         cudaPol(
             range(elePos.size()),
@@ -208,7 +206,7 @@ struct PrimitiveToZSLevelSet : INode {
             });
       } else if (lines.size()) {
         Vector<zs::vec<int, 2>> inds{numEles, memsrc_e::device, 0};
-        zs::copy(zs::mem_device, (void *)inds.data(), (void *)lines.data(),
+        copy(zs::mem_device, (void *)inds.data(), (void *)lines.data(),
                  sizeof(zeno::vec2i) * numEles);
         cudaPol(
             range(elePos.size()),
