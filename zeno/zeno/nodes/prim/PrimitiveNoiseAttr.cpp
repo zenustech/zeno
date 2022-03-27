@@ -111,9 +111,15 @@ struct PrimitivePerlinNoiseAttr : INode {
     auto prim = has_input("prim") ?
         get_input<PrimitiveObject>("prim") :
         std::make_shared<PrimitiveObject>();
+    
+
     //auto min = get_input<NumericObject>("min");
     //auto max = get_input<NumericObject>("max");
-    auto offset =  vec3f(frand(), frand(), frand());
+    auto offset = vec3f(frand(), frand(), frand());
+    if(has_input("seed"))
+        offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
+    auto res = std::make_shared<zeno::NumericObject>();
+    float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto attrType = std::get<std::string>(get_param("attrType"));
     auto &pos = prim->verts;
@@ -122,15 +128,16 @@ struct PrimitivePerlinNoiseAttr : INode {
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     prim->attr_visit(attrName, [&](auto &arr) {
+    #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                vec3f p = pos[i] + offset;
+                vec3f p = pos[i] * f + offset;
                 float x = perlin(p[0], p[1],p[2]);
                 float y = perlin(p[1], p[2], p[0]);
                 float z = perlin(p[2], p[0], p[1]);
                 arr[i] = vec3f(x,y,z);
             } else {
-                vec3f p = pos[i] + offset;
+                vec3f p = pos[i] * f + offset;
                 arr[i] = perlin(p[0], p[1],p[2]);
             }
         }
@@ -142,7 +149,8 @@ struct PrimitivePerlinNoiseAttr : INode {
 
 ZENDEFNODE(PrimitivePerlinNoiseAttr,
     { /* inputs: */ {
-    "prim",
+    "prim","seed",
+    {"float", "freq", "1.0"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
