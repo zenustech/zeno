@@ -233,12 +233,16 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 	{
 		if (!defaultValue.isNull())
 			inputs[inSock].info.defaultValue = defaultValue;	//default value?
+        //if (defaultValue.type() == QVariant::Int)
+            //zeno::log_critical("rehappy {}", defaultValue.toInt());
 		if (!outId.isEmpty() && !outSock.isEmpty())
 		{
 			inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
 			m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 		}
-	}
+	} else {
+        zeno::log_warn("no such input socket {}", inSock.toStdString());
+    }
 }
 
 void ModelAcceptor::setParamValue(const QString& id, const QString& name, const QVariant& var)
@@ -248,12 +252,6 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
 	QModelIndex idx = m_currentGraph->index(id);
 	Q_ASSERT(idx.isValid());
 	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();
-
-	if (id == "3e5f8949-MakeMultilineString" && name == "value")
-	{
-		int j;
-		j = 0;
-	}
 
 	if (params.find(name) != params.end())
 	{
