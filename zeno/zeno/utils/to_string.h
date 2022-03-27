@@ -37,7 +37,7 @@ void to_stream(Os &os, T const &t, std::string_view fms) {
     os << "()";
 }
 
-template <class Os, class T, std::enable_if_t<std::is_invocable_v<__stream_bit_shl, Os &, T const &>, int> = 0>
+template <class Os, class T, std::enable_if_t<std::is_invocable_v<__stream_bit_shl, Os &, T const &> && !std::is_enum_v<T>, int> = 0>
 void to_stream(Os &os, T const &t, std::string_view fms) {
     auto flgs = os.flags();
     if (fms.size() != 0) {
@@ -81,13 +81,13 @@ void to_stream(Os &os, T const &t, std::string_view fms) {
     os.flags(flgs);
 }
 
-template <class Os, class T, std::enable_if_t<!std::is_invocable_v<__stream_bit_shl, Os &, T const &> && std::is_enum_v<T>
+template <class Os, class T, std::enable_if_t<std::is_enum_v<T>
           && std::is_invocable_v<__stream_bit_shl, Os &, typename std::underlying_type<T>::type const &>, int> = 0>
 void to_stream(Os &os, T const &t, std::string_view fms) {
 #ifdef ZENO_ENABLE_MAGICENUM
     os << magic_enum::enum_name(t);
 #else
-    to_stream(os, std::underlying_type_t<T>{t});
+    os << std::underlying_type_t<T>{t};
 #endif
 }
 
@@ -98,16 +98,15 @@ std::string to_string(T const &t, std::string_view fms) {
     return ss.str();
 }
 
-template <class T, std::enable_if_t<!std::is_convertible_v<T, std::string>, int> = 0>
+template <class T>
 std::string to_string(T const &t) {
-    std::ostringstream ss;
-    to_stream(ss, t, {});
-    return ss.str();
-}
-
-template <class T, std::enable_if_t<std::is_convertible_v<T, std::string>, int> = 0>
-std::string to_string(T const &t) {
-    return t;
+    if constexpr (std::is_convertible_v<T, std::string>) {
+        return t;
+    } else {
+        std::ostringstream ss;
+        to_stream(ss, t, {});
+        return ss.str();
+    }
 }
 
 }

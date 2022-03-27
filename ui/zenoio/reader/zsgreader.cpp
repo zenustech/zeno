@@ -216,6 +216,7 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     }
 	else if (val.GetType() == rapidjson::kNumberType)
     {
+            zeno::log_critical("rapidjson number type {}", val.GetType());
         if (val.IsDouble())
             return val.GetDouble();
         else if (val.IsInt())
