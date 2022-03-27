@@ -1,12 +1,13 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/tuple_hash.h>
-#include <zeno/utils/value_type.h>
 #include <unordered_map>
 
 namespace zeno {
+namespace {
 
 struct PrimWeldClose : INode {
     virtual void apply() override {
@@ -20,13 +21,24 @@ struct PrimWeldClose : INode {
         for (int i = 0; i < prim->verts.size(); i++) {
             vec3f pos = prim->verts[i];
             vec3i posi = vec3i(pos * factor);
-            lut.emplace(posi, i);
+            auto [it, succ] = lut.emplace(posi, i);
+            if (!succ) {
+            }
         }
 
-        auto &tag = prim->verts.add_attr<int>(tagAttr);
-        std::fill(tag.begin(), tag.end(), 0);
-        for (auto const &[key, idx]: lut) {
-            tag[idx] = 1;
+        if (tagAttr.size()) {
+            auto &tag = prim->verts.add_attr<int>(tagAttr);
+            std::fill(tag.begin(), tag.end(), 0);
+            for (auto const &[key, idx]: lut) {
+                tag[idx] = 1;
+            }
+        } else {
+            std::vector<int> revamp;
+            revamp.reserve(lut.size());
+            for (auto const &[key, idx]: lut) {
+                revamp.push_back(idx);
+            }
+            primRevampVerts(prim.get(), revamp);
         }
 
         set_output("prim", std::move(prim));
@@ -37,8 +49,8 @@ struct PrimWeldClose : INode {
 ZENDEFNODE(PrimWeldClose, {
     {
     {"PrimitiveObject", "prim"},
-    {"string", "tagAttr", "tag"},
     {"float", "distance", "0.00005"},
+    {"string", "tagAttr", ""},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -49,4 +61,4 @@ ZENDEFNODE(PrimWeldClose, {
 });
 
 }
-
+}

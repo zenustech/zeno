@@ -9,10 +9,10 @@
 
 namespace zeno {
 
-ZENO_API void primFilter(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed) {
+ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed) {
     std::vector<int> revamp;
     revamp.reserve(prim->size());
-    auto const &tagArr = prim->attr<int>(tagAttr);
+    auto const &tagArr = prim->verts.attr<int>(tagAttr);
     if (!isInversed) {
         for (int i = 0; i < prim->size(); i++) {
             if (tagArr[i] == tagValue)
@@ -25,6 +25,10 @@ ZENO_API void primFilter(PrimitiveObject *prim, std::string tagAttr, int tagValu
         }
     }
 
+    primRevampVerts(prim, revamp);
+}
+
+ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp) {
     prim->foreach_attr([&] (auto const &key, auto &arr) {
         for (int i = 0; i < revamp.size(); i++) {
             arr[i] = arr[revamp[i]];
@@ -157,13 +161,24 @@ ZENO_API void primFilter(PrimitiveObject *prim, std::string tagAttr, int tagValu
     }
 }
 
+ZENO_API void primFilterFaces(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed) {
+    throw; // TODO
+}
+
+namespace {
+
 struct PrimFilter : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto tagAttr = get_input<StringObject>("tagAttr")->get();
     auto tagValue = get_input<NumericObject>("tagValue")->get<int>();
     auto isInversed = get_input<NumericObject>("isInversed")->get<bool>();
-    primFilter(prim.get(), tagAttr, tagValue, isInversed);
+    auto byElement = get_input<StringObject>("byElement")->get();
+    if (byElement == "faces") {
+        primFilterFaces(prim.get(), tagAttr, tagValue, isInversed);
+    } else {
+        primFilterVerts(prim.get(), tagAttr, tagValue, isInversed);
+    }
     set_output("prim", get_input("prim"));
   }
 };
@@ -174,6 +189,7 @@ ZENDEFNODE(PrimFilter, {
     {"string", "tagAttr", "tag"},
     {"int", "tagValue", "1"},
     {"bool", "isInversed", "0"},
+    {"enum verts faces", "byElement", "0"},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -183,4 +199,5 @@ ZENDEFNODE(PrimFilter, {
     {"primitive"},
 });
 
+}
 }

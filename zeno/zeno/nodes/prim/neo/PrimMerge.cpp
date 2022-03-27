@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 
 namespace zeno {
+namespace {
 
 struct PrimMerge : INode {
     virtual void apply() override {
@@ -350,4 +351,5 @@ ZENDEFNODE(PrimMerge, {
     {"primitive"},
 });
 
+}
 }
