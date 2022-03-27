@@ -13,7 +13,7 @@
 #include "zenvisapi.hpp"
 
 namespace zenvis {
-
+int oldnx, oldny;
 extern void setCascadeLevels(float far);
 extern void initCascadeShadow();
 extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
@@ -24,6 +24,16 @@ extern unsigned int getShadowMap();
 extern int getCascadeCount();
 extern void setfov(float f);
 extern void setaspect(float f);
+extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp);
+extern void initReflectiveMaps(int nx, int ny);
+extern void BeginReflective(int i, int nx, int ny);
+extern void EndReflective();
+extern void BeginSecondReflective(int i, int nx, int ny);
+extern void EndSecondReflective();
+extern glm::mat4 getReflectViewMat(int i);
+extern void setReflectMVP(int i, glm::mat4 mvp);
+extern void setReflectivePlane(int i, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp);
 
 int curr_frameid = -1;
 
@@ -54,7 +64,9 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-float g_near, g_far;
+float g_near, g_far, g_fov;
+glm::mat4 g_view, g_proj;
+glm::vec3 g_camPos, g_camView, g_camUp;
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
@@ -74,11 +86,19 @@ void look_perspective(
     view = glm::lookAt(center - back, center, up);
     proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
                       -100.0, 100.0);
+    g_view = view;
+    g_proj = proj;
   } else {
     view = glm::lookAt(center - back * (float)radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
-    g_near = 0.05;
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.1, 20000.0 * std::max(1.0f, (float)radius / 10000.f));
+    g_fov = fov;
+    g_near = 0.1;
     g_far = 20000.0 * std::max(1.0f, (float)radius / 10000.f);
+    g_view = view;
+    g_proj = proj;
+    g_camPos = center - back * (float)radius;
+    g_camView = back * (float)radius;
+    g_camUp = up;
   }
   camera_radius = radius;
   float level = std::fmax(std::log(radius) / std::log(5) - 1.0, -1);
@@ -122,6 +142,7 @@ extern glm::vec3 getLight()
 {
   return light;
 }
+extern void setLightHight(float h);
 void setLight(float x, float y, float z)
 {
   light = glm::vec3(x,y,z);
@@ -130,9 +151,11 @@ std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
-  
+  glDepthRangef(0,30000);
   setLight(1,1,0);
+  setLightHight(1000);
   initCascadeShadow();
+  initReflectiveMaps(nx, ny);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -159,7 +182,7 @@ static void draw_small_axis() {
   proj = gizmo_proj;
   CHECK_GL(glViewport(0, 0, nx * 0.1, ny * 0.1));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
-  axis->draw();
+  axis->draw(true);
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glViewport(0, 0, nx, ny));
   view = backup_view;
@@ -183,20 +206,61 @@ static void shadowPass()
   }
 }
 
+
+static void drawSceneDepthSafe(float aspRatio, bool reflect)
+{
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
+  for(int i=5; i>=1; i--)
+  {
+    CHECK_GL(glClearColor(0, 0, 0, 0.0f));
+    CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+    proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
+    
+    for (auto const &[key, gra]: current_frame_data()->graphics) {
+      gra->draw(reflect);
+    }
+    
+    
+  }
+}
+extern void setReflectionViewID(int i);
+extern bool renderReflect(int i);
+extern void updateReflectTexture(int nx, int ny);
+static void reflectivePass()
+{
+  
+  updateReflectTexture(nx, ny);
+  
+  //loop over reflective planes
+  for(int i=0;i<8;i++)
+  {
+    if(!renderReflect(i))
+      continue;
+    setReflectivePlane(i,  g_camPos, g_camView, g_camUp);
+    BeginReflective(i, nx, ny);
+    vao->bind();
+    view = getReflectViewMat(i);
+    setReflectionViewID(i);
+    glm::mat4 p = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), g_near, g_far);
+    setReflectMVP(i, p * view);
+    drawSceneDepthSafe((float)(nx * 1.0 / ny), true);
+    vao->unbind();
+    view = g_view;
+  }
+  EndReflective();
+}
 static void my_paint_graphics() {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
-  for (auto const &[key, gra]: current_frame_data()->graphics) {
-    gra->draw();
-  }
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), false);
   if (show_grid) {
-      axis->draw();
-      grid->draw();
-      draw_small_axis();
-  }
+        axis->draw(false);
+        grid->draw(false);
+        draw_small_axis();
+    }
   vao->unbind();
 }
 
@@ -290,7 +354,7 @@ void main(void)
 )";
 hg::OpenGL::Program* tmProg=nullptr;
 GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
-int oldnx, oldny;
+
 GLuint texRect=0, regularFBO = 0;
 GLuint emptyVAO=0;
 void ScreenFillQuad(GLuint tex)
@@ -313,6 +377,7 @@ void ScreenFillQuad(GLuint tex)
 }
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
+  reflectivePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;

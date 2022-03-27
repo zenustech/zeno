@@ -4,6 +4,7 @@
 #include "MyShader.hpp"
 #include "main.hpp"
 #include <memory>
+#include <string>
 #include <vector>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/ticktock.h>
@@ -31,6 +32,13 @@ extern unsigned int getIrradianceMap();
 extern unsigned int getPrefilterMap();
 extern unsigned int getBRDFLut();
 extern glm::vec3 getLight();
+extern std::vector<glm::mat4> getLightSpaceMatrices();
+extern glm::mat4 getReflectMVP(int i);
+extern std::vector<unsigned int> getReflectMaps();
+extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
+extern bool renderReflect(int i);
+extern int getReflectionViewID();
+
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
@@ -142,7 +150,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
             } else {
                 tang[i] = tangent * (1.f / tanlen);
             }*/
-
+            tang[i] = tangent;
         } else {
             tang[i] = zeno::vec3f(0);
             //zeno::vec3f n = nrm[tris[i][0]], unused;
@@ -182,7 +190,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
         mem[15 * i + 12] = nrm[tris[i][2]];
         mem[15 * i + 13] = has_uv ? tris.attr<zeno::vec3f>("uv2")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
         mem[15 * i + 14] = tang[i];
-
+        //std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
         trisdata[i] = zeno::vec3i(i*3, i*3+1, i*3+2);
 
     }
@@ -352,10 +360,33 @@ struct GraphicPrimitive : IGraphic {
         }
         
         triObj.prog = get_tris_program(path, prim->mtl);
-        if(prim->mtl!=nullptr)
+        if(prim->mtl!=nullptr){
             triObj.shadowprog = get_shadow_program(prim->mtl);
+            auto code = prim->mtl->frag;
+            if(code.find("mat_reflection = float(float(1))"))
+            {
+                glm::vec3 c=glm::vec3(0);
+                for(auto v:prim->verts)
+                {
+                    c+=glm::vec3(v[0], v[1], v[2]);
+                }
+                c = c/(prim->verts.size() + 0.000001f);
+                auto n=prim->attr<zeno::vec3f>("nrm")[0];
+                auto idpos = code.find("mat_reflectID");
+                auto idstr0 = code.substr(idpos + 28, 1);
+                auto idstr1 = code.substr(idpos + 29, 1);
+                std::string num;
+                if(idstr1!=")")
+                    num = idstr0+idstr1;
+                else
+                    num = idstr0;
+                auto refID = std::atoi(num.c_str());
+                setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
+            }
+        }
         if(!triObj.prog)
             triObj.prog = get_tris_program(path,nullptr);
+        
     }
 
     draw_all_points = !points_count && !lines_count && !tris_count;
@@ -438,7 +469,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void draw() override {
+  virtual void draw(bool reflect) override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
     int id = 0;
@@ -531,40 +562,49 @@ struct GraphicPrimitive : IGraphic {
 
         if (prim_has_mtl) {
             const int &texsSize = textures.size();
+            int texOcp=0;
             for (int texId=0; texId < texsSize; ++ texId)
             {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.prog->set_uniformi(texName.c_str(), texId);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
                 CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                texOcp++;
             }
-            triObj.prog->set_uniformi("skybox",texsSize);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize));
+            triObj.prog->set_uniformi("skybox",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("irradianceMap",texsSize+1);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+1));
+            triObj.prog->set_uniformi("irradianceMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("prefilterMap",texsSize+2);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+2));
+            triObj.prog->set_uniformi("prefilterMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+            texOcp++;
 
-            triObj.prog->set_uniformi("brdfLUT",texsSize+3);
-            CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+3));
+            triObj.prog->set_uniformi("brdfLUT",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+            texOcp++;
 
             for(size_t i=0; i<getCascadeDistances().size()+1; i++){
-                auto name = "shadowMap" + std::to_string(i);
-                triObj.prog->set_uniformi(name.c_str(), texsSize+4+i);
-                CHECK_GL(glActiveTexture(GL_TEXTURE0+texsSize+4+i));
+                auto name = "shadowMap[" + std::to_string(i) +"]";
+                triObj.prog->set_uniformi(name.c_str(), texOcp);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
                 if (auto shadowMap = getShadowMap(i); shadowMap != (unsigned int)-1)
                     CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+                texOcp++;
             }
+            
+
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());
@@ -575,6 +615,34 @@ struct GraphicPrimitive : IGraphic {
                 triObj.prog->set_uniform(name.c_str(), getCascadeDistances()[i]);
             }
             triObj.prog->set_uniform("lview", getLightMV());
+
+            auto matrices = getLightSpaceMatrices();
+            for(size_t i=0;i<matrices.size();i++)
+            {
+                auto name = "lightSpaceMatrices[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), matrices[i]);
+            }
+
+            if(reflect)
+            {
+                triObj.prog->set_uniform("reflectPass", 1.0f);
+            }
+            else {
+                triObj.prog->set_uniform("reflectPass",0.0f);
+            }
+            triObj.prog->set_uniform("reflectionViewID", (float)getReflectionViewID());
+            for(int i=0;i<16;i++)
+            {
+                if(!renderReflect(i))
+                    continue;
+                auto name = "reflectMVP[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), getReflectMVP(i));
+                auto name2 = "reflectionMap"+std::to_string(i);
+                triObj.prog->set_uniformi(name2.c_str(),texOcp);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
+                texOcp++;
+            }
     
         }
 
@@ -662,7 +730,7 @@ struct GraphicPrimitive : IGraphic {
   Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
   {
 auto SMVS = R"(
-#version 420 core
+#version 330 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -694,7 +762,7 @@ void main()
 }
 )";
 
-auto SMFS = "#version 420 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
+auto SMFS = "#version 330 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
@@ -729,7 +797,7 @@ void main()
 )";
 
 auto SMGS = R"(
-#version 420 core
+#version 330 core
 
 layout(triangles, invocations = 8) in;
 layout(triangle_strip, max_vertices = 3) out;
@@ -759,7 +827,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 420
+#version 330
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -794,7 +862,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 420
+#version 330
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -841,7 +909,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 420
+#version 330
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -895,7 +963,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 420
+#version 330
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -928,7 +996,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 420
+#version 330
 )" + (mtl ? mtl->extensions : "") + R"(
 const float minDot = 1e-5;
 
@@ -1774,22 +1842,15 @@ float brightness(vec3 c)
     return sqrt(c.x * c.r * 0.241 + c.y * c.y * 0.691 + c.z * c.z * 0.068);
 }
 uniform vec3 light0;
-uniform sampler2D shadowMap0;
-uniform sampler2D shadowMap1;
-uniform sampler2D shadowMap2;
-uniform sampler2D shadowMap3;
-uniform sampler2D shadowMap4;
-uniform sampler2D shadowMap5;
-uniform sampler2D shadowMap6;
-uniform sampler2D shadowMap7;
-uniform sampler2D shadowMap8;
+uniform sampler2D shadowMap[9];
+
 uniform float farPlane;
 uniform mat4 lview;
 
-layout (std140, binding = 0) uniform LightSpaceMatrices
-{
-    mat4 lightSpaceMatrices[16];
-};
+//layout (std140, binding = 0) uniform LightSpaceMatrices
+//{
+uniform mat4 lightSpaceMatrices[16];
+//};
 uniform float cascadePlaneDistances[16];
 uniform int cascadeCount;   // number of frusta - 1
 vec3 random3(vec3 c) {
@@ -1805,24 +1866,8 @@ vec3 random3(vec3 c) {
 float sampleShadowArray(vec2 coord, int layer)
 {
     vec4 res;
-    if(layer==0)
-    {
-        res = texture(shadowMap0, coord);
-    }
-    if(layer==1)
-        res = texture(shadowMap1, coord);
-    if(layer==2)
-        res = texture(shadowMap2, coord);
-    if(layer==3)
-        res = texture(shadowMap3, coord);
-    if(layer==4)
-        res = texture(shadowMap4, coord);
-    if(layer==5)
-        res = texture(shadowMap5, coord);
-    if(layer==6)
-        res = texture(shadowMap6, coord);
-    if(layer==7)
-        res = texture(shadowMap7, coord);
+    
+    res = texture(shadowMap[layer], coord);
 
     return res.r;    
 }
@@ -1830,7 +1875,7 @@ float PCFLayer(float currentDepth, float bias, vec3 pos, int layer, int k, vec2 
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap0, 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[0], 0));
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -1913,9 +1958,57 @@ float ShadowCalculation(vec3 fragPosWorldSpace)
     return mix(shadow1, shadow2, coef);
 }
 
-
-
-
+uniform mat4 reflectMVP[16];
+uniform sampler2DRect reflectionMap0;
+uniform sampler2DRect reflectionMap1;
+uniform sampler2DRect reflectionMap2;
+uniform sampler2DRect reflectionMap3;
+uniform sampler2DRect reflectionMap4;
+uniform sampler2DRect reflectionMap5;
+uniform sampler2DRect reflectionMap6;
+uniform sampler2DRect reflectionMap7;
+uniform sampler2DRect reflectionMap8;
+uniform sampler2DRect reflectionMap9;
+uniform sampler2DRect reflectionMap10;
+uniform sampler2DRect reflectionMap11;
+uniform sampler2DRect reflectionMap12;
+uniform sampler2DRect reflectionMap13;
+uniform sampler2DRect reflectionMap14;
+uniform sampler2DRect reflectionMap15;
+vec4 sampleReflectRectID(vec2 coord, int id)
+{
+    if(id==0) return texture2DRect(reflectionMap0, coord);
+    if(id==1) return texture2DRect(reflectionMap1, coord);
+    if(id==2) return texture2DRect(reflectionMap2, coord);
+    if(id==3) return texture2DRect(reflectionMap3, coord);
+    if(id==4) return texture2DRect(reflectionMap4, coord);
+    if(id==5) return texture2DRect(reflectionMap5, coord);
+    if(id==6) return texture2DRect(reflectionMap6, coord);
+    if(id==7) return texture2DRect(reflectionMap7, coord);
+    if(id==8) return texture2DRect(reflectionMap8, coord);
+    if(id==9) return texture2DRect(reflectionMap9, coord);
+    if(id==10) return texture2DRect(reflectionMap10, coord);
+    if(id==11) return texture2DRect(reflectionMap11, coord);
+    if(id==12) return texture2DRect(reflectionMap12, coord);
+    if(id==13) return texture2DRect(reflectionMap13, coord);
+    if(id==14) return texture2DRect(reflectionMap14, coord);
+    if(id==15) return texture2DRect(reflectionMap15, coord);
+}
+vec3 reflectionCalculation(vec3 worldPos, int id)
+{
+    vec4 fragPosReflectSpace = reflectMVP[id] * vec4(worldPos, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosReflectSpace.xyz / fragPosReflectSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+    {
+        return sampleReflectRectID(projCoords.xy * vec2(textureSize(reflectionMap0,0)), id ).xyz;
+    }
+    return vec3(0,0,0);
+}
+uniform float reflectPass;
+uniform float reflectionViewID;
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //normal = normalize(normal);
     vec3 L1 = light0;
@@ -1928,7 +2021,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     /* custom_shader_begin */
 )" + mtl->frag + R"(
+    if(reflectPass==1.0 && mat_reflection==1.0 )
+        discard;
     /* custom_shader_end */
+    vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
     vec3 color = vec3(0,0,0);
@@ -2008,7 +2104,9 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
 
     color = ACESFitted(color.rgb, 2.2);
-    return color;
+    if(mat_reflection==1.0 && mat_reflectID>-1 && mat_reflectID<16)
+        color = mix(color, reflectionCalculation(position, int(mat_reflectID)), mat_reflection);
+    return color + colorEmission;
 
 
 }

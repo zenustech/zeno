@@ -36,6 +36,7 @@ def _recieveStatus():
 old_frame_files = ()
 
 def _frameUpdate():
+    
     if fileio.isIOPathChanged():
         core.clear_graphics()
 
@@ -50,6 +51,7 @@ def _frameUpdate():
     global old_frame_files
     frame_files = fileio.getFrameFiles(frameid)
     if old_frame_files != frame_files:
+        core.clearReflectMask()
         for name, ext, path in frame_files:
             core.load_file(name, ext, path, frameid)
     old_frame_files = frame_files
