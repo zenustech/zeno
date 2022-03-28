@@ -612,16 +612,6 @@ QVariant GraphsModel::data2(const QModelIndex& subGpIdx, const QModelIndex& inde
     return QVariant();
 }
 
-void GraphsModel::setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role)
-{
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph);
-    if (pGraph)
-    {
-        pGraph->setData(index, value, role);
-    }
-}
-
 int GraphsModel::itemCount(const QModelIndex& subGpIdx) const
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());

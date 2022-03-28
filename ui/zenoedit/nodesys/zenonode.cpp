@@ -8,6 +8,7 @@
 #include <zenoui/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/zveceditor.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "graphsmanagment.h"
@@ -442,6 +443,9 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 {
     const QString& value = UiHelper::variantToString(param.value);
 
+	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+	pParamLayout->addItem(pNameItem);
+
 	switch (param.control)
 	{
 	    case CONTROL_STRING:
@@ -449,10 +453,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    case CONTROL_FLOAT:
 	    case CONTROL_BOOL:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
-		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
 		    pParamLayout->addItem(pLineEdit);
 		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pLineEdit->text());
@@ -460,32 +461,32 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    m_paramControls[paramName] = pLineEdit;
 		    break;
 	    }
+        case CONTROL_VEC3F:
+        {
+            QVector<qreal> vec = param.value.value<QVector<qreal>>();
+            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec);
+            pParamLayout->addItem(pVecEditor);
+			connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+				
+				});
+			m_paramControls[paramName] = pVecEditor;
+            break;
+        }
 	    case CONTROL_ENUM:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
 		    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
 		    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
 		    pParamLayout->addItem(pComboBox);
 
 		    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {
-			    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-			    PARAM_UPDATE_INFO info;
-			    info.name = paramName;
-			    info.oldValue = pGraphsModel->getParamValue(nodeId(), paramName, m_subGpIndex);
-			    info.newValue = textValue;
-			    pGraphsModel->updateParamInfo(nodeId(), info, m_subGpIndex, true);
+                onParamEditFinished(param.control, paramName, textValue);
 			    });
 		    m_paramControls[paramName] = pComboBox;
 		    break;
 	    }
 	    case CONTROL_READPATH:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
-		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
 
 			ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -505,10 +506,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    }
 	    case CONTROL_WRITEPATH:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
-		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, m_renderParams.lineEditParam);
+		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
 
             ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -528,9 +526,6 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    }
 	    case CONTROL_MULTILINE_STRING:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
 		    ZenoParamMultilineStr* pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
 		    pParamLayout->addItem(pMultiStrEdit);
 		    connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
@@ -541,9 +536,6 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    }
 	    default:
 	    {
-		    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pNameItem);
-
 		    zeno::log_warn("got undefined control type {}", param.control);
 		    ZenoTextLayoutItem* pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
 		    pParamLayout->addItem(pValueItem);
@@ -559,6 +551,8 @@ QPersistentModelIndex ZenoNode::subGraphIndex() const
 
 void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
 {
+    // graphics item sync to model.
+
     const QString nodeid = nodeId();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
@@ -738,9 +732,9 @@ QGraphicsLayout* ZenoNode::initSockets()
             const INPUT_SOCKET& inSocket = inputs[inSock];
             //dont need lineedit except "int£¬float£¬vec3f£¬string".
             const QString& sockType = inSocket.info.type;
-            if (sockType == "int" || sockType == "float" || sockType == "vec3f" || sockType == "string")
+            if (sockType == "int" || sockType == "float" || sockType == "string")
             {
-				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), m_renderParams.lineEditParam);
+				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), inSocket.info.control, m_renderParams.lineEditParam);
                 pMiniLayout->addItem(pSocketEditor);
                 connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]()
                 {
@@ -760,6 +754,16 @@ QGraphicsLayout* ZenoNode::initSockets()
                     }
 				});
                 socket_ctrl.socket_control = pSocketEditor;
+            }
+            else if (sockType == "vec3f")
+            {
+                QVector<qreal> vec = inSocket.info.defaultValue.value<QVector<qreal>>();
+				ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec);
+                pMiniLayout->addItem(pVecEditor);
+				connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+
+				});
+                socket_ctrl.socket_control = pVecEditor;
             }
 
             socket_ctrl.socket = socket;

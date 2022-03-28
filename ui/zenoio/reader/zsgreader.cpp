@@ -188,11 +188,6 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     }
 }
 
-PARAM_CONTROL ZsgReader::_getControlType(const QString& type)
-{
-    return UiHelper::_getControlType(type);
-}
-
 QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
 {
     return UiHelper::_parseDefaultValue(defaultValue, type);
@@ -359,11 +354,11 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 const QString& socketName = input_triple[1].GetString();
                 //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
                 const QString& socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = _getControlType(socketType);
+                inputSocket.info.control = ctrlType;
                 inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             }
@@ -378,7 +373,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 const QString& socketName = param_triple[1].GetString();
                 //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
                 const QString& socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
@@ -396,11 +391,11 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                 const QString& socketType = output_triple[0].GetString();
                 const QString& socketName = output_triple[1].GetString();
                 const QString& socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
-                outputSocket.info.control = _getControlType(socketType);
+                outputSocket.info.control = ctrlType;
                 outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);

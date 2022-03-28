@@ -25,7 +25,6 @@ private:
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     QVariant _parseDefaultValue(const QString& val, const QString &type);
     QVariant _parseToVariant(const rapidjson::Value& val);
-    PARAM_CONTROL _getControlType(const QString& type);
     NODE_DESCS _parseDescs(const rapidjson::Value& descs);
 };
 

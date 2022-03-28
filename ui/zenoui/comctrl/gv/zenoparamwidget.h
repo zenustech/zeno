@@ -6,6 +6,7 @@
 #include "../../nodesys/nodesys_common.h"
 #include "zenosocketitem.h"
 #include <zenoui/comctrl/zcombobox.h>
+#include <zenoui/comctrl/zveceditor.h>
 
 
 class ZenoParamWidget : public QGraphicsProxyWidget
@@ -60,7 +61,7 @@ class ZenoParamLineEdit : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent = nullptr);
+    ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString& text);
 
@@ -68,7 +69,22 @@ signals:
     void editingFinished();
 
 private:
-    ZenoGvLineEdit *m_pLineEdit;
+    QLineEdit *m_pLineEdit;
+};
+
+class ZenoVecEditWidget : public ZenoParamWidget
+{
+    Q_OBJECT
+public:
+    ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* parent = nullptr);
+    QVector<qreal> vec() const;
+    void setVec(const QVector<qreal>& vec);
+
+signals:
+    void editingFinished();
+
+private:
+    ZVecEditor* m_pEdit;
 };
 
 class ZenoParamLabel : public ZenoParamWidget

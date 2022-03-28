@@ -18,7 +18,8 @@ protected:
 
 public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-    void onLineEditFinish();
+    void onParamEditFinish();
+    void onInputEditFinish();
 
 private:
     QGroupBox* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);

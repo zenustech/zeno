@@ -82,15 +82,27 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, LineEditParam param, QGraphicsItem *parent)
+ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_pLineEdit = new ZenoGvLineEdit;
+    m_pLineEdit = new QLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    switch (ctrl)
+    {
+    case CONTROL_INT:
+        m_pLineEdit->setValidator(new QIntValidator);
+        break;
+    case CONTROL_FLOAT:
+        m_pLineEdit->setValidator(new QDoubleValidator);
+        break;
+    case CONTROL_BOOL:
+        break;
+    }
+
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
 }
@@ -103,6 +115,27 @@ QString ZenoParamLineEdit::text() const
 void ZenoParamLineEdit::setText(const QString &text)
 {
     m_pLineEdit->setText(text);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+ZenoVecEditWidget::ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pEdit(nullptr)
+{
+    m_pEdit = new ZVecEditor(vec, true, 3, "zenonode");
+	setWidget(m_pEdit);
+	connect(m_pEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+QVector<qreal> ZenoVecEditWidget::vec() const
+{
+    return m_pEdit->vec();
+}
+
+void ZenoVecEditWidget::setVec(const QVector<qreal>& vec)
+{
+    m_pEdit->onValueChanged(vec);
 }
 
 

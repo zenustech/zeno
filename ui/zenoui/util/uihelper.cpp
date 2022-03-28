@@ -120,6 +120,21 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_HEATMAP:
     case CONTROL_ENUM:
         return defaultValue;
+    case CONTROL_VEC3F:
+    {
+        QVector<qreal> vec(3);
+        if (!defaultValue.isEmpty())
+        {
+            QStringList L = defaultValue.split(",");
+            bool bOK = false;
+            for (int i = 0; i < L.size(); i++)
+            {
+                vec.append(L[i].toFloat(&bOK));
+                Q_ASSERT(bOK);
+            }
+        }
+        return QVariant::fromValue(vec);
+    }
     default:
         return QVariant();
     };
@@ -212,6 +227,8 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type == "string") {
         return CONTROL_STRING;
+    } else if (type == "vec3f") {
+        return CONTROL_VEC3F;
     } else if (type == "writepath") {
         return CONTROL_WRITEPATH;
     } else if (type == "readpath") {

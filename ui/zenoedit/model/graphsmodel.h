@@ -73,7 +73,6 @@ public:
 	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
 	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
-	void setData2(const QModelIndex& subGpIdx, const QModelIndex& index, const QVariant& value, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
