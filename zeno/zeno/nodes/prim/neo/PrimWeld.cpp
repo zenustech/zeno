@@ -9,7 +9,7 @@
 namespace zeno {
 namespace {
 
-struct PrimWeldClose : INode {
+struct PrimMarkClose : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
@@ -24,21 +24,11 @@ struct PrimWeldClose : INode {
             lut.emplace(posi, i);
         }
 
-        if (tagAttr.size()) {
-            auto &tag = prim->verts.add_attr<int>(tagAttr);
-            std::fill(tag.begin(), tag.end(), 0);
-            for (auto const &[key, idx]: lut) {
-                tag[idx] = 1;
-            }
-        } else {
-            std::vector<int> revamp;
-            revamp.reserve(lut.size());
-            for (auto const &[key, idx]: lut) {
-                printf("weld: %d\n", idx);
-                revamp.push_back(idx);
-            }
-            printf("WeldClose: %ld -> %ld\n", prim->verts.size(), revamp.size());
-            primRevampVerts(prim.get(), revamp);
+        auto &tag = prim->verts.add_attr<int>(tagAttr);
+        std::fill(tag.begin(), tag.end(), -1);
+        int cnt = 0;
+        for (auto const &[key, idx]: lut) {
+            tag[idx] = cnt++;
         }
 
         set_output("prim", std::move(prim));
@@ -46,11 +36,11 @@ struct PrimWeldClose : INode {
 };
 
 
-ZENDEFNODE(PrimWeldClose, {
+ZENDEFNODE(PrimMarkClose, {
     {
     {"PrimitiveObject", "prim"},
     {"float", "distance", "0.00005"},
-    {"string", "tagAttr", ""},
+    {"string", "tagAttr", "tag"},
     },
     {
     {"PrimitiveObject", "prim"},
