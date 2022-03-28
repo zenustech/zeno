@@ -8,8 +8,6 @@
 
 namespace zeno {
 
-static ZpcInitializer g_zpc_initializer{};
-
 struct MakeZSBuckets : zeno::INode {
   void apply() override {
     float radius = get_input<NumericObject>("radius")->get<float>();

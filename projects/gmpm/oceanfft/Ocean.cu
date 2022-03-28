@@ -24,8 +24,6 @@
 
 namespace zeno {
 
-static ZpcInitializer g_zpc_initializer{};
-
 //---------------
         //---------------
 
@@ -560,7 +558,7 @@ struct MakeCuOcean : zeno::INode {
 
         generate_h0(cuOceanObj);
         //cpu to gpu
-        zs::copy(zs::mem_device, (void*)cuOceanObj->d_h0.data(), (void*)cuOceanObj->h_h0, sizeof(float2)*cuOceanObj->spectrumSize);
+        copy(zs::mem_device, (void*)cuOceanObj->d_h0.data(), (void*)cuOceanObj->h_h0, sizeof(float2)*cuOceanObj->spectrumSize);
         // cudaMemcpy((void*)cuOceanObj->d_h0.data(), (void*)cuOceanObj->h_h0, sizeof(float2)*cuOceanObj->spectrumSize, cudaMemcpyHostToDevice);
  
         set_output("gpuOcean", cuOceanObj);
@@ -843,7 +841,7 @@ struct OceanCuCompute : zeno::INode {
     using namespace zs;
     auto backup_device_data = [&](auto &dst, const auto &src) {
         static_assert(sizeof(dst[0]) == sizeof(src[0]), "element size mismatch!");
-        copy(MemoryEntity{dst.memoryLocation(), (void*)dst.data()},
+        Resource::copy(MemoryEntity{dst.memoryLocation(), (void*)dst.data()},
             MemoryEntity{dst.memoryLocation(), (void*)src.data()}, sizeof(src[0]) * src.size());
     };
 
@@ -896,9 +894,9 @@ struct OceanCuCompute : zeno::INode {
     grid->resize(ingrid->size());
 
     // resize
-    auto h2dcopy = [](auto &dst, const auto &src) {
-        copy(MemoryEntity{dst.memoryLocation(), (void*)dst.data()},
-            MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void*)src.data()}, sizeof(src[0]) * dst.size());
+    auto h2dcopy = [](auto& dst, const auto& src) {
+        zs::Resource::copy(zs::MemoryEntity{ dst.memoryLocation(), (void*)dst.data() },
+            zs::MemoryEntity{ MemoryLocation{memsrc_e::host, -1}, (void*)src.data() }, sizeof(src[0]) * dst.size());
         if (src.size() > dst.size())
             throw std::runtime_error("copied size may overflow!");
     };
@@ -959,7 +957,7 @@ struct OceanCuCompute : zeno::INode {
     // write back to primObj
     auto write_back = [](auto &dst, const auto &src) {
         static_assert(sizeof(dst[0]) == sizeof(src[0]), "element size mismatch!");
-        copy(MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void*)dst.data()},
+        Resource::copy(MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void*)dst.data()},
             MemoryEntity{src.memoryLocation(), (void*)src.data()}, sizeof(src[0]) * src.size());
     };
     write_back(pos, CalOcean->d_pos);

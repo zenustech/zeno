@@ -21,9 +21,7 @@ struct PrimWeldClose : INode {
         for (int i = 0; i < prim->verts.size(); i++) {
             vec3f pos = prim->verts[i];
             vec3i posi = vec3i(pos * factor);
-            auto [it, succ] = lut.emplace(posi, i);
-            if (!succ) {
-            }
+            lut.emplace(posi, i);
         }
 
         if (tagAttr.size()) {
@@ -36,8 +34,10 @@ struct PrimWeldClose : INode {
             std::vector<int> revamp;
             revamp.reserve(lut.size());
             for (auto const &[key, idx]: lut) {
+                printf("weld: %d\n", idx);
                 revamp.push_back(idx);
             }
+            printf("WeldClose: %ld -> %ld\n", prim->verts.size(), revamp.size());
             primRevampVerts(prim.get(), revamp);
         }
 

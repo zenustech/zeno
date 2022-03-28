@@ -28,11 +28,18 @@ ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int ta
     primRevampVerts(prim, revamp);
 }
 
+template <class T>
+static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
+    std::vector<T> newarr(arr.size());
+    for (int i = 0; i < revamp.size(); i++) {
+        newarr[i] = arr[revamp[i]];
+    }
+    std::swap(arr, newarr);
+}
+
 ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp) {
     prim->foreach_attr([&] (auto const &key, auto &arr) {
-        for (int i = 0; i < revamp.size(); i++) {
-            arr[i] = arr[revamp[i]];
-        }
+        revamp_vector(arr, revamp);
     });
     auto old_prim_size = prim->size();
     prim->resize(revamp.size());
@@ -69,9 +76,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
                 prim->tris[i] = prim->tris[trisrevamp[i]];
             }
             prim->tris.foreach_attr([&] (auto const &key, auto &arr) {
-                for (int i = 0; i < trisrevamp.size(); i++) {
-                    arr[i] = arr[trisrevamp[i]];
-                }
+                revamp_vector(arr, trisrevamp);
             });
             prim->tris.resize(trisrevamp.size());
         }
@@ -88,9 +93,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
                 prim->quads[i] = prim->quads[quadsrevamp[i]];
             }
             prim->quads.foreach_attr([&] (auto const &key, auto &arr) {
-                for (int i = 0; i < quadsrevamp.size(); i++) {
-                    arr[i] = arr[quadsrevamp[i]];
-                }
+                revamp_vector(arr, quadsrevamp);
             });
             prim->quads.resize(quadsrevamp.size());
         }
@@ -107,9 +110,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
                 prim->lines[i] = prim->lines[linesrevamp[i]];
             }
             prim->lines.foreach_attr([&] (auto const &key, auto &arr) {
-                for (int i = 0; i < linesrevamp.size(); i++) {
-                    arr[i] = arr[linesrevamp[i]];
-                }
+                revamp_vector(arr, linesrevamp);
             });
             prim->lines.resize(linesrevamp.size());
         }
@@ -132,9 +133,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
                 prim->polys[i] = prim->polys[polysrevamp[i]];
             }
             prim->polys.foreach_attr([&] (auto const &key, auto &arr) {
-                for (int i = 0; i < polysrevamp.size(); i++) {
-                    arr[i] = arr[polysrevamp[i]];
-                }
+                revamp_vector(arr, polysrevamp);
             });
             prim->polys.resize(polysrevamp.size());
         }
@@ -151,9 +150,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
                 prim->points[i] = prim->points[pointsrevamp[i]];
             }
             prim->points.foreach_attr([&] (auto const &key, auto &arr) {
-                for (int i = 0; i < pointsrevamp.size(); i++) {
-                    arr[i] = arr[pointsrevamp[i]];
-                }
+                revamp_vector(arr, pointsrevamp);
             });
             prim->points.resize(pointsrevamp.size());
         }
