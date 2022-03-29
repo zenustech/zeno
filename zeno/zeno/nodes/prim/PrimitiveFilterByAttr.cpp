@@ -257,7 +257,6 @@ ZENDEFNODE(PrimitiveFilterByAttr,
 
 
 
-#if 0
 struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already auto-mock lines!
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("line");
@@ -311,7 +310,7 @@ ZENDEFNODE(SubLine,
     }, /* category: */ {
     "primitive",
     }});
-#endif
+
 
 
 
