@@ -11,8 +11,6 @@
 
 namespace zeno {
 
-static ZpcInitializer g_zpc_initializer{};
-
 struct PoissonDiskSample : INode {
   void apply() override {
     using namespace zs;
