@@ -98,8 +98,18 @@ struct zip_iterator {
     }
 
     template <class...>
-    zip_iterator operator-(zip_iterator that) const {
+    zip_iterator operator-(zip_iterator const &that) const {
         return t0 - that.t0;
+    }
+
+    template <class...>
+    bool operator==(zip_iterator const &that) const {
+        return t0 == that.t0;
+    }
+
+    template <class...>
+    bool operator!=(zip_iterator const &that) const {
+        return !this->operator==(that);
     }
 };
 

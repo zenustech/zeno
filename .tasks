@@ -1,0 +1,15 @@
+[project-build]
+command=python build.py
+output=quickfix
+cwd=$(VIM_ROOT)
+save=2
+
+[project-run]
+command=python run.py
+output=terminal
+cwd=$(VIM_ROOT)
+
+[grep]
+command=rg -n --no-heading --color never "$(-word)" "<root>" -tcpp -tc -tpy -tvim -tgo -tasm
+cwd=$(VIM_ROOT)
+errorformat=%f:%l:%m

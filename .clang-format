@@ -1,0 +1,35 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+DeriveLineEnding: false
+UseCRLF: false
+UseTab: Never
+IndentCaseLabels: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AlignTrailingComments: true
+AlignEscapedNewlines: true
+AlignConsecutiveDeclarations: false
+AlignOperands: true
+LambdaBodyIndentation: Signature
+NamespaceIndentation: None
+#PackConstructorInitializers: CurrentLine
+ColumnLimit: 80
+#RemoveBracesLLVM: false
+ReflowComments: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: false
+  AfterClass: false
+  AfterStruct: false
+  AfterCaseLabel: false
+  SplitEmptyFunction: false
+DerivePointerAlignment: false
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+#QualifierAlignment: Leave
+#QualifierOrder: ['static', 'inline', 'type', 'const', 'volatile']

@@ -61,6 +61,14 @@ struct counter_iterator {
     counter_iterator operator-(counter_iterator that) const {
         return counter - that.counter;
     }
+
+    bool operator==(counter_iterator that) const {
+        return counter == that.counter;
+    }
+
+    bool operator!=(counter_iterator that) const {
+        return !this->operator==(that);
+    }
 };
 
 template <class T>

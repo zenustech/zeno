@@ -3,43 +3,37 @@
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/tuple_hash.h>
 #include <unordered_map>
 
 namespace zeno {
 namespace {
 
-struct PrimMarkClose : INode {
+struct PrimWeld : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        float distance = get_input<NumericObject>("distance")->get<float>();
 
-        float factor = 1.0f / distance;
-        std::unordered_map<vec3i, int, tuple_hash, tuple_equal> lut;
-        lut.reserve(prim->verts.size());
-        for (int i = 0; i < prim->verts.size(); i++) {
-            vec3f pos = prim->verts[i];
-            vec3i posi = vec3i(pos * factor);
-            lut.emplace(posi, i);
+        std::unordered_multimap<int, int> lut;
+        auto &tag = prim->verts.attr<int>(tagAttr);
+        for (int i = 0; i < prim->size(); i++) {
+            lut.insert({tag[i], i});
         }
-
-        auto &tag = prim->verts.add_attr<int>(tagAttr);
-        std::fill(tag.begin(), tag.end(), -1);
-        int cnt = 0;
-        for (auto const &[key, idx]: lut) {
-            tag[idx] = cnt++;
+        for (auto it = lut.begin(); it != lut.end();) {
+            auto nit = std::find_if(std::next(it), lut.end(), [val = it->first] (auto const &p) {
+                return p.first != val;
+            });
+            for (; it != lut.end(); ++it) {
+                int idx = it->second;
+            }
         }
 
         set_output("prim", std::move(prim));
     }
 };
 
-
-ZENDEFNODE(PrimMarkClose, {
+ZENDEFNODE(PrimWeld, {
     {
     {"PrimitiveObject", "prim"},
-    {"float", "distance", "0.00005"},
     {"string", "tagAttr", "tag"},
     },
     {

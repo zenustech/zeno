@@ -170,8 +170,8 @@ struct PrimFilter : INode {
     auto tagAttr = get_input<StringObject>("tagAttr")->get();
     auto tagValue = get_input<NumericObject>("tagValue")->get<int>();
     auto isInversed = get_input<NumericObject>("isInversed")->get<bool>();
-    auto byElement = get_input<StringObject>("byElement")->get();
-    if (byElement == "faces") {
+    auto method = get_input<StringObject>("method")->get();
+    if (method == "faces") {
         primFilterFaces(prim.get(), tagAttr, tagValue, isInversed);
     } else {
         primFilterVerts(prim.get(), tagAttr, tagValue, isInversed);
@@ -186,7 +186,7 @@ ZENDEFNODE(PrimFilter, {
     {"string", "tagAttr", "tag"},
     {"int", "tagValue", "1"},
     {"bool", "isInversed", "0"},
-    {"enum verts faces", "byElement", "0"},
+    {"enum verts faces", "method", "verts"},
     },
     {
     {"PrimitiveObject", "prim"},
