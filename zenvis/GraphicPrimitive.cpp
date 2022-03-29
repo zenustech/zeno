@@ -384,8 +384,9 @@ struct GraphicPrimitive : IGraphic {
                 setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
             }
         }
-        if(!triObj.prog)
+        if(!triObj.prog){
             triObj.prog = get_tris_program(path,nullptr);
+        }
         
     }
 
@@ -399,7 +400,7 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
-    prim_has_mtl = prim->mtl != nullptr;
+    prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
   }
   
   virtual void drawShadow() override 
