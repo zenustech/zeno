@@ -2024,7 +2024,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(reflectPass==1.0 && mat_reflection==1.0 )
         discard;
     /* custom_shader_end */
-    if(mat_opacity>=0.99)
+    if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
