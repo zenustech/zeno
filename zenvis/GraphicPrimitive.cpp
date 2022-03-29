@@ -2087,7 +2087,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
-    vec3 ibl = mix(iblPhotoReal, iblNPR,mat_toon);
+    vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
     float shadow = ShadowCalculation(position);
     
     //color += ibl;
