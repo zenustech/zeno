@@ -5,6 +5,8 @@
 
 class IGraphsModel;
 
+class ZExpandableSection;
+
 class ZenoPropPanel : public QWidget
 {
 	Q_OBJECT
@@ -22,8 +24,8 @@ public slots:
     void onInputEditFinish();
 
 private:
-    QGroupBox* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
-    QGroupBox* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
+    ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
+    ZExpandableSection* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
 
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;

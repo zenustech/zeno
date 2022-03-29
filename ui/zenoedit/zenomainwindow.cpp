@@ -524,7 +524,7 @@ void ZenoMainWindow::verticalLayout()
 {
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
-    splitDockWidget(m_viewDock, m_parameter, Qt::Horizontal);
+    splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
 }
 
 void ZenoMainWindow::onlyEditorLayout()

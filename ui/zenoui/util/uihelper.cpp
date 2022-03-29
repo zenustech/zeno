@@ -219,7 +219,9 @@ QString UiHelper::generateUuid(const QString& name)
 
 PARAM_CONTROL UiHelper::_getControlType(const QString &type)
 {
-    if (type == "int") {
+    if (type.isEmpty()) {
+        return CONTROL_NONE;
+    } else if (type == "int") {
         return CONTROL_INT;
     } else if (type == "bool") {
         return CONTROL_BOOL;

@@ -1,5 +1,23 @@
 QLabel[cssClass="proppanel"]
 {
-	font: bold 14px "HarmonyOS Sans";
+	font: 14px "HarmonyOS Sans";
 	color: rgba(255, 255, 255, 0.7);
+}
+
+QLabel[cssClass="proppanel-nodename"]
+{
+	font: bold 15px "HarmonyOS Sans";
+	color: rgba(255, 255, 255, 0.5);
+}
+
+QLabel[cssClass="proppanel-sectionname"]
+{
+	font: bold 16px "HarmonyOS Sans";
+	color: rgba(211, 211, 211, 1.0);
+}
+
+QLabel[cssClass="proppanel-itemname"]
+{
+	font: bold 14px "HarmonyOS Sans";
+	color: rgba(119, 119, 119, 1.0);
 }

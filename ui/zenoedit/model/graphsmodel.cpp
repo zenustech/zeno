@@ -270,6 +270,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				INPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
+                socket.info.control = UiHelper::_getControlType(type);
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
 				desc.inputs[name] = socket;
 			}
@@ -284,6 +285,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
+                socket.info.control = UiHelper::_getControlType(type);
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
 				desc.outputs[name] = socket;
 			}

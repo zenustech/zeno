@@ -7,6 +7,7 @@ ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QSt
 {
 	QHBoxLayout* pLayout = new QHBoxLayout;
 	pLayout->setContentsMargins(0, 0, 0, 0);
+	pLayout->setSpacing(5);
 	int n = deflSize;
 	if (!vec.isEmpty())
 		n = vec.size();
@@ -23,8 +24,7 @@ ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QSt
 		});
 	}
 	setLayout(pLayout);
-	setAttribute(Qt::WA_TranslucentBackground);
-	setAutoFillBackground(true);
+	setStyleSheet("ZVecEditor { background: transparent; } ");
 }
 
 QVector<qreal> ZVecEditor::vec() const
@@ -39,7 +39,9 @@ QVector<qreal> ZVecEditor::vec() const
 
 void ZVecEditor::onValueChanged(const QVector<qreal>& vec)
 {
-	Q_ASSERT(vec.size() == m_editors.size());
+	//todo: some vector without init is a empty vec, need to unify later.
+	if (vec.size() != m_editors.size())
+		return;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
 		m_editors[i]->setText(QString::number(vec[i]));

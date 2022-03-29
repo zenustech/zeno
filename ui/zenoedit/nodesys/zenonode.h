@@ -67,6 +67,7 @@ public slots:
     void onParamUpdated(const QString &paramName, const QVariant &val);
     void onSocketUpdated(const SOCKET_UPDATE_INFO& info);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
+    void onInOutSocketChanged(bool bInput);
     void onNameUpdated(const QString& newName);
 
 protected:

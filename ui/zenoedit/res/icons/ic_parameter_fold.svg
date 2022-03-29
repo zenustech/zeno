@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="17px" viewBox="0 0 16 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic_parameter_fold</title>
+    <g id="ZENO@2Integration" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="整合-节点选中" transform="translate(-1198.000000, -379.000000)" fill-rule="nonzero">
+            <g id="Parameters" transform="translate(1186.000000, 122.000000)">
+                <g id="编组-11" transform="translate(0.000000, 211.000000)">
+                    <g id="ic_parameter_fold" transform="translate(12.000000, 46.500000)">
+                        <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                        <path d="M4.60234725,6.85770946 C4.46122266,6.88417031 4.45240238,7.05175577 4.53178496,7.13113835 L7.78647074,11.0561659 C7.84821274,11.1620093 8.05107933,11.1796499 8.11282135,11.0561659 L11.4733506,7.12231806 C11.5439129,7.06939635 11.5527331,6.85770946 11.3410463,6.85770946 L4.60234725,6.85770946 Z" id="路径" fill="#8A8A8C" transform="translate(8.000000, 9.000000) rotate(-90.000000) translate(-8.000000, -9.000000) "></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

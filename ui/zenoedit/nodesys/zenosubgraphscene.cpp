@@ -141,8 +141,13 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 	}
 	if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
 	{
-	    //it's diffcult to detect which link has changed on this method.
-        //but link sync is managed by linkModel
+	    //it's diffcult to detect which input/output socket has changed on this method.
+        //unless:
+        //1. add a member to INPUT_SOCKS/OUTPUT_SOCKS, to specify which key had changed.
+        //2. update all control value associated with input socket anyway.
+
+        //now we choose the second.
+        m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
 	}
 	if (role == ROLE_OPTIONS)
 	{

@@ -107,5 +107,7 @@
 	<file>icons/socket-on2.svg</file>
 	<file>icons/ic_pop_down.svg</file>
 	<file>icons/ic_pop_down-on.svg</file>
+	<file>icons/ic_parameter_fold.svg</file>
+	<file>icons/ic_parameter_unfold.svg</file>
 </qresource>
 </RCC>

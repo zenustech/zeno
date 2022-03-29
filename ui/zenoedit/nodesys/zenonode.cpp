@@ -583,6 +583,53 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
     }
 }
 
+void ZenoNode::onInOutSocketChanged(bool bInput)
+{
+    if (!m_index.isValid())
+        return;
+
+    if (bInput)
+    {
+        const INPUT_SOCKETS& inSocks = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        for (const INPUT_SOCKET& inSocket : inSocks)
+        {
+            switch (inSocket.info.control)
+            {
+			    case CONTROL_STRING:
+			    case CONTROL_INT:
+			    case CONTROL_FLOAT:
+			    case CONTROL_BOOL:
+                {
+                    ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(m_inSockets[inSocket.info.name].socket_control);
+                    if (plineEdit)
+                    {
+                        plineEdit->setText(inSocket.info.defaultValue.toString());
+                    }
+                    break;
+                }
+                case CONTROL_VEC3F:
+                {
+                    ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(m_inSockets[inSocket.info.name].socket_control);
+                    if (pVecEdit)
+                    {
+                        const QVector<qreal>& vec = inSocket.info.defaultValue.value<QVector<qreal>>();
+                        pVecEdit->setVec(vec);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        const OUTPUT_SOCKETS& outSocks = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        for (const OUTPUT_SOCKET& outSocket : outSocks)
+        {
+            //todo
+        }
+    }
+}
+
 void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 {
     switch (info.updateWay)
@@ -760,8 +807,22 @@ QGraphicsLayout* ZenoNode::initSockets()
                 QVector<qreal> vec = inSocket.info.defaultValue.value<QVector<qreal>>();
 				ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec);
                 pMiniLayout->addItem(pVecEditor);
-				connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+				connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]()
+                {
+                    QVector<qreal> vec = pVecEditor->vec();
+					INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 
+					PARAM_UPDATE_INFO info;
+					info.name = inSock;
+					info.oldValue = inputs[inSock].info.defaultValue;
+					info.newValue = QVariant::fromValue(vec);
+
+					if (info.oldValue != info.newValue)
+					{
+						IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+						Q_ASSERT(pGraphsModel);
+						pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex);
+					}
 				});
                 socket_ctrl.socket_control = pVecEditor;
             }

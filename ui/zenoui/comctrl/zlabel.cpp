@@ -27,6 +27,15 @@ void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QStr
     setFixedSize(m_iconSz);
 }
 
+void ZIconLabel::toggle()
+{
+    if (m_bToggleable)
+    {
+        m_bToggled = true;
+        updateIcon();
+    }
+}
+
 void ZIconLabel::enterEvent(QEvent* event)
 {
     m_bHovered = true;

@@ -10,6 +10,7 @@ class ZIconLabel : public QLabel
 public:
     ZIconLabel(QWidget* pLabel = nullptr);
     void setIcons(const QSize& sz, const QString& iconEnable, const QString& iconHover, const QString& iconNormalOn = QString(), const QString& iconHoverOn = QString(), const QString& iconDisable = QString());
+    void toggle();
 
 protected:
     void paintEvent(QPaintEvent* e) override;
