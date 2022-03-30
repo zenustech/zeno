@@ -5,10 +5,12 @@
 namespace zeno {
 
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
-    prim->tris.reserve(prim->tris.size() + prim->polys.size());
-
-    prim->loops.reserve(prim->loops.size() + prim->tris.size() * 3 + prim->quads.size() * 4);
-    prim->polys.reserve(prim->polys.size() + prim->tris.size() + prim->quads.size());
+    prim->loops.reserve(prim->loops.size() + prim->tris.size() * 3 +
+                        prim->quads.size() * 4 + prim->lines.size() * 2 +
+                        prim->points.size());
+    prim->polys.reserve(prim->polys.size() + prim->tris.size() +
+                        prim->quads.size() + prim->lines.size() +
+                        prim->points.size());
 
     int old_loop_base = prim->loops.size();
     if (prim->tris.size()) {
@@ -21,7 +23,7 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->polys.push_back({base + i * 3, 3});
         }
 
-        prim->tris.foreach_attr([&] (auto const &key, auto const &arr) {
+        prim->tris.foreach_attr([&](auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
             newarr.insert(newarr.end(), arr.begin(), arr.end());
@@ -39,7 +41,38 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->polys.push_back({base + i * 4, 4});
         }
 
-        prim->quads.foreach_attr([&] (auto const &key, auto const &arr) {
+        prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &newarr = prim->polys.add_attr<T>(key);
+            newarr.insert(newarr.end(), arr.begin(), arr.end());
+        });
+    }
+
+    if (prim->lines.size()) {
+        int base = prim->loops.size();
+        for (int i = 0; i < prim->lines.size(); i++) {
+            auto const &ind = prim->lines[i];
+            prim->loops.push_back(ind[0]);
+            prim->loops.push_back(ind[1]);
+            prim->polys.push_back({base + i * 2, 2});
+        }
+
+        prim->lines.foreach_attr([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &newarr = prim->polys.add_attr<T>(key);
+            newarr.insert(newarr.end(), arr.begin(), arr.end());
+        });
+    }
+
+    if (prim->points.size()) {
+        int base = prim->loops.size();
+        for (int i = 0; i < prim->points.size(); i++) {
+            auto ind = prim->points[i];
+            prim->loops.push_back(ind);
+            prim->polys.push_back({base + i, 1});
+        }
+
+        prim->points.foreach_attr([&](auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
             newarr.insert(newarr.end(), arr.begin(), arr.end());
@@ -48,7 +81,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
 
     prim->polys.update();
 
-    if (!(!prim->tris.has_attr("uv0") || !prim->tris.has_attr("uv1") || !prim->tris.has_attr("uv2") || !with_uv)) {
+    if (!(!prim->tris.has_attr("uv0") || !prim->tris.has_attr("uv1") ||
+          !prim->tris.has_attr("uv2") || !with_uv)) {
         auto &uv0 = prim->tris.attr<vec3f>("uv0");
         auto &uv1 = prim->tris.attr<vec3f>("uv1");
         auto &uv2 = prim->tris.attr<vec3f>("uv2");

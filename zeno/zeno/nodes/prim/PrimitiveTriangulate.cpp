@@ -31,10 +31,13 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
                             prim->loops[start + i - 1],
                             prim->loops[start + i]);
                 }
-            /*} else if (len == 2) {
+            } else if (len == 2) {
                 prim->lines.emplace_back(
                         prim->loops[start],
-                        prim->loops[start + 1]);*/
+                        prim->loops[start + 1]);
+            } else if (len == 1) {
+                prim->points.emplace_back(
+                        prim->loops[start]);
             }
         }
 
@@ -45,8 +48,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
         auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
 
-        /*auto &line_uv0 = prim->lines.add_attr<vec3f>("uv0");
-        auto &line_uv1 = prim->lines.add_attr<vec3f>("uv1");*/
+        auto &line_uv0 = prim->lines.add_attr<vec3f>("uv0");
+        auto &line_uv1 = prim->lines.add_attr<vec3f>("uv1");
+        auto &point_uv = prim->points.add_attr<vec3f>("uv");
 
         uv0.reserve(uv0.size() + prim->polys.size());
         uv1.reserve(uv1.size() + prim->polys.size());
@@ -70,12 +74,16 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
                             prim->loops[start + i - 1],
                             prim->loops[start + i]);
                 }
-            /*} else if (len == 2) {
+            } else if (len == 2) {
                 line_uv0.push_back(loop_uv[start]);
                 line_uv1.push_back(loop_uv[start + 1]);
                 prim->lines.emplace_back(
                         prim->loops[start],
-                        prim->loops[start + 1]);*/
+                        prim->loops[start + 1]);
+            } else if (len == 1) {
+                point_uv.push_back(loop_uv[start]);
+                prim->points.emplace_back(
+                        prim->loops[start]);
             }
         }
 
