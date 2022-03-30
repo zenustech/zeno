@@ -605,6 +605,10 @@ struct GraphicPrimitive : IGraphic {
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
             {
                 auto &light = lights[lightNo];
+                auto name = "shadowTint[" + std::to_string(lightNo) + "]";
+                triObj.prog->set_uniform(name.c_str(), light->shadowTint);
+                name = "shadowSoftness[" + std::to_string(lightNo) + "]";
+                triObj.prog->set_uniform(name.c_str(), light->shadowSoftness);
                 for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
                     auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
@@ -619,8 +623,8 @@ struct GraphicPrimitive : IGraphic {
                     auto name = "cascadePlaneDistances[" + std::to_string(lightNo * Light::cascadeCount + i) + "]";
                     triObj.prog->set_uniform(name.c_str(), light->shadowCascadeLevels[i]);
                 }
-                auto name1 = "lview[" + std::to_string(lightNo) + "]";
-                triObj.prog->set_uniform(name1.c_str(), light->lightMV);
+                name = "lview[" + std::to_string(lightNo) + "]";
+                triObj.prog->set_uniform(name.c_str(), light->lightMV);
 
                 auto matrices = light->lightSpaceMatrices;
                 for (size_t i = 0; i < matrices.size(); i++)
@@ -1852,6 +1856,8 @@ float brightness(vec3 c)
 uniform int lightNum; 
 uniform vec3 light[16];
 uniform sampler2D shadowMap[128];
+uniform vec3 shadowTint[16];
+uniform float shadowSoftness[16];
 
 uniform float farPlane;
 uniform mat4 lview[16];
