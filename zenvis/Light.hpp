@@ -31,11 +31,11 @@ namespace zenvis
         std::vector<float> shadowCascadeLevels;
         std::vector<unsigned int> DepthMaps;
         glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
-        glm::vec3 shadowTint;
+        glm::vec3 shadowTint = glm::vec3(0.2f);
         float lightHight = 1000.0;
         float gfov;
         float gaspect;
-        float shadowSoftness;
+        float shadowSoftness = 1.0;
         unsigned int lightFBO = 0;
         unsigned int lightDepthMaps = 0;
         unsigned int depthMapResolution = 8192;
