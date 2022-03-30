@@ -38,17 +38,18 @@ namespace zenvis
         unsigned int lightDepthMaps = 0;
         unsigned int depthMapResolution = 8192;
         unsigned int matricesUBO = 0;
+        static constexpr int cascadeCount = 7;
 
         void setCascadeLevels(float far)
         {
-            shadowCascadeLevels.resize(0);
-            shadowCascadeLevels.push_back(far / 8192.0);
-            shadowCascadeLevels.push_back(far / 4096.0);
-            shadowCascadeLevels.push_back(far / 1024.0);
-            shadowCascadeLevels.push_back(far / 256.0);
-            shadowCascadeLevels.push_back(far / 32.0);
-            shadowCascadeLevels.push_back(far / 8.0);
-            shadowCascadeLevels.push_back(far / 2.0);
+            shadowCascadeLevels.resize(cascadeCount);
+            shadowCascadeLevels[0] = far / 8192.0;
+            shadowCascadeLevels[1] = far / 4096.0;
+            shadowCascadeLevels[2] = far / 1024.0;
+            shadowCascadeLevels[3] = far / 256.0;
+            shadowCascadeLevels[4] = far / 32.0;
+            shadowCascadeLevels[5] = far / 8.0;
+            shadowCascadeLevels[6] = far / 2.0;
         }
 
         void setShadowMV(Program *shader)
@@ -149,13 +150,13 @@ namespace zenvis
         std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view)
         {
             std::vector<glm::mat4> ret;
-            for (size_t i = 0; i < shadowCascadeLevels.size() + 1; ++i)
+            for (size_t i = 0; i < cascadeCount + 1; ++i)
             {
                 if (i == 0)
                 {
                     ret.push_back(getLightSpaceMatrix(near, shadowCascadeLevels[i], proj, view));
                 }
-                else if (i < shadowCascadeLevels.size())
+                else if (i < cascadeCount)
                 {
                     ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i - 1], shadowCascadeLevels[i], proj, view));
                 }
@@ -171,7 +172,7 @@ namespace zenvis
         void initCascadeShadow()
         {
             setCascadeLevels(10000);
-            DepthMaps.resize(shadowCascadeLevels.size() + 1);
+            DepthMaps.resize(cascadeCount + 1);
             if (lightFBO == 0)
             {
                 CHECK_GL(glGenFramebuffers(1, &lightFBO));

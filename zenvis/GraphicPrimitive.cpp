@@ -601,23 +601,22 @@ struct GraphicPrimitive : IGraphic {
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());
+            triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
             {
                 auto &light = lights[lightNo];
-                auto name0 = "cascadeCount[" + std::to_string(lightNo) + "]";
-                triObj.prog->set_uniformi(name0.c_str(), light->shadowCascadeLevels.size());
-                for (size_t i = 0; i < light->shadowCascadeLevels.size() + 1; i++)
+                for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
-                    auto name = "shadowMap[" + std::to_string(lightNo) + "][" + std::to_string(i) + "]";
+                    auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
                     triObj.prog->set_uniformi(name.c_str(), texOcp);
                     CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
                     if (auto shadowMap = light->DepthMaps[i]; shadowMap != (unsigned int)-1)
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
                     texOcp++;
                 }
-                for (size_t i = 0; i < light->shadowCascadeLevels.size(); ++i)
+                for (size_t i = 0; i < Light::cascadeCount; ++i)
                 {
-                    auto name = "cascadePlaneDistances[" + std::to_string(lightNo) + "][" + std::to_string(i) + "]";
+                    auto name = "cascadePlaneDistances[" + std::to_string(lightNo * Light::cascadeCount + i) + "]";
                     triObj.prog->set_uniform(name.c_str(), light->shadowCascadeLevels[i]);
                 }
                 auto name1 = "lview[" + std::to_string(lightNo) + "]";
@@ -626,7 +625,7 @@ struct GraphicPrimitive : IGraphic {
                 auto matrices = light->lightSpaceMatrices;
                 for (size_t i = 0; i < matrices.size(); i++)
                 {
-                    auto name = "lightSpaceMatrices[" + std::to_string(lightNo) + "][" + std::to_string(i) + "]";
+                    auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
                     triObj.prog->set_uniform(name.c_str(), matrices[i]);
                 }
             }
@@ -812,14 +811,14 @@ layout(triangle_strip, max_vertices = 3) out;
 
 layout (std140, binding = 0) uniform LightSpaceMatrices
 {
-    mat4 lightSpaceMatrices[16][16];
+    mat4 lightSpaceMatrices[128];
 };
 
 void main()
 {          
 	for (int i = 0; i < 3; ++i)
 	{
-		gl_Position = lightSpaceMatrices[16][gl_InvocationID] * gl_in[i].gl_Position;
+		gl_Position = lightSpaceMatrices[gl_InvocationID] * gl_in[i].gl_Position;
 		gl_Layer = gl_InvocationID;
 		EmitVertex();
 	}
@@ -1852,17 +1851,17 @@ float brightness(vec3 c)
 }
 uniform int lightNum; 
 uniform vec3 light[16];
-uniform sampler2D shadowMap[16][9];
+uniform sampler2D shadowMap[128];
 
 uniform float farPlane;
 uniform mat4 lview[16];
 
 //layout (std140, binding = 0) uniform LightSpaceMatrices
 //{
-uniform mat4 lightSpaceMatrices[16][16];
+uniform mat4 lightSpaceMatrices[128];
 //};
-uniform float cascadePlaneDistances[16][16];
-uniform int cascadeCount[16];   // number of frusta - 1
+uniform float cascadePlaneDistances[112];
+uniform int cascadeCount;   // number of frusta - 1
 vec3 random3(vec3 c) {
 	float j = 4096.0*sin(dot(c,vec3(17.0, 59.4, 15.0)));
 	vec3 r;
@@ -1877,7 +1876,7 @@ float sampleShadowArray(int lightNo, vec2 coord, int layer)
 {
     vec4 res;
     
-    res = texture(shadowMap[lightNo][layer], coord);
+    res = texture(shadowMap[lightNo * (cascadeCount + 1) + layer], coord);
 
     return res.r;    
 }
@@ -1885,7 +1884,7 @@ float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer,
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo][0], 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -1905,9 +1904,9 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace)
     float depthValue = abs(fragPosViewSpace.z);
 
     int layer = -1;
-    for (int i = 0; i < cascadeCount[lightNo]; ++i)
+    for (int i = 0; i < cascadeCount; ++i)
     {
-        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo][i] * vec4(fragPosWorldSpace, 1.0);
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
         // perform perspective divide
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         // transform to [0,1] range
@@ -1920,10 +1919,10 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace)
     }
     if (layer == -1)
     {
-        layer = cascadeCount[lightNo];
+        layer = cascadeCount;
     }
 
-    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo][layer] * vec4(fragPosWorldSpace, 1.0);
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -1942,13 +1941,13 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace)
     float bias = max(0.0001 * (1.0 - dot(normal, light[0])), 0.00001);
     // float bm = bias;
     // const float biasModifier = 0.5f;
-    // if (layer == cascadeCount[lightNo])
+    // if (layer == cascadeCount)
     // {
     //     bm *= 1 / (farPlane * biasModifier);
     // }
     // else
     // {
-    //     bm *= 1 / (cascadePlaneDistances[lightNo][layer] * biasModifier);
+    //     bm *= 1 / (cascadePlaneDistances[lightNo * cascadeCount + layer] * biasModifier);
     // }
 
     // PCF
@@ -1956,12 +1955,12 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace)
     float shadow2 = shadow1;
     float coef = 0.0;
     if(layer>=1){
-        //bm = 1 / (cascadePlaneDistances[lightNo][layer-1] * biasModifier);
-        fragPosLightSpace = lightSpaceMatrices[lightNo][layer-1] * vec4(fragPosWorldSpace, 1.0);
+        //bm = 1 / (cascadePlaneDistances[lightNo * cascadeCount + (layer-1)] * biasModifier);
+        fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + (layer-1)] * vec4(fragPosWorldSpace, 1.0);
         projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords * 0.5 + 0.5;
         shadow2 = PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer-1, 3, projCoords.xy);
-        float coef = (depthValue - cascadePlaneDistances[lightNo][layer-1])/(cascadePlaneDistances[lightNo][layer] - cascadePlaneDistances[lightNo][layer-1]);
+        float coef = (depthValue - cascadePlaneDistances[lightNo * cascadeCount + (layer-1)])/(cascadePlaneDistances[lightNo * cascadeCount + layer] - cascadePlaneDistances[lightNo * cascadeCount + (layer-1)]);
     }
     
         
@@ -2098,7 +2097,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
     float shadow = 0.0;
-    for (int lightNo = 0; i < lightNum; ++lightNo)
+    for (int lightNo = 0; lightNo < lightNum; ++lightNo)
     {
         shadow += ShadowCalculation(lightNo, position);
     }

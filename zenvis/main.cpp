@@ -197,10 +197,9 @@ static void shadowPass()
 {
   auto &scene = Scene::getInstance();
   auto &lights = scene.lights;
-  int j = 0;
   for (auto &light : lights)
   {
-    for (int i = 0; i < light->shadowCascadeLevels.size() + 1; i++)
+    for (int i = 0; i < Light::cascadeCount + 1; i++)
     {
       light->BeginShadowMap(g_near, g_far, light->lightDir, proj, view, i);
       vao->bind();
@@ -211,7 +210,6 @@ static void shadowPass()
       vao->unbind();
       light->EndShadowMap();
     }
-    ++j;
   }
 }
 
