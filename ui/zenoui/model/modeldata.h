@@ -216,4 +216,11 @@ struct LINK_UPDATE_INFO {
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 
+struct CURVE_RANGE {
+    qreal xFrom;
+    qreal xTo;
+    qreal yFrom;
+    qreal yTo;
+};
+
 #endif

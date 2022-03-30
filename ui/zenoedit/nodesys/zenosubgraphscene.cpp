@@ -2,6 +2,7 @@
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
+#include "curvemapnode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -118,6 +119,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "MakeHeatmap")
     {
         return new MakeHeatMapNode(params);
+    }
+    else if (descName == "MakeCurvemap")
+    {
+        return new MakeCurvemapNode(params);
     }
     else
     {

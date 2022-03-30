@@ -258,7 +258,12 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
         zeno::log_trace("found param name {}", name.toStdString());
 		params[name].value = var;
 		m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
-	} else {
+	}
+	else
+	{
+		PARAMS_INFO _params = m_currentGraph->data(idx, ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+		_params[name].value = var;
+		m_currentGraph->setData(idx, QVariant::fromValue(_params), ROLE_PARAMETERS_NOT_DESC);
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
