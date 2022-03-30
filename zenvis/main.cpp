@@ -11,19 +11,10 @@
 #include <stb_image_write.h>
 #include <Hg/OpenGL/stdafx.hpp>
 #include "zenvisapi.hpp"
+#include <Scene.hpp>
 
 namespace zenvis {
 int oldnx, oldny;
-extern void setCascadeLevels(float far);
-extern void initCascadeShadow();
-extern std::vector<glm::mat4> getLightSpaceMatrices(float near, float far, glm::mat4 &proj, glm::mat4 &view);
-extern void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i);
-extern void setShadowMV(Program* shader);
-extern void EndShadowMap();
-extern unsigned int getShadowMap();
-extern int getCascadeCount();
-extern void setfov(float f);
-extern void setaspect(float f);
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c, glm::vec3 camPos, glm::vec3 camView, glm::vec3 camUp);
 extern void initReflectiveMaps(int nx, int ny);
@@ -71,8 +62,13 @@ void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
-  setfov(fov);
-  setaspect(nx*1.0/ny);
+  auto &scene = Scene::getInstance();
+  auto &lights = scene.lights;
+  for (auto &light : lights)
+  {
+    light->gfov = fov;
+    light->gaspect = nx * 1.0 / ny;
+  }
   center = glm::vec3(cx, cy, cz);
 
   point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
@@ -137,24 +133,28 @@ void set_program_uniforms(Program *pro) {
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-static glm::vec3 light;
-extern glm::vec3 getLight()
+void setLightHight(float h)
 {
-  return light;
+  auto &scene = Scene::getInstance();
+  auto &light = scene.lights[0];
+  light->lightHight = h;
 }
-extern void setLightHight(float h);
 void setLight(float x, float y, float z)
 {
-  light = glm::vec3(x,y,z);
+  auto &scene = Scene::getInstance();
+  auto &light = scene.lights[0];
+  light->lightDir = glm::vec3(x, y, z);
 }
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
-  setLight(1,1,0);
-  setLightHight(1000);
-  initCascadeShadow();
+  auto &scene = Scene::getInstance();
+  auto light0 = scene.addLight();
+  light0->lightDir = glm::vec3(1, 1, 0);
+  light0->lightHight = 1000;
+  light0->initCascadeShadow();
   initReflectiveMaps(nx, ny);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
@@ -195,14 +195,23 @@ extern float getCamFar()
 }
 static void shadowPass()
 {
-  for(int i=0;i<getCascadeCount()+1;i++){
-    BeginShadowMap(g_near, g_far, getLight(), proj, view,i);
-    vao->bind();
-    for (auto const &[key, gra]: current_frame_data()->graphics) {
-      gra->drawShadow();
+  auto &scene = Scene::getInstance();
+  auto &lights = scene.lights;
+  int j = 0;
+  for (auto &light : lights)
+  {
+    for (int i = 0; i < light->shadowCascadeLevels.size() + 1; i++)
+    {
+      light->BeginShadowMap(g_near, g_far, light->lightDir, proj, view, i);
+      vao->bind();
+      for (auto const &[key, gra] : current_frame_data()->graphics)
+      {
+        gra->drawShadow(light.get());
+      }
+      vao->unbind();
+      light->EndShadowMap();
     }
-    vao->unbind();
-    EndShadowMap();
+    ++j;
   }
 }
 
