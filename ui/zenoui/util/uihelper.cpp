@@ -24,10 +24,6 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
     for (const auto &node : jsonDescs.GetObject())
     {
         const QString &name = node.name.GetString();
-        if (name == "MakeHeatmap") {
-            int j;
-            j = 0;
-        }
         const auto &objValue = node.value;
         auto inputs = objValue["inputs"].GetArray();
         auto outputs = objValue["outputs"].GetArray();
@@ -122,16 +118,21 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
         return defaultValue;
     case CONTROL_VEC3F:
     {
-        QVector<qreal> vec(3);
+        QVector<qreal> vec;
         if (!defaultValue.isEmpty())
         {
             QStringList L = defaultValue.split(",");
+            vec.resize(qMax(L.size(), 3));
             bool bOK = false;
             for (int i = 0; i < L.size(); i++)
             {
-                vec.append(L[i].toFloat(&bOK));
+                vec[i] = L[i].toFloat(&bOK);
                 Q_ASSERT(bOK);
             }
+        }
+        else
+        {
+            vec.resize(3);
         }
         return QVariant::fromValue(vec);
     }
