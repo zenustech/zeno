@@ -384,8 +384,9 @@ struct GraphicPrimitive : IGraphic {
                 setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
             }
         }
-        if(!triObj.prog)
+        if(!triObj.prog){
             triObj.prog = get_tris_program(path,nullptr);
+        }
         
     }
 
@@ -399,7 +400,7 @@ struct GraphicPrimitive : IGraphic {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
     //load_textures(path);
-    prim_has_mtl = prim->mtl != nullptr;
+    prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
   }
   
   virtual void drawShadow() override 
@@ -2024,7 +2025,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(reflectPass==1.0 && mat_reflection==1.0 )
         discard;
     /* custom_shader_end */
-    if(mat_opacity>=0.99)
+    if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
@@ -2086,7 +2087,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
-    vec3 ibl = mix(iblPhotoReal, iblNPR,mat_toon);
+    vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
     float shadow = ShadowCalculation(position);
     
     //color += ibl;

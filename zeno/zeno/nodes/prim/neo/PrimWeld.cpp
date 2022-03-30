@@ -41,7 +41,7 @@ struct PrimWeld : INode {
                 prim->verts[start] = average;
             } else {
                 for (; it != nit; ++it) {
-                    printf("(%d) %d -> %d\n", it->first, it->second, nrevamp);
+                    //printf("(%d) %d -> %d\n", it->first, it->second, nrevamp);
                     unrevamp[it->second] = nrevamp;
                 }
             }
