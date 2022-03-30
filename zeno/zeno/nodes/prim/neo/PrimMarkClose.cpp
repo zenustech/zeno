@@ -16,7 +16,7 @@ struct PrimMarkClose : INode {
         float distance = get_input<NumericObject>("distance")->get<float>();
 
         float factor = 1.0f / distance;
-        std::unordered_map<vec3i, int, tuple_hash, tuple_equal> lut;
+        std::unordered_multimap<vec3i, int, tuple_hash, tuple_equal> lut;
         lut.reserve(prim->verts.size());
         for (int i = 0; i < prim->verts.size(); i++) {
             vec3f pos = prim->verts[i];
@@ -25,10 +25,16 @@ struct PrimMarkClose : INode {
         }
 
         auto &tag = prim->verts.add_attr<int>(tagAttr);
-        std::fill(tag.begin(), tag.end(), -1);
-        int cnt = 0;
-        for (auto const &[key, idx]: lut) {
-            tag[idx] = cnt++;
+        if (lut.size()) {
+            int cnt = 0;
+            int last_idx = lut.begin()->second;
+            for (auto const &[key, idx]: lut) {
+                if (last_idx != idx) {
+                    ++cnt;
+                    last_idx = idx;
+                }
+                tag[idx] = cnt;
+            }
         }
 
         set_output("prim", std::move(prim));

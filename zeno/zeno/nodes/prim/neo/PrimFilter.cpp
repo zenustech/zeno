@@ -37,7 +37,7 @@ static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
     std::swap(arr, newarr);
 }
 
-ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp) {
+ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp, std::vector<int> const *unrevamp_p) {
     prim->foreach_attr([&] (auto const &key, auto &arr) {
         revamp_vector(arr, revamp);
     });
@@ -52,9 +52,12 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
             || prim->points.size()
          )) {
 
-        std::vector<int> unrevamp(old_prim_size, -1);
-        for (int i = 0; i < revamp.size(); i++) {
-            unrevamp[revamp[i]] = i;
+        std::vector<int> unrevamp_s(old_prim_size, -1);
+        auto const &unrevamp = unrevamp_p ? *unrevamp_p : unrevamp_s;
+        if (!unrevamp_p) {
+            for (int i = 0; i < revamp.size(); i++) {
+                unrevamp_s[revamp[i]] = i;
+            }
         }
         auto mock = [&] (int &x) -> bool {
             int loc = unrevamp[x];
@@ -64,7 +67,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
             return true;
         };
 
-        if (prim->tris.size()) {
+        f (prim->tris.size()) {
             std::vector<int> trisrevamp;
             trisrevamp.reserve(prim->tris.size());
             for (int i = 0; i < prim->tris.size(); i++) {
