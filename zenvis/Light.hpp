@@ -42,6 +42,11 @@ namespace zenvis
         unsigned int matricesUBO = 0;
         static constexpr int cascadeCount = 7;
 
+        Light()
+        {
+            initCascadeShadow();
+        }
+
         void setCascadeLevels(float far)
         {
             shadowCascadeLevels.resize(cascadeCount);
