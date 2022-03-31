@@ -2163,6 +2163,9 @@ void main()
   }
   vec3 viewdir = -calcRayDir(position);
   vec3 albedo = iColor;
+  vec3 normalInView = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*normal;
+  if(dot(-viewdir, normalInView)>0)
+    normal = - normal;
 
   //normal = faceforward(normal, -viewdir, normal);
   vec3 tangent = iTangent;
