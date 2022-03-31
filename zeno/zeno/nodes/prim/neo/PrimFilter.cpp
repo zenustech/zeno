@@ -67,7 +67,7 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
             return true;
         };
 
-        f (prim->tris.size()) {
+        if (prim->tris.size()) {
             std::vector<int> trisrevamp;
             trisrevamp.reserve(prim->tris.size());
             for (int i = 0; i < prim->tris.size(); i++) {

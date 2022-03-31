@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Light.hpp>
 #include <memory>
 #include <vector>
 #include <string>
@@ -9,7 +10,7 @@ namespace zenvis {
 
 struct IGraphic {
   virtual void draw(bool reflect) = 0;
-  virtual void drawShadow() = 0;
+  virtual void drawShadow(Light *light) = 0;
   virtual ~IGraphic() = default;
 };
 
