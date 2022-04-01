@@ -952,7 +952,7 @@ struct MakeZSLevelSet : INode {
           tags, dx, 1, zs::memsrc_e::um, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
-    } else if (cateStr == "uniform_vel") {
+    } else if (cateStr == "const_velocity") {
       auto v = get_input<zeno::NumericObject>("aux")->get<zeno::vec3f>();
       ls->getLevelSet() = typename ZenoLevelSet::uniform_vel_ls_t{
           zs::vec<float, 3>{v[0], v[1], v[2]}};
@@ -986,7 +986,7 @@ ZENDEFNODE(MakeZSLevelSet,
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
                {{"enum unknown apic flip", "transfer", "unknown"},
-                {"enum cellcentered collocated staggered uni_velocity",
+                {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},
            });

@@ -5,12 +5,6 @@
 
 namespace zeno {
 
-struct ZenoBoundary : zeno::IObject {
-  auto &get() noexcept { return boundary; }
-  const auto &get() const noexcept { return boundary; }
-  zs::GeneralBoundary boundary;
-};
-
 struct ZenoExplicitTimeIntegrator : zeno::IObject {
   using value_type = typename ZenoFEMMesh::value_type;
   using size_type = typename ZenoFEMMesh::size_type;

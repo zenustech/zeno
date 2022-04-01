@@ -1509,9 +1509,9 @@ struct ApplyWindImpulseOnZSGrid : INode {
               zs::vec<float, 3> n{};
               float area{};
               {
-                auto p0 = pars.pack<3>("pos", eles("inds", 0, ei));
-                auto p1 = pars.pack<3>("pos", eles("inds", 1, ei));
-                auto p2 = pars.pack<3>("pos", eles("inds", 2, ei));
+                auto p0 = pars.pack<3>("pos", (int)eles("inds", 0, ei));
+                auto p1 = pars.pack<3>("pos", (int)eles("inds", 1, ei));
+                auto p2 = pars.pack<3>("pos", (int)eles("inds", 2, ei));
                 auto cp = (p1 - p0).cross(p2 - p0);
                 area = cp.length();
                 n = cp / area;
@@ -1519,7 +1519,13 @@ struct ApplyWindImpulseOnZSGrid : INode {
               }
               auto pos = eles.pack<3>("pos", ei);
               auto windVel = velLs.getMaterialVelocity(pos);
-              auto vel = eles.pack<3>("vel", ei);
+
+              auto vel0 = pars.pack<3>("vel", (int)eles("inds", 0, ei));
+              auto vel1 = pars.pack<3>("vel", (int)eles("inds", 1, ei));
+              auto vel2 = pars.pack<3>("vel", (int)eles("inds", 2, ei));
+              auto vel = (vel0 + vel1 + vel2) / 3;
+
+              // auto vel = eles.pack<3>("vel", ei);
               auto vrel = windVel - vel;
               float vnSignedLength = n.dot(vrel);
               auto vn = n * vnSignedLength;
