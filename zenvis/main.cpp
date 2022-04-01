@@ -151,10 +151,7 @@ void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
   auto &scene = Scene::getInstance();
-  auto light0 = scene.addLight();
-  light0->lightDir = glm::vec3(1, 1, 0);
-  light0->lightHight = 1000;
-  light0->initCascadeShadow();
+  scene.addLight();
   initReflectiveMaps(nx, ny);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");

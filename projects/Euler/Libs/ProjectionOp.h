@@ -26,7 +26,7 @@ public:
     {
         // BOW_TIMER_FLAG("Fix Momentum");
         // Logging::info("Fix Momentum");
-        auto flux_based_update = [&](const Vector<int, dim>& I) {
+        auto flux_based_update = [&, dt](const Vector<int, dim>& I) {
             if (field_helper.cell_type[field_helper.grid[I].idx] == CellType::GAS) {
                 auto RK_coeffs = ZenEulerGas::Math::TimeIntegration::TVDRK3<T, int>(substep);
                 field_helper.q[field_helper.grid[I].idx].template tail<dim>() -= dt * RK_coeffs(2) * field_helper.cellPressureGrad(I, inv_dx).array();
