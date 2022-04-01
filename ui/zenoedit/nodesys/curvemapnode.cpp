@@ -1,5 +1,5 @@
 #include "curvemapnode.h"
-#include "../panel/zcurvemapeditor.h"
+#include "../curvemap/zcurvemapeditor.h"
 
 
 MakeCurvemapNode::MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent)

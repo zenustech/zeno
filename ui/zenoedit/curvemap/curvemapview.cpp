@@ -1,5 +1,4 @@
-#include "zcurvemapeditor.h"
-#include <zenoui/nodesys/nodegrid.h>
+#include "curvemapview.h"
 #include "curvescalaritem.h"
 #include "curvegrid.h"
 
@@ -35,28 +34,29 @@ void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const Q
 	setScene(pScene);
 	m_range = range;
 
+	m_gridMargins.setLeft(64);
+	m_gridMargins.setRight(64);
+	m_gridMargins.setTop(64);
+	m_gridMargins.setBottom(64);
+
 	m_pHScalar = new CurveScalarItem(true, this);
 	m_pVScalar = new CurveScalarItem(false, this);
-	m_grid = new CurveGrid;
+	m_grid = new CurveGrid(this);
 	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
 	m_grid->setZValue(-100);
 	pScene->addItem(m_pHScalar);
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
 
-	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(resetPosition()));
-	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(resetPosition()));
-}
-
-CURVE_RANGE ZCurveMapView::range() const
-{
-	return m_range;
+	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
+	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
 }
 
 void ZCurveMapView::resizeEvent(QResizeEvent* event)
 {
 	QGraphicsView::resizeEvent(event);
 	const QSize sz = event->size();
+	setSceneRect(QRectF(0, 0, sz.width(), sz.height()));
 
 	qreal W = sz.width(), H = sz.height();
 	qreal W_ = m_range.xTo - m_range.xFrom;
@@ -66,16 +66,18 @@ void ZCurveMapView::resizeEvent(QResizeEvent* event)
 	W = W - 2 * margin;
 	H = H - 2 * margin;
 
-	QRectF rcBound(margin, margin, W, H);
-	setSceneRect(QRectF(0, 0, sz.width(), sz.height()));
-	m_grid->reset(rcBound);
-
-	m_pHScalar->onResizeView(this);
-	m_pHScalar->resetPosition(this);
-	m_pHScalar->setX(margin);
-	m_pVScalar->onResizeView(this);
-	m_pVScalar->resetPosition(this);
+	m_pHScalar->setX(m_gridMargins.left());
 	m_pVScalar->setY(margin);
+
+	m_pHScalar->update();
+	m_pVScalar->update();
+}
+
+QRectF ZCurveMapView::gridBoundingRect() const
+{
+	QRectF rc = rect();
+	rc = rc.marginsRemoved(m_gridMargins);
+	return rc;
 }
 
 void ZCurveMapView::wheelEvent(QWheelEvent* event)
@@ -127,8 +129,8 @@ void ZCurveMapView::mouseMoveEvent(QMouseEvent* event)
 		translate(-delta.x(), -delta.y());
 		_last_mouse_pos = event->pos();
 
-		m_pHScalar->updateScalar(this, m_factor, metrics(m_factor));
-		m_pVScalar->updateScalar(this, m_factor, metrics(m_factor));
+		m_pHScalar->update();
+		m_pVScalar->update();
 	}
 	QGraphicsView::mouseMoveEvent(event);
 }
@@ -143,47 +145,37 @@ void ZCurveMapView::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-int ZCurveMapView::metrics(int factor) const
+int ZCurveMapView::frames(bool bHorizontal) const
 {
-	if (factor >= 1.0 && factor <= 2.5)
+	//hard to cihou grids...
+	if (bHorizontal)
 	{
-		return 20;
-	}
-	else if (factor < 4)
-	{
-		return 40;
-	}
-	else if (factor < 6)
-	{
-		return 60;
-	}
-	else if (factor < 8)
-	{
-		return 80;
+		int W = width();
+		int wtf = W * m_factor * 0.015;
+		return wtf;
 	}
 	else
 	{
-		return 120;
+		int H = height();
+		int wtf = H * m_factor * 0.015;
+		return wtf;
 	}
 }
 
 void ZCurveMapView::drawBackground(QPainter* painter, const QRectF& rect)
 {
 	QGraphicsView::drawBackground(painter, rect);
-	//drawGrid(painter, rect);
 }
 
 void ZCurveMapView::gentle_zoom(qreal factor)
 {
+	//scale.
 	QTransform matrix = transform();
 	matrix.scale(factor, factor);
-
 	if (matrix.m11() < 1.0)
 		return;
-
 	setTransform(matrix);
 
-	//scale(factor, factor);
 	centerOn(target_scene_pos);
 	QPointF delta_viewport_pos = target_viewport_pos -
 		QPointF(viewport()->width() / 2.0, viewport()->height() / 2.0);
@@ -191,12 +183,10 @@ void ZCurveMapView::gentle_zoom(qreal factor)
 	centerOn(mapToScene(viewport_center.toPoint()));
 
 	m_factor = transform().m11();
-	emit zoomed(m_factor);
-	emit viewChanged(m_factor);
 
-	m_pHScalar->updateScalar(this, m_factor, metrics(m_factor));
-	m_pVScalar->updateScalar(this, m_factor, metrics(m_factor));
-	m_grid->setFactor(m_factor, metrics(m_factor));
+	m_pHScalar->update();
+	m_pVScalar->update();
+	m_grid->update();
 }
 
 void ZCurveMapView::set_modifiers(Qt::KeyboardModifiers modifiers)
@@ -208,56 +198,4 @@ void ZCurveMapView::resetTransform()
 {
 	QGraphicsView::resetTransform();
 	m_factor = 1.0;
-}
-
-void ZCurveMapView::drawGrid(QPainter* painter, const QRectF& rect)
-{
-	QTransform tf = transform();
-	qreal scale = tf.m11();
-	int innerGrid = 50;   //will be associated with scale factor.
-
-	qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
-	qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
-
-	QVarLengthArray<QLineF, 100> innerLines;
-
-	for (qreal x = left; x < rect.right(); x += innerGrid)
-	{
-		innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
-	}
-	for (qreal y = top; y < rect.bottom(); y += innerGrid)
-	{
-		innerLines.append(QLineF(rect.left(), y, rect.right(), y));
-	}
-
-	painter->fillRect(rect, QColor(30, 29, 33));
-
-	QPen pen;
-	pen.setColor(QColor(116, 116, 116));
-	pen.setWidthF(pen.widthF() / scale);
-	painter->setPen(pen);
-	painter->drawLines(innerLines.data(), innerLines.size());
-}
-
-
-ZCurveMapEditor::ZCurveMapEditor(QWidget* parent)
-	: QWidget(parent)
-	, m_view(nullptr)
-{
-
-}
-
-ZCurveMapEditor::~ZCurveMapEditor()
-{
-
-}
-
-void ZCurveMapEditor::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
-{
-	QVBoxLayout* pLayout = new QVBoxLayout;
-	pLayout->setContentsMargins(0, 0, 0, 0);
-	m_view = new ZCurveMapView;
-	m_view->init(range, pts, handlers);
-	pLayout->addWidget(m_view);
-	setLayout(pLayout);
 }

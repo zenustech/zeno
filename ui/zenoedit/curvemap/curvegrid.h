@@ -3,22 +3,20 @@
 
 #include <QtWidgets>
 
+class ZCurveMapView;
+
 class CurveGrid : public QGraphicsObject
 {
 	Q_OBJECT
 public:
-	CurveGrid(QGraphicsItem* parent = nullptr);
-	void reset(const QRectF& rc);
+	CurveGrid(ZCurveMapView* pView, QGraphicsItem* parent = nullptr);
 	void setColor(const QColor& clrGrid, const QColor& clrBackground);
-	void setFactor(const qreal& factor, int nFrames);
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
 private:
-	qreal m_factor;
-	int m_nFrames;
-	QRectF m_sceneRect;
 	QColor m_clrGrid, m_clrBg;
+	ZCurveMapView* m_view;
 };
 
 

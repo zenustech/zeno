@@ -1,12 +1,11 @@
-#ifndef __ZCURVEMAP_EDITOR_H__
-#define __ZCURVEMAP_EDITOR_H__
+#ifndef __CURVEMAP_VIEW_H__
+#define __CURVEMAP_VIEW_H__
 
-#include <zenoui/model/modeldata.h>
 #include <QtWidgets>
+#include <zenoui/model/modeldata.h>
 
-class CurveScalarItem;
 class CurveGrid;
-class NodeGridItem;
+class CurveScalarItem;
 
 class ZCurveMapView : public QGraphicsView
 {
@@ -15,7 +14,11 @@ public:
 	ZCurveMapView(QWidget* parent = nullptr);
 	~ZCurveMapView();
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
-	CURVE_RANGE range() const;
+	CURVE_RANGE range() const { return m_range; }
+	int frames(bool bHorizontal) const;
+	QMargins margins() const { return m_gridMargins; }
+	qreal factor() const { return m_factor; }
+	QRectF gridBoundingRect() const;
 
 protected:
 	void wheelEvent(QWheelEvent* event);
@@ -25,16 +28,10 @@ protected:
 	void mouseReleaseEvent(QMouseEvent* event);
 	void resizeEvent(QResizeEvent* event);
 
-signals:
-	void zoomed(qreal);
-	void viewChanged(qreal);
-
 private:
 	void gentle_zoom(qreal factor);
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void resetTransform();
-	void drawGrid(QPainter* painter, const QRectF& rect);
-	int metrics(int factor) const;
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 	QPoint m_mousePos;
@@ -42,6 +39,7 @@ private:
 	qreal m_factor;
 	QString m_path;
 	CURVE_RANGE m_range;
+	QMargins m_gridMargins;
 	CurveGrid* m_grid;
 	CurveScalarItem* m_pHScalar;
 	CurveScalarItem* m_pVScalar;
@@ -49,18 +47,5 @@ private:
 	Qt::KeyboardModifiers _modifiers;
 	bool m_dragMove;
 };
-
-class ZCurveMapEditor : public QWidget
-{
-	Q_OBJECT
-public:
-	ZCurveMapEditor(QWidget* parent = nullptr);
-	~ZCurveMapEditor();
-	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
-
-private:
-	ZCurveMapView* m_view;
-};
-
 
 #endif
