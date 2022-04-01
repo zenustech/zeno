@@ -150,7 +150,9 @@ void setLightData(
   std::tuple<float, float, float> dir,
   float height,
   float softness,
-  std::tuple<float, float, float> tint
+  std::tuple<float, float, float> tint,
+  std::tuple<float, float, float> color,
+  float intensity
 ) {
   auto &scene = Scene::getInstance();
   auto &light = scene.lights[index];
@@ -183,18 +185,24 @@ std::tuple<
   std::tuple<float, float, float>,
   float,
   float,
-  std::tuple<float, float, float>
+  std::tuple<float, float, float>,
+  std::tuple<float, float, float>,
+  float
 > getLight(int i) {
   auto &scene = Scene::getInstance();
   auto &l = scene.lights.at(i);
   auto d = glm::normalize(l->lightDir);
   auto t = l->shadowTint;
+  auto c = l->lightColor;
+  auto ins = l->intensity;
 
   return {
     {d.x, d.y, d.z},
     l->lightHight,
     l->shadowSoftness,
     {t.x, t.y, t.z},
+    {c.x, c.y, c.z},
+    ins
   };
 }
 

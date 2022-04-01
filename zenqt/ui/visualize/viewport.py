@@ -17,6 +17,9 @@ from ..editor import locale
 
 from typing import Tuple
 
+from ..keyframe_editor.frame_curve_editor import CurveWindow
+from ..keyframe_editor.curve_canvas import ControlPoint
+
 class CameraControl:
     '''
     MMB to orbit, Shift+MMB to pan, wheel to zoom
@@ -251,6 +254,17 @@ class QDMRecordMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+F12'))
         self.addAction(action)
 
+light_channel_names = [
+    'dir_x',
+    'dir_y',
+    'dir_z',
+    'height',
+    'softness',
+    'tint_r',
+    'tint_g',
+    'tint_b',
+]
+
 class LightKeyframe:
     def __init__(self):
         super().__init__()
@@ -258,7 +272,9 @@ class LightKeyframe:
         self.dir: Tuple[float, float, float] = (1, 1, 0)
         self.height: float = 1000.0
         self.softness: float = 1.0
-        self.Tint: Tuple[float, float, float] = (0.2, 0.2, 0.2)
+        self.tint: Tuple[float, float, float] = (0.2, 0.2, 0.2)
+        self.color: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+        self.intensity: float = 10.0
 
 class SetLightDialog(QWidget):
     def __init__(self):
@@ -267,9 +283,9 @@ class SetLightDialog(QWidget):
         self.setWindowTitle('LightsWindow')
         self.initUI()
 
-        self.light_keyframes = {
-            0: [LightKeyframe()],
-        }
+        self.lights = zenvis.status['lights']
+        self.new_light_channel()
+        self.curve_editor = CurveWindow(self.lights[0])
 
     def initUI(self):
         self.keyframe_btn = QPushButton('Keyframe')
@@ -296,9 +312,8 @@ class SetLightDialog(QWidget):
         self.height_spinbox = QLineEdit('0')
         self.height_spinbox.textEdited.connect(self.setLight)
 
-        self.softness_spinbox = QDoubleSpinBox()
-        self.softness_spinbox.valueChanged.connect(self.setLight)
-        self.softness_spinbox.setSingleStep(0.1)
+        self.softness_spinbox = QLineEdit('1')
+        self.softness_spinbox.textEdited.connect(self.setLight)
 
         self.shadow_tint_spinbox_r = QDoubleSpinBox()
         self.shadow_tint_spinbox_r.valueChanged.connect(self.setLight)
@@ -309,6 +324,20 @@ class SetLightDialog(QWidget):
         self.shadow_tint_spinbox_b = QDoubleSpinBox()
         self.shadow_tint_spinbox_b.valueChanged.connect(self.setLight)
         self.shadow_tint_spinbox_b.setSingleStep(0.05)
+
+        self.color_spinbox_r = QDoubleSpinBox()
+        self.color_spinbox_r.valueChanged.connect(self.setLight)
+        self.color_spinbox_r.setSingleStep(0.05)
+        self.color_spinbox_g = QDoubleSpinBox()
+        self.color_spinbox_g.valueChanged.connect(self.setLight)
+        self.color_spinbox_g.setSingleStep(0.05)
+        self.color_spinbox_b = QDoubleSpinBox()
+        self.color_spinbox_b.valueChanged.connect(self.setLight)
+        self.color_spinbox_b.setSingleStep(0.05)
+
+        self.light_intensity = QDoubleSpinBox()
+        self.light_intensity.valueChanged.connect(self.setLight)
+        self.light_intensity.setSingleStep(0.05)
         
         layout = QVBoxLayout()
         layout.addWidget(self.keyframe_btn)
@@ -333,6 +362,15 @@ class SetLightDialog(QWidget):
         layout.addWidget(self.shadow_tint_spinbox_g)
         layout.addWidget(self.shadow_tint_spinbox_b)
 
+        layout.addWidget(QLabel('LightColor'))
+        layout.addWidget(self.color_spinbox_r)
+        layout.addWidget(self.color_spinbox_g)
+        layout.addWidget(self.color_spinbox_b)
+
+
+        layout.addWidget(QLabel('LightIntensity'))
+        layout.addWidget(self.light_intensity)
+
         self.setLayout(layout)
 
     def paintEvent(self, e):
@@ -344,6 +382,7 @@ class SetLightDialog(QWidget):
     
     def add_light(self):
         zenvis.core.addLight()
+        self.new_light_channel()
         self.update()
     
     def update_item(self):
@@ -358,14 +397,25 @@ class SetLightDialog(QWidget):
         self.theta_slider.setValue(round(theta * 100))
 
         self.height_spinbox.setText(str(l[1]))
-        self.softness_spinbox.setValue(l[2])
+        self.softness_spinbox.setText(str(l[2]))
 
-        r, g, b = l[3]
+        sr, sg, sb = l[3]
 
-        self.shadow_tint_spinbox_r.setValue(r)
-        self.shadow_tint_spinbox_g.setValue(g)
-        self.shadow_tint_spinbox_b.setValue(b)
-    
+        self.shadow_tint_spinbox_r.setValue(sr)
+        self.shadow_tint_spinbox_g.setValue(sg)
+        self.shadow_tint_spinbox_b.setValue(sb)
+
+        cr, cg, cb = l[4]
+        self.color_spinbox_r.setValue(cr)
+        self.color_spinbox_g.setValue(cg)
+        self.color_spinbox_b.setValue(cb)
+
+        intensity = l[5]
+        self.light_intensity.setValue(intensity)
+
+        self.curve_editor.widget_state.data = self.lights[index]
+        self.curve_editor.update()
+
     def sphere_xyz(self, phi, theta):
         phi = phi * math.pi * 2
         theta = theta * math.pi
@@ -389,39 +439,47 @@ class SetLightDialog(QWidget):
         index = self.list.currentRow()
         if index == -1:
             return
-        phi = self.phi_slider.value() / 100
-        theta = self.theta_slider.value() / 100
-        x, y, z = self.sphere_xyz(phi, theta)
-        height = float(self.height_spinbox.text())
-        softness = self.softness_spinbox.value()
-        rgb = (
-            self.shadow_tint_spinbox_r.value(),
-            self.shadow_tint_spinbox_g.value(),
-            self.shadow_tint_spinbox_b.value(),
-        )
+        lkf = self.get_keyframe()
         zenvis.core.setLightData(
             index,
-            (x, y, z),
-            height,
-            softness,
-            rgb,
+            lkf.dir,
+            lkf.height,
+            lkf.softness,
+            lkf.tint,
+            lkf.color,
+            lkf.intensity,
         )
 
     def keyframe(self):
         index = self.list.currentRow()
         if index == -1:
             return
-        l = self.light_keyframes[index]
         f = zenvis.status['target_frame']
-        count = len(filter(lambda k: k.frame < f, l))
-        lkf = LightKeyframe()
-        if l[count - 1].frame == f:
-            l[count - 1] = lkf
-        else:
-            l.insert(count, lkf)
+        lkf = self.get_keyframe()
+        new_frame = {
+            'DirX': ControlPoint(f, lkf.dir[0]),
+            'DirY': ControlPoint(f, lkf.dir[1]),
+            'DirZ': ControlPoint(f, lkf.dir[2]),
+            'Height': ControlPoint(f, lkf.height),
+            'Softness': ControlPoint(f, lkf.softness),
+            'ShadowR': ControlPoint(f, lkf.tint[0]),
+            'ShadowG': ControlPoint(f, lkf.tint[1]),
+            'ShadowB': ControlPoint(f, lkf.tint[2]),
+            'ColorR': ControlPoint(f, lkf.color[0]),
+            'ColorG': ControlPoint(f, lkf.color[1]),
+            'ColorB': ControlPoint(f, lkf.color[2]),
+            'Intensity': ControlPoint(f, lkf.intensity),
+        }
+        for n, l in self.lights[index].items():
+            count = len(list(filter(lambda k: k.pos.x <= f, l)))
+            if l[count - 1].pos.x == f:
+                l[count - 1] = new_frame[n]
+            else:
+                l.insert(count, new_frame[n])
+        self.curve_editor.update()
 
     def edit(self):
-        pass
+        self.curve_editor.show()
 
     def get_keyframe(self):
         lkf = LightKeyframe()
@@ -429,12 +487,36 @@ class SetLightDialog(QWidget):
         theta = self.theta_slider.value() / 100
         lkf.dir = self.sphere_xyz(phi, theta)
         lkf.height = float(self.height_spinbox.text())
-        lkf.softness = self.softness_spinbox.value()
+        lkf.softness = float(self.softness_spinbox.text())
         lkf.tint = (
             self.shadow_tint_spinbox_r.value(),
             self.shadow_tint_spinbox_g.value(),
             self.shadow_tint_spinbox_b.value(),
         )
+        lkf.color = (
+            self.color_spinbox_r.value(),
+            self.color_spinbox_g.value(),
+            self.color_spinbox_b.value(),
+        )
+        lkf.intensity = self.light_intensity.value()
+        return lkf
+
+    def new_light_channel(self):
+        new_channel = {
+            'DirX': [ControlPoint(0, 1)],
+            'DirY': [ControlPoint(0, 1)],
+            'DirZ': [ControlPoint(0, 0)],
+            'Height': [ControlPoint(0, 1000.0)],
+            'Softness': [ControlPoint(0, 1.0)],
+            'ShadowR': [ControlPoint(0, 0.2)],
+            'ShadowG': [ControlPoint(0, 0.2)],
+            'ShadowB': [ControlPoint(0, 0.2)],
+            'ColorR': [ControlPoint(0, 1)],
+            'ColorG': [ControlPoint(0, 1)],
+            'ColorB': [ControlPoint(0, 1)],
+            'Intensity': [ControlPoint(0, 10.0)],
+        }
+        self.lights[len(self.lights)] = new_channel
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):

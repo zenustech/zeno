@@ -43,14 +43,18 @@ void setLightData(
   std::tuple<float, float, float> dir,
   float height,
   float softness,
-  std::tuple<float, float, float> tint
-  );
+  std::tuple<float, float, float> tint,
+  std::tuple<float, float, float> color,
+  float intensity
+);
 int getLightCount();
 void addLight();
 std::tuple<
   std::tuple<float, float, float>,
   float,
   float,
-  std::tuple<float, float, float>
+  std::tuple<float, float, float>,
+  std::tuple<float, float, float>,
+  float
 > getLight(int i);
 }
