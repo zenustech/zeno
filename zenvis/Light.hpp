@@ -21,6 +21,15 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 
+#ifdef _WIN32
+    #ifdef near
+        #undef near
+    #endif
+    #ifdef far
+        #undef far
+    #endif
+#endif
+
 namespace zenvis
 {
     struct Light
