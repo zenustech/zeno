@@ -45,9 +45,7 @@ void MakeCurvemapNode::onEditClicked()
 	if (params.contains("input_min") &&
 		params.contains("input_max") &&
 		params.contains("output_min") &&
-		params.contains("output_max") &&
-		params2.contains("_POINTS") &&
-		params2.contains("_HANDLERS"))
+		params.contains("output_max"))
 	{
 		CURVE_RANGE rg;
 
@@ -58,66 +56,65 @@ void MakeCurvemapNode::onEditClicked()
 
 		QString pointsStr = params2["_POINTS"].value.toString();
 		QString handlersStr = params2["_HANDLERS"].value.toString();
+
+		QVector<QPointF> points, handlers;
+
 		QStringList L = pointsStr.split(" ");
-		if (L.isEmpty())
+		if (!L.isEmpty())
 		{
-			Q_ASSERT(false);
-			return;
-		}
-
-		int n = 0;
-		bool bOK = false;
-		n = L[0].toInt(&bOK);
-		if (!bOK)
-		{
-			Q_ASSERT(false);
-			return;
-		}
-
-		if (L.length() != (1 + 2 * n))
-		{
-			Q_ASSERT(false);
-			return;
-		}
-
-		QVector<QPointF> points;
-		for (int i = 1; i < L.length(); i += 2)
-		{
-			QPointF pt;
-			pt.setX(L[i].toFloat(&bOK));
+			int n = 0;
+			bool bOK = false;
+			n = L[0].toInt(&bOK);
 			if (!bOK)
 			{
 				Q_ASSERT(false);
 				return;
 			}
-			pt.setY(L[i + 1].toFloat(&bOK));
-			if (!bOK)
-			{
-				Q_ASSERT(false);
-				return;
-			}
-			points.append(pt);
-		}
 
-		L = handlersStr.split(" ");
-		QVector<QPointF> handlers;
-		for (int i = 0; i < L.length(); i += 2)
-		{
-			QPointF pt;
+			if (L.length() != (1 + 2 * n))
+			{
+				Q_ASSERT(false);
+				return;
+			}
+			
+			for (int i = 1; i < L.length(); i += 2)
+			{
+				QPointF pt;
+				pt.setX(L[i].toFloat(&bOK));
+				if (!bOK)
+				{
+					Q_ASSERT(false);
+					return;
+				}
+				pt.setY(L[i + 1].toFloat(&bOK));
+				if (!bOK)
+				{
+					Q_ASSERT(false);
+					return;
+				}
+				points.append(pt);
+			}
 
-			pt.setX(L[i].toFloat(&bOK));
-			if (!bOK)
+			L = handlersStr.split(" ");
+			QVector<QPointF> handlers;
+			for (int i = 0; i < L.length(); i += 2)
 			{
-				Q_ASSERT(false);
-				return;
+				QPointF pt;
+
+				pt.setX(L[i].toFloat(&bOK));
+				if (!bOK)
+				{
+					Q_ASSERT(false);
+					return;
+				}
+				pt.setY(L[i + 1].toFloat(&bOK));
+				if (!bOK)
+				{
+					Q_ASSERT(false);
+					return;
+				}
+				handlers.append(pt);
 			}
-			pt.setY(L[i + 1].toFloat(&bOK));
-			if (!bOK)
-			{
-				Q_ASSERT(false);
-				return;
-			}
-			handlers.append(pt);
 		}
 
 		ZCurveMapEditor* pEditor = new ZCurveMapEditor;

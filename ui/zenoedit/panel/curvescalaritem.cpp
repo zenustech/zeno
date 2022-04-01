@@ -1,43 +1,29 @@
 #include <QtWidgets>
 #include "curvescalaritem.h"
+#include "zcurvemapeditor.h"
 
 
-CurveScalarItem::CurveScalarItem(bool bHorizontal, CURVE_RANGE rg, QGraphicsItem* parent)
+CurveScalarItem::CurveScalarItem(bool bHorizontal, ZCurveMapView* pView, QGraphicsItem* parent)
 	: QGraphicsObject(parent)
 	, m_bHorizontal(bHorizontal)
 	, m_from(0)
 	, m_to(0)
 	, m_nframes(30)
 	, m_factor(1.)
-	, m_range(rg)
+	, m_view(pView)
 {
 	if (m_bHorizontal)
 	{
-		m_from = rg.xFrom;
-		m_to = rg.xTo;
+		m_from = pView->range().xFrom;
+		m_to = pView->range().xTo;
 	}
 	else
 	{
-		m_from = rg.yFrom;
-		m_to = rg.yTo;
+		m_from = pView->range().yFrom;
+		m_to = pView->range().yTo;
 	}
 	setFlag(QGraphicsItem::ItemIgnoresTransformations);
 }
-
-//QRectF CurveScalarItem::boundingRect() const
-//{
-//	static const int margin = 64;
-//	if (m_bHorizontal)
-//	{
-//		qreal height = sz / m_factor;
-//		return QRectF(margin, 0, m_view.width() - 2 * margin, height);
-//	}
-//	else
-//	{
-//		qreal width = sz / m_factor;
-//		return QRectF(0, margin, width, m_view.height() - 2 * margin);
-//	}
-//}
 
 QRectF CurveScalarItem::boundingRect() const
 {
@@ -45,12 +31,13 @@ QRectF CurveScalarItem::boundingRect() const
 	if (m_bHorizontal)
 	{
 		qreal height = sz;
-		return QRectF(margin, 0, m_view.width() * m_factor, height);
+		qreal width = m_rect.width() - 2 * margin;
+		return QRectF(margin, 0, width * m_factor, height);
 	}
 	else
 	{
 		qreal width = sz;
-		return QRectF(0, margin, width, m_view.height() * m_factor);
+		return QRectF(0, margin, width, m_rect.height() * m_factor);
 	}
 }
 
@@ -71,16 +58,16 @@ void CurveScalarItem::resetPosition(QGraphicsView* pView)
 
 void CurveScalarItem::onResizeView(QGraphicsView* pView)
 {
-	m_view = pView->rect();
+	m_rect = pView->rect();
 	if (m_bHorizontal)
 	{
-		m_from = m_view.left();
-		m_to = m_view.right();
+		m_from = m_rect.left();
+		m_to = m_rect.right();
 	}
 	else
 	{
-		m_from = m_view.top();
-		m_to = m_view.bottom();
+		m_from = m_rect.top();
+		m_to = m_rect.bottom();
 	}
 	update();
 }
@@ -98,49 +85,52 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 	//painter->fillRect(option->rect, QColor(51, 51, 51));
 
 	//return;
-	qreal n = m_to - m_from - 2 * 64;
+	static const int margin = 64;
+	qreal n = 0;
+	if (m_bHorizontal)
+	{
+		n = m_rect.width() - 2 * margin;
+		m_from = 0;
+		m_to = n;
+	}
+	else
+	{
+		n = m_rect.height() - 2 * margin;
+		m_from = 0;
+		m_to = n;
+	}
 
-	QFont font("Calibre", 9);
+	CURVE_RANGE rg = m_view->range();
+
+	QFont font("HarmonyOS Sans", 12);
 	QFontMetrics metrics(font);
 	painter->setFont(font);
 	painter->setPen(QPen(QColor(153, 153, 153)));
 
 	for (qreal i = m_from, j = 0; i <= m_to; i += (n / m_nframes), j++)
 	{
-		int h = 0;
-		bool midScalar = false;// j % 10 == 0;
-		if (midScalar)
-		{
-			h = 13;
-		}
-		else
-		{
-			h = 5;
-		}
-
 		if (m_bHorizontal)
 		{
 			qreal x = i * m_factor;
 			qreal y = option->rect.top();
-			painter->drawLine(QPointF(x, y), QPointF(x, y + h));
-			if (midScalar)
-			{
-				painter->drawText(QPoint(x + 7, y + 22), QString::number(i));
-			}
+
+			qreal scalar = (rg.xTo - rg.xFrom) * (i - m_from) / n + rg.xFrom;
+
+			QString numText = QString::number(scalar, 'g', 3);
+			qreal textWidth = metrics.horizontalAdvance(numText);
+
+			painter->drawText(QPoint(x - textWidth / 2, y + 22), numText);
 		}
 		else
 		{
 			qreal x = option->rect.left();
 			qreal y = i * m_factor;
-			painter->drawLine(QPointF(x, y), QPointF(x + h, y));
-			if (midScalar)
-			{
-				painter->save();
-				painter->translate(24, y + 12);
-				painter->rotate(-90);
-				painter->drawText(QPointF(x + h + 5, 0), QString::number(i));
-				painter->restore();
-			}
+
+			qreal scalar = (rg.yTo - rg.yFrom) * (i - m_from) / n + rg.yFrom;
+			QString numText = QString::number(scalar, 'g', 3);
+			qreal textHeight = metrics.height();
+
+			painter->drawText(QPointF(x + 10, y + textHeight / 2), numText);
 		}
 	}
 }

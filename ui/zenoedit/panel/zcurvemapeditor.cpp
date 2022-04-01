@@ -35,8 +35,8 @@ void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const Q
 	setScene(pScene);
 	m_range = range;
 
-	m_pHScalar = new CurveScalarItem(true, range);
-	m_pVScalar = new CurveScalarItem(false, range);
+	m_pHScalar = new CurveScalarItem(true, this);
+	m_pVScalar = new CurveScalarItem(false, this);
 	m_grid = new CurveGrid;
 	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
 	m_grid->setZValue(-100);
@@ -46,6 +46,11 @@ void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const Q
 
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(resetPosition()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(resetPosition()));
+}
+
+CURVE_RANGE ZCurveMapView::range() const
+{
+	return m_range;
 }
 
 void ZCurveMapView::resizeEvent(QResizeEvent* event)

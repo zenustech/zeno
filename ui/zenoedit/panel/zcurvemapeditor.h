@@ -15,6 +15,7 @@ public:
 	ZCurveMapView(QWidget* parent = nullptr);
 	~ZCurveMapView();
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+	CURVE_RANGE range() const;
 
 protected:
 	void wheelEvent(QWheelEvent* event);
