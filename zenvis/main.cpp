@@ -145,6 +145,59 @@ void setLight(float x, float y, float z)
   auto &light = scene.lights[0];
   light->lightDir = glm::vec3(x, y, z);
 }
+void setLightData(
+  int index,
+  std::tuple<float, float, float> dir,
+  float height,
+  float softness,
+  std::tuple<float, float, float> tint
+) {
+  auto &scene = Scene::getInstance();
+  auto &light = scene.lights[index];
+  light->lightDir = glm::vec3(
+    std::get<0>(dir),
+    std::get<1>(dir),
+    std::get<2>(dir)
+  );
+  light->lightHight = height;
+  light->shadowSoftness = softness;
+  light->shadowTint = glm::vec3(
+    std::get<0>(tint),
+    std::get<1>(tint),
+    std::get<2>(tint)
+  );
+}
+
+int getLightCount() {
+  auto &scene = Scene::getInstance();
+  auto count = scene.lights.size();
+  return count;
+}
+
+void addLight() {
+  auto &scene = Scene::getInstance();
+  scene.addLight();
+}
+
+std::tuple<
+  std::tuple<float, float, float>,
+  float,
+  float,
+  std::tuple<float, float, float>
+> getLight(int i) {
+  auto &scene = Scene::getInstance();
+  auto &l = scene.lights.at(i);
+  auto d = glm::normalize(l->lightDir);
+  auto t = l->shadowTint;
+
+  return {
+    {d.x, d.y, d.z},
+    l->lightHight,
+    l->shadowSoftness,
+    {t.x, t.y, t.z},
+  };
+}
+
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
