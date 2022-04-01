@@ -4,7 +4,7 @@
 #include <QtWidgets>
 #include <zenoui/model/modeldata.h>
 
-class ZCurveMapView;
+class CurveMapView;
 
 class ZCurveMapEditor : public QWidget
 {
@@ -15,7 +15,7 @@ public:
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 
 private:
-	ZCurveMapView* m_view;
+	CurveMapView* m_view;
 };
 
 

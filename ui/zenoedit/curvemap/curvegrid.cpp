@@ -2,7 +2,7 @@
 #include "curvemapview.h"
 
 
-CurveGrid::CurveGrid(ZCurveMapView* pView, QGraphicsItem* parent)
+CurveGrid::CurveGrid(CurveMapView* pView, QGraphicsItem* parent)
 	: QGraphicsObject(parent)
 	, m_view(pView)
 {

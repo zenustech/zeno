@@ -3,13 +3,13 @@
 
 #include <zenoui/model/modeldata.h>
 
-class ZCurveMapView;
+class CurveMapView;
 
 class CurveScalarItem : public QGraphicsObject
 {
 	typedef QGraphicsObject _base;
 public:
-	CurveScalarItem(bool bHorizontal, ZCurveMapView* pView, QGraphicsItem* parent = nullptr);
+	CurveScalarItem(bool bHorizontal, CurveMapView* pView, QGraphicsItem* parent = nullptr);
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
@@ -20,7 +20,7 @@ private:
 	void resetPosition();
 
 	const qreal sz = 24.;
-	ZCurveMapView* m_view;
+	CurveMapView* m_view;
 	bool m_bHorizontal;
 };
 

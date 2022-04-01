@@ -3,7 +3,7 @@
 #include "curvegrid.h"
 
 
-ZCurveMapView::ZCurveMapView(QWidget* parent)
+CurveMapView::CurveMapView(QWidget* parent)
 	: QGraphicsView(parent)
 	, _modifiers(Qt::ControlModifier)
 	, m_factor(1.)
@@ -23,12 +23,12 @@ ZCurveMapView::ZCurveMapView(QWidget* parent)
 	setBackgroundBrush(QColor(26, 26, 26));
 }
 
-ZCurveMapView::~ZCurveMapView()
+CurveMapView::~CurveMapView()
 {
 
 }
 
-void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
+void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
@@ -41,6 +41,9 @@ void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const Q
 
 	m_pHScalar = new CurveScalarItem(true, this);
 	m_pVScalar = new CurveScalarItem(false, this);
+	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
+	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
+
 	m_grid = new CurveGrid(this);
 	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
 	m_grid->setZValue(-100);
@@ -48,11 +51,15 @@ void ZCurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const Q
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
 
-	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
-	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
+	initCurves();
 }
 
-void ZCurveMapView::resizeEvent(QResizeEvent* event)
+void CurveMapView::initCurves()
+{
+	//todo
+}
+
+void CurveMapView::resizeEvent(QResizeEvent* event)
 {
 	QGraphicsView::resizeEvent(event);
 	const QSize sz = event->size();
@@ -68,19 +75,18 @@ void ZCurveMapView::resizeEvent(QResizeEvent* event)
 
 	m_pHScalar->setX(m_gridMargins.left());
 	m_pVScalar->setY(margin);
-
 	m_pHScalar->update();
 	m_pVScalar->update();
 }
 
-QRectF ZCurveMapView::gridBoundingRect() const
+QRectF CurveMapView::gridBoundingRect() const
 {
 	QRectF rc = rect();
 	rc = rc.marginsRemoved(m_gridMargins);
 	return rc;
 }
 
-void ZCurveMapView::wheelEvent(QWheelEvent* event)
+void CurveMapView::wheelEvent(QWheelEvent* event)
 {
 	qreal zoomFactor = 1;
 	if (event->angleDelta().y() > 0)
@@ -90,7 +96,7 @@ void ZCurveMapView::wheelEvent(QWheelEvent* event)
 	gentle_zoom(zoomFactor);
 }
 
-void ZCurveMapView::mousePressEvent(QMouseEvent* event)
+void CurveMapView::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::MidButton)
 	{
@@ -112,7 +118,7 @@ void ZCurveMapView::mousePressEvent(QMouseEvent* event)
 	QGraphicsView::mousePressEvent(event);
 }
 
-void ZCurveMapView::mouseMoveEvent(QMouseEvent* event)
+void CurveMapView::mouseMoveEvent(QMouseEvent* event)
 {
 	m_mousePos = event->pos();
 	QPointF delta = target_viewport_pos - m_mousePos;
@@ -135,7 +141,7 @@ void ZCurveMapView::mouseMoveEvent(QMouseEvent* event)
 	QGraphicsView::mouseMoveEvent(event);
 }
 
-void ZCurveMapView::mouseReleaseEvent(QMouseEvent* event)
+void CurveMapView::mouseReleaseEvent(QMouseEvent* event)
 {
 	QGraphicsView::mouseReleaseEvent(event);
 	if (event->button() == Qt::MidButton)
@@ -145,7 +151,7 @@ void ZCurveMapView::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-int ZCurveMapView::frames(bool bHorizontal) const
+int CurveMapView::frames(bool bHorizontal) const
 {
 	//hard to cihou grids...
 	if (bHorizontal)
@@ -162,12 +168,12 @@ int ZCurveMapView::frames(bool bHorizontal) const
 	}
 }
 
-void ZCurveMapView::drawBackground(QPainter* painter, const QRectF& rect)
+void CurveMapView::drawBackground(QPainter* painter, const QRectF& rect)
 {
 	QGraphicsView::drawBackground(painter, rect);
 }
 
-void ZCurveMapView::gentle_zoom(qreal factor)
+void CurveMapView::gentle_zoom(qreal factor)
 {
 	//scale.
 	QTransform matrix = transform();
@@ -189,12 +195,12 @@ void ZCurveMapView::gentle_zoom(qreal factor)
 	m_grid->update();
 }
 
-void ZCurveMapView::set_modifiers(Qt::KeyboardModifiers modifiers)
+void CurveMapView::set_modifiers(Qt::KeyboardModifiers modifiers)
 {
 	_modifiers = modifiers;
 }
 
-void ZCurveMapView::resetTransform()
+void CurveMapView::resetTransform()
 {
 	QGraphicsView::resetTransform();
 	m_factor = 1.0;

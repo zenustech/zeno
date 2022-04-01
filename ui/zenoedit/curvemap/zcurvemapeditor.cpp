@@ -18,7 +18,7 @@ void ZCurveMapEditor::init(CURVE_RANGE range, const QVector<QPointF>& pts, const
 {
 	QVBoxLayout* pLayout = new QVBoxLayout;
 	pLayout->setContentsMargins(0, 0, 0, 0);
-	m_view = new ZCurveMapView;
+	m_view = new CurveMapView;
 	m_view->init(range, pts, handlers);
 	pLayout->addWidget(m_view);
 	setLayout(pLayout);

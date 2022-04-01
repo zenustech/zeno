@@ -7,12 +7,12 @@
 class CurveGrid;
 class CurveScalarItem;
 
-class ZCurveMapView : public QGraphicsView
+class CurveMapView : public QGraphicsView
 {
 	Q_OBJECT
 public:
-	ZCurveMapView(QWidget* parent = nullptr);
-	~ZCurveMapView();
+	CurveMapView(QWidget* parent = nullptr);
+	~CurveMapView();
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 	CURVE_RANGE range() const { return m_range; }
 	int frames(bool bHorizontal) const;
@@ -32,6 +32,7 @@ private:
 	void gentle_zoom(qreal factor);
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void resetTransform();
+	void initCurves();
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 	QPoint m_mousePos;

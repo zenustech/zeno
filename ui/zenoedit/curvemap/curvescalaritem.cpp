@@ -3,7 +3,7 @@
 #include "curvemapview.h"
 
 
-CurveScalarItem::CurveScalarItem(bool bHorizontal, ZCurveMapView* pView, QGraphicsItem* parent)
+CurveScalarItem::CurveScalarItem(bool bHorizontal, CurveMapView* pView, QGraphicsItem* parent)
 	: QGraphicsObject(parent)
 	, m_bHorizontal(bHorizontal)
 	, m_view(pView)
@@ -120,7 +120,7 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 		for (qreal i = rcGrid.height(); i > 0; i -= step)
 		{	
 			qreal y = i * factor;
-			qreal scalar = (rg.yTo - rg.yFrom) * (n - i) / n;
+			qreal scalar = (rg.yTo - rg.yFrom) * (n - i) / n + rg.yFrom;
 			int prec = 3;
 			QString numText = QString::number(scalar, 'g', prec);
 			qreal textHeight = metrics.height();
