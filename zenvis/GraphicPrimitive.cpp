@@ -611,6 +611,8 @@ struct GraphicPrimitive : IGraphic {
                 triObj.prog->set_uniform(name.c_str(), light->shadowTint);
                 name = "shadowSoftness[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->shadowSoftness);
+                name = "lightIntensity[" + std::to_string(lightNo) + "]";
+                triObj.prog->set_uniform(name.c_str(), light->lightColor * light->intensity);
                 for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
                     auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
@@ -1858,6 +1860,7 @@ float brightness(vec3 c)
 uniform int lightNum; 
 uniform vec3 light[16];
 uniform sampler2D shadowMap[128];
+uniform vec3 lightIntensity[16];
 uniform vec3 shadowTint[16];
 uniform float shadowSoftness[16];
 uniform vec3 lightDir[16];
@@ -2065,8 +2068,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     for(int lightId=0; lightId<lightNum; lightId++){
         light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
 
-        vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
-        vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * vec3(1, 1, 1) * mat_zenxposure;
+        vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
+        vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon);
     //   color +=  
