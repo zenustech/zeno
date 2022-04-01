@@ -61,12 +61,18 @@ def _uploadLights():
             sr = query_value(l, f, 'ShadowR')
             sg = query_value(l, f, 'ShadowG')
             sb = query_value(l, f, 'ShadowB')
+            cr = query_value(l, f, 'ColorR')
+            cg = query_value(l, f, 'ColorG')
+            cb = query_value(l, f, 'ColorB')
+            intensity = query_value(l, f, 'Intensity')
             core.setLightData(
                 index,
                 (x, y, z),
                 height,
                 softness,
                 (sr, sg, sb),
+                (cr, cg, cb),
+                intensity,                
             )
 
 def _recieveStatus():
