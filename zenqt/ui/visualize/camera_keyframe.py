@@ -18,8 +18,7 @@ class CameraKeyframeWidget(QWidget):
         self.setGeometry(300, 300, 500, 400)
         self.setWindowTitle('Camera Keyframe')
 
-        self.keyframes = {
-        }
+        self.keyframes = zenvis.status['camera_keyframes']
 
         self.list = QListWidget()
 
@@ -92,6 +91,10 @@ class CameraKeyframeWidget(QWidget):
         self.list.clear()
         l = sorted(list(self.keyframes.keys()))
         self.list.addItems(map(str, l))
+    
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        self.update_list()
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ status = {
     'target_frame': 0,
     'lights': {},
     'prev_frame': -1,
+    'camera_keyframes': {},
 }
 
 camera_keyframe = None
