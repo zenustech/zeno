@@ -58,10 +58,45 @@ void set_perspective(
 float g_near, g_far, g_fov;
 glm::mat4 g_view, g_proj;
 glm::vec3 g_camPos, g_camView, g_camUp;
+int g_camSetFromNode  = 0;
+glm::mat4 cview, cproj;
+void clearCameraControl()
+{
+  g_camSetFromNode = 0;
+}
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set)
+{
+  
+  cview = glm::lookAt(pos, pos + front, up);
+  cproj = glm::perspective(glm::radians(_fov), nx * 1.0 / ny, fnear, ffar);
+  g_fov = _fov;
+  g_near = fnear;
+  g_far = ffar;
+  g_view = view;
+  g_proj = proj;
+  g_camPos = pos;
+  g_camView = front;
+  g_camUp = up;
+  g_camSetFromNode = set;
+
+}
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  if(g_camSetFromNode==1)
+  {
+    view = cview;
+    proj = cproj;
+    auto &scene = Scene::getInstance();
+    auto &lights = scene.lights;
+    for (auto &light : lights)
+    {
+      light->gfov = fov;
+      light->gaspect = nx * 1.0 / ny;
+    }
+    return;
+  }
   auto &scene = Scene::getInstance();
   auto &lights = scene.lights;
   for (auto &light : lights)

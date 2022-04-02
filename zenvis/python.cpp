@@ -38,6 +38,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("getLightCount", zenvis::getLightCount);
     m.def("addLight", zenvis::addLight);
     m.def("getLight", zenvis::getLight);
+    m.def("clearCameraControl", zenvis::clearCameraControl);
 }
 
 

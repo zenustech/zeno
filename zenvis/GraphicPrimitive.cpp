@@ -28,6 +28,7 @@ extern std::vector<unsigned int> getReflectMaps();
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
 extern bool renderReflect(int i);
 extern int getReflectionViewID();
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set);
 
 struct drawObject
 {
@@ -348,12 +349,12 @@ struct GraphicPrimitive : IGraphic {
             computeTrianglesTangent(prim);
             parseTrianglesDrawBuffer(prim, triObj);
         }
-        
+        bool findCamera=false;
         triObj.prog = get_tris_program(path, prim->mtl);
         if(prim->mtl!=nullptr){
             triObj.shadowprog = get_shadow_program(prim->mtl);
             auto code = prim->mtl->frag;
-            if(code.find("mat_reflection = float(float(1))"))
+            if(code.find("mat_reflection = float(float(1))")!=std::string::npos)
             {
                 glm::vec3 c=glm::vec3(0);
                 for(auto v:prim->verts)
@@ -373,6 +374,21 @@ struct GraphicPrimitive : IGraphic {
                 auto refID = std::atoi(num.c_str());
                 setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
             }
+            if(code.find("mat_isCamera = float(float(1))")!=std::string::npos)
+            {
+                auto pos = prim->attr<zeno::vec3f>("pos")[0];
+                auto up = prim->attr<zeno::vec3f>("nrm")[0];
+                auto view = prim->attr<zeno::vec3f>("clr")[0];
+                auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
+                auto fnear = prim->attr<zeno::vec3f>("uv")[0][1];
+                auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
+                setCamera(glm::vec3(pos[0],pos[1],pos[2]),
+                          glm::vec3(view[0],view[1],view[2]),
+                          glm::vec3(up[0],up[1],up[2]),
+                          fov, fnear,ffar, 1);
+                
+            }
+            
         }
         if(!triObj.prog){
             triObj.prog = get_tris_program(path,nullptr);

@@ -40,7 +40,7 @@ class CameraControl:
     def reset(self):
         self.center = (0.0, 0.0, 0.0)
         self.radius = 5.0
-
+        zenvis.core.clearCameraControl()
         self.update_perspective()
 
     def mousePressEvent(self, event):

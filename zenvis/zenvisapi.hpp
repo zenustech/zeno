@@ -6,6 +6,7 @@
 #include <tuple>
 
 namespace zenvis {
+  void clearCameraControl();
 extern void clearReflectMask();
 void setLightHight(float h);
 void setLight(float x, float y, float z);
