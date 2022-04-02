@@ -47,6 +47,7 @@ static float point_scale = 1.f;
 static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
+static bool use_safety_frame = false; 
 
 void set_perspective(
     std::array<double, 16> viewArr,
@@ -63,6 +64,10 @@ glm::mat4 cview, cproj;
 void clearCameraControl()
 {
   g_camSetFromNode = 0;
+}
+void set_safety_frame(bool flag)
+{
+  use_safety_frame = flag;
 }
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set)
 {
@@ -163,11 +168,14 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
   pro->set_uniform("mGridBlend", grid_blend);
+  pro->set_uniform("mNX", (float)nx);
+  pro->set_uniform("mNY", (float)ny);
 }
 
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
+static std::unique_ptr<IGraphic> safety_frame;
 void setLightHight(float h)
 {
   auto &scene = Scene::getInstance();
@@ -249,6 +257,7 @@ std::tuple<
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
+std::unique_ptr<IGraphic> makeGraphicSafetyFrame();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
@@ -271,6 +280,7 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
+  safety_frame = makeGraphicSafetyFrame();
   //setup_env_map("Default");
 }
 
@@ -365,8 +375,13 @@ static void my_paint_graphics() {
   if (show_grid) {
         axis->draw(false);
         grid->draw(false);
-        draw_small_axis();
-    }
+  }
+  if (use_safety_frame) {
+    safety_frame->draw(false);
+  }
+  if (show_grid) {
+    draw_small_axis();
+  }
   vao->unbind();
 }
 
