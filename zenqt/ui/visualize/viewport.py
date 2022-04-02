@@ -454,7 +454,7 @@ class SetLightDialog(QWidget):
         index = self.list.currentRow()
         if index == -1:
             return
-        f = zenvis.status['target_frame']
+        f = zenvis.get_curr_frameid()
         lkf = self.get_keyframe()
         new_frame = {
             'DirX': ControlPoint(f, lkf.dir[0]),
