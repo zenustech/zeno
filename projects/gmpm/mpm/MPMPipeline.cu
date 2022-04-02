@@ -613,10 +613,13 @@ struct ZSParticleToZSGrid : INode {
                 const typename ZenoPartition::table_t &partition,
                 const float dt, typename ZenoGrid::grid_t &grid) {
     using namespace zs;
+    bool materialParamOverride =
+        pars.hasProperty("mu") && pars.hasProperty("lam");
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  table = proxy<execspace_e::cuda>(partition),
                                  grid = proxy<execspace_e::cuda>({}, grid), dt,
-                                 dxinv = 1.f / grid.dx, model,
+                                 dxinv = 1.f / grid.dx, model = model,
+                                 materialParamOverride,
                                  anisoModel] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
       const auto Dinv = 4.f * dxinv * dxinv;
@@ -626,6 +629,10 @@ struct ZSParticleToZSGrid : INode {
       auto vol = pars("vol", pi);
       auto C = pars.pack<3, 3>("C", pi);
       auto F = pars.pack<3, 3>("F", pi);
+      if (materialParamOverride) {
+        model.mu = pars("mu", pi);
+        model.lam = pars("lam", pi);
+      }
       auto P = model.first_piola(F);
       if constexpr (is_same_v<RM_CVREF_T(anisoModel), AnisotropicArap<float>>)
         P += anisoModel.first_piola(F, pars.pack<3>("a", pi));
@@ -806,6 +813,12 @@ struct ZSGridToZSParticle : INode {
                       C += W * Dinv * dyadic_prod(vi, xixp);
                     }
                     pars.tuple<3>("vel", pi) = vel;
+#if 1
+                    // temporal measure for explicit timestepping stability
+                    auto skew = 0.5f * (C - C.transpose());
+                    auto sym = 0.5f * (C + C.transpose());
+                    C = sym + skew * 0.8;
+#endif
                     pars.tuple<3 * 3>("C", pi) = C;
                     pos += vel * dt;
                     pars.tuple<3>("pos", pi) = pos;
@@ -1520,12 +1533,7 @@ struct ApplyWindImpulseOnZSGrid : INode {
               auto pos = eles.pack<3>("pos", ei);
               auto windVel = velLs.getMaterialVelocity(pos);
 
-              auto vel0 = pars.pack<3>("vel", (int)eles("inds", 0, ei));
-              auto vel1 = pars.pack<3>("vel", (int)eles("inds", 1, ei));
-              auto vel2 = pars.pack<3>("vel", (int)eles("inds", 2, ei));
-              auto vel = (vel0 + vel1 + vel2) / 3;
-
-              // auto vel = eles.pack<3>("vel", ei);
+              auto vel = eles.pack<3>("vel", ei);
               auto vrel = windVel - vel;
               float vnSignedLength = n.dot(vrel);
               auto vn = n * vnSignedLength;

@@ -203,6 +203,12 @@ void setLightData(
     std::get<1>(tint),
     std::get<2>(tint)
   );
+  light->lightColor = glm::vec3(
+    std::get<0>(color),
+    std::get<1>(color),
+    std::get<2>(color)
+  );
+  light->intensity = intensity;
 }
 
 int getLightCount() {
