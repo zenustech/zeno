@@ -96,7 +96,6 @@ void MakeCurvemapNode::onEditClicked()
 			}
 
 			L = handlersStr.split(" ");
-			QVector<QPointF> handlers;
 			for (int i = 0; i < L.length(); i += 2)
 			{
 				QPointF pt;

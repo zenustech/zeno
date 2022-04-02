@@ -1,6 +1,7 @@
 #include "curvemapview.h"
 #include "curvescalaritem.h"
 #include "curvegrid.h"
+#include "curvenodeitem.h"
 
 
 CurveMapView::CurveMapView(QWidget* parent)
@@ -51,12 +52,39 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
 
-	initCurves();
+	initCurves(pScene, pts, handlers);
 }
 
-void CurveMapView::initCurves()
+void CurveMapView::initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
 {
-	//todo
+	int N = pts.size();
+	Q_ASSERT(N * 2 == handlers.size());
+	for (int i = 0; i < N; i++)
+	{
+		QPointF pos = mapLogicToScene(pts[i]);
+		CurveNodeItem* pNode = new CurveNodeItem(pos, handlers[i * 2], handlers[i * 2 + 1]);
+		pScene->addItem(pNode);
+		pNode->setPos(pos);
+		pNode->setZValue(100);
+		pNode->show();
+	}
+}
+
+QPointF CurveMapView::mapLogicToScene(const QPointF& logicPos)
+{
+	const QRectF& bbox = gridBoundingRect();
+	qreal x = logicPos.x(), y = logicPos.y();
+	qreal sceneX = bbox.width() * (x - m_range.xFrom) / (m_range.xTo - m_range.xFrom) + bbox.left();
+	qreal sceneY = bbox.height() * (m_range.yTo - y) / (m_range.yTo - m_range.yFrom) + bbox.top();
+	return QPointF(sceneX, sceneY);
+}
+
+QPointF CurveMapView::mapSceneToLogic(const QPointF& scenePos)
+{
+	const QRectF& bbox = gridBoundingRect();
+	qreal x = (m_range.xTo - m_range.xFrom) * (scenePos.x() - bbox.left()) / bbox.width() + m_range.xFrom;
+	qreal y = m_range.yTo - (m_range.yTo - m_range.yFrom) * (scenePos.y() - bbox.top()) / bbox.height();
+	return QPointF(x, y);
 }
 
 void CurveMapView::resizeEvent(QResizeEvent* event)
@@ -113,6 +141,13 @@ void CurveMapView::mousePressEvent(QMouseEvent* event)
 		QPointF pos = event->pos();
 		QPointF scenePos = mapToScene(pos.toPoint());
 
+		QPointF logicPos = mapSceneToLogic(scenePos);
+		QPointF scenePos2 = mapLogicToScene(logicPos);
+		if (scenePos != scenePos2)
+		{
+			int j;
+			j = 0;
+		}
 		setDragMode(QGraphicsView::RubberBandDrag);
 	}
 	QGraphicsView::mousePressEvent(event);

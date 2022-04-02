@@ -6,6 +6,7 @@
 
 class CurveGrid;
 class CurveScalarItem;
+class CurveNodeItem;
 
 class CurveMapView : public QGraphicsView
 {
@@ -32,7 +33,9 @@ private:
 	void gentle_zoom(qreal factor);
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void resetTransform();
-	void initCurves();
+	void initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+	QPointF mapLogicToScene(const QPointF& logicPos);
+	QPointF mapSceneToLogic(const QPointF& scenePos);
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 	QPoint m_mousePos;
@@ -44,6 +47,8 @@ private:
 	CurveGrid* m_grid;
 	CurveScalarItem* m_pHScalar;
 	CurveScalarItem* m_pVScalar;
+	QVector<CurveNodeItem*> m_nodes;
+	QVector<QGraphicsPathItem*> m_curves;
 	const double m_factor_step = 0.1;
 	Qt::KeyboardModifiers _modifiers;
 	bool m_dragMove;
