@@ -28,7 +28,7 @@ extern std::vector<unsigned int> getReflectMaps();
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
 extern bool renderReflect(int i);
 extern int getReflectionViewID();
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set);
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
 
 struct drawObject
 {
@@ -380,12 +380,12 @@ struct GraphicPrimitive : IGraphic {
                 auto up = prim->attr<zeno::vec3f>("nrm")[0];
                 auto view = prim->attr<zeno::vec3f>("clr")[0];
                 auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
-                auto fnear = prim->attr<zeno::vec3f>("uv")[0][1];
+                auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
                 auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
                 setCamera(glm::vec3(pos[0],pos[1],pos[2]),
                           glm::vec3(view[0],view[1],view[2]),
                           glm::vec3(up[0],up[1],up[2]),
-                          fov, fnear,ffar, 1);
+                          fov, 0.1,ffar, dof, 1);
                 
             }
             
@@ -674,9 +674,10 @@ struct GraphicPrimitive : IGraphic {
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
                 texOcp++;
             }
+            
     
         }
-
+        triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
               GL_UNSIGNED_INT, /*first=*/0));
@@ -2167,7 +2168,7 @@ vec3 calcRayDir(vec3 pos)
 //   vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
   return normalize(vpos.xyz);
 }
-
+uniform float msweight;
 void main()
 {
   if (mRenderWireframe) {
@@ -2195,13 +2196,13 @@ void main()
 
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
-  fColor = vec4(color, 1.0);
+  fColor = vec4(color*msweight, 1);
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {
-        fColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+        fColor = vec4(0.42 * intensity*msweight, 0.42 * intensity*msweight, 0.93 * intensity*msweight, 1);
       } else {
-        fColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+        fColor = vec4(0.87 * intensity*msweight, 0.22 * intensity*msweight, 0.22 * intensity*msweight, 1);
       }
   }
 }
