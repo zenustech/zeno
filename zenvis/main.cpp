@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
 #include "MyShader.hpp"
 #include "glad/glad.h"
 #include "glm/geometric.hpp"
@@ -199,6 +202,11 @@ void setLightData(
   float intensity
 ) {
   auto &scene = Scene::getInstance();
+  auto count = scene.lights.size();
+  while (index >= count) {
+    scene.addLight();
+    count = scene.lights.size();
+  }
   auto &light = scene.lights[index];
   light->lightDir = glm::vec3(
     std::get<0>(dir),

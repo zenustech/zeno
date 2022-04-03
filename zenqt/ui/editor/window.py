@@ -328,6 +328,7 @@ class NodeEditor(QWidget):
         prog['version'] = CURR_VERSION
         prog['viewport'] = {
             'camera_record': zenvis.status['camera_keyframes'],
+            'lights': zenvis.dump_lights(),
         }
         return prog
 
@@ -406,6 +407,8 @@ class NodeEditor(QWidget):
             s = prog['viewport']
             for k, v in s['camera_record'].items():
                 zenvis.status['camera_keyframes'][int(k)] = v
+            if 'lights' in s:
+                zenvis.load_lights(s['lights'])
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
