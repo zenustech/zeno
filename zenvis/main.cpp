@@ -13,7 +13,8 @@
 #include <Hg/OpenGL/stdafx.hpp>
 #include "zenvisapi.hpp"
 #include <Scene.hpp>
-
+#include <thread>
+#include <chrono>
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
@@ -457,7 +458,7 @@ void main(void)
 )";
 hg::OpenGL::Program* tmProg=nullptr;
 GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
-
+GLuint ssfborgb=0, ssfbod=0, sfbo=0;
 GLuint texRect=0, regularFBO = 0;
 GLuint texRects[16];
 GLuint emptyVAO=0;
@@ -508,6 +509,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
     {
       CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
     }
+    if(ssfborgb!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &ssfborgb));
+    }
+
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
     /* begin cihou mesa */
@@ -517,6 +523,12 @@ static void paint_graphics(GLuint target_fbo = 0) {
     printf("num samples: %d\n", num_samples);
     /* end cihou mesa */
     CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
+
+    CHECK_GL(glGenRenderbuffers(1, &ssfborgb));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfborgb));
+    /* begin cihou mesa */
+    /* end cihou mesa */
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -527,12 +539,26 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
     CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
 
+    if(ssfbod!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &ssfbod));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfbod));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
+
     
     if(tonemapfbo!=0)
     {
       CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
     }
     CHECK_GL(glGenFramebuffers(1, &tonemapfbo));
+
+    if(sfbo!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &sfbo));
+    }
+    CHECK_GL(glGenFramebuffers(1, &sfbo));
 
 
     if(regularFBO!=0)
@@ -625,7 +651,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     for(int dofsample=0;dofsample<16;dofsample++){
       //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
       
-      ScreenFillQuad(texRects[dofsample], 1.0/16, dofsample);
+      ScreenFillQuad(texRects[dofsample], 1.0/16.0, dofsample);
     }
     CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
@@ -637,7 +663,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     ScreenFillQuad(texRect,1.0,0);
 
   } else {
-    glEnable(GL_MULTISAMPLE);
+    glDisable(GL_MULTISAMPLE);
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
@@ -649,11 +675,13 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
     glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
     //tmProg->set_uniform("msweight",1.0);
     ScreenFillQuad(texRect,1.0,0);
+    
   }
+  //std::this_thread::sleep_for(std::chrono::milliseconds(30));
   //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
   //drawScreenQuad here:
   CHECK_GL(glFlush());

@@ -47,7 +47,7 @@ namespace zenvis
         float shadowSoftness = 1.0;
         unsigned int lightFBO = 0;
         unsigned int lightDepthMaps = 0;
-        unsigned int depthMapResolution = 8192;
+        unsigned int depthMapResolution = 4096;
         unsigned int matricesUBO = 0;
         static constexpr int cascadeCount = 7;
         glm::vec3 lightColor = glm::vec3(1.0);
@@ -158,7 +158,7 @@ namespace zenvis
             maxX = midX + size;
             minY = midY - size;
             maxY = maxY + size;
-            const glm::mat4 lightProjection = glm::ortho(minX * 20, maxX * 20, minY * 20, maxY * 20, maxZ, -minZ);
+            const glm::mat4 lightProjection = glm::ortho(minX * 10, maxX * 10, minY * 10, maxY * 10, maxZ, -minZ);
             // std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
             lightMV = lightProjection * lightView;
             return lightProjection * lightView;
