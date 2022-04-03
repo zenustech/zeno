@@ -39,6 +39,16 @@ namespace zenvis
             return pLight;
         }
 
+        bool removeLight(std::size_t index)
+        {
+            if (index < 0 || index >= lights.size())
+            {
+                return false;
+            }
+            lights.erase(lights.begin() + index);
+            return true;
+        }
+
     }; // struct Scene
 
 }; // namespace zenvis

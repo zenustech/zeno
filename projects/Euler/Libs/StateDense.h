@@ -203,7 +203,7 @@ public:
                              j++)
                             for (int i = grid.bbmin(0) - extend; i < grid.bbmax(0) + extend;
                                  i++)
-                                operation(IV{ i, j, k });
+                                operation(IV{ i, j, (int)k });
                     });
             else {
                 std::cout << "not implemented" << std::endl;
@@ -269,7 +269,7 @@ public:
                                  j++)
                                 for (int i = grid.bbmin(0) - extend;
                                      i < grid.bbmax(0) + extend; i++)
-                                    operation(IV{ i, j, k });
+                                    operation(IV{ i, j, (int)k });
                         });
             else {
                 std::cout << "not implemented" << std::endl;

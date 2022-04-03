@@ -6,6 +6,7 @@
 #include <tuple>
 
 namespace zenvis {
+  void clearCameraControl();
 extern void clearReflectMask();
 void setLightHight(float h);
 void setLight(float x, float y, float z);
@@ -38,5 +39,23 @@ void set_smooth_shading(bool smooth);
 void set_normal_check(bool check);
 void set_render_wireframe(bool render_wireframe);
 unsigned int setup_env_map(std::string name);
-
+void setLightData(
+  int index,
+  std::tuple<float, float, float> dir,
+  float height,
+  float softness,
+  std::tuple<float, float, float> tint,
+  std::tuple<float, float, float> color,
+  float intensity
+);
+int getLightCount();
+void addLight();
+std::tuple<
+  std::tuple<float, float, float>,
+  float,
+  float,
+  std::tuple<float, float, float>,
+  std::tuple<float, float, float>,
+  float
+> getLight(int i);
 }

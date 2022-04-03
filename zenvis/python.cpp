@@ -34,6 +34,11 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("setLight", zenvis::setLight);
     m.def("setLightHight", zenvis::setLightHight);
     m.def("clearReflectMask", zenvis::clearReflectMask);
+    m.def("setLightData", zenvis::setLightData);
+    m.def("getLightCount", zenvis::getLightCount);
+    m.def("addLight", zenvis::addLight);
+    m.def("getLight", zenvis::getLight);
+    m.def("clearCameraControl", zenvis::clearCameraControl);
 }
 
 

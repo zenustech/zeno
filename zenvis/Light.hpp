@@ -21,6 +21,15 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 
+#ifdef _WIN32
+    #ifdef near
+        #undef near
+    #endif
+    #ifdef far
+        #undef far
+    #endif
+#endif
+
 namespace zenvis
 {
     struct Light
@@ -41,6 +50,12 @@ namespace zenvis
         unsigned int depthMapResolution = 8192;
         unsigned int matricesUBO = 0;
         static constexpr int cascadeCount = 7;
+        glm::vec3 lightColor = glm::vec3(1.0);
+        float intensity = 10.0;
+        Light()
+        {
+            initCascadeShadow();
+        }
 
         void setCascadeLevels(float far)
         {

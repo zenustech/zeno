@@ -58,10 +58,45 @@ void set_perspective(
 float g_near, g_far, g_fov;
 glm::mat4 g_view, g_proj;
 glm::vec3 g_camPos, g_camView, g_camUp;
+int g_camSetFromNode  = 0;
+glm::mat4 cview, cproj;
+void clearCameraControl()
+{
+  g_camSetFromNode = 0;
+}
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set)
+{
+  
+  cview = glm::lookAt(pos, pos + front, up);
+  cproj = glm::perspective(glm::radians(_fov), nx * 1.0 / ny, fnear, ffar);
+  g_fov = _fov;
+  g_near = fnear;
+  g_far = ffar;
+  g_view = view;
+  g_proj = proj;
+  g_camPos = pos;
+  g_camView = front;
+  g_camUp = up;
+  g_camSetFromNode = set;
+
+}
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  if(g_camSetFromNode==1)
+  {
+    view = cview;
+    proj = cproj;
+    auto &scene = Scene::getInstance();
+    auto &lights = scene.lights;
+    for (auto &light : lights)
+    {
+      light->gfov = fov;
+      light->gaspect = nx * 1.0 / ny;
+    }
+    return;
+  }
   auto &scene = Scene::getInstance();
   auto &lights = scene.lights;
   for (auto &light : lights)
@@ -145,16 +180,80 @@ void setLight(float x, float y, float z)
   auto &light = scene.lights[0];
   light->lightDir = glm::vec3(x, y, z);
 }
+void setLightData(
+  int index,
+  std::tuple<float, float, float> dir,
+  float height,
+  float softness,
+  std::tuple<float, float, float> tint,
+  std::tuple<float, float, float> color,
+  float intensity
+) {
+  auto &scene = Scene::getInstance();
+  auto &light = scene.lights[index];
+  light->lightDir = glm::vec3(
+    std::get<0>(dir),
+    std::get<1>(dir),
+    std::get<2>(dir)
+  );
+  light->lightHight = height;
+  light->shadowSoftness = softness;
+  light->shadowTint = glm::vec3(
+    std::get<0>(tint),
+    std::get<1>(tint),
+    std::get<2>(tint)
+  );
+  light->lightColor = glm::vec3(
+    std::get<0>(color),
+    std::get<1>(color),
+    std::get<2>(color)
+  );
+  light->intensity = intensity;
+}
+
+int getLightCount() {
+  auto &scene = Scene::getInstance();
+  auto count = scene.lights.size();
+  return count;
+}
+
+void addLight() {
+  auto &scene = Scene::getInstance();
+  scene.addLight();
+}
+
+std::tuple<
+  std::tuple<float, float, float>,
+  float,
+  float,
+  std::tuple<float, float, float>,
+  std::tuple<float, float, float>,
+  float
+> getLight(int i) {
+  auto &scene = Scene::getInstance();
+  auto &l = scene.lights.at(i);
+  auto d = glm::normalize(l->lightDir);
+  auto t = l->shadowTint;
+  auto c = l->lightColor;
+  auto ins = l->intensity;
+
+  return {
+    {d.x, d.y, d.z},
+    l->lightHight,
+    l->shadowSoftness,
+    {t.x, t.y, t.z},
+    {c.x, c.y, c.z},
+    ins
+  };
+}
+
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
   auto &scene = Scene::getInstance();
-  auto light0 = scene.addLight();
-  light0->lightDir = glm::vec3(1, 1, 0);
-  light0->lightHight = 1000;
-  light0->initCascadeShadow();
+  scene.addLight();
   initReflectiveMaps(nx, ny);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");

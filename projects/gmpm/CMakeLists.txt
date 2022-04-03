@@ -71,6 +71,7 @@ target_sources(zeno_mpm PRIVATE
   mpm/Generation.cpp
   mpm/MPMPipeline.cu
   mpm/Maintenance.cu
+  mpm/Temp.cu
 )
 target_link_libraries(zeno_mpm PRIVATE zensim)
 target_link_libraries(zeno_mpm PRIVATE zeno_nodep)
