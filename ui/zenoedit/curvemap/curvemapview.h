@@ -20,6 +20,9 @@ public:
 	QMargins margins() const { return m_gridMargins; }
 	qreal factor() const { return m_factor; }
 	QRectF gridBoundingRect() const;
+	QPointF mapLogicToScene(const QPointF& logicPos);
+	QPointF mapSceneToLogic(const QPointF& scenePos);
+	QPointF mapOffsetToScene(const QPointF& offset);
 
 protected:
 	void wheelEvent(QWheelEvent* event);
@@ -34,8 +37,6 @@ private:
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void resetTransform();
 	void initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
-	QPointF mapLogicToScene(const QPointF& logicPos);
-	QPointF mapSceneToLogic(const QPointF& scenePos);
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 	QPoint m_mousePos;
@@ -52,6 +53,7 @@ private:
 	const double m_factor_step = 0.1;
 	Qt::KeyboardModifiers _modifiers;
 	bool m_dragMove;
+	bool m_bInit;
 };
 
 #endif

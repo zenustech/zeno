@@ -5,6 +5,7 @@
 #include <QtSvg/QGraphicsSvgItem>
 
 class CurveNodeItem;
+class CurveMapView;
 
 class CurveHandlerItem : public QObject
 					   , public QGraphicsRectItem
@@ -25,8 +26,11 @@ class CurveNodeItem : public QGraphicsSvgItem
 {
 	Q_OBJECT
 public:
-	CurveNodeItem(const QPointF& nodePos, const QPointF& leftHandle, const QPointF& rightHandle, QGraphicsItem* parentItem = nullptr);
+	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, const QPointF& leftHandle, const QPointF& rightHandle, QGraphicsItem* parentItem = nullptr);
 	void onHandlerChanged(CurveHandlerItem* pHandler);
+	QPointF logicPos() const;
+	void updatePos();
+	void updateScale();
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -34,6 +38,8 @@ protected:
 private:
 	CurveHandlerItem* m_left;
 	CurveHandlerItem* m_right;
+	CurveMapView* m_view;
+	QPointF m_logicPos;
 };
 
 

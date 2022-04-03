@@ -1,4 +1,5 @@
 #include "curvenodeitem.h"
+#include "curvemapview.h"
 
 
 CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent)
@@ -12,6 +13,13 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGr
 	pen.setColor(QColor(255,255,255));
 	pen.setWidth(2);
 	setPen(pen);
+
+	QPointF wtf = mapFromScene(pos);
+	setPos(pos);
+
+	//setPos(QPointF(-50, 50));
+
+	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
 }
 
 QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -27,15 +35,22 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 }
 
 
-CurveNodeItem::CurveNodeItem(const QPointF& nodePos, const QPointF& leftHandle, const QPointF& rightHandle, QGraphicsItem* parentItem)
+CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, const QPointF& leftHandle, const QPointF& rightHandle, QGraphicsItem* parentItem)
 	: QGraphicsSvgItem(":/icons/collaspe.svg", parentItem)
 	, m_left(nullptr)
 	, m_right(nullptr)
+	, m_view(pView)
 {
-	m_left = new CurveHandlerItem(this, leftHandle, this);
-	m_right = new CurveHandlerItem(this, rightHandle, this);
+	QPointF pos = m_view->mapOffsetToScene(leftHandle);
+	m_left = new CurveHandlerItem(this, pos, this);
+
+	pos = m_view->mapOffsetToScene(rightHandle);
+	m_right = new CurveHandlerItem(this, pos, this);
+
 	m_left->hide();
 	m_right->hide();
+	m_logicPos = m_view->mapSceneToLogic(nodePos);
+	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
 }
 
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -43,9 +58,32 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 	if (change == QGraphicsItem::ItemSelectedHasChanged)
 	{
 		m_left->setVisible(value.toBool());
+		QPointF scenePos = m_left->scenePos();
 		m_right->setVisible(value.toBool());
+		scenePos = m_right->scenePos();
+	}
+	else if (change == QGraphicsItem::ItemPositionHasChanged)
+	{
+		QPointF phyPos = scenePos();
+		m_logicPos = m_view->mapSceneToLogic(phyPos);
 	}
 	return value;
+}
+
+void CurveNodeItem::updatePos()
+{
+	QPointF scenePos = m_view->mapLogicToScene(m_logicPos);
+	setPos(scenePos);
+}
+
+void CurveNodeItem::updateScale()
+{
+
+}
+
+QPointF CurveNodeItem::logicPos() const
+{
+	return m_logicPos;
 }
 
 void CurveNodeItem::onHandlerChanged(CurveHandlerItem* pHandler)

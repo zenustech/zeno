@@ -12,6 +12,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pHScalar(nullptr)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
+	, m_bInit(false)
 {
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -42,17 +43,22 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 
 	m_pHScalar = new CurveScalarItem(true, this);
 	m_pVScalar = new CurveScalarItem(false, this);
+	//m_pHScalar->hide();
+	//m_pVScalar->hide();
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
+
+	QRectF rc =scene()->sceneRect();
 
 	m_grid = new CurveGrid(this);
 	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
 	m_grid->setZValue(-100);
+
 	pScene->addItem(m_pHScalar);
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
 
-	initCurves(pScene, pts, handlers);
+	//initCurves(pScene, pts, handlers);
 }
 
 void CurveMapView::initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
@@ -62,11 +68,12 @@ void CurveMapView::initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pt
 	for (int i = 0; i < N; i++)
 	{
 		QPointF pos = mapLogicToScene(pts[i]);
-		CurveNodeItem* pNode = new CurveNodeItem(pos, handlers[i * 2], handlers[i * 2 + 1]);
+		CurveNodeItem* pNode = new CurveNodeItem(this, pos, handlers[i * 2], handlers[i * 2 + 1]);
 		pScene->addItem(pNode);
 		pNode->setPos(pos);
 		pNode->setZValue(100);
 		pNode->show();
+		m_nodes.append(pNode);
 	}
 }
 
@@ -87,30 +94,71 @@ QPointF CurveMapView::mapSceneToLogic(const QPointF& scenePos)
 	return QPointF(x, y);
 }
 
+QPointF CurveMapView::mapOffsetToScene(const QPointF& offset)
+{
+	const QRectF& bbox = gridBoundingRect();
+	qreal x = offset.x(), y = offset.y();
+	qreal sceneX = bbox.width() / (m_range.xTo - m_range.xFrom) * offset.x();
+	qreal sceneY = bbox.height() / (m_range.yTo - m_range.yFrom) * offset.y();
+	return QPoint(sceneX, -sceneY);
+}
+
+void CurveMapView::gentle_zoom(qreal factor)
+{
+	//scale.
+	//QTransform matrix = transform();
+	//matrix.scale(factor, factor);
+	//if (matrix.m11() < 1.0)
+	//	return;
+	//setTransform(matrix);
+
+	scale(factor, factor);
+
+	centerOn(target_scene_pos);
+	QPointF delta_viewport_pos = target_viewport_pos -
+		QPointF(viewport()->width() / 2.0, viewport()->height() / 2.0);
+	QPointF viewport_center = mapFromScene(target_scene_pos) - delta_viewport_pos;
+	centerOn(mapToScene(viewport_center.toPoint()));
+
+	m_factor = transform().m11();
+
+	m_pHScalar->update();
+	m_pVScalar->update();
+	//m_grid->update();
+}
+
 void CurveMapView::resizeEvent(QResizeEvent* event)
 {
 	QGraphicsView::resizeEvent(event);
-	const QSize sz = event->size();
-	setSceneRect(QRectF(0, 0, sz.width(), sz.height()));
+	QRectF rc = sceneRect();
+	setSceneRect(rc);
+	if (!m_bInit)
+	{
+		const QSize sz = event->size();
 
-	qreal W = sz.width(), H = sz.height();
-	qreal W_ = m_range.xTo - m_range.xFrom;
-	qreal H_ = m_range.yTo - m_range.yFrom;
+		m_grid->initRect(rc);
+		static int margin = 64;
 
-	static int margin = 64;
-	W = W - 2 * margin;
-	H = H - 2 * margin;
+		m_pHScalar->setX(m_gridMargins.left());
+		m_pVScalar->setY(margin);
+		m_pHScalar->update();
+		m_pVScalar->update();
 
-	m_pHScalar->setX(m_gridMargins.left());
-	m_pVScalar->setY(margin);
-	m_pHScalar->update();
-	m_pVScalar->update();
+		m_bInit = true;
+	}
+	
+	fitInView(rc, Qt::IgnoreAspectRatio);
+	//for (auto node : m_nodes)
+	//{
+	//	node->updatePos();
+	//}
 }
 
 QRectF CurveMapView::gridBoundingRect() const
 {
 	QRectF rc = rect();
 	rc = rc.marginsRemoved(m_gridMargins);
+	QRectF rc2 = m_grid->boundingRect();
 	return rc;
 }
 
@@ -140,7 +188,8 @@ void CurveMapView::mousePressEvent(QMouseEvent* event)
 		QTransform trans = transform();
 		QPointF pos = event->pos();
 		QPointF scenePos = mapToScene(pos.toPoint());
-
+		QRectF rc = scene()->sceneRect();
+		rc = sceneRect();
 		QPointF logicPos = mapSceneToLogic(scenePos);
 		QPointF scenePos2 = mapLogicToScene(logicPos);
 		if (scenePos != scenePos2)
@@ -208,27 +257,7 @@ void CurveMapView::drawBackground(QPainter* painter, const QRectF& rect)
 	QGraphicsView::drawBackground(painter, rect);
 }
 
-void CurveMapView::gentle_zoom(qreal factor)
-{
-	//scale.
-	QTransform matrix = transform();
-	matrix.scale(factor, factor);
-	if (matrix.m11() < 1.0)
-		return;
-	setTransform(matrix);
 
-	centerOn(target_scene_pos);
-	QPointF delta_viewport_pos = target_viewport_pos -
-		QPointF(viewport()->width() / 2.0, viewport()->height() / 2.0);
-	QPointF viewport_center = mapFromScene(target_scene_pos) - delta_viewport_pos;
-	centerOn(mapToScene(viewport_center.toPoint()));
-
-	m_factor = transform().m11();
-
-	m_pHScalar->update();
-	m_pVScalar->update();
-	m_grid->update();
-}
 
 void CurveMapView::set_modifiers(Qt::KeyboardModifiers modifiers)
 {
