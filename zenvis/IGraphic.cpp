@@ -51,7 +51,7 @@ void auto_gc_frame_data(int nkeep) {
             auto endi = std::min(curr_frameid + nkeep / 2, (int)frames.size());
             auto begi = std::max(endi - nkeep, 0);
             if (i >= endi || i < begi) {
-                //printf("auto gc free %d\n", i);
+                printf("auto gc free %d\n", i);
                 frames[i] = nullptr;
             }
         }
