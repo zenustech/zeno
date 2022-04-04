@@ -70,69 +70,6 @@ ZENDEFNODE(BlendPoses, {
 
 // input the forward kinematics result
 struct DoSkinning : zeno::INode {
-    template <
-    typename DerivedV,
-    typename DerivedW,
-    typename Q,
-    typename QAlloc,
-    typename T,
-    typename DerivedU>
-    IGL_INLINE void DualQuaternionSkinning(
-    const Eigen::MatrixBase<DerivedV> & V,
-    const Eigen::MatrixBase<DerivedW> & W,
-    const std::vector<Q,QAlloc> & vQ,
-    const std::vector<T> & vT,
-    Eigen::PlainObjectBase<DerivedU> & U)
-    {
-    using namespace std;
-    assert(V.rows() <= W.rows());
-    assert(W.cols() == (int)vQ.size());
-    assert(W.cols() == (int)vT.size());
-    // resize output
-    U.resizeLike(V);
-
-    // Convert quats + trans into dual parts
-    vector<Q> vD(vQ.size());
-    for(int c = 0;c<W.cols();c++)
-    {
-        const Q & q = vQ[c];
-        vD[c].w() = -0.5*( vT[c](0)*q.x() + vT[c](1)*q.y() + vT[c](2)*q.z());
-        vD[c].x() =  0.5*( vT[c](0)*q.w() + vT[c](1)*q.z() - vT[c](2)*q.y());
-        vD[c].y() =  0.5*(-vT[c](0)*q.z() + vT[c](1)*q.w() + vT[c](2)*q.x());
-        vD[c].z() =  0.5*( vT[c](0)*q.y() - vT[c](1)*q.x() + vT[c](2)*q.w());
-    }
-
-    // Loop over vertices
-    const int nv = V.rows();
-    #pragma omp parallel for if (nv>10000)
-    for(int i = 0;i<nv;i++)
-    {
-        Q b0(0,0,0,0);
-        Q be(0,0,0,0);
-        // Loop over handles
-        for(int c = 0;c<W.cols();c++)
-        {
-            if(b0.dot(vQ[c]) > 0)
-                b0.coeffs() += W(i,c) * vQ[c].coeffs();
-            else
-                b0.coeffs() -= W(i,c) * vQ[c].coeffs();
-            be.coeffs() += W(i,c) * vD[c].coeffs();
-        }
-        Q ce = be;
-        ce.coeffs() /= b0.norm();
-        Q c0 = b0;
-        c0.coeffs() /= b0.norm();
-        // See algorithm 1 in "Geometric skinning with approximate dual quaternion
-        // blending" by Kavan et al
-        T v = V.row(i);
-        T d0 = c0.vec();
-        T de = ce.vec();
-        typename Q::Scalar a0 = c0.w();
-        typename Q::Scalar ae = ce.w();
-        U.row(i) =  v + 2*d0.cross(d0.cross(v) + a0*v) + 2*(a0*de - ae*d0 + d0.cross(de));
-    }
-
-    }    
     virtual void apply() override {
         auto shape = get_input<PrimitiveObject>("shape");
         auto algorithm = std::get<std::string>(get_param("algorithm"));
@@ -176,10 +113,6 @@ struct DoSkinning : zeno::INode {
 
         std::vector<Eigen::Vector3d> Ts;
         RotationList Qs;
-
-
-
-        // std::cout << "CHECKOUT_2" << std::endl;
 
         auto do_FK = get_param<int>("FK");
         if(!do_FK){
@@ -269,8 +202,8 @@ struct DoSkinning : zeno::INode {
         }
 
         if(algorithm == "DQS"){
-            std::cout << "DQS SKINNING " << std::endl;
-            DualQuaternionSkinning(V,W,Qs,Ts,U);
+            // std::cout << "DQS SKINNING " << std::endl;
+            igl::dqs(V,W,Qs,Ts,U);
         }else if(algorithm == "LBS"){
             Eigen::MatrixXd M;
             igl::lbs_matrix(V,W,M);
