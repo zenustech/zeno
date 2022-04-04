@@ -298,7 +298,7 @@ static void draw_small_axis() {
   proj = gizmo_proj;
   CHECK_GL(glViewport(0, 0, nx * 0.1, ny * 0.1));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
-  axis->draw(true);
+  axis->draw(true,0.0);
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glViewport(0, 0, nx, ny));
   view = backup_view;
@@ -309,6 +309,7 @@ extern float getCamFar()
 {
   return g_far;
 }
+
 static void shadowPass()
 {
   auto &scene = Scene::getInstance();
@@ -330,7 +331,7 @@ static void shadowPass()
 }
 
 
-static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect)
+static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass)
 {
 
     //glEnable(GL_BLEND);
@@ -340,8 +341,7 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect)
     // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
-    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    
     
       
       float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
@@ -353,7 +353,7 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect)
         
         for (auto const &[key, gra]: current_frame_data()->graphics) {
           gra->setMultiSampleWeight(sampleweight);
-          gra->draw(reflect);
+          gra->draw(reflect, isDepthPass);
         }
       }
 
@@ -378,21 +378,21 @@ static void reflectivePass()
     setReflectionViewID(i);
     glm::mat4 p = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), g_near, g_far);
     setReflectMVP(i, p * view);
-    drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0,true);
+    drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0,true,0.0);
     vao->unbind();
     view = g_view;
   }
   EndReflective();
 }
-static void my_paint_graphics(float samples) {
+static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false);
-  if (show_grid) {
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass);
+  if (isDepthPass!=1.0 && show_grid) {
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        axis->draw(false);
-        grid->draw(false);
+        axis->draw(false,0.0);
+        grid->draw(false,0.0);
         draw_small_axis();
     }
   vao->unbind();
@@ -401,7 +401,7 @@ static void my_paint_graphics(float samples) {
 
 static bool enable_hdr = true;
 /* BEGIN ZHXX HAPPY */
-namespace {
+
 auto qvert = R"(
 #version 330 core
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
@@ -493,6 +493,29 @@ void ScreenFillQuad(GLuint tex, float msweight, int samplei)
   glUseProgram(0);
   glEnable(GL_DEPTH_TEST);
 }
+extern unsigned int getDepthTexture()
+{
+  return texRect;
+}
+static void ZPass()
+{
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+  CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+  CHECK_GL(glClearColor(0, 0, 0, 0));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  my_paint_graphics(1.0, 1.0);
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+  CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_RECTANGLE, texRect, 0));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+}
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
@@ -508,7 +531,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     if (!enable_hdr) {
         
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-        return my_paint_graphics(1.0);
+        return my_paint_graphics(1.0, 0.0);
     }
   
   if(msfborgb==0||oldnx!=nx||oldny!=ny)
@@ -631,13 +654,16 @@ static void paint_graphics(GLuint target_fbo = 0) {
           glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
           glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) + p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
           view = glm::lookAt(g_camPos + 0.05f * bokeh, object, p_up);
+          ZPass();
           CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
           CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                         GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
           CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                         GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
           CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-          my_paint_graphics(1.0);
+          CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+          CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+          my_paint_graphics(1.0, 0.0);
           CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
           CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
           CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
@@ -648,11 +674,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
           
     }
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-          CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                        GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
-          CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                        GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
-          CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     glad_glBlendEquation(GL_FUNC_ADD);
@@ -672,21 +698,27 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   } else {
     glDisable(GL_MULTISAMPLE);
+    ZPass();
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-    my_paint_graphics(1.0);
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    my_paint_graphics(1.0, 0.0);
     CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
+          CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_RECTANGLE, texRects[0], 0));
     glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
     //tmProg->set_uniform("msweight",1.0);
-    ScreenFillQuad(texRect,1.0,0);
+    ScreenFillQuad(texRects[0],1.0,0);
     
   }
   //std::this_thread::sleep_for(std::chrono::milliseconds(30));
@@ -694,7 +726,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
   //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
-}
+
 /* END ZHXX HAPPY */
 
 static double get_time() {

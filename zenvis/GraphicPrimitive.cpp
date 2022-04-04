@@ -29,6 +29,7 @@ extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
 extern bool renderReflect(int i);
 extern int getReflectionViewID();
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
+extern unsigned int getDepthTexture();
 
 struct drawObject
 {
@@ -476,7 +477,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void draw(bool reflect) override {
+  virtual void draw(bool reflect, float depthPass) override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
     int id = 0;
@@ -674,9 +675,14 @@ struct GraphicPrimitive : IGraphic {
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
                 texOcp++;
             }
-            
+            triObj.prog->set_uniform("depthPass", depthPass);
+            triObj.prog->set_uniformi("depthBuffer", texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getDepthTexture()));
+            texOcp++;
     
         }
+        
         triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
@@ -2046,7 +2052,11 @@ vec3 reflectionCalculation(vec3 worldPos, int id)
 }
 uniform float reflectPass;
 uniform float reflectionViewID;
+uniform float depthPass;
+uniform sampler2DRect depthBuffer;
+
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
     vec3 L1 = light[0];
     vec3 att_pos = position;
@@ -2055,7 +2065,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
     float att_NoL = dot(normal, L1);
-
+    if(depthPass<=0.01)
+    {
+        
+        float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
+        if(d==0 || abs(projPos.z)>abs(d) )
+            discard;
+    }
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     if(reflectPass==1.0 && mat_reflection==1.0 )
@@ -2063,6 +2079,12 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     /* custom_shader_end */
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
+    
+    if(depthPass>=0.99)
+    {
+        return abs(projPos.zzz);
+    }
+    
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
@@ -2171,6 +2193,7 @@ vec3 calcRayDir(vec3 pos)
 uniform float msweight;
 void main()
 {
+  
   if (mRenderWireframe) {
     fColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
@@ -2197,6 +2220,7 @@ void main()
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
   fColor = vec4(color*msweight, 1);
+  
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {

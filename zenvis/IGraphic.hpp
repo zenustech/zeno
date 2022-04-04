@@ -14,7 +14,7 @@ struct IGraphic {
   {
     m_weight = w;
   }
-  virtual void draw(bool reflect) = 0;
+  virtual void draw(bool reflect, float depthPass) = 0;
   virtual void drawShadow(Light *light) = 0;
   virtual ~IGraphic() = default;
 };

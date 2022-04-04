@@ -12,7 +12,7 @@ status = {
     'render_fps': 0,
     'resolution': (1, 1),
     'perspective': (),
-    'cache_frames': 3,
+    'cache_frames': 1,
     'show_grid': True,
     'playing': True,
     'target_frame': 0,
