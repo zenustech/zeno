@@ -150,7 +150,94 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         }
     }
 }
+void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    //TICK(parse);
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &tris = prim->tris;
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    auto &tang = prim->tris.attr<zeno::vec3f>("tang");
+    std::vector<zeno::vec3f> pos1(pos.size());
+    std::vector<zeno::vec3f> clr1(pos.size());
+    std::vector<zeno::vec3f> nrm1(pos.size());
+    std::vector<zeno::vec3f> uv1(pos.size());
+    std::vector<zeno::vec3f> tang1(pos.size());
+    std::vector<int> vertVisited(pos.size());
+    std::vector<zeno::vec3i> tris1(tris.size());
+    vertVisited.assign(pos.size(),0);
+    for(int i=0; i<tris.size();i++)
+    {
+        float area = zeno::length(zeno::cross(pos[tris[i][1]]-pos[tris[i][0]], pos[tris[i][2]]-pos[tris[i][0]]));
+        for(int j=0;j<3;j++)
+        {
+            tang1[tris[i][j]]+=area*tang[i];
+        }
+    }
+    std::cout<<"1111111111111111\n";
+    #pragma omp parallel for
+    for(int i=0; i<tang1.size();i++)
+    {
+        tang1[i] = tang[i]/(zeno::length(tang[i])+0.000001);
+    }
+    std::cout<<"2222222222222222\n";
+    std::vector<int> issueTris(0);
+    for(int i=0; i<tris.size();i++)
+    {
+        //if all verts not visited
+        for(int j=0;j<3;j++)
+        {
+            //just add verts id
+        }
 
+        //else
+        {
+            //if no uv confliction
+            //simply add verts id
+            //else
+            {
+                //add this tri to issueTris
+            }
+        }
+    }
+    //for issueTris
+    {
+        //emit new verts
+    }
+    std::cout<<"3333333333333333333\n";
+
+    //end compressed tri assign
+    obj.count = tris1.size();
+    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    std::vector<zeno::vec3f> mem(pos1.size()  * 5);
+    std::vector<zeno::vec3i> trisdata(obj.count);
+#pragma omp parallel for
+    for(int i=0; i<pos1.size(); i++)
+    {
+        mem[5 * i + 0]  = pos1[i];
+        mem[5 * i + 1]  = clr1[i];
+        mem[5 * i + 2]  = nrm1[i];
+        mem[5 * i + 3]  = uv1[i];
+        mem[5 * i + 4]  = tang1[i];
+    }
+#pragma omp parallel for
+    for(int i=0; i<tris1.size();i++)
+    {
+        trisdata[i] = tris1[i];
+    }
+
+    TICK(bindvbo);
+    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
+    if(obj.count)
+    {
+        obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        obj.ebo->bind_data(&(trisdata[0]), tris1.size() * sizeof(trisdata[0]));
+    }
+    TOCK(bindebo);
+}
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     TICK(parse);
@@ -167,16 +254,16 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
-        mem[15 * i + 0] = pos[tris[i][0]];
-        mem[15 * i + 1] = clr[tris[i][0]];
-        mem[15 * i + 2] = nrm[tris[i][0]];
-        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 4] = tang[i];
-        mem[15 * i + 5] = pos[tris[i][1]];
-        mem[15 * i + 6] = clr[tris[i][1]];
-        mem[15 * i + 7] = nrm[tris[i][1]];
-        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 9] = tang[i];
+        mem[15 * i + 0]  = pos[tris[i][0]];
+        mem[15 * i + 1]  = clr[tris[i][0]];
+        mem[15 * i + 2]  = nrm[tris[i][0]];
+        mem[15 * i + 3]  = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 4]  = tang[i];
+        mem[15 * i + 5]  = pos[tris[i][1]];
+        mem[15 * i + 6]  = clr[tris[i][1]];
+        mem[15 * i + 7]  = nrm[tris[i][1]];
+        mem[15 * i + 8]  = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 9]  = tang[i];
         mem[15 * i + 10] = pos[tris[i][2]];
         mem[15 * i + 11] = clr[tris[i][2]];
         mem[15 * i + 12] = nrm[tris[i][2]];
