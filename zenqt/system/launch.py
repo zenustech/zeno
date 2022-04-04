@@ -59,7 +59,7 @@ def launchProgram(prog, nframes, start_frame):
     print('IOPath:', g_iopath)
     if os.environ.get('ZEN_SPROC') or os.environ.get('ZEN_DOFORK'):
         from . import run
-        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
+        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath, start_frame)
     else:
         filepath = os.path.join(g_iopath, 'prog.zsg')
         with open(filepath, 'w') as f:
