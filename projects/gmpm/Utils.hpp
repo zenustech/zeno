@@ -5,6 +5,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/zeno.h>
 
+#include "Structures.hpp"
 #include "zensim/container/HashTable.hpp"
 
 // only use this macro within a zeno::INode::apply()
@@ -95,7 +96,8 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
        ibs = proxy<space>(ibs)] ZS_LAMBDA(size_t pi) mutable {
         auto pos = tvs.template pack<3>("pos", pi);
         auto coord = ibs.bucketCoord(pos);
-        atomic_add(exec_cuda, (index_type *)&ibs.counts[ibs.table.query(coord)],
+        atomic_add(wrapv<space>{},
+                   (index_type *)&ibs.counts[ibs.table.query(coord)],
                    (index_type)1);
       });
 
@@ -118,10 +120,76 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
         auto pos = tvs.template pack<3>("pos", pi);
         auto coord = ibs.bucketCoord(pos);
         auto cellno = ibs.table.query(coord);
-        auto localno =
-            atomic_add(exec_cuda, (index_type *)&counts[cellno], (index_type)1);
+        auto localno = atomic_add(wrapv<space>{}, (index_type *)&counts[cellno],
+                                  (index_type)1);
         ibs.indices[ibs.offsets[cellno] + localno] = (index_type)pi;
       });
+}
+
+template <typename ExecPol, int side_length>
+inline void identify_boundary_indices(ExecPol &pol, ZenoPartition &partition,
+                                      zs::wrapv<side_length>) {
+  using namespace zs;
+  constexpr auto space = ExecPol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  if (!partition.hasTags())
+    return;
+
+  auto &table = partition.table;
+
+  auto allocator = table.get_allocator();
+  auto mloc = allocator.location;
+
+  using Ti = typename ZenoPartition::Ti;
+  using indices_t = typename ZenoPartition::indices_t;
+
+  std::size_t numBlocks = table.size();
+  indices_t marks{allocator, numBlocks + 1}, offsets{allocator, numBlocks + 1};
+
+  pol(range(numBlocks), [table = proxy<space>(table),
+                         marks = proxy<space>(marks)] ZS_LAMBDA(Ti bi) mutable {
+    using table_t = RM_CVREF_T(table);
+    auto bcoord = table._activeKeys[bi];
+    using key_t = typename table_t::key_t;
+    bool isBoundary =
+        (table.query(bcoord + key_t{-side_length, 0, 0}) ==
+             table_t::sentinel_v ||
+         table.query(bcoord + key_t{side_length, 0, 0}) ==
+             table_t::sentinel_v ||
+         table.query(bcoord + key_t{0, -side_length, 0}) ==
+             table_t::sentinel_v ||
+         table.query(bcoord + key_t{0, side_length, 0}) ==
+             table_t::sentinel_v ||
+         table.query(bcoord + key_t{0, 0, -side_length}) ==
+             table_t::sentinel_v ||
+         table.query(bcoord + key_t{0, 0, side_length}) == table_t::sentinel_v);
+    marks[bi] = isBoundary ? (Ti)1 : (Ti)0;
+  });
+
+  exclusive_scan(pol, std::begin(marks), std::end(marks), std::begin(offsets));
+  auto bouCnt = offsets.getVal(numBlocks);
+
+  auto &boundaryIndices = partition.getBoundaryIndices();
+  boundaryIndices.resize(bouCnt);
+  pol(range(numBlocks),
+      [marks = proxy<space>(marks),
+       boundaryIndices = proxy<space>(boundaryIndices),
+       offsets = proxy<space>(offsets)] ZS_LAMBDA(Ti bi) mutable {
+        if (marks[bi])
+          boundaryIndices[offsets[bi]] = bi;
+      });
+
+  auto &tags = partition.getTags();
+  tags.resize(bouCnt);
+  tags.reset(0);
+  return;
 }
 
 } // namespace zeno
