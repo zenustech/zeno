@@ -5,7 +5,6 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
-#include <spdlog/spdlog.h>
 
 namespace zeno {
 

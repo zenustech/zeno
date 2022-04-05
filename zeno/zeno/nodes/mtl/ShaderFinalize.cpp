@@ -89,7 +89,7 @@ struct ShaderFinalize : INode {
 
         if (has_input("tex2dList"))
         {
-            auto tex2dList = get_input<ListObject>("tex2dList")->get<std::shared_ptr<zeno::Texture2DObject>>();
+            auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
             for (const auto &tex: tex2dList)
             {
                 auto texId = mtl->tex2Ds.size();
