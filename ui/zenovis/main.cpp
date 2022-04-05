@@ -746,8 +746,12 @@ void finalize() {
 }
 
 void new_frame() {
+#if 1
+          CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   my_paint_graphics(1.0f, 0.0f);
-  // paint_graphics();  // TODO: zhxx paint_graphics has bug with zeno2
+#else
+   paint_graphics();  // TODO: zhxx paint_graphics has bug with zeno2
+#endif
   renderFPS.tick();
 }
 
