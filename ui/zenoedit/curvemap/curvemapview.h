@@ -36,7 +36,6 @@ private:
 	void gentle_zoom(qreal factor);
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void resetTransform();
-	void initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 
 	QPointF target_scene_pos, target_viewport_pos, m_startPos;
 	QPoint m_mousePos;
@@ -45,6 +44,7 @@ private:
 	QString m_path;
 	CURVE_RANGE m_range;
 	QMargins m_gridMargins;
+	QRectF m_fixedSceneRect;
 	CurveGrid* m_grid;
 	CurveScalarItem* m_pHScalar;
 	CurveScalarItem* m_pVScalar;

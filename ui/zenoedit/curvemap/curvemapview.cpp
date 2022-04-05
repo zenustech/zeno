@@ -2,6 +2,7 @@
 #include "curvescalaritem.h"
 #include "curvegrid.h"
 #include "curvenodeitem.h"
+#include "curveutil.h"
 
 
 CurveMapView::CurveMapView(QWidget* parent)
@@ -14,6 +15,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_grid(nullptr)
 	, m_bInit(false)
 {
+	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -27,7 +29,6 @@ CurveMapView::CurveMapView(QWidget* parent)
 
 CurveMapView::~CurveMapView()
 {
-
 }
 
 void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
@@ -48,33 +49,19 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
 
-	QRectF rc =scene()->sceneRect();
+	QRectF rc = scene()->sceneRect();
+	rc = sceneRect();
 
-	m_grid = new CurveGrid(this);
+	m_fixedSceneRect = curve_util::fitInRange(m_range, m_gridMargins);
+
+	m_grid = new CurveGrid(this, m_fixedSceneRect);
+	m_grid->initCurves(pts, handlers);
 	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
 	m_grid->setZValue(-100);
 
 	pScene->addItem(m_pHScalar);
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
-
-	//initCurves(pScene, pts, handlers);
-}
-
-void CurveMapView::initCurves(QGraphicsScene* pScene, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
-{
-	int N = pts.size();
-	Q_ASSERT(N * 2 == handlers.size());
-	for (int i = 0; i < N; i++)
-	{
-		QPointF pos = mapLogicToScene(pts[i]);
-		CurveNodeItem* pNode = new CurveNodeItem(this, pos, handlers[i * 2], handlers[i * 2 + 1]);
-		pScene->addItem(pNode);
-		pNode->setPos(pos);
-		pNode->setZValue(100);
-		pNode->show();
-		m_nodes.append(pNode);
-	}
 }
 
 QPointF CurveMapView::mapLogicToScene(const QPointF& logicPos)
@@ -131,12 +118,9 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 {
 	QGraphicsView::resizeEvent(event);
 	QRectF rc = sceneRect();
-	setSceneRect(rc);
+	setSceneRect(m_fixedSceneRect);
 	if (!m_bInit)
 	{
-		const QSize sz = event->size();
-
-		m_grid->initRect(rc);
 		static int margin = 64;
 
 		m_pHScalar->setX(m_gridMargins.left());
@@ -147,11 +131,7 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 		m_bInit = true;
 	}
 	
-	fitInView(rc, Qt::IgnoreAspectRatio);
-	//for (auto node : m_nodes)
-	//{
-	//	node->updatePos();
-	//}
+	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
 }
 
 QRectF CurveMapView::gridBoundingRect() const

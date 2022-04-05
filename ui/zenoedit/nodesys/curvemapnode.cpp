@@ -59,7 +59,7 @@ void MakeCurvemapNode::onEditClicked()
 
 		QVector<QPointF> points, handlers;
 
-		QStringList L = pointsStr.split(" ");
+		QStringList L = pointsStr.split(" ", Qt::SkipEmptyParts);
 		if (!L.isEmpty())
 		{
 			int n = 0;
