@@ -892,6 +892,8 @@ struct MakeZSGrid : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (grid->transferScheme == "apic")
       ;
+    else if (grid->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", grid->transferScheme));
@@ -932,6 +934,8 @@ struct MakeZSLevelSet : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (ls->transferScheme == "apic")
       ;
+    else if (ls->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", ls->transferScheme));
@@ -985,7 +989,7 @@ ZENDEFNODE(MakeZSLevelSet,
            {
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
-               {{"enum unknown apic flip", "transfer", "unknown"},
+               {{"enum unknown apic flip boundary", "transfer", "unknown"},
                 {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},

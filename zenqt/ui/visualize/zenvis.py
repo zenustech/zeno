@@ -1,9 +1,10 @@
+from typing import Dict
 from ...bin import pylib_zenvis as core
 
 from ...system import fileio
 
 from ..keyframe_editor.frame_curve_editor import lerp
-from ..keyframe_editor.curve_canvas import Bezier
+from ..keyframe_editor.curve_canvas import Bezier, ControlPoint
 
 status = {
     'solver_frameid': 0,
@@ -11,7 +12,7 @@ status = {
     'render_fps': 0,
     'resolution': (1, 1),
     'perspective': (),
-    'cache_frames': 10,
+    'cache_frames': 2,
     'show_grid': True,
     'playing': True,
     'target_frame': 0,
@@ -145,3 +146,49 @@ def set_curr_frameid(frameid):
             camera_control.update_perspective()
 
     return frameid
+
+def dump_lights() -> Dict[int, str]:
+    lights = {}
+    global status
+    for lk, lv in status['lights'].items():
+        txt = '{}'.format(len(lv))
+        for k, v in lv.items():
+            txt += ' {}'.format(k)
+            txt += ' {}'.format(len(v))
+            for p in v:
+                txt += ' {} {} {} {} {} {} {}'.format(
+                    p.pos.x,
+                    p.pos.y,
+                    p.cp_type,
+                    p.left_handler.x,
+                    p.left_handler.y,
+                    p.right_handler.x,
+                    p.right_handler.y,
+                )
+        lights[lk] = txt
+    return lights
+
+def load_lights(lights: Dict[str, str]):
+    for lk, lv in lights.items():
+        lk = int(lk)
+        txt = lv.split()
+        txt = (s for s in txt)
+        c = int(next(txt))
+        light = {}
+        for i in range(c):
+            k = next(txt)
+            l = int(next(txt))
+            ls = []
+            for j in range(l):
+                pos_x = int(next(txt))
+                pos_y = float(next(txt))
+                cp = ControlPoint(pos_x, pos_y)
+                cp.cp_type = next(txt)
+                cp.left_handler.x = float(next(txt))
+                cp.left_handler.y = float(next(txt))
+                cp.right_handler.x = float(next(txt))
+                cp.right_handler.y = float(next(txt))
+                ls.append(cp)
+            light[k] = ls
+        global status
+        status['lights'][lk] = light

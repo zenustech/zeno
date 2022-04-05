@@ -1,5 +1,9 @@
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
 #include "MyShader.hpp"
 #include "glad/glad.h"
+#include "glm/geometric.hpp"
 #include "stdafx.hpp"
 #include "main.hpp"
 #include "IGraphic.hpp"
@@ -12,7 +16,8 @@
 #include <Hg/OpenGL/stdafx.hpp>
 #include "zenvisapi.hpp"
 #include <Scene.hpp>
-
+#include <thread>
+#include <chrono>
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
@@ -47,7 +52,11 @@ static float point_scale = 1.f;
 static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
-
+float g_dof=-1;
+extern void setDOF(float _dof)
+{
+  g_dof = _dof;
+}
 void set_perspective(
     std::array<double, 16> viewArr,
     std::array<double, 16> projArr)
@@ -63,20 +72,23 @@ glm::mat4 cview, cproj;
 void clearCameraControl()
 {
   g_camSetFromNode = 0;
+  g_dof = -1;
 }
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set)
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set)
 {
-  
+  front = glm::normalize(front);
+  up = glm::normalize(up);
   cview = glm::lookAt(pos, pos + front, up);
-  cproj = glm::perspective(glm::radians(_fov), nx * 1.0 / ny, fnear, ffar);
+  cproj = glm::perspective(glm::radians(_fov), 1.5, fnear, ffar);
   g_fov = _fov;
   g_near = fnear;
   g_far = ffar;
   g_view = view;
   g_proj = proj;
   g_camPos = pos;
-  g_camView = front;
-  g_camUp = up;
+  g_camView = glm::normalize(front);
+  g_camUp = glm::normalize(up);
+  g_dof = _dof;
   g_camSetFromNode = set;
 
 }
@@ -190,6 +202,11 @@ void setLightData(
   float intensity
 ) {
   auto &scene = Scene::getInstance();
+  auto count = scene.lights.size();
+  while (index >= count) {
+    scene.addLight();
+    count = scene.lights.size();
+  }
   auto &light = scene.lights[index];
   light->lightDir = glm::vec3(
     std::get<0>(dir),
@@ -281,7 +298,7 @@ static void draw_small_axis() {
   proj = gizmo_proj;
   CHECK_GL(glViewport(0, 0, nx * 0.1, ny * 0.1));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
-  axis->draw(true);
+  axis->draw(true,0.0);
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glViewport(0, 0, nx, ny));
   view = backup_view;
@@ -292,6 +309,7 @@ extern float getCamFar()
 {
   return g_far;
 }
+
 static void shadowPass()
 {
   auto &scene = Scene::getInstance();
@@ -313,23 +331,32 @@ static void shadowPass()
 }
 
 
-static void drawSceneDepthSafe(float aspRatio, bool reflect)
+static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass)
 {
-  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
-  for(int i=5; i>=1; i--)
-  {
-    CHECK_GL(glClearColor(0, 0, 0, 0.0f));
-    CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-    proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
-    
-    for (auto const &[key, gra]: current_frame_data()->graphics) {
-      gra->draw(reflect);
-    }
+
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_ONE, GL_ONE);
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    // std::cout<<"camPos:"<<g_camPos.x<<","<<g_camPos.y<<","<<g_camPos.z<<std::endl;
+    // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
+    // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
+    //CHECK_GL(glDisable(GL_MULTISAMPLE));
     
     
-  }
+      
+      float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
+      for(int i=5; i>=1; i--)
+      {
+        CHECK_GL(glClearDepth(1));
+        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+        proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
+        
+        for (auto const &[key, gra]: current_frame_data()->graphics) {
+          gra->setMultiSampleWeight(sampleweight);
+          gra->draw(reflect, isDepthPass);
+        }
+      }
+
 }
 extern void setReflectionViewID(int i);
 extern bool renderReflect(int i);
@@ -351,20 +378,21 @@ static void reflectivePass()
     setReflectionViewID(i);
     glm::mat4 p = glm::perspective(glm::radians(g_fov), (float)(nx * 1.0 / ny), g_near, g_far);
     setReflectMVP(i, p * view);
-    drawSceneDepthSafe((float)(nx * 1.0 / ny), true);
+    drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0,true,0.0);
     vao->unbind();
     view = g_view;
   }
   EndReflective();
 }
-static void my_paint_graphics() {
+static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), false);
-  if (show_grid) {
-        axis->draw(false);
-        grid->draw(false);
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass);
+  if (isDepthPass!=1.0 && show_grid) {
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        axis->draw(false,0.0);
+        grid->draw(false,0.0);
         draw_small_axis();
     }
   vao->unbind();
@@ -373,7 +401,7 @@ static void my_paint_graphics() {
 
 static bool enable_hdr = true;
 /* BEGIN ZHXX HAPPY */
-namespace {
+
 auto qvert = R"(
 #version 330 core
 const vec2 quad_vertices[4] = vec2[4]( vec2( -1.0, -1.0), vec2( 1.0, -1.0), vec2( -1.0, 1.0), vec2( 1.0, 1.0));
@@ -428,50 +456,33 @@ vec3 ACESFitted(vec3 color, float gamma)
 
 uniform sampler2DRect hdr_image;
 out vec4 oColor;
+uniform float msweight;
 void main(void)
 {
-	int i;
-	float lum[25];
-	vec2 tex_scale = vec2(1.0);
-	for (i = 0; i < 25; i++)
-	{
-		vec2 tc = (2.0 * gl_FragCoord.xy + 3.5 * vec2(i % 5 - 2, i / 5 - 2));
-		vec3 col = texture2DRect(hdr_image, tc).rgb;
-    lum[i] = dot(col, vec3(0.3, 0.59, 0.11));
-	} 
-	// Calculate weighted color of region
-	float kernelLuminance = (
-		(1.0 * (lum[0] + lum[4] + lum[20] + lum[24])) +
-		(4.0 * (lum[1] + lum[3] + lum[5] + lum[9] +
-		lum[15] + lum[19] + lum[21] + lum[23])) +
-		(7.0 * (lum[2] + lum[10] + lum[14] + lum[22])) +
-		(16.0 * (lum[6] + lum[8] + lum[16] + lum[18])) +
-		(26.0 * (lum[7] + lum[11] + lum[13] + lum[17])) +
-		(41.0 * lum[12])
-	) / 273.0;
-	// Compute the corresponding exposure
-	float exposure = sqrt(8.0 / (kernelLuminance + 0.25));
-	// Apply the exposure to this texel
-  //oColor.rgb = 1.0 - exp2(-texture2DRect(hdr_image, gl_FragCoord.xy).rgb * exposure);
-	//oColor.a = 1.0f;
-	oColor = vec4(texture2DRect(hdr_image, gl_FragCoord.xy).rgb, 1.0);
+  vec3 color = texture2DRect(hdr_image, gl_FragCoord.xy).rgb;
+	oColor = vec4(color * msweight, 1);
   
 }
 )";
 hg::OpenGL::Program* tmProg=nullptr;
 GLuint msfborgb=0, msfbod=0, tonemapfbo=0;
-
+GLuint ssfborgb=0, ssfbod=0, sfbo=0;
 GLuint texRect=0, regularFBO = 0;
+GLuint texRects[16];
 GLuint emptyVAO=0;
-void ScreenFillQuad(GLuint tex)
+void ScreenFillQuad(GLuint tex, float msweight, int samplei)
 {
+  glDisable(GL_DEPTH_TEST);
   if(emptyVAO==0)
     glGenVertexArrays(1, &emptyVAO); 
   CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  if(samplei==0){
+    CHECK_GL(glClearColor(0, 0, 0, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  }
   tmProg->use();
   tmProg->set_uniformi("hdr_image",0);
+  tmProg->set_uniform("msweight", msweight);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_RECTANGLE, tex);
 
@@ -480,6 +491,30 @@ void ScreenFillQuad(GLuint tex)
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glDisableVertexAttribArray(0);
   glUseProgram(0);
+  glEnable(GL_DEPTH_TEST);
+}
+extern unsigned int getDepthTexture()
+{
+  return texRect;
+}
+static void ZPass()
+{
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+  CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+  CHECK_GL(glClearColor(0, 0, 0, 0));
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  my_paint_graphics(1.0, 1.0);
+  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+  CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+  CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_RECTANGLE, texRect, 0));
+  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
 }
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
@@ -496,7 +531,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     if (!enable_hdr) {
         
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-        return my_paint_graphics();
+        return my_paint_graphics(1.0, 0.0);
     }
   
   if(msfborgb==0||oldnx!=nx||oldny!=ny)
@@ -505,6 +540,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
     {
       CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
     }
+    if(ssfborgb!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &ssfborgb));
+    }
+
     CHECK_GL(glGenRenderbuffers(1, &msfborgb));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
     /* begin cihou mesa */
@@ -514,6 +554,12 @@ static void paint_graphics(GLuint target_fbo = 0) {
     printf("num samples: %d\n", num_samples);
     /* end cihou mesa */
     CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny));
+
+    CHECK_GL(glGenRenderbuffers(1, &ssfborgb));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfborgb));
+    /* begin cihou mesa */
+    /* end cihou mesa */
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, nx, ny));
     
   
     if(msfbod!=0)
@@ -524,12 +570,26 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
     CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
 
+    if(ssfbod!=0)
+    {
+      CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
+    }
+    CHECK_GL(glGenRenderbuffers(1, &ssfbod));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfbod));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
+
     
     if(tonemapfbo!=0)
     {
       CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
     }
     CHECK_GL(glGenFramebuffers(1, &tonemapfbo));
+
+    if(sfbo!=0)
+    {
+      CHECK_GL(glDeleteFramebuffers(1, &sfbo));
+    }
+    CHECK_GL(glGenFramebuffers(1, &sfbo));
 
 
     if(regularFBO!=0)
@@ -540,8 +600,16 @@ static void paint_graphics(GLuint target_fbo = 0) {
     if(texRect!=0)
     {
       CHECK_GL(glDeleteTextures(1, &texRect));
+      for(int i=0;i<16;i++)
+      {
+        CHECK_GL(glDeleteTextures(1, &texRects[i]));
+      }
     }
     CHECK_GL(glGenTextures(1, &texRect));
+    for(int i=0;i<16;i++)
+    {
+      CHECK_GL(glGenTextures(1, &texRects[i]));
+    }
     CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
     {
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
@@ -550,6 +618,18 @@ static void paint_graphics(GLuint target_fbo = 0) {
         CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
+    }
+    for(int i=0;i<16;i++)
+    {
+      CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[i]));
+      {
+          CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+          CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+          CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+          CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+          CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, nx, ny, 0, GL_RGBA, GL_FLOAT, nullptr));
+      }
     }
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
     CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
@@ -564,27 +644,89 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
     
   
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
-  CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
-  CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+  
+  if(g_dof>0){
+    
+    for(int dofsample=0;dofsample<16;dofsample++){
+          glDisable(GL_MULTISAMPLE);
+          glm::vec3 object = g_camPos + g_dof * glm::normalize(g_camView);
+          glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+          glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+          glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) + p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
+          view = glm::lookAt(g_camPos + 0.05f * bokeh, object, p_up);
+          ZPass();
+          CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+          CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                        GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+          CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                        GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+          CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+          CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+          CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+          my_paint_graphics(1.0, 0.0);
+          CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+          CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+          CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
+          CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_RECTANGLE, texRects[dofsample], 0));
+          glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+          
+    }
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glad_glBlendEquation(GL_FUNC_ADD);
+    for(int dofsample=0;dofsample<16;dofsample++){
+      //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+      
+      ScreenFillQuad(texRects[dofsample], 1.0/16.0, dofsample);
+    }
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
+    CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+              GL_TEXTURE_RECTANGLE, texRect, 0));
+    glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+    ScreenFillQuad(texRect,1.0,0);
 
-  my_paint_graphics();
-  CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-  glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  } else {
+    glDisable(GL_MULTISAMPLE);
+    ZPass();
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                  GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    my_paint_graphics(1.0, 0.0);
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
+          CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_RECTANGLE, texRects[0], 0));
+    glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-  //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
-  CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-  ScreenFillQuad(texRect);
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+    //tmProg->set_uniform("msweight",1.0);
+    ScreenFillQuad(texRects[0],1.0,0);
+    
+  }
+  //std::this_thread::sleep_for(std::chrono::milliseconds(30));
   //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
   //drawScreenQuad here:
   CHECK_GL(glFlush());
 }
-}
+
 /* END ZHXX HAPPY */
 
 static double get_time() {
