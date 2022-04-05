@@ -8,3 +8,4 @@ save=2
 command=ZEN_OPEN=/tmp/a.zsg python run.py
 output=terminal
 cwd=$(VIM_ROOT)
+save=2

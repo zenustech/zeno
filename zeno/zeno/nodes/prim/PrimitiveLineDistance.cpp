@@ -10,6 +10,7 @@
 #include <limits>
 #include <queue>
 namespace zeno {
+namespace {
 class myGreator
 {
 public:
@@ -56,6 +57,7 @@ void dijkstra(PrimitiveObject *prim, int start, std::vector<float> &dist)
     }
 
 
+}
 }
 /* AWAK, NIKOLA TESLA'S JOB IS DJ, I.E. DJ-TESLA */
 /* THAT EXPLAINS WHY DJ COULD DRIVE THE TESLA CAR */
