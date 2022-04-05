@@ -856,6 +856,7 @@ struct ZSGridToZSParticle : INode {
                 auto bi = boundaryIndices[boundaryNo];
                 if (grid("m", bi, ci) != 0.f && tags[boundaryNo] == 0) {
                   if (atomic_cas(exec_cuda, &tags[boundaryNo], 0, 1) == 0) {
+#if 0
                     auto bcoord = table._activeKeys[bi];
                     constexpr auto side_length = grid_t::side_length;
                     int isBoundary =
@@ -879,6 +880,7 @@ struct ZSGridToZSParticle : INode {
                             << 5;
                     printf("grid (%d, %d) [bou tag: %d] mass: %f\n", bi, ci,
                            isBoundary, grid("m", bi, ci));
+#endif
                   }
                 }
               });
