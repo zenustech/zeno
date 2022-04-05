@@ -480,7 +480,7 @@ struct GraphicPrimitive : IGraphic {
             
         }
         if(!triObj.prog){
-            triObj.prog = get_tris_program(path,nullptr);
+            triObj.prog = get_tris_program(nullptr);
         }
         
     }

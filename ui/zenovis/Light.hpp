@@ -17,7 +17,6 @@
 #include <Hg/OpenGL/stdafx.hpp>
 #include <unordered_map>
 #include "zenvisapi.hpp"
-#include <spdlog/spdlog.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 

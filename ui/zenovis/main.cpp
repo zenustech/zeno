@@ -322,7 +322,7 @@ static void shadowPass()
     {
       light->BeginShadowMap(g_near, g_far, light->lightDir, proj, view, i);
       vao->bind();
-      for (auto const &[key, gra] : current_frame_data()->graphics)
+      for (auto const &gra: current_graphics())
       {
         gra->drawShadow(light.get());
       }
@@ -353,7 +353,7 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
         proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
         
-        for (auto const &[key, gra]: current_frame_data()->graphics) {
+        for (auto const &gra: current_graphics()) {
           gra->setMultiSampleWeight(sampleweight);
           gra->draw(reflect, isDepthPass);
         }
@@ -403,7 +403,6 @@ static void my_paint_graphics(float samples, float isDepthPass) {
 
 static bool enable_hdr = true;
 /* BEGIN ZHXX HAPPY */
-namespace {
 
 auto qvert = R"(
 #version 330 core
@@ -747,7 +746,8 @@ void finalize() {
 }
 
 void new_frame() {
-  my_paint_graphics();
+  my_paint_graphics(1.0f, 0.0f);
+  // paint_graphics();  // TODO: zhxx paint_graphics has bug with zeno2
   renderFPS.tick();
 }
 
