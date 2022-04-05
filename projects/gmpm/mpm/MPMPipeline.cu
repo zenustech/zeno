@@ -1183,7 +1183,7 @@ struct ZSReturnMapping : INode {
       constexpr auto friction_coeff = 0.f;
       // constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::qr(F);
-      if (friction_coeff == 0.f) {
+      if (gamma == 0.f) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = zs::min(R(2, 2), 1.f);
       } else if (R(2, 2) > 1) {
