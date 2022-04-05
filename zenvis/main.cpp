@@ -341,7 +341,8 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
     // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
-    
+      CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+      CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     
       
       float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
@@ -654,7 +655,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
           glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
           glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) + p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
           view = glm::lookAt(g_camPos + 0.05f * bokeh, object, p_up);
-          ZPass();
+          //ZPass();
           CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
           CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                         GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
@@ -698,7 +699,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   } else {
     glDisable(GL_MULTISAMPLE);
-    ZPass();
+    //ZPass();
+    glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+    glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+    glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+    view = glm::lookAt(g_camPos, object, p_up);
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));

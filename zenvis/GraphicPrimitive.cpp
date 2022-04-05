@@ -2152,13 +2152,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
     float att_NoL = dot(normal, L1);
-    if(depthPass<=0.01)
-    {
-        
-        float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
-        if(d==0 || abs(projPos.z)>abs(d) )
-            discard;
-    }
+    //if(depthPass<=0.01)
+    //{
+    //    
+    //    float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
+    //    if(d==0 || abs(projPos.z)>abs(d) )
+    //        discard;
+    //}
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     if(reflectPass==1.0 && mat_reflection==1.0 )
@@ -2167,10 +2167,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     
-    if(depthPass>=0.99)
-    {
-        return abs(projPos.zzz);
-    }
+    //if(depthPass>=0.99)
+    //{
+    //    return abs(projPos.zzz);
+    //}
     
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
