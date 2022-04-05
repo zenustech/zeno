@@ -18,8 +18,7 @@ class CameraKeyframeWidget(QWidget):
         self.setGeometry(300, 300, 500, 400)
         self.setWindowTitle('Camera Keyframe')
 
-        self.keyframes = {
-        }
+        self.keyframes = zenvis.status['camera_keyframes']
 
         self.list = QListWidget()
 
@@ -40,10 +39,6 @@ class CameraKeyframeWidget(QWidget):
         dlgLayout.addWidget(self.remove)
 
         self.setLayout(dlgLayout)
-    
-    def checkbox_callback(self, status):
-        print(satus)
-        self.enable_flag = False if status == 0 else True
     
     def query_frame(self, frame):
         if self.enable.checkState() == Qt.Unchecked:
@@ -89,9 +84,22 @@ class CameraKeyframeWidget(QWidget):
         self.update_list()
     
     def update_list(self):
-        self.list.clear()
         l = sorted(list(self.keyframes.keys()))
-        self.list.addItems(map(str, l))
+        need_update = False
+        if self.list.count() != len(l):
+            need_update = True
+        else:
+            for i in range(self.list.count()):
+                if self.list.item(i).txt() != l[i]:
+                    need_update = True
+                    break
+        if need_update:
+            self.list.clear()
+            self.list.addItems(map(str, l))
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        self.update_list()
 
 
 if __name__ == "__main__":

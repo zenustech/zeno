@@ -90,7 +90,8 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  enum category_e : int { mpm, curve, surface, tet };
+  // tracker particle for 
+  enum category_e : int { mpm, curve, surface, tet, tracker };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
   auto &getParticles() noexcept { return particles; }
@@ -123,14 +124,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   ZenoConstitutiveModel model{};
 };
 
-struct ZenoPartition : IObject {
+struct ZenoPartition : IObjectClone<ZenoPartition> {
   using table_t = zs::HashTable<int, 3, int, zs::ZSPmrAllocator<false>>;
-  auto &get() noexcept { return table; }
-  const auto &get() const noexcept { return table; }
+  auto& get() noexcept { return table; }
+  const auto& get() const noexcept { return table; }
   table_t table;
 };
 
-struct ZenoGrid : IObject {
+struct ZenoGrid : IObjectClone<ZenoGrid> {
   enum transfer_scheme_e { Empty, Apic, Flip, AsFlip };
   using grid_t =
       zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
@@ -142,7 +143,7 @@ struct ZenoGrid : IObject {
   std::shared_ptr<ZenoPartition> partition;
 };
 
-struct ZenoIndexBuckets : IObject {
+struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
   using buckets_t = zs::IndexBuckets<3, int, int, zs::grid_e::collocated,
                                      zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return ibs; }
@@ -150,7 +151,7 @@ struct ZenoIndexBuckets : IObject {
   buckets_t ibs;
 };
 
-struct ZenoLevelSet : IObject {
+struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
   // this supports a wide range of grid types (not just collocated)
   // default channel contains "sdf"
   // default transfer scheme is "unknown"
@@ -216,7 +217,7 @@ struct ZenoLevelSet : IObject {
   std::string transferScheme;
 };
 
-struct ZenoBoundary : IObject {
+struct ZenoBoundary : IObjectClone<ZenoBoundary> {
   using levelset_t = typename ZenoLevelSet::levelset_t;
 
   template <typename LsView> auto getBoundary(LsView &&lsv) const noexcept {

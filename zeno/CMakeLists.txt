@@ -16,6 +16,25 @@ if (ZENO_BENCHMARKING)
     target_compile_definitions(zenocore PRIVATE -DZENO_BENCHMARKING)
 endif()
 
+if (ZENO_PARALLEL_STL)
+    if (MSVC)
+        find_package(TBB)
+        if (TBB_FOUND)
+            target_link_libraries(zeno PRIVATE TBB::tbb)
+        else()
+            message(WARNING "TBB not found, disabling parallel STL")
+            set(ZENO_PARALLEL_STL OFF)
+        endif()
+    endif()
+    if (ZENO_PARALLEL_STL)
+        target_compile_definitions(zeno PRIVATE -DZENO_PARALLEL_STL)
+    endif()
+endif()
+
+if (ZENO_FAIL_SILENTLY)
+    target_compile_definitions(zeno PRIVATE -DZENO_FAIL_SILENTLY)
+endif()
+
 if (ZENO_FAULTHANDLER)
     target_compile_definitions(zenocore PRIVATE -DZENO_FAULTHANDLER)
     add_backward(zenocore)
@@ -26,15 +45,18 @@ target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DL
 target_include_directories(zenocore PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/Zeno/zenocore>)
+
 if (ZENO_INSTALL_TARGET)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include/Zeno/zenocore)
 endif()
 
 target_link_libraries(zenocore PUBLIC zenoinclude)
+
 if (ZENO_ENABLE_SPDLOG)
     target_link_libraries(zenocore PUBLIC spdlog)
     target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_SPDLOG)
 endif()
+
 if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()

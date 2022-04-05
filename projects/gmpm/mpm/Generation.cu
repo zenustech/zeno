@@ -637,6 +637,94 @@ ZENDEFNODE(ToBoundaryParticles, {
                                     {"MPM"},
                                 });
 
+struct ToTrackerParticles : INode {
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToTrackerParticles\n");
+
+    // primitive
+    auto inParticles = get_input<PrimitiveObject>("prim");
+    auto &obj = inParticles->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel"))
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+
+    auto outParticles = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    outParticles->prim = inParticles;
+
+    /// category, size
+    std::size_t size{obj.size()};
+    outParticles->category = ZenoParticles::category_e::tracker;
+
+    // per vertex (node) vol, pos, vel
+    using namespace zs;
+    auto ompExec = zs::omp_exec();
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}};
+    {
+      auto &pars = outParticles->getParticles(); // tilevector
+      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
+      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
+                                velsPtr, &obj](size_t pi) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+
+        // pos
+        pars.tuple<3>("pos", pi) = obj[pi];
+
+        // vel
+        if (velsPtr != nullptr)
+          pars.tuple<3>("vel", pi) = velsPtr[pi];
+        else
+          pars.tuple<3>("vel", pi) = vec3::zeros();
+      });
+
+      pars = pars.clone({memsrc_e::um, 0});
+    }
+    if (inParticles->tris.size()) {
+      const auto eleSize = inParticles->tris.size();
+      std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}, {"inds", 3}};
+      outParticles->elements =
+          typename ZenoParticles::particles_t{tags, eleSize, memsrc_e::host};
+      auto &eles = outParticles->getQuadraturePoints();
+
+      auto &tris = inParticles->tris.values;
+      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::host>({}, eles),
+                                   &obj, &tris, velsPtr](size_t ei) mutable {
+        using vec3 = zs::vec<float, 3>;
+        // inds
+        int inds[3] = {(int)tris[ei][0], (int)tris[ei][1], (int)tris[ei][2]};
+        for (int d = 0; d != 3; ++d)
+          eles("inds", d, ei) = inds[d];
+        // pos
+        eles.tuple<3>("pos", ei) =
+            (obj[inds[0]] + obj[inds[1]] + obj[inds[2]]) / 3.f;
+
+        // vel
+        if (velsPtr != nullptr) {
+          eles.tuple<3>("vel", ei) =
+              (velsPtr[inds[0]] + velsPtr[inds[1]] + velsPtr[inds[2]]) / 3.f;
+        } else
+          eles.tuple<3>("vel", ei) = vec3::zeros();
+      });
+
+      eles = eles.clone({memsrc_e::um, 0});
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ToTrackerParticles\n");
+    set_output("ZSParticles", outParticles);
+  }
+};
+
+ZENDEFNODE(ToTrackerParticles, {
+                                   {"prim"},
+                                   {"ZSParticles"},
+                                   {},
+                                   {"MPM"},
+                               });
+
 struct BuildPrimitiveSequence : INode {
   void apply() override {
     using namespace zs;
@@ -751,7 +839,7 @@ struct UpdatePrimitiveFromZSParticles : INode {
       auto &pos = parObjPtr->prim->attr<vec3f>("pos");
       auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
-      if (parObjPtr->prim->has_attr("vel"))
+      if (parObjPtr->prim->has_attr("vel") && pars.hasProperty("vel"))
         velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
 
       // currently only write back pos and vel (if has)
@@ -804,6 +892,8 @@ struct MakeZSGrid : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (grid->transferScheme == "apic")
       ;
+    else if (grid->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", grid->transferScheme));
@@ -844,6 +934,8 @@ struct MakeZSLevelSet : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (ls->transferScheme == "apic")
       ;
+    else if (ls->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", ls->transferScheme));
@@ -864,7 +956,7 @@ struct MakeZSLevelSet : INode {
           tags, dx, 1, zs::memsrc_e::um, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
-    } else if (cateStr == "uniform_vel") {
+    } else if (cateStr == "const_velocity") {
       auto v = get_input<zeno::NumericObject>("aux")->get<zeno::vec3f>();
       ls->getLevelSet() = typename ZenoLevelSet::uniform_vel_ls_t{
           zs::vec<float, 3>{v[0], v[1], v[2]}};
@@ -897,8 +989,8 @@ ZENDEFNODE(MakeZSLevelSet,
            {
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
-               {{"enum unknown apic flip", "transfer", "unknown"},
-                {"enum cellcentered collocated staggered uni_velocity",
+               {{"enum unknown apic flip boundary", "transfer", "unknown"},
+                {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},
            });

@@ -326,6 +326,10 @@ class NodeEditor(QWidget):
         prog['views'] = views
         prog['descs'] = dict(self.descs)
         prog['version'] = CURR_VERSION
+        prog['viewport'] = {
+            'camera_record': zenvis.status['camera_keyframes'],
+            'lights': zenvis.dump_lights(),
+        }
         return prog
 
     def bkwdCompatProgram(self, prog):
@@ -399,6 +403,12 @@ class NodeEditor(QWidget):
             self.scene.record()
         self.initDescriptors()
         self.switchScene('main')
+        if 'viewport' in prog:
+            s = prog['viewport']
+            for k, v in s['camera_record'].items():
+                zenvis.status['camera_keyframes'][int(k)] = v
+            if 'lights' in s:
+                zenvis.load_lights(s['lights'])
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
@@ -527,7 +537,7 @@ ZENDEFNODE(''' + key + ''', {
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
-        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode) or isinstance(n, QDMGraphicsNode_Blackboard) ]
         nodes = self.scene.dumpGraph(itemList)
         self.clipboard.setText(json.dumps(nodes))
 
@@ -554,20 +564,21 @@ ZENDEFNODE(''' + key + ''', {
             for nid, n in nodes.items():
                 x, y = n['uipos']
                 n['uipos'] = (x + offset_x, y + offset_y)
-                inputs = n['inputs']
-                for name, info in inputs.items():
-                    if info == None:
-                        continue
-                    nid_, name_, value = info
-                    if nid_ in nid_map and value != None:
-                        info = (nid_map[nid_], name_, value)
-                    elif nid_ in nid_map:
-                        info = (nid_map[nid_], name_)
-                    elif value != None:
-                        info = (None, None, value)
-                    else:
-                        info = None
-                    inputs[name] = info
+                if 'inputs' in n:
+                    inputs = n['inputs']
+                    for name, info in inputs.items():
+                        if info == None:
+                            continue
+                        nid_, name_, value = info
+                        if nid_ in nid_map and value != None:
+                            info = (nid_map[nid_], name_, value)
+                        elif nid_ in nid_map:
+                            info = (nid_map[nid_], name_)
+                        elif value != None:
+                            info = (None, None, value)
+                        else:
+                            info = None
+                        inputs[name] = info
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()

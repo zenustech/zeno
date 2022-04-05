@@ -1,7 +1,8 @@
 #pragma once
 
+#include "glad/glad.h"
 #include <stb_image.h>
-
+#include <cmath>
 namespace hg::OpenGL {
 
   struct Texture {
@@ -36,6 +37,10 @@ namespace hg::OpenGL {
       int nx, ny, nc;
       stbi_set_flip_vertically_on_load(true);
       unsigned char *img = stbi_load(path, &nx, &ny, &nc, 0);
+      int maxSize;
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+      nx = std::min(std::max(nx, 1), maxSize);
+      ny = std::min(std::max(ny, 1), maxSize);
       assert(img);
       switch (nc) {
         case 4:
@@ -43,6 +48,12 @@ namespace hg::OpenGL {
           break;
         case 3:
           format = GL_RGB;
+          break;
+        case 2:
+          format = GL_RG;
+          break;
+        case 1:
+          format = GL_RED;
           break;
         default:
           printf("%d\n", nc);

@@ -186,7 +186,7 @@ namespace zeno
             EmissionPass::CommonFunc blendFunc;
             blendFunc.rettype = 1;
             blendFunc.argTypes = {1, 1};
-            blendFunc.code = "(float base, float blend) {\n" + code + "}\n";
+            blendFunc.code = "(" + em->typeNameOf(1) + " base, " + em->typeNameOf(1) + " blend) {\n" + code + "}\n";
             const auto blendFuncName = em->addCommonFunc(std::move(blendFunc));
 
             const auto base = get_input("base");
@@ -199,45 +199,42 @@ namespace zeno
                 opacityFunc.rettype = 1;
                 opacityFunc.argTypes = {1, 1, 1};
                 opacityFunc.code = 
-                "(float base, float blend, float opacity) {\n"
-                "   float newBlend = " + blendFuncName + "(base, blend);\n"
-                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "(" + em->typeNameOf(1) + " base, " + em->typeNameOf(1) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
+                "   blend = " + blendFuncName + "(base, blend);\n"
+                "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
             case 2:
                 opacityFunc.rettype = 2;
                 opacityFunc.argTypes = {2, 2, 1};
                 opacityFunc.code = 
-                "(vec2 base, vec2 blend, float opacity) {\n"
-                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
-                "   vec2 newBlend = vec2(r, g);\n"
-                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "(" + em->typeNameOf(2) + " base, " + em->typeNameOf(2) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
+                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
             case 3:
                 opacityFunc.rettype = 3;
                 opacityFunc.argTypes = {3, 3, 1};
                 opacityFunc.code = 
-                "(vec3 base, vec3 blend, float opacity) {\n"
-                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
-                "   float b = " + blendFuncName + "(base.b, blend.b);\n"
-                "   vec3 newBlend = vec3(r, g, b);\n"
-                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "(" + em->typeNameOf(3) + " base, " + em->typeNameOf(3) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
+                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   blend.b = " + blendFuncName + "(base.b, blend.b);\n"
+                "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
             case 4:
                 opacityFunc.rettype = 4;
                 opacityFunc.argTypes = {4, 4, 1};
                 opacityFunc.code = 
-                "(vec4 base, vec4 blend, float opacity) {\n"
-                "   float r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   float g = " + blendFuncName + "(base.g, blend.g);\n"
-                "   float b = " + blendFuncName + "(base.b, blend.b);\n"
-                "   float a = " + blendFuncName + "(base.a, blend.a);\n"
-                "   vec4 newBlend = vec4(r, g, b, a);\n"
-                "   return newBlend * opacity + base * (1.0 - opacity);\n"
+                "(" + em->typeNameOf(4) + " base, " + em->typeNameOf(4) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
+                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
+                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   blend.b = " + blendFuncName + "(base.b, blend.b);\n"
+                "   blend.a = " + blendFuncName + "(base.a, blend.a);\n"
+                "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
             default:

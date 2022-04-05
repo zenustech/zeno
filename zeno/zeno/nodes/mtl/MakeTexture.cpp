@@ -84,35 +84,4 @@ namespace zeno
 			},
 		});
 
-	struct MaterialTexture2D
-		: zeno::INode
-	{
-		virtual void apply() override
-		{
-			auto mtl = get_input<zeno::MaterialObject>("mtl");
-			auto tex = get_input<zeno::Texture2DObject>("tex");
-            int texId = mtl->tex2Ds.size();
-			mtl->tex2Ds.push_back(tex);
-            auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
-            mtl->common.insert(0, texCode);
-			set_output("mtl", std::move(mtl));
-		}
-	};
-
-	ZENDEFNODE(
-		MaterialTexture2D,
-		{
-			{
-				{"material", "mtl"},
-				{"texture", "tex"},
-			},
-			{
-				{"material", "mtl"},
-			},
-			{},
-			{
-				"shader",
-			},
-		});
-
 } // namespace zeno

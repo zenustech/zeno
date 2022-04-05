@@ -120,7 +120,7 @@ struct ReadObjPrim : INode {
         auto binary = file_get_binary(path);
         auto prim = parse_obj(std::move(binary));
         if (get_param<bool>("triangulate")) {
-            prim_polys_to_tris_with_uv(prim.get());
+            primTriangulate(prim.get());
         }
         set_output("prim", std::move(prim));
     }

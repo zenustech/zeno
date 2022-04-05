@@ -51,8 +51,8 @@ struct NumericWrangle : zeno::INode {
                     parnames.emplace_back(key, 1);
                     parnames.emplace_back(key, 2);
                     return 3;
-                } else if constexpr (std::is_same_v<T, float>) {
-                    parvals.push_back(v);
+                } else if constexpr (std::is_constructible_v<float, T>) {
+                    parvals.push_back(float(v));
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else return 0;

@@ -1,3 +1,6 @@
+#include "zeno/types/PrimitiveObject.h"
+#include "zeno/types/StringObject.h"
+#include <openvdb/Types.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/StringObject.h>
@@ -7,8 +10,44 @@
 #include <zeno/ZenoInc.h>
 
 namespace zeno {
+struct ParticleAsVoxels : INode{
+    virtual void apply() override{
+        auto ingrid = get_input<VDBFloatGrid>("vdbGrid");
+        auto const &grid = ingrid->m_grid;
+        auto inparticles = get_input<PrimitiveObject>("particles");
+        auto attrName = get_input<StringObject>("Attr")->value;
 
-
+        inparticles->attr_visit(attrName, [&](auto &arr) {
+        #pragma omp parallel for
+            for (int i = 0; i < arr.size(); i++) {
+                if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
+                    // auto accessor = grid->getAccessor();
+                    // openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
+                    // openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
+                    // accessor.setValue(coord, openvdb::Vec3f(arr[i][0], arr[i][1], arr[i][2]));
+                } else {
+                    auto accessor = grid->getAccessor();
+                    openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
+                    openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
+                    accessor.setValue(coord, arr[i]);
+                }
+            }
+        });
+        set_output("oGrid", std::move(ingrid));
+    }
+};
+ZENDEFNODE(ParticleAsVoxels, {
+                            {{"VDBGrid", "vdbGrid"}, 
+                             {"string", "Attr"},
+                             {"particles"},
+                            },
+                            {"oGrid"},
+                            
+                            {
+                             
+                            },
+                            {"visualize"},
+                        });
 struct VDBVoxelAsParticles : INode {
     virtual void apply() override {
         auto ingrid = get_input<VDBFloatGrid>("vdbGrid");
