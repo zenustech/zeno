@@ -192,4 +192,193 @@ inline void identify_boundary_indices(ExecPol &pol, ZenoPartition &partition,
   return;
 }
 
+template <typename ExecPol>
+inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
+                                      ZenoPartition &partition,
+                                      ZenoGrid &zsgrid) {
+  using namespace zs;
+  constexpr auto space = ExecPol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  using T = typename ZenoParticles::particles_t::value_type;
+  using Ti = typename ZenoPartition::table_t::index_type;
+  static_assert(std::is_signed_v<Ti>, "Ti should be a signed integer");
+  // using Box = AABBBox<3, T>;
+  // using TV = typename Box::TV;
+  // using mc_t = u32;
+
+  auto &grid = zsgrid.get();
+  auto &table = partition.get();
+
+  using grid_t = RM_CVREF_T(grid);
+  using table_t = RM_CVREF_T(table);
+
+  auto &pars = primitive.getParticles();
+  auto allocator = pars.get_allocator();
+  auto mloc = allocator.location;
+
+  // morton codes
+  const auto cnt = pars.size();
+  constexpr auto blockSize = grid_t::block_size;
+  constexpr auto sizeLength = grid_t::side_length;
+  auto numBuckets = (Ti)table.size() * (Ti)blockSize;
+  Vector<Ti> bucketCnts{(std::size_t)numBuckets, mloc.memspace(), mloc.devid()},
+      bucketOffsets{(std::size_t)numBuckets, mloc.memspace(), mloc.devid()};
+  bucketCnts.reset(0);
+  // key: [blockno, cellno]
+  pol(range(cnt), [dxinv = 1.f / grid.dx, bucketCnts = proxy<space>(bucketCnts),
+                   prims = proxy<space>({}, pars), table = proxy<space>(table),
+                   grid = proxy<space>(grid)] ZS_LAMBDA(Ti i) mutable {
+    using grid_t = RM_CVREF_T(grid);
+    auto pos = prims.template pack<3>("pos", i);
+    auto index = (pos * dxinv - 0.5f);
+    typename table_t::key_t coord{};
+    for (int d = 0; d != 3; ++d)
+      coord[d] = lower_trunc(index[d]);
+    auto ccoord = coord & (grid_t::side_length - 1);
+    auto bcoord = coord - ccoord;
+    if (auto bno = table.query(bcoord); bno != table_t::sentinel_v) {
+      auto bucketNo = (Ti)bno * (Ti)grid_t::side_length +
+                      (Ti)grid_t::coord_to_cellid(ccoord);
+      atomic_add(wrapv<space>{}, &bucketCnts[bucketNo], (Ti)1);
+    } else {
+      printf("unable to sort primitives by histogram sort since no "
+             "corresponding bucket exists");
+    }
+  });
+  exclusive_scan(pol, std::begin(bucketCnts), std::end(bucketCnts),
+                 std::begin(bucketOffsets));
+
+  Vector<Ti> sortedIndices{cnt, mloc.memspace(), mloc.devid()};
+  pol(range(cnt), [dxinv = 1.f / grid.dx, bucketCnts = proxy<space>(bucketCnts),
+                   bucketOffsets = proxy<space>(bucketOffsets),
+                   indices = proxy<space>(sortedIndices),
+                   prims = proxy<space>({}, pars), table = proxy<space>(table),
+                   grid = proxy<space>(grid)] ZS_LAMBDA(Ti i) mutable {
+    using grid_t = RM_CVREF_T(grid);
+    auto pos = prims.template pack<3>("pos", i);
+    auto index = (pos * dxinv - 0.5f);
+    typename table_t::key_t coord{};
+    for (int d = 0; d != 3; ++d)
+      coord[d] = lower_trunc(index[d]);
+    auto ccoord = coord & (grid_t::side_length - 1);
+    auto bcoord = coord - ccoord;
+    if (auto bno = table.query(bcoord); bno != table_t::sentinel_v) {
+      auto bucketNo = (Ti)bno * (Ti)grid_t::side_length +
+                      (Ti)grid_t::coord_to_cellid(ccoord);
+      indices[bucketOffsets[bucketNo] +
+              atomic_add(wrapv<space>{}, &bucketCnts[bucketNo], (Ti)-1) - 1] =
+          i;
+    }
+  });
+
+  {
+    auto tmp = pars.clone(mloc);
+    if (!pars.hasProperty("id"))
+      pars.append_channels(pol, {{"id", 1}});
+    pol(range(cnt),
+        [prims = proxy<space>({}, pars), tmp = proxy<space>({}, tmp),
+         indices = proxy<space>(sortedIndices)] ZS_LAMBDA(Ti i) mutable {
+          auto o_id = indices[i];
+          for (int chn = 0; chn != tmp.numChannels(); ++chn)
+            prims(chn, i) = tmp(chn, o_id);
+          prims("id", i) = o_id;
+        });
+  }
+
+  if (primitive.isMeshPrimitive()) {
+    auto &eles = primitive.getQuadraturePoints();
+    const auto ecnt = eles.size();
+    const int degree =
+        primitive.category == ZenoParticles::curve
+            ? 2
+            : (ZenoParticles::surface ? 3 : (ZenoParticles::tet ? 4 : -1));
+
+    bucketCnts.reset(0);
+    pol(range(ecnt),
+        [dxinv = 1.f / grid.dx, bucketCnts = proxy<space>(bucketCnts),
+         pars = proxy<space>({}, pars), eles = proxy<space>({}, eles),
+         table = proxy<space>(table), grid = proxy<space>(grid),
+         degree] ZS_LAMBDA(Ti ei) mutable {
+          using grid_t = RM_CVREF_T(grid);
+          auto pos = table_t::key_t::zeros();
+          for (int d = 0; d != degree; ++d) {
+            auto ind = (Ti)eles("inds", d, ei);
+            pos += pars.template pack<3>("pos", ind);
+          }
+          pos /= degree;
+          auto index = (pos * dxinv - 0.5f);
+          typename table_t::key_t coord{};
+          for (int d = 0; d != 3; ++d)
+            coord[d] = lower_trunc(index[d]);
+          auto ccoord = coord & (grid_t::side_length - 1);
+          auto bcoord = coord - ccoord;
+          if (auto bno = table.query(bcoord); bno != table_t::sentinel_v) {
+            auto bucketNo = (Ti)bno * (Ti)grid_t::side_length +
+                            (Ti)grid_t::coord_to_cellid(ccoord);
+            atomic_add(wrapv<space>{}, &bucketCnts[bucketNo], (Ti)1);
+          } else {
+            printf("unable to sort primitives by histogram sort since no "
+                   "corresponding bucket exists");
+          }
+        });
+    exclusive_scan(pol, std::begin(bucketCnts), std::end(bucketCnts),
+                   std::begin(bucketOffsets));
+
+    Vector<Ti> elementIndices{ecnt, mloc.memspace(), mloc.devid()};
+    pol(range(ecnt), [dxinv = 1.f / grid.dx,
+                      bucketCnts = proxy<space>(bucketCnts),
+                      bucketOffsets = proxy<space>(bucketOffsets),
+                      indices = proxy<space>(elementIndices),
+                      pars = proxy<space>({}, pars),
+                      eles = proxy<space>({}, eles),
+                      table = proxy<space>(table), grid = proxy<space>(grid),
+                      degree] ZS_LAMBDA(Ti ei) mutable {
+      using grid_t = RM_CVREF_T(grid);
+      auto pos = table_t::key_t::zeros();
+      for (int d = 0; d != degree; ++d) {
+        auto ind = (Ti)eles("inds", d, ei);
+        pos += pars.template pack<3>("pos", ind);
+      }
+      pos /= degree;
+      auto index = (pos * dxinv - 0.5f);
+      typename table_t::key_t coord{};
+      for (int d = 0; d != 3; ++d)
+        coord[d] = lower_trunc(index[d]);
+      auto ccoord = coord & (grid_t::side_length - 1);
+      auto bcoord = coord - ccoord;
+      if (auto bno = table.query(bcoord); bno != table_t::sentinel_v) {
+        auto bucketNo = (Ti)bno * (Ti)grid_t::side_length +
+                        (Ti)grid_t::coord_to_cellid(ccoord);
+        indices[bucketOffsets[bucketNo] +
+                atomic_add(wrapv<space>{}, &bucketCnts[bucketNo], (Ti)-1) - 1] =
+            ei;
+      }
+    });
+
+    auto tmp = eles.clone(mloc);
+    if (!eles.hasProperty("id"))
+      eles.append_channels(pol, {{"id", 1}});
+    pol(range(ecnt),
+        [prims = proxy<space>({}, eles), tmp = proxy<space>({}, tmp),
+         vertIndices = proxy<space>(sortedIndices),
+         elementIndices = proxy<space>(elementIndices),
+         degree] ZS_LAMBDA(Ti ei) mutable {
+          auto o_eid = elementIndices[ei];
+          for (int chn = 0; chn != tmp.numChannels(); ++chn)
+            prims(chn, ei) = tmp(chn, o_eid);
+          for (int d = 0; d != degree; ++d)
+            prims("inds", d, ei) = vertIndices[(Ti)prims("inds", d, ei)];
+          prims("id", ei) = o_eid;
+        });
+  }
+  return;
+}
+
 } // namespace zeno
