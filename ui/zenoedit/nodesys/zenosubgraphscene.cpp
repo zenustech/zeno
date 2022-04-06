@@ -137,6 +137,8 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 	QString id = idx.data(ROLE_OBJID).toString();
 
+    if (m_nodes.find(id) == m_nodes.end()) return;
+
 	if (role == ROLE_OBJPOS)
 	{
         Q_ASSERT(m_nodes.find(id) != m_nodes.end());
@@ -151,6 +153,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         //1. add a member to INPUT_SOCKS/OUTPUT_SOCKS, to specify which key had changed.
         //2. update all control value associated with input socket anyway.
 
+        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
         //now we choose the second.
         m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
 	}
