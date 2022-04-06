@@ -35,11 +35,11 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
-			else
-			{
-				if (varType != QVariant::Invalid)
-					zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
-				Q_ASSERT(false);
+			else if (varType != QVariant::Invalid) // TODO: LUZH please support vec3f
+            {
+                writer.Null();
+                zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
+                //Q_ASSERT(false);
 			}
 		}
 		writer.EndArray();

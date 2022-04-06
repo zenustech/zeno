@@ -818,7 +818,9 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
 			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
             return linkIdx;
-		}
+		} else {
+            return QModelIndex();
+        }
     }
 }
 
