@@ -17,17 +17,40 @@ namespace zeno {
 /// sparsity
 struct ZSPartitionForZSParticles : INode {
   void apply() override {
+    using namespace zs;
     fmt::print(fg(fmt::color::green),
                "begin executing ZSPartitionForZSParticles\n");
     auto table = get_input<ZenoPartition>("ZSPartition");
     auto &partition = table->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
+    auto cudaPol = cuda_exec().device(0);
+
+    bool cached = get_param<std::string>("strategy") == "cache" ? true : false;
+    if (cached && table->hasTags()) {
+      zs::Vector<int> bRebuild{1, memsrc_e::device, 0};
+      bRebuild.setVal(0);
+      cudaPol(range(table->numBoundaryEntries()), // table->getTags(),
+              [tags = proxy<execspace_e::cuda>(table->getTags()),
+               flag = proxy<execspace_e::cuda>(
+                   bRebuild)] __device__(auto i) mutable {
+                auto tag = tags[i];
+                if (tag == 1 && flag[0] == 0)
+                  atomic_cas(exec_cuda, &flag[0], 0, 1);
+              });
+      // no boundary entry touched yet, no need for rebuild
+      if (bRebuild.getVal() == 0) {
+        table->rebuilt = false;
+        fmt::print(fg(fmt::color::cyan),
+                   "done executing ZSPartitionForZSParticles (skipping full "
+                   "rebuild)\n");
+        set_output("ZSPartition", table);
+        return;
+      }
+    }
 
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
-    using namespace zs;
-    auto cudaPol = cuda_exec().device(0);
     std::size_t cnt = 0;
     for (auto &&parObjPtr : parObjPtrs) {
       cnt += (std::size_t)std::ceil(parObjPtr->getParticles().size() /
@@ -40,19 +63,13 @@ struct ZSPartitionForZSParticles : INode {
       partition.resize(cudaPol, cnt * 2);
 
     using Partition = typename ZenoPartition::table_t;
-    cudaPol(range(partition._tableSize),
-            [table = proxy<execspace_e::cuda>(partition)] __device__(
-                size_t i) mutable {
-              table._table.keys[i] =
-                  Partition::key_t::uniform(Partition::key_scalar_sentinel_v);
-              table._table.indices[i] = Partition::sentinel_v;
-              table._table.status[i] = -1;
-              if (i == 0)
-                *table._cnt = 0;
-            });
+    // reset
+    partition.reset(cudaPol, true);
+
     using grid_t = typename ZenoGrid::grid_t;
     static_assert(grid_traits<grid_t>::is_power_of_two,
                   "grid side_length should be power of two");
+
     for (auto &&parObjPtr : parObjPtrs) {
       auto &pars = parObjPtr->getParticles();
       cudaPol(range(pars.size()),
@@ -67,6 +84,9 @@ struct ZSPartitionForZSParticles : INode {
                 table.insert(coord - (coord & (grid_t::side_length - 1)));
               });
       if (parObjPtr->category != ZenoParticles::mpm) { // including tracker
+        if (!parObjPtr->isMeshPrimitive())
+          throw std::runtime_error(
+              "The zsprimitive is not of mpm category but has no elements.");
         auto &eles = parObjPtr->getQuadraturePoints();
         cudaPol(range(eles.size()),
                 [eles = proxy<execspace_e::cuda>({}, eles),
@@ -81,6 +101,12 @@ struct ZSPartitionForZSParticles : INode {
                 });
       }
     }
+    if (cached) {
+      table->reserveTags();
+      identify_boundary_indices(cudaPol, *table, wrapv<grid_t::side_length>{});
+    }
+    table->rebuilt = true;
+
     fmt::print("partition of [{}] blocks for {} particles\n", partition.size(),
                cnt);
 
@@ -94,7 +120,7 @@ ZENDEFNODE(ZSPartitionForZSParticles,
            {
                {"ZSPartition", "ZSGrid", "ZSParticles", {"float", "ppb", "1"}},
                {"ZSPartition"},
-               {},
+               {{"enum force cache", "strategy", "force"}},
                {"MPM"},
            });
 
@@ -105,6 +131,13 @@ struct ExpandZSPartition : INode {
     auto &partition = table->get();
     auto offset = get_param<int>("offset");
     auto extent = get_param<int>("extent");
+
+    if (!table->rebuilt) { // only expand after a fresh rebuilt
+      fmt::print(fg(fmt::color::cyan), "done executing ExpandZSPartition "
+                                       "(skipping expansion due to caching)\n");
+      set_output("ZSPartition", std::move(table));
+      return;
+    }
 
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
@@ -120,6 +153,9 @@ struct ExpandZSPartition : INode {
         table.insert(blockid + (make_vec<int>(ijk) + offset) *
                                    (int)grid_traits<grid_t>::side_length);
     });
+    if (table->hasTags())
+      identify_boundary_indices(cudaPol, *table, wrapv<grid_t::side_length>{});
+
     fmt::print("partition insertion [{}] blocks -> [{}] blocks\n", prevCnt,
                partition.size());
     fmt::print(fg(fmt::color::cyan), "done executing ExpandZSPartition\n");
@@ -793,7 +829,8 @@ struct ZSGridToZSParticle : INode {
     fmt::print(fg(fmt::color::green), "begin executing ZSGridToZSParticle\n");
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
-    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto table = get_input<ZenoPartition>("ZSPartition");
+    auto &partition = table->get();
 
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
@@ -801,6 +838,56 @@ struct ZSGridToZSParticle : INode {
 
     using namespace zs;
     auto cudaPol = cuda_exec().device(0);
+
+    using grid_t = RM_CVREF_T(grid);
+    if (table->hasTags()) {
+      using Ti = typename ZenoPartition::Ti;
+      table->clearTags();
+      cudaPol(Collapse{table->numBoundaryEntries(), grid_t::block_size},
+              [table = proxy<execspace_e::cuda>(partition),
+               boundaryIndices =
+                   proxy<execspace_e::cuda>(table->getBoundaryIndices()),
+               tags = proxy<execspace_e::cuda>(table->getTags()),
+               grid = proxy<execspace_e::cuda>(
+                   {}, grid)] __device__(auto boundaryNo, auto ci) mutable {
+                using grid_t = RM_CVREF_T(grid);
+                using table_t = RM_CVREF_T(table);
+                using key_t = typename table_t::key_t;
+                auto bi = boundaryIndices[boundaryNo];
+                if (grid("m", bi, ci) != 0.f && tags[boundaryNo] == 0) {
+                  if (atomic_cas(exec_cuda, &tags[boundaryNo], 0, 1) == 0) {
+#if 0
+                    auto bcoord = table._activeKeys[bi];
+                    constexpr auto side_length = grid_t::side_length;
+                    int isBoundary =
+                        (table.query(bcoord + key_t{-side_length, 0, 0}) ==
+                         table_t::sentinel_v)
+                            << 0 |
+                        (table.query(bcoord + key_t{side_length, 0, 0}) ==
+                         table_t::sentinel_v)
+                            << 1 |
+                        (table.query(bcoord + key_t{0, -side_length, 0}) ==
+                         table_t::sentinel_v)
+                            << 2 |
+                        (table.query(bcoord + key_t{0, side_length, 0}) ==
+                         table_t::sentinel_v)
+                            << 3 |
+                        (table.query(bcoord + key_t{0, 0, -side_length}) ==
+                         table_t::sentinel_v)
+                            << 4 |
+                        (table.query(bcoord + key_t{0, 0, side_length}) ==
+                         table_t::sentinel_v)
+                            << 5;
+                    printf("grid (%d, %d) [bou tag: %d] mass: %f\n", bi, ci,
+                           isBoundary, grid("m", bi, ci));
+#endif
+                  }
+                }
+              });
+      fmt::print("checking {} boundary blocks out of {} blocks in total.",
+                 table->numBoundaryEntries(), table->numEntries());
+    }
+
     for (auto &&parObjPtr : parObjPtrs) {
       if (parObjPtr->asBoundary)
         continue;
@@ -1098,7 +1185,7 @@ struct ZSReturnMapping : INode {
       constexpr auto friction_coeff = 0.f;
       // constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::qr(F);
-      if (friction_coeff == 0.f) {
+      if (gamma == 0.f) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = zs::min(R(2, 2), 1.f);
       } else if (R(2, 2) > 1) {

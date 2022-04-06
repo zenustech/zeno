@@ -90,7 +90,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  // tracker particle for 
+  // tracker particle for
   enum category_e : int { mpm, curve, surface, tet, tracker };
   using particles_t =
       zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
@@ -125,10 +125,41 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
 };
 
 struct ZenoPartition : IObjectClone<ZenoPartition> {
-  using table_t = zs::HashTable<int, 3, int, zs::ZSPmrAllocator<false>>;
-  auto& get() noexcept { return table; }
-  const auto& get() const noexcept { return table; }
+  using Ti = int; // entry count
+  using table_t = zs::HashTable<int, 3, Ti, zs::ZSPmrAllocator<false>>;
+  using tag_t = zs::Vector<int>;
+  using indices_t = zs::Vector<Ti>;
+
+  auto &get() noexcept { return table; }
+  const auto &get() const noexcept { return table; }
+
+  auto numEntries() const noexcept { return table.size(); }
+  auto numBoundaryEntries() const noexcept { return (*boundaryIndices).size(); }
+
+  bool hasTags() const noexcept {
+    return tags.has_value() && boundaryIndices.has_value();
+  }
+  auto &getTags() { return *tags; }
+  const auto &getTags() const { return *tags; }
+  auto &getBoundaryIndices() { return *boundaryIndices; }
+  const auto &getBoundaryIndices() const { return *boundaryIndices; }
+
+  void reserveTags() {
+    auto numEntries = (std::size_t)table.size();
+    if (!hasTags()) {
+      tags = tag_t{numEntries, zs::memsrc_e::device, 0};
+      boundaryIndices = indices_t{numEntries, zs::memsrc_e::device, 0};
+    }
+  }
+  void clearTags() {
+    if (hasTags())
+      (*tags).reset(0);
+  }
+
   table_t table;
+  zs::optional<tag_t> tags;
+  zs::optional<indices_t> boundaryIndices;
+  bool rebuilt;
 };
 
 struct ZenoGrid : IObjectClone<ZenoGrid> {

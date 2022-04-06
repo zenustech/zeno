@@ -372,7 +372,8 @@ struct ToZSParticles : INode {
             } else
               pars.tuple<3>("a", pi) = vec3{0, 0, 1};
           } else
-            pars.tuple<3>("a", pi) = vec3::zeros();
+            // pars.tuple<3>("a", pi) = vec3::zeros();
+            pars.tuple<3>("a", pi) = vec3{0, 1, 0};
         }
 
         // plasticity
