@@ -83,6 +83,10 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 
     prim_triangulate(prim.get());
 
+    auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+    auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+    auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+
     if (auto uv = mesh.getUVsParam()) {
         auto uvsamp = uv.getIndexedValue();
         int value_size = (int) uvsamp.getVals()->size();
@@ -106,9 +110,6 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
             }
         }
-        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
         auto uv_loops = std::vector<int>();
         std::vector<int> *uv_loops_ref;
         if (prim->loops.size() == index_size) {
@@ -136,7 +137,17 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     } else {
         if (!read_done) {
-            log_info("[alembic] Not found uv");
+            log_warn("[alembic] Not found uv, auto fill zero.");
+        }
+        int count = 0;
+        for (auto [start, len]: prim->polys) {
+            if (len < 3) continue;
+            for (int i = 2; i < len; i++) {
+                uv0[count] = zeno::vec3f(0, 0, 0);
+                uv1[count] = zeno::vec3f(0, 0, 0);
+                uv2[count] = zeno::vec3f(0, 0, 0);
+                count += 1;
+            }
         }
     }
 
