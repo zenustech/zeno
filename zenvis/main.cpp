@@ -74,6 +74,10 @@ void clearCameraControl()
   g_camSetFromNode = 0;
   proj = glm::perspective(glm::radians(45.0), (double)nx/(double)ny, 0.1, 20000.0);
   g_dof = -1;
+  g_fov = 45.0;
+  g_near = 0.1;
+  g_far = 20000;
+  g_proj = proj;
 }
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set)
 {
