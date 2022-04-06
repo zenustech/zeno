@@ -45,7 +45,9 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 		QPointF nodePos = mapFromScene(m_node->scenePos());
 		QPointF thisPos = boundingRect().center();
 		m_line->setLine(QLineF(thisPos, nodePos));
-		m_node->onHandlerChanged(this);
+
+		QPointF wtf = scenePos();
+		pModel->setData(m_index, wtf, ROLE_ItemPos);
 	}
 	else if (change == QGraphicsItem::ItemSelectedChange)
 	{
@@ -131,7 +133,9 @@ void CurveNodeItem::initHandles(const MODEL_PACK& pack, const QModelIndex& idx, 
 		pLeftHandle = new QStandardItem;
 		pLeftHandle->setData(ITEM_LEFTHANDLE, ROLE_ItemType);
 		pLeftHandle->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-		pLeftHandle->setData(leftOffset, ROLE_ItemPos);
+
+		QPointF globalScenePos = scenePos() + leftOffset;
+		pLeftHandle->setData(globalScenePos, ROLE_ItemPos);
 		pLeftHandle->setData(UiHelper::generateUuid(), ROLE_ItemObjId);
 		pLeftHandle->setData(nodeid, ROLE_ItemBelongTo);
 		pack.pModel->appendRow(pLeftHandle);
@@ -146,7 +150,10 @@ void CurveNodeItem::initHandles(const MODEL_PACK& pack, const QModelIndex& idx, 
 		pRightHandle = new QStandardItem;
 		pRightHandle->setData(ITEM_RIGHTHANDLE, ROLE_ItemType);
 		pRightHandle->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-		pRightHandle->setData(rightOffset, ROLE_ItemPos);
+
+		QPointF globalScenePos = scenePos() + rightOffset;
+		pRightHandle->setData(globalScenePos, ROLE_ItemPos);
+
 		pRightHandle->setData(UiHelper::generateUuid(), ROLE_ItemObjId);
 		pRightHandle->setData(nodeid, ROLE_ItemBelongTo);
 		pack.pModel->appendRow(pRightHandle);
@@ -216,35 +223,15 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 	{
 		QPointF phyPos = scenePos();
 		m_logicPos = m_view->mapSceneToLogic(phyPos);
+		QPointF wtf = pos();
+		pModel->setData(m_index, wtf, ROLE_ItemPos);
 	}
 	return value;
-}
-
-void CurveNodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-	_base::mousePressEvent(event);
-}
-
-void CurveNodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
-{
-	_base::mouseReleaseEvent(event);
 }
 
 QPointF CurveNodeItem::logicPos() const
 {
 	return m_logicPos;
-}
-
-void CurveNodeItem::onHandlerChanged(CurveHandlerItem* pHandler)
-{
-	if (pHandler == m_left)
-	{
-
-	}
-	else
-	{
-
-	}
 }
 
 QRectF CurveNodeItem::boundingRect(void) const

@@ -41,7 +41,6 @@ public:
 	void initHandles(const MODEL_PACK& pack, const QModelIndex& idx, const QPointF& leftHandle, const QPointF& rightHandle);
 	void updateStatus();
 	void updateHandleStatus(const QString& objId);
-	void onHandlerChanged(CurveHandlerItem* pHandler);
 	QPointF logicPos() const;
 	QRectF boundingRect(void) const;
 	QModelIndex index() const { return m_index; }
@@ -49,8 +48,6 @@ public:
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
-	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-	void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
 	QPointF m_logicPos;
