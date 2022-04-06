@@ -111,12 +111,12 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 				{
 					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
 					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-					AddVariantListWithNull({ outNode, outSock, deflVal }, writer);
+					AddVariantListWithNull({ outNode, outSock, deflVal }, inSock.info.type, writer);
 				}
 			}
 			else
 			{
-				AddVariantListWithNull({ QVariant(), QVariant(), deflVal}, writer);
+				AddVariantListWithNull({ QVariant(), QVariant(), deflVal}, inSock.info.type, writer);
 			}
 		}
 	}

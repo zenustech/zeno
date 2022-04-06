@@ -178,7 +178,7 @@ void launchProgram(GraphsModel* pModel, int nframes)
 	RAPIDJSON_WRITER writer(s);
     {
         JsonArrayBatch batch(writer);
-        JsonHelper::AddVariantList({"setAdhocNumFrames", nframes}, writer);
+        JsonHelper::AddVariantList({"setAdhocNumFrames", nframes}, "int", writer);
         serializeScene(pModel, writer);
     }
     std::string progJson(s.GetString());
