@@ -53,9 +53,14 @@ static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
 float g_dof=-1;
+float g_aperature=0.05;
 extern void setDOF(float _dof)
 {
   g_dof = _dof;
+}
+extern void setAperature(float _apt)
+{
+  g_aperature = _apt;
 }
 void set_perspective(
     std::array<double, 16> viewArr,
@@ -72,19 +77,24 @@ glm::mat4 cview, cproj;
 void clearCameraControl()
 {
   g_camSetFromNode = 0;
+  proj = glm::perspective(glm::radians(45.0), (double)nx/(double)ny, 0.1, 20000.0);
   g_dof = -1;
+  g_fov = 45.0;
+  g_near = 0.1;
+  g_far = 20000;
+  g_proj = proj;
 }
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set)
 {
   front = glm::normalize(front);
   up = glm::normalize(up);
   cview = glm::lookAt(pos, pos + front, up);
-  cproj = glm::perspective(glm::radians(_fov), 1.5, fnear, ffar);
+  cproj = glm::perspective(glm::radians(_fov), (double)nx/(double)ny, fnear, ffar);
   g_fov = _fov;
   g_near = fnear;
   g_far = ffar;
-  g_view = view;
-  g_proj = proj;
+  g_view = cview;
+  g_proj = cproj;
   g_camPos = pos;
   g_camView = glm::normalize(front);
   g_camUp = glm::normalize(up);
