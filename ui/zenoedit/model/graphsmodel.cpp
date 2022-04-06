@@ -790,6 +790,7 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     {
         AddLinkCommand* pCmd = new AddLinkCommand(info, this, subGpIdx);
         m_stack->push(pCmd);
+        return QModelIndex();
     }
     else
     {

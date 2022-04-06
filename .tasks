@@ -1,5 +1,5 @@
 [+]
-build_type=Release
+build_type=Debug
 build_target=zenoedit
 run_target="$(VIM:build_dir)/bin/zenoedit"
 build_configs=
