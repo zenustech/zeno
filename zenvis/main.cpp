@@ -53,9 +53,14 @@ static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
 float g_dof=-1;
+float g_aperature=0.05;
 extern void setDOF(float _dof)
 {
   g_dof = _dof;
+}
+extern void setAperature(float _apt)
+{
+  g_aperature = _apt;
 }
 void set_perspective(
     std::array<double, 16> viewArr,
