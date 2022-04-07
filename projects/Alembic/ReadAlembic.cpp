@@ -93,7 +93,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
     if (auto uv = mesh.getUVsParam()) {
-        auto uvsamp = uv.getIndexedValue();
+        auto uvsamp = uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
         int value_size = (int) uvsamp.getVals()->size();
         int index_size = (int) uvsamp.getIndices()->size();
         if (!read_done) {
