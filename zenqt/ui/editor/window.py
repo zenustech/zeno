@@ -445,9 +445,7 @@ class NodeEditor(QWidget):
         return path
 
     def getSaveFileName(self):
-        self.in_eventloop = True
         path, kind = self.getOpenPath('Path to Save')
-        self.in_eventloop = False
         return path
 
     def menuTriggered(self, act):
