@@ -48,18 +48,16 @@ class RecordVideoDialog(QDialog):
 
     def initUI(self):
         frame_start = QLabel('Frame start:')
-        self.frame_start_edit = QSpinBox()
-        self.frame_start_edit.setMinimum(0)
-        self.frame_start_edit.setValue(0)
+        self.frame_start_edit = QLineEdit()
+        self.frame_start_edit.setText('0')
 
         frame_end = QLabel('Frame end:')
-        self.frame_end_edit = QSpinBox()
-        self.frame_end_edit.setMinimum(0)
+        self.frame_end_edit = QLineEdit()
+        self.frame_end_edit.setText('0')
 
         fps = QLabel('FPS:')
-        self.fps_edit = QSpinBox()
-        self.fps_edit.setMinimum(1)
-        self.fps_edit.setValue(30)
+        self.fps_edit = QLineEdit()
+        self.fps_edit.setText('30')
 
         viewport_width = QLabel('Width:')
         self.viewport_width_editor = QLineEdit('1280')
@@ -116,17 +114,11 @@ class RecordVideoDialog(QDialog):
 
         self.setLayout(grid) 
 
-    def setFrameCount(self, frame_count):
-        self.frame_end_edit.setMaximum(10000)
-        self.frame_start_edit.setMaximum(10000)
-        # self.frame_end_edit.setMaximum(frame_count - 1)
-        # self.frame_end_edit.setValue(frame_count - 1)
-
     def accept(self):
         r = self.params
-        r['frame_start'] = self.frame_start_edit.value()
-        r['frame_end'] = self.frame_end_edit.value()
-        r['fps'] = self.fps_edit.value()
+        r['frame_start'] = int(self.frame_start_edit.text())
+        r['frame_end'] = int(self.frame_end_edit.text())
+        r['fps'] = int(self.fps_edit.text())
         r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
@@ -155,20 +147,9 @@ class RecordVideoDialog(QDialog):
         display = self.display
         params = self.params
 
-        # count = fileio.getFrameCount()
-        # if count == 0:
-        #     QMessageBox.information(display, 'Zeno', 'Please do simulation before record video!')
-        #     return
-        self.setFrameCount(1)
         accept = self.exec()
-        # if not accept:
-        #     return
-        # if params['frame_start'] >= params['frame_end']:
-        #     QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
-        #     return
-        # params['frame_end'] = min(count - 1, params['frame_end'])
-
-        
+        if not accept:
+            return
 
         display.timeline.jump_frame(params['frame_start'])
         display.view.frame_end = params['frame_end']
