@@ -17,6 +17,7 @@ public:
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 	CURVE_RANGE range() const { return m_range; }
 	int frames(bool bHorizontal) const;
+    bool isSmoothCurve() const;
 	QMargins margins() const { return m_gridMargins; }
 	qreal factor() const { return m_factor; }
 	QRectF gridBoundingRect() const;
@@ -54,6 +55,7 @@ private:
 	Qt::KeyboardModifiers _modifiers;
 	bool m_dragMove;
 	bool m_bInit;
+	bool m_bSmoothCurve;
 };
 
 #endif

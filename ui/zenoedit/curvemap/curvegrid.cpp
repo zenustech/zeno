@@ -10,8 +10,6 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 	: QGraphicsObject(parent)
 	, m_view(pView)
 	, m_initRc(rc)
-	, m_model(nullptr)
-	, m_selection(nullptr)
 {
 	initTransform();
 }
@@ -59,13 +57,6 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 	int N = pts.size();
 	Q_ASSERT(N * 2 == handlers.size());
 
-	m_model = new QStandardItemModel(this);
-	m_selection = new QItemSelectionModel(m_model);
-	MODEL_PACK pack;
-	pack.pModel = m_model;
-	pack.pSelection = m_selection;
-
-	QModelIndex idxPrevious;
 	for (int i = 0; i < N; i++)
 	{
 		QPointF scenePos = m_invTrans.map(pts[i]);
@@ -74,34 +65,15 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 		QPointF leftOffset = leftScenePos - scenePos;
 		QPointF rightOffset = rightScenePos - scenePos;
 
-		QStandardItem* pNode = new QStandardItem;
-		const QString& nodeId = UiHelper::generateUuid();
-		pNode->setData(nodeId, ROLE_ItemObjId);
-		pNode->setData(ITEM_NODE, ROLE_ItemType);
-		pNode->setData(scenePos, ROLE_ItemPos);
-		pNode->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-		m_model->appendRow(pNode);
-
-		const QModelIndex& nodeIdx = m_model->indexFromItem(pNode);
 		CurveNodeItem* pNodeItem = new CurveNodeItem(m_view, scenePos, this);
-		pNodeItem->initHandles(pack, nodeIdx, leftOffset, rightOffset);
-
-		m_nodes.insert(nodeId, pNodeItem);
+		pNodeItem->initHandles(leftOffset, rightOffset);
+		connect(pNodeItem, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
 
 		if (i == 0)
 		{
-			idxPrevious = nodeIdx;
+            m_vecNodes.append(pNodeItem);
 			continue;
 		}
-
-		QStandardItem* curveItem = new QStandardItem;
-		const QString& curveId = UiHelper::generateUuid();
-		const QString& previousId = idxPrevious.data(ROLE_ItemObjId).toString();
-		curveItem->setData(curveId, ROLE_ItemObjId);
-		curveItem->setData(ITEM_CURVE, ROLE_ItemType);
-		curveItem->setData(previousId, ROLE_CurveLeftNode);
-		curveItem->setData(nodeId, ROLE_CurveRightNode);
-		m_model->appendRow(curveItem);
 
 		QGraphicsPathItem* pathItem = new QGraphicsPathItem(this);
 		const int penWidth = 2;
@@ -119,82 +91,44 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 		pathItem->setPath(path);
 		pathItem->update();
 
-		m_curves.insert(curveId, pathItem);
+		pNodeItem->setLeftCurve(pathItem);
+        m_vecNodes[i-1]->setRightCurve(pathItem);
 
-		idxPrevious = nodeIdx;
-	}
-
-	//init curves.
-	connect(pack.pModel, &QStandardItemModel::dataChanged, this, &CurveGrid::onDataChanged);
-}
-
-void CurveGrid::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-	ItemType type =(ItemType)topLeft.data(ROLE_ItemType).toInt();
-	if (type == ITEM_NODE)
-	{
-		int role = roles[0];
-		const QString& objId = topLeft.data(ROLE_ItemObjId).toString();
-		if (role == ROLE_ItemStatus)
-		{
-			if (m_nodes.find(objId) != m_nodes.end())
-			{
-				CurveNodeItem* pNodeItem = m_nodes[objId];
-				pNodeItem->updateStatus();
-			}
-		}
-		else if (role == ROLE_ItemPos)
-		{
-			//node changed, need to sync curves of two side.
-			updateCurve(findUniqueItem(m_model, ROLE_CurveLeftNode, objId));
-			updateCurve(findUniqueItem(m_model, ROLE_CurveRightNode, objId));
-		}
-	}
-	else if (type == ITEM_LEFTHANDLE || type == ITEM_RIGHTHANDLE)
-	{
-		const QString& objId = topLeft.data(ROLE_ItemObjId).toString();
-		const QString& nodeId = topLeft.data(ROLE_ItemBelongTo).toString();
-		const QModelIndex& nodeIdx = findUniqueItem(m_model, ROLE_ItemObjId, nodeId);
-		if (m_nodes.find(nodeId) != m_nodes.end())
-		{
-			CurveNodeItem* pNodeItem = m_nodes[nodeId];
-			pNodeItem->updateHandleStatus(objId);
-		}
-	}
-	else if (type == ITEM_CURVE)
-	{
-
+		m_vecNodes.append(pNodeItem);
 	}
 }
 
-void CurveGrid::updateCurve(const QModelIndex& curveIdx)
+void CurveGrid::onNodeGeometryChanged()
 {
-	if (!curveIdx.isValid())
-		return;
+    CurveNodeItem* pNode = qobject_cast<CurveNodeItem*>(sender());
+    int i = m_vecNodes.indexOf(pNode);
+    Q_ASSERT(i >= 0);
 
-	const QString& curveId = curveIdx.data(ROLE_ItemObjId).toString();
+    QGraphicsPathItem* pLeftCurve = pNode->leftCurve();
+    if (pLeftCurve)
+	{
+        Q_ASSERT(i >= 1);
+        CurveNodeItem *pLeftNode = m_vecNodes[i - 1];
 
-	const QString& leftNode = curveIdx.data(ROLE_CurveLeftNode).toString();
-	const QModelIndex& leftNodeIdx = findUniqueItem(m_model, ROLE_ItemObjId, leftNode);
-	// and then find the right handle of the left node.
-	const QModelIndex& rightHandle = findUniqueItem(m_model, ROLE_ItemBelongTo, leftNode);
-	const QPointF& leftPos = leftNodeIdx.data(ROLE_ItemPos).toPointF();
-	const QPointF& rightHdlPos = rightHandle.data(ROLE_ItemPos).toPointF();
+        QPainterPath path;
+        path.moveTo(pLeftNode->pos());
+        path.cubicTo(pLeftNode->rightHandlePos(), pNode->leftHandlePos(), pNode->pos());
+        pLeftCurve->setPath(path);
+        pLeftCurve->update();
+	}
 
+	QGraphicsPathItem* pRightCurve = pNode->rightCurve();
+    if (pRightCurve)
+	{
+        Q_ASSERT(i < m_vecNodes.size() - 1);
+        CurveNodeItem *pRightNode = m_vecNodes[i + 1];
 
-	const QString& rightNode = curveIdx.data(ROLE_CurveRightNode).toString();
-	const QModelIndex& rightNodeIdx = findUniqueItem(m_model, ROLE_ItemObjId, rightNode);
-	// find the left handle of the right node.
-	const QModelIndex& leftHandle = findUniqueItem(m_model, ROLE_ItemBelongTo, rightNode);
-	const QPointF& rightPos = rightNodeIdx.data(ROLE_ItemPos).toPointF();
-	const QPointF& leftHdlPos = leftHandle.data(ROLE_ItemPos).toPointF();
-
-	QPainterPath path;
-	path.moveTo(leftPos);
-	path.cubicTo(rightHdlPos, leftHdlPos, rightPos);
-	auto pathItem = m_curves[curveId];
-	pathItem->setPath(path);
-	pathItem->update();
+        QPainterPath path;
+        path.moveTo(pNode->pos());
+        path.cubicTo(pNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
+        pRightCurve->setPath(path);
+        pRightCurve->update();
+	}
 }
 
 void CurveGrid::setColor(const QColor& clrGrid, const QColor& clrBackground)

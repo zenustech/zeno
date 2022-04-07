@@ -23,10 +23,9 @@ public:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event);
 	void initTransform();
 	void initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
-	void updateCurve(const QModelIndex& curveIdx);
 
-private:
-	void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+public slots:
+    void onNodeGeometryChanged();
 
 private:
 	QColor m_clrGrid, m_clrBg;
@@ -34,10 +33,7 @@ private:
 	QRectF m_initRc;
 	QTransform m_transform;
 	QTransform m_invTrans;
-	QMap<QString, CurveNodeItem*> m_nodes;
-	QMap<QString, QGraphicsPathItem*> m_curves;
-	QItemSelectionModel* m_selection;
-	QStandardItemModel* m_model;
+	QVector<CurveNodeItem*> m_vecNodes;
 };
 
 

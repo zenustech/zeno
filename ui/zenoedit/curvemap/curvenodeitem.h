@@ -12,11 +12,12 @@ class CurveHandlerItem : public QGraphicsRectItem
 {
 	typedef QGraphicsRectItem _base;
 public:
-	CurveHandlerItem(CurveNodeItem* pNode, const QModelIndex& idx, const QPointF& pos, QGraphicsItem* parent = nullptr);
+	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
-	QModelIndex index() const { return m_index; }
 	void setOtherHandleIdx(const QModelIndex& idx);
-	void updateStatus();
+	void setOtherHandle(CurveHandlerItem* other);
+    bool isMouseEventTriggered();
+    void setUpdateNotify(bool bNotify);
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -25,11 +26,11 @@ protected:
 
 private:
 	const int sz = 6;
-	QPersistentModelIndex m_index;
-	QPersistentModelIndex m_nodeIdx;
-	QPersistentModelIndex m_otherIdx;
 	QGraphicsLineItem* m_line;
 	CurveNodeItem* m_node;
+	CurveHandlerItem* m_other;
+	bool m_bMouseTriggered;
+	bool m_bNotify;
 };
 
 class CurveNodeItem : public QGraphicsObject
@@ -38,22 +39,29 @@ class CurveNodeItem : public QGraphicsObject
 	typedef QGraphicsObject _base;
 public:
 	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, QGraphicsItem* parentItem = nullptr);
-	void initHandles(const MODEL_PACK& pack, const QModelIndex& idx, const QPointF& leftHandle, const QPointF& rightHandle);
-	void updateStatus();
-	void updateHandleStatus(const QString& objId);
-	QPointF logicPos() const;
+	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
+    void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const;
-	QModelIndex index() const { return m_index; }
+    void toggle(bool bChecked);
+    QPointF leftHandlePos() const;
+    QPointF rightHandlePos() const;
+    void setLeftCurve(QGraphicsPathItem* leftCurve);
+    void setRightCurve(QGraphicsPathItem* rightCurve);
+    QGraphicsPathItem* leftCurve() const;
+    QGraphicsPathItem* rightCurve() const;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
+
+signals:
+	void geometryChanged();
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
-	QPointF m_logicPos;
-	QPersistentModelIndex m_index;
 	CurveHandlerItem* m_left;
 	CurveHandlerItem* m_right;
+    QGraphicsPathItem* m_leftCurve;
+    QGraphicsPathItem* m_rightCurve;
 	CurveMapView* m_view;
 	bool m_bToggle;
 };

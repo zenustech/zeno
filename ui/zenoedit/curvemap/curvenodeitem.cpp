@@ -6,11 +6,12 @@
 
 using namespace curve_util;
 
-CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QModelIndex& idx, const QPointF& offset, QGraphicsItem* parent)
+CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, QGraphicsItem* parent)
 	: QGraphicsRectItem(-3, -3, 6, 6, parent)
 	, m_node(pNode)
-	, m_index(idx)
-	, m_nodeIdx(pNode->index())
+	, m_bMouseTriggered(false)
+	, m_other(nullptr)
+	, m_bNotify(true)
 {
 	m_line = new QGraphicsLineItem(this);
 	m_line->setPen(QPen(QColor(255,255,255), 1));
@@ -30,24 +31,30 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QModelIndex& idx,
 	m_line->setLine(QLineF(QPointF(0, 0), -offset));
 
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
+    setFlag(ItemSendsGeometryChanges, true);
 }
 
-void CurveHandlerItem::setOtherHandleIdx(const QModelIndex& idx)
+void CurveHandlerItem::setOtherHandle(CurveHandlerItem *other)
 {
-	m_otherIdx = idx;
+    m_other = other;
 }
 
 QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-	if (change == QGraphicsItem::ItemPositionHasChanged)
+    if (change == QGraphicsItem::ItemPositionChange)
+	{
+        int j;
+        j = 0;
+	}
+	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
 		QPointF nodePos = mapFromScene(m_node->scenePos());
 		QPointF thisPos = boundingRect().center();
 		m_line->setLine(QLineF(thisPos, nodePos));
 
 		QPointF wtf = scenePos();
-		pModel->setData(m_index, wtf, ROLE_ItemPos);
+        if (m_bNotify)
+			m_node->onHandleUpdate(this);
 	}
 	else if (change == QGraphicsItem::ItemSelectedChange)
 	{
@@ -57,48 +64,50 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 	}
 	else if (change == QGraphicsItem::ItemSelectedHasChanged)
 	{
-		bool isSelected = this->isSelected();
-		if (isSelected)
+		if (m_bNotify)
 		{
-			pModel->setData(m_index, ITEM_SELECTED, ROLE_ItemStatus);
-			pModel->setData(m_nodeIdx, ITEM_TOGGLED, ROLE_ItemStatus);
-			pModel->setData(m_otherIdx, ITEM_TOGGLED, ROLE_ItemStatus);
-		}
-		else
-		{
-			pModel->setData(m_index, ITEM_UNTOGGLED, ROLE_ItemStatus);
-			pModel->setData(m_nodeIdx, ITEM_UNTOGGLED, ROLE_ItemStatus);
-			if (!m_otherIdx.data(ROLE_MouseClicked).toBool())
-				pModel->setData(m_otherIdx, ITEM_UNTOGGLED, ROLE_ItemStatus);
+            bool isSelected = this->isSelected();
+			if (isSelected)
+			{
+				m_node->toggle(true);
+				setVisible(true);
+				if (m_other)
+					m_other->setVisible(true);
+			}
+			else
+			{
+				m_node->toggle(false);
+				setVisible(false);
+				if (m_other && !m_other->isMouseEventTriggered())
+					m_other->setVisible(false);
+			}
 		}
 	}
 	return value;
 }
 
-void CurveHandlerItem::updateStatus()
+bool CurveHandlerItem::isMouseEventTriggered()
 {
-	ItemStatus status = (ItemStatus)m_index.data(ROLE_ItemStatus).toInt();
-	if (status == ITEM_SELECTED || status == ITEM_TOGGLED)
-	{
-		setVisible(true);
-	}
-	else
-	{
-		setVisible(false);
-	}
+    return m_bMouseTriggered;
+}
+
+void CurveHandlerItem::setUpdateNotify(bool bNotify)
+{
+    m_bNotify = bNotify;
 }
 
 void CurveHandlerItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-	pModel->setData(m_index, true, ROLE_MouseClicked);
+    m_bMouseTriggered = true;
 	_base::mousePressEvent(event);
-	pModel->setData(m_index, false, ROLE_MouseClicked);
+    m_bMouseTriggered = false;
 }
 
 void CurveHandlerItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+    m_bMouseTriggered = true;
 	_base::mouseReleaseEvent(event);
+    m_bMouseTriggered = false;
 }
 
 void CurveHandlerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -112,126 +121,135 @@ CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, QGraph
 	: QGraphicsObject(parentItem)
 	, m_left(nullptr)
 	, m_right(nullptr)
+	, m_leftCurve(nullptr)
+	, m_rightCurve(nullptr)
 	, m_view(pView)
 	, m_bToggle(false)
 {
-	m_logicPos = m_view->mapSceneToLogic(nodePos);
-	QRectF br = boundingRect();
+    QRectF br = boundingRect();
 	setPos(nodePos);
 	setZValue(100);
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
 }
 
-void CurveNodeItem::initHandles(const MODEL_PACK& pack, const QModelIndex& idx, const QPointF& leftOffset, const QPointF& rightOffset)
+void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightOffset)
 {
-	m_index = idx;
-	const QString& nodeid = m_index.data(ROLE_ItemObjId).toString();
-	QStandardItem* pLeftHandle = nullptr, *pRightHandle = nullptr;
-	QModelIndex leftIdx, rightIdx;
 	if (leftOffset != QPointF(0, 0))
 	{
-		pLeftHandle = new QStandardItem;
-		pLeftHandle->setData(ITEM_LEFTHANDLE, ROLE_ItemType);
-		pLeftHandle->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-
-		QPointF globalScenePos = scenePos() + leftOffset;
-		pLeftHandle->setData(globalScenePos, ROLE_ItemPos);
-		pLeftHandle->setData(UiHelper::generateUuid(), ROLE_ItemObjId);
-		pLeftHandle->setData(nodeid, ROLE_ItemBelongTo);
-		pack.pModel->appendRow(pLeftHandle);
-
-		leftIdx = pack.pModel->indexFromItem(pLeftHandle);
-		m_left = new CurveHandlerItem(this, leftIdx, leftOffset, this);
+		m_left = new CurveHandlerItem(this, leftOffset, this);
 		m_left->hide();
 	}
 
 	if (rightOffset != QPointF(0, 0))
 	{
-		pRightHandle = new QStandardItem;
-		pRightHandle->setData(ITEM_RIGHTHANDLE, ROLE_ItemType);
-		pRightHandle->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-
-		QPointF globalScenePos = scenePos() + rightOffset;
-		pRightHandle->setData(globalScenePos, ROLE_ItemPos);
-
-		pRightHandle->setData(UiHelper::generateUuid(), ROLE_ItemObjId);
-		pRightHandle->setData(nodeid, ROLE_ItemBelongTo);
-		pack.pModel->appendRow(pRightHandle);
-
-		rightIdx = pack.pModel->indexFromItem(pRightHandle);
-		m_right = new CurveHandlerItem(this, rightIdx, rightOffset, this);
+		m_right = new CurveHandlerItem(this, rightOffset, this);
 		m_right->hide();
 	}
 
 	if (m_left && m_right)
 	{
-		m_left->setOtherHandleIdx(rightIdx);
-		m_right->setOtherHandleIdx(leftIdx);
+		m_left->setOtherHandle(m_right);
+        m_right->setOtherHandle(m_left);
 	}
 }
 
-void CurveNodeItem::updateStatus()
+void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
 {
-	ItemStatus status = (ItemStatus)m_index.data(ROLE_ItemStatus).toInt();
-	if (status == ITEM_SELECTED || status == ITEM_TOGGLED)
+    if (m_view->isSmoothCurve())
 	{
-		m_bToggle = true;
-	}
-	else
-	{
-		m_bToggle = false;
-	}
-	update();
+		//update the pos of another handle.
+        QVector2D roffset(rightHandlePos() - pos());
+        QVector2D loffset(leftHandlePos() - pos());
+        if (m_left == pItem && m_right)
+		{
+			qreal length = roffset.length();
+			roffset = -loffset.normalized() * length;
+			QPointF newPos = roffset.toPointF() + pos();
+			newPos = mapFromScene(newPos);
+
+			m_right->setUpdateNotify(false);
+			m_right->setPos(newPos);
+			m_right->setUpdateNotify(true);
+		}
+		else if (m_right == pItem && m_left)
+		{
+			qreal length = loffset.length();
+			loffset = -roffset.normalized() * length;
+			QPointF newPos = loffset.toPointF() + pos();
+			newPos = mapFromScene(newPos);
+
+			m_left->setUpdateNotify(false);
+			m_left->setPos(newPos);
+			m_left->setUpdateNotify(true);
+		}
+    }
+	emit geometryChanged();
 }
 
-void CurveNodeItem::updateHandleStatus(const QString& objId)
+void CurveNodeItem::toggle(bool bChecked)
 {
-	if (m_left && m_left->index().data(ROLE_ItemObjId).toString() == objId)
-		m_left->updateStatus();
-	else if (m_right && m_right->index().data(ROLE_ItemObjId).toString() == objId)
-		m_right->updateStatus();
+    m_bToggle = bChecked;
+}
+
+QPointF CurveNodeItem::leftHandlePos() const
+{
+    return m_left ? m_left->scenePos() : QPointF();
+}
+
+QPointF CurveNodeItem::rightHandlePos() const
+{
+    return m_right ? m_right->scenePos() : QPointF();
+}
+
+QGraphicsPathItem* CurveNodeItem::leftCurve() const
+{
+    return m_leftCurve;
+}
+
+QGraphicsPathItem *CurveNodeItem::rightCurve() const
+{
+    return m_rightCurve;
+}
+
+void CurveNodeItem::setLeftCurve(QGraphicsPathItem* leftCurve)
+{
+    m_leftCurve = leftCurve;
+}
+
+void CurveNodeItem::setRightCurve(QGraphicsPathItem* rightCurve)
+{
+    m_rightCurve = rightCurve;
 }
 
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
 	if (change == QGraphicsItem::ItemSelectedHasChanged)
 	{
 		bool selected = isSelected();
 		if (selected)
 		{
-			pModel->setData(m_index, ITEM_SELECTED, ROLE_ItemStatus);
-			if (m_left)
-				pModel->setData(m_left->index(), ITEM_TOGGLED, ROLE_ItemStatus);
-			if (m_right)
-				pModel->setData(m_right->index(), ITEM_TOGGLED, ROLE_ItemStatus);
+            m_bToggle = true;
+			if (m_left) m_left->setVisible(true);
+			if (m_right) m_right->setVisible(true);
 		}
 		else
 		{
-			pModel->setData(m_index, ITEM_UNTOGGLED, ROLE_ItemStatus);
-			if (m_left && !m_left->index().data(ROLE_MouseClicked).toBool())
+			m_bToggle = false;
+			if (m_left && !m_left->isMouseEventTriggered())
 			{
-				pModel->setData(m_left->index(), ITEM_UNTOGGLED, ROLE_ItemStatus);
+				m_left->setVisible(false);
 			}
-			if (m_right && !m_right->index().data(ROLE_MouseClicked).toBool())
+			if (m_right && !m_right->isMouseEventTriggered())
 			{
-				pModel->setData(m_right->index(), ITEM_UNTOGGLED, ROLE_ItemStatus);
+				m_right->setVisible(false);
 			}
 		}
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
-		QPointF phyPos = scenePos();
-		m_logicPos = m_view->mapSceneToLogic(phyPos);
-		QPointF wtf = pos();
-		pModel->setData(m_index, wtf, ROLE_ItemPos);
+		emit geometryChanged();
 	}
 	return value;
-}
-
-QPointF CurveNodeItem::logicPos() const
-{
-	return m_logicPos;
 }
 
 QRectF CurveNodeItem::boundingRect(void) const

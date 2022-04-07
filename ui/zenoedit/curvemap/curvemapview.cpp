@@ -14,6 +14,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
 	, m_bInit(false)
+	, m_bSmoothCurve(true)
 {
 	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
@@ -230,6 +231,11 @@ int CurveMapView::frames(bool bHorizontal) const
 		int wtf = H * m_factor * 0.015;
 		return wtf;
 	}
+}
+
+bool CurveMapView::isSmoothCurve() const
+{
+    return m_bSmoothCurve;
 }
 
 void CurveMapView::drawBackground(QPainter* painter, const QRectF& rect)
