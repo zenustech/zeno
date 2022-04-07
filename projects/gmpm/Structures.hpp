@@ -112,6 +112,23 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
 
+  int numDegree() const noexcept {
+    switch (category) {
+    case category_e::mpm:
+      return 1;
+    case category_e::curve:
+      return 2;
+    case category_e::surface:
+      return 3;
+    case category_e::tet:
+      return 4;
+    case category_e::tracker:
+      return 0;
+    default:
+      return -1;
+    }
+    return -1;
+  }
   std::size_t numParticles() const noexcept { return particles.size(); }
   std::size_t numElements() const noexcept { return (*elements).size(); }
 

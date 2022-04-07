@@ -295,10 +295,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
   if (primitive.isMeshPrimitive()) {
     auto &eles = primitive.getQuadraturePoints();
     const auto ecnt = eles.size();
-    const int degree =
-        primitive.category == ZenoParticles::curve
-            ? 2
-            : (ZenoParticles::surface ? 3 : (ZenoParticles::tet ? 4 : -1));
+    const int degree = primitive.numDegree();
 
     bucketCnts.reset(0);
     pol(range(ecnt),

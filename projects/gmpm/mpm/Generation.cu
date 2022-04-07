@@ -836,20 +836,34 @@ struct UpdatePrimitiveFromZSParticles : INode {
       if (parObjPtr->prim.get() == nullptr)
         continue;
 
+      auto &prim = *parObjPtr->prim;
       // const auto category = parObjPtr->category;
-      auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      auto &pos = prim.attr<vec3f>("pos");
       auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
-      if (parObjPtr->prim->has_attr("vel") && pars.hasProperty("vel"))
-        velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
+      if (prim.has_attr("vel") && pars.hasProperty("vel"))
+        velsPtr = prim.attr<vec3f>("vel").data();
 
-      // currently only write back pos and vel (if has)
-      ompExec(range(size),
-              [&, pars = proxy<execspace_e::host>({}, pars)](std::size_t pi) {
-                pos[pi] = pars.array<3>("pos", pi);
-                if (velsPtr != nullptr)
-                  velsPtr[pi] = pars.array<3>("vel", pi);
-              });
+      if (pars.hasProperty("id")) {
+        ompExec(range(pars.size()),
+                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                  auto id = (int)pars("id", pi);
+                  if (id >= size)
+                    return;
+                  pos[id] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[id] = pars.array<3>("vel", pi);
+                });
+      } else {
+        // currently only write back pos and vel (if exists)
+        ompExec(range(size),
+                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                  pos[pi] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[pi] = pars.array<3>("vel", pi);
+                });
+      }
+      const auto cnt = pars.size();
     }
 
     fmt::print(fg(fmt::color::cyan),
