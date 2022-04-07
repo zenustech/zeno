@@ -97,6 +97,7 @@ class NodeEditor(QWidget):
 
         self.always_run = False
         self.target_frame = 0
+        self.in_eventloop = False
 
         self.current_path = None
         self.clipboard = QApplication.clipboard()
@@ -427,14 +428,24 @@ class NodeEditor(QWidget):
         self.clearScenes()
         self.switchScene('main')
 
-    def getOpenFileName(self):
-        path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+    def in_dlg_eventloop(self):
+        return self.in_eventloop
+
+    def getOpenPath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getOpenFileName(self, title,
                 '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
+    def getOpenFileName(self):
+        path, kind = self.getOpenPath('File to Open')
         return path
 
     def getSaveFileName(self):
-        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        path, kind = self.getOpenPath('Path to Save')
         return path
 
     def menuTriggered(self, act):
