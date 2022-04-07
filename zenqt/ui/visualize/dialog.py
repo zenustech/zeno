@@ -117,9 +117,10 @@ class RecordVideoDialog(QDialog):
         self.setLayout(grid) 
 
     def setFrameCount(self, frame_count):
-        self.frame_start_edit.setMaximum(frame_count - 1)
-        self.frame_end_edit.setMaximum(frame_count - 1)
-        self.frame_end_edit.setValue(frame_count - 1)
+        self.frame_end_edit.setMaximum(10000)
+        self.frame_start_edit.setMaximum(10000)
+        # self.frame_end_edit.setMaximum(frame_count - 1)
+        # self.frame_end_edit.setValue(frame_count - 1)
 
     def accept(self):
         r = self.params
@@ -154,19 +155,20 @@ class RecordVideoDialog(QDialog):
         display = self.display
         params = self.params
 
-        count = fileio.getFrameCount()
-        if count == 0:
-            QMessageBox.information(display, 'Zeno', 'Please do simulation before record video!')
-            return
-        self.setFrameCount(count)
+        # count = fileio.getFrameCount()
+        # if count == 0:
+        #     QMessageBox.information(display, 'Zeno', 'Please do simulation before record video!')
+        #     return
+        self.setFrameCount(1)
         accept = self.exec()
-        if not accept:
-            return
-        if params['frame_start'] >= params['frame_end']:
-            QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
-            return
-        params['frame_end'] = min(count - 1, params['frame_end'])
+        # if not accept:
+        #     return
+        # if params['frame_start'] >= params['frame_end']:
+        #     QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
+        #     return
+        # params['frame_end'] = min(count - 1, params['frame_end'])
 
+        
 
         display.timeline.jump_frame(params['frame_start'])
         display.view.frame_end = params['frame_end']
