@@ -33,7 +33,7 @@ class RecordVideoCancelDialog(QDialog):
     
     def btn_callback(self):
         view = self.display.view
-        shutil.rmtree(view.record_path, ignore_errors=True)
+        # shutil.rmtree(view.record_path, ignore_errors=True)
         view.record_path = None
         self.close()
 
@@ -171,9 +171,14 @@ class RecordVideoDialog(QDialog):
         display.timeline.jump_frame(params['frame_start'])
         display.view.frame_end = params['frame_end']
 
-        tmp_path = tempfile.mkdtemp(prefix='recording-')
-        assert os.path.isdir(tmp_path)
-        display.view.record_path = tmp_path
+        if params['path']:
+            dir_path = params['path']
+        else:
+            dir_path = display.get_output_path('.mp4')
+        dir_path = dir_path.replace('.', '_') + '_images'
+        os.makedirs(dir_path)
+
+        display.view.record_path = dir_path
         display.view.record_res = (params['width'], params['height'])
 
         display.timeline.stop_play()
@@ -220,8 +225,8 @@ class RecordVideoDialog(QDialog):
         except subprocess.CalledProcessError:
             msg = 'Encoding error!'
             QMessageBox.critical(display, 'Record Video', msg)
-        finally:
-            shutil.rmtree(tmp_path, ignore_errors=True)
+        # finally:
+        #     shutil.rmtree(tmp_path, ignore_errors=True)
 
     def path_button_callback(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Save', '', 'MP4(*.mp4);;')

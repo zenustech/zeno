@@ -40,6 +40,8 @@ class QDMEditMenu(QMenu):
                 (None, None),
                 ('&Find', QKeySequence.Find),
                 ('Easy Subgraph', 'Alt+S'),
+                (None, None),
+                ('Set Cache Path', None),
         ]
         
         for name, shortcut in acts:
@@ -498,6 +500,15 @@ class NodeEditor(QWidget):
 
         elif name == 'Easy Subgraph':
             self.easy_subgraph()
+
+        elif name == 'Set Cache Path':
+            cache_dir = ''
+            if os.path.exists(asset_path('cache_path.txt')):
+                with open(asset_path('cache_path.txt'), 'r') as f:
+                    cache_dir = f.read()
+            cache_dir = QFileDialog.getExistingDirectory(self, 'Set Cache Path', cache_dir)
+            with open(asset_path('cache_path.txt'), 'w') as f:
+                f.write(cache_dir)
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
