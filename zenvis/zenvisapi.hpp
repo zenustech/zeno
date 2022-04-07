@@ -33,6 +33,7 @@ void set_perspective(
     std::array<double, 16> viewArr,
     std::array<double, 16> projArr);
 void do_screenshot(std::string path);
+void do_screenshot_exr(std::string path);
 void new_frame_offline(std::string path);
 void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();

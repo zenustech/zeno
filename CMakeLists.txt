@@ -77,6 +77,7 @@ endif()
 
 if (ZENO_VISUALIZATION)
     add_subdirectory(external/glad)
+    add_subdirectory(external/openexr)
     add_subdirectory(zenvis)
 endif()
 

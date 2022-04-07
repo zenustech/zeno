@@ -18,6 +18,8 @@
 #include <Scene.hpp>
 #include <thread>
 #include <chrono>
+#include <ImfRgbaFile.h>
+#include <ImfArray.h>
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
@@ -758,7 +760,17 @@ void finalize() {
   vao = nullptr;
 }
 
+static int frameId = 0;
 void new_frame() {
+  ++frameId;
+  if (frameId == 1500)
+  {
+    do_screenshot_exr("/home/navier/Projects/zeno_March/zeno/zjy3.exr");
+  }
+  if (frameId <= 1500)
+  {
+    std::cout << "frameId: " << frameId << "\n";
+  }
   paint_graphics();
   renderFPS.tick();
 }
@@ -843,6 +855,30 @@ void do_screenshot(std::string path) {
     std::vector<char> pixels = record_frame_offline();
     stbi_flip_vertically_on_write(true);
     stbi_write_png(path.c_str(), nx, ny, 3, &pixels[0], 0);
+}
+
+void do_screenshot_exr(std::string path) {
+    std::vector<char> pixels = record_frame_offline();
+    Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
+    // Imf::R
+    Imf::Array2D<Imf::Rgba> px(ny, nx);
+    int i = 0;
+    for (int y = 0; y < ny; ++y)
+    {
+      for (int x = 0; x < nx; ++x)
+      {
+        //todo
+        Imf::Rgba &p = px[ny - 1 - y][x];
+        // Imf::Rgba &p = px[ny][nx];
+        p.r = pixels[i]/255.0;
+        p.g = pixels[i + 1]/255.0;
+        p.b = pixels[i + 2]/255.0;
+        p.a = 0;
+        i += 3;
+      }
+    }
+    file.setFrameBuffer(&px[0][0], 1, nx);
+    file.writePixels(ny);
 }
 
 void set_background_color(float r, float g, float b) {
