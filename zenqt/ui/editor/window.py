@@ -411,9 +411,11 @@ class NodeEditor(QWidget):
                 zenvis.load_lights(s['lights'])
 
     def on_execute(self):
-        nframes = int(self.edit_nframes.text())
+        start_frame = int(self.start_frame.text())
+        maxframe = int(self.max_frame.text())
+        nframes = maxframe - start_frame + 1
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes, start_frame=0)
+        go(launch.launchProgram, prog, nframes, start_frame)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
