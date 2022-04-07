@@ -8,13 +8,26 @@
 class CurveNodeItem;
 class CurveMapView;
 
+class CurvePathItem : public QObject
+					, public QGraphicsPathItem
+{
+	Q_OBJECT
+public:
+    CurvePathItem(QGraphicsItem* parent = nullptr);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+
+signals:
+    void clicked(QPointF);
+};
+
 class CurveHandlerItem : public QGraphicsRectItem
 {
 	typedef QGraphicsRectItem _base;
 public:
 	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
-	void setOtherHandleIdx(const QModelIndex& idx);
 	void setOtherHandle(CurveHandlerItem* other);
     bool isMouseEventTriggered();
     void setUpdateNotify(bool bNotify);
@@ -45,23 +58,19 @@ public:
     void toggle(bool bChecked);
     QPointF leftHandlePos() const;
     QPointF rightHandlePos() const;
-    void setLeftCurve(QGraphicsPathItem* leftCurve);
-    void setRightCurve(QGraphicsPathItem* rightCurve);
-    QGraphicsPathItem* leftCurve() const;
-    QGraphicsPathItem* rightCurve() const;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
 
 signals:
 	void geometryChanged();
+	void deleteTriggered();
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+	void keyPressEvent(QKeyEvent* event);
 
 private:
 	CurveHandlerItem* m_left;
 	CurveHandlerItem* m_right;
-    QGraphicsPathItem* m_leftCurve;
-    QGraphicsPathItem* m_rightCurve;
 	CurveMapView* m_view;
 	bool m_bToggle;
 };

@@ -5,6 +5,7 @@
 
 class CurveMapView;
 class CurveNodeItem;
+class CurvePathItem;
 
 struct MODEL_PACK
 {
@@ -26,6 +27,8 @@ public:
 
 public slots:
     void onNodeGeometryChanged();
+	void onNodeDeleted();
+    void onPathClicked(const QPointF& pos);
 
 private:
 	QColor m_clrGrid, m_clrBg;
@@ -34,6 +37,7 @@ private:
 	QTransform m_transform;
 	QTransform m_invTrans;
 	QVector<CurveNodeItem*> m_vecNodes;
+	QVector<CurvePathItem*> m_vecCurves;
 };
 
 

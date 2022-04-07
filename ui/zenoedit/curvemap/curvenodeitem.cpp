@@ -6,6 +6,24 @@
 
 using namespace curve_util;
 
+
+CurvePathItem::CurvePathItem(QGraphicsItem *parent)
+    : QObject(nullptr)
+	, QGraphicsPathItem(parent)
+{
+    const int penWidth = 2;
+    QPen pen(QColor(231, 29, 31), penWidth);
+    pen.setStyle(Qt::SolidLine);
+    setPen(pen);
+}
+
+void CurvePathItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    QGraphicsPathItem::mousePressEvent(event);
+    emit clicked(event->pos());
+}
+
+
 CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, QGraphicsItem* parent)
 	: QGraphicsRectItem(-3, -3, 6, 6, parent)
 	, m_node(pNode)
@@ -121,15 +139,13 @@ CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, QGraph
 	: QGraphicsObject(parentItem)
 	, m_left(nullptr)
 	, m_right(nullptr)
-	, m_leftCurve(nullptr)
-	, m_rightCurve(nullptr)
 	, m_view(pView)
 	, m_bToggle(false)
 {
     QRectF br = boundingRect();
 	setPos(nodePos);
 	setZValue(100);
-	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
+	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemIsFocusable);
 }
 
 void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightOffset)
@@ -201,26 +217,6 @@ QPointF CurveNodeItem::rightHandlePos() const
     return m_right ? m_right->scenePos() : QPointF();
 }
 
-QGraphicsPathItem* CurveNodeItem::leftCurve() const
-{
-    return m_leftCurve;
-}
-
-QGraphicsPathItem *CurveNodeItem::rightCurve() const
-{
-    return m_rightCurve;
-}
-
-void CurveNodeItem::setLeftCurve(QGraphicsPathItem* leftCurve)
-{
-    m_leftCurve = leftCurve;
-}
-
-void CurveNodeItem::setRightCurve(QGraphicsPathItem* rightCurve)
-{
-    m_rightCurve = rightCurve;
-}
-
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	if (change == QGraphicsItem::ItemSelectedHasChanged)
@@ -258,6 +254,15 @@ QRectF CurveNodeItem::boundingRect(void) const
 	qreal w = sz.width(), h = sz.height();
 	QRectF rc = QRectF(-w / 2, -h / 2, w, h);
 	return rc;
+}
+
+void CurveNodeItem::keyPressEvent(QKeyEvent* event)
+{
+    QGraphicsObject::keyPressEvent(event);
+    if (event->key() == Qt::Key_Delete)
+	{
+        emit deleteTriggered();
+	}
 }
 
 void CurveNodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, QWidget* widget)

@@ -68,6 +68,7 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 		CurveNodeItem* pNodeItem = new CurveNodeItem(m_view, scenePos, this);
 		pNodeItem->initHandles(leftOffset, rightOffset);
 		connect(pNodeItem, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+        connect(pNodeItem, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
 
 		if (i == 0)
 		{
@@ -75,11 +76,8 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 			continue;
 		}
 
-		QGraphicsPathItem* pathItem = new QGraphicsPathItem(this);
-		const int penWidth = 2;
-		QPen pen(QColor(231, 29, 31), penWidth);
-		pen.setStyle(Qt::SolidLine);
-		pathItem->setPen(pen);
+		CurvePathItem *pathItem = new CurvePathItem(this);
+        connect(pathItem, SIGNAL(clicked(const QPointF &)), this, SLOT(onPathClicked(const QPointF&)));
 
 		QPainterPath path;
 
@@ -89,12 +87,10 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 		path.moveTo(lastNodePos);
 		path.cubicTo(lastRightPos, leftScenePos, scenePos);
 		pathItem->setPath(path);
-		pathItem->update();
-
-		pNodeItem->setLeftCurve(pathItem);
-        m_vecNodes[i-1]->setRightCurve(pathItem);
+        pathItem->update();
 
 		m_vecNodes.append(pNodeItem);
+        m_vecCurves.append(pathItem);
 	}
 }
 
@@ -104,12 +100,10 @@ void CurveGrid::onNodeGeometryChanged()
     int i = m_vecNodes.indexOf(pNode);
     Q_ASSERT(i >= 0);
 
-    QGraphicsPathItem* pLeftCurve = pNode->leftCurve();
+    QGraphicsPathItem* pLeftCurve = i > 0 ? m_vecCurves[i-1] : nullptr;
     if (pLeftCurve)
 	{
-        Q_ASSERT(i >= 1);
         CurveNodeItem *pLeftNode = m_vecNodes[i - 1];
-
         QPainterPath path;
         path.moveTo(pLeftNode->pos());
         path.cubicTo(pLeftNode->rightHandlePos(), pNode->leftHandlePos(), pNode->pos());
@@ -117,18 +111,79 @@ void CurveGrid::onNodeGeometryChanged()
         pLeftCurve->update();
 	}
 
-	QGraphicsPathItem* pRightCurve = pNode->rightCurve();
+	QGraphicsPathItem *pRightCurve = (i < m_vecNodes.size() - 1) ? m_vecCurves[i] : nullptr;
     if (pRightCurve)
 	{
-        Q_ASSERT(i < m_vecNodes.size() - 1);
         CurveNodeItem *pRightNode = m_vecNodes[i + 1];
-
         QPainterPath path;
         path.moveTo(pNode->pos());
         path.cubicTo(pNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
         pRightCurve->setPath(path);
         pRightCurve->update();
 	}
+}
+
+void CurveGrid::onNodeDeleted()
+{
+    CurveNodeItem* pItem = qobject_cast<CurveNodeItem*>(sender());
+    Q_ASSERT(pItem);
+    int i = m_vecNodes.indexOf(pItem);
+    if (i == 0 || i == m_vecNodes.size() - 1)
+        return;
+
+	CurveNodeItem* pLeftNode = m_vecNodes[i - 1];
+    CurveNodeItem* pRightNode = m_vecNodes[i + 1];
+
+	//curves[i-1] as a new curve from node i-1 to node i.
+	CurvePathItem *pathItem = m_vecCurves[i - 1];
+
+    m_vecCurves[i]->deleteLater();
+	pItem->deleteLater();
+
+	CurvePathItem* pDeleleCurve = m_vecCurves[i];
+	m_vecCurves.remove(i);
+    m_vecNodes.remove(i);
+
+	QPainterPath path;
+    path.moveTo(pLeftNode->pos());
+	path.cubicTo(pLeftNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
+    pathItem->setPath(path);
+	pathItem->update();
+}
+
+void CurveGrid::onPathClicked(const QPointF& pos)
+{
+	CurvePathItem* pItem = qobject_cast<CurvePathItem*>(sender());
+    Q_ASSERT(pItem);
+    int i = m_vecCurves.indexOf(pItem);
+    CurveNodeItem *pLeftNode = m_vecNodes[i];
+    CurveNodeItem *pRightNode = m_vecNodes[i + 1];
+
+	//insert a new node.
+    CurveNodeItem *pNewNode = new CurveNodeItem(m_view, pos, this);
+	connect(pNewNode, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+    QPointF leftOffset(-50, -50);
+    QPointF rightOffset(50, 50);
+    pNewNode->initHandles(leftOffset, rightOffset);
+
+	CurvePathItem* pLeftHalf = pItem;
+    CurvePathItem* pRightHalf = new CurvePathItem(this);
+	connect(pRightHalf, SIGNAL(clicked(const QPointF &)), this, SLOT(onPathClicked(const QPointF&)));
+
+	QPainterPath leftPath;
+    leftPath.moveTo(pLeftNode->pos());
+	leftPath.cubicTo(pLeftNode->rightHandlePos(), pNewNode->leftHandlePos(), pNewNode->pos());
+    pLeftHalf->setPath(leftPath);
+	pLeftHalf->update();
+
+	QPainterPath rightPath;
+    rightPath.moveTo(pNewNode->pos());
+	rightPath.cubicTo(pNewNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
+    pRightHalf->setPath(rightPath);
+	pRightHalf->update();
+
+	m_vecNodes.insert(i + 1, pNewNode);
+    m_vecCurves.insert(i + 1, pRightHalf);
 }
 
 void CurveGrid::setColor(const QColor& clrGrid, const QColor& clrBackground)
