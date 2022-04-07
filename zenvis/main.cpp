@@ -1,3 +1,4 @@
+#include "ImfPixelType.h"
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
 #endif
@@ -760,17 +761,7 @@ void finalize() {
   vao = nullptr;
 }
 
-static int frameId = 0;
 void new_frame() {
-  ++frameId;
-  if (frameId == 1500)
-  {
-    do_screenshot_exr("/home/navier/Projects/zeno_March/zeno/zjy3.exr");
-  }
-  if (frameId <= 1500)
-  {
-    std::cout << "frameId: " << frameId << "\n";
-  }
   paint_graphics();
   renderFPS.tick();
 }
@@ -841,6 +832,47 @@ std::vector<char> record_frame_offline() {
     return pixels;
 }
 
+std::vector<Imath::half> record_frame_offline_exr() {
+    std::vector<Imath::half> pixels(nx * ny * 3);
+
+    GLuint fbo, rbo1, rbo2;
+    CHECK_GL(glGenRenderbuffers(1, &rbo1));
+    CHECK_GL(glGenRenderbuffers(1, &rbo2));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
+
+    CHECK_GL(glGenFramebuffers(1, &fbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
+    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
+    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+
+    paint_graphics(fbo);
+
+    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
+        CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
+        CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
+        CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+
+        CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_HALF_FLOAT, &pixels[0]));
+    }
+
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+    CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
+    CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
+    CHECK_GL(glDeleteFramebuffers(1, &fbo));
+
+    return pixels;
+}
+
 void new_frame_offline(std::string path) {
     char buf[1024];
     sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
@@ -852,15 +884,17 @@ void new_frame_offline(std::string path) {
 }
 
 void do_screenshot(std::string path) {
+    /*
     std::vector<char> pixels = record_frame_offline();
     stbi_flip_vertically_on_write(true);
     stbi_write_png(path.c_str(), nx, ny, 3, &pixels[0], 0);
+    */
+   do_screenshot_exr("/home/navier/Projects/zeno_March/zeno/zjy5.exr");
 }
 
 void do_screenshot_exr(std::string path) {
-    std::vector<char> pixels = record_frame_offline();
+    std::vector<Imath::half> pixels = record_frame_offline_exr();
     Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
-    // Imf::R
     Imf::Array2D<Imf::Rgba> px(ny, nx);
     int i = 0;
     for (int y = 0; y < ny; ++y)
@@ -869,10 +903,11 @@ void do_screenshot_exr(std::string path) {
       {
         //todo
         Imf::Rgba &p = px[ny - 1 - y][x];
+        
         // Imf::Rgba &p = px[ny][nx];
-        p.r = pixels[i]/255.0;
-        p.g = pixels[i + 1]/255.0;
-        p.b = pixels[i + 2]/255.0;
+        p.r = pixels[i];
+        p.g = pixels[i + 1];
+        p.b = pixels[i + 2];
         p.a = 0;
         i += 3;
       }
