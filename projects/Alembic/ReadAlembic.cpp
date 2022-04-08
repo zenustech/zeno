@@ -143,6 +143,28 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     return prim;
 }
 
+static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, int frameid) {
+    CameraInfo cam_info;
+    frameid = clamp(frameid, 0, (int)cam.getNumSamples() - 1);
+    auto samp = cam.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)frameid));
+    cam_info.focal_length = samp.getFocalLength();
+    cam_info._near = samp.getNearClippingPlane();
+    cam_info._far = samp.getFarClippingPlane();
+    log_info(
+        "[alembic] Camera focal_length: {}, near: {}, far: {}",
+        cam_info.focal_length,
+        cam_info._near,
+        cam_info._far
+    );
+    return std::make_shared<CameraInfo>(cam_info);
+}
+
+static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, int frameid) {
+    frameid = clamp(frameid, 0, (int)xfm.getNumSamples() - 1);
+    auto samp = xfm.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)frameid));
+    return samp.getMatrix();
+}
+
 static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -164,6 +186,20 @@ static void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
+        } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found a Xform [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::IXform xfm(obj);
+            auto &cam_sch = xfm.getSchema();
+            tree.xform = foundABCXform(cam_sch, frameid);
+        } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found a Camera [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::ICamera cam(obj);
+            auto &cam_sch = cam.getSchema();
+            tree.camera_info = foundABCCamera(cam_sch, frameid);
         }
     }
 

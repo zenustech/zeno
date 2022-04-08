@@ -2,12 +2,21 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <Alembic/AbcGeom/Foundation.h>
 
 namespace zeno {
+
+struct CameraInfo {
+    double _far;
+    double _near;
+    double focal_length;
+};
 
 struct ABCTree : IObjectClone<ABCTree> {
     std::string name;
     std::shared_ptr<PrimitiveObject> prim;
+    Alembic::Abc::v12::M44d xform = Alembic::Abc::v12::M44d();
+    std::shared_ptr<CameraInfo> camera_info;
     std::vector<std::shared_ptr<ABCTree>> children;
 
     template <class Func>

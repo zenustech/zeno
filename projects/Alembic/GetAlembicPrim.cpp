@@ -6,6 +6,8 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include "ABCTree.h"
+#include <queue>
+#include <utility>
 
 namespace zeno {
 namespace {
@@ -81,6 +83,59 @@ struct AllAlembicPrim : INode {
 ZENDEFNODE(AllAlembicPrim, {
     {{"ABCTree", "abctree"}},
     {{"PrimitiveObject", "prim"}},
+    {},
+    {"alembic"},
+});
+
+struct GetAlembicCamera : INode {
+    virtual void apply() override {
+        auto abctree = get_input<ABCTree>("abctree");
+        std::queue<std::pair<Alembic::Abc::v12::M44d, std::shared_ptr<ABCTree>>> q;
+        q.emplace(Alembic::Abc::v12::M44d(), abctree);
+        Alembic::Abc::v12::M44d mat;
+        std::optional<CameraInfo> cam_info;
+        while (q.size() > 0) {
+            auto [m, t] = q.front();
+            q.pop();
+            if (t->camera_info) {
+                mat = m;
+                cam_info = *(t->camera_info);
+                break;
+            }
+            for (auto ch: t->children) {
+                q.emplace(m * t->xform, ch);
+            }
+        }
+        if (!cam_info.has_value()) {
+            log_error("Not found camera!");
+        }
+
+        auto pos = Imath::V4d(0, 0, 0, 1) * mat;
+        auto up = Imath::V4d(0, 1, 0, 0) * mat;
+        auto right = Imath::V4d(1, 0, 0, 0) * mat;
+
+        float h_fov = (float)std::atan(35.0 / (2.0 * cam_info.value().focal_length));
+
+        set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
+        set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
+        set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
+
+        set_output("half_fov", std::make_shared<NumericObject>(h_fov));
+        set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
+        set_output("far", std::make_shared<NumericObject>((float)cam_info.value()._far));
+    }
+};
+
+ZENDEFNODE(GetAlembicCamera, {
+    {{"ABCTree", "abctree"}},
+    {
+        "pos",
+        "up",
+        "right",
+        "half_fov",
+        "near",
+        "far",
+    },
     {},
     {"alembic"},
 });
