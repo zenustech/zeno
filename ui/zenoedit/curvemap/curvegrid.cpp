@@ -257,8 +257,11 @@ void CurveGrid::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
 	int W = rc.width(), H = rc.height();
 	qreal factor = m_view->factor();
-	int nVLines = m_view->frames(true);
-	int nHLines = m_view->frames(false);
+
+	const QTransform& trans = m_view->transform();
+	auto frames = curve_util::numframes(trans.m11(), trans.m22());
+    int nVLines = frames.first;
+	int nHLines = frames.second;
 
 	const qreal left = rc.left(), right = rc.right();
 	const qreal top = rc.top(), bottom = rc.bottom();

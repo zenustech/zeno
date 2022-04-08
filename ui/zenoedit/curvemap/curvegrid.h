@@ -22,7 +22,7 @@ public:
     int nodeCount() const;
 	int indexOf(CurveNodeItem* pItem) const;
     QPointF nodePos(int i) const;
-    CurveNodeItem *nodeItem(int i) const;
+    CurveNodeItem* nodeItem(int i) const;
 
 public slots:
     void onNodeGeometryChanged();

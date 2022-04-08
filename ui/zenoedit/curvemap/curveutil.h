@@ -34,6 +34,7 @@ namespace curve_util
 
 	QRectF fitInRange(CURVE_RANGE rg, const QMargins& margins);
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
+	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 }
 
 #endif

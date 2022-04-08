@@ -23,4 +23,11 @@ namespace curve_util
 			return QModelIndex();
 		return lst[0];
 	}
+
+	QPair<int, int> numframes(qreal scaleX, qreal scaleY)
+	{
+		int wtfX = 10 * scaleX * 1;
+        int wtfY = 10 * scaleY * 1;
+        return {wtfX, wtfY};
+	}
 }

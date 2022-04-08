@@ -133,6 +133,8 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 	}
 	
 	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
+    m_pHScalar->update();
+    m_pVScalar->update();
 }
 
 QRectF CurveMapView::gridBoundingRect() const
@@ -140,7 +142,7 @@ QRectF CurveMapView::gridBoundingRect() const
 	QRectF rc = rect();
 	rc = rc.marginsRemoved(m_gridMargins);
 	QRectF rc2 = m_grid->boundingRect();
-	return rc;
+	return rc2;
 }
 
 void CurveMapView::wheelEvent(QWheelEvent* event)
