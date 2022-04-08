@@ -7,12 +7,6 @@ class CurveMapView;
 class CurveNodeItem;
 class CurvePathItem;
 
-struct MODEL_PACK
-{
-	QStandardItemModel* pModel;
-	QItemSelectionModel* pSelection;
-};
-
 class CurveGrid : public QGraphicsObject
 {
 	Q_OBJECT
@@ -24,6 +18,11 @@ public:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event);
 	void initTransform();
 	void initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+    bool isFuncCurve() const;
+    int nodeCount() const;
+	int indexOf(CurveNodeItem* pItem) const;
+    QPointF nodePos(int i) const;
+    CurveNodeItem *nodeItem(int i) const;
 
 public slots:
     void onNodeGeometryChanged();
@@ -38,6 +37,7 @@ private:
 	QTransform m_invTrans;
 	QVector<CurveNodeItem*> m_vecNodes;
 	QVector<CurvePathItem*> m_vecCurves;
+	bool m_bFCurve;			//function curve.
 };
 
 

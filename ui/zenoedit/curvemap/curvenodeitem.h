@@ -51,13 +51,16 @@ class CurveNodeItem : public QGraphicsObject
 	Q_OBJECT
 	typedef QGraphicsObject _base;
 public:
-	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, QGraphicsItem* parentItem = nullptr);
+	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem = nullptr);
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
     void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const;
     void toggle(bool bChecked);
+    CurveHandlerItem* leftHandle() const;
+    CurveHandlerItem* rightHandle() const;
     QPointF leftHandlePos() const;
     QPointF rightHandlePos() const;
+    CurveGrid* grid() const;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
 
 signals:
@@ -72,6 +75,7 @@ private:
 	CurveHandlerItem* m_left;
 	CurveHandlerItem* m_right;
 	CurveMapView* m_view;
+	CurveGrid* m_grid;
 	bool m_bToggle;
 };
 

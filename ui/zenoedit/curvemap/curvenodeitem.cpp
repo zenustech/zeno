@@ -61,8 +61,32 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 {
     if (change == QGraphicsItem::ItemPositionChange)
 	{
-        int j;
-        j = 0;
+        if (m_node->grid()->isFuncCurve())
+		{
+            QPointF newPos = value.toPointF();
+            int i = m_node->grid()->indexOf(m_node);
+            if (m_node->leftHandle() == this)
+			{
+                QPointF lastNodePos = m_node->mapFromScene(m_node->grid()->nodePos(i - 1));
+                newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+                if (m_other)
+				{
+                    QPointF rightHdlPos = m_other->pos();
+                    newPos.setX(qMin(newPos.x(), rightHdlPos.x()));
+				}
+            }
+			else if (m_node->rightHandle() == this)
+			{
+                QPointF nextNodePos = m_node->mapFromScene(m_node->grid()->nodePos(i + 1));
+                newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+                if (m_other)
+				{
+                    QPointF leftHdlPos = m_other->pos();
+                    newPos.setX(qMax(newPos.x(), leftHdlPos.x()));
+				}
+            }
+            return newPos;
+		}
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
@@ -135,12 +159,13 @@ void CurveHandlerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 }
 
 
-CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, QGraphicsItem* parentItem)
+CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem)
 	: QGraphicsObject(parentItem)
 	, m_left(nullptr)
 	, m_right(nullptr)
 	, m_view(pView)
 	, m_bToggle(false)
+	, m_grid(parentItem)
 {
     QRectF br = boundingRect();
 	setPos(nodePos);
@@ -207,6 +232,16 @@ void CurveNodeItem::toggle(bool bChecked)
     m_bToggle = bChecked;
 }
 
+CurveHandlerItem* CurveNodeItem::leftHandle() const
+{
+    return m_left;
+}
+
+CurveHandlerItem* CurveNodeItem::rightHandle() const
+{
+    return m_right;
+}
+
 QPointF CurveNodeItem::leftHandlePos() const
 {
     return m_left ? m_left->scenePos() : QPointF();
@@ -215,6 +250,11 @@ QPointF CurveNodeItem::leftHandlePos() const
 QPointF CurveNodeItem::rightHandlePos() const
 {
     return m_right ? m_right->scenePos() : QPointF();
+}
+
+CurveGrid* CurveNodeItem::grid() const
+{
+    return m_grid;
 }
 
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -240,6 +280,37 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 				m_right->setVisible(false);
 			}
 		}
+	} 
+	else if (change == QGraphicsItem::ItemPositionChange)
+	{
+        int i = m_grid->indexOf(this);
+
+		QRectF rc = m_grid->boundingRect();
+		QPointF newPos = value.toPointF();
+        newPos.setX(qMin(qMax(newPos.x(), rc.left()), rc.right()));
+        newPos.setY(qMin(qMax(newPos.y(), rc.top()), rc.bottom()));
+
+        if (grid()->isFuncCurve())
+		{
+            if (i == 0)
+			{
+                newPos.setX(rc.left());
+			}
+			else if (i == grid()->nodeCount() - 1)
+			{
+                newPos.setX(rc.right());
+            }
+			else
+			{
+                CurveNodeItem *pLast = m_grid->nodeItem(i - 1);
+                CurveNodeItem *pNext = m_grid->nodeItem(i + 1);
+                CurveHandlerItem *pRightHdl = pLast->rightHandle();
+                CurveHandlerItem *pLeftHdl = pNext->leftHandle();
+                newPos.setX(qMin(qMax(newPos.x(), pRightHdl->scenePos().x()),
+                                 pLeftHdl->scenePos().x()));
+			}
+			return newPos;
+        }
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
