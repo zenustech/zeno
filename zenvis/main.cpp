@@ -1,4 +1,3 @@
-#include "ImfPixelType.h"
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
 #endif
@@ -19,8 +18,11 @@
 #include <Scene.hpp>
 #include <thread>
 #include <chrono>
+#ifdef ZENO_ENABLE_OPENEXR
+#include "ImfPixelType.h"
 #include <ImfRgbaFile.h>
 #include <ImfArray.h>
+#endif
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
