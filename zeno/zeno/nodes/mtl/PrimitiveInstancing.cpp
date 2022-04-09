@@ -2,7 +2,7 @@
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/ListObject.h>
-// #include <zeno/types/MatrixObject.h>
+#include <zeno/types/MatrixObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
