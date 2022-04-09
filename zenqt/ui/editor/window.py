@@ -444,12 +444,21 @@ class NodeEditor(QWidget):
             self.in_eventloop = False
         return path, kind
 
+    def getSavePath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getSaveFileName(self, title,
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
     def getOpenFileName(self):
         path, kind = self.getOpenPath('File to Open')
         return path
 
     def getSaveFileName(self):
-        path, kind = self.getOpenPath('Path to Save')
+        path, kind = self.getSavePath('Path to Save')
         return path
 
     def menuTriggered(self, act):
