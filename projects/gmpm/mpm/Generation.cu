@@ -270,13 +270,15 @@ struct ToZSParticles : INode {
     const bool hasOrientation = model->hasOrientation();
     const bool hasF = model->hasF();
 
-    if (hasF)
-      tags.emplace_back(zs::PropertyTag{"F", 9});
-    else {
-      tags.emplace_back(zs::PropertyTag{"J", 1});
-      if (category != ZenoParticles::mpm)
-        throw std::runtime_error(
-            "mesh particles should not use the 'J' attribute.");
+    if (!bindMesh) {
+      if (hasF)
+        tags.emplace_back(zs::PropertyTag{"F", 9});
+      else {
+        tags.emplace_back(zs::PropertyTag{"J", 1});
+        if (category != ZenoParticles::mpm)
+          throw std::runtime_error(
+              "mesh particles should not use the 'J' attribute.");
+      }
     }
 
     if (hasOrientation) {
@@ -331,7 +333,7 @@ struct ToZSParticles : INode {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
       ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
                                 hasLogJp, hasOrientation, hasF, &model, &obj,
-                                velsPtr, nrmsPtr, &dofVol, category,
+                                velsPtr, nrmsPtr, bindMesh, &dofVol, category,
                                 &inParticles, &auxAttribs](size_t pi) mutable {
         using vec3 = zs::vec<float, 3>;
         using mat3 = zs::vec<float, 3, 3>;
@@ -351,10 +353,12 @@ struct ToZSParticles : INode {
           pars.tuple<3>("vel", pi) = vec3::zeros();
 
         // deformation
-        if (hasF)
-          pars.tuple<9>("F", pi) = mat3::identity();
-        else
-          pars("J", pi) = 1.;
+        if (!bindMesh) {
+          if (hasF)
+            pars.tuple<9>("F", pi) = mat3::identity();
+          else
+            pars("J", pi) = 1.;
+        }
 
         // apic transfer
         pars.tuple<9>("C", pi) = mat3::zeros();

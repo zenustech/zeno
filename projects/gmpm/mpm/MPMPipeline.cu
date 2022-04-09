@@ -568,13 +568,14 @@ struct ZSParticleToZSGrid : INode {
               auto vol = eles("vol", pi);
               auto C = eles.pack<3, 3>("C", pi);
               auto F = eles.pack<3, 3>("F", pi);
+              auto d_ = eles.pack<3, 3>("d", pi);
 
               // hard coded P compute
               using mat2 = zs::vec<float, 2, 2>;
               using mat3 = zs::vec<float, 3, 3>;
               constexpr auto gamma = 0.f;
               constexpr auto k = 100.f;
-              auto [Q, R] = math::qr(F);
+              auto [Q, R] = math::gram_schmidt(F);
               mat2 R2{R(0, 0), R(0, 1), R(1, 0), R(1, 1)};
               auto P2 = model.first_piola(R2); // use as F
               auto Pplane = mat3::zeros();
@@ -607,7 +608,7 @@ struct ZSParticleToZSGrid : INode {
 
               //
               auto P_c3 = col(P, 2);
-              auto d_c3 = col(eles.pack<3, 3>("d", pi), 2);
+              auto d_c3 = col(d_, 2);
 
               auto arena =
                   make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
@@ -629,15 +630,17 @@ struct ZSParticleToZSGrid : INode {
                   atomic_add(exec_cuda, &block("v", d, cellid), vft(d));
               }
 
+#if 1
               // type (ii)
-              auto transfer = [&P, &grid, &table](auto &&pos, auto &&Dinv_r,
+              auto transfer = [&P, &grid, &table](const auto &pos,
+                                                  const auto &Dinv_r,
                                                   const auto coeff) {
                 auto vft =
                     coeff * zs::vec<float, 3>{
                                 P(0, 0) * Dinv_r(0) + P(0, 1) * Dinv_r(1),
                                 P(1, 0) * Dinv_r(0) + P(1, 1) * Dinv_r(1),
                                 P(2, 0) * Dinv_r(0) + P(2, 1) * Dinv_r(1)};
-                auto arena = make_local_arena(grid.dx, std::move(pos));
+                auto arena = make_local_arena(grid.dx, pos);
 
                 for (auto loc : arena.range()) {
                   auto coord = arena.coord(loc);
@@ -654,16 +657,19 @@ struct ZSParticleToZSGrid : INode {
                 }
               };
               auto Dminv = eles.pack<3, 3>("Dinv", pi);
-              auto p0 = verts.pack<3>("pos", (int)eles("inds", (int)0, pi));
+              auto ind0 = (int)eles("inds", (int)0, pi);
+              auto vol0 = verts("vol", ind0);
+              auto p0 = verts.pack<3>("pos", ind0);
               {
-                for (int i = 1, m = 3; i != m; ++i) {
+                for (int i = 1; i != 3; ++i) {
                   auto Dinv_ri = row(Dminv, i - 1);
-                  transfer(verts.pack<3>("pos", (int)eles("inds", (int)i, pi)),
-                           Dinv_ri, -vol * dt);
-                  // this should be further optimized
+                  auto ind = (int)eles("inds", (int)i, pi);
+                  auto p_i = verts.pack<3>("pos", ind);
+                  transfer(p_i, Dinv_ri, -vol * dt);
                   transfer(p0, Dinv_ri, vol * dt);
                 }
               }
+#endif
             });
   }
   template <typename Model, typename AnisoModel>
@@ -1016,49 +1022,55 @@ struct ZSGridToZSParticle : INode {
                   pars.tuple<3>("pos", pi) = pos;
                 });
       } else if (parObjPtr->category != ZenoParticles::mpm) {
-        cudaPol(range(pars.size()),
-                [pars = proxy<execspace_e::cuda>({}, pars),
-                 table = proxy<execspace_e::cuda>(partition),
-                 grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
-                 dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
-                  using grid_t = RM_CVREF_T(grid);
-                  const auto Dinv = 4.f * dxinv * dxinv;
-                  auto pos = pars.pack<3>("pos", pi);
-                  auto vel = zs::vec<float, 3>::zeros();
-                  auto C = zs::vec<float, 3, 3>::zeros();
+        cudaPol(
+            range(pars.size()),
+            [pars = proxy<execspace_e::cuda>({}, pars),
+             table = proxy<execspace_e::cuda>(partition),
+             grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
+             dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+              using grid_t = RM_CVREF_T(grid);
+              const auto Dinv = 4.f * dxinv * dxinv;
+              auto pos = pars.pack<3>("pos", pi);
+              auto vel = zs::vec<float, 3>::zeros();
+              auto C = zs::vec<float, 3, 3>::zeros();
+              // auto vGrad = zs::vec<float, 3, 3>::zeros();
 
-                  auto arena = make_local_arena(grid.dx, pos);
-                  for (auto loc : arena.range()) {
-                    auto coord = arena.coord(loc);
-                    auto localIndex = coord & (grid_t::side_length - 1);
-                    auto blockno = table.query(coord - localIndex);
-                    if (blockno < 0)
-                      printf("THE HELL!");
-                    auto block = grid.block(blockno);
-                    auto xixp = arena.diff(loc);
-                    auto W = arena.weight(loc);
-                    auto vi =
-                        block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
+              auto arena =
+                  make_local_arena<grid_e::collocated, kernel_e::quadratic, 0>(
+                      grid.dx, pos);
+              for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto localIndex = coord & (grid_t::side_length - 1);
+                auto blockno = table.query(coord - localIndex);
+                if (blockno < 0)
+                  printf("THE HELL!");
+                auto block = grid.block(blockno);
+                auto xixp = arena.diff(loc);
+                auto W = arena.weight(loc);
+                // auto Wgrad = arena.weightGradients(loc) * dxinv;
+                auto vi =
+                    block.pack<3>("v", grid_t::coord_to_cellid(localIndex));
 
-                    vel += vi * W;
-                    C += W * dyadic_prod(vi, xixp); // remove Dinv
-                  }
+                vel += vi * W;
+                C += W * Dinv * dyadic_prod(vi, xixp);
+                // vGrad += dyadic_prod(vi, Wgrad);
+              }
 #if 0
                   if (pi < 10)
                     printf("pi[%d] vel: %f, %f, %f\n", (int)pi, vel[0], vel[1],
                            vel[2]);
 #endif
-                  // vel
-                  pars.tuple<3>("vel", pi) = vel;
-                  // C
-                  auto skew = 0.5f * (C - C.transpose());
-                  auto sym = 0.5f * (C + C.transpose());
-                  C = skew + sym * 0.2f;
-                  pars.tuple<3 * 3>("C", pi) = C;
-                  // pos
-                  pos += vel * dt;
-                  pars.tuple<3>("pos", pi) = pos;
-                });
+              // vel
+              pars.tuple<3>("vel", pi) = vel;
+              // C
+              auto skew = 0.5f * (C - C.transpose());
+              auto sym = 0.5f * (C + C.transpose());
+              C = skew + sym * 0.2f;
+              pars.tuple<3 * 3>("C", pi) = C;
+              // pos
+              pos += vel * dt;
+              pars.tuple<3>("pos", pi) = pos;
+            });
         auto &eles = parObjPtr->getQuadraturePoints();
         if (parObjPtr->category == ZenoParticles::surface) {
           cudaPol(range(eles.size()),
@@ -1093,14 +1105,14 @@ struct ZSGridToZSParticle : INode {
                           "v", grid_t::coord_to_cellid(localIndex));
 
                       vel += vi * W;
-                      C += W * dyadic_prod(vi, xixp); // remove Dinv
+                      C += W * Dinv * dyadic_prod(vi, xixp);
                       vGrad += dyadic_prod(vi, Wgrad);
                     }
                     // damping -> C is omitted here
                     auto skew = 0.5f * (C - C.transpose());
                     auto sym = 0.5f * (C + C.transpose());
                     C = skew + sym * 0.2f;
-                    eles.tuple<3 * 3>("C", pi) = C;
+                    eles.tuple<9>("C", pi) = C;
 
                     // section 4.3
                     auto i0 = (int)eles("inds", 0, pi);
@@ -1122,8 +1134,8 @@ struct ZSGridToZSParticle : INode {
                     auto d_c1 = p1 - p0;
                     auto d_c2 = p2 - p0;
                     auto d_c3 = col(eles.pack<3, 3>("d", pi), 2);
-                    // d_c3 += dt * (C * d_c3);
-                    d_c3 += dt * (vGrad * d_c3);
+                    // d_c3 += dt * (vGrad * d_c3);
+                    d_c3 += dt * (C * d_c3);
 
                     mat3 d{d_c1[0], d_c2[0], d_c3[0], d_c1[1], d_c2[1],
                            d_c3[1], d_c1[2], d_c2[2], d_c3[2]};
@@ -1177,13 +1189,13 @@ struct ZSReturnMapping : INode {
     using namespace zs;
     cudaPol(range(eles.size()), [eles = proxy<execspace_e::cuda>(
                                      {}, eles)] __device__(size_t pi) mutable {
-      auto F = eles.pack<3, 3>("F", pi);
+      auto d = eles.pack<3, 3>("d", pi);
       // hard code ftm
       constexpr auto gamma = 0.f;
       constexpr auto k = 100.f;
       constexpr auto friction_coeff = 0.f;
       // constexpr auto friction_coeff = 0.17f;
-      auto [Q, R] = math::qr(F);
+      auto [Q, R] = math::gram_schmidt(d);
       if (gamma == 0.f) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = zs::min(R(2, 2), 1.f);
@@ -1215,13 +1227,9 @@ struct ZSReturnMapping : INode {
         }
 #endif
       }
-      F = Q * R;
-      eles.tuple<3 * 3>("F", pi) = F;
-#if 0
-      eles.tuple<3 * 3>("d", pi) =
-          F *
-          inverse(eles.pack<3, 3>("Dinv", pi)); // not sure if this is necessary
-#endif
+      d = Q * R;
+      eles.tuple<9>("d", pi) = d;
+      eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("Dinv", pi);
     });
   }
   void apply() override {
