@@ -10,9 +10,6 @@
 #include <cstring>
 #include <variant>
 namespace zeno {
-struct MatrixObject : zeno::IObjectClone<MatrixObject>{//ZhxxHappyObject
-    std::variant<glm::mat3, glm::mat4> m;
-};
 
 /*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
     virtual void apply() override {

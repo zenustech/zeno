@@ -3,6 +3,9 @@
 #include <zeno/utils/vec.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/Exception.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <variant>
 
 namespace zeno {
@@ -39,6 +42,10 @@ struct NumericObject : IObjectClone<NumericObject> {
   void set(T const &x) {
     value = x;
   }
+};
+
+struct MatrixObject : zeno::IObjectClone<MatrixObject>{//ZhxxHappyObject
+    std::variant<glm::mat3, glm::mat4> m;
 };
 
 }
