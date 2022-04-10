@@ -77,16 +77,12 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
     }
 }
 struct PrimitiveCalcNormal : zeno::INode {
-
-  
-
-  virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto flip = get_input<NumericObject>("flip")->get<int>() == 1? -1.0f:1.0f;
-    primCalcNormal(prim.get(), flip);
-
-    set_output("prim", get_input("prim"));
-  }
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto flip = get_input<NumericObject>("flip")->get<bool>();
+        primCalcNormal(prim.get(), flip ? 1 : -1);
+        set_output("prim", get_input("prim"));
+    }
 };
 
 ZENDEFNODE(PrimitiveCalcNormal, {
