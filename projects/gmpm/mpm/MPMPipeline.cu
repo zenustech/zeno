@@ -630,7 +630,6 @@ struct ZSParticleToZSGrid : INode {
                   atomic_add(exec_cuda, &block("v", d, cellid), vft(d));
               }
 
-#if 1
               // type (ii)
               auto transfer = [&P, &grid, &table](const auto &pos,
                                                   const auto &Dinv_r,
@@ -656,7 +655,7 @@ struct ZSParticleToZSGrid : INode {
                     atomic_add(exec_cuda, &block("v", d, cellid), W * vft[d]);
                 }
               };
-              auto Dminv = eles.pack<3, 3>("Dinv", pi);
+              auto Dminv = eles.pack<3, 3>("DmInv", pi);
               auto ind0 = (int)eles("inds", (int)0, pi);
               auto vol0 = verts("vol", ind0);
               auto p0 = verts.pack<3>("pos", ind0);
@@ -669,7 +668,6 @@ struct ZSParticleToZSGrid : INode {
                   transfer(p0, Dinv_ri, vol * dt);
                 }
               }
-#endif
             });
   }
   template <typename Model, typename AnisoModel>
@@ -1141,7 +1139,7 @@ struct ZSGridToZSParticle : INode {
                            d_c3[1], d_c1[2], d_c2[2], d_c3[2]};
                     eles.tuple<9>("d", pi) = d;
                     // F
-                    eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("Dinv", pi);
+                    eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
                   });
         } // case: surface
       }   // end mesh particle g2p
@@ -1229,7 +1227,7 @@ struct ZSReturnMapping : INode {
       }
       d = Q * R;
       eles.tuple<9>("d", pi) = d;
-      eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("Dinv", pi);
+      eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
     });
   }
   void apply() override {
