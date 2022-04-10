@@ -31,7 +31,7 @@
       "path": [
        null,
        null,
-       "assets/mattress_0_01.obj"
+       "assets/mattress.obj"
       ],
       "SRC": [
        null,
@@ -57,8 +57,8 @@
        null
       ],
       "translation": [
-       "a300d4df-NumericVec3",
-       "vec3",
+       null,
+       null,
        null
       ],
       "offset": [
@@ -67,8 +67,8 @@
        null
       ],
       "eulerXYZ": [
-       "9aa2188b-NumericVec3",
-       "vec3",
+       null,
+       null,
        null
       ],
       "quatRotation": [
@@ -106,26 +106,6 @@
       "ONCE"
      ]
     },
-    "9aa2188b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -1664.3940420908766,
-      217.43478787445258
-     ],
-     "options": []
-    },
     "3bb02b7b-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
@@ -137,32 +117,12 @@
      },
      "params": {
       "x": 4.0,
-      "y": 4.0,
+      "y": 1.0,
       "z": 4.0
      },
      "uipos": [
-      -1517.3150147352537,
-      436.713093345577
-     ],
-     "options": []
-    },
-    "a300d4df-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": -2.0,
-      "y": -0.2,
-      "z": -2.0
-     },
-     "uipos": [
-      -1601.1664585042504,
-      25.6391951692857
+      -1485.6542166131887,
+      380.69783512961646
      ],
      "options": []
     },
@@ -176,7 +136,7 @@
       ]
      },
      "params": {
-      "value": 0.05
+      "value": 0.02
      },
      "uipos": [
       -1918.7350620352622,
@@ -235,8 +195,8 @@
      },
      "params": {},
      "uipos": [
-      250.54890826842689,
-      1239.2497981572942
+      229.238755686268,
+      1248.382720692505
      ],
      "options": [
       "ONCE"
@@ -262,36 +222,6 @@
      ],
      "options": []
     },
-    "37cb1d39-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "5b2e71ff-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "Dx": [
-       "c66f775e-NumericOperator",
-       "ret",
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      593.2513297872339,
-      1435.234612462005
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "61888c4e-PortalIn": {
      "name": "PortalIn",
      "inputs": {
@@ -315,41 +245,11 @@
      ],
      "options": []
     },
-    "3dfd5ba2-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "374779c9-ReadObjPrim",
-       "prim",
-       null
-      ],
-      "Dx": [
-       "c66f775e-NumericOperator",
-       "ret",
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      591.280395136778,
-      1849.2951842512493
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "07a86228-ToZSLevelSet": {
      "name": "ToZSLevelSet",
      "inputs": {
       "VDBGrid": [
-       "37cb1d39-PrimitiveToSDF",
+       "02063477-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -374,7 +274,7 @@
      "name": "ToZSLevelSet",
      "inputs": {
       "VDBGrid": [
-       "3dfd5ba2-PrimitiveToSDF",
+       "4607776f-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -2539,8 +2439,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -1824.5518353043976,
-      -428.31001624771216
+      -1824.5518353043979,
+      -435.6163542758809
      ],
      "options": []
     },
@@ -2565,7 +2465,9 @@
       -252.4790419161672,
       1893.4233805116994
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "387797d6-SetMaterial": {
      "name": "SetMaterial",
@@ -3569,7 +3471,7 @@
       "E": [
        null,
        null,
-       400.0
+       200.0
       ],
       "nu": [
        null,
@@ -3639,13 +3541,89 @@
       -1889.2387895218055
      ],
      "options": []
+    },
+    "4607776f-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "374779c9-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "Dx": [
+       "bd4c2913-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      86.70187793426925,
+      1837.3004694835042
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "bd4c2913-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx"
+     },
+     "uipos": [
+      -542.9218016431737,
+      1631.9862822769387
+     ],
+     "options": []
+    },
+    "02063477-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "5b2e71ff-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "Dx": [
+       "bd4c2913-PortalOut",
+       "port",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      538.842429577446,
+      1467.356220657226
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1646.5876510289042,
-    "y": -853.7980062482384,
-    "width": 3662.1093749999977,
-    "height": 2026.3671874999295
+    "x": -105.82871393538528,
+    "y": 1023.6390273395173,
+    "width": 2343.7499999999986,
+    "height": 1296.874999999955
    }
   },
   "bark": {
