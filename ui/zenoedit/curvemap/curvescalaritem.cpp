@@ -1,6 +1,7 @@
 #include <QtWidgets>
 #include "curvescalaritem.h"
 #include "curvemapview.h"
+#include "curveutil.h"
 
 
 CurveScalarItem::CurveScalarItem(bool bHorizontal, CurveMapView* pView, QGraphicsItem* parent)
@@ -14,18 +15,21 @@ CurveScalarItem::CurveScalarItem(bool bHorizontal, CurveMapView* pView, QGraphic
 QRectF CurveScalarItem::boundingRect() const
 {
 	const QMargins margins = m_view->margins();
+    const QTransform& trans = m_view->transform();
 	const QRectF& rcGrid = m_view->gridBoundingRect();
 	if (m_bHorizontal)
 	{
 		qreal height = sz;
 		qreal width = rcGrid.width();
-		return QRectF(rcGrid.left(), 0, width * m_view->factor(), height);
+		QRectF orginalRc(rcGrid.left(), 0, width * trans.m11(), height);
+		return orginalRc;
 	}
 	else
 	{
 		qreal width = sz;
 		qreal height = rcGrid.height();
-		return QRectF(0, rcGrid.top(), width, height * m_view->factor());
+        QRectF orginalRc(0, rcGrid.top(), width, height * trans.m22());
+        return orginalRc;
 	}
 }
 
@@ -33,11 +37,12 @@ void CurveScalarItem::resetPosition()
 {
 	QRect rcViewport = m_view->viewport()->rect();
 	QPointF wtf = m_view->mapToScene(rcViewport.topLeft());
+	const QTransform& trans = m_view->transform();
 	if (m_bHorizontal)
 	{
-		wtf = m_view->mapToScene(rcViewport.bottomLeft());
-		const QMargins& margins = m_view->margins();
-		setY(wtf.y() - sz / m_view->factor());
+        const QMargins &margins = m_view->margins();
+		wtf = m_view->mapToScene(rcViewport.bottomLeft() - QPoint(0, sz));
+		setY(wtf.y());
 	}
 	else
 	{
@@ -72,16 +77,26 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 		to = n;
 	}
 
-	qreal factor = m_view->factor();
-
 	if (n <= 0)
 		return;
 
+	const QTransform &trans = m_view->transform();
+    qreal scaleX = trans.m11();
+    qreal scaleY = trans.m22();
+
+	int prec = 2;
 	int nFrames = 0;
 	if (m_bHorizontal)
-		nFrames = m_view->frames(true);
+	{
+        nFrames = m_view->frames(true);
+	}
 	else
-		nFrames = m_view->frames(false);
+	{
+        nFrames = m_view->frames(false);
+	}
+
+    auto frames = curve_util::numframes(trans.m11(), trans.m22());
+    nFrames = m_bHorizontal ? frames.first : frames.second;
 
 	CURVE_RANGE rg = m_view->range();
 
@@ -94,34 +109,36 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 	if (m_bHorizontal)
 	{
-		qreal step = rcGrid.width() / nFrames;
+		qreal realWidth = rcGrid.width() * scaleX;
+        n *= scaleX;
+		qreal step = realWidth / nFrames;
 		qreal y = option->rect.top();
-		for (qreal i = 0; i < rcGrid.width(); i += step)
+		for (qreal i = 0; i < realWidth; i += step)
 		{
-			qreal x = i * factor;
+			qreal x = i;
 			qreal scalar = (rg.xTo - rg.xFrom) * (i - 0) / n + rg.xFrom;
-			int prec = 3;
+			
 			QString numText = QString::number(scalar, 'g', prec);
 			qreal textWidth = metrics.horizontalAdvance(numText);
 			painter->drawText(QPoint(x - textWidth / 2, y + 22), numText);
 		}
 
-		qreal x = rcGrid.width() * factor;
+		qreal x = realWidth;
 		qreal scalar = rg.xTo;
-		int prec = 3;
 		QString numText = QString::number(scalar, 'g', prec);
 		qreal textWidth = metrics.horizontalAdvance(numText);
 		painter->drawText(QPoint(x - textWidth / 2, y + 22), numText);
 	}
 	else
 	{
-		qreal step = rcGrid.height() / nFrames;
+		qreal realHeight = rcGrid.height() * trans.m22();
+		n *= scaleY;
+		qreal step = realHeight / nFrames;
 		qreal x = option->rect.left();
-		for (qreal i = rcGrid.height(); i > 0; i -= step)
+		for (qreal i = realHeight; i > 0; i -= step)
 		{	
-			qreal y = i * factor;
+			qreal y = i;
 			qreal scalar = (rg.yTo - rg.yFrom) * (n - i) / n + rg.yFrom;
-			int prec = 3;
 			QString numText = QString::number(scalar, 'g', prec);
 			qreal textHeight = metrics.height();
 
@@ -130,7 +147,6 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 		qreal y = 0;
 		qreal scalar = rg.yTo;
-		int prec = 3;
 		QString numText = QString::number(scalar, 'g', prec);
 		qreal textHeight = metrics.height();
 		painter->drawText(QPointF(x + 10, y + textHeight / 2), numText);

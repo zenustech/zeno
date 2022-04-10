@@ -238,8 +238,8 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 		if (!outId.isEmpty() && !outSock.isEmpty())
 		{
 			inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
-			m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 		}
+		m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 	} else {
         zeno::log_warn("no such input socket {}", inSock.toStdString());
     }

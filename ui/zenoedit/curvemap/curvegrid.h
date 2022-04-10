@@ -5,12 +5,7 @@
 
 class CurveMapView;
 class CurveNodeItem;
-
-struct MODEL_PACK
-{
-	QStandardItemModel* pModel;
-	QItemSelectionModel* pSelection;
-};
+class CurvePathItem;
 
 class CurveGrid : public QGraphicsObject
 {
@@ -23,9 +18,16 @@ public:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event);
 	void initTransform();
 	void initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+    bool isFuncCurve() const;
+    int nodeCount() const;
+	int indexOf(CurveNodeItem* pItem) const;
+    QPointF nodePos(int i) const;
+    CurveNodeItem* nodeItem(int i) const;
 
-private:
-	void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+public slots:
+    void onNodeGeometryChanged();
+	void onNodeDeleted();
+    void onPathClicked(const QPointF& pos);
 
 private:
 	QColor m_clrGrid, m_clrBg;
@@ -33,9 +35,9 @@ private:
 	QRectF m_initRc;
 	QTransform m_transform;
 	QTransform m_invTrans;
-	QMap<QString, CurveNodeItem*> m_nodes;
-	QItemSelectionModel* m_selection;
-	QStandardItemModel* m_model;
+	QVector<CurveNodeItem*> m_vecNodes;
+	QVector<CurvePathItem*> m_vecCurves;
+	bool m_bFCurve;			//function curve.
 };
 
 

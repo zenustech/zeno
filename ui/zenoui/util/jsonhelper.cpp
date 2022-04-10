@@ -13,7 +13,7 @@ namespace JsonHelper
 		writer.EndArray();
 	}
 
-	void AddVariantList(const QVariantList& list, RAPIDJSON_WRITER& writer)
+	void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer)
 	{
 		writer.StartArray();
 		for (const QVariant& value : list)
@@ -35,8 +35,24 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
-			else if (varType != QVariant::Invalid) // TODO: LUZH please support vec3f
+			else if (varType != QVariant::Invalid)
             {
+				if (varType == QVariant::UserType) {
+					//todo: declare a custom metatype
+					QVector<qreal> vec = value.value<QVector<qreal>>();
+                    if (!vec.isEmpty()) {
+                        writer.StartArray();
+                        for (int i = 0; i < vec.size(); i++) {
+                            if (type == "vec3i")
+                                writer.Int(vec[i]);
+                            else
+                                writer.Double(vec[i]);
+						}
+                        writer.EndArray();
+						continue;
+					}
+				}
+
                 writer.Null();
                 zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
                 //Q_ASSERT(false);
@@ -45,7 +61,7 @@ namespace JsonHelper
 		writer.EndArray();
 	}
 
-	void AddVariantListWithNull(const QVariantList& list, RAPIDJSON_WRITER& writer)
+	void AddVariantListWithNull(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer)
 	{
 		writer.StartArray();
 		for (const QVariant& value : list)
@@ -69,6 +85,23 @@ namespace JsonHelper
 			}
 			else
 			{
+                if (varType == QVariant::UserType) {
+					//todo: declare a custom metatype
+					QVector<qreal> vec = value.value<QVector<qreal>>();
+					//for vec:
+                    if (!vec.isEmpty()) {
+                        writer.StartArray();
+                        for (int i = 0; i < vec.size(); i++) {
+							//todo: more type.
+                            if (type == "vec3i")
+                                writer.Int(vec[i]);
+                            else
+                                writer.Double(vec[i]);
+						}
+                        writer.EndArray();
+						continue;
+					}
+				}
 				if (varType != QVariant::Invalid)
 					zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
 				writer.Null();

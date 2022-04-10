@@ -16,5 +16,18 @@ namespace curve_util
 		return rc;
 	}
 
+	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value)
+	{
+		auto lst = pModel->match(pModel->index(0, 0), role, value);
+		if (lst.size() != 1)
+			return QModelIndex();
+		return lst[0];
+	}
 
+	QPair<int, int> numframes(qreal scaleX, qreal scaleY)
+	{
+		int wtfX = 10 * scaleX * 1;
+        int wtfY = 10 * scaleY * 1;
+        return {wtfX, wtfY};
+	}
 }

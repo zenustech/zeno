@@ -82,7 +82,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 const QVariant& defl = input.info.defaultValue;
                 if (!defl.isNull())
                 {
-                    AddVariantList({ "setNodeInput", ident, inputName, defl }, writer);
+                    AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
                 }
             }
             else
@@ -99,7 +99,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 
 		for (PARAM_INFO param_info : params)
 		{
-            AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, writer);
+            AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, param_info.typeDesc, writer);
 		}
 
         if (opts & OPT_ONCE) {

@@ -234,6 +234,16 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     {
 		return QVariant();
     }
+    else if (val.GetType() == rapidjson::kArrayType)
+    {
+        QVector<qreal> vec;
+        auto values = val.GetArray();
+        for (int i = 0; i < values.Size(); i++)
+        {
+            vec.append(values[i].GetFloat());
+        }
+        return QVariant::fromValue(vec);
+    }
 	else
     {
         zeno::log_warn("bad rapidjson value type {}", val.GetType());

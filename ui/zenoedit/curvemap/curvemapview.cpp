@@ -14,6 +14,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
 	, m_bInit(false)
+	, m_bSmoothCurve(true)
 {
 	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
@@ -132,6 +133,8 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 	}
 	
 	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
+    m_pHScalar->update();
+    m_pVScalar->update();
 }
 
 QRectF CurveMapView::gridBoundingRect() const
@@ -139,7 +142,7 @@ QRectF CurveMapView::gridBoundingRect() const
 	QRectF rc = rect();
 	rc = rc.marginsRemoved(m_gridMargins);
 	QRectF rc2 = m_grid->boundingRect();
-	return rc;
+	return rc2;
 }
 
 void CurveMapView::wheelEvent(QWheelEvent* event)
@@ -230,6 +233,11 @@ int CurveMapView::frames(bool bHorizontal) const
 		int wtf = H * m_factor * 0.015;
 		return wtf;
 	}
+}
+
+bool CurveMapView::isSmoothCurve() const
+{
+    return m_bSmoothCurve;
 }
 
 void CurveMapView::drawBackground(QPainter* painter, const QRectF& rect)

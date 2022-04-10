@@ -28,9 +28,13 @@ namespace curve_util
 		ROLE_ItemPos,
 		ROLE_ItemStatus,
 		ROLE_MouseClicked,
+		ROLE_CurveLeftNode,
+		ROLE_CurveRightNode
 	};
 
 	QRectF fitInRange(CURVE_RANGE rg, const QMargins& margins);
+	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
+	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 }
 
 #endif

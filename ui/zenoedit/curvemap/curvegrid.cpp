@@ -3,6 +3,8 @@
 #include "curvenodeitem.h"
 #include "curveutil.h"
 #include <zenoui/util/uihelper.h>
+#include <QtGui/private/qbezier_p.h>
+#include <QtGui/private/qstroker_p.h>
 
 using namespace curve_util;
 
@@ -10,8 +12,7 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 	: QGraphicsObject(parent)
 	, m_view(pView)
 	, m_initRc(rc)
-	, m_model(nullptr)
-	, m_selection(nullptr)
+	, m_bFCurve(true)
 {
 	initTransform();
 }
@@ -59,12 +60,6 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 	int N = pts.size();
 	Q_ASSERT(N * 2 == handlers.size());
 
-	m_model = new QStandardItemModel(this);
-	m_selection = new QItemSelectionModel(m_model);
-	MODEL_PACK pack;
-	pack.pModel = m_model;
-	pack.pSelection = m_selection;
-
 	for (int i = 0; i < N; i++)
 	{
 		QPointF scenePos = m_invTrans.map(pts[i]);
@@ -73,56 +68,166 @@ void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& 
 		QPointF leftOffset = leftScenePos - scenePos;
 		QPointF rightOffset = rightScenePos - scenePos;
 
-		QStandardItem* pNode = new QStandardItem;
-		const QString& id = UiHelper::generateUuid();
-		pNode->setData(id, ROLE_ItemObjId);
-		pNode->setData(ITEM_NODE, ROLE_ItemType);
-		pNode->setData(scenePos, ROLE_ItemPos);
-		pNode->setData(ITEM_UNTOGGLED, ROLE_ItemStatus);
-		m_model->appendRow(pNode);
-
-		const QModelIndex& idx = m_model->indexFromItem(pNode);
 		CurveNodeItem* pNodeItem = new CurveNodeItem(m_view, scenePos, this);
-		pNodeItem->initHandles(pack, idx, leftOffset, rightOffset);
+		pNodeItem->initHandles(leftOffset, rightOffset);
+		connect(pNodeItem, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+        connect(pNodeItem, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
 
-		m_nodes.insert(id, pNodeItem);
+		if (i == 0)
+		{
+            m_vecNodes.append(pNodeItem);
+			continue;
+		}
+
+		CurvePathItem *pathItem = new CurvePathItem(this);
+        connect(pathItem, SIGNAL(clicked(const QPointF &)), this, SLOT(onPathClicked(const QPointF&)));
+
+		QPainterPath path;
+
+		QPointF lastNodePos = m_invTrans.map(pts[i-1]);
+		QPointF lastRightPos = m_invTrans.map(pts[i-1] + handlers[(i - 1) * 2 + 1]);
+
+		path.moveTo(lastNodePos);
+		path.cubicTo(lastRightPos, leftScenePos, scenePos);
+		pathItem->setPath(path);
+        pathItem->update();
+
+		m_vecNodes.append(pNodeItem);
+        m_vecCurves.append(pathItem);
 	}
-
-	//init curves.
-
-	connect(pack.pModel, &QStandardItemModel::dataChanged, this, &CurveGrid::onDataChanged);
 }
 
-void CurveGrid::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+int CurveGrid::nodeCount() const
 {
-	ItemType type =(ItemType)topLeft.data(ROLE_ItemType).toInt();
-	if (type == ITEM_NODE)
-	{
-		const QString& objId = topLeft.data(ROLE_ItemObjId).toString();
-		if (m_nodes.find(objId) != m_nodes.end())
-		{
-			CurveNodeItem* pNodeItem = m_nodes[objId];
-			pNodeItem->updateStatus();
-		}
-	}
-	else if (type == ITEM_LEFTHANDLE || type == ITEM_RIGHTHANDLE)
-	{
-		const QString& objId = topLeft.data(ROLE_ItemObjId).toString();
-		const QString& nodeId = topLeft.data(ROLE_ItemBelongTo).toString();
-		auto lst = m_model->match(m_model->index(0, 0), ROLE_ItemObjId, nodeId, 1, Qt::MatchExactly);
-		Q_ASSERT(lst.size() == 1);
-		const QModelIndex& nodeIdx = lst[0];
+    return m_vecNodes.size();
+}
 
-		if (m_nodes.find(nodeId) != m_nodes.end())
-		{
-			CurveNodeItem* pNodeItem = m_nodes[nodeId];
-			pNodeItem->updateHandleStatus(objId);
-		}
-	}
-	else if (type == ITEM_CURVE)
-	{
+int CurveGrid::indexOf(CurveNodeItem *pItem) const
+{
+    return m_vecNodes.indexOf(pItem);
+}
 
+QPointF CurveGrid::nodePos(int i) const
+{
+    Q_ASSERT(i >= 0 && i < m_vecNodes.size());
+    return m_vecNodes[i]->pos();
+}
+
+CurveNodeItem* CurveGrid::nodeItem(int i) const
+{
+    Q_ASSERT(i >= 0 && i < m_vecNodes.size());
+    return m_vecNodes[i];
+}
+
+void CurveGrid::onNodeGeometryChanged()
+{
+    CurveNodeItem* pNode = qobject_cast<CurveNodeItem*>(sender());
+    int i = m_vecNodes.indexOf(pNode);
+    Q_ASSERT(i >= 0);
+
+    QGraphicsPathItem* pLeftCurve = i > 0 ? m_vecCurves[i-1] : nullptr;
+    if (pLeftCurve)
+	{
+        CurveNodeItem *pLeftNode = m_vecNodes[i - 1];
+        QPainterPath path;
+        path.moveTo(pLeftNode->pos());
+        path.cubicTo(pLeftNode->rightHandlePos(), pNode->leftHandlePos(), pNode->pos());
+        pLeftCurve->setPath(path);
+        pLeftCurve->update();
 	}
+
+	QGraphicsPathItem *pRightCurve = (i < m_vecNodes.size() - 1) ? m_vecCurves[i] : nullptr;
+    if (pRightCurve)
+	{
+        CurveNodeItem *pRightNode = m_vecNodes[i + 1];
+        QPainterPath path;
+        path.moveTo(pNode->pos());
+        path.cubicTo(pNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
+        pRightCurve->setPath(path);
+        pRightCurve->update();
+	}
+}
+
+void CurveGrid::onNodeDeleted()
+{
+    CurveNodeItem* pItem = qobject_cast<CurveNodeItem*>(sender());
+    Q_ASSERT(pItem);
+    int i = m_vecNodes.indexOf(pItem);
+    if (i == 0 || i == m_vecNodes.size() - 1)
+        return;
+
+	CurveNodeItem* pLeftNode = m_vecNodes[i - 1];
+    CurveNodeItem* pRightNode = m_vecNodes[i + 1];
+
+	//curves[i-1] as a new curve from node i-1 to node i.
+	CurvePathItem* pathItem = m_vecCurves[i - 1];
+
+    m_vecCurves[i]->deleteLater();
+	pItem->deleteLater();
+
+	CurvePathItem* pDeleleCurve = m_vecCurves[i];
+	m_vecCurves.remove(i);
+    m_vecNodes.remove(i);
+
+	QPainterPath path;
+    path.moveTo(pLeftNode->pos());
+	path.cubicTo(pLeftNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
+    pathItem->setPath(path);
+	pathItem->update();
+}
+
+void CurveGrid::onPathClicked(const QPointF& pos)
+{
+	CurvePathItem* pItem = qobject_cast<CurvePathItem*>(sender());
+    Q_ASSERT(pItem);
+    int i = m_vecCurves.indexOf(pItem);
+    CurveNodeItem *pLeftNode = m_vecNodes[i];
+    CurveNodeItem *pRightNode = m_vecNodes[i + 1];
+
+	QPointF leftNodePos = pLeftNode->pos(), rightHdlPos = pLeftNode->rightHandlePos(),
+			leftHdlPos = pRightNode->leftHandlePos(), rightNodePos = pRightNode->pos();
+
+	/*
+	QBezier bezier = QBezier::fromPoints(leftNodePos, rightHdlPos, leftHdlPos, rightNodePos);
+	qreal t = (pos.x() - leftNodePos.x()) / (rightNodePos.x() - leftNodePos.x());
+	QPointF k = bezier.derivedAt(t);
+    QVector2D vec(k);
+    vec.normalize();
+	*/
+
+	QPointF leftOffset(-50, 0);
+    QPointF rightOffset(50, 0);
+
+	//insert a new node.
+    CurveNodeItem* pNewNode = new CurveNodeItem(m_view, pos, this);
+	connect(pNewNode, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+    connect(pNewNode, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
+
+    pNewNode->initHandles(leftOffset, rightOffset);
+
+	CurvePathItem* pLeftHalf = pItem;
+    CurvePathItem* pRightHalf = new CurvePathItem(this);
+	connect(pRightHalf, SIGNAL(clicked(const QPointF &)), this, SLOT(onPathClicked(const QPointF&)));
+
+	QPainterPath leftPath;
+    leftPath.moveTo(leftNodePos);
+	leftPath.cubicTo(rightHdlPos, pNewNode->leftHandlePos(), pNewNode->pos());
+    pLeftHalf->setPath(leftPath);
+	pLeftHalf->update();
+
+	QPainterPath rightPath;
+    rightPath.moveTo(pNewNode->pos());
+	rightPath.cubicTo(pNewNode->rightHandlePos(), leftHdlPos, rightNodePos);
+    pRightHalf->setPath(rightPath);
+	pRightHalf->update();
+
+	m_vecNodes.insert(i + 1, pNewNode);
+    m_vecCurves.insert(i + 1, pRightHalf);
+}
+
+bool CurveGrid::isFuncCurve() const
+{
+    return m_bFCurve;
 }
 
 void CurveGrid::setColor(const QColor& clrGrid, const QColor& clrBackground)
@@ -152,8 +257,11 @@ void CurveGrid::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
 	int W = rc.width(), H = rc.height();
 	qreal factor = m_view->factor();
-	int nVLines = m_view->frames(true);
-	int nHLines = m_view->frames(false);
+
+	const QTransform& trans = m_view->transform();
+	auto frames = curve_util::numframes(trans.m11(), trans.m22());
+    int nVLines = frames.first;
+	int nHLines = frames.second;
 
 	const qreal left = rc.left(), right = rc.right();
 	const qreal top = rc.top(), bottom = rc.bottom();
