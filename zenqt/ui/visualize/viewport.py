@@ -226,7 +226,10 @@ class QDMDisplayMenu(QMenu):
         self.addAction(action)
 
 def get_env_tex_names():
-    ns = os.listdir('assets/sky_box')
+    current_path = os.path.abspath(__file__)
+    father_path = os.path.abspath(os.path.dirname(current_path) + os.path.sep + ".")
+    zenqt_dir = os.path.abspath(os.path.dirname(father_path) + os.path.sep + "..")
+    ns = os.path.join(os.path.abspath(os.path.dirname(zenqt_dir) ), 'assets\sky_box')
     return list(ns)
 
 env_texs = get_env_tex_names()
