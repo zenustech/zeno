@@ -999,12 +999,12 @@ out vec3 iTangent;
 
 void main()
 {
-  position = vPosition;
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
   iColor = vColor;
-  iNormal = mat3(transpose(inverse(mInstModel))) * vNormal;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
   iTangent = mat3(mInstModel) * vTangent;
-  gl_Position = mView * mInstModel * vec4(position, 1.0);
+  gl_Position = mView * vec4(position, 1.0);
 }
 )";
     }
@@ -1270,12 +1270,12 @@ out vec3 iTexCoord;
 out vec3 iTangent;
 void main()
 {
-  position = vPosition;
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
   iColor = vColor;
-  iNormal = mat3(transpose(inverse(mInstModel))) * vNormal;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
   iTangent = mat3(mInstModel) * vTangent;
-  gl_Position = mVP * mInstModel * vec4(position, 1.0);
+  gl_Position = mVP * vec4(position, 1.0);
 }
 )";
         }
