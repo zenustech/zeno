@@ -1,6 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-	<file>stylesheet/darkening.qss</file>
 	<file>stylesheet/qlabel.qss</file>
 	<file>stylesheet/qlineedit.qss</file>
 	<file>stylesheet/qcombobox.qss</file>
