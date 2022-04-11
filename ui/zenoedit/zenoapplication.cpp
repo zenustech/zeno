@@ -17,41 +17,26 @@ ZenoApplication::~ZenoApplication()
 {
 }
 
+QString ZenoApplication::readQss(const QString& qssPath)
+{
+    bool ret = false;
+    QFile file;
+    file.setFileName(qssPath);
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
+    return file.readAll();
+}
+
 void ZenoApplication::initStyleSheets()
 {
-    QByteArray bytes;
     QString qss;
-
-	QFile file(":/stylesheet/qlabel.qss");
-	bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss = file.readAll();
-
-    file.setFileName(":/stylesheet/qlineedit.qss");
-    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss += file.readAll();
-
-    file.setFileName(":/stylesheet/menu.qss");
-    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss += file.readAll();
-
-    file.setFileName(":/stylesheet/qcombobox.qss");
-    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss += file.readAll();
-
-    file.setFileName(":/stylesheet/qwidget.qss");
-    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss += file.readAll();
-
-    file.setFileName(":/stylesheet/pushbutton.qss");
-    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
-    qss += file.readAll();
-
+    qss += readQss(":/stylesheet/qlabel.qss");
+    qss += readQss(":/stylesheet/qlineedit.qss");
+    qss += readQss(":/stylesheet/menu.qss");
+    qss += readQss(":/stylesheet/qcombobox.qss");
+    qss += readQss(":/stylesheet/qwidget.qss");
+    qss += readQss(":/stylesheet/pushbutton.qss");
+    qss += readQss(":/stylesheet/scrollbar.qss");
     setStyleSheet(qss);
 }
 

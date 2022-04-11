@@ -1,4 +1,5 @@
 #include "zveceditor.h"
+#include <zenoui/style/zenostyle.h>
 
 
 ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
@@ -15,6 +16,7 @@ ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QSt
 	for (int i = 0; i < m_editors.size(); i++)
 	{
 		m_editors[i] = new QLineEdit;
+        m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
 		m_editors[i]->setProperty("cssClass", styleCls);
 		if (!vec.isEmpty())
 			m_editors[i]->setText(QString::number(vec[i]));

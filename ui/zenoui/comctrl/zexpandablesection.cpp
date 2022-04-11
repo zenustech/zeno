@@ -6,11 +6,9 @@
 ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	: QWidget(parent)
 	, m_mainLayout(nullptr)
-	, m_animation(nullptr),
-      m_contentArea(nullptr)
+	, m_contentArea(nullptr)
 	, m_contentWidget(nullptr)
 {
-    m_animation = new QParallelAnimationGroup(this);
 	m_contentArea = new QScrollArea(this);
 	m_mainLayout = new QGridLayout(this);
 
@@ -23,12 +21,7 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	m_contentArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	m_contentArea->setMinimumHeight(0);
 	m_contentArea->setProperty("cssClass", "proppanel");
-
 	m_contentArea->setFrameShape(QFrame::NoFrame);
-
-	m_animation->addAnimation(new QPropertyAnimation(this, "minimumHeight"));
-	m_animation->addAnimation(new QPropertyAnimation(this, "maximumHeight"));
-	m_animation->addAnimation(new QPropertyAnimation(m_contentArea, "maximumHeight"));
 
 	m_mainLayout->setVerticalSpacing(0);
 	m_mainLayout->setContentsMargins(15, 15, 15, 15);
@@ -54,32 +47,10 @@ void ZExpandableSection::setContentLayout(QLayout* contentLayout)
 
     m_contentArea->setWidget(contentWidget);
 	update();
-
-	//const auto collapsedHeight = sizeHint().height() - m_contentArea->maximumHeight();
-	//auto contentHeight = contentLayout->sizeHint().height();
-
-	//for (int i = 0; i < m_animation->animationCount() - 1; i++)
-	//{
-	//	QPropertyAnimation* SectionAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(i));
-	//	SectionAnimation->setDuration(m_duration);
-	//	SectionAnimation->setStartValue(collapsedHeight);
-	//	SectionAnimation->setEndValue(collapsedHeight + contentHeight);
-	//}
-
-	//QPropertyAnimation* contentAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(
-	//	m_animation->animationCount() - 1));
-	//contentAnimation->setDuration(m_duration);
-	//contentAnimation->setStartValue(0);
-	//contentAnimation->setEndValue(contentHeight);
-
-	//expand when inited.
-	//m_collaspBtn->toggle();
-	//m_contentArea->setMaximumHeight(contentHeight);
-	//m_animation->setDirection(QAbstractAnimation::Backward);
 }
 
 void ZExpandableSection::toggle(bool collasped)
 {
-	//m_animation->setDirection(collasped ? QAbstractAnimation::Forward : QAbstractAnimation::Backward);
-	//m_animation->start();
+    m_contentArea->setVisible(!m_contentArea->isVisible());
+    update();
 }

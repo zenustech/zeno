@@ -8,7 +8,6 @@ class ZIconLabel;
 class ZExpandableSection : public QWidget
 {
 	Q_OBJECT
-
 public:
 	explicit ZExpandableSection(const QString& title, QWidget* parent = nullptr);
 	void setContentLayout(QLayout* layout);
@@ -19,10 +18,8 @@ public slots:
 private:
 	QGridLayout* m_mainLayout;
 	ZIconLabel* m_collaspBtn;
-	QParallelAnimationGroup* m_animation;
 	QScrollArea* m_contentArea;
 	QWidget* m_contentWidget;
-	const int m_duration = 0;
 };
 
 #endif

@@ -8,5 +8,6 @@
     <file>stylesheet/groupbox.qss</file>
     <file>stylesheet/pushbutton.qss</file>
     <file>stylesheet/spinbox.qss</file>
+    <file>stylesheet/scrollbar.qss</file>
 </qresource>
 </RCC>

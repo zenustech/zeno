@@ -22,6 +22,8 @@ public:
     ZenoMainWindow* getMainWindow();
 
 private:
+    QString readQss(const QString& qssPath);
+
     QSharedPointer<GraphsManagment> m_pGraphs;
     bool m_bIOProcessing;
 };
