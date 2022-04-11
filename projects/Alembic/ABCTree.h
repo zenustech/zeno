@@ -15,7 +15,7 @@ struct CameraInfo {
 struct ABCTree : IObjectClone<ABCTree> {
     std::string name;
     std::shared_ptr<PrimitiveObject> prim;
-    Alembic::Abc::v12::M44d xform = Alembic::Abc::v12::M44d();
+    Alembic::Abc::M44d xform = Alembic::Abc::M44d();
     std::shared_ptr<CameraInfo> camera_info;
     std::vector<std::shared_ptr<ABCTree>> children;
 
