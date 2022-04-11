@@ -1,3 +1,12 @@
+QComboBox QAbstractItemView {
+    border: 0px solid rgba(0,0,0,1);
+    background: #272727;
+    selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+    outline: 0px;
+}
+
 QComboBox[cssClass="proppanel"] {
     border: 0px solid gray;
     border-radius: 0px;
@@ -16,7 +25,6 @@ QComboBox[cssClass="proppanel"]:!editable, QComboBox::drop-down:editable {
      background: rgb(19,19,19);
 }
 
-/* QComboBox gets the "on" state when the popup is open */
 QComboBox[cssClass="proppanel"]:!editable:on, QComboBox::drop-down:editable:on {
     background: rgb(19,19,19);
 }

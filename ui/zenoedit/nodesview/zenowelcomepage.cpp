@@ -8,6 +8,9 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 	m_ui = new Ui::WelcomePage;
 	m_ui->setupUi(this);
 
+	m_ui->btnNew->setProperty("cssClass", "welcomepage");
+    m_ui->btnOpen->setProperty("cssClass", "welcomepage");
+
 	initSignals();
 }
 

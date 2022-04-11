@@ -1,0 +1,6 @@
+QScrollArea[cssClass="proppanel"]
+{
+    background: transparent;
+}
+
+

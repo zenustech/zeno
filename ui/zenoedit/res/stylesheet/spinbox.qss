@@ -1,0 +1,27 @@
+QSpinBox {
+    border: 0.5px solid rgba(0,0,0,1);
+	background: #17171A;
+	color: #FFFFFF;
+	font: 10px "HarmonyOS Sans";
+    padding-right: 0px;
+}
+
+QSpinBox::down-button
+{
+	image: url(:/icons/spinbox-downbutton.svg);
+}
+
+QSpinBox::up-button
+{
+	image: url(:/icons/spinbox-upbutton.svg);
+}
+
+QSpinBox::down-button:hover
+{
+	image: url(:/icons/spinbox-downbutton-hover.svg);
+}
+
+QSpinBox::up-button:hover
+{
+	image: url(:/icons/spinbox-upbutton-hover.svg);
+}

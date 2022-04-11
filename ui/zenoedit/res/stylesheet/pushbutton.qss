@@ -1,0 +1,30 @@
+QPushButton[cssClass="grayButton"]
+{
+    border-width: 0px;
+    border-radius: 0px;
+	background-color: rgb(71,71,71);
+	font: 14px 'HarmonyOS Sans';
+	color: rgb(168, 163, 160);
+}
+
+QPushButton[cssClass="grayButton"]:hover
+{
+	color: rgb(255, 255, 255);
+}
+
+QPushButton[cssClass="welcomepage"]
+{
+	border-style: solid;
+    border-width: 1px;
+    border-radius: 0px;
+    border-color: rgba(133,130,128,1);
+	background-color: transparent;
+	font: 14px 'HarmonyOS Sans';
+	color: rgb(156, 156, 156);
+}
+
+QPushButton[cssClass="welcomepage"]:hover
+{
+    border-color: rgb(255,255,255);
+	color: rgb(255, 255, 255);
+}

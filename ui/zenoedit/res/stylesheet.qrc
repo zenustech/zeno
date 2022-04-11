@@ -4,5 +4,10 @@
 	<file>stylesheet/qlabel.qss</file>
 	<file>stylesheet/qlineedit.qss</file>
 	<file>stylesheet/qcombobox.qss</file>
+    <file>stylesheet/qwidget.qss</file>
+    <file>stylesheet/menu.qss</file>
+    <file>stylesheet/groupbox.qss</file>
+    <file>stylesheet/pushbutton.qss</file>
+    <file>stylesheet/spinbox.qss</file>
 </qresource>
 </RCC>

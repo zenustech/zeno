@@ -6,10 +6,11 @@
 ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	: QWidget(parent)
 	, m_mainLayout(nullptr)
-	, m_animation(nullptr)
-	, m_contentArea(nullptr)
+	, m_animation(nullptr),
+      m_contentArea(nullptr)
+	, m_contentWidget(nullptr)
 {
-	m_animation = new QParallelAnimationGroup(this);
+    m_animation = new QParallelAnimationGroup(this);
 	m_contentArea = new QScrollArea(this);
 	m_mainLayout = new QGridLayout(this);
 
@@ -19,10 +20,10 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	m_collaspBtn = new ZIconLabel;
 	m_collaspBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/ic_parameter_fold.svg", "", ":/icons/ic_parameter_unfold.svg");
 
-	m_contentArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-	m_contentArea->setMaximumHeight(0);
+	m_contentArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	m_contentArea->setMinimumHeight(0);
-	m_contentArea->setStyleSheet("QScrollArea {background: transparent;}");
+	m_contentArea->setProperty("cssClass", "proppanel");
+
 	m_contentArea->setFrameShape(QFrame::NoFrame);
 
 	m_animation->addAnimation(new QPropertyAnimation(this, "minimumHeight"));
@@ -44,34 +45,41 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 
 void ZExpandableSection::setContentLayout(QLayout* contentLayout)
 {
-	delete m_contentArea->layout();
-	m_contentArea->setLayout(contentLayout);
+    QWidget* contentWidget = new QWidget;
+    contentWidget->setLayout(contentLayout);
+    contentWidget->setAutoFillBackground(true);
+    QPalette pal = this->palette();
+    pal.setColor(QPalette::Window, QColor(42, 42, 42));
+    contentWidget->setPalette(pal);
 
-	const auto collapsedHeight = sizeHint().height() - m_contentArea->maximumHeight();
-	auto contentHeight = contentLayout->sizeHint().height();
+    m_contentArea->setWidget(contentWidget);
+	update();
 
-	for (int i = 0; i < m_animation->animationCount() - 1; i++)
-	{
-		QPropertyAnimation* SectionAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(i));
-		SectionAnimation->setDuration(m_duration);
-		SectionAnimation->setStartValue(collapsedHeight);
-		SectionAnimation->setEndValue(collapsedHeight + contentHeight);
-	}
+	//const auto collapsedHeight = sizeHint().height() - m_contentArea->maximumHeight();
+	//auto contentHeight = contentLayout->sizeHint().height();
 
-	QPropertyAnimation* contentAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(
-		m_animation->animationCount() - 1));
-	contentAnimation->setDuration(m_duration);
-	contentAnimation->setStartValue(0);
-	contentAnimation->setEndValue(contentHeight);
+	//for (int i = 0; i < m_animation->animationCount() - 1; i++)
+	//{
+	//	QPropertyAnimation* SectionAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(i));
+	//	SectionAnimation->setDuration(m_duration);
+	//	SectionAnimation->setStartValue(collapsedHeight);
+	//	SectionAnimation->setEndValue(collapsedHeight + contentHeight);
+	//}
+
+	//QPropertyAnimation* contentAnimation = static_cast<QPropertyAnimation*>(m_animation->animationAt(
+	//	m_animation->animationCount() - 1));
+	//contentAnimation->setDuration(m_duration);
+	//contentAnimation->setStartValue(0);
+	//contentAnimation->setEndValue(contentHeight);
 
 	//expand when inited.
-	m_collaspBtn->toggle();
-	m_contentArea->setMaximumHeight(contentHeight);
-	m_animation->setDirection(QAbstractAnimation::Backward);
+	//m_collaspBtn->toggle();
+	//m_contentArea->setMaximumHeight(contentHeight);
+	//m_animation->setDirection(QAbstractAnimation::Backward);
 }
 
 void ZExpandableSection::toggle(bool collasped)
 {
-	m_animation->setDirection(collasped ? QAbstractAnimation::Forward : QAbstractAnimation::Backward);
-	m_animation->start();
+	//m_animation->setDirection(collasped ? QAbstractAnimation::Forward : QAbstractAnimation::Backward);
+	//m_animation->start();
 }

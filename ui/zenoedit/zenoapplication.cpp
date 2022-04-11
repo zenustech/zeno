@@ -27,19 +27,29 @@ void ZenoApplication::initStyleSheets()
     Q_ASSERT(ret);
     qss = file.readAll();
 
-	file.setFileName(":/stylesheet/qlineedit.qss");
-	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-	Q_ASSERT(ret);
-	qss += file.readAll();
+    file.setFileName(":/stylesheet/qlineedit.qss");
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
+    qss += file.readAll();
 
-	file.setFileName(":/stylesheet/qcombobox.qss");
-	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-	Q_ASSERT(ret);
-	qss += file.readAll();
+    file.setFileName(":/stylesheet/menu.qss");
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
+    qss += file.readAll();
 
-    file.setFileName(":/stylesheet/darkening.qss");
-	ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-	Q_ASSERT(ret);
+    file.setFileName(":/stylesheet/qcombobox.qss");
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
+    qss += file.readAll();
+
+    file.setFileName(":/stylesheet/qwidget.qss");
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
+    qss += file.readAll();
+
+    file.setFileName(":/stylesheet/pushbutton.qss");
+    ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    Q_ASSERT(ret);
     qss += file.readAll();
 
     setStyleSheet(qss);

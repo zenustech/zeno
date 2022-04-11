@@ -98,6 +98,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 	pLayout->setContentsMargins(0, 15, 0, 15);
 	pLayout->setColumnStretch(0, 1);
 	pLayout->setColumnStretch(1, 3);
+	pLayout->setSpacing(5);
 
 	int r = 0;
 	for (auto paramName : params.keys())
@@ -196,6 +197,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			{
 				QPushButton* pBtn = new QPushButton("Edit");
 				pBtn->setObjectName("grayButton");
+                pBtn->setProperty("cssClass", "grayButton");
 				pLayout->addWidget(pBtn, r++, 1);
 				break;
 			}
@@ -218,6 +220,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 
 	QGridLayout* pLayout = new QGridLayout;
 	pLayout->setContentsMargins(0, 15, 0, 15);
+	pLayout->setSpacing(5);
 
 	int r = 0;
 	for (QString inputSock : inputs.keys())

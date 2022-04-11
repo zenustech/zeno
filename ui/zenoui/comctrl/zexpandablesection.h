@@ -21,7 +21,8 @@ private:
 	ZIconLabel* m_collaspBtn;
 	QParallelAnimationGroup* m_animation;
 	QScrollArea* m_contentArea;
-	const int m_duration = 200;
+	QWidget* m_contentWidget;
+	const int m_duration = 0;
 };
 
 #endif

@@ -22,11 +22,11 @@ ZTimeline::ZTimeline(QWidget* parent)
     pFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(50, 24)));
 
     QPushButton* pRun = new QPushButton(tr("Run"));
-    pRun->setObjectName("grayButton");
+    pRun->setProperty("cssClass", "grayButton");
     pRun->setFixedSize(ZenoStyle::dpiScaledSize(QSize(87, 24)));
 
     QPushButton* pKill = new QPushButton(tr("Kill"));
-    pKill->setObjectName("grayButton");
+    pKill->setProperty("cssClass", "grayButton");
     pKill->setFixedSize(ZenoStyle::dpiScaledSize(QSize(87, 24)));
 
     ZIconLabel* plblForward = new ZIconLabel;

@@ -232,7 +232,7 @@ ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePo
     , m_width(width)
 {
     QPushButton* pBtn = new QPushButton(name);
-    pBtn->setObjectName("grayButton");
+    pBtn->setProperty("cssClass", "grayButton");
     if (hor == QSizePolicy::Fixed)
         pBtn->setFixedWidth(width);
     pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
