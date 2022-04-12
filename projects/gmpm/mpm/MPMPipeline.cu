@@ -1224,6 +1224,7 @@ struct ZSGridToZSParticle : INode {
 #if 0
                     d_c3 += dt * (C * d_c3);
 #else
+                    // ref: Yun Fei, libwetcloth;
                     d_c3 += (dt * C + 0.5 * dt * dt * C * C) * d_c3;
 #endif
 
