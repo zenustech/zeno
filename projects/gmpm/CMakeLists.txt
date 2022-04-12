@@ -69,6 +69,7 @@ target_sources(zeno_mpm PRIVATE
   utils/IndexBuckets.cu
   mpm/Generation.cu
   mpm/Generation.cpp
+  mpm/Transfer.cu
   mpm/MPMPipeline.cu
   mpm/Maintenance.cu
   mpm/Temp.cu
