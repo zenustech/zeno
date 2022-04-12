@@ -35,8 +35,10 @@ struct ZSPartitionForZSParticles : INode {
                flag = proxy<execspace_e::cuda>(
                    bRebuild)] __device__(auto i) mutable {
                 auto tag = tags[i];
-                if (tag == 1 && flag[0] == 0)
-                  atomic_cas(exec_cuda, &flag[0], 0, 1);
+                if (tag == 1 && flag[0] == 0) {
+                  // atomic_cas(exec_cuda, &flag[0], 0, 1);
+                  flag[0] = 1;
+                }
               });
       // no boundary entry touched yet, no need for rebuild
       if (bRebuild.getVal() == 0) {
@@ -1218,8 +1220,12 @@ struct ZSGridToZSParticle : INode {
                     auto d_c1 = p1 - p0;
                     auto d_c2 = p2 - p0;
                     auto d_c3 = col(eles.pack<3, 3>("d", pi), 2);
-                    // d_c3 += dt * (vGrad * d_c3);
+// d_c3 += dt * (vGrad * d_c3);
+#if 0
                     d_c3 += dt * (C * d_c3);
+#else
+                    d_c3 += (dt * C + 0.5 * dt * dt * C * C) * d_c3;
+#endif
 
                     mat3 d{d_c1[0], d_c2[0], d_c3[0], d_c1[1], d_c2[1],
                            d_c3[1], d_c1[2], d_c2[2], d_c3[2]};
