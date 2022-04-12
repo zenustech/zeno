@@ -35,7 +35,7 @@
       ]
      },
      "params": {
-      "value": 0.025
+      "value": 0.03
      },
      "uipos": [
       -637.6875960502122,
@@ -87,7 +87,7 @@
       ]
      },
      "params": {
-      "value": 960
+      "value": 720
      },
      "uipos": [
       -1214.0841772987199,
@@ -182,8 +182,8 @@
       "name": "stepdt"
      },
      "uipos": [
-      4642.874587859963,
-      1178.3227675180483
+      3924.589707029896,
+      1220.3285866351277
      ],
      "options": []
     },
@@ -242,15 +242,15 @@
        null
       ],
       "SRC": [
-       "341ae928-ZSReturnMapping",
+       "3460e983-UpdateZSPrimitiveSequence",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      7162.7849171494745,
-      1713.9705375610831
+      6798.169996313015,
+      1691.9903207958446
      ],
      "options": []
     },
@@ -270,8 +270,8 @@
      },
      "params": {},
      "uipos": [
-      2816.2634896667037,
-      1574.7370511779407
+      2880.0071770173413,
+      1572.4186658719127
      ],
      "options": []
     },
@@ -322,7 +322,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_cloth_1.obj"
+       "assets/cloth/do_not_share/output/char_cloth2.obj"
       ],
       "SRC": [
        null,
@@ -346,7 +346,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_cloth_2.obj"
+       "assets/cloth/do_not_share/output/char_cloth1.obj"
       ],
       "SRC": [
        null,
@@ -370,7 +370,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/do_not_share/bishop_cloth/bishop_pants.obj"
+       "assets/cloth/do_not_share/output/char_cloth3.obj"
       ],
       "SRC": [
        null,
@@ -414,8 +414,8 @@
      },
      "params": {},
      "uipos": [
-      1003.575409559178,
-      2689.0768204354804
+      1076.4551900124354,
+      2612.257592390155
      ],
      "options": [
       "ONCE"
@@ -447,8 +447,8 @@
      },
      "params": {},
      "uipos": [
-      1001.3597865897179,
-      2915.4741868259935
+      1076.8813318606046,
+      2833.371429145409
      ],
      "options": [
       "ONCE"
@@ -480,8 +480,8 @@
      },
      "params": {},
      "uipos": [
-      1004.845664188807,
-      3130.901260006631
+      1080.8770027157182,
+      3054.082031961305
      ],
      "options": [
       "ONCE"
@@ -669,8 +669,8 @@
       "_KEYS": "obj0\nobj1\nobj2\nobj3"
      },
      "uipos": [
-      2382.9822936240403,
-      2783.9006851812997
+      2316.7995740772976,
+      2774.4460109603365
      ],
      "options": [
       "ONCE"
@@ -738,8 +738,8 @@
       "strategy": "cache"
      },
      "uipos": [
-      4078.6169810114707,
-      1704.9587087539903
+      3628.9896755162217,
+      1722.3893805309715
      ],
      "options": []
     },
@@ -762,8 +762,8 @@
       "extent": 5
      },
      "uipos": [
-      4355.232025259259,
-      1731.6572316345396
+      3905.60471976401,
+      1747.4336283185833
      ],
      "options": []
     },
@@ -798,8 +798,8 @@
      },
      "params": {},
      "uipos": [
-      4917.114058060894,
-      1746.0600768552472
+      4467.4867525656455,
+      1761.8364735392915
      ],
      "options": []
     },
@@ -824,8 +824,8 @@
      },
      "params": {},
      "uipos": [
-      4615.443225342446,
-      1776.4263003088438
+      4153.249060322834,
+      1775.1094980272242
      ],
      "options": []
     },
@@ -860,8 +860,8 @@
      },
      "params": {},
      "uipos": [
-      6309.396727652532,
-      1810.9846252568846
+      5859.769422157283,
+      1826.7610219409285
      ],
      "options": []
     },
@@ -871,7 +871,7 @@
       "gravity": [
        null,
        null,
-       -5.0
+       -3.0
       ],
       "ZSPartition": [
        "50437419-PortalOut",
@@ -901,8 +901,8 @@
      },
      "params": {},
      "uipos": [
-      5227.492895940902,
-      1721.4044902874934
+      4777.865590445653,
+      1737.1808869715376
      ],
      "options": []
     },
@@ -919,8 +919,8 @@
       "name": "grid"
      },
      "uipos": [
-      3697.5172836729203,
-      1712.3018895503424
+      3305.331726717237,
+      1828.8339786135684
      ],
      "options": []
     },
@@ -937,8 +937,8 @@
       "name": "partition"
      },
      "uipos": [
-      3351.796804129989,
-      1476.9810574506837
+      3290.037926675099,
+      1566.6311762536866
      ],
      "options": []
     },
@@ -955,8 +955,8 @@
       "name": "zspars"
      },
      "uipos": [
-      3104.9575190031655,
-      1538.776972069451
+      3285.8277861044194,
+      1375.7740270178176
      ],
      "options": []
     },
@@ -976,8 +976,8 @@
      },
      "params": {},
      "uipos": [
-      7786.782381504323,
-      1898.9566225008568
+      7422.167460667863,
+      1876.9764057356178
      ],
      "options": [
       "VIEW"
@@ -1000,202 +1000,6 @@
       2184.2019694245364
      ],
      "options": []
-    },
-    "9ff0ab09-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "assets/cloth/do_not_share/bishop_vdb/sdf_v1_0.vdb"
-     },
-     "uipos": [
-      2548.9902211290587,
-      4265.631694035377
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "579eef31-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/tank.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3111.7537993920823,
-      4298.42880699086
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "a858c708-ImportVDBGrid": {
-     "name": "ImportVDBGrid",
-     "inputs": {
-      "path": [
-       "9ff0ab09-MakeString",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": ""
-     },
-     "uipos": [
-      2825.9190729483153,
-      4277.782294832807
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "539ce20f-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       "55c5f45a-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3262.676296276356,
-      4529.80243161092
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "27e50f98-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/tank.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2540.1519756838784,
-      4581.200607902712
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "78c58f4c-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "27e50f98-ImportObjPrimitive",
-       "prim",
-       null
-      ],
-      "Dx": [
-       null,
-       null,
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      2783.617021276583,
-      4570.379939209706
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "55c5f45a-ToZSLevelSet": {
-     "name": "ToZSLevelSet",
-     "inputs": {
-      "VDBGrid": [
-       "78c58f4c-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      3016.2613981762775,
-      4573.085106382957
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "de0766e0-NumericOperator": {
      "name": "NumericOperator",
@@ -1248,12 +1052,56 @@
      ],
      "options": []
     },
-    "359e26ca-PortalIn": {
+    "4adfb693-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "2b1b9830-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "obj1": [
+       "e7448882-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "obj2": [
+       "9b5f5e1d-ToZSParticles",
+       "ZSParticles",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2\nobj3"
+     },
+     "uipos": [
+      1536.781296659194,
+      3394.212999253436
+     ],
+     "options": [],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2",
+      "obj3"
+     ]
+    },
+    "21f79dfa-PortalIn": {
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "539ce20f-ToZSBoundary",
-       "ZSBoundary",
+       "4adfb693-MakeList",
+       "list",
        null
       ],
       "SRC": [
@@ -1263,11 +1111,11 @@
       ]
      },
      "params": {
-      "name": "groundboundary"
+      "name": "clothpars"
      },
      "uipos": [
-      3545.7520251428823,
-      4651.249582296273
+      1533.7304692360256,
+      3665.315836132869
      ],
      "options": []
     },
@@ -1307,7 +1155,7 @@
       "E": [
        null,
        null,
-       300.0
+       200.0
       ],
       "nu": [
        null,
@@ -1347,8 +1195,8 @@
       "name": "zspars"
      },
      "uipos": [
-      7492.350246116879,
-      1795.972457951931
+      7127.735325280416,
+      1773.992241186692
      ],
      "options": []
     },
@@ -1390,7 +1238,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/output/bishop/bishop_body.{frame}.obj"
+      "value": "assets/cloth/do_not_share/output/char/char.{frame}.obj"
      },
      "uipos": [
       619.0155342668259,
@@ -1410,7 +1258,7 @@
       ]
      },
      "params": {
-      "value": "assets/cloth/do_not_share/output/bishop/bishop_body.{frame+1}.obj"
+      "value": "assets/cloth/do_not_share/output/char/char.{frame+1}.obj"
      },
      "uipos": [
       841.6169850440265,
@@ -1476,8 +1324,8 @@
        null
       ],
       "framedt": [
-       null,
-       null,
+       "8f47a627-GetFrameTime",
+       "time",
        0.1
       ],
       "ZSParticles": [
@@ -1560,8 +1408,8 @@
      },
      "params": {},
      "uipos": [
-      1414.813876235732,
-      1627.992416351848
+      1417.2971351643037,
+      1614.3841574232767
      ],
      "options": []
     },
@@ -1647,8 +1495,8 @@
      },
      "params": {},
      "uipos": [
-      5573.898148722806,
-      2560.2922492538187
+      5124.270843227557,
+      2576.068645937862
      ],
      "options": []
     },
@@ -1678,8 +1526,8 @@
      },
      "params": {},
      "uipos": [
-      5180.523890194844,
-      2587.9374984388182
+      4730.896584699594,
+      2603.713895122862
      ],
      "options": []
     },
@@ -1696,8 +1544,8 @@
       "name": "boundary_partition"
      },
      "uipos": [
-      3784.171832940204,
-      2316.7653297184947
+      3334.5445274449553,
+      2332.5417264025386
      ],
      "options": []
     },
@@ -1722,8 +1570,8 @@
      },
      "params": {},
      "uipos": [
-      4623.9556489476245,
-      2650.3193229320254
+      4227.966736309519,
+      2685.9617910446414
      ],
      "options": []
     },
@@ -1760,8 +1608,8 @@
       "strategy": "cache"
      },
      "uipos": [
-      4043.540496522318,
-      2603.42518763984
+      3593.9131910270685,
+      2619.2015843238837
      ],
      "options": []
     },
@@ -1778,8 +1626,8 @@
       "name": "boundary_grid"
      },
      "uipos": [
-      3646.640231982631,
-      2469.4774134699933
+      3197.0129264873817,
+      2485.253810154037
      ],
      "options": []
     },
@@ -1816,8 +1664,8 @@
       "type": "separate"
      },
      "uipos": [
-      5951.6989277417915,
-      2141.582964909942
+      5504.592868705466,
+      2154.838115135062
      ],
      "options": []
     },
@@ -1834,8 +1682,8 @@
       "name": "primseq"
      },
      "uipos": [
-      3576.301264224335,
-      2671.035030408832
+      3152.499851586229,
+      2688.7980342357328
      ],
      "options": []
     },
@@ -1858,8 +1706,8 @@
       "extent": 5
      },
      "uipos": [
-      4321.122601460472,
-      2615.6679111379194
+      3871.4952959652232,
+      2631.4443078219633
      ],
      "options": []
     },
@@ -1973,7 +1821,28 @@
      ],
      "options": []
     },
-    "7cf8edf7-UpdateZSPrimitiveSequence": {
+    "4655bd9a-ZSReturnMapping": {
+     "name": "ZSReturnMapping",
+     "inputs": {
+      "ZSParticles": [
+       "9aeb882d-ZSGridToZSParticle",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       "9aeb882d-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6172.189732142827,
+      1801.9520089285627
+     ],
+     "options": []
+    },
+    "3460e983-UpdateZSPrimitiveSequence": {
      "name": "UpdateZSPrimitiveSequence",
      "inputs": {
       "ZSPrimitiveSequence": [
@@ -1987,45 +1856,24 @@
        0.1
       ],
       "SRC": [
-       "9aeb882d-ZSGridToZSParticle",
+       "4655bd9a-ZSReturnMapping",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      6577.584123503681,
-      1732.6489673351534
-     ],
-     "options": []
-    },
-    "341ae928-ZSReturnMapping": {
-     "name": "ZSReturnMapping",
-     "inputs": {
-      "ZSParticles": [
-       "769fad1c-PortalOut",
-       "port",
-       null
-      ],
-      "SRC": [
-       "7cf8edf7-UpdateZSPrimitiveSequence",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      6865.086547397736,
-      1700.1243610594709
+      6470.379464285683,
+      1744.241071428563
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 998.0804649935121,
-    "y": 1128.6057394130721,
-    "width": 5722.045898437496,
-    "height": 3395.0805664062327
+    "x": 649.4157263674308,
+    "y": 2169.5896501237794,
+    "width": 2343.749999999993,
+    "height": 1390.6249999999932
    }
   }
  },
@@ -18244,7 +18092,7 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "12 DirX 1 0 1 align -5 0 5 0 DirY 1 0 1 align -5 0 5 0 DirZ 1 0 0 align -5 0 5 0 Height 1 0 1000.0 align -5 0 5 0 Softness 1 0 1.0 align -5 0 5 0 ShadowR 1 0 0.2 align -5 0 5 0 ShadowG 1 0 0.2 align -5 0 5 0 ShadowB 1 0 0.2 align -5 0 5 0 ColorR 1 0 1 align -5 0 5 0 ColorG 1 0 1 align -5 0 5 0 ColorB 1 0 1 align -5 0 5 0 Intensity 1 0 10.0 align -5 0 5 0"
+   "0": "12 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0"
   }
  }
 }
