@@ -5,12 +5,24 @@
 
 class ZIconLabel;
 
+class ZContentWidget : public QWidget
+{
+	Q_OBJECT
+public:
+    ZContentWidget(QWidget* parent = nullptr);
+	virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
+};
+
+
 class ZExpandableSection : public QWidget
 {
 	Q_OBJECT
 public:
 	explicit ZExpandableSection(const QString& title, QWidget* parent = nullptr);
 	void setContentLayout(QLayout* layout);
+	virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
 
 public slots:
 	void toggle(bool collasped);

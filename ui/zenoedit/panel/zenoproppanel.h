@@ -14,6 +14,8 @@ public:
     ZenoPropPanel(QWidget* parent = nullptr);
     ~ZenoPropPanel();
     void reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
 
 protected:
     void mousePressEvent(QMouseEvent* event);

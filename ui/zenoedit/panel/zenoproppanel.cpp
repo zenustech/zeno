@@ -25,10 +25,24 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 	palette.setBrush(QPalette::Window, QColor(42, 42, 42));
 	setPalette(palette);
 	setAutoFillBackground(true);
+
+	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 }
 
 ZenoPropPanel::~ZenoPropPanel()
 {
+}
+
+QSize ZenoPropPanel::sizeHint() const
+{
+    QSize sz = QWidget::sizeHint();
+    return sz;
+}
+
+QSize ZenoPropPanel::minimumSizeHint() const
+{
+    QSize sz = QWidget::minimumSizeHint();
+    return sz;
 }
 
 void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
