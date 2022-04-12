@@ -1803,9 +1803,10 @@ vec3 CalculateLightingIBLToon(
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 irradiance = texture(irradianceMap, m*N).rgb;
-    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
     const float MAX_REFLECTION_LOD = 7.0;
+    vec3 irradiance = textureLod(prefilterMap, m*N,  MAX_REFLECTION_LOD).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    
     vec3 R = reflect(-V, N); 
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
     vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
