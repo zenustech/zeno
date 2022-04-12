@@ -32,8 +32,13 @@ static int clamp(int i, int _min, int _max) {
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
-    frameid = clamp(frameid, 0, (int)mesh.getNumSamples() - 1);
-    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)frameid));
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+
+    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
 
     if (auto marr = mesamp.getPositions()) {
         if (!read_done) {
@@ -83,8 +88,12 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 
     prim_triangulate(prim.get());
 
+    auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+    auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+    auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+
     if (auto uv = mesh.getUVsParam()) {
-        auto uvsamp = uv.getIndexedValue();
+        auto uvsamp = uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
         int value_size = (int) uvsamp.getVals()->size();
         int index_size = (int) uvsamp.getIndices()->size();
         if (!read_done) {
@@ -106,9 +115,6 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
             }
         }
-        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
         auto uv_loops = std::vector<int>();
         std::vector<int> *uv_loops_ref;
         if (prim->loops.size() == index_size) {
@@ -136,7 +142,17 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     } else {
         if (!read_done) {
-            log_info("[alembic] Not found uv");
+            log_warn("[alembic] Not found uv, auto fill zero.");
+        }
+        int count = 0;
+        for (auto [start, len]: prim->polys) {
+            if (len < 3) continue;
+            for (int i = 2; i < len; i++) {
+                uv0[count] = zeno::vec3f(0, 0, 0);
+                uv1[count] = zeno::vec3f(0, 0, 0);
+                uv2[count] = zeno::vec3f(0, 0, 0);
+                count += 1;
+            }
         }
     }
 

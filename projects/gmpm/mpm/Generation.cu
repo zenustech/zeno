@@ -262,21 +262,23 @@ struct ToZSParticles : INode {
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
                                       {"vol", 1},  {"C", 9},   {"vms", 1}};
     std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1}, {"pos", 3},  {"vel", 3},
-        {"vol", 1},  {"C", 9},    {"F", 9},
-        {"d", 9},    {"Dinv", 9}, {"inds", (int)category + 1}};
+        {"mass", 1}, {"pos", 3},   {"vel", 3},
+        {"vol", 1},  {"C", 9},     {"F", 9},
+        {"d", 9},    {"DmInv", 9}, {"inds", (int)category + 1}};
 
     const bool hasLogJp = model->hasLogJp();
     const bool hasOrientation = model->hasOrientation();
     const bool hasF = model->hasF();
 
-    if (hasF)
-      tags.emplace_back(zs::PropertyTag{"F", 9});
-    else {
-      tags.emplace_back(zs::PropertyTag{"J", 1});
-      if (category != ZenoParticles::mpm)
-        throw std::runtime_error(
-            "mesh particles should not use the 'J' attribute.");
+    if (!bindMesh) {
+      if (hasF)
+        tags.emplace_back(zs::PropertyTag{"F", 9});
+      else {
+        tags.emplace_back(zs::PropertyTag{"J", 1});
+        if (category != ZenoParticles::mpm)
+          throw std::runtime_error(
+              "mesh particles should not use the 'J' attribute.");
+      }
     }
 
     if (hasOrientation) {
@@ -331,7 +333,7 @@ struct ToZSParticles : INode {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
       ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
                                 hasLogJp, hasOrientation, hasF, &model, &obj,
-                                velsPtr, nrmsPtr, &dofVol, category,
+                                velsPtr, nrmsPtr, bindMesh, &dofVol, category,
                                 &inParticles, &auxAttribs](size_t pi) mutable {
         using vec3 = zs::vec<float, 3>;
         using mat3 = zs::vec<float, 3, 3>;
@@ -351,10 +353,12 @@ struct ToZSParticles : INode {
           pars.tuple<3>("vel", pi) = vec3::zeros();
 
         // deformation
-        if (hasF)
-          pars.tuple<9>("F", pi) = mat3::identity();
-        else
-          pars("J", pi) = 1.;
+        if (!bindMesh) {
+          if (hasF)
+            pars.tuple<9>("F", pi) = mat3::identity();
+          else
+            pars("J", pi) = 1.;
+        }
 
         // apic transfer
         pars.tuple<9>("C", pi) = mat3::zeros();
@@ -372,7 +376,8 @@ struct ToZSParticles : INode {
             } else
               pars.tuple<3>("a", pi) = vec3{0, 0, 1};
           } else
-            pars.tuple<3>("a", pi) = vec3::zeros();
+            // pars.tuple<3>("a", pi) = vec3::zeros();
+            pars.tuple<3>("a", pi) = vec3{0, 1, 0};
         }
 
         // plasticity
@@ -422,8 +427,32 @@ struct ToZSParticles : INode {
                                  D[2][1], D[0][2], D[1][2], D[2][2]};
                 // could qr decomp here first (tech doc)
                 eles.tuple<9>("d", ei) = Dmat;
-                eles.tuple<9>("Dinv", ei) = zs::inverse(Dmat);
+
+                // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
+                // ref: Yun Fei, libwetcloth;
+                auto t0 = col(Dmat, 0);
+                auto t1 = col(Dmat, 1);
+                auto normal = col(Dmat, 2);
+                auto [Q, R] = math::qr(Dmat);
+                zs::Rotation<float, 3> rot0{normal, vec3{0, 0, 1}};
+                auto u = rot0 * t0;
+                auto v = rot0 * t1;
+                zs::Rotation<float, 3> rot1{u, vec3{1, 0, 0}};
+                auto ru = rot1 * u;
+                auto rv = rot1 * v;
+                auto Dstar = mat3::identity();
+                Dstar(0, 0) = ru(0);
+                Dstar(0, 1) = rv(0);
+                Dstar(1, 1) = rv(1);
+
+#if 1
+                auto invDstar = zs::inverse(Dstar);
+                eles.tuple<9>("DmInv", ei) = invDstar;
+                eles.tuple<9>("F", ei) = Dmat * invDstar;
+#else
+                eles.tuple<9>("DmInv", ei) = zs::inverse(Dmat);
                 eles.tuple<9>("F", ei) = mat3::identity();
+#endif
 
                 // apic transfer
                 eles.tuple<9>("C", ei) = mat3::zeros();
@@ -835,20 +864,34 @@ struct UpdatePrimitiveFromZSParticles : INode {
       if (parObjPtr->prim.get() == nullptr)
         continue;
 
+      auto &prim = *parObjPtr->prim;
       // const auto category = parObjPtr->category;
-      auto &pos = parObjPtr->prim->attr<vec3f>("pos");
+      auto &pos = prim.attr<vec3f>("pos");
       auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
-      if (parObjPtr->prim->has_attr("vel") && pars.hasProperty("vel"))
-        velsPtr = parObjPtr->prim->attr<vec3f>("vel").data();
+      if (prim.has_attr("vel") && pars.hasProperty("vel"))
+        velsPtr = prim.attr<vec3f>("vel").data();
 
-      // currently only write back pos and vel (if has)
-      ompExec(range(size),
-              [&, pars = proxy<execspace_e::host>({}, pars)](std::size_t pi) {
-                pos[pi] = pars.array<3>("pos", pi);
-                if (velsPtr != nullptr)
-                  velsPtr[pi] = pars.array<3>("vel", pi);
-              });
+      if (pars.hasProperty("id")) {
+        ompExec(range(pars.size()),
+                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                  auto id = (int)pars("id", pi);
+                  if (id >= size)
+                    return;
+                  pos[id] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[id] = pars.array<3>("vel", pi);
+                });
+      } else {
+        // currently only write back pos and vel (if exists)
+        ompExec(range(size),
+                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                  pos[pi] = pars.array<3>("pos", pi);
+                  if (velsPtr != nullptr)
+                    velsPtr[pi] = pars.array<3>("vel", pi);
+                });
+      }
+      const auto cnt = pars.size();
     }
 
     fmt::print(fg(fmt::color::cyan),
@@ -892,6 +935,8 @@ struct MakeZSGrid : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (grid->transferScheme == "apic")
       ;
+    else if (grid->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", grid->transferScheme));
@@ -932,6 +977,8 @@ struct MakeZSLevelSet : INode {
       tags.emplace_back(zs::PropertyTag{"vdiff", 3});
     else if (ls->transferScheme == "apic")
       ;
+    else if (ls->transferScheme == "boundary")
+      tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", ls->transferScheme));
@@ -985,7 +1032,7 @@ ZENDEFNODE(MakeZSLevelSet,
            {
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
-               {{"enum unknown apic flip", "transfer", "unknown"},
+               {{"enum unknown apic flip boundary", "transfer", "unknown"},
                 {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},

@@ -47,7 +47,7 @@ namespace zenvis
         float shadowSoftness = 1.0;
         unsigned int lightFBO = 0;
         unsigned int lightDepthMaps = 0;
-        unsigned int depthMapResolution = 8192;
+        unsigned int depthMapResolution = 4096;
         unsigned int matricesUBO = 0;
         static constexpr int cascadeCount = 7;
         glm::vec3 lightColor = glm::vec3(1.0);

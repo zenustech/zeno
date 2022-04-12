@@ -70,6 +70,8 @@ class MainWindow(QWidget):
         self.setWindowTitle(title)
 
     def on_update(self):
+        if hasattr(self, 'editor') and self.editor.in_dlg_eventloop():
+            return
         if hasattr(self, 'viewport'):
             self.viewport.on_update()
         self.timeline.on_update()

@@ -6,6 +6,8 @@
 #include <tuple>
 
 namespace zenvis {
+  extern unsigned int getDepthTexture();
+extern void setDOF(float _dof);
   void clearCameraControl();
 extern void clearReflectMask();
 void setLightHight(float h);

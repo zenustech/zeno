@@ -13,6 +13,7 @@
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
+#include <zeno/types/InstancingObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 #include <Scene.hpp>
@@ -28,12 +29,14 @@ extern std::vector<unsigned int> getReflectMaps();
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
 extern bool renderReflect(int i);
 extern int getReflectionViewID();
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, int set);
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
+extern unsigned int getDepthTexture();
 
 struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
+    std::unique_ptr<Buffer> instvbo;
     size_t count=0;
     Program *prog;
     Program *shadowprog;
@@ -149,7 +152,94 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         }
     }
 }
+void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, drawObject &obj)
+{
+    //TICK(parse);
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+    auto const &tris = prim->tris;
+    bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+    auto &tang = prim->tris.attr<zeno::vec3f>("tang");
+    std::vector<zeno::vec3f> pos1(pos.size());
+    std::vector<zeno::vec3f> clr1(pos.size());
+    std::vector<zeno::vec3f> nrm1(pos.size());
+    std::vector<zeno::vec3f> uv1(pos.size());
+    std::vector<zeno::vec3f> tang1(pos.size());
+    std::vector<int> vertVisited(pos.size());
+    std::vector<zeno::vec3i> tris1(tris.size());
+    vertVisited.assign(pos.size(),0);
+    for(int i=0; i<tris.size();i++)
+    {
+        float area = zeno::length(zeno::cross(pos[tris[i][1]]-pos[tris[i][0]], pos[tris[i][2]]-pos[tris[i][0]]));
+        for(int j=0;j<3;j++)
+        {
+            tang1[tris[i][j]]+=area*tang[i];
+        }
+    }
+    std::cout<<"1111111111111111\n";
+    #pragma omp parallel for
+    for(int i=0; i<tang1.size();i++)
+    {
+        tang1[i] = tang[i]/(zeno::length(tang[i])+0.000001);
+    }
+    std::cout<<"2222222222222222\n";
+    std::vector<int> issueTris(0);
+    for(int i=0; i<tris.size();i++)
+    {
+        //if all verts not visited
+        for(int j=0;j<3;j++)
+        {
+            //just add verts id
+        }
 
+        //else
+        {
+            //if no uv confliction
+            //simply add verts id
+            //else
+            {
+                //add this tri to issueTris
+            }
+        }
+    }
+    //for issueTris
+    {
+        //emit new verts
+    }
+    std::cout<<"3333333333333333333\n";
+
+    //end compressed tri assign
+    obj.count = tris1.size();
+    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    std::vector<zeno::vec3f> mem(pos1.size()  * 5);
+    std::vector<zeno::vec3i> trisdata(obj.count);
+#pragma omp parallel for
+    for(int i=0; i<pos1.size(); i++)
+    {
+        mem[5 * i + 0]  = pos1[i];
+        mem[5 * i + 1]  = clr1[i];
+        mem[5 * i + 2]  = nrm1[i];
+        mem[5 * i + 3]  = uv1[i];
+        mem[5 * i + 4]  = tang1[i];
+    }
+#pragma omp parallel for
+    for(int i=0; i<tris1.size();i++)
+    {
+        trisdata[i] = tris1[i];
+    }
+
+    TICK(bindvbo);
+    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    TOCK(bindvbo);
+    TICK(bindebo);
+    if(obj.count)
+    {
+        obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        obj.ebo->bind_data(&(trisdata[0]), tris1.size() * sizeof(trisdata[0]));
+    }
+    TOCK(bindebo);
+}
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 {
     TICK(parse);
@@ -166,16 +256,16 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 #pragma omp parallel for
     for(int i=0; i<obj.count;i++)
     {
-        mem[15 * i + 0] = pos[tris[i][0]];
-        mem[15 * i + 1] = clr[tris[i][0]];
-        mem[15 * i + 2] = nrm[tris[i][0]];
-        mem[15 * i + 3] = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 4] = tang[i];
-        mem[15 * i + 5] = pos[tris[i][1]];
-        mem[15 * i + 6] = clr[tris[i][1]];
-        mem[15 * i + 7] = nrm[tris[i][1]];
-        mem[15 * i + 8] = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
-        mem[15 * i + 9] = tang[i];
+        mem[15 * i + 0]  = pos[tris[i][0]];
+        mem[15 * i + 1]  = clr[tris[i][0]];
+        mem[15 * i + 2]  = nrm[tris[i][0]];
+        mem[15 * i + 3]  = has_uv ? tris.attr<zeno::vec3f>("uv0")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 4]  = tang[i];
+        mem[15 * i + 5]  = pos[tris[i][1]];
+        mem[15 * i + 6]  = clr[tris[i][1]];
+        mem[15 * i + 7]  = nrm[tris[i][1]];
+        mem[15 * i + 8]  = has_uv ? tris.attr<zeno::vec3f>("uv1")[i] : zeno::vec3f(0.0f, 0.0f, 0.0f);
+        mem[15 * i + 9]  = tang[i];
         mem[15 * i + 10] = pos[tris[i][2]];
         mem[15 * i + 11] = clr[tris[i][2]];
         mem[15 * i + 12] = nrm[tris[i][2]];
@@ -200,6 +290,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
+  std::unique_ptr<Buffer> instvbo;
   size_t vertex_count;
   bool draw_all_points;
 
@@ -221,6 +312,8 @@ struct GraphicPrimitive : IGraphic {
   std::vector<std::unique_ptr<Texture>> textures;
 
   bool prim_has_mtl = false;
+  bool prim_has_inst = false;
+  int prim_inst_amount = 0;
   
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -308,6 +401,12 @@ struct GraphicPrimitive : IGraphic {
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
+    if (prim->inst != nullptr)
+    {
+        instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        instvbo->bind_data(prim->inst->modelMatrices.data(), prim->inst->modelMatrices.size() * sizeof(prim->inst->modelMatrices[0]));
+    }
+
     points_count = prim->points.size();
     if (points_count) {
         pointObj.count = points_count;
@@ -349,10 +448,17 @@ struct GraphicPrimitive : IGraphic {
             computeTrianglesTangent(prim);
             parseTrianglesDrawBuffer(prim, triObj);
         }
+
+        if (prim->inst != nullptr)
+        {
+            triObj.instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+            triObj.instvbo->bind_data(prim->inst->modelMatrices.data(), prim->inst->modelMatrices.size() * sizeof(prim->inst->modelMatrices[0]));
+        }
+
         bool findCamera=false;
-        triObj.prog = get_tris_program(path, prim->mtl);
+        triObj.prog = get_tris_program(path, prim->mtl, prim->inst);
         if(prim->mtl!=nullptr){
-            triObj.shadowprog = get_shadow_program(prim->mtl);
+            triObj.shadowprog = get_shadow_program(prim->mtl, prim->inst);
             auto code = prim->mtl->frag;
             if(code.find("mat_reflection = float(float(1))")!=std::string::npos)
             {
@@ -380,18 +486,18 @@ struct GraphicPrimitive : IGraphic {
                 auto up = prim->attr<zeno::vec3f>("nrm")[0];
                 auto view = prim->attr<zeno::vec3f>("clr")[0];
                 auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
-                auto fnear = prim->attr<zeno::vec3f>("uv")[0][1];
+                auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
                 auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
                 setCamera(glm::vec3(pos[0],pos[1],pos[2]),
                           glm::vec3(view[0],view[1],view[2]),
                           glm::vec3(up[0],up[1],up[2]),
-                          fov, fnear,ffar, 1);
+                          fov, 0.1,ffar, dof, 1);
                 
             }
             
         }
         if(!triObj.prog){
-            triObj.prog = get_tris_program(path,nullptr);
+            triObj.prog = get_tris_program(path,nullptr,nullptr);
         }
         
     }
@@ -407,6 +513,13 @@ struct GraphicPrimitive : IGraphic {
     }
     //load_textures(path);
     prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
+
+    if (prim->inst != nullptr)
+    {
+        prim_has_inst = true;
+        prim_inst_amount = prim->inst->amount;    
+    }
+
   }
   
   virtual void drawShadow(Light *light) override 
@@ -444,6 +557,25 @@ struct GraphicPrimitive : IGraphic {
         vbo->unbind();
     };
 
+    auto instvbobind = [&] (auto &instvbo) {
+        instvbo->bind();
+        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attrib_divisor(5, 1);
+        instvbo->attrib_divisor(6, 1);
+        instvbo->attrib_divisor(7, 1);
+        instvbo->attrib_divisor(8, 1);
+    };
+    auto instvbounbind = [&] (auto &instvbo) {
+        instvbo->disable_attribute(5);
+        instvbo->disable_attribute(6);
+        instvbo->disable_attribute(7);
+        instvbo->disable_attribute(8);
+        instvbo->unbind();
+    };
+
     if (tris_count) {
         //printf("TRIS\n");
         if (triObj.vbo) {
@@ -451,6 +583,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbobind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbobind(triObj.instvbo);
+            } else {
+                instvbobind(instvbo);
+            }
+        }
+
         triObj.shadowprog->use();
         light->setShadowMV(triObj.shadowprog);
         if (prim_has_mtl) {
@@ -464,8 +605,17 @@ struct GraphicPrimitive : IGraphic {
             }
         }
         triObj.ebo->bind();
-        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
-              GL_UNSIGNED_INT, /*first=*/0));
+
+        if (prim_has_inst)
+        {
+            CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+        }
+        else
+        {
+            CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0));
+        }
         
         triObj.ebo->unbind();
         if (triObj.vbo) {
@@ -473,10 +623,18 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbounbind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbounbind(triObj.instvbo);
+            } else {
+                instvbounbind(instvbo);
+            }
+        }
     }
 
   }
-  virtual void draw(bool reflect) override {
+  virtual void draw(bool reflect, float depthPass) override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
     int id = 0;
@@ -509,6 +667,25 @@ struct GraphicPrimitive : IGraphic {
         vbo->disable_attribute(3);
         vbo->disable_attribute(4);
         vbo->unbind();
+    };
+
+    auto instvbobind = [&] (auto &instvbo) {
+        instvbo->bind();
+        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attrib_divisor(5, 1);
+        instvbo->attrib_divisor(6, 1);
+        instvbo->attrib_divisor(7, 1);
+        instvbo->attrib_divisor(8, 1);
+    };
+    auto instvbounbind = [&] (auto &instvbo) {
+        instvbo->disable_attribute(5);
+        instvbo->disable_attribute(6);
+        instvbo->disable_attribute(7);
+        instvbo->disable_attribute(8);
+        instvbo->unbind();
     };
 
     if (draw_all_points || points_count)
@@ -562,6 +739,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbobind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbobind(triObj.instvbo);
+            } else {
+                instvbobind(instvbo);
+            }
+        }
+
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
 
@@ -674,12 +860,28 @@ struct GraphicPrimitive : IGraphic {
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
                 texOcp++;
             }
+            triObj.prog->set_uniform("depthPass", depthPass);
+            triObj.prog->set_uniformi("depthBuffer", texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getDepthTexture()));
+            texOcp++;
     
         }
-
+        
+        triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
-        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
-              GL_UNSIGNED_INT, /*first=*/0));
+
+        if (prim_has_inst)
+        {
+            CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+        }
+        else
+        {
+            CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0));
+        }
+
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
@@ -695,6 +897,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbounbind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbounbind(triObj.instvbo);
+            } else {
+                instvbounbind(instvbo);
+            }
+        }       
+
     }
 
     
@@ -758,9 +969,48 @@ struct GraphicPrimitive : IGraphic {
       textures.push_back(std::move(tex));
     }
   }
-  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
+  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
   {
-auto SMVS = R"(
+std::string SMVS;
+    if (inst != nullptr)
+    {
+SMVS = R"(
+#version 330 core
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+in mat4 mInstModel;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+
+void main()
+{
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  iColor = vColor;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = mat3(mInstModel) * vTangent;
+  gl_Position = mView * vec4(position, 1.0);
+}
+)";
+    }
+    else
+  {
+SMVS = R"(
 #version 330 core
 
 uniform mat4 mVP;
@@ -792,6 +1042,7 @@ void main()
   gl_Position = mView * vec4(position, 1.0);
 }
 )";
+    }
 
 auto SMFS = "#version 330 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
 uniform mat4 mVP;
@@ -988,11 +1239,48 @@ void main()
     return compile_program(vert, frag);
   }
 
-  Program *get_tris_program(std::string const &path, std::shared_ptr<zeno::MaterialObject> mtl) {
+  Program *get_tris_program(std::string const &path, std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst) {
     auto vert = hg::file_get_content(path + ".tris.vert");
     auto frag = hg::file_get_content(path + ".tris.frag");
 
     if (vert.size() == 0) {
+        if (inst != nullptr)
+        {
+      vert = R"(
+#version 330
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+in mat4 mInstModel;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+void main()
+{
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  iColor = vColor;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = mat3(mInstModel) * vTangent;
+  gl_Position = mVP * vec4(position, 1.0);
+}
+)";
+        }
+        else
+        {
       vert = R"(
 #version 330
 
@@ -1024,6 +1312,7 @@ void main()
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
+        }
     }
     if (frag.size() == 0) {
         frag = R"(
@@ -2045,7 +2334,11 @@ vec3 reflectionCalculation(vec3 worldPos, int id)
 }
 uniform float reflectPass;
 uniform float reflectionViewID;
+uniform float depthPass;
+uniform sampler2DRect depthBuffer;
+
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+    vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
     vec3 L1 = light[0];
     vec3 att_pos = position;
@@ -2054,7 +2347,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
     float att_NoL = dot(normal, L1);
-
+    //if(depthPass<=0.01)
+    //{
+    //    
+    //    float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
+    //    if(d==0 || abs(projPos.z)>abs(d) )
+    //        discard;
+    //}
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     if(reflectPass==1.0 && mat_reflection==1.0 )
@@ -2062,6 +2361,12 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     /* custom_shader_end */
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
+    
+    //if(depthPass>=0.99)
+    //{
+    //    return abs(projPos.zzz);
+    //}
+    
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
@@ -2167,9 +2472,10 @@ vec3 calcRayDir(vec3 pos)
 //   vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
   return normalize(vpos.xyz);
 }
-
+uniform float msweight;
 void main()
 {
+  
   if (mRenderWireframe) {
     fColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
@@ -2195,13 +2501,14 @@ void main()
 
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
-  fColor = vec4(color, 1.0);
+  fColor = vec4(color*msweight, 1);
+  
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {
-        fColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1.0);
+        fColor = vec4(0.42 * intensity*msweight, 0.42 * intensity*msweight, 0.93 * intensity*msweight, 1);
       } else {
-        fColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1.0);
+        fColor = vec4(0.87 * intensity*msweight, 0.22 * intensity*msweight, 0.22 * intensity*msweight, 1);
       }
   }
 }
