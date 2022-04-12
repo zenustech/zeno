@@ -25,7 +25,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	setFrameShape(QFrame::NoFrame);
 	setMouseTracking(true);
 	setContextMenuPolicy(Qt::DefaultContextMenu);
-	setBackgroundBrush(QColor(26, 26, 26));
+	setBackgroundBrush(QColor(31, 31, 31));
 }
 
 CurveMapView::~CurveMapView()
@@ -45,8 +45,6 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 
 	m_pHScalar = new CurveScalarItem(true, this);
 	m_pVScalar = new CurveScalarItem(false, this);
-	//m_pHScalar->hide();
-	//m_pVScalar->hide();
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
 
@@ -57,7 +55,7 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
 	m_grid->initCurves(pts, handlers);
-	m_grid->setColor(QColor(58, 58, 58), QColor(32, 32, 32));
+	m_grid->setColor(QColor(32, 32, 32), QColor(22, 22, 24));
 	m_grid->setZValue(-100);
 
 	pScene->addItem(m_pHScalar);
@@ -112,7 +110,6 @@ void CurveMapView::gentle_zoom(qreal factor)
 
 	m_pHScalar->update();
 	m_pVScalar->update();
-	//m_grid->update();
 }
 
 void CurveMapView::resizeEvent(QResizeEvent* event)

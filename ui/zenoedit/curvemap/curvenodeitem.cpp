@@ -12,9 +12,10 @@ CurvePathItem::CurvePathItem(QGraphicsItem *parent)
 	, QGraphicsPathItem(parent)
 {
     const int penWidth = 2;
-    QPen pen(QColor(231, 29, 31), penWidth);
+    QPen pen(QColor(77, 77, 77), penWidth);
     pen.setStyle(Qt::SolidLine);
     setPen(pen);
+    setZValue(9);
 }
 
 void CurvePathItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -25,28 +26,29 @@ void CurvePathItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 
 CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, QGraphicsItem* parent)
-	: QGraphicsRectItem(-3, -3, 6, 6, parent)
+    : _base(parent)
 	, m_node(pNode)
 	, m_bMouseTriggered(false)
 	, m_other(nullptr)
 	, m_bNotify(true)
 {
-	m_line = new QGraphicsLineItem(this);
-	m_line->setPen(QPen(QColor(255,255,255), 1));
-	m_line->setZValue(-100);
+    CurveGrid *pGrid = m_node->grid();
 
-	setBrush(QColor(255, 87, 0));
-	QPen pen;
-	pen.setColor(QColor(255,255,255));
-	pen.setWidth(1);
-	setPen(pen);
+    m_line = new QGraphicsLineItem(pGrid);
+	m_line->setPen(QPen(QColor(255, 255, 255), 2));
 
 	QPointF center = pNode->boundingRect().center();
 
 	QPointF pos = offset;
 	setPos(pos);
 
-	m_line->setLine(QLineF(QPointF(0, 0), -offset));
+	QPointF wtf = this->scenePos();
+	QPointF hdlPosInGrid = pGrid->mapFromScene(wtf);
+    QPointF nodePosInGrid = pNode->pos();
+
+    m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
+    m_line->setZValue(10);
+    m_line->hide();
 
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
     setFlag(ItemSendsGeometryChanges, true);
@@ -90,13 +92,18 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
-		QPointF nodePos = mapFromScene(m_node->scenePos());
-		QPointF thisPos = boundingRect().center();
-		m_line->setLine(QLineF(thisPos, nodePos));
+		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
+		QPointF nodePosInGrid = m_node->pos();
+		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
 
-		QPointF wtf = scenePos();
         if (m_bNotify)
 			m_node->onHandleUpdate(this);
+	}
+	else if (change == QGraphicsItem::ItemScenePositionHasChanged)
+	{
+		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
+		QPointF nodePosInGrid = m_node->pos();
+		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
 	}
 	else if (change == QGraphicsItem::ItemSelectedChange)
 	{
@@ -112,16 +119,16 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 			if (isSelected)
 			{
 				m_node->toggle(true);
-				setVisible(true);
+				toggle(true);
 				if (m_other)
-					m_other->setVisible(true);
+					m_other->toggle(true);
 			}
 			else
 			{
 				m_node->toggle(false);
-				setVisible(false);
+				toggle(false);
 				if (m_other && !m_other->isMouseEventTriggered())
-					m_other->setVisible(false);
+					m_other->toggle(false);
 			}
 		}
 	}
@@ -131,6 +138,12 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 bool CurveHandlerItem::isMouseEventTriggered()
 {
     return m_bMouseTriggered;
+}
+
+void CurveHandlerItem::toggle(bool bToggle)
+{
+    setVisible(bToggle);
+    m_line->setVisible(bToggle);
 }
 
 void CurveHandlerItem::setUpdateNotify(bool bNotify)
@@ -152,10 +165,40 @@ void CurveHandlerItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     m_bMouseTriggered = false;
 }
 
+QRectF CurveHandlerItem::boundingRect(void) const
+{
+    QSize sz = ZenoStyle::dpiScaledSize(QSize(12, 12));
+    qreal w = sz.width(), h = sz.height();
+    QRectF rc = QRectF(-w / 2, -h / 2, w, h);
+    return rc;
+}
+
 void CurveHandlerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	painter->setRenderHint(QPainter::Antialiasing);
-	_base::paint(painter, option, widget);
+	const QTransform &transform = m_node->grid()->view()->transform();
+	qreal scaleX = transform.m11();
+	qreal scaleY = transform.m22();
+	qreal width = option->rect.width();
+	qreal height = option->rect.height();
+	QPointF center = option->rect.center();
+	qreal W = 0, H = 0;
+	if (scaleX < scaleY)
+	{
+		W = width;
+		H = width * scaleX / scaleY;
+	}
+	else
+	{
+		W = height * scaleY / scaleX;
+		H = height;
+	}
+
+	W = 0.5 * W;
+	H = 0.5 * H;
+
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(255, 255, 255));
+    painter->drawEllipse(center, W, H);
 }
 
 
@@ -169,7 +212,7 @@ CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveG
 {
     QRectF br = boundingRect();
 	setPos(nodePos);
-	setZValue(100);
+    setZValue(11);
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges | ItemIsFocusable);
 }
 
@@ -265,19 +308,19 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 		if (selected)
 		{
             m_bToggle = true;
-			if (m_left) m_left->setVisible(true);
-			if (m_right) m_right->setVisible(true);
+			if (m_left) m_left->toggle(true);
+			if (m_right) m_right->toggle(true);
 		}
 		else
 		{
 			m_bToggle = false;
 			if (m_left && !m_left->isMouseEventTriggered())
 			{
-				m_left->setVisible(false);
+				m_left->toggle(false);
 			}
 			if (m_right && !m_right->isMouseEventTriggered())
 			{
-				m_right->setVisible(false);
+				m_right->toggle(false);
 			}
 		}
 	} 
@@ -344,10 +387,6 @@ void CurveNodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 	qreal width = opt->rect.width();
 	qreal height = opt->rect.height();
 	QPointF center = opt->rect.center();
-	QRectF rc = opt->rect;
-	bool bSelected = isSelected();
-	painter->setBrush(QColor(0, 0, 0));
-	//painter->drawRect(rc);
 
 	qreal W = 0, H = 0;
 	if (scaleX < scaleY)
@@ -361,28 +400,29 @@ void CurveNodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 		H = height;
 	}
 
-	if (m_bToggle)
+    if (m_bToggle)
 	{
-		painter->setPen(QPen(QColor(255,255,255), 1));
-		painter->setBrush(QColor(255, 87, 0));
-		painter->setRenderHint(QPainter::Antialiasing, true);
-
-		QPainterPath path;
-		W = 0.8 * W;
-		H = 0.8 * H;
-		path.moveTo(center.x(), center.y() - H / 2);
-		path.lineTo(center.x() + W / 2, center.y());
-		path.lineTo(center.x(), center.y() + H / 2);
-		path.lineTo(center.x() - W / 2, center.y());
-		path.closeSubpath();
-
-		painter->drawPath(path);
+        QPen pen(QColor(245, 172, 83), 2);
+		pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+        painter->setBrush(QColor(245, 172, 83));
 	}
-	else
+    else
 	{
-		painter->setRenderHint(QPainter::Antialiasing, true);
-		painter->setPen(Qt::NoPen);
-		painter->setBrush(QColor(231, 29, 31));
-		painter->drawEllipse(center, W / 4, H / 4);
+        QPen pen(QColor(255, 255, 255), 2);
+		pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+        painter->setBrush(QColor(24, 24, 24)); 
 	}
+
+	QPainterPath path;
+	W = 0.7 * W;
+	H = 0.7 * H;
+	path.moveTo(center.x(), center.y() - H / 2);
+	path.lineTo(center.x() + W / 2, center.y());
+	path.lineTo(center.x(), center.y() + H / 2);
+	path.lineTo(center.x() - W / 2, center.y());
+	path.closeSubpath();
+
+	painter->drawPath(path);
 }
