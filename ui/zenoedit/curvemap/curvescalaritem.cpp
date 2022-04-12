@@ -38,15 +38,17 @@ void CurveScalarItem::resetPosition()
 	QRect rcViewport = m_view->viewport()->rect();
 	QPointF wtf = m_view->mapToScene(rcViewport.topLeft());
 	const QTransform& trans = m_view->transform();
+	const QMargins& margins = m_view->margins();
 	if (m_bHorizontal)
 	{
-        const QMargins &margins = m_view->margins();
 		wtf = m_view->mapToScene(rcViewport.bottomLeft() - QPoint(0, sz));
+        setX(margins.left());
 		setY(wtf.y());
 	}
 	else
 	{
 		setX(wtf.x());
+        setY(margins.top());
 	}
 	m_view->scene()->update();
 }

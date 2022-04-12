@@ -54,6 +54,11 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
     setFlag(ItemSendsGeometryChanges, true);
 }
 
+CurveHandlerItem::~CurveHandlerItem()
+{
+    delete m_line;
+}
+
 void CurveHandlerItem::setOtherHandle(CurveHandlerItem *other)
 {
     m_other = other;

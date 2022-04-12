@@ -13,7 +13,6 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pHScalar(nullptr)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
-	, m_bInit(false)
 	, m_bSmoothCurve(true)
 {
 	setRenderHint(QPainter::Antialiasing);
@@ -117,17 +116,6 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 	QGraphicsView::resizeEvent(event);
 	QRectF rc = sceneRect();
 	setSceneRect(m_fixedSceneRect);
-	if (!m_bInit)
-	{
-		static int margin = 64;
-
-		m_pHScalar->setX(m_gridMargins.left());
-		m_pVScalar->setY(margin);
-		m_pHScalar->update();
-		m_pVScalar->update();
-
-		m_bInit = true;
-	}
 	
 	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
     m_pHScalar->update();

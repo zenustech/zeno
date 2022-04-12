@@ -54,7 +54,6 @@ private:
 	const double m_factor_step = 0.1;
 	Qt::KeyboardModifiers _modifiers;
 	bool m_dragMove;
-	bool m_bInit;
 	bool m_bSmoothCurve;
 };
 

@@ -28,6 +28,7 @@ class CurveHandlerItem : public QGraphicsObject
 	typedef QGraphicsObject _base;
 public:
 	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
+	~CurveHandlerItem();
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
 	QRectF boundingRect(void) const;
 	void setOtherHandle(CurveHandlerItem* other);

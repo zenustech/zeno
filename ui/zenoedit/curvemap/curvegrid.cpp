@@ -19,7 +19,9 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 
 void CurveGrid::initTransform()
 {
-	m_initRc.adjust(64, 64, -64, -64);
+    QMargins margins = m_view->margins();
+
+    m_initRc = m_initRc.marginsRemoved(margins);
 
 	//setup the transform.
 	CURVE_RANGE rg = m_view->range();
