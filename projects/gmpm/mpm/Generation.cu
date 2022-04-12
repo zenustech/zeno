@@ -223,7 +223,8 @@ struct ToZSParticles : INode {
                 (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
           eleD[i][0] = obj[tri[1]] - obj[tri[0]];
           eleD[i][1] = obj[tri[2]] - obj[tri[0]];
-          eleD[i][2] = normalize(cross(eleD[i][0], eleD[i][1]));
+          eleD[i][2] =
+              normalize(cross(eleD[i][0], eleD[i][1])); // this is broken!
           for (auto pi : tri)
             dofVol[pi] += v / 3;
         }
@@ -432,8 +433,9 @@ struct ToZSParticles : INode {
                 // ref: Yun Fei, libwetcloth;
                 auto t0 = col(Dmat, 0);
                 auto t1 = col(Dmat, 1);
-                auto normal = col(Dmat, 2);
-                auto [Q, R] = math::qr(Dmat);
+                // auto normal = col(Dmat, 2);
+                auto normal = cross(t0, t1).normalized(); // use zpc instead
+                // auto [Q, R] = math::qr(Dmat);
                 zs::Rotation<float, 3> rot0{normal, vec3{0, 0, 1}};
                 auto u = rot0 * t0;
                 auto v = rot0 * t1;
