@@ -741,6 +741,8 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
                     bool includeNormal = false) {
     using namespace zs;
 
+    Vector<int> flag{pars.get_allocator(), 1};
+    flag.setVal(0);
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  table = proxy<execspace_e::cuda>(partition),
                                  grid = proxy<execspace_e::cuda>({}, grid),
