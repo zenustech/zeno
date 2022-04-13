@@ -341,7 +341,7 @@ static void shadowPass()
 }
 
 
-static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass)
+static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass, bool show_grid=false)
 {
 
     //glEnable(GL_BLEND);
@@ -365,6 +365,10 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
         for (auto const &[key, gra]: current_frame_data()->graphics) {
           gra->setMultiSampleWeight(sampleweight);
           gra->draw(reflect, isDepthPass);
+        }
+        if (isDepthPass != 1.0 && show_grid) {
+          axis->draw(false, 0.0);
+          grid->draw(false, 0.0);
         }
       }
 
@@ -399,11 +403,9 @@ static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass);
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass, true);
   if (isDepthPass!=1.0 && show_grid) {
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        axis->draw(false,0.0);
-        grid->draw(false,0.0);
         draw_small_axis();
     }
   vao->unbind();
