@@ -756,15 +756,17 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       // auto vol = pars("vol", pi);
       auto nrm = pars.pack<3>("nrm", pi);
 
-      auto arena =
-          make_local_arena<grid_e::collocated, kernel_e::linear>(grid.dx, pos);
+      auto arena = make_local_arena<grid_e::collocated, kernel_e::quadratic>(
+          grid.dx, pos);
 
       for (auto loc : arena.range()) {
         auto coord = arena.coord(loc);
         auto localIndex = coord & (grid_t::side_length - 1);
         auto blockno = table.query(coord - localIndex);
-        if (blockno < 0)
+        if (blockno < 0) {
           printf("THE HELL!");
+          continue;
+        }
         auto block = grid.block(blockno);
         auto W = arena.weight(loc);
         const auto cellid = grid_t::coord_to_cellid(localIndex);
