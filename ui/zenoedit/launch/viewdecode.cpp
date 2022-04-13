@@ -14,30 +14,6 @@
 
 namespace {
 
-bool processPacket(std::string const &action, const char *buf, size_t len) {
-
-    if (action == "viewObject") {
-        auto object = zeno::decodeObject(buf, len);
-        if (!object) {
-            zeno::log_warn("failed to decode view object");
-            return false;
-        }
-        zeno::getSession().globalComm->addViewObject(object);
-
-    } else if (action == "newFrame") {
-        zeno::getSession().globalComm->newFrame();
-
-    } else if (action == "reportStatus") {
-        std::string statJson{buf, len};
-        zeno::getSession().globalStatus->fromJson(statJson);
-
-    } else {
-        zeno::log_warn("unknown packet action type {}", action);
-        return false;
-    }
-    return true;
-}
-
 struct Header {
     size_t total_size;
     size_t info_size;
@@ -45,38 +21,91 @@ struct Header {
     size_t checksum;
 
     bool isValid() const {
-        if (magicnum != 314159265) return 0;
+        if (magicnum != 314159265) return false;
         return (total_size ^ info_size ^ magicnum ^ checksum) == 0;
     }
 };
 
-bool parsePacket(const char *buf, Header const &header) {
-    zeno::log_debug("viewDecodePacket: n={}", header.total_size);
-    if (header.total_size < header.info_size) {
-        zeno::log_warn("total_size < info_size");
+struct PacketProc {
+    int globalStateNeedClean = 0;
+
+    void onStart() {
+        globalStateNeedClean = 1;
+        zeno::getSession().globalState->clearState();
+        zeno::getSession().globalStatus->clearState();
+        zeno::getSession().globalState->working = true;
+    }
+
+    void onFinish() {
+        clearGlobalStateIfNeeded();
+        zeno::getSession().globalState->working = false;
+    }
+
+    bool clearGlobalStateIfNeeded() {
+        if (globalStateNeedClean) {
+            if (globalStateNeedClean > 2)
+                zeno::getSession().globalComm->newFrame();
+            globalStateNeedClean = 0;
+            zeno::getSession().globalComm->clearState();
+            return true;
+        }
         return false;
     }
 
-    rapidjson::Document doc;
-    doc.Parse(buf, header.info_size);
+    bool processPacket(std::string const &action, const char *buf, size_t len) {
 
-    if (!doc.IsObject()) {
-        zeno::log_warn("document root not object: {}", std::string(buf, header.info_size));
-        return false;
+        if (action == "viewObject") {
+            auto object = zeno::decodeObject(buf, len);
+            if (!object) {
+                zeno::log_warn("failed to decode view object");
+                return false;
+            }
+            clearGlobalStateIfNeeded();
+            zeno::getSession().globalComm->addViewObject(object);
+
+        } else if (action == "newFrame") {
+            globalStateNeedClean = 2; // postpone: zeno::getSession().globalComm->newFrame();
+
+        } else if (action == "reportStatus") {
+            std::string statJson{buf, len};
+            zeno::getSession().globalStatus->fromJson(statJson);
+
+        } else {
+            zeno::log_warn("unknown packet action type {}", action);
+            return false;
+        }
+        return true;
     }
-    auto root = doc.GetObject();
-    auto it = root.FindMember("action");
-    if (it == root.MemberEnd() || !it->value.IsString()) {
-        zeno::log_warn("no string entry named 'action'");
-        return false;
+
+    bool parsePacket(const char *buf, Header const &header) {
+        zeno::log_debug("viewDecodePacket: n={}", header.total_size);
+        if (header.total_size < header.info_size) {
+            zeno::log_warn("total_size < info_size");
+            return false;
+        }
+
+        rapidjson::Document doc;
+        doc.Parse(buf, header.info_size);
+
+        if (!doc.IsObject()) {
+            zeno::log_warn("document root not object: {}", std::string(buf, header.info_size));
+            return false;
+        }
+        auto root = doc.GetObject();
+        auto it = root.FindMember("action");
+        if (it == root.MemberEnd() || !it->value.IsString()) {
+            zeno::log_warn("no string entry named 'action'");
+            return false;
+        }
+        std::string action{it->value.GetString(), it->value.GetStringLength()};
+
+        const char *data = buf + header.info_size;
+        size_t size = header.total_size - header.info_size;
+
+        return processPacket(action, data, size);
     }
-    std::string action{it->value.GetString(), it->value.GetStringLength()};
 
-    const char *data = buf + header.info_size;
-    size_t size = header.total_size - header.info_size;
-
-    return processPacket(action, data, size);
-}
+} packetProc;
 
 
 struct ViewDecodeData {
@@ -119,7 +148,7 @@ struct ViewDecodeData {
                 if (buffercurr >= header().total_size) {
                     buffercurr = 0;
                     zeno::log_debug("finish rx, parsing packet of size {}", header().total_size);
-                    parsePacket(buffer.data(), header());
+                    packetProc.parsePacket(buffer.data(), header());
                     phase = 0;
                 }
             } else if (phase == 0) {
@@ -170,13 +199,16 @@ struct ViewDecodeData {
 
 }
 
+void viewDecodeFinish()
+{
+    packetProc.onFinish();
+}
+
 void viewDecodeClear()
 {
     zeno::log_debug("viewDecodeClear");
     viewDecodeData.clear();
-    zeno::getSession().globalComm->clearState();
-    zeno::getSession().globalState->clearState();
-    zeno::getSession().globalStatus->clearState();
+    packetProc.onStart();
 }
 
 void viewDecodeAppend(const char *buf, size_t n)

@@ -10,6 +10,7 @@ namespace zeno {
 struct IObject;
 
 struct GlobalState {
+    bool working = false;
     int frameid = 0;
     int substepid = 0;
     float frame_time = 0.03f;

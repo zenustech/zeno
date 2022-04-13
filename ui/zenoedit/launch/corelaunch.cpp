@@ -3,6 +3,7 @@
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/jsonhelper.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/scope_exit.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/logger.h>
@@ -126,6 +127,9 @@ struct ProgramRunData {
 
         std::vector<char> buf(1<<20); // 1MB
         viewDecodeClear();
+        zeno::optional_scope_exit decodeFin{[] {
+            viewDecodeFinish();
+        }};
 
         while (g_proc->waitForReadyRead(-1)) {
             while (!g_proc->atEnd()) {
@@ -140,6 +144,7 @@ struct ProgramRunData {
             if (g_state == KILLING) return;
         }
         zeno::log_debug("still not ready-read, assume exited");
+        decodeFin.commit();
 
         buf.clear();
         g_proc->terminate();

@@ -5,4 +5,5 @@
 
 void viewDecodeClear();
 void viewDecodeAppend(const char *buf, size_t n);
+void viewDecodeFinish();
 #endif

@@ -7,12 +7,12 @@ namespace zeno {
 ZENO_API void GlobalComm::newFrame() {
     std::lock_guard lck(mtx);
     frames.emplace_back();
-    log_debug("GlobalComm::newFrame");
+    log_debug("GlobalComm::newFrame {}", frames.size());
 }
 
 ZENO_API void GlobalComm::addViewObject(std::shared_ptr<IObject> const &object) {
     std::lock_guard lck(mtx);
-    log_debug("GlobalComm::addViewObject");
+    log_debug("GlobalComm::addViewObject {}", frames.size());
     frames.back().view_objects.push_back(object);
 }
 

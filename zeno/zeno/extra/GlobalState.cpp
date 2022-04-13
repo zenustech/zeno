@@ -36,6 +36,7 @@ ZENO_API void GlobalState::frameEnd() {
 }
 
 ZENO_API void GlobalState::clearState() {
+    working = false;
     frameid = 0;
     frameid = 0;
     substepid = 0;
