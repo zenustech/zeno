@@ -24,6 +24,12 @@ public:
 	QPointF mapLogicToScene(const QPointF& logicPos);
 	QPointF mapSceneToLogic(const QPointF& scenePos);
 	QPointF mapOffsetToScene(const QPointF& offset);
+    CurveGrid* gridItem() const;
+	QList<CurveNodeItem*> getSelectedNodes();
+
+signals:
+	void nodeItemsSelectionChanged(QList<CurveNodeItem*>);
+	void nodeItemsGeometryChanged();
 
 protected:
 	void wheelEvent(QWheelEvent* event);
@@ -32,6 +38,9 @@ protected:
 	void mouseMoveEvent(QMouseEvent* event);
 	void mouseReleaseEvent(QMouseEvent* event);
 	void resizeEvent(QResizeEvent* event);
+
+private slots:
+    void onSelectionChanged();
 
 private:
 	void gentle_zoom(qreal factor);

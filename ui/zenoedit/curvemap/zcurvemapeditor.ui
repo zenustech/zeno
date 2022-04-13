@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>876</width>
-    <height>533</height>
+    <width>882</width>
+    <height>530</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -70,7 +70,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_7">
+        <widget class="QLineEdit" name="editTanLeftX">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -94,7 +94,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_9">
+        <widget class="QLineEdit" name="editTanRightX">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -125,7 +125,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_8">
+        <widget class="QLineEdit" name="editTanLeftY">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -149,7 +149,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_10">
+        <widget class="QLineEdit" name="editTanRightY">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -180,12 +180,15 @@
         <widget class="QPushButton" name="btnFree">
          <property name="maximumSize">
           <size>
-           <width>38</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
           <string/>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -193,12 +196,15 @@
         <widget class="QPushButton" name="btnVector">
          <property name="maximumSize">
           <size>
-           <width>38</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
           <string/>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -206,12 +212,15 @@
         <widget class="QPushButton" name="btnAligned">
          <property name="maximumSize">
           <size>
-           <width>38</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
           <string/>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -219,12 +228,15 @@
         <widget class="QPushButton" name="btnAsymmetry">
          <property name="maximumSize">
           <size>
-           <width>38</width>
-           <height>22</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
           <string/>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -292,7 +304,7 @@
      <item row="0" column="3">
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
-        <widget class="QLineEdit" name="lineEdit_5">
+        <widget class="QLineEdit" name="editPtX">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -315,7 +327,7 @@
      <item row="1" column="3">
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
-        <widget class="QLineEdit" name="lineEdit_6">
+        <widget class="QLineEdit" name="editPtY">
          <property name="minimumSize">
           <size>
            <width>52</width>
@@ -337,6 +349,9 @@
      </item>
      <item row="0" column="0">
       <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
        <property name="topMargin">
         <number>0</number>
        </property>
@@ -361,34 +376,93 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit">
-         <property name="minimumSize">
-          <size>
-           <width>36</width>
-           <height>0</height>
-          </size>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="spacing">
+          <number>1</number>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame">
-         <property name="frameShape">
-          <enum>QFrame::HLine</enum>
+         <property name="leftMargin">
+          <number>0</number>
          </property>
-         <property name="frameShadow">
-          <enum>QFrame::Plain</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_2">
-         <property name="minimumSize">
-          <size>
-           <width>36</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
+         <item>
+          <widget class="QLineEdit" name="editXFrom">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame">
+           <property name="minimumSize">
+            <size>
+             <width>5</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>5</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="palette">
+            <palette>
+             <active>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>138</red>
+                 <green>138</green>
+                 <blue>140</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </active>
+             <inactive>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>138</red>
+                 <green>138</green>
+                 <blue>140</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </inactive>
+             <disabled>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>120</red>
+                 <green>120</green>
+                 <blue>120</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </disabled>
+            </palette>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::HLine</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="editXTo">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
@@ -415,34 +489,93 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_3">
-         <property name="minimumSize">
-          <size>
-           <width>36</width>
-           <height>0</height>
-          </size>
+        <layout class="QHBoxLayout" name="horizontalLayout_10">
+         <property name="spacing">
+          <number>1</number>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_2">
-         <property name="frameShape">
-          <enum>QFrame::HLine</enum>
+         <property name="leftMargin">
+          <number>0</number>
          </property>
-         <property name="frameShadow">
-          <enum>QFrame::Plain</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_4">
-         <property name="minimumSize">
-          <size>
-           <width>36</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
+         <item>
+          <widget class="QLineEdit" name="editYFrom">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame_2">
+           <property name="minimumSize">
+            <size>
+             <width>5</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>5</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="palette">
+            <palette>
+             <active>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>138</red>
+                 <green>138</green>
+                 <blue>140</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </active>
+             <inactive>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>138</red>
+                 <green>138</green>
+                 <blue>140</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </inactive>
+             <disabled>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>120</red>
+                 <green>120</green>
+                 <blue>120</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </disabled>
+            </palette>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::HLine</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="editYTo">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
@@ -452,11 +585,11 @@
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
+        <enum>QSizePolicy::Minimum</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>82</width>
+         <width>64</width>
          <height>20</height>
         </size>
        </property>
@@ -468,11 +601,11 @@
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
+        <enum>QSizePolicy::Minimum</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>56</width>
+         <width>64</width>
          <height>20</height>
         </size>
        </property>

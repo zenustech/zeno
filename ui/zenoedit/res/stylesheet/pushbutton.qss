@@ -36,8 +36,110 @@ QPushButton[cssClass="shadowButton"]
 	padding-right: 6px;
 	padding-bottom: 2.5px;
 	border: 0.5px solid rgba(0,0,0,1);
-    border-radius: 2px;
+    border-radius: 3px;
 	background-color: #2B2B2B;
 	font: 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+}
+
+QPushButton[cssClass="shadowButton"]:pressed
+{
+	background-color: #000000;
+	color: #8A8A8C;
+}
+
+QPushButton#btnFree
+{
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 2px;
+	background-color: #2B2B2B;
+	background-image: url(:/icons/ic_handle_free.svg);
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-left: 6px;
+	padding-top: 2.5px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+}
+
+QPushButton#btnFree:pressed, QPushButton#btnFree:checked {
+    background-color: rgb(26, 26, 26);
+	background-image: url(:/icons/ic_handle_free-on.svg);
+}
+
+QPushButton#btnVector
+{
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 2px;
+	background-color: #2B2B2B;
+	background-image: url(:/icons/ic_handle_vector.svg);
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-left: 6px;
+	padding-top: 2.5px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+}
+
+QPushButton#btnVector:pressed, QPushButton#btnVector:checked {
+    background-color: rgb(26, 26, 26);
+	background-image: url(:/icons/ic_handle_vector-on.svg);
+}
+
+QPushButton#btnAligned
+{
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 2px;
+	background-color: #2B2B2B;
+	background-image: url(:/icons/ic_handle_aligned.svg);
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-left: 6px;
+	padding-top: 2.5px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+}
+
+QPushButton#btnAligned:pressed, QPushButton#btnAligned:checked {
+    background-color: rgb(26, 26, 26);
+	background-image: url(:/icons/ic_handle_aligned-on.svg);
+}
+
+QPushButton#btnAsymmetry
+{
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 2px;
+	background-color: #2B2B2B;
+	background-image: url(:/icons/ic_handle_asymmetry.svg);
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-left: 6px;
+	padding-top: 2.5px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+}
+
+QPushButton#btnAsymmetry:pressed, QPushButton#btnAsymmetry:checked {
+    background-color: rgb(26, 26, 26);
+	background-image: url(:/icons/ic_handle_asymmetry-on.svg);
+}
+
+
+QPushButton[cssClass="curve-preset"]
+{
+	padding-top: 2px;
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-bottom: 2px;
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 3px;
+	background-color: #2B2B2B;
+	font: 12px 'HarmonyOS Sans';
+	color: #8A8A8C;
+}
+
+QPushButton[cssClass="curve-preset"]:pressed
+{
+	background-color: #000000;
 	color: #8A8A8C;
 }

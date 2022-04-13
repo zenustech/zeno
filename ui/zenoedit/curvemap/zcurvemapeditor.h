@@ -3,8 +3,12 @@
 
 #include <QtWidgets>
 #include <zenoui/model/modeldata.h>
+#include "curveutil.h"
+
+using namespace curve_util;
 
 class CurveMapView;
+class CurveNodeItem;
 
 namespace Ui
 {
@@ -14,16 +18,28 @@ namespace Ui
 class ZCurveMapEditor : public QDialog
 {
 	Q_OBJECT
+
 public:
 	ZCurveMapEditor(QWidget* parent = nullptr);
 	~ZCurveMapEditor();
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 
+public slots:
+	void onButtonToggled(QAbstractButton* btn, bool bToggled);
+	void onNodesSelectionChanged(QList<CurveNodeItem*> lst);
+    void onNodesDataChanged();
+
 private:
 	void initUI();
+	void initSize();
+    void initSignals();
+	void initButtonShadow();
+    void initStylesheet();
 
-	CurveMapView* m_view;
 	Ui::FCurveDlg* m_ui;
+
+	QButtonGroup* m_pGroupHdlType;
+
 };
 
 

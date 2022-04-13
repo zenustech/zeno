@@ -54,6 +54,15 @@ QLineEdit[cssClass="zenonode"]:focus
     color: rgba(255,255,255,1.0);
 }
 
+QLineEdit[cssClass="FCurve-lineedit"] {
+    background-color: rgb(23, 23, 26);
+    color: #CCCCCC;
+}
+
+QLineEdit[cssClass="FCurve-lineedit"]:focus {
+    color: #FFFFFF;
+}
+
 
 QTextEdit {
     background-color: rgb(36, 37, 36);
@@ -64,3 +73,6 @@ QTextEdit[cssClass="proppanel"] {
     background-color: rgb(36, 37, 36);
     color: rgb(111, 111, 111);
 }
+
+
+

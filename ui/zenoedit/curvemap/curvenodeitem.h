@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include <QtSvg/QGraphicsSvgItem>
 #include "curvegrid.h"
+#include "curveutil.h"
 
 class CurveNodeItem;
 class CurveMapView;
@@ -35,6 +36,9 @@ public:
     bool isMouseEventTriggered();
     void setUpdateNotify(bool bNotify);
     void toggle(bool bToggle);
+	enum{ Type = curve_util::CURVE_HANDLE };
+    int type() const override;
+	CurveNodeItem* nodeItem() const;
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -60,11 +64,16 @@ public:
     void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const;
     void toggle(bool bChecked);
+    bool isToggled() const;
     CurveHandlerItem* leftHandle() const;
     CurveHandlerItem* rightHandle() const;
     QPointF leftHandlePos() const;
     QPointF rightHandlePos() const;
     CurveGrid* grid() const;
+
+	enum{ Type = curve_util::CURVE_NODE };
+    int type() const override;
+
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
 
 signals:

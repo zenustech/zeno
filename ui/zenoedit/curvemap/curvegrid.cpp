@@ -148,6 +148,8 @@ void CurveGrid::onNodeGeometryChanged()
         pRightCurve->setPath(path);
         pRightCurve->update();
 	}
+
+    emit nodesDataChanged();
 }
 
 void CurveGrid::onNodeDeleted()
@@ -176,6 +178,8 @@ void CurveGrid::onNodeDeleted()
 	path.cubicTo(pLeftNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
     pathItem->setPath(path);
 	pathItem->update();
+
+	emit nodesDataChanged();
 }
 
 void CurveGrid::onPathClicked(const QPointF& pos)
@@ -225,6 +229,18 @@ void CurveGrid::onPathClicked(const QPointF& pos)
 
 	m_vecNodes.insert(i + 1, pNewNode);
     m_vecCurves.insert(i + 1, pRightHalf);
+}
+
+QPointF CurveGrid::logicToScene(QPointF logicPos)
+{
+    QPointF pos = m_invTrans.map(logicPos);
+    return pos;
+}
+
+QPointF CurveGrid::sceneToLogic(QPointF scenePos)
+{
+    QPointF pos = m_transform.map(scenePos);
+    return pos;
 }
 
 bool CurveGrid::isFuncCurve() const

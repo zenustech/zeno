@@ -24,6 +24,11 @@ public:
     QPointF nodePos(int i) const;
     CurveNodeItem* nodeItem(int i) const;
     CurveMapView* view() const { return m_view; }
+    QPointF logicToScene(QPointF logicPos);
+    QPointF sceneToLogic(QPointF scenePos);
+
+signals:
+    void nodesDataChanged();
 
 public slots:
     void onNodeGeometryChanged();
