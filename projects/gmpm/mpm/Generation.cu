@@ -403,82 +403,86 @@ struct ToZSParticles : INode {
       outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
       auto &eles = outParticles->getQuadraturePoints(); // tilevector
-      ompExec(zs::range(eleSize),
-              [eles = proxy<execspace_e::host>({}, eles), &model, velsPtr,
-               nrmsPtr, &eleVol, &elePos, &eleVel, &eleD, category, &quads,
-               &tris, &lines](size_t ei) mutable {
-                using vec3 = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-                // vol, mass
-                eles("vol", ei) = eleVol[ei];
-                eles("mass", ei) = eleVol[ei] * model->density;
+      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::host>({}, eles),
+                                   &model, velsPtr, nrmsPtr, &eleVol, &elePos,
+                                   &eleVel, &eleD, category, &quads, &tris,
+                                   &lines](size_t ei) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+        // vol, mass
+        eles("vol", ei) = eleVol[ei];
+        eles("mass", ei) = eleVol[ei] * model->density;
 
-                // pos
-                eles.tuple<3>("pos", ei) = elePos[ei];
+        // pos
+        eles.tuple<3>("pos", ei) = elePos[ei];
 
-                // vel
-                if (velsPtr != nullptr)
-                  eles.tuple<3>("vel", ei) = eleVel[ei];
-                else
-                  eles.tuple<3>("vel", ei) = vec3::zeros();
+        // vel
+        if (velsPtr != nullptr)
+          eles.tuple<3>("vel", ei) = eleVel[ei];
+        else
+          eles.tuple<3>("vel", ei) = vec3::zeros();
 
-                // deformation
-                const auto &D = eleD[ei]; // [col]
-                auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
-                                 D[2][1], D[0][2], D[1][2], D[2][2]};
-                // could qr decomp here first (tech doc)
-                eles.tuple<9>("d", ei) = Dmat;
+        // deformation
+        const auto &D = eleD[ei]; // [col]
+        auto Dmat =
+            mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
+                 D[2][1], D[0][2], D[1][2], D[2][2]}; // discard last column ftm
+        // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
+        // ref: Yun Fei, libwetcloth;
+        auto t0 = col(Dmat, 0);
+        auto t1 = col(Dmat, 1);
+        // auto normal = col(Dmat, 2);
+        auto normal = cross(t0, t1).normalized(); // use zpc instead
+        Dmat(0, 2) = normal(0);
+        Dmat(1, 2) = normal(1);
+        Dmat(2, 2) = normal(2);
+        // could qr decomp here first (tech doc)
+        eles.tuple<9>("d", ei) = Dmat;
 
-                // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
-                // ref: Yun Fei, libwetcloth;
-                auto t0 = col(Dmat, 0);
-                auto t1 = col(Dmat, 1);
-                // auto normal = col(Dmat, 2);
-                auto normal = cross(t0, t1).normalized(); // use zpc instead
-                // auto [Q, R] = math::qr(Dmat);
-                zs::Rotation<float, 3> rot0{normal, vec3{0, 0, 1}};
-                auto u = rot0 * t0;
-                auto v = rot0 * t1;
-                zs::Rotation<float, 3> rot1{u, vec3{1, 0, 0}};
-                auto ru = rot1 * u;
-                auto rv = rot1 * v;
-                auto Dstar = mat3::identity();
-                Dstar(0, 0) = ru(0);
-                Dstar(0, 1) = rv(0);
-                Dstar(1, 1) = rv(1);
+        // auto [Q, R] = math::qr(Dmat);
+        zs::Rotation<float, 3> rot0{normal, vec3{0, 0, 1}};
+        auto u = rot0 * t0;
+        auto v = rot0 * t1;
+        zs::Rotation<float, 3> rot1{u, vec3{1, 0, 0}};
+        auto ru = rot1 * u;
+        auto rv = rot1 * v;
+        auto Dstar = mat3::identity();
+        Dstar(0, 0) = ru(0);
+        Dstar(0, 1) = rv(0);
+        Dstar(1, 1) = rv(1);
 
 #if 1
-                auto invDstar = zs::inverse(Dstar);
-                eles.tuple<9>("DmInv", ei) = invDstar;
-                eles.tuple<9>("F", ei) = Dmat * invDstar;
+        auto invDstar = zs::inverse(Dstar);
+        eles.tuple<9>("DmInv", ei) = invDstar;
+        eles.tuple<9>("F", ei) = Dmat * invDstar;
 #else
                 eles.tuple<9>("DmInv", ei) = zs::inverse(Dmat);
                 eles.tuple<9>("F", ei) = mat3::identity();
 #endif
 
-                // apic transfer
-                eles.tuple<9>("C", ei) = mat3::zeros();
+        // apic transfer
+        eles.tuple<9>("C", ei) = mat3::zeros();
 
-                // plasticity
+        // plasticity
 
-                // element-vertex indices
-                if (category == ZenoParticles::tet) {
-                  const auto &quad = quads[ei];
-                  for (int i = 0; i != 4; ++i) {
-                    eles("inds", i, ei) = quad[i];
-                  }
-                } else if (category == ZenoParticles::surface) {
-                  const auto &tri = tris[ei];
-                  for (int i = 0; i != 3; ++i) {
-                    eles("inds", i, ei) = tri[i];
-                  }
-                } else if (category == ZenoParticles::curve) {
-                  const auto &line = lines[ei];
-                  for (int i = 0; i != 2; ++i) {
-                    eles("inds", i, ei) = line[i];
-                  }
-                }
-              });
+        // element-vertex indices
+        if (category == ZenoParticles::tet) {
+          const auto &quad = quads[ei];
+          for (int i = 0; i != 4; ++i) {
+            eles("inds", i, ei) = quad[i];
+          }
+        } else if (category == ZenoParticles::surface) {
+          const auto &tri = tris[ei];
+          for (int i = 0; i != 3; ++i) {
+            eles("inds", i, ei) = tri[i];
+          }
+        } else if (category == ZenoParticles::curve) {
+          const auto &line = lines[ei];
+          for (int i = 0; i != 2; ++i) {
+            eles("inds", i, ei) = line[i];
+          }
+        }
+      });
       eles = eles.clone({memsrc_e::um, 0});
     }
 
