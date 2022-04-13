@@ -306,7 +306,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
           using grid_t = RM_CVREF_T(grid);
           auto pos = table_t::key_t::zeros();
           for (int d = 0; d != degree; ++d) {
-            auto ind = (Ti)eles("inds", d, ei);
+            auto ind = reinterpret_bits<int>(eles("inds", d, ei));
             pos += pars.template pack<3>("pos", ind);
           }
           pos /= degree;
@@ -340,7 +340,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
       using grid_t = RM_CVREF_T(grid);
       auto pos = table_t::key_t::zeros();
       for (int d = 0; d != degree; ++d) {
-        auto ind = (Ti)eles("inds", d, ei);
+        auto ind = reinterpret_bits<int>(eles("inds", d, ei));
         pos += pars.template pack<3>("pos", ind);
       }
       pos /= degree;
@@ -371,7 +371,8 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
           for (int chn = 0; chn != tmp.numChannels(); ++chn)
             prims(chn, ei) = tmp(chn, o_eid);
           for (int d = 0; d != degree; ++d)
-            prims("inds", d, ei) = vertIndices[(Ti)prims("inds", d, ei)];
+            prims("inds", d, ei) =
+                vertIndices[reinterpret_bits<int>(prims("inds", d, ei))];
           prims("id", ei) = o_eid;
         });
   }
