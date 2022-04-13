@@ -127,7 +127,7 @@ struct ProgramRunData {
 
         std::vector<char> buf(1<<20); // 1MB
         viewDecodeClear();
-        zeno::optional_scope_exit decodeFin{[] {
+        zeno::scope_exit decodeFin{[] {
             viewDecodeFinish();
         }};
 
@@ -144,7 +144,7 @@ struct ProgramRunData {
             if (g_state == KILLING) return;
         }
         zeno::log_debug("still not ready-read, assume exited");
-        decodeFin.commit();
+        decodeFin.reset();
 
         buf.clear();
         g_proc->terminate();

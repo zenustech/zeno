@@ -1,46 +1,55 @@
 #pragma once
 
 #include <utility>
-#include <optional>
 
 namespace zeno {
 
 template <class Func>
-struct scope_exit {
+class scope_exit {
     Func func;
+    bool enabled;
 
-    scope_exit(Func &&func) : func(std::forward<Func>(func)) {
+public:
+    scope_exit(Func &&func) : func(std::forward<Func>(func)), enabled(true) {
+    }
+
+    bool has_value() const {
+        return enabled;
+    }
+
+    void release() {
+        enabled = false;
+    }
+
+    void reset() {
+        if (enabled) {
+            func();
+            enabled = false;
+        }
     }
 
     ~scope_exit() {
-        func();
+        if (enabled)
+            func();
     }
 
     scope_exit(scope_exit const &) = delete;
     scope_exit &operator=(scope_exit const &) = delete;
-    scope_exit(scope_exit &&) = delete;
-    scope_exit &operator=(scope_exit &&) = delete;
+
+    scope_exit(scope_exit &&that) : func(std::move(func)), enabled(that.enabled) {
+        that.enabled = false;
+    }
+
+    scope_exit &operator=(scope_exit &&that) {
+        if (this != &that) {
+            enabled = that.enabled;
+            that.enabled = false;
+            func = std::move(that.func);
+        }
+    }
 };
 
 template <class Func>
 scope_exit(Func) -> scope_exit<Func>;
-
-template <class Func>
-struct optional_scope_exit {
-    std::optional<scope_exit<Func>> opt;
-
-    optional_scope_exit(Func &&func) : opt(std::forward<Func>(func)) {
-    }
-
-    optional_scope_exit(optional_scope_exit const &) = delete;
-    optional_scope_exit &operator=(optional_scope_exit const &) = delete;
-
-    void commit() {
-        opt.reset();
-    }
-};
-
-template <class Func>
-optional_scope_exit(Func) -> optional_scope_exit<Func>;
 
 }
