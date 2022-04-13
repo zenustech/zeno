@@ -469,17 +469,17 @@ struct ToZSParticles : INode {
         if (category == ZenoParticles::tet) {
           const auto &quad = quads[ei];
           for (int i = 0; i != 4; ++i) {
-            eles("inds", i, ei) = quad[i];
+            eles("inds", i, ei) = reinterpret_bits<float>(quad[i]);
           }
         } else if (category == ZenoParticles::surface) {
           const auto &tri = tris[ei];
           for (int i = 0; i != 3; ++i) {
-            eles("inds", i, ei) = tri[i];
+            eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
           }
         } else if (category == ZenoParticles::curve) {
           const auto &line = lines[ei];
           for (int i = 0; i != 2; ++i) {
-            eles("inds", i, ei) = line[i];
+            eles("inds", i, ei) = reinterpret_bits<float>(line[i]);
           }
         }
       });
@@ -637,7 +637,7 @@ struct ToBoundaryParticles : INode {
                 // inds
                 const auto &tri = tris[ei];
                 for (int i = 0; i != 3; ++i)
-                  eles("inds", i, ei) = tri[i];
+                  eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
 
                 // nrm
                 {
@@ -732,7 +732,7 @@ struct ToTrackerParticles : INode {
         // inds
         int inds[3] = {(int)tris[ei][0], (int)tris[ei][1], (int)tris[ei][2]};
         for (int d = 0; d != 3; ++d)
-          eles("inds", d, ei) = inds[d];
+          eles("inds", d, ei) = reinterpret_bits<float>(inds[d]);
         // pos
         eles.tuple<3>("pos", ei) =
             (obj[inds[0]] + obj[inds[1]] + obj[inds[2]]) / 3.f;
@@ -1163,6 +1163,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                  [zspars = zs::proxy<execspace_e::cuda>({}, zspars),
                   dst = zs::proxy<execspace_e::cuda>(dst),
                   name = prop.name] __device__(size_t pi) mutable {
+                   // dst[pi] = zspars.pack<3>(name, pi);
                    dst[pi] = zspars.pack<3>(name, pi);
                  });
         copy(zs::mem_device,
@@ -1192,7 +1193,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                  [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                   dst = zs::proxy<execspace_e::cuda>(
                       dst)] __device__(size_t ei) mutable {
-                   dst[ei] = zseles.pack<2>("inds", ei).cast<int>();
+                   dst[ei] = zseles.pack<2>("inds", ei).reinterpret_bits<int>();
                  });
 
         prim->lines.resize(numEle);
@@ -1206,7 +1207,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                  [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                   dst = zs::proxy<execspace_e::cuda>(
                       dst)] __device__(size_t ei) mutable {
-                   dst[ei] = zseles.pack<3>("inds", ei).cast<int>();
+                   dst[ei] = zseles.pack<3>("inds", ei).reinterpret_bits<int>();
                  });
 
         prim->tris.resize(numEle);
@@ -1220,7 +1221,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                  [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                   dst = zs::proxy<execspace_e::cuda>(
                       dst)] __device__(size_t ei) mutable {
-                   dst[ei] = zseles.pack<4>("inds", ei).cast<int>();
+                   dst[ei] = zseles.pack<4>("inds", ei).reinterpret_bits<int>();
                  });
 
         prim->quads.resize(numEle);

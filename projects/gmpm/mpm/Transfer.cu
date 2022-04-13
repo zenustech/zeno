@@ -161,7 +161,7 @@ struct ZSParticleToZSGrid : INode {
         }
       };
       auto Dminv = eles.pack<3, 3>("DmInv", pi);
-      auto ind0 = (int)eles("inds", (int)0, pi);
+      auto ind0 = reinterpret_bits<int>(eles("inds", (int)0, pi));
       // auto vol0 = verts("vol", ind0);
       auto p0 = verts.pack<3>("pos", ind0);
       {
@@ -170,7 +170,7 @@ struct ZSParticleToZSGrid : INode {
         for (int i = 1; i != 3; ++i) {
           // auto Dinv_ri = row(Dminv, i - 1);
           auto Dinv_ri = Dminv_r[i - 1];
-          auto ind = (int)eles("inds", (int)i, pi);
+          auto ind = reinterpret_bits<int>(eles("inds", (int)i, pi));
           auto p_i = verts.pack<3>("pos", ind);
           transfer(p_i, Dinv_ri, -vol * dt);
           // transfer(p0, Dinv_ri, vol * dt);
@@ -653,9 +653,9 @@ struct ZSGridToZSParticle : INode {
                     eles.tuple<9>("C", pi) = C;
 
                     // section 4.3
-                    auto i0 = (int)eles("inds", 0, pi);
-                    auto i1 = (int)eles("inds", 1, pi);
-                    auto i2 = (int)eles("inds", 2, pi);
+                    auto i0 = reinterpret_bits<int>(eles("inds", 0, pi));
+                    auto i1 = reinterpret_bits<int>(eles("inds", 1, pi));
+                    auto i2 = reinterpret_bits<int>(eles("inds", 2, pi));
 
                     auto p0 = verts.pack<3>("pos", i0);
                     auto p1 = verts.pack<3>("pos", i1);

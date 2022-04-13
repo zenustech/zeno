@@ -213,9 +213,9 @@ struct RefineMeshParticles : INode {
                    eleOffsets = proxy<execspace_e::cuda>(eleOffsets),
                    dx] __device__(int ei) mutable {
                     /// inds, xs
-                    int inds[3] = {(int)eles("inds", 0, ei),
-                                   (int)eles("inds", 1, ei),
-                                   (int)eles("inds", 2, ei)};
+                    int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                         reinterpret_bits<int>(eles("inds", 1, ei)),
+                         reinterpret_bits<int>(eles("inds", 2, ei))};
                     zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
                                             pars.pack<3>("pos", inds[1]),
                                             pars.pack<3>("pos", inds[2])};
@@ -251,9 +251,9 @@ struct RefineMeshParticles : INode {
                    rho = model.density] __device__(int ei) mutable {
                     if (auto vertId = vertOffsets[ei]; vertId >= 0) {
                       /// inds, xs
-                      int inds[3] = {(int)eles("inds", 0, ei),
-                                     (int)eles("inds", 1, ei),
-                                     (int)eles("inds", 2, ei)};
+                      int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                         reinterpret_bits<int>(eles("inds", 1, ei)),
+                         reinterpret_bits<int>(eles("inds", 2, ei))};
                       zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
                                               pars.pack<3>("pos", inds[1]),
                                               pars.pack<3>("pos", inds[2])};
@@ -328,9 +328,9 @@ struct RefineMeshParticles : INode {
     d(2, 2) = d2[2];                                                           \
     eles.tuple<9>("d", e) = d;                                                 \
     eles.tuple<9>("Dinv", e) = zs::inverse(d) * Fe;                            \
-    eles("inds", 0, e) = ia;                                                   \
-    eles("inds", 1, e) = ib;                                                   \
-    eles("inds", 2, e) = vertId;                                               \
+    eles("inds", 0, e) = reinterpret_bits<float>(ia);                          \
+    eles("inds", 1, e) = reinterpret_bits<float>(ib);                          \
+    eles("inds", 2, e) = reinterpret_bits<float>(vertId);                      \
     atomic_add(exec_cuda, &pars("vol", ia), vole / 3.f);                       \
     atomic_add(exec_cuda, &pars("mass", ia), vole *rho / 3.f);                 \
     atomic_add(exec_cuda, &pars("vol", ib), vole / 3.f);                       \
@@ -412,9 +412,9 @@ struct RefineMeshParticles : INode {
                   [eles = proxy<execspace_e::cuda>({}, eles),
                    table = proxy<execspace_e::cuda>(
                        edgeTable)] __device__(int ei) mutable {
-                    int inds[3] = {(int)eles("inds", 0, ei),
-                                   (int)eles("inds", 1, ei),
-                                   (int)eles("inds", 2, ei)};
+                    int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                                   reinterpret_bits<int>(eles("inds", 1, ei)),
+                                   reinterpret_bits<int>(eles("inds", 2, ei))};
                     for (int e = 0; e != 3; ++e) {
                       auto st = inds[e];
                       auto ed = inds[(e + 1) % 3];
@@ -439,9 +439,9 @@ struct RefineMeshParticles : INode {
                edgeLocalNosInEle = proxy<execspace_e::cuda>(edgeLocalNosInEle),
                table = proxy<execspace_e::cuda>(
                    edgeTable)] __device__(int ei) mutable {
-                int inds[3] = {(int)eles("inds", 0, ei),
-                               (int)eles("inds", 1, ei),
-                               (int)eles("inds", 2, ei)};
+                int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                               reinterpret_bits<int>(eles("inds", 1, ei)),
+                               reinterpret_bits<int>(eles("inds", 2, ei))};
                 for (char e = 0; e != 3; ++e) {
                   auto st = inds[e];
                   auto ed = inds[(e + 1) % 3];
@@ -577,9 +577,9 @@ struct RefineMeshParticles : INode {
                     ++numSplits;
 
                 // inds, xs
-                int inds[3] = {(int)eles("inds", 0, ei),
-                               (int)eles("inds", 1, ei),
-                               (int)eles("inds", 2, ei)};
+                int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                               reinterpret_bits<int>(eles("inds", 1, ei)),
+                               reinterpret_bits<int>(eles("inds", 2, ei))};
                 zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
                                         pars.pack<3>("pos", inds[1]),
                                         pars.pack<3>("pos", inds[2])};
@@ -638,7 +638,7 @@ struct RefineMeshParticles : INode {
                   auto vol_div3 = vole / 3.f;
                   auto mass_div3 = vol_div3 * rho;
                   for (int i = 0; i != 3; ++i) {
-                    eles("inds", i, e) = is[i];
+                    eles("inds", i, e) = reinterpret_bits<float>(is[i]);
                     atomic_add(exec_cuda, &pars("vol", is[i]), vol_div3);
                     atomic_add(exec_cuda, &pars("mass", is[i]), mass_div3);
                   }
@@ -783,8 +783,9 @@ struct UpdateZSPrimitiveSequence : INode {
         [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
          eles = proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
          dt] __device__(int ei) mutable {
-          int inds[3] = {(int)eles("inds", 0, ei), (int)eles("inds", 1, ei),
-                         (int)eles("inds", 2, ei)};
+          int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
+                         reinterpret_bits<int>(eles("inds", 1, ei)),
+                         reinterpret_bits<int>(eles("inds", 2, ei))};
           zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
                                   pars.pack<3>("pos", inds[1]),
                                   pars.pack<3>("pos", inds[2])};
