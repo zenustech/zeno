@@ -23,6 +23,7 @@ public:
 	int indexOf(CurveNodeItem* pItem) const;
     QPointF nodePos(int i) const;
     CurveNodeItem* nodeItem(int i) const;
+    CurveMapView* view() const { return m_view; }
 
 public slots:
     void onNodeGeometryChanged();

@@ -6,7 +6,12 @@
 
 class CurveMapView;
 
-class ZCurveMapEditor : public QWidget
+namespace Ui
+{
+	class FCurveDlg;
+}
+
+class ZCurveMapEditor : public QDialog
 {
 	Q_OBJECT
 public:
@@ -15,7 +20,10 @@ public:
 	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
 
 private:
+	void initUI();
+
 	CurveMapView* m_view;
+	Ui::FCurveDlg* m_ui;
 };
 
 

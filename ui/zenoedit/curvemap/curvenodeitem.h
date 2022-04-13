@@ -22,15 +22,19 @@ signals:
     void clicked(QPointF);
 };
 
-class CurveHandlerItem : public QGraphicsRectItem
+class CurveHandlerItem : public QGraphicsObject
 {
-	typedef QGraphicsRectItem _base;
+    Q_OBJECT
+	typedef QGraphicsObject _base;
 public:
 	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
+	~CurveHandlerItem();
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
+	QRectF boundingRect(void) const;
 	void setOtherHandle(CurveHandlerItem* other);
     bool isMouseEventTriggered();
     void setUpdateNotify(bool bNotify);
+    void toggle(bool bToggle);
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -39,7 +43,7 @@ protected:
 
 private:
 	const int sz = 6;
-	QGraphicsLineItem* m_line;
+    QGraphicsLineItem* m_line;
 	CurveNodeItem* m_node;
 	CurveHandlerItem* m_other;
 	bool m_bMouseTriggered;
