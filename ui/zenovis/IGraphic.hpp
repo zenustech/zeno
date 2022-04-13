@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Light.hpp>
 #include <memory>
 #include <vector>
 #include <string>
@@ -8,6 +7,8 @@
 #include <zeno/core/IObject.h>
 
 namespace zenvis {
+
+struct Light;
 
 struct IGraphic {
   float m_weight;

@@ -519,8 +519,6 @@ static void ZPass()
 
 }
 static void paint_graphics(GLuint target_fbo = 0) {
-  shadowPass();
-  reflectivePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -530,11 +528,22 @@ static void paint_graphics(GLuint target_fbo = 0) {
         enable_hdr = false;
     }
   }
-    if (!enable_hdr) {
-        
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+
+    if (!enable_hdr || 1) {
+        if (target_fbo)
+            CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
         return my_paint_graphics(1.0, 0.0);
     }
+
+  shadowPass();
+  reflectivePass();
+
+    GLint zero_fbo = 0;
+    CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &zero_fbo));
+    GLint zero_draw_fbo = 0;
+    CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zero_draw_fbo));
+    if (target_fbo == 0)
+        target_fbo = zero_draw_fbo;
   
   if(msfborgb==0||oldnx!=nx||oldny!=ny)
   {
@@ -637,7 +646,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
     CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                     GL_TEXTURE_RECTANGLE, texRect, 0));
-    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, zero_fbo));
 
     oldnx = nx;
     oldny = ny;
@@ -726,7 +735,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
   //std::this_thread::sleep_for(std::chrono::milliseconds(30));
   //glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
   //drawScreenQuad here:
-  CHECK_GL(glFlush());
+  //CHECK_GL(glFlush()); // delete this to cihou zeno2
 }
 
 /* END ZHXX HAPPY */
@@ -746,8 +755,8 @@ void finalize() {
 }
 
 void new_frame() {
-#if 1
-          CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+#if 0
   my_paint_graphics(1.0f, 0.0f);
 #else
    paint_graphics();  // TODO: zhxx paint_graphics has bug with zeno2

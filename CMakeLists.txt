@@ -65,7 +65,7 @@ endif()
 
 if (ZENO_NO_WARNING)
     if (CMAKE_COMPILER_IS_GNUCC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-deprecated-declarations -Werror=return-type")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Werror=return-type")
     endif()
     if (MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
