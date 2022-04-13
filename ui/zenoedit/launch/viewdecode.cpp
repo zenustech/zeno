@@ -41,15 +41,14 @@ struct PacketProc {
         zeno::getSession().globalState->working = false;
     }
 
-    bool clearGlobalStateIfNeeded() {
+    void clearGlobalStateIfNeeded() {
         if (globalStateNeedClean) {
-            if (globalStateNeedClean > 2)
+            zeno::log_critical("PacketProc::clearGlobalStateIfNeeded");
+            zeno::getSession().globalComm->clearState();
+            if (globalStateNeedClean >= 2)
                 zeno::getSession().globalComm->newFrame();
             globalStateNeedClean = 0;
-            zeno::getSession().globalComm->clearState();
-            return true;
         }
-        return false;
     }
 
     bool processPacket(std::string const &action, const char *buf, size_t len) {
