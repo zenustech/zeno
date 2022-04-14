@@ -151,6 +151,16 @@ void CurveHandlerItem::toggle(bool bToggle)
     m_line->setVisible(bToggle);
 }
 
+int CurveHandlerItem::type() const
+{
+	return Type;
+}
+
+CurveNodeItem* CurveHandlerItem::nodeItem() const
+{
+    return m_node;
+}
+
 void CurveHandlerItem::setUpdateNotify(bool bNotify)
 {
     m_bNotify = bNotify;
@@ -280,6 +290,11 @@ void CurveNodeItem::toggle(bool bChecked)
     m_bToggle = bChecked;
 }
 
+bool CurveNodeItem::isToggled() const
+{
+    return m_bToggle;
+}
+
 CurveHandlerItem* CurveNodeItem::leftHandle() const
 {
     return m_left;
@@ -305,6 +320,11 @@ CurveGrid* CurveNodeItem::grid() const
     return m_grid;
 }
 
+int CurveNodeItem::type() const
+{
+    return Type;
+}
+
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	if (change == QGraphicsItem::ItemSelectedHasChanged)
@@ -312,13 +332,13 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 		bool selected = isSelected();
 		if (selected)
 		{
-            m_bToggle = true;
+            toggle(true);
 			if (m_left) m_left->toggle(true);
 			if (m_right) m_right->toggle(true);
 		}
 		else
 		{
-			m_bToggle = false;
+			toggle(false);
 			if (m_left && !m_left->isMouseEventTriggered())
 			{
 				m_left->toggle(false);

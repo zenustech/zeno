@@ -46,6 +46,7 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 	m_pVScalar = new CurveScalarItem(false, this);
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
+    connect(pScene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
 
 	QRectF rc = scene()->sceneRect();
 	rc = sceneRect();
@@ -120,6 +121,34 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
     m_pHScalar->update();
     m_pVScalar->update();
+}
+
+CurveGrid* CurveMapView::gridItem() const
+{
+    return m_grid;
+}
+
+QList<CurveNodeItem*> CurveMapView::getSelectedNodes()
+{
+	auto selItems = scene()->selectedItems();
+	QList<CurveNodeItem*> lstNodes;
+    for (auto item : selItems)
+	{
+        if (CurveNodeItem* pNode = qgraphicsitem_cast<CurveNodeItem*>(item))
+		{
+            lstNodes.append(pNode);
+        }
+		else if (CurveHandlerItem* pHandle = qgraphicsitem_cast<CurveHandlerItem*>(item))
+        {
+            lstNodes.append(pHandle->nodeItem());
+        }
+    }
+    return lstNodes;
+}
+
+void CurveMapView::onSelectionChanged()
+{
+    emit nodeItemsSelectionChanged(getSelectedNodes());
 }
 
 QRectF CurveMapView::gridBoundingRect() const
