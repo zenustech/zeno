@@ -55,9 +55,14 @@ static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
 float g_dof=-1;
+float g_aperature=0.05;
 extern void setDOF(float _dof)
 {
   g_dof = _dof;
+}
+extern void setAperature(float _apt)
+{
+  g_aperature = _apt;
 }
 void set_perspective(
     std::array<double, 16> viewArr,
@@ -74,19 +79,24 @@ glm::mat4 cview, cproj;
 void clearCameraControl()
 {
   g_camSetFromNode = 0;
+  proj = glm::perspective(glm::radians(45.0), (double)nx/(double)ny, 0.1, 20000.0);
   g_dof = -1;
+  g_fov = 45.0;
+  g_near = 0.1;
+  g_far = 20000;
+  g_proj = proj;
 }
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set)
 {
   front = glm::normalize(front);
   up = glm::normalize(up);
   cview = glm::lookAt(pos, pos + front, up);
-  cproj = glm::perspective(glm::radians(_fov), 1.5, fnear, ffar);
+  cproj = glm::perspective(glm::radians(_fov), (double)nx/(double)ny, fnear, ffar);
   g_fov = _fov;
   g_near = fnear;
   g_far = ffar;
-  g_view = view;
-  g_proj = proj;
+  g_view = cview;
+  g_proj = cproj;
   g_camPos = pos;
   g_camView = glm::normalize(front);
   g_camUp = glm::normalize(up);
@@ -333,7 +343,7 @@ static void shadowPass()
 }
 
 
-static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass)
+static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass, bool show_grid=false)
 {
 
     //glEnable(GL_BLEND);
@@ -343,7 +353,8 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
     // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
-    
+      CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+      CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     
       
       float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
@@ -356,6 +367,10 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
         for (auto const &gra: current_graphics()) {
           gra->setMultiSampleWeight(sampleweight);
           gra->draw(reflect, isDepthPass);
+        }
+        if (isDepthPass != 1.0 && show_grid) {
+          axis->draw(false, 0.0);
+          grid->draw(false, 0.0);
         }
       }
 
@@ -390,11 +405,9 @@ static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass);
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass, true);
   if (isDepthPass!=1.0 && show_grid) {
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        axis->draw(false,0.0);
-        grid->draw(false,0.0);
         draw_small_axis();
     }
   vao->unbind();
@@ -665,7 +678,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
           glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
           glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) + p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
           view = glm::lookAt(g_camPos + 0.05f * bokeh, object, p_up);
-          ZPass();
+          //ZPass();
           CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
           CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                         GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
@@ -709,7 +722,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   } else {
     glDisable(GL_MULTISAMPLE);
-    ZPass();
+    //ZPass();
+    glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+    glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+    glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+    view = glm::lookAt(g_camPos, object, p_up);
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));

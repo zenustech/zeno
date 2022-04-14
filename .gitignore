@@ -72,3 +72,7 @@ projects/Euler
 # xinlei files
 assets/upper_slate_v01
 assets/character
+
+# temp path setting
+zenqt/assets/cache_path.txt
+

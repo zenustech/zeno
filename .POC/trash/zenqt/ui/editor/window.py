@@ -40,6 +40,8 @@ class QDMEditMenu(QMenu):
                 (None, None),
                 ('&Find', QKeySequence.Find),
                 ('Easy Subgraph', 'Alt+S'),
+                (None, None),
+                ('Set Cache Path', None),
         ]
         
         for name, shortcut in acts:
@@ -97,6 +99,7 @@ class NodeEditor(QWidget):
 
         self.always_run = False
         self.target_frame = 0
+        self.in_eventloop = False
 
         self.current_path = None
         self.clipboard = QApplication.clipboard()
@@ -411,9 +414,11 @@ class NodeEditor(QWidget):
                 zenvis.load_lights(s['lights'])
 
     def on_execute(self):
-        nframes = int(self.edit_nframes.text())
+        start_frame = int(self.start_frame.text())
+        maxframe = int(self.max_frame.text())
+        nframes = maxframe - start_frame + 1
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes, start_frame=0)
+        go(launch.launchProgram, prog, nframes, start_frame)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -427,14 +432,33 @@ class NodeEditor(QWidget):
         self.clearScenes()
         self.switchScene('main')
 
-    def getOpenFileName(self):
-        path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+    def in_dlg_eventloop(self):
+        return self.in_eventloop
+
+    def getOpenPath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getOpenFileName(self, title,
                 '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
+    def getSavePath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getSaveFileName(self, title,
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
+    def getOpenFileName(self):
+        path, kind = self.getOpenPath('File to Open')
         return path
 
     def getSaveFileName(self):
-        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        path, kind = self.getSavePath('Path to Save')
         return path
 
     def menuTriggered(self, act):
@@ -487,6 +511,15 @@ class NodeEditor(QWidget):
 
         elif name == 'Easy Subgraph':
             self.easy_subgraph()
+
+        elif name == 'Set Cache Path':
+            cache_dir = ''
+            if os.path.exists(asset_path('cache_path.txt')):
+                with open(asset_path('cache_path.txt'), 'r') as f:
+                    cache_dir = f.read()
+            cache_dir = QFileDialog.getExistingDirectory(self, 'Set Cache Path', cache_dir)
+            with open(asset_path('cache_path.txt'), 'w') as f:
+                f.write(cache_dir)
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',

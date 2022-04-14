@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/MatrixObject.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
@@ -8,9 +9,6 @@
 #include <cstring>
 
 namespace zeno {
-struct MatrixObject : zeno::IObjectClone<MatrixObject>{//ZhxxHappyObject
-    std::variant<glm::mat3, glm::mat4> m;
-};
 
 /*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
     virtual void apply() override {

@@ -38,6 +38,8 @@ namespace zenvis
         std::vector<glm::mat4> lightSpaceMatrices;
         std::vector<float> shadowCascadeLevels;
         std::vector<unsigned int> DepthMaps;
+        std::vector<float> m_nearPlane;
+        std::vector<float> m_farPlane;
         glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
         glm::vec3 shadowTint = glm::vec3(0.2f);
         float lightHight = 1000.0;
@@ -99,7 +101,7 @@ namespace zenvis
             return getFrustumCornersWorldSpace(proj * view);
         }
 
-        glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, glm::mat4 &proj, glm::mat4 &view)
+        glm::mat4 getLightSpaceMatrix(int layer, const float nearPlane, const float farPlane, glm::mat4 &proj, glm::mat4 &view)
         {
             auto p = glm::perspective(glm::radians(gfov), gaspect, nearPlane, farPlane);
             const auto corners = getFrustumCornersWorldSpace(p, view);
@@ -157,8 +159,10 @@ namespace zenvis
             maxX = midX + size;
             minY = midY - size;
             maxY = maxY + size;
-            const glm::mat4 lightProjection = glm::ortho(minX * 20, maxX * 20, minY * 20, maxY * 20, maxZ, -minZ);
+            const glm::mat4 lightProjection = glm::ortho(minX * 30, maxX * 30, minY * 30, maxY * 30, maxZ, -minZ);
             // std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
+            m_nearPlane[layer] = maxZ;
+            m_farPlane[layer] = -minZ;
             lightMV = lightProjection * lightView;
             return lightProjection * lightView;
         }
@@ -170,15 +174,15 @@ namespace zenvis
             {
                 if (i == 0)
                 {
-                    ret.push_back(getLightSpaceMatrix(near, shadowCascadeLevels[i], proj, view));
+                    ret.push_back(getLightSpaceMatrix(i,near, shadowCascadeLevels[i], proj, view));
                 }
                 else if (i < cascadeCount)
                 {
-                    ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i - 1], shadowCascadeLevels[i], proj, view));
+                    ret.push_back(getLightSpaceMatrix(i,shadowCascadeLevels[i - 1], shadowCascadeLevels[i], proj, view));
                 }
                 else
                 {
-                    ret.push_back(getLightSpaceMatrix(shadowCascadeLevels[i - 1], far, proj, view));
+                    ret.push_back(getLightSpaceMatrix(i,shadowCascadeLevels[i - 1], far, proj, view));
                 }
             }
             lightSpaceMatrices = ret;
@@ -189,6 +193,8 @@ namespace zenvis
         {
             setCascadeLevels(10000);
             DepthMaps.resize(cascadeCount + 1);
+            m_nearPlane.resize(cascadeCount + 1);
+            m_farPlane.resize(cascadeCount + 1);
             if (lightFBO == 0)
             {
                 CHECK_GL(glGenFramebuffers(1, &lightFBO));

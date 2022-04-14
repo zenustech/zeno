@@ -14,6 +14,7 @@
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
+#include <zeno/types/InstancingObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 #include <Scene.hpp>
@@ -36,6 +37,7 @@ struct drawObject
 {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
+    std::unique_ptr<Buffer> instvbo;
     size_t count=0;
     Program *prog;
     Program *shadowprog;
@@ -289,6 +291,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
 }
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
+  std::unique_ptr<Buffer> instvbo;
   size_t vertex_count;
   bool draw_all_points;
 
@@ -309,6 +312,8 @@ struct GraphicPrimitive : IGraphic {
   drawObject triObj;
   std::vector<std::unique_ptr<Texture>> textures;
   bool prim_has_mtl = false;
+  bool prim_has_inst = false;
+  int prim_inst_amount = 0;
 
   GraphicPrimitive(std::shared_ptr<zeno::PrimitiveObject> prim) {
       zeno::log_trace("rendering primitive size {}", prim->size());
@@ -395,6 +400,12 @@ struct GraphicPrimitive : IGraphic {
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
+    if (prim->inst != nullptr)
+    {
+        instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        instvbo->bind_data(prim->inst->modelMatrices.data(), prim->inst->modelMatrices.size() * sizeof(prim->inst->modelMatrices[0]));
+    }
+
     points_count = prim->points.size();
     if (points_count) {
         pointObj.count = points_count;
@@ -436,12 +447,19 @@ struct GraphicPrimitive : IGraphic {
             computeTrianglesTangent(prim.get());
             parseTrianglesDrawBuffer(prim.get(), triObj);
         }
+
+        if (prim->inst != nullptr)
+        {
+            triObj.instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+            triObj.instvbo->bind_data(prim->inst->modelMatrices.data(), prim->inst->modelMatrices.size() * sizeof(prim->inst->modelMatrices[0]));
+        }
+
         bool findCamera=false;
-        triObj.prog = get_tris_program(prim->mtl);
+        triObj.prog = get_tris_program(prim->mtl, prim->inst);
         if(!triObj.prog)
             triObj.prog = get_tris_program(nullptr);
         if(prim->mtl!=nullptr){
-            triObj.shadowprog = get_shadow_program(prim->mtl);
+            triObj.shadowprog = get_shadow_program(prim->mtl, prim->inst);
             auto code = prim->mtl->frag;
             if(code.find("mat_reflection = float(float(1))")!=std::string::npos)
             {
@@ -480,7 +498,7 @@ struct GraphicPrimitive : IGraphic {
             
         }
         if(!triObj.prog){
-            triObj.prog = get_tris_program(nullptr);
+            triObj.prog = get_tris_program(nullptr,nullptr);
         }
         
     }
@@ -496,6 +514,13 @@ struct GraphicPrimitive : IGraphic {
     }
     //load_textures(path);
     prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
+
+    if (prim->inst != nullptr)
+    {
+        prim_has_inst = true;
+        prim_inst_amount = prim->inst->amount;    
+    }
+
   }
   
   virtual void drawShadow(Light *light) override 
@@ -533,6 +558,25 @@ struct GraphicPrimitive : IGraphic {
         vbo->unbind();
     };
 
+    auto instvbobind = [&] (auto &instvbo) {
+        instvbo->bind();
+        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attrib_divisor(5, 1);
+        instvbo->attrib_divisor(6, 1);
+        instvbo->attrib_divisor(7, 1);
+        instvbo->attrib_divisor(8, 1);
+    };
+    auto instvbounbind = [&] (auto &instvbo) {
+        instvbo->disable_attribute(5);
+        instvbo->disable_attribute(6);
+        instvbo->disable_attribute(7);
+        instvbo->disable_attribute(8);
+        instvbo->unbind();
+    };
+
     if (tris_count) {
         //printf("TRIS\n");
         if (triObj.vbo) {
@@ -540,6 +584,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbobind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbobind(triObj.instvbo);
+            } else {
+                instvbobind(instvbo);
+            }
+        }
+
         triObj.shadowprog->use();
         light->setShadowMV(triObj.shadowprog);
         if (prim_has_mtl) {
@@ -553,14 +606,31 @@ struct GraphicPrimitive : IGraphic {
             }
         }
         triObj.ebo->bind();
-        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
-              GL_UNSIGNED_INT, /*first=*/0));
+
+        if (prim_has_inst)
+        {
+            CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+        }
+        else
+        {
+            CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0));
+        }
         
         triObj.ebo->unbind();
         if (triObj.vbo) {
             vbounbind(triObj.vbo);
         } else {
             vbounbind(vbo);
+        }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbounbind(triObj.instvbo);
+            } else {
+                instvbounbind(instvbo);
+            }
         }
     }
 
@@ -598,6 +668,25 @@ struct GraphicPrimitive : IGraphic {
         vbo->disable_attribute(3);
         vbo->disable_attribute(4);
         vbo->unbind();
+    };
+
+    auto instvbobind = [&] (auto &instvbo) {
+        instvbo->bind();
+        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attrib_divisor(5, 1);
+        instvbo->attrib_divisor(6, 1);
+        instvbo->attrib_divisor(7, 1);
+        instvbo->attrib_divisor(8, 1);
+    };
+    auto instvbounbind = [&] (auto &instvbo) {
+        instvbo->disable_attribute(5);
+        instvbo->disable_attribute(6);
+        instvbo->disable_attribute(7);
+        instvbo->disable_attribute(8);
+        instvbo->unbind();
     };
 
     if (draw_all_points || points_count)
@@ -651,6 +740,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbobind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbobind(triObj.instvbo);
+            } else {
+                instvbobind(instvbo);
+            }
+        }
+
         triObj.prog->use();
         set_program_uniforms(triObj.prog);
 
@@ -720,6 +818,12 @@ struct GraphicPrimitive : IGraphic {
                 triObj.prog->set_uniform(name.c_str(), light->lightColor * light->intensity);
                 for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
+                    auto name1 = "near[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.prog->set_uniform(name1.c_str(), light->m_nearPlane[i]);
+
+                    auto name2 = "far[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.prog->set_uniform(name1.c_str(), light->m_farPlane[i]);
+
                     auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
                     triObj.prog->set_uniformi(name.c_str(), texOcp);
                     CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
@@ -773,8 +877,18 @@ struct GraphicPrimitive : IGraphic {
         
         triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
-        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
-              GL_UNSIGNED_INT, /*first=*/0));
+
+        if (prim_has_inst)
+        {
+            CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+        }
+        else
+        {
+            CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0));
+        }
+
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
@@ -790,6 +904,15 @@ struct GraphicPrimitive : IGraphic {
         } else {
             vbounbind(vbo);
         }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbounbind(triObj.instvbo);
+            } else {
+                instvbounbind(instvbo);
+            }
+        }       
+
     }
 
     
@@ -853,9 +976,48 @@ struct GraphicPrimitive : IGraphic {
       textures.push_back(std::move(tex));
     }
   }
-  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl)
+  Program * get_shadow_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
   {
-auto SMVS = R"(
+std::string SMVS;
+    if (inst != nullptr)
+    {
+SMVS = R"(
+#version 330 core
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+in mat4 mInstModel;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+
+void main()
+{
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  iColor = vColor;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = mat3(mInstModel) * vTangent;
+  gl_Position = mView * vec4(position, 1.0);
+}
+)";
+    }
+    else
+  {
+SMVS = R"(
 #version 330 core
 
 uniform mat4 mVP;
@@ -887,6 +1049,7 @@ void main()
   gl_Position = mView * vec4(position, 1.0);
 }
 )";
+    }
 
 auto SMFS = "#version 330 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
 uniform mat4 mVP;
@@ -1065,8 +1228,39 @@ void main()
     return compile_program(vert, frag);
   }
 
-  Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl) {
-      auto vert = R"(#version 330
+  Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst) {
+        auto vert  = inst != nullptr ? R"(#version 330
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+in vec3 vPosition;
+in vec3 vColor;
+in vec3 vNormal;
+in vec3 vTexCoord;
+in vec3 vTangent;
+in mat4 mInstModel;
+
+out vec3 position;
+out vec3 iColor;
+out vec3 iNormal;
+out vec3 iTexCoord;
+out vec3 iTangent;
+void main()
+{
+  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  iColor = vColor;
+  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
+  iTexCoord = vTexCoord;
+  iTangent = mat3(mInstModel) * vTangent;
+  gl_Position = mVP * vec4(position, 1.0);
+}
+)" : R"(
+#version 330
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -1582,9 +1776,10 @@ vec3 CalculateLightingIBLToon(
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 irradiance = texture(irradianceMap, m*N).rgb;
-    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
     const float MAX_REFLECTION_LOD = 7.0;
+    vec3 irradiance = textureLod(prefilterMap, m*N,  MAX_REFLECTION_LOD).rgb;
+    vec3 diffuse      = irradiance * CalculateDiffuse(albedo);
+    
     vec3 R = reflect(-V, N); 
     vec3 prefilteredColor = textureLod(prefilterMap, m*R,  roughness * MAX_REFLECTION_LOD).rgb;
     vec3 prefilteredColor2 = textureLod(prefilterMap, m*R,  max(roughness, 0.5) * MAX_REFLECTION_LOD).rgb;
@@ -1950,7 +2145,8 @@ uniform float shadowSoftness[16];
 uniform vec3 lightDir[16];
 uniform float farPlane;
 uniform mat4 lview[16];
-
+uniform float near[128];
+uniform float far[128];
 //layout (std140, binding = 0) uniform LightSpaceMatrices
 //{
 uniform mat4 lightSpaceMatrices[128];
@@ -2061,6 +2257,65 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
         
     return mix(shadow1, shadow2, coef);
 }
+float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord, float near, float far)
+{
+    
+    float length = 0.0;
+    float res = far;
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
+            float pcfDepth = sampleShadowArray(lightNo, coord + (vec2(x, y) * softness + noise.xy) * softness * texelSize, layer) * (far-near) + near; 
+            res = min(res, abs(currentDepth - pcfDepth));
+        }    
+    }
+    return res;
+}
+
+float lightAttenuation(int lightNo, vec3 fragPosWorldSpace, float softness)
+{
+    // select cascade layer
+    vec4 fragPosViewSpace = mView * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
+        // perform perspective divide
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        // transform to [0,1] range
+        projCoords = projCoords * 0.5 + 0.5;
+        if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+    {
+        layer = cascadeCount;
+    }
+
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get depth of current fragment from light's perspective
+    float nearPlane = near[lightNo * (cascadeCount + 1) + layer];
+    float farPlane = far[lightNo * (cascadeCount + 1) + layer];
+    float currentDepth = projCoords.z * (farPlane - nearPlane) + nearPlane;
+
+    float avgL = PCFAttLayer(lightNo, currentDepth, 0, fragPosWorldSpace, layer, 5, 0, projCoords.xy, nearPlane, farPlane);
+
+    return avgL;
+    
+}
 
 uniform mat4 reflectMVP[16];
 uniform sampler2DRect reflectionMap0;
@@ -2126,13 +2381,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
     float att_NoL = dot(normal, L1);
-    if(depthPass<=0.01)
-    {
-        
-        float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
-        if(d==0 || abs(projPos.z)>abs(d) )
-            discard;
-    }
+    //if(depthPass<=0.01)
+    //{
+    //    
+    //    float d = texture2DRect(depthBuffer, gl_FragCoord.xy).r;
+    //    if(d==0 || abs(projPos.z)>abs(d) )
+    //        discard;
+    //}
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     if(reflectPass==1.0 && mat_reflection==1.0 )
@@ -2141,10 +2396,10 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     
-    if(depthPass>=0.99)
-    {
-        return abs(projPos.zzz);
-    }
+    //if(depthPass>=0.99)
+    //{
+    //    return abs(projPos.zzz);
+    //}
     
     vec3 colorEmission = mat_emission;
     mat_metallic = clamp(mat_metallic, 0, 1);
@@ -2167,11 +2422,19 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 realColor = vec3(0,0,0);
     for(int lightId=0; lightId<lightNum; lightId++){
         light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
-
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
         vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
 
-        vec3 lcolor = mix(photoReal, NPR, mat_toon);
+        vec3 sss =  vec3(0);
+        if(mat_subsurface>0)
+        {
+            vec3 vl = light_dir + new_normal * mat_sssParam.x;
+            float ltDot = pow(clamp(dot(normalize(view_dir), -vl),0,1), 12.0) * mat_sssParam.y;
+            float lthick = lightAttenuation(lightId, position, shadowSoftness[lightId]);
+            sss = mat_thickness * exp(-lthick * mat_sssParam.z) * ltDot * mat_sssColor * lightIntensity[lightId];
+        }
+
+        vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
     //   color +=  
     //       CalculateLightingAnalytical(
     //           new_normal,

@@ -35,7 +35,7 @@
       ]
      },
      "params": {
-      "value": 0.025
+      "value": 0.03
      },
      "uipos": [
       -637.6875960502122,
@@ -87,7 +87,7 @@
       ]
      },
      "params": {
-      "value": 480
+      "value": 720
      },
      "uipos": [
       -1214.0841772987199,
@@ -182,8 +182,8 @@
       "name": "stepdt"
      },
      "uipos": [
-      4193.247282364715,
-      1194.0991642020922
+      3924.589707029896,
+      1220.3285866351277
      ],
      "options": []
     },
@@ -242,15 +242,15 @@
        null
       ],
       "SRC": [
-       "7cf8edf7-UpdateZSPrimitiveSequence",
+       "3460e983-UpdateZSPrimitiveSequence",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      6522.528255241587,
-      1716.8229100815588
+      6798.169996313015,
+      1691.9903207958446
      ],
      "options": []
     },
@@ -270,8 +270,8 @@
      },
      "params": {},
      "uipos": [
-      2973.7750341601973,
-      1578.7758087290558
+      2880.0071770173413,
+      1572.4186658719127
      ],
      "options": []
     },
@@ -709,89 +709,37 @@
      "name": "ZSPartitionForZSParticles",
      "inputs": {
       "ZSPartition": [
-       "36743144-PortalOut",
+       "50437419-PortalOut",
        "port",
        null
       ],
       "ZSGrid": [
-       "359506a6-PortalOut",
+       "8c9fdef5-PortalOut",
        "port",
        null
       ],
       "ZSParticles": [
-       "3ff6c87a-PortalOut",
+       "769fad1c-PortalOut",
        "port",
        null
       ],
-      "ppc": [
+      "ppb": [
        null,
        null,
        8.0
       ],
       "SRC": [
-       "14eaf94b-BeginFor",
+       "8c9fdef5-PortalOut",
        "DST",
        null
       ]
      },
-     "params": {},
+     "params": {
+      "strategy": "cache"
+     },
      "uipos": [
       3628.9896755162217,
       1722.3893805309715
-     ],
-     "options": []
-    },
-    "3ff6c87a-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "zspars"
-     },
-     "uipos": [
-      3149.4745575221236,
-      1894.7640117994072
-     ],
-     "options": []
-    },
-    "36743144-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "partition"
-     },
-     "uipos": [
-      3221.9717920353974,
-      1960.5457227138625
-     ],
-     "options": []
-    },
-    "359506a6-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "grid"
-     },
-     "uipos": [
-      3359.905051622417,
-      2040.094948377579
      ],
      "options": []
     },
@@ -810,8 +758,8 @@
       ]
      },
      "params": {
-      "offset": 0,
-      "extent": 2
+      "offset": -2,
+      "extent": 5
      },
      "uipos": [
       3905.60471976401,
@@ -843,7 +791,7 @@
        null
       ],
       "SRC": [
-       "769fad1c-PortalOut",
+       "8804575c-ZSGridFromZSPartition",
        "DST",
        null
       ]
@@ -876,8 +824,8 @@
      },
      "params": {},
      "uipos": [
-      4179.050120590691,
-      1789.5558568441886
+      4153.249060322834,
+      1775.1094980272242
      ],
      "options": []
     },
@@ -923,7 +871,7 @@
       "gravity": [
        null,
        null,
-       -5.0
+       -3.0
       ],
       "ZSPartition": [
        "50437419-PortalOut",
@@ -962,8 +910,8 @@
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "50437419-PortalOut",
+       "DST",
        null
       ]
      },
@@ -971,8 +919,8 @@
       "name": "grid"
      },
      "uipos": [
-      3921.179941002948,
-      2037.4277286135675
+      3305.331726717237,
+      1828.8339786135684
      ],
      "options": []
     },
@@ -980,8 +928,8 @@
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "769fad1c-PortalOut",
+       "DST",
        null
       ]
      },
@@ -989,8 +937,8 @@
       "name": "partition"
      },
      "uipos": [
-      3758.8772123893814,
-      1524.9124262536868
+      3290.037926675099,
+      1566.6311762536866
      ],
      "options": []
     },
@@ -998,7 +946,7 @@
      "name": "PortalOut",
      "inputs": {
       "SRC": [
-       "8804575c-ZSGridFromZSPartition",
+       "14eaf94b-BeginFor",
        "DST",
        null
       ]
@@ -1007,8 +955,8 @@
       "name": "zspars"
      },
      "uipos": [
-      4084.6238938053075,
-      1453.3324115044245
+      3285.8277861044194,
+      1375.7740270178176
      ],
      "options": []
     },
@@ -1028,8 +976,8 @@
      },
      "params": {},
      "uipos": [
-      7146.525719596436,
-      1901.808995021332
+      7422.167460667863,
+      1876.9764057356178
      ],
      "options": [
       "VIEW"
@@ -1050,364 +998,6 @@
      "uipos": [
       281.2414963326252,
       2184.2019694245364
-     ],
-     "options": []
-    },
-    "9ff0ab09-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "assets/cloth/do_not_share/bishop_vdb/sdf_v1_0.vdb"
-     },
-     "uipos": [
-      2548.9902211290587,
-      4265.631694035377
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "579eef31-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/tank.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3111.7537993920823,
-      4298.42880699086
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "a858c708-ImportVDBGrid": {
-     "name": "ImportVDBGrid",
-     "inputs": {
-      "path": [
-       "9ff0ab09-MakeString",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": ""
-     },
-     "uipos": [
-      2825.9190729483153,
-      4277.782294832807
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "539ce20f-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       "55c5f45a-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "sticky"
-     },
-     "uipos": [
-      3262.676296276356,
-      4529.80243161092
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "27e50f98-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/tank.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2540.1519756838784,
-      4581.200607902712
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "78c58f4c-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "27e50f98-ImportObjPrimitive",
-       "prim",
-       null
-      ],
-      "Dx": [
-       null,
-       null,
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      2783.617021276583,
-      4570.379939209706
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "55c5f45a-ToZSLevelSet": {
-     "name": "ToZSLevelSet",
-     "inputs": {
-      "VDBGrid": [
-       "78c58f4c-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      3016.2613981762775,
-      4573.085106382957
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "6697b858-ZSParticlesToPrimitiveObject": {
-     "name": "ZSParticlesToPrimitiveObject",
-     "inputs": {
-      "ZSParticles": [
-       "2b1b9830-ToZSParticles",
-       "ZSParticles",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1620.8917885638216,
-      4763.174996306124
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "d24515d2-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "6697b858-ZSParticlesToPrimitiveObject",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@clr=vec3{1, 1, 0}"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1880.5277223699673,
-      4742.5556109633335
-     ],
-     "options": []
-    },
-    "acbbb670-ZSParticlesToPrimitiveObject": {
-     "name": "ZSParticlesToPrimitiveObject",
-     "inputs": {
-      "ZSParticles": [
-       "e7448882-ToZSParticles",
-       "ZSParticles",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1601.4033133865173,
-      5067.179428930237
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "80f33557-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "acbbb670-ZSParticlesToPrimitiveObject",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@clr=vec3{0, 1, 0}"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1899.9635970744607,
-      5052.346095596901
-     ],
-     "options": []
-    },
-    "973e186b-ZSParticlesToPrimitiveObject": {
-     "name": "ZSParticlesToPrimitiveObject",
-     "inputs": {
-      "ZSParticles": [
-       "9b5f5e1d-ToZSParticles",
-       "ZSParticles",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1615.9473441193763,
-      5326.05265588059
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "c82bcde4-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "973e186b-ZSParticlesToPrimitiveObject",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@clr=vec3{0, 1, 1}"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1905.2499445921899,
-      5332.259511672551
      ],
      "options": []
     },
@@ -1529,29 +1119,6 @@
      ],
      "options": []
     },
-    "359e26ca-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "539ce20f-ToZSBoundary",
-       "ZSBoundary",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "groundboundary"
-     },
-     "uipos": [
-      3545.7520251428823,
-      4651.249582296273
-     ],
-     "options": []
-    },
     "7c6e859d-ConfigConstitutiveModel": {
      "name": "ConfigConstitutiveModel",
      "inputs": {
@@ -1628,8 +1195,8 @@
       "name": "zspars"
      },
      "uipos": [
-      6852.09358420899,
-      1798.8248304724061
+      7127.735325280416,
+      1773.992241186692
      ],
      "options": []
     },
@@ -1757,8 +1324,8 @@
        null
       ],
       "framedt": [
-       null,
-       null,
+       "8f47a627-GetFrameTime",
+       "time",
        0.1
       ],
       "ZSParticles": [
@@ -1841,8 +1408,8 @@
      },
      "params": {},
      "uipos": [
-      1414.813876235732,
-      1627.992416351848
+      1417.2971351643037,
+      1614.3841574232767
      ],
      "options": []
     },
@@ -2003,8 +1570,8 @@
      },
      "params": {},
      "uipos": [
-      4174.328343452376,
-      2666.0957196160693
+      4227.966736309519,
+      2685.9617910446414
      ],
      "options": []
     },
@@ -2026,10 +1593,10 @@
        "port",
        null
       ],
-      "ppc": [
+      "ppb": [
        null,
        null,
-       2.0
+       1.0
       ],
       "SRC": [
        "c3bc30bf-PortalOut",
@@ -2037,7 +1604,9 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "strategy": "cache"
+     },
      "uipos": [
       3593.9131910270685,
       2619.2015843238837
@@ -2092,11 +1661,11 @@
       ]
      },
      "params": {
-      "type": "sticky"
+      "type": "separate"
      },
      "uipos": [
-      5502.071622246543,
-      2157.3593615939853
+      5504.592868705466,
+      2154.838115135062
      ],
      "options": []
     },
@@ -2113,8 +1682,8 @@
       "name": "primseq"
      },
      "uipos": [
-      3126.6739587290863,
-      2686.811427092876
+      3152.499851586229,
+      2688.7980342357328
      ],
      "options": []
     },
@@ -2133,8 +1702,8 @@
       ]
      },
      "params": {
-      "offset": 0,
-      "extent": 2
+      "offset": -2,
+      "extent": 5
      },
      "uipos": [
       3871.4952959652232,
@@ -2189,7 +1758,7 @@
       "transfer": [
        null,
        null,
-       "apic"
+       "boundary"
       ],
       "SRC": [
        null,
@@ -2252,32 +1821,6 @@
      ],
      "options": []
     },
-    "7cf8edf7-UpdateZSPrimitiveSequence": {
-     "name": "UpdateZSPrimitiveSequence",
-     "inputs": {
-      "ZSPrimitiveSequence": [
-       "c3bc30bf-PortalOut",
-       "port",
-       null
-      ],
-      "stepdt": [
-       "71878c26-PortalOut",
-       "port",
-       0.1
-      ],
-      "SRC": [
-       "9aeb882d-ZSGridToZSParticle",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      6177.006074514007,
-      1748.8596112310927
-     ],
-     "options": []
-    },
     "bfa4f512-RefineMeshParticles": {
      "name": "RefineMeshParticles",
      "inputs": {
@@ -2302,7 +1845,9 @@
       1495.8544179806158,
       2723.007011065716
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "d99632ca-RefineMeshParticles": {
      "name": "RefineMeshParticles",
@@ -2328,7 +1873,9 @@
       1497.0352868540958,
       2918.7274411094086
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "f569c2b4-RefineMeshParticles": {
      "name": "RefineMeshParticles",
@@ -2354,14 +1901,63 @@
       1504.7492401215732,
       3122.777355623085
      ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4655bd9a-ZSReturnMapping": {
+     "name": "ZSReturnMapping",
+     "inputs": {
+      "ZSParticles": [
+       "9aeb882d-ZSGridToZSParticle",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       "9aeb882d-ZSGridToZSParticle",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6172.189732142827,
+      1801.9520089285627
+     ],
+     "options": []
+    },
+    "3460e983-UpdateZSPrimitiveSequence": {
+     "name": "UpdateZSPrimitiveSequence",
+     "inputs": {
+      "ZSPrimitiveSequence": [
+       "c3bc30bf-PortalOut",
+       "port",
+       null
+      ],
+      "stepdt": [
+       "71878c26-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       "4655bd9a-ZSReturnMapping",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6470.379464285683,
+      1744.241071428563
+     ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -1500.4503926410496,
-    "y": 487.46594974018467,
-    "width": 8940.696716308588,
-    "height": 5304.813385009738
+    "x": -608.0315281793567,
+    "y": 266.7072306404309,
+    "width": 7152.557373046853,
+    "height": 4243.850708007791
    }
   }
  },
@@ -2462,6 +2058,72 @@
     "FEM"
    ]
   },
+  "AdjustParticleMaterial": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "float",
+     "E_hard",
+     "100"
+    ],
+    [
+     "float",
+     "E_soft",
+     "50"
+    ],
+    [
+     "float",
+     "nu_hard",
+     "0.4"
+    ],
+    [
+     "float",
+     "nu_soft",
+     "0.2"
+    ],
+    [
+     "float",
+     "end_hard",
+     "1"
+    ],
+    [
+     "float",
+     "end_soft",
+     "-0.5"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum x y z",
+     "orientation",
+     "y"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "AdvectZSLevelSet": {
    "inputs": [
     [
@@ -2505,6 +2167,36 @@
    "params": [],
    "categories": [
     "Volume"
+   ]
+  },
+  "AllAlembicPrim": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
    ]
   },
   "AppendList": {
@@ -3752,6 +3444,36 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "CountAlembicPrims": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "int",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
    ]
   },
   "CreateCone": {
@@ -5782,6 +5504,41 @@
     "trimesh"
    ]
   },
+  "GetAlembicPrim": {
+   "inputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
+   ]
+  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -7243,6 +7000,41 @@
     "FEM"
    ]
   },
+  "MakeInstancing": {
+   "inputs": [
+    [
+     "int",
+     "amount",
+     "1"
+    ],
+    [
+     "list",
+     "modelMatrices",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "instancing",
+     "inst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "MakeList": {
    "inputs": [
     [
@@ -7912,12 +7704,12 @@
    ],
    "params": [
     [
-     "enum unknown apic flip",
+     "enum unknown apic flip boundary",
      "transfer",
      "unknown"
     ],
     [
-     "enum cellcentered collocated staggered uni_velocity",
+     "enum cellcentered collocated staggered const_velocity",
      "category",
      "cellcentered"
     ]
@@ -8024,41 +7816,6 @@
    "params": [],
    "categories": [
     "Volume"
-   ]
-  },
-  "MaterialTexture2D": {
-   "inputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "texture",
-     "tex",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "shader"
    ]
   },
   "MeshCopy": {
@@ -9176,6 +8933,46 @@
     "FLIPSolver"
    ]
   },
+  "ParticleAsVoxels": {
+   "inputs": [
+    [
+     "VDBGrid",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "string",
+     "Attr",
+     ""
+    ],
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "ParticleEmitter": {
    "inputs": [
     [
@@ -9820,6 +9617,56 @@
     "portal"
    ]
   },
+  "PrimFilter": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "tagAttr",
+     "tag"
+    ],
+    [
+     "int",
+     "tagValue",
+     "1"
+    ],
+    [
+     "bool",
+     "isInversed",
+     "0"
+    ],
+    [
+     "enum verts faces",
+     "method",
+     "verts"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimFindTriangle": {
    "inputs": [
     [
@@ -9842,6 +9689,46 @@
     [
      "",
      "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimMarkClose": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "distance",
+     "0.00005"
+    ],
+    [
+     "string",
+     "tagAttr",
+     "tag"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
@@ -9992,6 +9879,46 @@
     [
      "list",
      "listPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimWeld": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "tagAttr",
+     "tag"
+    ],
+    [
+     "enum oneof average",
+     "method",
+     "oneof"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
      ""
     ],
     [
@@ -10442,6 +10369,11 @@
      "",
      "prim",
      ""
+    ],
+    [
+     "enum edges faces all",
+     "type",
+     "all"
     ],
     [
      "",
@@ -11315,6 +11247,16 @@
     ],
     [
      "",
+     "seed",
+     ""
+    ],
+    [
+     "float",
+     "freq",
+     "1.0"
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -11341,6 +11283,42 @@
      "enum float float3",
      "attrType",
      "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePolygonate": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "with_uv",
+     "1"
     ]
    ],
    "categories": [
@@ -12015,6 +11993,46 @@
     "openvdb"
    ]
   },
+  "PrimitiveToZSLevelSet": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "dx",
+     "0.1"
+    ],
+    [
+     "float",
+     "thickness",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
+   ]
+  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -12575,6 +12593,41 @@
    ],
    "categories": [
     "particles"
+   ]
+  },
+  "ReadAlembic": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "frameid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ABCTree",
+     "abctree",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "alembic"
    ]
   },
   "ReadMutable": {
@@ -13557,6 +13610,41 @@
     "frame"
    ]
   },
+  "SetInstancing": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "instancing",
+     "inst",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "SetMaterial": {
    "inputs": [
     [
@@ -14119,6 +14207,11 @@
     ],
     [
      "float",
+     "ao",
+     "1.0"
+    ],
+    [
+     "float",
      "toon",
      "0.0"
     ],
@@ -14130,7 +14223,7 @@
     [
      "vec3f",
      "shape",
-     "1.0"
+     "-0.5,0.5,0"
     ],
     [
      "float",
@@ -14140,17 +14233,37 @@
     [
      "float",
      "strokeNoise",
-     "0"
+     "1"
     ],
     [
      "vec3f",
      "shad",
-     "0,1,0"
+     "0,0,0"
     ],
     [
      "vec3f",
      "strokeTint",
      "0,0,0"
+    ],
+    [
+     "float",
+     "opacity",
+     "0"
+    ],
+    [
+     "float",
+     "reflection",
+     "0"
+    ],
+    [
+     "float",
+     "reflectID",
+     "-1"
+    ],
+    [
+     "float",
+     "isCamera",
+     "0"
     ],
     [
      "string",
@@ -14160,6 +14273,11 @@
     [
      "string",
      "extensionsCode",
+     ""
+    ],
+    [
+     "list",
+     "tex2dList",
      ""
     ],
     [
@@ -15037,6 +15155,57 @@
     "subgraph"
    ]
   },
+  "SubLine": {
+   "inputs": [
+    [
+     "",
+     "line",
+     ""
+    ],
+    [
+     "NumericObject",
+     "value",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rad"
+    ],
+    [
+     "enum cmpgt cmplt cmpge cmple cmpeq cmpne",
+     "acceptIf",
+     "cmpgt"
+    ],
+    [
+     "enum any all",
+     "vecSelType",
+     "all"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "SubOutput": {
    "inputs": [
     [
@@ -15377,6 +15546,36 @@
      "float",
      "dx",
      "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "MPM"
+   ]
+  },
+  "ToTrackerParticles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
     ],
     [
      "",
@@ -17030,6 +17229,42 @@
     "openvdb"
    ]
   },
+  "WriteAlembic": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "int",
+     "frame_count",
+     "100"
+    ]
+   ],
+   "categories": [
+    "alembic"
+   ]
+  },
   "WriteBgeo": {
    "inputs": [
     [
@@ -17285,6 +17520,26 @@
     "MPM"
    ]
   },
+  "ZSCULinkTest": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZPCTest"
+   ]
+  },
   "ZSGridFromZSPartition": {
    "inputs": [
     [
@@ -17307,51 +17562,6 @@
     [
      "",
      "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "MPM"
-   ]
-  },
-  "ZSGridToZSBoundaryPrimitive": {
-   "inputs": [
-    [
-     "",
-     "ZSGrid",
-     ""
-    ],
-    [
-     "",
-     "ZSPartition",
-     ""
-    ],
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.01"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSParticles",
      ""
     ],
     [
@@ -17845,8 +18055,8 @@
     ],
     [
      "float",
-     "ppc",
-     "8"
+     "ppb",
+     "1"
     ],
     [
      "",
@@ -17866,7 +18076,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum force cache",
+     "strategy",
+     "force"
+    ]
+   ],
    "categories": [
     "MPM"
    ]
@@ -17956,5 +18172,11 @@
    ]
   }
  },
- "version": "v1"
+ "version": "v1",
+ "viewport": {
+  "camera_record": {},
+  "lights": {
+   "0": "12 DirX 1 0 1 align -5 0 5 0 DirY 1 0 1 align -5 0 5 0 DirZ 1 0 0 align -5 0 5 0 Height 1 0 1000.0 align -5 0 5 0 Softness 1 0 1.0 align -5 0 5 0 ShadowR 1 0 0.2 align -5 0 5 0 ShadowG 1 0 0.2 align -5 0 5 0 ShadowB 1 0 0.2 align -5 0 5 0 ColorR 1 0 1 align -5 0 5 0 ColorG 1 0 1 align -5 0 5 0 ColorB 1 0 1 align -5 0 5 0 Intensity 1 0 10.0 align -5 0 5 0"
+  }
+ }
 }

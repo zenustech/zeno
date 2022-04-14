@@ -33,7 +33,7 @@ class RecordVideoCancelDialog(QDialog):
     
     def btn_callback(self):
         view = self.display.view
-        shutil.rmtree(view.record_path, ignore_errors=True)
+        # shutil.rmtree(view.record_path, ignore_errors=True)
         view.record_path = None
         self.close()
 
@@ -48,18 +48,16 @@ class RecordVideoDialog(QDialog):
 
     def initUI(self):
         frame_start = QLabel('Frame start:')
-        self.frame_start_edit = QSpinBox()
-        self.frame_start_edit.setMinimum(0)
-        self.frame_start_edit.setValue(0)
+        self.frame_start_edit = QLineEdit()
+        self.frame_start_edit.setText('0')
 
         frame_end = QLabel('Frame end:')
-        self.frame_end_edit = QSpinBox()
-        self.frame_end_edit.setMinimum(0)
+        self.frame_end_edit = QLineEdit()
+        self.frame_end_edit.setText('0')
 
         fps = QLabel('FPS:')
-        self.fps_edit = QSpinBox()
-        self.fps_edit.setMinimum(1)
-        self.fps_edit.setValue(30)
+        self.fps_edit = QLineEdit()
+        self.fps_edit.setText('30')
 
         viewport_width = QLabel('Width:')
         self.viewport_width_editor = QLineEdit('1280')
@@ -116,16 +114,11 @@ class RecordVideoDialog(QDialog):
 
         self.setLayout(grid) 
 
-    def setFrameCount(self, frame_count):
-        self.frame_start_edit.setMaximum(frame_count - 1)
-        self.frame_end_edit.setMaximum(frame_count - 1)
-        self.frame_end_edit.setValue(frame_count - 1)
-
     def accept(self):
         r = self.params
-        r['frame_start'] = self.frame_start_edit.value()
-        r['frame_end'] = self.frame_end_edit.value()
-        r['fps'] = self.fps_edit.value()
+        r['frame_start'] = int(self.frame_start_edit.text())
+        r['frame_end'] = int(self.frame_end_edit.text())
+        r['fps'] = int(self.fps_edit.text())
         r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
@@ -154,26 +147,21 @@ class RecordVideoDialog(QDialog):
         display = self.display
         params = self.params
 
-        count = fileio.getFrameCount()
-        if count == 0:
-            QMessageBox.information(display, 'Zeno', 'Please do simulation before record video!')
-            return
-        self.setFrameCount(count)
         accept = self.exec()
         if not accept:
             return
-        if params['frame_start'] >= params['frame_end']:
-            QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
-            return
-        params['frame_end'] = min(count - 1, params['frame_end'])
-
 
         display.timeline.jump_frame(params['frame_start'])
         display.view.frame_end = params['frame_end']
 
-        tmp_path = tempfile.mkdtemp(prefix='recording-')
-        assert os.path.isdir(tmp_path)
-        display.view.record_path = tmp_path
+        if params['path']:
+            dir_path = params['path']
+        else:
+            dir_path = display.get_output_path('.mp4')
+        dir_path = dir_path.replace('.', '_') + '_images'
+        os.makedirs(dir_path)
+
+        display.view.record_path = dir_path
         display.view.record_res = (params['width'], params['height'])
 
         display.timeline.stop_play()
@@ -220,8 +208,8 @@ class RecordVideoDialog(QDialog):
         except subprocess.CalledProcessError:
             msg = 'Encoding error!'
             QMessageBox.critical(display, 'Record Video', msg)
-        finally:
-            shutil.rmtree(tmp_path, ignore_errors=True)
+        # finally:
+        #     shutil.rmtree(tmp_path, ignore_errors=True)
 
     def path_button_callback(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Save', '', 'MP4(*.mp4);;')
