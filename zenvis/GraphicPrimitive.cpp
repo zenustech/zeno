@@ -821,7 +821,7 @@ struct GraphicPrimitive : IGraphic {
                     triObj.prog->set_uniform(name1.c_str(), light->m_nearPlane[i]);
 
                     auto name2 = "far[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
-                    triObj.prog->set_uniform(name1.c_str(), light->m_farPlane[i]);
+                    triObj.prog->set_uniform(name2.c_str(), light->m_farPlane[i]);
 
                     auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
                     triObj.prog->set_uniformi(name.c_str(), texOcp);
@@ -2344,7 +2344,7 @@ float lightAttenuation(int lightNo, vec3 fragPosWorldSpace, float softness)
     float farPlane = far[lightNo * (cascadeCount + 1) + layer];
     float currentDepth = projCoords.z * (farPlane - nearPlane) + nearPlane;
 
-    float avgL = PCFAttLayer(lightNo, currentDepth, 0, fragPosWorldSpace, layer, 5, 0, projCoords.xy, nearPlane, farPlane);
+    float avgL = PCFAttLayer(lightNo, currentDepth, 0, fragPosWorldSpace, layer, 5, 1, projCoords.xy, nearPlane, farPlane);
 
     return avgL;
     
