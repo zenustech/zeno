@@ -26,7 +26,7 @@ namespace zeno
             std::size_t modelMatricesIndex = 0;
             if (has_input("modelMatrices"))
             {
-                auto modelMatrices = get_input<zeno::ListObject>("modelMatrices")->get<std::shared_ptr<zeno::MatrixObject>>();
+                auto modelMatrices = get_input<zeno::ListObject>("modelMatrices")->get<zeno::MatrixObject>();
                 auto modelMatricesSize = modelMatrices.size();
                 auto firstLoopCnt = std::min(static_cast<std::size_t>(amount), modelMatricesSize);
                 for (; modelMatricesIndex < firstLoopCnt; ++modelMatricesIndex)

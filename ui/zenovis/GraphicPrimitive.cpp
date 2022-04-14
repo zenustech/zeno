@@ -457,7 +457,7 @@ struct GraphicPrimitive : IGraphic {
         bool findCamera=false;
         triObj.prog = get_tris_program(prim->mtl, prim->inst);
         if(!triObj.prog)
-            triObj.prog = get_tris_program(nullptr);
+            triObj.prog = get_tris_program(nullptr, nullptr);
         if(prim->mtl!=nullptr){
             triObj.shadowprog = get_shadow_program(prim->mtl, prim->inst);
             auto code = prim->mtl->frag;
