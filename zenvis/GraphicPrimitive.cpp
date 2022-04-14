@@ -2468,6 +2468,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
             float lthick = lightAttenuation(lightId, position, shadowSoftness[lightId]);
             sss = mat_thickness * exp(-lthick * mat_sssParam.z) * ltDot * mat_sssColor * lightIntensity[lightId];
         }
+        if(mat_foliage>0)
+        {
+            if(dot(new_normal, light_dir)<0)
+            {
+                sss += mat_foliage * clamp(dot(-new_normal, light_dir)*0.6+0.4, 0,1)*mon2lin(mat_basecolor)/PI;
+            }
+        }
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
     //   color +=  
