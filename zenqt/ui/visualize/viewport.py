@@ -207,11 +207,6 @@ class QDMDisplayMenu(QMenu):
 
         self.addSeparator()
 
-        action = QAction('Satefy Frame', self)
-        action.setCheckable(True)
-        action.setChecked(False)
-        self.addAction(action)
-
         action = QAction('Camera Keyframe', self)
         self.addAction(action)
 
@@ -569,10 +564,6 @@ class DisplayWidget(QWidget):
         elif name == 'Smooth Shading':
             checked = act.isChecked()
             zenvis.core.set_smooth_shading(checked)
-
-        elif name == 'Satefy Frame':
-            checked = act.isChecked()
-            zenvis.core.set_safety_frame(checked)
 
         elif name == 'Normal Check':
             checked = act.isChecked()
