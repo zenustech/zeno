@@ -224,6 +224,7 @@ CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveG
 	, m_view(pView)
 	, m_bToggle(false)
 	, m_grid(parentItem)
+	, m_type(HDL_ASYM)
 {
     QRectF br = boundingRect();
 	setPos(nodePos);
@@ -323,6 +324,16 @@ CurveGrid* CurveNodeItem::grid() const
 int CurveNodeItem::type() const
 {
     return Type;
+}
+
+HANDLE_TYPE CurveNodeItem::hdlType() const
+{
+    return m_type;
+}
+
+void CurveNodeItem::setHdlType(HANDLE_TYPE type)
+{
+    m_type = type;
 }
 
 QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)

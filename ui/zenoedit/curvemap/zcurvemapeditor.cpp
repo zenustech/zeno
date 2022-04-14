@@ -90,6 +90,12 @@ void ZCurveMapEditor::init(CURVE_RANGE range, const QVector<QPointF>& pts, const
     m_ui->editYTo->setText(QString::number(range.yTo));
 
     connect(m_ui->gridview->gridItem(), SIGNAL(nodesDataChanged()), this, SLOT(onNodesDataChanged()));
+    connect(m_ui->editPtX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_ui->editPtY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_ui->editTanLeftX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_ui->editTanLeftY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_ui->editTanRightX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_ui->editTanRightY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
 }
 
 void ZCurveMapEditor::initSignals()
@@ -102,6 +108,40 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
 {
     auto lst = m_ui->gridview->getSelectedNodes();
 
+}
+
+void ZCurveMapEditor::onLineEditFinished()
+{
+    QObject *pEdit = sender();
+    if (pEdit == m_ui->editPtX) {
+    
+    }
+
+    CurveGrid *pGrid = m_ui->gridview->gridItem();
+    auto lst = m_ui->gridview->getSelectedNodes();
+    if (lst.size() == 1)
+    {
+        CurveNodeItem* node = lst[0];
+        QPointF logicPos = QPointF(m_ui->editPtX->text().toFloat(), m_ui->editPtY->text().toFloat());
+        qreal leftX = m_ui->editTanLeftX->text().toFloat();
+        qreal leftY = m_ui->editTanLeftY->text().toFloat();
+        qreal rightX = m_ui->editTanRightX->text().toFloat();
+        qreal rightY = m_ui->editTanRightY->text().toFloat();
+        QPointF leftHdlLogic = logicPos + QPointF(leftX, leftY);
+        QPointF rightHdlLogic = logicPos + QPointF(rightX, rightY);
+
+        QPointF nodeScenePos = pGrid->logicToScene(logicPos);
+        QPointF leftHdlScene = pGrid->logicToScene(leftHdlLogic);
+        QPointF rightHdlScene = pGrid->logicToScene(rightHdlLogic);
+        QPointF leftHdlOffset = leftHdlScene - nodeScenePos;
+        QPointF rightHdlOffset = rightHdlScene - nodeScenePos;
+
+        node->setPos(nodeScenePos);
+        if (node->leftHandle())
+            node->leftHandle()->setPos(leftHdlOffset);
+        if (node->rightHandle())
+            node->rightHandle()->setPos(rightHdlOffset);
+    }
 }
 
 void ZCurveMapEditor::onNodesDataChanged()

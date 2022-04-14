@@ -9,6 +9,8 @@
 class CurveNodeItem;
 class CurveMapView;
 
+using namespace curve_util;
+
 class CurvePathItem : public QObject
 					, public QGraphicsPathItem
 {
@@ -73,6 +75,8 @@ public:
 
 	enum{ Type = curve_util::CURVE_NODE };
     int type() const override;
+    HANDLE_TYPE hdlType() const;
+    void setHdlType(HANDLE_TYPE type);
 
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
 
@@ -89,6 +93,7 @@ private:
 	CurveHandlerItem* m_right;
 	CurveMapView* m_view;
 	CurveGrid* m_grid;
+	HANDLE_TYPE m_type;
 	bool m_bToggle;
 };
 
