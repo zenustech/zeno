@@ -52,11 +52,6 @@ static float point_scale = 1.f;
 static float camera_radius = 1.f;
 static float grid_scale = 1.f;
 static float grid_blend = 0.f;
-static bool use_safety_frame = false;
-void set_safety_frame(bool flag)
-{
-  use_safety_frame = flag;
-}
 float g_dof=-1;
 float g_aperature=0.05;
 extern void setDOF(float _dof)
@@ -190,14 +185,11 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mCameraCenter", center);
   pro->set_uniform("mGridScale", grid_scale);
   pro->set_uniform("mGridBlend", grid_blend);
-  pro->set_uniform("mNX", (float)nx);
-  pro->set_uniform("mNY", (float)ny);
 }
 
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
 static std::unique_ptr<IGraphic> axis;
-static std::unique_ptr<IGraphic> safety_frame;
 void setLightHight(float h)
 {
   auto &scene = Scene::getInstance();
@@ -284,7 +276,6 @@ std::tuple<
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
-std::unique_ptr<IGraphic> makeGraphicSafetyFrame();
 void initialize() {
   gladLoadGL();
   glDepthRangef(0,30000);
@@ -307,7 +298,6 @@ void initialize() {
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
-  safety_frame = makeGraphicSafetyFrame();
   //setup_env_map("Default");
 }
 
@@ -413,16 +403,11 @@ static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-
   drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass, show_grid);
   if (isDepthPass!=1.0 && show_grid) {
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         draw_small_axis();
     }
-    if (show_grid) {
-      draw_small_axis();
-    }
-  }
   vao->unbind();
 }
 
