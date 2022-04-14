@@ -285,8 +285,8 @@ struct ToZSParticles : INode {
           eleD[i][0] = obj[tri[1]] - obj[tri[0]];
           eleD[i][1] = obj[tri[2]] - obj[tri[0]];
 
-          auto normal = cross(toTV3(eleD[i][1]) / model->dx,
-                              toTV3(eleD[i][0]) / model->dx)
+          auto normal = cross(toTV3(eleD[i][0]).normalized(),
+                              toTV3(eleD[i][1]).normalized())
                             .normalized();
           eleD[i][2] = fromTV3(normal);
 
@@ -468,82 +468,87 @@ struct ToZSParticles : INode {
       outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
       auto &eles = outParticles->getQuadraturePoints(); // tilevector
-      ompExec(zs::range(eleSize),
-              [eles = proxy<execspace_e::host>({}, eles), &model, velsPtr,
-               nrmsPtr, &eleVol, &elePos, &obj, &eleVel, &eleD, category,
-               &quads, &tris, &lines](size_t ei) mutable {
-                using vec3 = zs::vec<double, 3>;
-                using mat3 = zs::vec<double, 3, 3>;
-                // vol, mass
-                eles("vol", ei) = eleVol[ei];
-                eles("mass", ei) = eleVol[ei] * model->density;
+      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::host>({}, eles),
+                                   &model, velsPtr, nrmsPtr, &eleVol, &elePos,
+                                   &obj, &eleVel, &eleD, category, &quads,
+                                   &tris, &lines](size_t ei) mutable {
+        using vec3 = zs::vec<double, 3>;
+        using mat3 = zs::vec<double, 3, 3>;
+        // vol, mass
+        eles("vol", ei) = eleVol[ei];
+        eles("mass", ei) = eleVol[ei] * model->density;
 
-                // pos
-                eles.tuple<3>("pos", ei) = elePos[ei];
+        // pos
+        eles.tuple<3>("pos", ei) = elePos[ei];
 
-                // vel
-                if (velsPtr != nullptr)
-                  eles.tuple<3>("vel", ei) = eleVel[ei];
-                else
-                  eles.tuple<3>("vel", ei) = vec3::zeros();
+        // vel
+        if (velsPtr != nullptr)
+          eles.tuple<3>("vel", ei) = eleVel[ei];
+        else
+          eles.tuple<3>("vel", ei) = vec3::zeros();
 
-                // deformation
-                const auto &D = eleD[ei]; // [col]
-                auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
-                                 D[2][1], D[0][2], D[1][2], D[2][2]};
-                eles.tuple<9>("d", ei) = Dmat;
-                // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
-                // ref: Yun Fei, libwetcloth;
-                auto t0 = col(Dmat, 0);
-                auto t1 = col(Dmat, 1);
-                auto normal = col(Dmat, 2);
-                // could qr decomp here first (tech doc)
+        // deformation
+        const auto &D = eleD[ei]; // [col]
+        auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
+                         D[2][1], D[0][2], D[1][2], D[2][2]};
+        eles.tuple<9>("d", ei) = Dmat;
+        // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
+        // ref: Yun Fei, libwetcloth;
+        auto t0 = col(Dmat, 0);
+        auto t1 = col(Dmat, 1);
+        auto normal = col(Dmat, 2);
+        // could qr decomp here first (tech doc)
 
-                zs::Rotation<double, 3> rot0{normal, vec3{0, 0, 1}};
-                auto u = rot0 * t0;
-                auto v = rot0 * t1;
-                zs::Rotation<double, 3> rot1{u, vec3{1, 0, 0}};
-                auto ru = rot1 * u;
-                auto rv = rot1 * v;
-                auto Dstar = mat3::identity();
-                Dstar(0, 0) = ru(0);
-                Dstar(0, 1) = rv(0);
-                Dstar(1, 1) = rv(1);
+        zs::Rotation<double, 3> rot0{normal, vec3{0, 0, 1}};
+        auto u = rot0 * t0;
+        auto v = rot0 * t1;
+        zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
+        auto ru = rot1 * u;
+        auto rv = rot1 * v;
+        auto Dstar = mat3::identity();
+        Dstar(0, 0) = ru(0);
+        Dstar(0, 1) = rv(0);
+        Dstar(1, 1) = rv(1);
 
-                if (std::abs(rv(1)) < 10 * limits<float>::epsilon() ||
-                    std::abs(ru(0)) < 10 * limits<float>::epsilon()) {
-                  eles.tuple<9>("DmInv", ei) = mat3::identity();
-                  eles.tuple<9>("F", ei) = Dmat;
-                  puts("beware: encounters near-singular Dm element");
-                } else {
-                  auto invDstar = zs::inverse(Dstar);
-                  eles.tuple<9>("DmInv", ei) = invDstar;
-                  eles.tuple<9>("F", ei) = Dmat * invDstar;
-                }
+        if (std::abs(rv(1)) < 10 * limits<float>::epsilon() ||
+            std::abs(ru(0)) < 10 * limits<float>::epsilon()) {
+#if 0
+          eles.tuple<9>("DmInv", ei) = mat3::identity();
+          eles.tuple<9>("F", ei) = Dmat;
+#endif
+          fmt::print(fg(fmt::color::red),
+                     "beware: encounters near-singular Dm element [{}]\n", ei);
+          throw std::runtime_error(
+              "there exists degenerated triangle surface element");
+        } else {
+          auto invDstar = zs::inverse(Dstar);
+          eles.tuple<9>("DmInv", ei) = invDstar;
+          eles.tuple<9>("F", ei) = Dmat * invDstar;
+        }
 
-                // apic transfer
-                eles.tuple<9>("C", ei) = mat3::zeros();
+        // apic transfer
+        eles.tuple<9>("C", ei) = mat3::zeros();
 
-                // plasticity
+        // plasticity
 
-                // element-vertex indices
-                if (category == ZenoParticles::tet) {
-                  const auto &quad = quads[ei];
-                  for (int i = 0; i != 4; ++i) {
-                    eles("inds", i, ei) = reinterpret_bits<float>(quad[i]);
-                  }
-                } else if (category == ZenoParticles::surface) {
-                  const auto &tri = tris[ei];
-                  for (int i = 0; i != 3; ++i) {
-                    eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
-                  }
-                } else if (category == ZenoParticles::curve) {
-                  const auto &line = lines[ei];
-                  for (int i = 0; i != 2; ++i) {
-                    eles("inds", i, ei) = reinterpret_bits<float>(line[i]);
-                  }
-                }
-              });
+        // element-vertex indices
+        if (category == ZenoParticles::tet) {
+          const auto &quad = quads[ei];
+          for (int i = 0; i != 4; ++i) {
+            eles("inds", i, ei) = reinterpret_bits<float>(quad[i]);
+          }
+        } else if (category == ZenoParticles::surface) {
+          const auto &tri = tris[ei];
+          for (int i = 0; i != 3; ++i) {
+            eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
+          }
+        } else if (category == ZenoParticles::curve) {
+          const auto &line = lines[ei];
+          for (int i = 0; i != 2; ++i) {
+            eles("inds", i, ei) = reinterpret_bits<float>(line[i]);
+          }
+        }
+      });
       eles = eles.clone({memsrc_e::um, 0});
     }
 
