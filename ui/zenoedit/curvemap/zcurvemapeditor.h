@@ -28,6 +28,7 @@ public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);
 	void onNodesSelectionChanged(QList<CurveNodeItem*> lst);
     void onNodesDataChanged();
+	void onLineEditFinished();
 
 private:
 	void initUI();
