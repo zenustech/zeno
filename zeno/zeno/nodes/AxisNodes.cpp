@@ -1,6 +1,5 @@
 #include <zeno/zeno.h>
 #include <zeno/types/AxisObject.h>
-#include <zeno/utils/logger.h>
 
 namespace zeno {
 namespace {
