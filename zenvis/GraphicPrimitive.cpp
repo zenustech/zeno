@@ -2456,12 +2456,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     for(int lightId=0; lightId<lightNum; lightId++){
         light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
-        vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
+        vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
 
         vec3 sss =  vec3(0);
         if(mat_subsurface>0)
         {
             vec3 vl = light_dir + new_normal * mat_sssParam.x;
+
             float ltDot = pow(clamp(dot(normalize(view_dir), -vl),0,1), 12.0) * mat_sssParam.y;
             float lthick = lightAttenuation(lightId, position, shadowSoftness[lightId]);
             sss = mat_thickness * exp(-lthick * mat_sssParam.z) * ltDot * mat_sssColor * lightIntensity[lightId];
