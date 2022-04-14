@@ -80,6 +80,7 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
         zeno::vec3f scaling = {1,1,1};
         zeno::vec3f offset = {0,0,0};
         glm::mat4 pre_mat = glm::mat4(1.0);
+        glm::mat4 pre_apply = glm::mat4(1.0);
         glm::mat4 local = glm::mat4(1.0);
         if (has_input("Matrix"))
             pre_mat = std::get<glm::mat4>(get_input<zeno::MatrixObject>("Matrix")->m);
@@ -95,6 +96,8 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
             offset = get_input<zeno::NumericObject>("offset")->get<zeno::vec3f>();
         if (has_input("local"))
            local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
+        if (has_input("preTransform"))
+            pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
 
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
@@ -104,7 +107,7 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
-        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local);
+        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
