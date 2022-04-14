@@ -817,6 +817,12 @@ struct GraphicPrimitive : IGraphic {
                 triObj.prog->set_uniform(name.c_str(), light->lightColor * light->intensity);
                 for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
+                    auto name1 = "near[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.prog->set_uniform(name1.c_str(), light->m_nearPlane[i]);
+
+                    auto name2 = "far[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.prog->set_uniform(name1.c_str(), light->m_farPlane[i]);
+
                     auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
                     triObj.prog->set_uniformi(name.c_str(), texOcp);
                     CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
@@ -2172,7 +2178,8 @@ uniform float shadowSoftness[16];
 uniform vec3 lightDir[16];
 uniform float farPlane;
 uniform mat4 lview[16];
-
+uniform float near[128];
+uniform float far[128];
 //layout (std140, binding = 0) uniform LightSpaceMatrices
 //{
 uniform mat4 lightSpaceMatrices[128];
@@ -2283,7 +2290,67 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
         
     return mix(shadow1, shadow2, coef);
 }
+float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord, float near, float far)
+{
+    
+    float length = 0.0;
+    float res = far;
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
+            float pcfDepth = sampleShadowArray(lightNo, coord + (vec2(x, y) * softness + noise.xy) * softness * texelSize, layer) * (far-near) + near; 
+            res = min(res, abs(currentDepth - pcfDepth));
+        }    
+    }
+    return res;
+}
 
+float lightAttenuation(int lightNo, vec3 fragPosWorldSpace, float softness)
+{
+    // select cascade layer
+    vec4 fragPosViewSpace = mView * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
+        // perform perspective divide
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        // transform to [0,1] range
+        projCoords = projCoords * 0.5 + 0.5;
+        if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+    {
+        layer = cascadeCount;
+    }
+
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get depth of current fragment from light's perspective
+    float nearPlane = near[lightNo * (cascadeCount + 1) + layer];
+    float farPlane = far[lightNo * (cascadeCount + 1) + layer];
+    float currentDepth = projCoords.z * (farPlane - nearPlane) + nearPlane;
+
+    float avgL = PCFAttLayer(lightNo, currentDepth, 0, fragPosWorldSpace, layer, 5, 0, projCoords.xy, nearPlane, farPlane);
+
+    return avgL;
+    
+}
+
+)" + R"(
 uniform mat4 reflectMVP[16];
 uniform sampler2DRect reflectionMap0;
 uniform sampler2DRect reflectionMap1;
@@ -2389,11 +2456,19 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 realColor = vec3(0,0,0);
     for(int lightId=0; lightId<lightNum; lightId++){
         light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
-
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
         vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
 
-        vec3 lcolor = mix(photoReal, NPR, mat_toon);
+        vec3 sss =  vec3(0);
+        if(mat_subsurface>0)
+        {
+            vec3 vl = light_dir + new_normal * mat_sssParam.x;
+            float ltDot = pow(clamp(dot(normalize(view_dir), -vl),0,1), 12.0) * mat_sssParam.y;
+            float lthick = lightAttenuation(lightId, position, shadowSoftness[lightId]);
+            sss = mat_thickness * exp(-lthick * mat_sssParam.z) * ltDot * mat_sssColor * lightIntensity[lightId];
+        }
+
+        vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
     //   color +=  
     //       CalculateLightingAnalytical(
     //           new_normal,

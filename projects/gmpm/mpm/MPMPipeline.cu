@@ -772,55 +772,58 @@ struct ApplyWindImpulseOnZSGrid : INode {
                           const typename ZenoPartition::table_t &partition,
                           typename ZenoGrid::grid_t &grid, float dt) {
     using namespace zs;
-    cudaPol(range(eles.size()),
-            [windDragCoeff, windDensity, velLs,
-             pars = proxy<execspace_e::cuda>({}, pars), // for normal compute
-             eles = proxy<execspace_e::cuda>({}, eles),
-             table = proxy<execspace_e::cuda>(partition),
-             grid = proxy<execspace_e::cuda>({}, grid),
-             Dinv = 4.f / grid.dx / grid.dx, dt] __device__(size_t ei) mutable {
-              using grid_t = RM_CVREF_T(grid);
-              zs::vec<float, 3> n{};
-              float area{};
-              {
-                auto p0 = pars.pack<3>("pos", (int)eles("inds", 0, ei));
-                auto p1 = pars.pack<3>("pos", (int)eles("inds", 1, ei));
-                auto p2 = pars.pack<3>("pos", (int)eles("inds", 2, ei));
-                auto cp = (p1 - p0).cross(p2 - p0);
-                area = cp.length();
-                n = cp / area;
-                area *= 0.5f;
-              }
-              auto pos = eles.pack<3>("pos", ei);
-              auto windVel = velLs.getMaterialVelocity(pos);
+    cudaPol(
+        range(eles.size()),
+        [windDragCoeff, windDensity, velLs,
+         pars = proxy<execspace_e::cuda>({}, pars), // for normal compute
+         eles = proxy<execspace_e::cuda>({}, eles),
+         table = proxy<execspace_e::cuda>(partition),
+         grid = proxy<execspace_e::cuda>({}, grid),
+         Dinv = 4.f / grid.dx / grid.dx, dt] __device__(size_t ei) mutable {
+          using grid_t = RM_CVREF_T(grid);
+          zs::vec<float, 3> n{};
+          float area{};
+          {
+            auto p0 =
+                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 0, ei)));
+            auto p1 =
+                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 1, ei)));
+            auto p2 =
+                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 2, ei)));
+            auto cp = (p1 - p0).cross(p2 - p0);
+            area = cp.length();
+            n = cp / area;
+            area *= 0.5f;
+          }
+          auto pos = eles.pack<3>("pos", ei);
+          auto windVel = velLs.getMaterialVelocity(pos);
 
-              auto vel = eles.pack<3>("vel", ei);
-              auto vrel = windVel - vel;
-              float vnSignedLength = n.dot(vrel);
-              auto vn = n * vnSignedLength;
-              auto vt = vrel - vn; // tangent
-              auto windForce =
-                  windDensity * area * zs::abs(vnSignedLength) * vn +
-                  windDragCoeff * area * vt;
-              auto fdt = windForce * dt;
+          auto vel = eles.pack<3>("vel", ei);
+          auto vrel = windVel - vel;
+          float vnSignedLength = n.dot(vrel);
+          auto vn = n * vnSignedLength;
+          auto vt = vrel - vn; // tangent
+          auto windForce = windDensity * area * zs::abs(vnSignedLength) * vn +
+                           windDragCoeff * area * vt;
+          auto fdt = windForce * dt;
 
-              auto arena =
-                  make_local_arena<grid_e::collocated, kernel_e::quadratic>(
-                      grid.dx, pos);
+          auto arena =
+              make_local_arena<grid_e::collocated, kernel_e::quadratic>(grid.dx,
+                                                                        pos);
 
-              for (auto loc : arena.range()) {
-                auto coord = arena.coord(loc);
-                auto localIndex = coord & (grid_t::side_length - 1);
-                auto blockno = table.query(coord - localIndex);
-                if (blockno < 0)
-                  printf("THE HELL!");
-                auto block = grid.block(blockno);
-                auto W = arena.weight(loc);
-                const auto cellid = grid_t::coord_to_cellid(localIndex);
-                for (int d = 0; d != 3; ++d)
-                  atomic_add(exec_cuda, &block("v", d, cellid), W * fdt[d]);
-              }
-            });
+          for (auto loc : arena.range()) {
+            auto coord = arena.coord(loc);
+            auto localIndex = coord & (grid_t::side_length - 1);
+            auto blockno = table.query(coord - localIndex);
+            if (blockno < 0)
+              printf("THE HELL!");
+            auto block = grid.block(blockno);
+            auto W = arena.weight(loc);
+            const auto cellid = grid_t::coord_to_cellid(localIndex);
+            for (int d = 0; d != 3; ++d)
+              atomic_add(exec_cuda, &block("v", d, cellid), W * fdt[d]);
+          }
+        });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
