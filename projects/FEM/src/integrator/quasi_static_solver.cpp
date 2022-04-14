@@ -30,8 +30,6 @@ int QuasiStaticSolver::EvalElmObj(const TetAttributes& attrs,
                 *elm_obj += 0.5 * attrs.interpPenaltyCoeff * (tpos - ipos).squaredNorm() / attrs.interpPs.size();
             }
         }
-
-
         Vec12d example_diff = u0 - attrs._example_pos;
         FEM_Scaler exam_energy = 0.5 * example_diff.transpose() * attrs._example_pos_weight.asDiagonal() * example_diff;
         *elm_obj += exam_energy;

@@ -26,7 +26,15 @@ struct MakeFEMPrimitive : zeno::INode {
         // Add nodal-wise channel
         const auto& pos = prim->add_attr<zeno::vec3f>("pos");
         auto& curPos = prim->verts.add_attr<zeno::vec3f>("curPos");
+        auto& curVel = prim->verts.add_attr<zeno::vec3f>("curVel");
+        auto& prePos = prim->verts.add_attr<zeno::vec3f>("prePos");
+        auto& preVel = prim->verts.add_attr<zeno::vec3f>("preVel");
+
         std::copy(pos.begin(),pos.end(),curPos.begin());
+        std::copy(pos.begin(),pos.end(),prePos.begin());
+        std::fill(curVel.begin(),curVel.end(),zeno::vec3f(0,0,0));
+        std::fill(preVel.begin(),preVel.end(),zeno::vec3f(0,0,0));
+
         auto& examW = prim->verts.add_attr<float>("examW",ExamShapeCoeff);
         auto& examShape = prim->verts.add_attr<zeno::vec3f>("examShape");
         std::copy(pos.begin(),pos.end(),examShape.begin());
@@ -36,6 +44,7 @@ struct MakeFEMPrimitive : zeno::INode {
         auto& E = prim->quads.add_attr<float>("E",YoungModulus);
         auto& nu = prim->quads.add_attr<float>("nu",PossonRatio);
         auto& v = prim->quads.add_attr<float>("v",0);
+        auto& use_dynamic = prim->quads.add_attr<float>("dynamic_mark",0);
 
         // characteristic norm for scalability 
         auto& cnorm = prim->quads.add_attr<float>("cnorm",0);

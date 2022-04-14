@@ -38,6 +38,14 @@ struct SolveFEM : zeno::INode {
         HBuffer.resize(integrator->_connMatrix.nonZeros());
 
         auto& cpos = shape->attr<zeno::vec3f>("curPos");
+        auto& ppos = shape->attr<zeno::vec3f>("prePos");
+        auto& pppos = shape->attr<zeno::vec3f>("preprePos");
+
+        for(size_t i = 0;i < shape->size();++i){
+            pppos[i] = ppos[i];
+            ppos[i] = cpos[i];
+        }
+
 
         size_t iter_idx = 0;
 
