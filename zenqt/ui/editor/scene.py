@@ -119,20 +119,26 @@ class QDMFindBar(QWidget):
         result = []
         for n in scene.nodes:
             need_to_add = False
-            for _, s in n.inputs.items():
-                v = s.getValue()
-                if type(v) == str and text in v.lower():
+            if type(n) == QDMGraphicsNode_Blackboard:
+                title = n.title.toPlainText().lower()
+                content = n.content.toPlainText().lower()
+                if text in title or text in content:
                     need_to_add = True
+            else:
+                for _, s in n.inputs.items():
+                    v = s.getValue()
+                    if type(v) == str and text in v.lower():
+                        need_to_add = True
 
-            for _, s in n.params.items():
-                v = s.getValue()
-                if type(v) == str and text in v.lower():
+                for _, s in n.params.items():
+                    v = s.getValue()
+                    if type(v) == str and text in v.lower():
+                        need_to_add = True
+
+                name = n.name.lower()
+                ident = n.ident.lower()
+                if text in name or text in ident:
                     need_to_add = True
-
-            name = n.name.lower()
-            ident = n.ident.lower()
-            if text in name or text in ident:
-                need_to_add = True
             if need_to_add:
                 result.append((scene.name, n))
 

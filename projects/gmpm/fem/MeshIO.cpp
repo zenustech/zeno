@@ -12,8 +12,6 @@
 
 namespace zeno {
 
-static ZpcInitializer g_zpc_initializer{};
-
 struct MakeFEMMeshFromFile2 : zeno::INode {
   virtual void apply() override {
     using mat3 = typename ZenoFEMMesh::mat3;

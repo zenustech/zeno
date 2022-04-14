@@ -1,3 +1,4 @@
+#include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -108,10 +109,14 @@ ZENDEFNODE(PrimitiveSimpleQuads,
 struct PrimitiveClearConnect : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    prim->points.clear();
-    prim->lines.clear();
-    prim->tris.clear();
-    prim->quads.clear();
+    auto type = get_input<StringObject>("type")->value;
+    
+    if(type=="edges" || type=="all")
+      prim->lines.clear();
+    if(type=="faces" || type=="all"){
+      prim->tris.clear();
+      prim->quads.clear();
+    }
 
     set_output("prim", get_input("prim"));
   }
@@ -119,7 +124,7 @@ struct PrimitiveClearConnect : zeno::INode {
 
 ZENDEFNODE(PrimitiveClearConnect,
     { /* inputs: */ {
-    "prim",
+    "prim", {"enum edges faces all","type", "all"}
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {

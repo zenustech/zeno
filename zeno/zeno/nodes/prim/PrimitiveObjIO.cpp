@@ -133,8 +133,7 @@ ZENDEFNODE(ImportObjPrimitive,
 
 
 static void writeobj(
-        std::vector<zeno::vec3f> const &vertices,
-        std::vector<zeno::vec3i> const &indices,
+        std::shared_ptr<zeno::PrimitiveObject> &prim,
         const char *path)
 {
     FILE *fp = fopen(path, "w");
@@ -142,11 +141,31 @@ static void writeobj(
         perror(path);
         abort();
     }
-    for (auto const &vert: vertices) {
+    for (auto const &vert: prim->verts) {
         fprintf(fp, "v %f %f %f\n", vert[0], vert[1], vert[2]);
     }
-    for (auto const &ind: indices) {
-        fprintf(fp, "f %d %d %d\n", ind[0] + 1, ind[1] + 1, ind[2] + 1);
+    if (prim->tris.has_attr("uv0")) {
+        auto& uv0 = prim->tris.attr<zeno::vec3f>("uv0");
+        auto& uv1 = prim->tris.attr<zeno::vec3f>("uv1");
+        auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            fprintf(fp, "vt %f %f %f\n", uv0[i][0], uv0[i][1], uv0[i][2]);
+            fprintf(fp, "vt %f %f %f\n", uv1[i][0], uv1[i][1], uv1[i][2]);
+            fprintf(fp, "vt %f %f %f\n", uv2[i][0], uv2[i][1], uv2[i][2]);
+        }
+        int count = 0;
+        for (auto const &ind: prim->tris) {
+            fprintf(fp, "f %d/%d %d/%d %d/%d\n",
+                ind[0] + 1, count + 1,
+                ind[1] + 1, count + 2,
+                ind[2] + 1, count + 3
+            );
+            count += 3;
+        }
+    } else {
+        for (auto const &ind: prim->tris) {
+            fprintf(fp, "f %d %d %d\n", ind[0] + 1, ind[1] + 1, ind[2] + 1);
+        }
     }
     fclose(fp);
 }
@@ -157,7 +176,7 @@ struct WriteObjPrimitive : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        writeobj(pos, prim->tris, path.c_str());
+        writeobj(prim, path.c_str());
     }
 };
 
@@ -176,7 +195,7 @@ struct ExportObjPrimitive : WriteObjPrimitive {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        writeobj(pos, prim->tris, path.c_str());
+        writeobj(prim, path.c_str());
     }
 };
 

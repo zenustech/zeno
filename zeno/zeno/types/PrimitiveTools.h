@@ -5,6 +5,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
+#include <spdlog/spdlog.h>
 
 namespace zeno {
 
@@ -14,11 +15,7 @@ static void prim_triangulate(PrimitiveObject *prim) {
 
     for (auto [start, len]: prim->polys) {
         if (len < 3) continue;
-        prim->tris.emplace_back(
-                prim->loops[start],
-                prim->loops[start + 1],
-                prim->loops[start + 2]);
-        for (int i = 3; i < len; i++) {
+        for (int i = 2; i < len; i++) {
             prim->tris.emplace_back(
                     prim->loops[start],
                     prim->loops[start + i - 1],

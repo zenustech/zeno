@@ -40,6 +40,8 @@ class QDMEditMenu(QMenu):
                 (None, None),
                 ('&Find', QKeySequence.Find),
                 ('Easy Subgraph', 'Alt+S'),
+                (None, None),
+                ('Set Cache Path', None),
         ]
         
         for name, shortcut in acts:
@@ -97,6 +99,7 @@ class NodeEditor(QWidget):
 
         self.always_run = False
         self.target_frame = 0
+        self.in_eventloop = False
 
         self.current_path = None
         self.clipboard = QApplication.clipboard()
@@ -326,6 +329,10 @@ class NodeEditor(QWidget):
         prog['views'] = views
         prog['descs'] = dict(self.descs)
         prog['version'] = CURR_VERSION
+        prog['viewport'] = {
+            'camera_record': zenvis.status['camera_keyframes'],
+            'lights': zenvis.dump_lights(),
+        }
         return prog
 
     def bkwdCompatProgram(self, prog):
@@ -399,11 +406,19 @@ class NodeEditor(QWidget):
             self.scene.record()
         self.initDescriptors()
         self.switchScene('main')
+        if 'viewport' in prog:
+            s = prog['viewport']
+            for k, v in s['camera_record'].items():
+                zenvis.status['camera_keyframes'][int(k)] = v
+            if 'lights' in s:
+                zenvis.load_lights(s['lights'])
 
     def on_execute(self):
-        nframes = int(self.edit_nframes.text())
+        start_frame = int(self.start_frame.text())
+        maxframe = int(self.max_frame.text())
+        nframes = maxframe - start_frame + 1
         prog = self.dumpProgram()
-        go(launch.launchProgram, prog, nframes, start_frame=0)
+        go(launch.launchProgram, prog, nframes, start_frame)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -417,14 +432,33 @@ class NodeEditor(QWidget):
         self.clearScenes()
         self.switchScene('main')
 
-    def getOpenFileName(self):
-        path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+    def in_dlg_eventloop(self):
+        return self.in_eventloop
+
+    def getOpenPath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getOpenFileName(self, title,
                 '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
+    def getSavePath(self, title):
+        self.in_eventloop = True
+        try:
+            path, kind = QFileDialog.getSaveFileName(self, title,
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        finally:
+            self.in_eventloop = False
+        return path, kind
+
+    def getOpenFileName(self):
+        path, kind = self.getOpenPath('File to Open')
         return path
 
     def getSaveFileName(self):
-        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        path, kind = self.getSavePath('Path to Save')
         return path
 
     def menuTriggered(self, act):
@@ -478,6 +512,15 @@ class NodeEditor(QWidget):
         elif name == 'Easy Subgraph':
             self.easy_subgraph()
 
+        elif name == 'Set Cache Path':
+            cache_dir = ''
+            if os.path.exists(asset_path('cache_path.txt')):
+                with open(asset_path('cache_path.txt'), 'r') as f:
+                    cache_dir = f.read()
+            cache_dir = QFileDialog.getExistingDirectory(self, 'Set Cache Path', cache_dir)
+            with open(asset_path('cache_path.txt'), 'w') as f:
+                f.write(cache_dir)
+
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
                 '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
@@ -527,7 +570,7 @@ ZENDEFNODE(''' + key + ''', {
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
-        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode) or isinstance(n, QDMGraphicsNode_Blackboard) ]
         nodes = self.scene.dumpGraph(itemList)
         self.clipboard.setText(json.dumps(nodes))
 
@@ -554,20 +597,21 @@ ZENDEFNODE(''' + key + ''', {
             for nid, n in nodes.items():
                 x, y = n['uipos']
                 n['uipos'] = (x + offset_x, y + offset_y)
-                inputs = n['inputs']
-                for name, info in inputs.items():
-                    if info == None:
-                        continue
-                    nid_, name_, value = info
-                    if nid_ in nid_map and value != None:
-                        info = (nid_map[nid_], name_, value)
-                    elif nid_ in nid_map:
-                        info = (nid_map[nid_], name_)
-                    elif value != None:
-                        info = (None, None, value)
-                    else:
-                        info = None
-                    inputs[name] = info
+                if 'inputs' in n:
+                    inputs = n['inputs']
+                    for name, info in inputs.items():
+                        if info == None:
+                            continue
+                        nid_, name_, value = info
+                        if nid_ in nid_map and value != None:
+                            info = (nid_map[nid_], name_, value)
+                        elif nid_ in nid_map:
+                            info = (nid_map[nid_], name_)
+                        elif value != None:
+                            info = (None, None, value)
+                        else:
+                            info = None
+                        inputs[name] = info
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()

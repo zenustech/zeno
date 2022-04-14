@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 namespace zeno {
+namespace {
 
 struct PrimUnmerge : INode {
     virtual void apply() override {
@@ -145,4 +146,5 @@ ZENDEFNODE(PrimUnmerge, {
     {"primitive"},
 });
 
+}
 }
