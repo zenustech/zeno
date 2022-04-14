@@ -148,6 +148,7 @@ ZENDEFNODE(TransformPrimitive, {
     {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
     {"Matrix"},
+    {"preTransform"},
     {"local"},
     },
     {{"outPrim"}, {"Matrix"}},
