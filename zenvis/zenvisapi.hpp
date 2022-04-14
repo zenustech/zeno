@@ -60,4 +60,5 @@ std::tuple<
   std::tuple<float, float, float>,
   float
 > getLight(int i);
+void set_safety_frame(bool flag);
 }

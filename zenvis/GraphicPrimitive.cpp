@@ -2350,6 +2350,7 @@ float lightAttenuation(int lightNo, vec3 fragPosWorldSpace, float softness)
     
 }
 
+)" + R"(
 uniform mat4 reflectMVP[16];
 uniform sampler2DRect reflectionMap0;
 uniform sampler2DRect reflectionMap1;

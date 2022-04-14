@@ -741,11 +741,14 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
                     bool includeNormal = false) {
     using namespace zs;
 
+    Vector<int> flag{pars.get_allocator(), 1};
+    flag.setVal(0);
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  table = proxy<execspace_e::cuda>(partition),
                                  grid = proxy<execspace_e::cuda>({}, grid),
-                                 dxinv = 1.f / grid.dx,
-                                 includeNormal] __device__(size_t pi) mutable {
+                                 dxinv = 1.f / grid.dx, includeNormal,
+                                 flag = proxy<execspace_e::cuda>(
+                                     flag)] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
       const auto Dinv = 4.f * dxinv * dxinv;
       auto pos = pars.pack<3>("pos", pi);
@@ -754,15 +757,19 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       // auto vol = pars("vol", pi);
       auto nrm = pars.pack<3>("nrm", pi);
 
-      auto arena =
-          make_local_arena<grid_e::collocated, kernel_e::linear>(grid.dx, pos);
+      auto arena = make_local_arena<grid_e::collocated, kernel_e::quadratic>(
+          grid.dx, pos);
 
       for (auto loc : arena.range()) {
         auto coord = arena.coord(loc);
         auto localIndex = coord & (grid_t::side_length - 1);
         auto blockno = table.query(coord - localIndex);
-        if (blockno < 0)
-          printf("THE HELL!");
+        if (blockno < 0) {
+          // printf("THE HELL!");
+          if (flag[0] == 0)
+            flag[0] = 1;
+          continue;
+        }
         auto block = grid.block(blockno);
         auto W = arena.weight(loc);
         const auto cellid = grid_t::coord_to_cellid(localIndex);
@@ -774,6 +781,9 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
             atomic_add(exec_cuda, &block("nrm", d, cellid), nrm[d]);
       }
     });
+    if (flag.getVal() != 0)
+      fmt::print(fg(fmt::color::red),
+                 "encountering boundary particles breaking CFL");
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
