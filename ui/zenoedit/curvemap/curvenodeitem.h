@@ -8,6 +8,7 @@
 
 class CurveNodeItem;
 class CurveMapView;
+class CurvesItem;
 
 using namespace curve_util;
 
@@ -61,7 +62,7 @@ class CurveNodeItem : public QGraphicsObject
 	Q_OBJECT
 	typedef QGraphicsObject _base;
 public:
-	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem = nullptr);
+	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
     void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const;
@@ -72,6 +73,7 @@ public:
     QPointF leftHandlePos() const;
     QPointF rightHandlePos() const;
     CurveGrid* grid() const;
+	CurvesItem* curves() const;
 
 	enum{ Type = curve_util::CURVE_NODE };
     int type() const override;
@@ -92,6 +94,7 @@ private:
 	CurveHandlerItem* m_left;
 	CurveHandlerItem* m_right;
 	CurveMapView* m_view;
+	CurvesItem* m_curve;
 	CurveGrid* m_grid;
 	HANDLE_TYPE m_type;
 	bool m_bToggle;

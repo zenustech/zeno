@@ -6,6 +6,7 @@
 class CurveMapView;
 class CurveNodeItem;
 class CurvePathItem;
+class CurvesItem;
 
 class CurveGrid : public QGraphicsObject
 {
@@ -19,10 +20,6 @@ public:
 	void initTransform();
 	void initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
     bool isFuncCurve() const;
-    int nodeCount() const;
-	int indexOf(CurveNodeItem* pItem) const;
-    QPointF nodePos(int i) const;
-    CurveNodeItem* nodeItem(int i) const;
     CurveMapView* view() const { return m_view; }
     QPointF logicToScene(QPointF logicPos);
     QPointF sceneToLogic(QPointF scenePos);
@@ -30,19 +27,15 @@ public:
 signals:
     void nodesDataChanged();
 
-public slots:
-    void onNodeGeometryChanged();
-	void onNodeDeleted();
-    void onPathClicked(const QPointF& pos);
-
 private:
 	QColor m_clrGrid, m_clrBg;
-	CurveMapView* m_view;
 	QRectF m_initRc;
 	QTransform m_transform;
 	QTransform m_invTrans;
-	QVector<CurveNodeItem*> m_vecNodes;
-	QVector<CurvePathItem*> m_vecCurves;
+	CurveMapView* m_view;
+	CurvesItem* m_curveX;	//default curve item when only one channel.
+	CurvesItem* m_curveY;
+	CurvesItem* m_curveZ;
 	bool m_bFCurve;			//function curve.
 };
 
