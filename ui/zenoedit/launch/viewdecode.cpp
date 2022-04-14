@@ -63,7 +63,7 @@ struct PacketProc {
             zeno::getSession().globalComm->addViewObject(object);
 
         } else if (action == "newFrame") {
-            globalStateNeedClean = 2; // postpone: zeno::getSession().globalComm->newFrame();
+            globalStateNeedClean = 2; // postpone `zeno::getSession().globalComm->newFrame();`
 
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
