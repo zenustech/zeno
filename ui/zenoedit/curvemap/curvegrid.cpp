@@ -14,9 +14,6 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 	, m_view(pView)
 	, m_initRc(rc)
 	, m_bFCurve(true)
-	, m_curveX(nullptr)
-	, m_curveY(nullptr)
-	, m_curveZ(nullptr)
 {
 	initTransform();
 }
@@ -61,12 +58,12 @@ void CurveGrid::initTransform()
 	QPointF pos3 = m_transform.map(m_initRc.center());
 }
 
-void CurveGrid::initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
+void CurveGrid::addCurve(CurveModel* model)
 {
-	// only one channel.
-    m_curveX = new CurvesItem(m_view, this, m_initRc, this);
-	m_curveX->initCurves(pts, handlers);
-    connect(m_curveX, SIGNAL(nodesDataChanged()), this, SIGNAL(nodesDataChanged()));
+    CurvesItem* pCurves = new CurvesItem(m_view, this, m_initRc, this);
+	pCurves->initCurves(model);
+    connect(pCurves, SIGNAL(nodesDataChanged()), this, SIGNAL(nodesDataChanged()));
+    m_curves["only-one"] = pCurves;
 }
 
 QPointF CurveGrid::logicToScene(QPointF logicPos)

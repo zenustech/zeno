@@ -1,5 +1,6 @@
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
+#include "../model/curvemodel.h"
 
 
 MakeCurvemapNode::MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -116,8 +117,11 @@ void MakeCurvemapNode::onEditClicked()
 			}
 		}
 
+		CurveModel* pModel = new CurveModel(rg, this);
+		pModel->initItems(rg, points, handlers);
+
 		ZCurveMapEditor* pEditor = new ZCurveMapEditor;
-		pEditor->init(rg, points, handlers);
+		pEditor->init(pModel);
 		pEditor->show();
 	}
 }
