@@ -798,8 +798,7 @@ struct UpdateZSPrimitiveSequence : INode {
     cudaPol(Collapse{numV},
             [pars = proxy<execspace_e::cuda>(
                  {}, zsprimseq->getParticles())] __device__(int pi) mutable {
-              pars.tuple<3>("nrm", pi) =
-                  pars.pack<3>("nrm", pi) / pars("outdgr", pi);
+              pars.tuple<3>("nrm", pi) = pars.pack<3>("nrm", pi).normalized();
             });
 
     fmt::print(fg(fmt::color::cyan),
