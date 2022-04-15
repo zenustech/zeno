@@ -11,18 +11,18 @@ template <int curr, class Os, class It, class ...Args>
 bool __format(Os &os, It fb, It fe, std::tuple<Args const &...> const &args) {
     if constexpr (curr >= sizeof...(Args)) {
         if (fb != fe)
-            os << std::string_view{fb, fe - fb};
+            os << std::string_view(fb, fe - fb);
         return curr > sizeof...(Args);
     } else {
         if (fb == fe) return false;
         auto ib = std::find(fb, fe, '{');
         if (ib == fe) return false;
-        os << std::string_view{fb, ib - fb};
+        os << std::string_view(fb, ib - fb);
         ++ib;
         auto ie = std::find(ib, fe, '}');
         if (ie == fe) return false;
         ++ie;
-        auto fms = std::string_view{ib, ie - ib};
+        auto fms = std::string_view(ib, ie - ib);
         if (auto i = fms.find(':'); i != std::string_view::npos) {
             fms = fms.substr(i + 1);
         }
