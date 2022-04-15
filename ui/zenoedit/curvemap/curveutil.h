@@ -32,14 +32,6 @@ namespace curve_util
 		ROLE_CurveRightNode
 	};
 
-	enum HANDLE_TYPE
-	{
-		HDL_FREE,
-		HDL_ALIGNED,
-		HDL_VECTOR,
-		HDL_ASYM
-	};
-
 	enum CurveGVType
 	{
 		CURVE_NODE = QGraphicsItem::UserType + 1,

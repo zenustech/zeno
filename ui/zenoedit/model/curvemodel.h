@@ -10,8 +10,15 @@ enum CURVE_ROLE
     ROLE_NODEPOS = Qt::UserRole + 1,   //logic pos
     ROLE_LEFTPOS,   //left handle pos offset,
     ROLE_RIGHTPOS,  //right handle pos
-    ROLE_LTYPE,     // left handle type
-    ROLE_RTYPE,
+    ROLE_TYPE,
+};
+
+enum HANDLE_TYPE
+{
+    HDL_FREE,
+    HDL_ALIGNED,
+    HDL_VECTOR,
+    HDL_ASYM
 };
 
 class CurveModel : public QStandardItemModel
