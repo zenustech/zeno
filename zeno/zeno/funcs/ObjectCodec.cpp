@@ -1,5 +1,6 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
@@ -13,6 +14,7 @@ namespace {
 enum class ObjectType {
     PrimitiveObject,
     NumericObject,
+    StringObject,
 };
 
 struct ObjectHeader {
@@ -27,6 +29,7 @@ namespace _implObjectCodec {
 
 #define _VISIT_OBJECT_TYPE \
     _PER_OBJECT_TYPE(PrimitiveObject) \
+    _PER_OBJECT_TYPE(StringObject) \
     _PER_OBJECT_TYPE(NumericObject)
 
 #define _PER_OBJECT_TYPE(TypeName) \
@@ -107,8 +110,8 @@ static bool _encodeObjectImpl(IObject const *object, std::vector<char> &buf) {
 }
 
 bool encodeObject(IObject const *object, std::vector<char> &buf) {
+    auto oldsize = buf.size();
     bool ret = _encodeObjectImpl(object, buf);
-    ObjectHeader &header = *(ObjectHeader *)buf.data();
 
     std::vector<std::vector<char>> valbufs;
     for (auto const &[key, val]: object->userData()) {
@@ -119,6 +122,7 @@ bool encodeObject(IObject const *object, std::vector<char> &buf) {
         if (encodeObject(val.get(), valbuf))
             valbufs.push_back(std::move(valbuf));
     }
+    auto &header = *(ObjectHeader *)(buf.data() + oldsize);
     header.numUserData = valbufs.size();
     header.beginUserData = buf.size();
     for (auto const &valbuf: valbufs) {

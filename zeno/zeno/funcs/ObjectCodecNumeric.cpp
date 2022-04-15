@@ -1,7 +1,5 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/funcs/ObjectCodec.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/MaterialObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/log.h>
 #include <algorithm>
@@ -12,7 +10,7 @@ namespace _implObjectCodec {
 
 std::shared_ptr<NumericObject> decodeNumericObject(const char *it) {
     auto obj = std::make_shared<NumericObject>();
-    size_t index = *(int *)it;
+    size_t index = *(size_t *)it;
     it += sizeof(index);
     auto succ = index_switch<std::variant_size_v<NumericValue>, true>(index, [&] (auto idx) {
         if constexpr (std::is_same_v<decltype(idx), index_variant_monostate>) {
