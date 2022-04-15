@@ -259,40 +259,56 @@ void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightO
 
 void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
 {
-    if (m_view->isSmoothCurve())
+	Q_ASSERT(pItem && m_index.isValid());
+	int type = m_index.data(ROLE_TYPE).toInt();
 	{
 		//update the pos of another handle.
         CurveModel *const pModel = m_curve->model();
         QVector2D roffset(rightHandlePos() - pos());
         QVector2D loffset(leftHandlePos() - pos());
-        if (m_left == pItem && m_right)
+        if (m_left == pItem)
 		{
-			qreal length = roffset.length();
-			roffset = -loffset.normalized() * length;
-			QPointF newPos = roffset.toPointF() + pos();
-			newPos = mapFromScene(newPos);
+			if (m_right && type != HDL_FREE)
+			{
+				qreal length = roffset.length();
+				if (type == HDL_ALIGNED)
+					length = loffset.length();
+				roffset = -loffset.normalized() * length;
+				QPointF newPos = roffset.toPointF() + pos();
+				newPos = mapFromScene(newPos);
 
-			m_right->setUpdateNotify(false);
-			m_right->setPos(newPos);
-			m_right->setUpdateNotify(true);
+				m_right->setUpdateNotify(false);
+				m_right->setPos(newPos);
+				m_right->setUpdateNotify(true);
 
-			//sync to model.
-            QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
+				//sync to model.
+				QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
+				pModel->setData(m_index, offset, ROLE_RIGHTPOS);
+			}
+			QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
 			pModel->setData(m_index, offset, ROLE_LEFTPOS);
 		}
-		else if (m_right == pItem && m_left)
+		
+		if (m_right == pItem)
 		{
-			qreal length = loffset.length();
-			loffset = -roffset.normalized() * length;
-			QPointF newPos = loffset.toPointF() + pos();
-			newPos = mapFromScene(newPos);
+			if (m_left && type != HDL_FREE)
+			{
+				qreal length = loffset.length();
+				if (type == HDL_ALIGNED)
+					length = roffset.length();
+				loffset = -roffset.normalized() * length;
+				QPointF newPos = loffset.toPointF() + pos();
+				newPos = mapFromScene(newPos);
 
-			m_left->setUpdateNotify(false);
-			m_left->setPos(newPos);
-			m_left->setUpdateNotify(true);
+				m_left->setUpdateNotify(false);
+				m_left->setPos(newPos);
+				m_left->setUpdateNotify(true);
 
-			//sync to model.
-			QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
+				//sync to model.
+				QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
+				pModel->setData(m_index, offset, ROLE_LEFTPOS);
+			}
+			QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
 			pModel->setData(m_index, offset, ROLE_RIGHTPOS);
 		}
     }
@@ -338,6 +354,11 @@ CurvesItem* CurveNodeItem::curves() const
     return m_curve;
 }
 
+QModelIndex CurveNodeItem::index() const
+{
+	return m_index;
+}
+
 int CurveNodeItem::type() const
 {
     return Type;
@@ -361,8 +382,17 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 		if (selected)
 		{
             toggle(true);
-			if (m_left) m_left->toggle(true);
-			if (m_right) m_right->toggle(true);
+			if (m_index.data(ROLE_TYPE).toInt() != HDL_VECTOR)
+			{
+				if (m_left) m_left->toggle(true);
+				if (m_right) m_right->toggle(true);
+			}
+			else
+			{
+				//handler length is 0.
+				if (m_left) m_left->toggle(false);
+				if (m_right) m_right->toggle(false);
+			}
 		}
 		else
 		{

@@ -5,6 +5,7 @@
 #include <QtSvg/QGraphicsSvgItem>
 #include "curvegrid.h"
 #include "curveutil.h"
+#include "../model/curvemodel.h"
 
 class CurveNodeItem;
 class CurveMapView;
@@ -74,6 +75,7 @@ public:
     QPointF rightHandlePos() const;
     CurveGrid* grid() const;
 	CurvesItem* curves() const;
+	QModelIndex index() const;
 
 	enum{ Type = curve_util::CURVE_NODE };
     int type() const override;

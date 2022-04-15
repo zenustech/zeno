@@ -41,7 +41,7 @@ private:
 	Ui::FCurveDlg* m_ui;
 
 	QButtonGroup* m_pGroupHdlType;
-
+	CurveModel* m_model;
 };
 
 

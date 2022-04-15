@@ -35,6 +35,7 @@ void CurveModel::initItems(CURVE_RANGE rg, const QVector<QPointF>& pts, const QV
         pItem->setData(logicPos, ROLE_NODEPOS);
         pItem->setData(leftOffset, ROLE_LEFTPOS);
         pItem->setData(rightOffset, ROLE_RIGHTPOS);
+        pItem->setData(HDL_ASYM, ROLE_TYPE);
         appendRow(pItem);
     }
 }

@@ -78,7 +78,8 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
     QGraphicsPathItem* pLeftCurve = r > 0 ? m_vecCurves[r - 1] : nullptr;
     if (pLeftCurve)
 	{
-        CurveNodeItem *pLeftNode = m_vecNodes[r - 1];
+        int lType = topLeft.data(ROLE_TYPE).toInt();
+        CurveNodeItem* pLeftNode = m_vecNodes[r - 1];
         QPainterPath path;
         path.moveTo(pLeftNode->pos());
         path.cubicTo(pLeftNode->rightHandlePos(), pNode->leftHandlePos(), pNode->pos());
@@ -89,6 +90,7 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
 	QGraphicsPathItem* pRightCurve = (r < m_vecNodes.size() - 1) ? m_vecCurves[r] : nullptr;
     if (pRightCurve)
 	{
+        int rType = topLeft.data(ROLE_TYPE).toInt();
         CurveNodeItem* pRightNode = m_vecNodes[r + 1];
         QPainterPath path;
         path.moveTo(pNode->pos());
