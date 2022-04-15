@@ -47,6 +47,22 @@ struct UserData {
     void del(std::string const &name) {
         m_data.erase(name);
     }
+
+    auto begin() const {
+        return m_data.begin();
+    }
+
+    auto end() const {
+        return m_data.end();
+    }
+
+    auto begin() {
+        return m_data.begin();
+    }
+
+    auto end() {
+        return m_data.end();
+    }
 };
 
 }

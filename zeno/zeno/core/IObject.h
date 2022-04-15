@@ -13,7 +13,7 @@ struct UserData;
 struct IObject {
     using polymorphic_base_type = IObject;
 
-    std::any m_userData;
+    mutable std::any m_userData;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();
@@ -28,7 +28,7 @@ struct IObject {
     ZENO_API virtual bool assign(IObject *other);
     ZENO_API virtual bool move_assign(IObject *other);
 
-    ZENO_API UserData &userData();
+    ZENO_API UserData &userData() const;
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }

@@ -1,6 +1,7 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include <zeno/utils/log.h>
+#include <zeno/types/UserData.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -43,7 +44,7 @@ struct PacketProc {
 
     void clearGlobalStateIfNeeded() {
         if (globalStateNeedClean) {
-            zeno::log_critical("PacketProc::clearGlobalStateIfNeeded");
+            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded");
             zeno::getSession().globalComm->clearState();
             if (globalStateNeedClean >= 2)
                 zeno::getSession().globalComm->newFrame();
@@ -54,7 +55,9 @@ struct PacketProc {
     bool processPacket(std::string const &action, const char *buf, size_t len) {
 
         if (action == "viewObject") {
+            zeno::log_debug("decoding object");
             auto object = zeno::decodeObject(buf, len);
+            //zeno::log_debug("object ident=[{}]", object->userData().get("ident"));
             if (!object) {
                 zeno::log_warn("failed to decode view object");
                 return false;
@@ -91,12 +94,15 @@ struct PacketProc {
             return false;
         }
         auto root = doc.GetObject();
-        auto it = root.FindMember("action");
-        if (it == root.MemberEnd() || !it->value.IsString()) {
+
+        
+        std::string action;
+        if (auto it = root.FindMember("action"); it != root.MemberEnd() && it->value.IsString()) {
+            action.assign(it->value.GetString(), it->value.GetStringLength());
+        } else {
             zeno::log_warn("no string entry named 'action'");
             return false;
         }
-        std::string action{it->value.GetString(), it->value.GetStringLength()};
 
         const char *data = buf + header.info_size;
         size_t size = header.total_size - header.info_size;
