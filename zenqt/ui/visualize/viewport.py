@@ -276,6 +276,8 @@ class LightKeyframe:
         self.tint: Tuple[float, float, float] = (0.2, 0.2, 0.2)
         self.color: Tuple[float, float, float] = (1.0, 1.0, 1.0)
         self.intensity: float = 10.0
+        self.scale: float = 1.0
+        self.enable: float = 1.0
 
 class SetLightDialog(QWidget):
     def __init__(self):
@@ -297,8 +299,16 @@ class SetLightDialog(QWidget):
 
         self.add_light_btn = QPushButton('Add')
         self.add_light_btn.clicked.connect(self.add_light)
+
+        self.remove_light_btn = QPushButton('Remove')
+        self.remove_light_btn.clicked.connect(self.remove_light)
+
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self.update_item)
+
+        self.enable_checkbox = QCheckBox('Enable')
+        self.enable_checkbox.setCheckState(Qt.Checked)
+        self.enable_checkbox.stateChanged.connect(self.setLight)
 
         self.phi_slider = QSlider(Qt.Horizontal)
         self.phi_slider.setMinimum(0)
@@ -315,6 +325,9 @@ class SetLightDialog(QWidget):
 
         self.softness_spinbox = QLineEdit('1')
         self.softness_spinbox.textEdited.connect(self.setLight)
+
+        self.scale_spinbox = QLineEdit('1')
+        self.scale_spinbox.textEdited.connect(self.setLight)
 
         self.shadow_tint_spinbox_r = QDoubleSpinBox()
         self.shadow_tint_spinbox_r.valueChanged.connect(self.setLight)
@@ -344,7 +357,10 @@ class SetLightDialog(QWidget):
         layout.addWidget(self.keyframe_btn)
         layout.addWidget(self.edit_btn)
         layout.addWidget(self.add_light_btn)
+        layout.addWidget(self.remove_light_btn)
         layout.addWidget(self.list)
+
+        layout.addWidget(self.enable_checkbox)
 
         layout.addWidget(QLabel('Phi'))
         layout.addWidget(self.phi_slider)
@@ -357,6 +373,9 @@ class SetLightDialog(QWidget):
 
         layout.addWidget(QLabel('Softness'))
         layout.addWidget(self.softness_spinbox)
+
+        layout.addWidget(QLabel('Scale'))
+        layout.addWidget(self.scale_spinbox)
 
         layout.addWidget(QLabel('ShadowTint'))
         layout.addWidget(self.shadow_tint_spinbox_r)
@@ -384,6 +403,13 @@ class SetLightDialog(QWidget):
     def add_light(self):
         zenvis.core.addLight()
         self.new_light_channel()
+        self.update()
+
+    def remove_light(self):
+        index = self.list.currentRow()
+        if index == -1:
+            return
+        zenvis.core.removeLight(index)
         self.update()
     
     def update_item(self):
@@ -413,6 +439,12 @@ class SetLightDialog(QWidget):
 
         intensity = l[5]
         self.light_intensity.setValue(intensity)
+
+        scale = str(l[6])
+        self.scale_spinbox.setText(scale)
+
+        enable = l[7]
+        self.enable_checkbox.setCheckState(Qt.Checked if enable else Qt.Unchecked)
 
         self.curve_editor.widget_state.data = self.lights[index]
         self.curve_editor.update()
@@ -449,6 +481,8 @@ class SetLightDialog(QWidget):
             lkf.tint,
             lkf.color,
             lkf.intensity,
+            lkf.scale,
+            lkf.enable > 0.5,
         )
 
     def keyframe(self):
@@ -470,6 +504,8 @@ class SetLightDialog(QWidget):
             'ColorG': ControlPoint(f, lkf.color[1]),
             'ColorB': ControlPoint(f, lkf.color[2]),
             'Intensity': ControlPoint(f, lkf.intensity),
+            'Scale': ControlPoint(f, lkf.scale),
+            'Enable': ControlPoint(f, lkf.enable, 'constant'),
         }
         for n, l in self.lights[index].items():
             count = len(list(filter(lambda k: k.pos.x <= f, l)))
@@ -489,6 +525,8 @@ class SetLightDialog(QWidget):
         lkf.dir = self.sphere_xyz(phi, theta)
         lkf.height = float(self.height_spinbox.text())
         lkf.softness = float(self.softness_spinbox.text())
+        lkf.scale = float(self.softness_spinbox.text())
+        lkf.enable = 1.0 if self.enable_checkbox.checkState() == Qt.Checked else 0.0
         lkf.tint = (
             self.shadow_tint_spinbox_r.value(),
             self.shadow_tint_spinbox_g.value(),
@@ -516,6 +554,8 @@ class SetLightDialog(QWidget):
             'ColorG': [ControlPoint(0, 1)],
             'ColorB': [ControlPoint(0, 1)],
             'Intensity': [ControlPoint(0, 10.0)],
+            'Scale': [ControlPoint(0, 1.0)],
+            'Enable': [ControlPoint(0, 1.0, 'constant')],
         }
         self.lights[len(self.lights)] = new_channel
 
