@@ -62,7 +62,7 @@ class CurveNodeItem : public QGraphicsObject
 	Q_OBJECT
 	typedef QGraphicsObject _base;
 public:
-	CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
+	CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
     void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const;
@@ -97,6 +97,7 @@ private:
 	CurvesItem* m_curve;
 	CurveGrid* m_grid;
 	HANDLE_TYPE m_type;
+	QPersistentModelIndex m_index;
 	bool m_bToggle;
 };
 

@@ -4,6 +4,7 @@
 #include <zenoui/util/uihelper.h>
 #include "curveutil.h"
 #include "curvesitem.h"
+#include "../model/curvemodel.h"
 
 using namespace curve_util;
 
@@ -218,7 +219,7 @@ void CurveHandlerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 }
 
 
-CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve)
+CurveNodeItem::CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve)
 	: QGraphicsObject(parentItem)
 	, m_left(nullptr)
 	, m_right(nullptr)
@@ -227,6 +228,7 @@ CurveNodeItem::CurveNodeItem(CurveMapView* pView, const QPointF& nodePos, CurveG
 	, m_grid(parentItem)
 	, m_type(HDL_ASYM)
 	, m_curve(curve)
+	, m_index(idx)
 {
     QRectF br = boundingRect();
 	setPos(nodePos);
@@ -260,6 +262,7 @@ void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
     if (m_view->isSmoothCurve())
 	{
 		//update the pos of another handle.
+        CurveModel *const pModel = m_curve->model();
         QVector2D roffset(rightHandlePos() - pos());
         QVector2D loffset(leftHandlePos() - pos());
         if (m_left == pItem && m_right)
@@ -272,6 +275,10 @@ void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
 			m_right->setUpdateNotify(false);
 			m_right->setPos(newPos);
 			m_right->setUpdateNotify(true);
+
+			//sync to model.
+            QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
+			pModel->setData(m_index, offset, ROLE_LEFTPOS);
 		}
 		else if (m_right == pItem && m_left)
 		{
@@ -283,9 +290,12 @@ void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
 			m_left->setUpdateNotify(false);
 			m_left->setPos(newPos);
 			m_left->setUpdateNotify(true);
+
+			//sync to model.
+			QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
+			pModel->setData(m_index, offset, ROLE_RIGHTPOS);
 		}
     }
-	emit geometryChanged();
 }
 
 void CurveNodeItem::toggle(bool bChecked)
@@ -400,7 +410,9 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
-		emit geometryChanged();
+        CurveModel *const pModel = m_curve->model();
+		QPointF logicPos = m_grid->sceneToLogic(pos());
+		pModel->setData(m_index, logicPos, ROLE_NODEPOS);
 	}
 	return value;
 }

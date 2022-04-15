@@ -9,6 +9,7 @@ using namespace curve_util;
 
 class CurveMapView;
 class CurveNodeItem;
+class CurveModel;
 
 namespace Ui
 {
@@ -22,7 +23,7 @@ class ZCurveMapEditor : public QDialog
 public:
 	ZCurveMapEditor(QWidget* parent = nullptr);
 	~ZCurveMapEditor();
-	void init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+	void init(CurveModel* model);
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);

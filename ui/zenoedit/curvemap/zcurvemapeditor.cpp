@@ -3,6 +3,7 @@
 #include "ui_zcurvemapeditor.h"
 #include <zenoui/style/zenostyle.h>
 #include "curvenodeitem.h"
+#include "../model/curvemodel.h"
 
 
 ZCurveMapEditor::ZCurveMapEditor(QWidget* parent)
@@ -81,9 +82,10 @@ void ZCurveMapEditor::initButtonShadow()
     }
 }
 
-void ZCurveMapEditor::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
+void ZCurveMapEditor::init(CurveModel* model)
 {
-	m_ui->gridview->init(range, pts, handlers);
+    m_ui->gridview->init(model);
+    CURVE_RANGE range = model->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));
     m_ui->editYFrom->setText(QString::number(range.yFrom));

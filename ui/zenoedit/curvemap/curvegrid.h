@@ -7,6 +7,7 @@ class CurveMapView;
 class CurveNodeItem;
 class CurvePathItem;
 class CurvesItem;
+class CurveModel;
 
 class CurveGrid : public QGraphicsObject
 {
@@ -18,7 +19,7 @@ public:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent* event);
 	void initTransform();
-	void initCurves(const QVector<QPointF>& pts, const QVector<QPointF>& handlers);
+	void addCurve(CurveModel* model);
     bool isFuncCurve() const;
     CurveMapView* view() const { return m_view; }
     QPointF logicToScene(QPointF logicPos);
@@ -33,9 +34,7 @@ private:
 	QTransform m_transform;
 	QTransform m_invTrans;
 	CurveMapView* m_view;
-	CurvesItem* m_curveX;	//default curve item when only one channel.
-	CurvesItem* m_curveY;
-	CurvesItem* m_curveZ;
+	QMap<QString, CurvesItem*> m_curves;
 	bool m_bFCurve;			//function curve.
 };
 

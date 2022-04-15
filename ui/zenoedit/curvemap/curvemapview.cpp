@@ -3,6 +3,7 @@
 #include "curvegrid.h"
 #include "curvenodeitem.h"
 #include "curveutil.h"
+#include "../model/curvemodel.h"
 
 
 CurveMapView::CurveMapView(QWidget* parent)
@@ -31,11 +32,12 @@ CurveMapView::~CurveMapView()
 {
 }
 
-void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
+void CurveMapView::init(CurveModel* model)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
-	m_range = range;
+    m_range = model->range();
+    m_model = model;
 
 	m_gridMargins.setLeft(64);
 	m_gridMargins.setRight(64);
@@ -54,7 +56,7 @@ void CurveMapView::init(CURVE_RANGE range, const QVector<QPointF>& pts, const QV
 	m_fixedSceneRect = curve_util::fitInRange(m_range, m_gridMargins);
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
-	m_grid->initCurves(pts, handlers);
+	m_grid->addCurve(model);
 	m_grid->setColor(QColor(32, 32, 32), QColor(22, 22, 24));
 	m_grid->setZValue(-100);
 
@@ -78,15 +80,6 @@ QPointF CurveMapView::mapSceneToLogic(const QPointF& scenePos)
 	qreal x = (m_range.xTo - m_range.xFrom) * (scenePos.x() - bbox.left()) / bbox.width() + m_range.xFrom;
 	qreal y = m_range.yTo - (m_range.yTo - m_range.yFrom) * (scenePos.y() - bbox.top()) / bbox.height();
 	return QPointF(x, y);
-}
-
-QPointF CurveMapView::mapOffsetToScene(const QPointF& offset)
-{
-	const QRectF& bbox = gridBoundingRect();
-	qreal x = offset.x(), y = offset.y();
-	qreal sceneX = bbox.width() / (m_range.xTo - m_range.xFrom) * offset.x();
-	qreal sceneY = bbox.height() / (m_range.yTo - m_range.yFrom) * offset.y();
-	return QPoint(sceneX, -sceneY);
 }
 
 void CurveMapView::gentle_zoom(qreal factor)
