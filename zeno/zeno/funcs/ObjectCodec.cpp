@@ -12,6 +12,7 @@ namespace {
 
 enum class ObjectType {
     PrimitiveObject,
+    NumericObject,
 };
 
 struct ObjectHeader {
@@ -24,10 +25,15 @@ struct ObjectHeader {
 
 namespace _implObjectCodec {
 
-std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it);
-bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator<std::vector<char>> it);
-std::shared_ptr<PrimitiveObject> decodeNumericObject(const char *it);
-bool encodeNumericObject(PrimitiveObject const *obj, std::back_insert_iterator<std::vector<char>> it);
+#define _VISIT_OBJECT_TYPE \
+    _PER_OBJECT_TYPE(PrimitiveObject) \
+    _PER_OBJECT_TYPE(NumericObject)
+
+#define _PER_OBJECT_TYPE(TypeName) \
+std::shared_ptr<TypeName> decode##TypeName(const char *it); \
+bool encode##TypeName(TypeName const *obj, std::back_insert_iterator<std::vector<char>> it);
+_VISIT_OBJECT_TYPE
+#undef _PER_OBJECT_TYPE
 
 }
 
@@ -41,8 +47,13 @@ std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
     auto &header = *(ObjectHeader *)buf;
     auto it = buf + sizeof(ObjectHeader);
 
-    if (header.type == ObjectType::PrimitiveObject) {
-        return decodePrimitiveObject(it);
+    if (0) {
+
+#define _PER_OBJECT_TYPE(TypeName) \
+    } else if (header.type == ObjectType::TypeName) { \
+        return decode##TypeName(it);
+    _VISIT_OBJECT_TYPE
+#undef _PER_OBJECT_TYPE
 
     } else {
         log_error("invalid object type {}", header.type);
@@ -80,9 +91,14 @@ static bool _encodeObjectImpl(IObject const *object, std::vector<char> &buf) {
     it = std::fill_n(it, sizeof(ObjectHeader), 0);
     auto &header = *(ObjectHeader *)buf.data();
 
-    if (auto obj = dynamic_cast<PrimitiveObject const *>(object)) {
-        header.type = ObjectType::PrimitiveObject;
-        return encodePrimitiveObject(obj, it);
+    if (0) {
+
+#define _PER_OBJECT_TYPE(TypeName) \
+    } else if (auto obj = dynamic_cast<TypeName const *>(object)) { \
+        header.type = ObjectType::TypeName; \
+        return encode##TypeName(obj, it);
+    _VISIT_OBJECT_TYPE
+#undef _PER_OBJECT_TYPE
 
     } else {
         log_error("invalid object type `{}`", cppdemangle(typeid(*object)));
