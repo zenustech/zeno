@@ -159,6 +159,38 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     return prim;
 }
 
+static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, int frameid) {
+    CameraInfo cam_info;
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = cam.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+    int sample_index = clamp(frameid - start_frame, 0, (int)cam.getNumSamples() - 1);
+
+    auto samp = cam.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    cam_info.focal_length = samp.getFocalLength();
+    cam_info._near = samp.getNearClippingPlane();
+    cam_info._far = samp.getFarClippingPlane();
+    log_info(
+        "[alembic] Camera focal_length: {}, near: {}, far: {}",
+        cam_info.focal_length,
+        cam_info._near,
+        cam_info._far
+    );
+    return std::make_shared<CameraInfo>(cam_info);
+}
+
+static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, int frameid) {
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = xfm.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+    int sample_index = clamp(frameid - start_frame, 0, (int)xfm.getNumSamples() - 1);
+
+    auto samp = xfm.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    return samp.getMatrix();
+}
+
 static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -180,6 +212,20 @@ static void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
+        } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found a Xform [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::IXform xfm(obj);
+            auto &cam_sch = xfm.getSchema();
+            tree.xform = foundABCXform(cam_sch, frameid);
+        } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found a Camera [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::ICamera cam(obj);
+            auto &cam_sch = cam.getSchema();
+            tree.camera_info = foundABCCamera(cam_sch, frameid);
         }
     }
 

@@ -57,7 +57,7 @@ ZENDEFNODE(MakeLocalSys, {
     {"math"},
 });
 
-struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
+struct TransformPrimitive : zeno::INode {//zhxx happy node
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
         auto vector4 = matrix * glm::vec4(vector, 1.0f);
         return glm::vec3(vector4) / vector4.w;
@@ -76,6 +76,12 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
         zeno::vec4f rotation = {0,0,0,1};
         zeno::vec3f eulerXYZ = {0,0,0};
         zeno::vec3f scaling = {1,1,1};
+        zeno::vec3f offset = {0,0,0};
+        glm::mat4 pre_mat = glm::mat4(1.0);
+        glm::mat4 pre_apply = glm::mat4(1.0);
+        glm::mat4 local = glm::mat4(1.0);
+        if (has_input("Matrix"))
+            pre_mat = std::get<glm::mat4>(get_input<zeno::MatrixObject>("Matrix")->m);
         if (has_input("translation"))
             translate = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
         if (has_input("eulerXYZ"))
@@ -84,6 +90,14 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
             rotation = get_input<zeno::NumericObject>("quatRotation")->get<zeno::vec4f>();
         if (has_input("scaling"))
             scaling = get_input<zeno::NumericObject>("scaling")->get<zeno::vec3f>();
+        if (has_input("offset"))
+            offset = get_input<zeno::NumericObject>("offset")->get<zeno::vec3f>();
+        if (has_input("local"))
+           local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
+        if (has_input("preTransform"))
+            pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
+
+
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
         glm::mat4 matRotx  = glm::rotate( eulerXYZ[0], glm::vec3(1,0,0) );
         glm::mat4 matRoty  = glm::rotate( eulerXYZ[1], glm::vec3(0,1,0) );
@@ -91,7 +105,7 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
-        auto matrix = matTrans*matRotz*matRoty*matRotx*matQuat*matScal;
+        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
@@ -128,34 +142,13 @@ ZENDEFNODE(TransformPrimitive, {
     {"vec3f", "eulerXYZ", "0,0,0"},
     {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
+    {"Matrix"},
+    {"preTransform"},
+    {"local"},
     },
     {
     {"PrimitiveObject", "outPrim"}
     },
-    {},
-    {"primitive"},
-});
-
-
-struct TranslatePrimitive : zeno::INode {
-    virtual void apply() override {
-        auto translation = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto &pos = prim->attr<vec3f>("pos");
-        #pragma omp parallel for
-        for (int i = 0; i < pos.size(); i++) {
-            pos[i] += translation;
-        }
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(TranslatePrimitive, {
-    {
-    {"PrimitiveObject", "prim"},
-    {"vec3f", "translation", "0,0,0"},
-    },
-    {"prim"},
     {},
     {"primitive"},
 });
