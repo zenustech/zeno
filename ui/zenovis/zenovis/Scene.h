@@ -15,10 +15,12 @@ struct ReflectivePass;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
-    std::unique_ptr<ShaderManager> shaderMan;
     std::vector<std::unique_ptr<Light>> lights;
-    std::vector<std::unique_ptr<IGraphic>> graphics;
 
+    std::vector<std::unique_ptr<IGraphic>> graphics;
+    std::vector<std::unique_ptr<IGraphic>> hudGraphics;
+
+    std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<DepthPass> mDepthPass;
     std::unique_ptr<ReflectivePass> mReflectivePass;
 

@@ -6,6 +6,7 @@
 #include <zenovis/Light.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
+#include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
@@ -316,7 +317,7 @@ void main(void)
                 CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
                                       camera()->bgcolor.b, 0.0f));
                 CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                my_paint_graphics(1.0, 0.0);
+                scene->my_paint_graphics(1.0, 0.0);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
                 CHECK_GL(
@@ -359,12 +360,13 @@ void main(void)
         } else {
             glDisable(GL_MULTISAMPLE);
             //ZPass();
-            glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
-            glm::vec3 right =
-                glm::normalize(glm::cross(object - g_camPos, g_camUp));
+            glm::vec3 object =
+                camera()->g_camPos + 1.0f * glm::normalize(camera()->g_camView);
+            glm::vec3 right = glm::normalize(
+                glm::cross(object - camera()->g_camPos, camera()->g_camUp));
             glm::vec3 p_up =
-                glm::normalize(glm::cross(right, object - g_camPos));
-            view = glm::lookAt(g_camPos, object, p_up);
+                glm::normalize(glm::cross(right, object - camera()->g_camPos));
+            camera()->view = glm::lookAt(camera()->g_camPos, object, p_up);
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                                                GL_COLOR_ATTACHMENT0,
@@ -376,7 +378,7 @@ void main(void)
             CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
                                   camera()->bgcolor.b, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-            my_paint_graphics(1.0, 0.0);
+            scene->my_paint_graphics(1.0, 0.0);
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
@@ -389,7 +391,7 @@ void main(void)
 
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-            //tmProg->set_uniform("msweight",1.0);
+            //tmProg->set_uniform("msweight",1.0);//already set in camera::set_program_uniforms
             ScreenFillQuad(texRects[0], 1.0, 0);
         }
         //std::this_thread::sleep_for(std::chrono::milliseconds(30));
@@ -401,7 +403,7 @@ void main(void)
     /* END ZHXX HAPPY */
 
     ~DepthPass() {
-        /* TODO: delete the frame buffers */
+        /* TODO: delete the C-style frame buffers */
     }
 };
 

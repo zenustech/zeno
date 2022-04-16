@@ -1,17 +1,24 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <zeno/utils/vec.h>
-#include <zeno/utils/logger.h>
-#include <zeno/utils/ticktock.h>
-#include <zeno/utils/orthonormal.h>
+#include <zeno/types/InstancingObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
-#include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
-#include <zeno/types/InstancingObject.h>
-#include <zenovis/zenovis/IGraphic.h>
+#include <zeno/utils/logger.h>
+#include <zeno/utils/orthonormal.h>
+#include <zeno/utils/ticktock.h>
+#include <zeno/utils/vec.h>
+#include <zenovis/IGraphic.h>
+#include <zenovis/opengl/buffer.h>
+#include <zenovis/opengl/shader.h>
+#include <zenovis/opengl/texture.h>
+#include <zenovis/Scene.h>
+#include <zenovis/ShaderManager.h>
 namespace zenovis {
+    using namespace opengl;
+
 extern float getCamFar();
 extern void ensureGlobalMapExist();
 extern unsigned int getGlobalEnvMap();
@@ -283,6 +290,7 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj)
     TOCK(bindebo);
 }
 struct GraphicPrimitive : IGraphic {
+    Scene *scene;
   std::unique_ptr<Buffer> vbo;
   std::unique_ptr<Buffer> instvbo;
   size_t vertex_count;
@@ -308,7 +316,7 @@ struct GraphicPrimitive : IGraphic {
   bool prim_has_inst = false;
   int prim_inst_amount = 0;
 
-  GraphicPrimitive(std::shared_ptr<zeno::PrimitiveObject> prim) {
+  explicit GraphicPrimitive(Scene *scene_, std::shared_ptr<zeno::PrimitiveObject> prim) : scene(scene_) {
       zeno::log_trace("rendering primitive size {}", prim->size());
   
     if (!prim->has_attr("pos")) {
@@ -1099,7 +1107,7 @@ void main()
 	EndPrimitive();
 }  
 )";
-    return compile_program(SMVS, SMFS);
+    return scene->shaderMan->compile_program(SMVS, SMFS);
   }
 
   Program *get_points_program() {
@@ -1172,7 +1180,7 @@ void main()
 }
 )";
 
-    return compile_program(vert, frag);
+    return scene->shaderMan->compile_program(vert, frag);
   }
 
   Program *get_lines_program() {
@@ -1217,7 +1225,7 @@ void main()
 }
 )";
 
-    return compile_program(vert, frag);
+    return scene->shaderMan->compile_program(vert, frag);
   }
 
   Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst) {
@@ -2558,13 +2566,13 @@ void main()
 )";
 
 //printf("!!!!%s!!!!\n", frag.c_str());
-    return compile_program(vert, frag);
+    return scene->shaderMan->compile_program(vert, frag);
   }
 };
 
-std::unique_ptr<IGraphic> makeGraphicPrimitive(std::shared_ptr<zeno::IObject> obj) {
+std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
   if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
-      return std::make_unique<GraphicPrimitive>(std::move(prim));
+      return std::make_unique<GraphicPrimitive>(scene, std::move(prim));
   return nullptr;
 }
 

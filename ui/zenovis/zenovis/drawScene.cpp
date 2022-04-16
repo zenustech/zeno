@@ -6,10 +6,12 @@
 
 namespace zenovis {
 
-    Scene::Scene()
-        : camera(std::make_unique<Camera>())
-        , mDepthPass(std::make_unique<DepthPass>(this))
-    Scene::~Scene() = default;
+Scene::Scene()
+    : camera(std::make_unique<Camera>()),
+      mDepthPass(std::make_unique<DepthPass>(this)) {
+}
+
+Scene::~Scene() = default;
 
 void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
                                bool _show_grid) {
@@ -35,8 +37,9 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
             gra->draw(reflect, isDepthPass);
         }
         if (isDepthPass != 1.0f && _show_grid) {
-            axis->draw(false, 0.0f);
-            grid->draw(false, 0.0f);
+            for (auto const &hudgra : hudGraphics) {
+                hudgra->draw(false, 0.0f);
+            }
         }
     }
 }
