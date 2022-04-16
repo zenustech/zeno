@@ -7,16 +7,8 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <zeno/utils/Error.h>
+#include <zeno/utils/fuck_win.h>
 #include <zenovis/opengl/shader.h>
-
-#ifdef _WIN32
-#ifdef near
-#undef near
-#endif
-#ifdef far
-#undef far
-#endif
-#endif
 
 namespace zenovis {
 

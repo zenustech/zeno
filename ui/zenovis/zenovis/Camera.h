@@ -4,11 +4,16 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
 
 struct Camera {
+    glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
+    std::unique_ptr<opengl::Buffer> vao;
+    int nx{512}, ny{512};
+    int oldnx{512}, oldny{512};
 
     double g_aspect{1};
     double last_xpos{}, last_ypos{};
@@ -20,8 +25,9 @@ struct Camera {
     float camera_radius = 1.f;
     float grid_scale = 1.f;
     float grid_blend = 0.f;
-    float g_dof = -1;
-    float g_aperature = 0.05;
+    float g_dof = -1.f;
+    float g_aperature = 0.05f;
+    float m_sample_weight = 0.0f;
 
     void setAspect(float _aspect) {
         g_aspect = _aspect;
@@ -168,6 +174,28 @@ struct Camera {
         pro->set_uniform("mCameraCenter", center);
         pro->set_uniform("mGridScale", grid_scale);
         pro->set_uniform("mGridBlend", grid_blend);
+        pro->set_uniform("mSampleWeight", m_sample_weight);
+    }
+
+    bool show_grid = true;
+    bool render_wireframe = false;
+
+    int _m_default_num_samples = 8;
+    int _m_ready_num_samples = -1;
+    void setNumSamples(int num_samples) {
+        _m_default_num_samples = num_samples;
+        _m_ready_num_samples = -1;
+    }
+    int getNumSamples() {
+        if (_m_ready_num_samples < 0) {
+            /* begin cihou mesa */
+            int max_num_samples = _m_ready_num_samples;
+            CHECK_GL(glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &max_num_samples));
+            _m_ready_num_samples = std::min(_m_ready_num_samples, max_num_samples);
+            printf("num samples: %d\n", _m_ready_num_samples);
+            /* end cihou mesa */
+        }
+        return _m_ready_num_samples;
     }
 };
 
