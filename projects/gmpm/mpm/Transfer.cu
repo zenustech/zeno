@@ -734,7 +734,8 @@ ZENDEFNODE(ZSGridToZSParticle,
            });
 
 struct ZSBoundaryPrimitiveToZSGrid : INode {
-  void p2g_momentum(zs::CudaExecutionPolicy &cudaPol,
+  void p2g_momentum(zs::CudaExecutionPolicy &cudaPol, std::size_t offset,
+                    std::size_t size,
                     const typename ZenoParticles::particles_t &pars,
                     const typename ZenoPartition::table_t &partition,
                     typename ZenoGrid::grid_t &grid,
@@ -743,18 +744,18 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
 
     Vector<int> flag{pars.get_allocator(), 1};
     flag.setVal(0);
-    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
-                                 table = proxy<execspace_e::cuda>(partition),
-                                 grid = proxy<execspace_e::cuda>({}, grid),
-                                 dxinv = 1.f / grid.dx, includeNormal,
-                                 flag = proxy<execspace_e::cuda>(
-                                     flag)] __device__(size_t pi) mutable {
+    cudaPol(range(size), [pars = proxy<execspace_e::cuda>({}, pars),
+                          table = proxy<execspace_e::cuda>(partition),
+                          grid = proxy<execspace_e::cuda>({}, grid),
+                          dxinv = 1.f / grid.dx, offset, includeNormal,
+                          flag = proxy<execspace_e::cuda>(
+                              flag)] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
       const auto Dinv = 4.f * dxinv * dxinv;
+      pi += offset;
       auto pos = pars.pack<3>("pos", pi);
       auto vel = pars.pack<3>("vel", pi);
       auto mass = pars("mass", pi);
-      // auto vol = pars("vol", pi);
       auto nrm = pars.pack<3>("nrm", pi);
 
       auto arena = make_local_arena<grid_e::collocated, kernel_e::quadratic>(
@@ -778,12 +779,12 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
           atomic_add(exec_cuda, &block("v", d, cellid), W * mass * vel[d]);
         if (includeNormal)
           for (int d = 0; d != 3; ++d)
-            atomic_add(exec_cuda, &block("nrm", d, cellid), nrm[d]);
+            atomic_add(exec_cuda, &block("nrm", d, cellid), W * mass * nrm[d]);
       }
     });
     if (flag.getVal() != 0)
       fmt::print(fg(fmt::color::red),
-                 "encountering boundary particles breaking CFL");
+                 "encountering boundary particles breaking CFL\n");
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
@@ -806,12 +807,18 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       if (!pars.hasProperty("nrm") || !eles.hasProperty("nrm"))
         throw std::runtime_error(
             "boundary primitive does not have normal channel!");
-      p2g_momentum(cudaPol, pars, partition, grid, false);
-      p2g_momentum(cudaPol, eles, partition, grid, true);
+      auto sprayedOffset = parObjPtr->sprayedOffset;
+      auto sprayedSize = pars.size() - sprayedOffset;
+      auto size = sprayedOffset;
+      if (sprayedSize == 0) {
+        p2g_momentum(cudaPol, 0, pars.size(), pars, partition, grid, false);
+        p2g_momentum(cudaPol, 0, eles.size(), eles, partition, grid, true);
+      } else {
+        p2g_momentum(cudaPol, sprayedOffset, sprayedSize, pars, partition, grid,
+                     true);
+      }
       fmt::print("[boundary particle p2g] dx: {}, npars: {}, neles: {}\n",
                  grid.dx, pars.size(), eles.size());
-      // fmt::print("p2g boundary iterating par: {}\n", (void
-      // *)parObjPtr.get());
     }
 
     fmt::print(fg(fmt::color::cyan),
