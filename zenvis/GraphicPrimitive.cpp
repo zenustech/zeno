@@ -893,7 +893,14 @@ struct GraphicPrimitive : IGraphic {
           glPolygonOffset(-1, -1);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
           triObj.prog->set_uniformi("mRenderWireframe", true);
-          CHECK_GL(glDrawElements(GL_TRIANGLES, triObj.count * 3, GL_UNSIGNED_INT, 0));
+          if (prim_has_inst){
+                CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                    GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+          }else
+          {
+                CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                    GL_UNSIGNED_INT, /*first=*/0));
+          }
           glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
           glDisable(GL_POLYGON_OFFSET_LINE);
         }
@@ -2387,6 +2394,46 @@ vec4 sampleReflectRectID(vec2 coord, int id)
     if(id==14) return texture2DRect(reflectionMap14, coord);
     if(id==15) return texture2DRect(reflectionMap15, coord);
 }
+float mad(float a, float b, float c)
+{
+    return c + a * b;
+}
+vec3 mad3(vec3 a, vec3 b, vec3 c)
+{
+    return c + a * b;
+}
+vec3 skinBRDF(vec3 normal, vec3 light, float curvature)
+{
+    float NdotL = dot(normal, light) * 0.5 + 0.5; // map to 0 to 1 range
+    float curva = (1.0/mad(curvature, 0.5 - 0.0625, 0.0625) - 2.0) / (16.0 - 2.0); 
+    float oneMinusCurva = 1.0 - curva;
+    vec3 curve0;
+    {
+        vec3 rangeMin = vec3(0.0, 0.3, 0.3);
+        vec3 rangeMax = vec3(1.0, 0.7, 0.7);
+        vec3 offset = vec3(0.0, 0.06, 0.06);
+        vec3 t = clamp( mad3(vec3(NdotL), 1.0 / (rangeMax - rangeMin), (offset + rangeMin) / (rangeMin - rangeMax)  ), vec3(0), vec3(1));
+        vec3 lowerLine = (t * t) * vec3(0.65, 0.5, 0.9);
+        lowerLine.r += 0.045;
+        lowerLine.b *= t.b;
+        vec3 m = vec3(1.75, 2.0, 1.97);
+        vec3 upperLine = mad3(vec3(NdotL), m, vec3(0.99, 0.99, 0.99) -m );
+        upperLine = clamp(upperLine, vec3(0), vec3(1));
+        vec3 lerpMin = vec3(0.0, 0.35, 0.35);
+        vec3 lerpMax = vec3(1.0, 0.7 , 0.6 );
+        vec3 lerpT = clamp( mad3(vec3(NdotL), vec3(1.0)/(lerpMax-lerpMin), lerpMin/ (lerpMin - lerpMax) ), vec3(0), vec3(1));
+        curve0 = mix(lowerLine, upperLine, lerpT * lerpT);
+    }
+    vec3 curve1;
+    {
+        vec3 m = vec3(1.95, 2.0, 2.0);
+        vec3 upperLine = mad3( vec3(NdotL), m, vec3(0.99, 0.99, 1.0) - m);
+        curve1 = clamp(upperLine,0,1);
+    }
+    float oneMinusCurva2 = oneMinusCurva * oneMinusCurva;
+    vec3 brdf = mix(curve0, curve1, mad(oneMinusCurva2, -1.0 * oneMinusCurva2, 1.0) );
+    return brdf;
+}
 vec3 reflectionCalculation(vec3 worldPos, int id)
 {
     vec4 fragPosReflectSpace = reflectMVP[id] * vec4(worldPos, 1.0);
@@ -2472,8 +2519,12 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         {
             if(dot(new_normal, light_dir)<0)
             {
-                sss += mat_foliage * clamp(dot(-new_normal, light_dir)*0.6+0.4, 0,1)*mon2lin(mat_basecolor)/PI;
+                sss += mat_foliage * clamp(dot(-new_normal, light_dir)*0.6+0.4, 0,1) * mon2lin(mat_basecolor)/PI;
             }
+        }
+        if(mat_skin>0)
+        {
+            sss += mat_skin * skinBRDF(new_normal, light_dir, mat_curvature) * lightIntensity[lightId] * mon2lin(mat_basecolor)/PI;
         }
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
