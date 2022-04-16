@@ -15,6 +15,8 @@
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
 #include <zenovis/Scene.h>
+#include <zenovis/Camera.h>
+#include <zenovis/Light.h>
 #include <zenovis/ShaderManager.h>
 namespace zenovis {
     using namespace opengl;
@@ -696,14 +698,14 @@ struct GraphicPrimitive : IGraphic {
     if (draw_all_points) {
         //printf("ALLPOINTS\n");
         pointObj.prog->use();
-        set_program_uniforms(pointObj.prog);
+        scene->camera->set_program_uniforms(pointObj.prog);
         CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
     }
 
     if (points_count) {
         //printf("POINTS\n");
         pointObj.prog->use();
-        set_program_uniforms(pointObj.prog);
+        scene->camera->set_program_uniforms(pointObj.prog);
         pointObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_POINTS, /*count=*/pointObj.count * 1,
               GL_UNSIGNED_INT, /*first=*/0));
@@ -722,7 +724,7 @@ struct GraphicPrimitive : IGraphic {
             vbobind(vbo);
         }
         lineObj.prog->use();
-        set_program_uniforms(lineObj.prog);
+        scene->camera->set_program_uniforms(lineObj.prog);
         lineObj.ebo->bind();
         CHECK_GL(glDrawElements(GL_LINES, /*count=*/lineObj.count * 2,
               GL_UNSIGNED_INT, /*first=*/0));
@@ -751,10 +753,9 @@ struct GraphicPrimitive : IGraphic {
         }
 
         triObj.prog->use();
-        set_program_uniforms(triObj.prog);
+        scene->camera->set_program_uniforms(triObj.prog);
 
-        auto &scene = Scene::getInstance();
-        auto &lights = scene.lights;
+        auto &lights = scene->lights;
         triObj.prog->set_uniformi("lightNum", lights.size());
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
@@ -889,7 +890,7 @@ struct GraphicPrimitive : IGraphic {
                 GL_UNSIGNED_INT, /*first=*/0));
         }
 
-        if (render_wireframe) {
+        if (scene->camera->render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
