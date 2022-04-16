@@ -518,8 +518,8 @@ struct ToZSParticles : INode {
         Dstar(0, 1) = rv(0);
         Dstar(1, 1) = rv(1);
 
-        if (std::abs(rv(1)) <= 4 * limits<float>::epsilon() ||
-            std::abs(ru(0)) <= 4 * limits<float>::epsilon()) {
+        if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
+            std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
           fmt::print(fg(fmt::color::red),
                      "beware: encounters near-singular Dm element [{}] of: "
                      "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
@@ -634,24 +634,14 @@ struct ToBoundaryParticles : INode {
       totalSize += sprayedSize;
     }
     // (mesh）
-    std::size_t eleSize{0};
-    std::vector<float> dofVol{};
-    std::vector<float> eleVol{};
-    std::vector<vec3f> elePos{};
-    std::vector<vec3f> eleVel{};
-    std::vector<int> sprayedVertToElement{};
+    std::size_t eleSize{tris.size()};
+    std::vector<float> dofVol(totalSize, 0.f); // may include sprayed particles
+    std::vector<float> eleVol(eleSize);
+    std::vector<vec3f> elePos(eleSize);
+    std::vector<vec3f> eleVel(eleSize);
+    std::vector<int> sprayedVertToElement(sprayedSize);
 
-    ZenoParticles::category_e category{};
-    {
-      category = ZenoParticles::surface;
-      eleSize = tris.size();
-      dofVol.resize(totalSize, 0.f); // may include sprayed particles
-
-      eleVol.resize(eleSize);
-      elePos.resize(eleSize);
-      eleVel.resize(eleSize);
-      sprayedVertToElement.resize(sprayedSize);
-    }
+    ZenoParticles::category_e category{ZenoParticles::surface};
 
     // category
     outParticles->category = category;
@@ -677,6 +667,8 @@ struct ToBoundaryParticles : INode {
         elePos[i] = (pos[tri[0]] + pos[tri[1]] + pos[tri[2]]) / 3;
         if (velsPtr)
           eleVel[i] = (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+        else
+          eleVel[i] = vec3f{0, 0, 0};
         for (auto pi : tri) {
           atomic_add(exec_omp, &dofVol[pi], v / 3);
         }
@@ -689,6 +681,7 @@ struct ToBoundaryParticles : INode {
     typename ZenoPartition::table_t table{eleSize, memsrc_e::host, -1};
     Vector<int> numSprayedParsPerElement{table.get_allocator(), eleSize};
     numSprayedParsPerElement.reset(0);
+    // sprayedVertToElement, dofVol
     if (sprayed) { // compute volumes for remaining verts
       table.reset(ompExec, true);
       // hash
@@ -833,22 +826,18 @@ struct ToBoundaryParticles : INode {
     auto &eles = outParticles->getQuadraturePoints(); // tilevector
     ompExec(zs::range(eleSize),
             [pars = proxy<execspace_e::openmp>({}, pars),
-             eles = proxy<execspace_e::openmp>({}, eles), velsPtr, &eleVol,
-             &elePos, &eleVel, category, &tris](size_t ei) mutable {
+             eles = proxy<execspace_e::openmp>({}, eles), &eleVol, &elePos,
+             &eleVel, &tris](size_t ei) mutable {
               using vec3 = zs::vec<float, 3>;
               using mat3 = zs::vec<float, 3, 3>;
               // mass
-              eles("vol", ei) = eleVol[ei];
               eles("mass", ei) = eleVol[ei];
 
               // pos
               eles.tuple<3>("pos", ei) = elePos[ei];
 
               // vel
-              if (velsPtr != nullptr)
-                eles.tuple<3>("vel", ei) = eleVel[ei];
-              else
-                eles.tuple<3>("vel", ei) = vec3::zeros();
+              eles.tuple<3>("vel", ei) = eleVel[ei];
 
               // element-vertex indices
               // inds
@@ -888,8 +877,8 @@ struct ToBoundaryParticles : INode {
                 pars.tuple<3>("nrm", dst) = eles.pack<3>("nrm", eid);
               });
 
-    eles = eles.clone({memsrc_e::um, 0});
-    pars = pars.clone({memsrc_e::um, 0});
+    eles = eles.clone({memsrc_e::device, 0});
+    pars = pars.clone({memsrc_e::device, 0});
 
     fmt::print(fg(fmt::color::cyan), "done executing ToBoundaryParticles\n");
     set_output("ZSParticles", outParticles);
