@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <zeno/core/IObject.h>
 
 namespace zenovis {
 
@@ -12,7 +11,5 @@ struct IGraphic {
     virtual void drawShadow(Light *light) = 0;
     virtual ~IGraphic() = default;
 };
-
-std::unique_ptr<IGraphic> makeGraphicPrimitive(std::shared_ptr<zeno::IObject> obj);
 
 } // namespace zenovis

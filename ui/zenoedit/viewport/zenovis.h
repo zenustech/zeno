@@ -2,6 +2,7 @@
 #define __ZENOVIS_H__
 
 #include <QtWidgets>
+#include <zenovis/Scene.h>
 
 class CameraControl;
 class CameraKeyframeWidget;
@@ -25,6 +26,7 @@ class Zenovis : public QObject
 {
     Q_OBJECT
     typedef std::tuple<QString, QString, QString> FRAME_FILE;
+    std::unique_ptr<zenovis::IScene> scene;
 
 signals:
     void frameUpdated(int);

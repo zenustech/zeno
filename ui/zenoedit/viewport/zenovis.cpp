@@ -1,5 +1,3 @@
-#include "zenovis.h"
-#include "../zenovis/zenvisapi.hpp"
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
 #include "../launch/corelaunch.h"
@@ -111,7 +109,7 @@ void Zenovis::_frameUpdate()
     auto viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
 
     zeno::log_trace("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
-    zenvis::load_objects(viewObjs);
+    session->load_objects(viewObjs);
 }
 
 /*
