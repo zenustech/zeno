@@ -494,6 +494,14 @@ struct ToZSParticles : INode {
         eles.tuple<9>("d", ei) = Dmat;
         // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
         // ref: Yun Fei, libwetcloth;
+        // This file is part of the libWetCloth open source project
+        //
+        // Copyright 2018 Yun (Raymond) Fei, Christopher Batty, Eitan Grinspun,
+        // and Changxi Zheng
+        //
+        // This Source Code Form is subject to the terms of the Mozilla Public
+        // License, v. 2.0. If a copy of the MPL was not distributed with this
+        // file, You can obtain one at http://mozilla.org/MPL/2.0/.
         auto t0 = col(Dmat, 0);
         auto t1 = col(Dmat, 1);
         auto normal = col(Dmat, 2);
