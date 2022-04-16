@@ -56,9 +56,9 @@ public:
     ZENO_API std::shared_ptr<Error> getError() const noexcept;
 
     ErrorException(ErrorException const &) = default;
-    ErrorException &operator=(ErrorException const &) = default;
+    ErrorException &operator=(ErrorException const &) = delete;
     ErrorException(ErrorException &&) = default;
-    ErrorException &operator=(ErrorException &&) = default;
+    ErrorException &operator=(ErrorException &&) = delete;
 };
 
 template <class T = Error, class ...Ts>

@@ -56,7 +56,7 @@ struct Texture : zeno::disable_copy {
         case 3: format = GL_RGB; break;
         case 2: format = GL_RG; break;
         case 1: format = GL_RED; break;
-        default: throw OpenGLTextureException{};
+        default: throw zeno::makeError("bad texture channel numbers");
         }
         bind_image(img, nx, ny);
         stbi_image_free(img);

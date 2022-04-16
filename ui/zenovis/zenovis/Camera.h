@@ -1,13 +1,12 @@
 #pragma once
 
-#include <zenovis/opengl/shader.h>
 #include <array>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <zenovis/opengl/shader.h>
 
 namespace zenovis {
-using namespace hg::OpenGL;
 
 struct Camera {
 
@@ -93,23 +92,23 @@ struct Camera {
         if (g_camSetFromNode == 1) {
             view = cview;
             proj = cproj;
-            auto &scene = Scene::getInstance();
-            auto &lights = scene.lights;
-            for (auto &light : lights) {
-                light->gfov = fov;
-                light->gaspect = g_aspect;
-            }
+            /* auto &scene = Scene::getInstance(); */
+            /* auto &lights = scene.lights; */
+            /* for (auto &light : lights) { */
+            /*     light->gfov = fov; */
+            /*     light->gaspect = g_aspect; */
+            /* } */
             return;
         }
-        auto &scene = Scene::getInstance();
-        auto &lights = scene.lights;
-        for (auto &light : lights) {
-            light->gfov = fov;
-            light->gaspect = g_aspect;
-        }
+        /* auto &scene = Scene::getInstance(); */
+        /* auto &lights = scene.lights; */
+        /* for (auto &light : lights) { */
+        /*     light->gfov = fov; */
+        /*     light->gaspect = g_aspect; */
+        /* } */
         center = glm::vec3(cx, cy, cz);
 
-        point_scale = ny / (50.f * tanf(fov * 0.5f * 3.1415926f / 180.0f));
+        point_scale = 21.6f / tan(fov * 0.5f * 3.1415926f / 180.0f);
 
         double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
         double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
@@ -142,7 +141,7 @@ struct Camera {
         auto ratio_clamp = [](float value, float lower_bound,
                               float upper_bound) {
             float ratio = (value - lower_bound) / (upper_bound - lower_bound);
-            return fmin(fmax(ratio, 0.0), 1.0);
+            return std::fmin(std::fmax(ratio, 0.0), 1.0);
         };
         grid_blend = ratio_clamp(level - std::floor(level), 0.8, 1.0);
         center = glm::vec3(0, 0, 0);
@@ -152,7 +151,7 @@ struct Camera {
                                 radius, -100.0, 100.0);
     }
 
-    void set_program_uniforms(Program *pro) {
+    void set_program_uniforms(opengl::Program *pro) {
         pro->use();
 
         auto pers = proj * view;

@@ -32,9 +32,8 @@ struct Shader : zeno::disable_copy {
             CHECK_GL(
                 glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            printf("Error compiling shader:\n%s\n%s\n", source.c_str(),
-                   log.data());
-            throw ShaderCompileException();
+            throw zeno::makeError("Error compiling shader:\n" + source + "\n" +
+                                  log.data());
         }
     }
 };
@@ -65,8 +64,8 @@ struct Program : zeno::disable_copy {
             CHECK_GL(
                 glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            printf("Error linking program:\n%s\n", log.data());
-            throw ShaderCompileException();
+            throw zeno::makeError((std::string)"Error linking program:\n" +
+                                  log.data());
         }
     }
 
