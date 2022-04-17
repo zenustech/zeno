@@ -1,6 +1,6 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h include/*.cpp)
 
-add_library(zenocore ${ZENO_LIBTYPE} ${source})
+add_library(zenocore OBJECT ${source})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -39,7 +39,7 @@ endif()
 # we are not using shared libraries now, so no need for this:
 target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 target_include_directories(zenocore PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/Zeno/zenocore>)
 
 if (ZENO_INSTALL_TARGET)
