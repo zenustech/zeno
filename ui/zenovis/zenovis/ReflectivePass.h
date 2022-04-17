@@ -71,7 +71,6 @@ struct ReflectivePass : zeno::disable_copy {
         return ReflectivePlanes[i].c;
     }
     void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c) {
-
         if (i < 0 || i >= 16)
             return;
         reflectMask[i] = 1;

@@ -50,7 +50,7 @@ Scene::Scene()
 std::vector<IGraphic *> Scene::graphics() const {
     std::vector<IGraphic *> gras;
     gras.reserve(graphicsMan->graphics.size());
-    for (auto const &[key, val]: graphicsMan->graphics) {
+    for (auto const &[key, val] : graphicsMan->graphics) {
         gras.push_back(val.get());
     }
     return gras;
