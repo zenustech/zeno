@@ -4,14 +4,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
 
 struct Camera {
     glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
-    std::unique_ptr<opengl::Buffer> vao;
     int nx{512}, ny{512};
     int oldnx{512}, oldny{512};
 

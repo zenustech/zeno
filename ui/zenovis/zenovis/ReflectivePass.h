@@ -8,6 +8,7 @@
 #include <zenovis/Camera.h>
 #include <zenovis/Scene.h>
 #include <zenovis/opengl/common.h>
+#include <zenovis/opengl/vao.h>
 
 namespace zenovis {
 
@@ -251,7 +252,7 @@ struct ReflectivePass : zeno::disable_copy {
             setReflectivePlane(i, camera()->g_camPos, camera()->g_camView,
                                camera()->g_camUp);
             BeginReflective(i, camera()->nx, camera()->ny);
-            camera()->vao->bind();
+            scene->vao->bind();
             camera()->view = getReflectViewMat(i);
             setReflectionViewID(i);
             glm::mat4 p = glm::perspective(
@@ -259,7 +260,7 @@ struct ReflectivePass : zeno::disable_copy {
                 (float)camera()->g_near, (float)camera()->g_far);
             setReflectMVP(i, p * camera()->view);
             scene->drawSceneDepthSafe(camera()->g_aspect, true, 1.0f, false);
-            camera()->vao->unbind();
+            scene->vao->unbind();
             camera()->view = camera()->g_view;
         }
         EndReflective();

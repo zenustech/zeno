@@ -5,26 +5,6 @@
 
 namespace zenovis::opengl {
 
-struct VAO : zeno::disable_copy {
-    GLuint vao;
-
-    VAO() {
-        CHECK_GL(glGenVertexArrays(1, &vao));
-    }
-
-    ~VAO() {
-        CHECK_GL(glDeleteVertexArrays(1, &vao));
-    }
-
-    void bind() const {
-        CHECK_GL(glBindVertexArray(vao));
-    }
-
-    void unbind() const {
-        CHECK_GL(glBindVertexArray(0));
-    }
-};
-
 struct Buffer : zeno::disable_copy {
     GLuint buf;
     GLuint target{GL_ARRAY_BUFFER};

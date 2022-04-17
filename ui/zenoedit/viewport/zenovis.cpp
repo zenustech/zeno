@@ -27,28 +27,28 @@ Zenovis& Zenovis::GetInstance()
 
 void Zenovis::initializeGL()
 {
-    zenvis::initialize();
+    session = std::make_unique<zenovis::Session>();
 }
 
 void Zenovis::paintGL()
 {
     _frameUpdate();
     _uploadStatus();
-    zenvis::new_frame();
+    session->new_frame();
     _recieveStatus();
 }
 
 void Zenovis::recordGL(const std::string& record_path)
 {
-    zenvis::set_window_size(m_resolution[0], m_resolution[1]);
-    zenvis::look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, 
+    session->set_window_size(m_resolution[0], m_resolution[1]);
+    session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, 
         m_perspective.theta, m_perspective.phi, m_perspective.radius, m_perspective.fov, m_perspective.ortho_mode);
-    zenvis::new_frame_offline(record_path);
+    session->new_frame_offline(record_path);
 }
 
 int Zenovis::getCurrentFrameId()
 {
-    return zenvis::get_curr_frameid();
+    return session->get_curr_frameid();
 }
 
 void Zenovis::startPlay(bool bPlaying)
@@ -63,8 +63,8 @@ int Zenovis::setCurrentFrameId(int frameid)
     int nFrames = zeno::getSession().globalComm->countFrames();
     if (frameid >= nFrames)
         frameid = nFrames - 1;
-    int cur_frameid = zenvis::get_curr_frameid();
-    zenvis::set_curr_frameid(frameid);
+    int cur_frameid = session->get_curr_frameid();
+    session->set_curr_frameid(frameid);
     if (cur_frameid != frameid && m_camera_keyframe && m_camera_control)
     {
         PerspectiveInfo r;
@@ -81,18 +81,18 @@ int Zenovis::setCurrentFrameId(int frameid)
 
 void Zenovis::_uploadStatus()
 {
-    zenvis::set_window_size(m_resolution[0], m_resolution[1]);
-    zenvis::look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, m_perspective.theta,
+    session->set_window_size(m_resolution[0], m_resolution[1]);
+    session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, m_perspective.theta,
         m_perspective.phi, m_perspective.radius, m_perspective.fov, false);
 }
 
 void Zenovis::_recieveStatus()
 {
-    int frameid = zenvis::get_curr_frameid();
-    double solver_interval = zenvis::get_solver_interval();
-    double render_fps = zenvis::get_render_fps();
-    m_solver_interval = solver_interval;
-    m_render_fps = render_fps;
+    int frameid = session->get_curr_frameid();
+    /* double solver_interval = session->get_solver_interval(); */
+    /* double render_fps = session->get_render_fps(); */
+    /* m_solver_interval = solver_interval; */
+    /* m_render_fps = render_fps; */
 }
 
 void Zenovis::_frameUpdate()
@@ -104,7 +104,7 @@ void Zenovis::_frameUpdate()
         frameid += 1;
     frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
-    zenvis::set_show_grid(m_show_grid);
+    session->set_show_grid(m_show_grid);
 
     auto viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
 

@@ -1,3 +1,4 @@
+#include <zenovis/Scene.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/log.h>
@@ -6,10 +7,10 @@
 namespace zenovis {
 
 extern std::unique_ptr<IGraphic>
-makeGraphicPrimitive(std::shared_ptr<zeno::IObject> obj);
+makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj);
 
-std::unique_ptr<IGraphic> makeGraphic(std::shared_ptr<zeno::IObject> obj) {
-    if (auto ig = makeGraphicPrimitive(obj)) {
+std::unique_ptr<IGraphic> makeGraphic(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
+    if (auto ig = makeGraphicPrimitive(scene, obj)) {
         zeno::log_trace("load_object: primitive");
         return ig;
     }

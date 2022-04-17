@@ -1,6 +1,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <zenovis/DepthPass.h>
+#include <zenovis/ReflectivePass.h>
+#include <zenovis/EnvmapManager.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -21,19 +24,19 @@
 namespace zenovis {
     using namespace opengl;
 
-extern float getCamFar();
-extern void ensureGlobalMapExist();
-extern unsigned int getGlobalEnvMap();
-extern unsigned int getIrradianceMap();
-extern unsigned int getPrefilterMap();
-extern unsigned int getBRDFLut();
-extern glm::mat4 getReflectMVP(int i);
-extern std::vector<unsigned int> getReflectMaps();
-extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
-extern bool renderReflect(int i);
-extern int getReflectionViewID();
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
-extern unsigned int getDepthTexture();
+/* extern float getCamFar(); */
+/* extern void ensureGlobalMapExist(); */
+/* extern unsigned int getGlobalEnvMap(); */
+/* extern unsigned int getIrradianceMap(); */
+/* extern unsigned int getPrefilterMap(); */
+/* extern unsigned int getBRDFLut(); */
+/* extern glm::mat4 getReflectMVP(int i); */
+/* extern std::vector<unsigned int> getReflectMaps(); */
+/* extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c); */
+/* extern bool renderReflect(int i); */
+/* extern int getReflectionViewID(); */
+/* extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set); */
+/* extern unsigned int getDepthTexture(); */
 
 struct drawObject
 {
@@ -482,7 +485,7 @@ struct GraphicPrimitive : IGraphic {
                 else
                     num = idstr0;
                 auto refID = std::atoi(num.c_str());
-                setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
+                scene->mReflectivePass->setReflectivePlane(refID, glm::vec3(n[0], n[1], n[2]), c);
             }
             if(code.find("mat_isCamera = float(float(1))")!=std::string::npos)
             {
@@ -492,7 +495,7 @@ struct GraphicPrimitive : IGraphic {
                 auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
                 auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
                 auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
-                setCamera(glm::vec3(pos[0],pos[1],pos[2]),
+                scene->camera->setCamera(glm::vec3(pos[0],pos[1],pos[2]),
                           glm::vec3(view[0],view[1],view[2]),
                           glm::vec3(up[0],up[1],up[2]),
                           fov, 0.1,ffar, dof, 1);
@@ -639,7 +642,7 @@ struct GraphicPrimitive : IGraphic {
 
   }
   virtual void draw(bool reflect, float depthPass) override {
-      if (prim_has_mtl) ensureGlobalMapExist();
+      if (prim_has_mtl) scene->envmapMan->ensureGlobalMapExist();
 
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
@@ -779,25 +782,25 @@ struct GraphicPrimitive : IGraphic {
             }
             triObj.prog->set_uniformi("skybox",texOcp);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            if (auto envmap = getGlobalEnvMap(); envmap != (unsigned int)-1)
+            if (auto envmap = scene->envmapMan->getGlobalEnvMap(); envmap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envmap));
             texOcp++;
 
             triObj.prog->set_uniformi("irradianceMap",texOcp);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+            if (auto irradianceMap = scene->envmapMan->integrator->getIrradianceMap(); irradianceMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
             texOcp++;
 
             triObj.prog->set_uniformi("prefilterMap",texOcp);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+            if (auto prefilterMap = scene->envmapMan->integrator->getPrefilterMap(); prefilterMap != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
             texOcp++;
 
             triObj.prog->set_uniformi("brdfLUT",texOcp);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+            if (auto brdfLUT = scene->envmapMan->integrator->getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
 
@@ -805,7 +808,7 @@ struct GraphicPrimitive : IGraphic {
 
 
             
-            triObj.prog->set_uniform("farPlane", getCamFar());
+            triObj.prog->set_uniform("farPlane", scene->camera->g_far);
             triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
             {
@@ -856,23 +859,23 @@ struct GraphicPrimitive : IGraphic {
             else {
                 triObj.prog->set_uniform("reflectPass",0.0f);
             }
-            triObj.prog->set_uniform("reflectionViewID", (float)getReflectionViewID());
+            triObj.prog->set_uniform("reflectionViewID", (float)scene->mReflectivePass->getReflectionViewID());
             for(int i=0;i<16;i++)
             {
-                if(!renderReflect(i))
+                if(!scene->mReflectivePass->renderReflect(i))
                     continue;
                 auto name = "reflectMVP[" + std::to_string(i) + "]";
-                triObj.prog->set_uniform(name.c_str(), getReflectMVP(i));
+                triObj.prog->set_uniform(name.c_str(), scene->mReflectivePass->getReflectMVP(i));
                 auto name2 = "reflectionMap"+std::to_string(i);
                 triObj.prog->set_uniformi(name2.c_str(),texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getReflectMaps()[i]));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, scene->mReflectivePass->getReflectMaps()[i]));
                 texOcp++;
             }
             triObj.prog->set_uniform("depthPass", depthPass);
             triObj.prog->set_uniformi("depthBuffer", texOcp);
             CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, getDepthTexture()));
+            CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, scene->mDepthPass->getDepthTexture()));
             texOcp++;
     
         }

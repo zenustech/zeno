@@ -8,6 +8,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/shader.h>
+#include <zenovis/opengl/vao.h>
 
 namespace zenovis {
 
@@ -144,11 +145,11 @@ void main(void)
                 light->BeginShadowMap(camera()->g_near, camera()->g_far,
                                       light->lightDir, camera()->proj,
                                       camera()->view, i);
-                camera()->vao->bind();
+                scene->vao->bind();
                 for (auto const &gra : scene->graphics) {
                     gra->drawShadow(light.get());
                 }
-                camera()->vao->unbind();
+                scene->vao->unbind();
                 light->EndShadowMap();
             }
         }
