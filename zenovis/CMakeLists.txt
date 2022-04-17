@@ -1,5 +1,5 @@
-file(GLOB_RECURSE ZENOVIS_SOURCE CONFIGURE_DEPENDS *.h *.cpp)
+file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h include/*.cpp)
 
-ADD_LIBRARY(zenovis OBJECT ${ZENOVIS_SOURCE})
-target_link_libraries(zenovis PUBLIC glad zenoinclude zenostbi zenodes)
+add_library(zenovis ${ZENO_LIBTYPE} ${source})
+target_link_libraries(zenovis PUBLIC glad zenoinclude zenostbi zenocore)
 target_include_directories(zenovis PUBLIC .)
