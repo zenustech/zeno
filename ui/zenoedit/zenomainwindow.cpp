@@ -15,6 +15,7 @@
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/utils/log.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/util/uihelper.h>
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -22,6 +23,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_pEditor(nullptr)
     , m_viewDock(nullptr)
     , m_timelineDock(nullptr)
+    , m_bInDlgEventloop(false)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -257,7 +259,7 @@ void ZenoMainWindow::initDocks()
 	m_viewDock = new ZenoDockWidget("view", this);
 	m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
 	m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-	DisplayWidget* view = new DisplayWidget;
+	DisplayWidget* view = new DisplayWidget(this);
 	m_viewDock->setWidget(DOCK_VIEW, view);
 	m_docks.insert(DOCK_VIEW, m_viewDock);
 
@@ -483,8 +485,14 @@ bool ZenoMainWindow::saveFile(QString filePath)
     return true;
 }
 
+bool ZenoMainWindow::inDlgEventLoop() const
+{
+    return m_bInDlgEventloop;
+}
+
 void ZenoMainWindow::saveAs()
 {
+    VarToggleScope scope(&m_bInDlgEventloop);
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty())
     {
@@ -494,6 +502,7 @@ void ZenoMainWindow::saveAs()
 
 QString ZenoMainWindow::getOpenFileByDialog()
 {
+    VarToggleScope scope(&m_bInDlgEventloop);
     const QString& initialPath = ".";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);

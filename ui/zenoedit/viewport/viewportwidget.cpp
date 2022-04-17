@@ -6,6 +6,7 @@
 #include "model/graphsmodel.h"
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 CameraControl::CameraControl(QWidget* parent)
@@ -228,10 +229,11 @@ QDMRecordMenu::QDMRecordMenu()
 }
 
 
-DisplayWidget::DisplayWidget(QWidget* parent)
-    : QWidget(parent)
+DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
+    : QWidget(pMainWin)
     , m_view(nullptr)
     , m_timeline(nullptr)
+    , m_mainWin(pMainWin)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -284,12 +286,13 @@ void DisplayWidget::init()
 
 QSize DisplayWidget::sizeHint() const
 {
-    //¿¼ÂÇnoviewµÄÇé¿ö¡£
     return QSize(12, 400);
 }
 
 void DisplayWidget::updateFrame()
 {
+    if (m_mainWin && m_mainWin->inDlgEventLoop())
+        return;
     m_view->update();
 }
 

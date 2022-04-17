@@ -16,6 +16,16 @@ private:
     QObject* m_pObject;
 };
 
+class VarToggleScope
+{
+public:
+    VarToggleScope(bool* pbVar);
+    ~VarToggleScope();
+
+private:
+    bool* m_pbVar;
+};
+
 class UiHelper
 {
 public:
