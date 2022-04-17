@@ -40,6 +40,7 @@ If you use Linux the setup would be much easier, simply run these commands:
 ```bash
 sudo apt-get install -y git cmake make g++
 sudo apt-get install -y qt5-default
+sudo apt-get install libqt5svg5*
 ```
 
 > We haven't tested Zeno on WSL (they doesn't have X11 by default), but please give feedback if you meet trouble there, we'd happy to help you resolve :)

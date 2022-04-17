@@ -7,6 +7,7 @@
 #include "comctrl/zmenu.h"
 
 class ZTimeline;
+class ZenoMainWindow;
 
 class QDMDisplayMenu : public ZMenu
 {
@@ -74,7 +75,7 @@ class DisplayWidget : public QWidget
 {
     Q_OBJECT
 public:
-    DisplayWidget(QWidget* parent = nullptr);
+    DisplayWidget(ZenoMainWindow* parent = nullptr);
     ~DisplayWidget();
     void init();
     QSize sizeHint() const;
@@ -89,6 +90,7 @@ signals:
 private:
     ViewportWidget* m_view;
     ZTimeline* m_timeline;
+    ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
 };
 
