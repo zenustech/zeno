@@ -385,11 +385,8 @@ struct UpdateZSGrid : INode {
                     auto vel = block.pack<3>("v", ci) * mass;
                     block.set("v", ci, vel);
                   }
-                  auto nrm = block.pack<3>("nrm", ci);
-                  if (auto len = nrm.l2NormSqr();
-                      len > zs::limits<float>::epsilon() * 128)
-                    nrm /= zs::sqrt(len);
-                  block.set("nrm", ci, nrm);
+                  auto nrm = block.pack<3>("nrm", ci) * mass;
+                  block.set("nrm", ci, nrm.normalized());
                 }
               });
 

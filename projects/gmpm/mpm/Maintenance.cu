@@ -763,7 +763,11 @@ struct UpdateZSPrimitiveSequence : INode {
     auto cudaPol = cuda_exec().device(0);
 
     auto numV = zsprimseq->numParticles();
+    auto sprayedOffset = zsprimseq->sprayedOffset;
+    auto size = sprayedOffset;
+    auto sprayedSize = numV - sprayedOffset;
     auto numE = zsprimseq->numElements();
+    /// pos, nrm
     cudaPol(Collapse{numV},
             [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
              dt] __device__(int pi) mutable {
@@ -789,17 +793,30 @@ struct UpdateZSPrimitiveSequence : INode {
           zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
                                   pars.pack<3>("pos", inds[1]),
                                   pars.pack<3>("pos", inds[2])};
-          auto n = (xs[1] - xs[0]).cross(xs[2] - xs[0]).normalized();
+          auto n = (xs[1] - xs[0])
+                       .normalized()
+                       .cross((xs[2] - xs[0]).normalized())
+                       .normalized();
           eles.tuple<3>("nrm", ei) = n;
           for (int i = 0; i != 3; ++i)
             for (int d = 0; d != 3; ++d)
               atomic_add(exec_cuda, &pars("nrm", d, inds[i]), n[d]);
         });
-    cudaPol(Collapse{numV},
+    cudaPol(Collapse{size},
             [pars = proxy<execspace_e::cuda>(
                  {}, zsprimseq->getParticles())] __device__(int pi) mutable {
               pars.tuple<3>("nrm", pi) = pars.pack<3>("nrm", pi).normalized();
             });
+    if (sprayedSize != 0)
+      cudaPol(Collapse{sprayedSize},
+              [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+               eles = proxy<execspace_e::cuda>(
+                   {}, zsprimseq->getQuadraturePoints()),
+               sprayedOffset] __device__(int pi) mutable {
+                auto dst = pi + sprayedOffset;
+                int eid = reinterpret_bits<int>(pars("eid", dst));
+                pars.tuple<3>("nrm", dst) = eles.pack<3>("nrm", eid);
+              });
 
     fmt::print(fg(fmt::color::cyan),
                "done executing UpdateZSPrimitiveSequence\n");
