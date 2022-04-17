@@ -57,10 +57,18 @@ struct ReflectivePass : zeno::disable_copy {
     glm::mat4 getReflectMVP(int i) {
         return reflectMVPs[i];
     }
+
     std::vector<int> reflectMask;
     std::vector<ReflectivePlane> ReflectivePlanes;
+
     std::vector<ReflectivePlane> getReflectivePlanes() {
         return ReflectivePlanes;
+    }
+    glm::vec3 getReflectiveNormal(int i) {
+        return ReflectivePlanes[i].n;
+    }
+    glm::vec3 getReflectiveCenter(int i) {
+        return ReflectivePlanes[i].c;
     }
     void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c) {
 
@@ -255,9 +263,10 @@ struct ReflectivePass : zeno::disable_copy {
             scene->vao->bind();
             camera()->view = getReflectViewMat(i);
             setReflectionViewID(i);
-            glm::mat4 p = glm::perspective(
-                (float)glm::radians(camera()->g_fov), (float)camera()->getAspect(),
-                (float)camera()->g_near, (float)camera()->g_far);
+            glm::mat4 p = glm::perspective((float)glm::radians(camera()->g_fov),
+                                           (float)camera()->getAspect(),
+                                           (float)camera()->g_near,
+                                           (float)camera()->g_far);
             setReflectMVP(i, p * camera()->view);
             scene->drawSceneDepthSafe(camera()->getAspect(), true, 1.0f, false);
             scene->vao->unbind();

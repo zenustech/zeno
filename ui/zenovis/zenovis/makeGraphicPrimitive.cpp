@@ -866,6 +866,10 @@ struct GraphicPrimitive : IGraphic {
                     continue;
                 auto name = "reflectMVP[" + std::to_string(i) + "]";
                 triObj.prog->set_uniform(name.c_str(), scene->mReflectivePass->getReflectMVP(i));
+                name = "reflect_normals[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), scene->mReflectivePass->getReflectiveNormal(i));
+                name = "reflect_centers[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), scene->mReflectivePass->getReflectiveCenter(i));
                 auto name2 = "reflectionMap"+std::to_string(i);
                 triObj.prog->set_uniformi(name2.c_str(),texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
@@ -2442,9 +2446,11 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //}
     /* custom_shader_begin */
 )" + mtl->frag + R"(
+    /* custom_shader_end */
     if(reflectPass==1.0 && mat_reflection==1.0 )
         discard;
-    /* custom_shader_end */
+    if(reflectPass==1.0 && dot(reflect_normals[int(reflectionViewID)], position-reflect_centers[int(reflectionViewID)])<0)
+        discard;
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     
