@@ -4,6 +4,7 @@
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/makeGraphic.h>
 #include <zenovis/Camera.h>
 
 

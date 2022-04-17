@@ -3,6 +3,7 @@
 #include <zenovis/EnvmapManager.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/IGraphic.h>
+#include <zenovis/makeGraphic.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
@@ -42,8 +43,8 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->nx, camera->ny);
 
-    hudGraphics.push_back(makeGraphicGrid());
-    hudGraphics.push_back(makeGraphicAxis());
+    hudGraphics.push_back(makeGraphicGrid(this));
+    hudGraphics.push_back(makeGraphicAxis(this));
     //setup_env_map("Default");
 }
 
