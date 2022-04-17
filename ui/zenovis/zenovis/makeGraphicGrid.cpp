@@ -1,21 +1,21 @@
-#include <zenovis/Scene.h>
 #include <zeno/utils/vec.h>
+#include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/opengl/shader.h>
-#include <zenovis/opengl/buffer.h>
+#include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/makeGraphic.h>
-#include <zenovis/Camera.h>
+#include <zenovis/opengl/buffer.h>
+#include <zenovis/opengl/shader.h>
 
 namespace zenovis {
 
-using zeno::vec3f;
-using opengl::Program;
 using opengl::Buffer;
+using opengl::Program;
+using zeno::vec3f;
 
 namespace {
 
-static const char* vert_code = R"(
+static const char *vert_code = R"(
     #version 120
 
     uniform mat4 mVP;
@@ -38,7 +38,7 @@ static const char* vert_code = R"(
     }
 )";
 
-static const char* frag_code = R"(
+static const char *frag_code = R"(
     #version 120
 
     uniform mat4 mVP;
@@ -88,55 +88,51 @@ static const char* frag_code = R"(
     }
 )";
 
-
-
 struct GraphicGrid : IGraphic {
     Scene *scene;
 
-  std::unique_ptr<Buffer> vbo;
-  size_t vertex_count;
+    std::unique_ptr<Buffer> vbo;
+    size_t vertex_count;
 
-  Program *prog;
+    Program *prog;
 
-  explicit GraphicGrid(Scene *scene_) : scene(scene_) {
-    vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zeno::vec3f> mem;
-    float bound = 1000;
-    mem.push_back(vec3f(-bound, 0, -bound));
-    mem.push_back(vec3f(-bound, 0, bound));
-    mem.push_back(vec3f(bound, 0, -bound));
-    mem.push_back(vec3f(-bound, 0, bound));
-    mem.push_back(vec3f(bound, 0, bound));
-    mem.push_back(vec3f(bound, 0, -bound));
-    vertex_count = mem.size();
+    explicit GraphicGrid(Scene *scene_) : scene(scene_) {
+        vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        std::vector<zeno::vec3f> mem;
+        float bound = 1000;
+        mem.push_back(vec3f(-bound, 0, -bound));
+        mem.push_back(vec3f(-bound, 0, bound));
+        mem.push_back(vec3f(bound, 0, -bound));
+        mem.push_back(vec3f(-bound, 0, bound));
+        mem.push_back(vec3f(bound, 0, bound));
+        mem.push_back(vec3f(bound, 0, -bound));
+        vertex_count = mem.size();
 
-    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+        vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
-    prog = scene->shaderMan->compile_program(vert_code, frag_code);
-  }
-  virtual void drawShadow(Light *light) override
-  {
-    
-  }
+        prog = scene->shaderMan->compile_program(vert_code, frag_code);
+    }
+    virtual void drawShadow(Light *light) override {
+    }
 
-  virtual void draw(bool reflect, float depthPass) override {
-    vbo->bind();
-    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+    virtual void draw(bool reflect, float depthPass) override {
+        vbo->bind();
+        vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
-    prog->use();
-    scene->camera->set_program_uniforms(prog);
-    CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertex_count));
+        prog->use();
+        scene->camera->set_program_uniforms(prog);
+        CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertex_count));
 
-    vbo->disable_attribute(0);
-    vbo->disable_attribute(1);
-    vbo->unbind();
-  }
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->unbind();
+    }
 };
 
-}
+} // namespace
 
 std::unique_ptr<IGraphic> makeGraphicGrid(Scene *scene) {
-  return std::make_unique<GraphicGrid>(scene);
+    return std::make_unique<GraphicGrid>(scene);
 }
 
-}
+} // namespace zenovis
