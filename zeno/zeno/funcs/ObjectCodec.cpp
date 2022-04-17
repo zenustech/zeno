@@ -11,13 +11,16 @@ namespace zeno {
 
 namespace {
 
-enum class ObjectType {
+enum class ObjectType : int32_t {
     PrimitiveObject,
     NumericObject,
     StringObject,
 };
 
 struct ObjectHeader {
+    constexpr static uint32_t kMagicNumber = 0xc0febabe;
+
+    uint32_t magicNumber;
     ObjectType type;
     size_t numUserData;
     size_t beginUserData;
@@ -65,9 +68,14 @@ std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
 }
 
 std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
+    auto &header = *(ObjectHeader *)buf;
+    if (header.magicNumber != ObjectHeader::kMagicNumber) {
+        zeno::log_error("object header magic number mismatch");
+        return nullptr;
+    }
+
     auto object = _decodeObjectImpl(buf, len);
 
-    auto &header = *(ObjectHeader *)buf;
     auto ptr = buf + header.beginUserData;
     for (int i = 0; i < header.numUserData; i++) {
         size_t valbufsize = *(size_t *)ptr;
@@ -81,7 +89,8 @@ std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
 
         auto decolen = valbufsize > keysize ? valbufsize - keysize : 0;
         auto val = decodeObject(ptr, decolen);
-        object->userData().set(key, std::move(val));
+        if (val)
+            object->userData().set(key, std::move(val));
 
         ptr = nextptr;
     }
@@ -91,14 +100,15 @@ std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
 
 static bool _encodeObjectImpl(IObject const *object, std::vector<char> &buf) {
     auto it = std::back_inserter(buf);
-    it = std::fill_n(it, sizeof(ObjectHeader), 0);
-    auto &header = *(ObjectHeader *)buf.data();
+    ObjectHeader header;
+    header.magicNumber = ObjectHeader::kMagicNumber;
 
     if (0) {
 
 #define _PER_OBJECT_TYPE(TypeName) \
     } else if (auto obj = dynamic_cast<TypeName const *>(object)) { \
         header.type = ObjectType::TypeName; \
+        it = std::copy_n((char *)&header, sizeof(ObjectHeader), it); \
         return encode##TypeName(obj, it);
     _VISIT_OBJECT_TYPE
 #undef _PER_OBJECT_TYPE
@@ -124,7 +134,7 @@ bool encodeObject(IObject const *object, std::vector<char> &buf) {
     }
     auto &header = *(ObjectHeader *)(buf.data() + oldsize);
     header.numUserData = valbufs.size();
-    header.beginUserData = buf.size();
+    header.beginUserData = buf.size() - oldsize;
     for (auto const &valbuf: valbufs) {
         size_t valbufsize = valbuf.size();
         buf.insert(buf.end(), (char *)&valbufsize, (char *)(&valbufsize + 1));
