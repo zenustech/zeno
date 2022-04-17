@@ -111,8 +111,20 @@ ViewportWidget::~ViewportWidget()
 {
 }
 
+namespace {
+struct OpenGLProcAddressHelper {
+    inline static QOpenGLContext *ctx;
+
+    static void *getProcAddress(const char *name) {
+        return (void *)ctx->getProcAddress(name);
+    }
+};
+}
+
 void ViewportWidget::initializeGL()
 {
+    OpenGLProcAddressHelper::ctx = context();
+    Zenovis::GetInstance().loadGLAPI((void *)OpenGLProcAddressHelper::getProcAddress);
     Zenovis::GetInstance().initializeGL();
 }
 

@@ -18,8 +18,6 @@ Scene::Scene()
     : camera(std::make_unique<Camera>()),
       shaderMan(std::make_unique<ShaderManager>()) {
 
-    gladLoadGL();
-
     CHECK_GL(glDepthRangef(0, 30000));
     CHECK_GL(glEnable(GL_BLEND));
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -44,8 +42,8 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->nx, camera->ny);
 
-    /* hudGraphics.push_back(makeGraphicGrid()); */
-    /* hudGraphics.push_back(makeGraphicAxis()); */
+    hudGraphics.push_back(makeGraphicGrid());
+    hudGraphics.push_back(makeGraphicAxis());
     //setup_env_map("Default");
 }
 

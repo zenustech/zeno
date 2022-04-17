@@ -37,6 +37,7 @@ public slots:
 
 public:
     static Zenovis& GetInstance();
+    void loadGLAPI(void *procaddr);
     void initializeGL();
     void paintGL();
     void recordGL(const std::string& record_path);

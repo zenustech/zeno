@@ -25,6 +25,11 @@ Zenovis& Zenovis::GetInstance()
     return instance;
 }
 
+void Zenovis::loadGLAPI(void *procaddr)
+{
+    zenovis::loadGLAPI(procaddr);
+}
+
 void Zenovis::initializeGL()
 {
     session = std::make_unique<zenovis::Session>();

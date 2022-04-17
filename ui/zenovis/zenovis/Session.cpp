@@ -5,6 +5,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Session.h>
 #include <zenovis/GraphicsManager.h>
+#include <zenovis/opengl/common.h>
 
 namespace zenovis {
 
@@ -90,6 +91,12 @@ int Session::get_curr_frameid() {
 
 void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
     impl->scene->graphicsMan->load_objects(objs);
+}
+
+void loadGLAPI(void *procaddr) {
+    int res = gladLoadGLLoader((GLADloadproc)procaddr);
+    if (res != 0)
+        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
 }
 
 } // namespace zenovis

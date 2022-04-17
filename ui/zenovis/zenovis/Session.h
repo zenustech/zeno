@@ -10,6 +10,8 @@
 
 namespace zenovis {
 
+void loadGLAPI(void *procaddr);
+
 struct Session : zeno::disable_copy {
     struct Impl;
 
