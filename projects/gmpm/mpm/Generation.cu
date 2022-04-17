@@ -102,180 +102,6 @@ ZENDEFNODE(ConfigConstitutiveModel,
                {"MPM"},
            });
 
-struct ToBoundaryParticles : INode {
-  void apply() override {
-    fmt::print(fg(fmt::color::green), "begin executing ToBoundaryParticles\n");
-
-    // primitive
-    auto inParticles = get_input<PrimitiveObject>("prim");
-    auto &pos = inParticles->attr<vec3f>("pos");
-    vec3f *velsPtr{nullptr};
-    if (inParticles->has_attr("vel"))
-      velsPtr = inParticles->attr<vec3f>("vel").data();
-
-    auto &tris = inParticles->tris;
-
-    auto outParticles = std::make_shared<ZenoParticles>();
-
-    // primitive binding
-    outParticles->prim = inParticles;
-
-    /// category, size
-    std::size_t size{pos.size()};
-    // (mesh）
-    std::size_t eleSize{0};
-    std::vector<float> dofVol{};
-    std::vector<float> eleVol{};
-    std::vector<vec3f> elePos{};
-    std::vector<vec3f> eleVel{};
-
-    ZenoParticles::category_e category{ZenoParticles::surface};
-    {
-      category = ZenoParticles::surface;
-      eleSize = tris.size();
-      dofVol.resize(size, 0.f);
-
-      eleVol.resize(eleSize);
-      elePos.resize(eleSize);
-      eleVel.resize(eleSize);
-    }
-    outParticles->category = category;
-
-    float dx = get_input2<float>("dx");
-
-    // per vertex (node) vol, pos, vel
-    using namespace zs;
-    auto ompExec = zs::omp_exec();
-
-    {
-      switch (category) {
-      // surface
-      case ZenoParticles::surface: {
-        const auto triArea = [&pos](vec3i tri) {
-          using TV3 = zs::vec<float, 3>;
-          TV3 p0 = TV3{pos[tri[0]][0], pos[tri[0]][1], pos[tri[0]][2]};
-          TV3 p1 = TV3{pos[tri[1]][0], pos[tri[1]][1], pos[tri[1]][2]};
-          TV3 p2 = TV3{pos[tri[2]][0], pos[tri[2]][1], pos[tri[2]][2]};
-          return (p1 - p0).cross(p2 - p0).norm() * 0.5f;
-        };
-        for (std::size_t i = 0; i != eleSize; ++i) {
-          auto tri = tris[i];
-          auto v = triArea(tri) * dx;
-          eleVol[i] = v;
-          elePos[i] = (pos[tri[0]] + pos[tri[1]] + pos[tri[2]]) / 3;
-          if (velsPtr)
-            eleVel[i] =
-                (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
-          for (auto pi : tri)
-            dofVol[pi] += v / 3;
-        }
-      } break;
-      default:;
-      } // end switch
-    }   // end bindmesh
-
-    // particles
-    auto &pars = outParticles->getParticles(); // tilevector
-
-    // attributes
-    std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"vol", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
-    std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1}, {"vol", 1}, {"pos", 3},
-        {"vel", 3},  {"nrm", 3}, {"inds", (int)category + 1}};
-
-    for (auto tag : eleTags)
-      fmt::print("boundary element tag: [{}, {}]\n", tag.name, tag.numChannels);
-
-    float density = (float)1e10;
-    {
-      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
-      ompExec(zs::range(size),
-              [pars = proxy<execspace_e::host>({}, pars), &pos, velsPtr,
-               &dofVol, category, &inParticles, density](size_t pi) mutable {
-                using vec3 = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-
-                // mass
-                float vol = dofVol[pi];
-                pars("vol", pi) = vol;
-                pars("mass", pi) = vol * density; // unstoppable mass
-
-                // pos
-                pars.tuple<3>("pos", pi) = pos[pi];
-
-                // vel
-                if (velsPtr != nullptr)
-                  pars.tuple<3>("vel", pi) = velsPtr[pi];
-                else
-                  pars.tuple<3>("vel", pi) = vec3::zeros();
-
-                // init nrm
-                pars.tuple<3>("nrm", pi) = vec3::zeros();
-              });
-    }
-    {
-      outParticles->elements =
-          typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
-      auto &eles = outParticles->getQuadraturePoints(); // tilevector
-      ompExec(zs::range(eleSize),
-              [pars = proxy<execspace_e::host>({}, pars),
-               eles = proxy<execspace_e::host>({}, eles), velsPtr, &eleVol,
-               &elePos, &eleVel, category, &tris, density](size_t ei) mutable {
-                using vec3 = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-                // mass
-                eles("vol", ei) = eleVol[ei];
-                eles("mass", ei) = eleVol[ei] * density;
-
-                // pos
-                eles.tuple<3>("pos", ei) = elePos[ei];
-
-                // vel
-                if (velsPtr != nullptr)
-                  eles.tuple<3>("vel", ei) = eleVel[ei];
-                else
-                  eles.tuple<3>("vel", ei) = vec3::zeros();
-
-                // element-vertex indices
-                // inds
-                const auto &tri = tris[ei];
-                for (int i = 0; i != 3; ++i)
-                  eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
-
-                // nrm
-                {
-                  zs::vec<float, 3> xs[3] = {pars.pack<3>("pos", tri[0]),
-                                             pars.pack<3>("pos", tri[1]),
-                                             pars.pack<3>("pos", tri[2])};
-                  auto n = (xs[1] - xs[0]).cross(xs[2] - xs[0]).normalized();
-                  eles.tuple<3>("nrm", ei) = n;
-                  // nrm of verts
-                  for (int i = 0; i != 3; ++i)
-                    for (int d = 0; d != 3; ++d)
-                      atomic_add(exec_omp, &pars("nrm", d, tri[i]), n[d]);
-                }
-              });
-      eles = eles.clone({memsrc_e::um, 0});
-    }
-    ompExec(zs::range(size),
-            [pars = proxy<execspace_e::host>({}, pars)](size_t pi) mutable {
-              pars.tuple<3>("nrm", pi) = pars.pack<3>("nrm", pi).normalized();
-            });
-    pars = pars.clone({memsrc_e::um, 0});
-
-    fmt::print(fg(fmt::color::cyan), "done executing ToBoundaryParticles\n");
-    set_output("ZSParticles", outParticles);
-  }
-};
-
-ZENDEFNODE(ToBoundaryParticles, {
-                                    {"prim", {"float", "dx", "0.1"}},
-                                    {"ZSParticles"},
-                                    {},
-                                    {"MPM"},
-                                });
-
 struct ToTrackerParticles : INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToTrackerParticles\n");
@@ -376,73 +202,65 @@ struct BuildPrimitiveSequence : INode {
       throw std::runtime_error(
           fmt::format("no incoming prim for prim sequence!\n"));
     auto next = get_input<ZenoParticles>("ZSParticles");
-
-    auto numV = next->numParticles();
-    auto numE = next->numElements();
-
-    fmt::print("checking size V: {}, size E: {}\n", numV, numE);
+    if (!next->asBoundary)
+      throw std::runtime_error(
+          fmt::format("incoming prim is not used as a boundary!\n"));
 
     auto cudaPol = cuda_exec().device(0);
     if (has_input<ZenoParticles>("ZSPrimitiveSequence")) {
       zsprimseq = get_input<ZenoParticles>("ZSPrimitiveSequence");
-      if (numV != zsprimseq->numParticles() || numE != zsprimseq->numElements())
+      auto numV = zsprimseq->numParticles();
+      auto numE = zsprimseq->numElements();
+      auto sprayedOffset = zsprimseq->sprayedOffset;
+      auto sprayedSize = numV - sprayedOffset;
+      auto size = sprayedOffset;
+      if (size != next->numParticles() || numE != next->numElements())
         throw std::runtime_error(
             fmt::format("prim size mismatch with current sequence prim!\n"));
 
+      fmt::print("{} verts (including {} sprayed), {} elements\n", numV,
+                 sprayedSize, numE);
+
       auto dt = get_input2<float>("framedt"); // framedt
-      {
-        cudaPol(Collapse{numV},
-                [prev = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
-                 next = proxy<execspace_e::cuda>({}, next->getParticles()),
-                 dt] __device__(int pi) mutable {
-                  prev.tuple<3>("vel", pi) =
-                      (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
-                });
+      /// update velocity
+      // update mesh verts
+      cudaPol(Collapse{size},
+              [prev = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+               next = proxy<execspace_e::cuda>({}, next->getParticles()),
+               dt] __device__(int pi) mutable {
+                prev.tuple<3>("vel", pi) =
+                    (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+              });
+      // update elements
+      cudaPol(Collapse{numE},
+              [prev = proxy<execspace_e::cuda>(
+                   {}, zsprimseq->getQuadraturePoints()),
+               next = proxy<execspace_e::cuda>({}, next->getQuadraturePoints()),
+               dt] __device__(int ei) mutable {
+                prev.tuple<3>("vel", ei) =
+                    (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
+              });
+      if (size != numV) { // update sprayed mesh verts
         cudaPol(
-            Collapse{numE},
-            [prev =
+            Collapse{sprayedSize},
+            [verts = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
+             eles =
                  proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
-             next = proxy<execspace_e::cuda>({}, next->getQuadraturePoints()),
-             dt] __device__(int ei) mutable {
-              prev.tuple<3>("vel", ei) =
-                  (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
+             sprayedOffset] __device__(int pi) mutable {
+              auto dst = pi + sprayedOffset;
+
+              int eid = reinterpret_bits<int>(verts("eid", dst));
+              auto tri = eles.pack<3>("inds", eid).reinterpret_bits<int>();
+              auto v0 = verts.pack<3>("vel", tri[0]);
+              auto v1 = verts.pack<3>("vel", tri[1]);
+              auto v2 = verts.pack<3>("vel", tri[2]);
+
+              auto ws = verts.pack<3>("weights", dst);
+              verts.tuple<3>("vel", dst) = ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
             });
       }
     } else {
-      zsprimseq = std::make_shared<ZenoParticles>();
-      zsprimseq->category = ZenoParticles::surface;
-      zsprimseq->asBoundary = true;
-      std::vector<zs::PropertyTag> tags{
-          {"mass", 1}, {"vol", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
-      std::vector<zs::PropertyTag> eleTags{{"mass", 1}, {"vol", 1},
-                                           {"pos", 3},  {"vel", 3},
-                                           {"nrm", 3},  {"inds", (int)3}};
-      zsprimseq->particles =
-          typename ZenoParticles::particles_t{tags, numV, memsrc_e::device, 0};
-      zsprimseq->elements = typename ZenoParticles::particles_t{
-          eleTags, numE, memsrc_e::device, 0};
-      cudaPol(Collapse{numV},
-              [seq = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
-               next = proxy<execspace_e::cuda>(
-                   {}, next->getParticles())] __device__(int pi) mutable {
-                seq("mass", pi) = next("mass", pi);
-                seq("vol", pi) = next("vol", pi);
-                seq.tuple<3>("pos", pi) = next.pack<3>("pos", pi);
-                seq.tuple<3>("vel", pi) = next.pack<3>("vel", pi);
-                seq.tuple<3>("nrm", pi) = next.pack<3>("nrm", pi);
-              });
-      cudaPol(
-          Collapse{numE},
-          [seq = proxy<execspace_e::cuda>({}, zsprimseq->getQuadraturePoints()),
-           next = proxy<execspace_e::cuda>(
-               {}, next->getQuadraturePoints())] __device__(int ei) mutable {
-            seq("mass", ei) = next("mass", ei);
-            seq("vol", ei) = next("vol", ei);
-            seq.tuple<3>("pos", ei) = next.pack<3>("pos", ei);
-            seq.tuple<3>("vel", ei) = next.pack<3>("vel", ei);
-            seq.tuple<3>("nrm", ei) = next.pack<3>("nrm", ei);
-            seq.tuple<3>("inds", ei) = next.pack<3>("inds", ei);
-          });
+      zsprimseq = std::make_shared<ZenoParticles>(*next);
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing BuildPrimitiveSequence\n");
