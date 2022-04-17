@@ -226,18 +226,18 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
         trisdata[i] = tris1[i];
     }
 
-    TICK(bindvbo);
+    /* TICK(bindvbo); */
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
-    TOCK(bindvbo);
-    TICK(bindebo);
+    /* TOCK(bindvbo); */
+    /* TICK(bindebo); */
     if (obj.count) {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), tris1.size() * sizeof(trisdata[0]));
     }
-    TOCK(bindebo);
+    /* TOCK(bindebo); */
 }
 void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
-    TICK(parse);
+    /* TICK(parse); */
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -272,17 +272,17 @@ void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
         //std::cout<<tang[i][0]<<" "<<tang[i][1]<<" "<<tang[i][2]<<std::endl;
         trisdata[i] = zeno::vec3i(i * 3, i * 3 + 1, i * 3 + 2);
     }
-    TOCK(parse);
+    /* TOCK(parse); */
 
-    TICK(bindvbo);
+    /* TICK(bindvbo); */
     obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
-    TOCK(bindvbo);
-    TICK(bindebo);
+    /* TOCK(bindvbo); */
+    /* TICK(bindebo); */
     if (obj.count) {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(trisdata[0]), obj.count * sizeof(trisdata[0]));
     }
-    TOCK(bindebo);
+    /* TOCK(bindebo); */
 }
 struct GraphicPrimitive : IGraphic {
     Scene *scene;
