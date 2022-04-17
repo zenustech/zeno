@@ -68,7 +68,7 @@ struct Camera {
     }
 
     double getAspect() const {
-        return (double)ny / (double)nx;
+        return (double)nx / (double)ny;
     }
 
     void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov,

@@ -9,6 +9,7 @@ namespace zenovis {
 struct Camera;
 struct ShaderManager;
 struct EnvmapManager;
+struct GraphicsManager;
 struct Light;
 struct IGraphic;
 struct DepthPass;
@@ -21,18 +22,19 @@ struct VAO;
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::vector<std::unique_ptr<Light>> lights;
-
-    std::vector<std::unique_ptr<IGraphic>> graphics;
     std::vector<std::unique_ptr<IGraphic>> hudGraphics;
 
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<EnvmapManager> envmapMan;
+    std::unique_ptr<GraphicsManager> graphicsMan;
     std::unique_ptr<DepthPass> mDepthPass;
     std::unique_ptr<ReflectivePass> mReflectivePass;
     std::unique_ptr<opengl::VAO> vao;
 
     Scene();
     ~Scene();
+
+    std::vector<IGraphic *> graphics() const;
 
     void drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
                             bool _show_grid = false);

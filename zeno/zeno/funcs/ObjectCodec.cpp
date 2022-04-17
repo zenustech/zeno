@@ -59,7 +59,7 @@ std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
 #undef _PER_OBJECT_TYPE
 
     } else {
-        log_error("invalid object type {}", header.type);
+        log_error("invalid object header type {}", (int)header.type);
         return nullptr;
     }
 }

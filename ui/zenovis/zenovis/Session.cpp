@@ -1,22 +1,19 @@
 #include <stb_image_write.h>
-#include <unordered_map>
 #include <zeno/utils/log.h>
 #include <zenovis/Camera.h>
+#include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Session.h>
-#include <zenovis/makeGraphic.h>
-#include <zenovis/opengl/common.h>
+#include <zenovis/GraphicsManager.h>
 
 namespace zenovis {
-
-using namespace zeno;
 
 struct Session::Impl {
     std::unique_ptr<Scene> scene = std::make_unique<Scene>();
 
-    std::unordered_map<std::shared_ptr<IObject>, std::unique_ptr<IGraphic>>
+    std::unordered_map<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>>
         new_graphics;
-    std::unordered_map<std::shared_ptr<IObject>, std::unique_ptr<IGraphic>>
+    std::unordered_map<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>>
         graphics;
 
     int curr_frameid = 0;
@@ -26,28 +23,6 @@ Session::Session() : impl(std::make_unique<Impl>()) {
 }
 
 Session::~Session() = default;
-
-void Session::load_objects(
-    std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
-    impl->new_graphics.clear();
-    for (auto const &obj : objs) {
-        log_trace("load_object: got object {}", obj.get());
-        auto it = impl->graphics.find(obj);
-        if (it != impl->graphics.end()) {
-            log_trace("load_object: cache hit graphics {}", it->second.get());
-            impl->new_graphics.emplace(it->first, std::move(it->second));
-            impl->graphics.erase(it);
-            continue;
-        }
-        auto ig = makeGraphic(impl->scene.get(), obj);
-        log_trace("load_object: fresh load graphics {}", ig.get());
-        if (!ig)
-            continue;
-        impl->new_graphics.emplace(obj, std::move(ig));
-    }
-    std::swap(impl->new_graphics, impl->graphics);
-    impl->new_graphics.clear();
-}
 
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->nx = nx;
@@ -111,6 +86,10 @@ void Session::set_curr_frameid(int frameid) {
 
 int Session::get_curr_frameid() {
     return impl->curr_frameid;
+}
+
+void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
+    impl->scene->graphicsMan->load_objects(objs);
 }
 
 } // namespace zenovis

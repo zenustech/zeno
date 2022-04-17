@@ -146,7 +146,7 @@ void main(void)
                                       light->lightDir, camera()->proj,
                                       camera()->view, i);
                 scene->vao->bind();
-                for (auto const &gra : scene->graphics) {
+                for (auto const &gra : scene->graphics()) {
                     gra->drawShadow(light.get());
                 }
                 scene->vao->unbind();
@@ -156,6 +156,8 @@ void main(void)
     }
 
     void paint_graphics(GLuint target_fbo = 0) {
+        CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
+                     camera()->bgcolor.b, 0.0f));
         if (enable_hdr && tmProg == nullptr) {
             tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {

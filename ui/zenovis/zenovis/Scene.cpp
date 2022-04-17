@@ -1,6 +1,7 @@
 #include <zenovis/Camera.h>
 #include <zenovis/DepthPass.h>
 #include <zenovis/EnvmapManager.h>
+#include <zenovis/GraphicsManager.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
@@ -37,6 +38,7 @@ Scene::Scene()
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
     envmapMan = std::make_unique<EnvmapManager>(this);
+    graphicsMan = std::make_unique<GraphicsManager>(this);
     mDepthPass = std::make_unique<DepthPass>(this);
     mReflectivePass = std::make_unique<ReflectivePass>(this);
 
@@ -45,6 +47,15 @@ Scene::Scene()
     /* hudGraphics.push_back(makeGraphicGrid()); */
     /* hudGraphics.push_back(makeGraphicAxis()); */
     //setup_env_map("Default");
+}
+
+std::vector<IGraphic *> Scene::graphics() const {
+    std::vector<IGraphic *> gras;
+    gras.reserve(graphicsMan->graphics.size());
+    for (auto const &[key, val]: graphicsMan->graphics) {
+        gras.push_back(val.get());
+    }
+    return gras;
 }
 
 void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
@@ -67,7 +78,7 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
         camera->proj = glm::perspective(glm::radians(camera->g_fov), aspRatio,
                                         range[i - 1], range[i]);
 
-        for (auto const &gra : graphics) {
+        for (auto const &gra : graphics()) {
             gra->draw(reflect, isDepthPass);
         }
         if (isDepthPass != 1.0f && _show_grid) {
@@ -83,7 +94,8 @@ void Scene::my_paint_graphics(float samples, float isDepthPass) {
     CHECK_GL(glViewport(0, 0, camera->nx, camera->ny));
     vao->bind();
     camera->m_sample_weight = 1.0f / samples;
-    drawSceneDepthSafe(camera->getAspect(), false, isDepthPass, camera->show_grid);
+    drawSceneDepthSafe(camera->getAspect(), false, isDepthPass,
+                       camera->show_grid);
     if (isDepthPass != 1.0 && camera->show_grid) {
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         draw_small_axis();
@@ -96,10 +108,7 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 
 void Scene::draw(unsigned int target_fbo) {
     /* ZHXX DONT MODIFY ME */
-    //mDepthPass->paint_graphics(target_fbo);
-    glClearColor(0.2f, 0.3f, 0.4f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    my_paint_graphics(1.0f, 0.0f);
+    mDepthPass->paint_graphics(target_fbo);
 }
 
 std::vector<char> Scene::record_frame_offline() {
