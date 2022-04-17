@@ -1,8 +1,0 @@
-numpy>=1.20.0
-pybind11>=2.6.0
-#PyQt5>=5.15.0
-#opencv-python>=4.5.0
-#PyOpenGL>=3.1.0
-#Flask>=1.1.0
-#twine>=3.4.0
-#wheel>=0.36.0

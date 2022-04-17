@@ -226,15 +226,15 @@ If you have trouble setting up developing environment, please let us help by ope
 
 ### Folder structures
 
-* `assets` - binary assets for some examples to run.
+<!-- * `assets` - binary assets for some examples to run. -->
 * `docs` - documentations for Zeno developers and contributors.
 * `external` - third-party libraries of Zeno as submodules.
-* `graphs` - example graphs to demostrate the use of Zeno.
+<!-- * `graphs` - example graphs to demostrate the use of Zeno. -->
 * `misc` - some random files and scripts used by CI.
 * `projects` - source code of Zeno extension modules.
 * `ui` - source code of Zeno editor UI (written in Qt5).
 * `zeno` - source code of Zeno node system core.
-* `.POC` - proof-of-concept and deprecated code archive.
+<!-- * `.POC` - proof-of-concept and deprecated code archive. -->
 * `.github` - GitHub workflow and template files.
 
 ### Code Style
