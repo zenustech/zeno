@@ -97,12 +97,12 @@ class Bezier:
         return np.y
 
 class ControlPoint:
-    def __init__(self, x, y) -> None:
+    def __init__(self, x, y, cp_type='align') -> None:
         self.pos = ValuePoint(x, y)
         self.left_handler = ValuePoint(-5, 0)
         self.right_handler = ValuePoint(5, 0)
         # straight, constant, align, free
-        self.cp_type = 'align'
+        self.cp_type = cp_type
 
 class MainCanvas(QWidget):
     def __init__(self) -> None:

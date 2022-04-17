@@ -67,6 +67,8 @@ def _uploadLights():
             cg = query_value(l, f, 'ColorG')
             cb = query_value(l, f, 'ColorB')
             intensity = query_value(l, f, 'Intensity')
+            scale = query_value(l, f, 'Scale')
+            enable = query_value(l, f, 'Enable')
             core.setLightData(
                 index,
                 (x, y, z),
@@ -75,6 +77,8 @@ def _uploadLights():
                 (sr, sg, sb),
                 (cr, cg, cb),
                 intensity,                
+                scale,
+                enable,
             )
 
 def _recieveStatus():
@@ -190,5 +194,8 @@ def load_lights(lights: Dict[str, str]):
                 cp.right_handler.y = float(next(txt))
                 ls.append(cp)
             light[k] = ls
+        if 'Scale' not in light:
+            light['Scale'] = [ControlPoint(0, 1)]
+            light['Enable'] = [ControlPoint(0, 1, 'constant')]
         global status
         status['lights'][lk] = light
