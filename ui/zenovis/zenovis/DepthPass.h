@@ -91,12 +91,35 @@ void main(void)
     GLuint msfborgb = 0, msfbod = 0, tonemapfbo = 0;
     GLuint ssfborgb = 0, ssfbod = 0, sfbo = 0;
     GLuint texRect = 0, regularFBO = 0;
-    GLuint texRects[16];
+    GLuint texRects[16] = {0};
     GLuint emptyVAO = 0;
+
+    ~DepthPass() {
+        if (emptyVAO)
+            glDeleteVertexArrays(1, &emptyVAO);
+        if (msfborgb)
+            glDeleteRenderbuffers(1, &msfborgb);
+        if (msfbod)
+            glDeleteRenderbuffers(1, &msfbod);
+        if (tonemapfbo)
+            glDeleteFramebuffers(1, &tonemapfbo);
+        if (ssfborgb)
+            glDeleteRenderbuffers(1, &ssfborgb);
+        if (ssfbod)
+            glDeleteRenderbuffers(1, &ssfbod);
+        if (sfbo)
+            glDeleteFramebuffers(1, &sfbo);
+        if (texRect)
+            glDeleteTextures(1, &sfbo);
+        for (int i = 0; i < 16; i++)
+            if (texRects[i])
+                glDeleteTextures(1, &texRects[i]);
+    }
+
     void ScreenFillQuad(GLuint tex, float msweight, int samplei) {
         glDisable(GL_DEPTH_TEST);
         if (emptyVAO == 0)
-            glGenVertexArrays(1, &emptyVAO);
+            CHECK_GL(glGenVertexArrays(1, &emptyVAO));
         CHECK_GL(glViewport(0, 0, camera()->nx, camera()->ny));
         if (samplei == 0) {
             CHECK_GL(glClearColor(0, 0, 0, 0.0f));
@@ -105,15 +128,15 @@ void main(void)
         tmProg->use();
         tmProg->set_uniformi("hdr_image", 0);
         tmProg->set_uniform("msweight", msweight);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0);
+        CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, tex);
 
-        glEnableVertexAttribArray(0);
-        glBindVertexArray(emptyVAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDisableVertexAttribArray(0);
-        glUseProgram(0);
-        glEnable(GL_DEPTH_TEST);
+        CHECK_GL(glEnableVertexAttribArray(0));
+        CHECK_GL(glBindVertexArray(emptyVAO));
+        CHECK_GL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+        CHECK_GL(glDisableVertexAttribArray(0));
+        CHECK_GL(glUseProgram(0));
+        CHECK_GL(glEnable(GL_DEPTH_TEST));
     }
     unsigned int getDepthTexture() const {
         return texRect;
@@ -134,8 +157,8 @@ void main(void)
         CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                         GL_TEXTURE_RECTANGLE, texRect, 0));
-        glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0, camera()->nx,
-                          camera()->ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0, camera()->nx,
+                          camera()->ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
     }
 
     void shadowPass() {
@@ -185,9 +208,11 @@ void main(void)
             camera()->oldny != camera()->ny) {
             if (msfborgb != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
+                msfborgb = 0;
             }
             if (ssfborgb != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &ssfborgb));
+                ssfborgb = 0;
             }
 
             CHECK_GL(glGenRenderbuffers(1, &msfborgb));
@@ -206,6 +231,7 @@ void main(void)
 
             if (msfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
+                msfbod = 0;
             }
             CHECK_GL(glGenRenderbuffers(1, &msfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
@@ -215,6 +241,7 @@ void main(void)
 
             if (ssfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
+                ssfbod = 0;
             }
             CHECK_GL(glGenRenderbuffers(1, &ssfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfbod));
@@ -224,22 +251,27 @@ void main(void)
 
             if (tonemapfbo != 0) {
                 CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
+                tonemapfbo = 0;
             }
             CHECK_GL(glGenFramebuffers(1, &tonemapfbo));
 
             if (sfbo != 0) {
                 CHECK_GL(glDeleteFramebuffers(1, &sfbo));
+                sfbo = 0;
             }
             CHECK_GL(glGenFramebuffers(1, &sfbo));
 
             if (regularFBO != 0) {
                 CHECK_GL(glDeleteFramebuffers(1, &regularFBO));
+                regularFBO = 0;
             }
             CHECK_GL(glGenFramebuffers(1, &regularFBO));
             if (texRect != 0) {
                 CHECK_GL(glDeleteTextures(1, &texRect));
+                texRect = 0;
                 for (int i = 0; i < 16; i++) {
                     CHECK_GL(glDeleteTextures(1, &texRects[i]));
+                    texRects[i] = 0;
                 }
             }
             CHECK_GL(glGenTextures(1, &texRect));
@@ -340,9 +372,9 @@ void main(void)
                                                GL_DEPTH_ATTACHMENT,
                                                GL_RENDERBUFFER, msfbod));
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);
-            glad_glBlendEquation(GL_FUNC_ADD);
+            CHECK_GL(glEnable(GL_BLEND));
+            CHECK_GL(glBlendFunc(GL_ONE, GL_ONE));
+            CHECK_GL(glad_glBlendEquation(GL_FUNC_ADD));
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
 
@@ -404,10 +436,6 @@ void main(void)
     }
 
     /* END ZHXX HAPPY */
-
-    ~DepthPass() {
-        /* TODO: delete the C-style frame buffers */
-    }
 };
 
 } // namespace zenovis
