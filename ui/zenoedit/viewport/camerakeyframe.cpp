@@ -1,5 +1,4 @@
 #include "camerakeyframe.h"
-#include "../zenovis/zenvisapi.hpp"
 
 CameraKeyframeWidget::CameraKeyframeWidget()
     : m_list(nullptr)
